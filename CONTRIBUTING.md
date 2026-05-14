@@ -225,13 +225,30 @@ A partir de v1.6.0-stable, el proyecto adopta un protocolo de auto-push automati
 - **Hotfixes SEV-1:** Permitido push directo con label `hotfix` + rollback plan documentado
 - **Drafts experimentales:** Usar ramas `experiment/*` sin auto-push a main
 
+## Embudo de Contribuidores
+
+ed2kIA usa un sistema de tiers progresivos para reconocer y promover contribuidores. Consulta [`docs/community/contributor-funnel.md`](docs/community/contributor-funnel.md) para detalles completos.
+
+| Tier | Entrada | Privilegios | Gobernanza |
+|------|---------|-------------|-----------|
+| **Spectator** | Automática | Lectura, discusión | Sin voto |
+| **Contributor** | Primer PR mergeado | Write access (PR), issues | 0.5x voto |
+| **Advocate** | 500 rep + 5 reviews | Triage, labels | 1x voto |
+| **Steward** | Nomination + election | PR approval, proposals | 2x voto |
+| **Guardian** | Election + community | Admin, releases, steering | 3x voto |
+
 ## Recursos
 
 - **Arquitectura:** [`docs/architecture_v1.6.0.md`](docs/architecture_v1.6.0.md)
 - **Transparencia:** [`docs/TRANSPARENCY_FRAMEWORK.md`](docs/TRANSPARENCY_FRAMEWORK.md)
 - **Gobernanza:** [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md)
+- **Embudo de Contribuidores:** [`docs/community/contributor-funnel.md`](docs/community/contributor-funnel.md)
 - **Migración:** [`docs/migration_guide_v1.5_to_v1.6.md`](docs/migration_guide_v1.5_to_v1.6.md)
-- **Roadmap:** [`docs/v1.7-roadmap-placeholder.md`](docs/v1.7-roadmap-placeholder.md)
+- **Roadmap v1.7:** [`docs/v1.7-roadmap-placeholder.md`](docs/v1.7-roadmap-placeholder.md)
+- **Roadmap v1.8 (ChatGPT Moment):** [`docs/roadmap/v1.8-chatgpt-moment.md`](docs/roadmap/v1.8-chatgpt-moment.md)
+- **Arquitectura Reputación:** [`docs/architecture/reputation-gamification.md`](docs/architecture/reputation-gamification.md)
+- **Arquitectura WASM/Mobile:** [`docs/architecture/mobile-browser-expansion.md`](docs/architecture/mobile-browser-expansion.md)
+- **Estrategia de Financiamiento:** [`docs/funding-strategy.md`](docs/funding-strategy.md)
 - **RFC-001:** [`docs/rfc/rfc-001-latency-mitigation-v1.7.md`](docs/rfc/rfc-001-latency-mitigation-v1.7.md)
 
 ## Contacto

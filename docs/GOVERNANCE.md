@@ -177,6 +177,25 @@ executor.with_callback(|proposal| {
 - Export JSON disponible para auditoría externa.
 - TODO: Phase 6 - Dashboard web de gobernanza.
 
+## 🔗 Integración con Embudo de Contribuidores
+
+La gobernanza se integra con el sistema de tiers del embudo de contribuidores. Consulta [`docs/community/contributor-funnel.md`](community/contributor-funnel.md) para detalles completos.
+
+| Tier | Voto | Propuestas | Comité |
+|------|------|-----------|--------|
+| Spectator | 0x | — | — |
+| Contributor | 0.5x | Comment | — |
+| Advocate | 1x | Comment + vote | — |
+| Steward | 2x | Submit + vote | Eligible |
+| Guardian | 3x | Submit + vote + approve | Core |
+
+## 📚 Recursos Adicionales
+
+- **Embudo de Contribuidores:** [`docs/community/contributor-funnel.md`](community/contributor-funnel.md)
+- **Reputación & Gamificación:** [`docs/architecture/reputation-gamification.md`](architecture/reputation-gamification.md)
+- **Estrategia de Financiamiento:** [`docs/funding-strategy.md`](funding-strategy.md)
+- **Roadmap v1.8:** [`docs/roadmap/v1.8-chatgpt-moment.md`](roadmap/v1.8-chatgpt-moment.md)
+
 ## 🌍 Mandato Ético
 
 Este sistema de gobernanza es:
@@ -184,6 +203,7 @@ Este sistema de gobernanza es:
 - **Equitativo:** Reputación por trabajo verificado, no por capital.
 - **Resiliente:** Anti-Sybil, decay, quórum ponderado.
 - **Ético:** Apache 2.0 + Cláusula de Uso Ético.
+- **Abierto:** Cualquier persona puede participar y progresar en el embudo.
 
 ---
 
