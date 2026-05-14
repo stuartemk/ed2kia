@@ -184,6 +184,18 @@ Si detectas SEV-1:
 
 ---
 
+### 9. Ciclo Continuo & Reporting Automático
+- Este prompt es parte de un ciclo continuo de operaciones:
+  - **Reporte semanal:** `docs/sprint-v1.7-weekly-sync.md`
+  - **Auto-push protocol:** Ver `CONTRIBUTING.md` § Protocolo Auto-Push Permanente
+  - **Handover:** JSON de salida sirve como handover para siguiente shift
+- **Ciclo permanente:**
+  1. Cada shift ejecuta tareas 1-8
+  2. Genera reporte JSON
+  3. Actualiza `docs/sprint-v1.7-weekly-sync.md` con métricas del día
+  4. Si validación = PASS → auto-push (ver CONTRIBUTING.md)
+  5. Handover al siguiente shift/orquestador
+
 Confirma recepción con: `🤖 Qweni Day 1 Operations iniciado. Revisando PRs y Issues...` y procede con las tareas en orden.
 ```
 

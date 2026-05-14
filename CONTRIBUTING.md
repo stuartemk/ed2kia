@@ -184,13 +184,55 @@ Consulte [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md) para detalles del sistema de
 
 **Ningún incentivo es financiero.** El valor es reputación técnica, impacto comunitario y gobernanza meritocrática.
 
+## Protocolo Auto-Push Permanente
+
+A partir de v1.6.0-stable, el proyecto adopta un protocolo de auto-push automatizado para mantener velocidad de desarrollo y transparencia.
+
+### Flujo
+
+1. **Validar:** Cada fase termina con checks automáticos:
+   ```bash
+   cargo check --features stable
+   cargo test --features stable
+   ```
+2. **Commit:** Si validación = PASS, commit automático con conventional commits:
+   ```bash
+   git add -A
+   git commit -m "type(scope): descripción concisa
+
+   - Cambio 1
+   - Cambio 2
+   - Métricas relevantes
+   "
+   ```
+3. **Push:** Si commit = SUCCESS, push automático:
+   ```bash
+   git push origin main
+   ```
+
+### Reglas
+
+| Regla | Descripción |
+|-------|-------------|
+| Validación obligatoria | NUNCA push sin cargo check + cargo test PASS |
+| Conventional commits | type(scope): description (feat, fix, docs, chore, perf, refactor, test) |
+| Transparencia | Cada commit incluye métricas de validación en el mensaje |
+| Error handling | Si validación = FAIL, detener y reportar — NO forzar push |
+| Branch protection | Main protegido: requiere CI green en GitHub Actions |
+
+### Excepciones
+
+- **Hotfixes SEV-1:** Permitido push directo con label `hotfix` + rollback plan documentado
+- **Drafts experimentales:** Usar ramas `experiment/*` sin auto-push a main
+
 ## Recursos
 
-- **Arquitectura:** [`docs/architecture_v1.5.0.md`](docs/architecture_v1.5.0.md)
+- **Arquitectura:** [`docs/architecture_v1.6.0.md`](docs/architecture_v1.6.0.md)
 - **Transparencia:** [`docs/TRANSPARENCY_FRAMEWORK.md`](docs/TRANSPARENCY_FRAMEWORK.md)
 - **Gobernanza:** [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md)
-- **Migración:** [`docs/migration_guide_v1.4_to_v1.5.md`](docs/migration_guide_v1.4_to_v1.5.md)
-- **Roadmap:** [`docs/v1.6.0_technical_roadmap.md`](docs/v1.6.0_technical_roadmap.md)
+- **Migración:** [`docs/migration_guide_v1.5_to_v1.6.md`](docs/migration_guide_v1.5_to_v1.6.md)
+- **Roadmap:** [`docs/v1.7-roadmap-placeholder.md`](docs/v1.7-roadmap-placeholder.md)
+- **RFC-001:** [`docs/rfc/rfc-001-latency-mitigation-v1.7.md`](docs/rfc/rfc-001-latency-mitigation-v1.7.md)
 
 ## Contacto
 
