@@ -1,8 +1,22 @@
-# Publicaciones Comunitarias — ed2kIA v1.6.0-stable
+# Publicaciones Comunitarias — ed2kIA v1.7 Sprint Active
 
 **Estado:** Listas para copiar/pegar
 **Fecha:** 2026-05-14
-**Versión:** v1.6.0-stable
+**Versión:** v1.6.0-stable → v1.7 Sprint 1 ACTIVE
+**Sprint:** RFC-001 Latency Mitigation
+
+---
+
+## 📊 Estado Actual v1.7 Sprint 1
+
+| Métrica | Baseline | Target v1.7 | Status |
+|---------|----------|-------------|--------|
+| FP8 MAPE | <0.1% | <2% | ✅ PASS |
+| INT4 MAPE | <7% | <10% | ✅ PASS |
+| Tests quantization | 15/15 | 15/15 | ✅ PASS |
+| Tests async_steering | 13/13 | 13/13 | ✅ PASS |
+| Benchmark CI | N/A | configured | ✅ READY |
+| Good-first-issues | 0 | 4 | ✅ READY |
 
 ---
 
