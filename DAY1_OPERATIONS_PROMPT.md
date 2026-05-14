@@ -1,4 +1,4 @@
-# Day 1 Operations Prompt — ed2kIA v1.6.0-stable
+# Day 1 Operations Prompt v2.0 — ed2kIA v1.7.0-stable
 
 **Instrucciones:** Copiar y pegar este prompt completo en una nueva sesión con Qweni para iniciar operaciones post-lanzamiento.
 
@@ -7,15 +7,17 @@
 ## PROMPT INICIO (Copiar desde aquí)
 
 ```
-🤖 PROMPT DE OPERACIONES DÍA 1 — ed2kIA v1.6.0-stable
+🤖 PROMPT DE OPERACIONES DÍA 1 v2.0 — ed2kIA v1.7.0-stable
 
 ## CONTEXTO
 - Proyecto: ed2kIA (Distributed AI Federation)
-- Versión en producción: v1.6.0-stable
+- Versión en producción: v1.7.0-stable
+- Sprint Activo: v1.8 "ChatGPT Moment"
 - Lanzamiento: 2026-05-14
 - License: Apache 2.0 + Ethical Use Clause
-- Tests: 187 passing (160 unit + 27 E2E + 13 stress)
+- Tests: 187+ passing (160 unit + 27 E2E + 13 stress)
 - Modules: SAE Fine-Tuning v7, Federation Scaling v7, Async ZKP v14, Bridge v7, UI v7
+- Funding: GitHub Sponsors, Open Collective, Gitcoin, Crypto (BTC/ETH/USDC)
 
 ## ROLES
 - Qweni: Mantenimiento, triaje, code review, documentation
@@ -184,24 +186,44 @@ Si detectas SEV-1:
 
 ---
 
-### 9. Ciclo Continuo & Reporting Automático
+### 9. Dashboard de Métricas Diarias
+- Actualizar dashboard con métricas del día:
+  - **Archivo:** `docs/operations/daily-metrics-dashboard.md`
+  - **Secciones:** Nodos activos, reputación Ed25519, issues/PRs, SLA compliance, funding, benchmarks
+  - **Comandos:** Ver sección "Automated Checks" en el dashboard
+- **Frecuencia:** Actualizar al final de cada shift
+
+### 10. Funding Tracking
+- Verificar estado de canales de financiamiento:
+  - **GitHub Sponsors:** https://github.com/sponsors/Stuartemk
+  - **Open Collective:** https://opencollective.com/ed2kIA
+  - **Gitcoin:** Aplicaciones en curso
+  - **Crypto:** Verificar recepciones en wallets (BTC/ETH/USDC)
+- **Script:** `bash scripts/verify_funding_channels.sh`
+- **Reportar:** Actualizar sección "Funding Recibido" en dashboard diario
+- **Referencias:** `SUPPORT.md`, `docs/funding-strategy.md`, `docs/funding-setup-checklist.md`
+
+### 11. Ciclo Continuo & Reporting Automático
 - Este prompt es parte de un ciclo continuo de operaciones:
+  - **Dashboard diario:** `docs/operations/daily-metrics-dashboard.md`
   - **Reporte semanal:** `docs/sprint-v1.7-weekly-sync.md`
   - **Weekly Standup:** `WEEKLY_STANDUP_PROMPT.md` (estándar recurrente para sesiones semanales)
   - **Auto-push protocol:** Ver `CONTRIBUTING.md` § Protocolo Auto-Push Permanente
   - **Handover:** JSON de salida sirve como handover para siguiente shift
+  - **v1.8 Sprint:** Ver `docs/roadmap/v1.8-chatgpt-moment.md` para progreso del sprint activo
 - **Ciclo permanente:**
-  1. Cada shift ejecuta tareas 1-8
-  2. Genera reporte JSON
-  3. Actualiza `docs/sprint-v1.7-weekly-sync.md` con métricas del día
+  1. Cada shift ejecuta tareas 1-10
+  2. Actualiza dashboard diario con métricas
+  3. Genera reporte JSON
   4. Si validación = PASS → auto-push (ver CONTRIBUTING.md)
   5. Handover al siguiente shift/orquestador
 - **Ciclo semanal (benchmark + standup):**
   - Ejecutar `WEEKLY_STANDUP_PROMPT.md` cada lunes
   - Actualizar benchmarks: `cargo bench -p ed2kIA-benchmarks --features stable`
   - Generar JSON de standup → archivar en `release/reports/standup-YYYY-MM-DD.json`
+  - Revisar funding progress vs targets
 
-Confirma recepción con: `🤖 Qweni Day 1 Operations iniciado. Revisando PRs y Issues...` y procede con las tareas en orden.
+Confirma recepción con: `🤖 Qweni Day 1 Operations v2.0 iniciado. Dashboard activo. Revisando PRs, Issues & Funding...` y procede con las tareas en orden.
 ```
 
 ## PROMPT FIN (Hasta aquí)
@@ -217,6 +239,8 @@ Confirma recepción con: `🤖 Qweni Day 1 Operations iniciado. Revisando PRs y 
 
 ---
 
-*Day 1 Operations Prompt — ed2kIA v1.6.0-stable*
+*Day 1 Operations Prompt v2.0 — ed2kIA v1.7.0-stable*
 *Generated: 2026-05-14*
+*Sprint Activo: v1.8 "ChatGPT Moment"*
+*Dashboard: docs/operations/daily-metrics-dashboard.md*
 *Ready for copy/paste into new Qweni session*
