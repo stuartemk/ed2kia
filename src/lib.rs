@@ -104,6 +104,19 @@ pub mod bridge {
     #[cfg(feature = "v1.6-sprint3")]
     #[path = "../bridge/federation_zkp_bridge_v7.rs"]
     pub mod federation_zkp_bridge_v7;
+    #[cfg(feature = "v1.7-sprint1")]
+    #[path = "../bridge/quantization.rs"]
+    pub mod quantization;
+}
+
+// ============================================================================
+// Protocol Layer — Async Steering & Latency Mitigation (RFC-001)
+// ============================================================================
+
+#[cfg(feature = "v1.7-sprint1")]
+pub mod protocol {
+    #[path = "../protocol/async_steering.rs"]
+    pub mod async_steering;
 }
 
 // ============================================================================
