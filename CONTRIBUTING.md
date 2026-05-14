@@ -115,6 +115,38 @@ pub use internal::*;
 - Tests de stress en `tests/load/`
 - Todos los tests deben pasar con `cargo test --features stable`
 
+### 🚀 Performance & Benchmarks Track
+
+El proyecto ed2kIA mantiene un track activo de rendimiento para v1.7.0. Si tienes experiencia en optimización de código, SIMD, CUDA o serialización, esta sección es para ti.
+
+#### Cómo ejecutar benchmarks
+
+```bash
+# Ejecutar todos los benchmarks
+cargo bench -p ed2kIA-benchmarks
+
+# Ejecutar benchmark específico
+cargo bench -p ed2kIA-benchmarks --bench tensor_serialization
+```
+
+#### Cómo reportar resultados
+
+1. Ejecuta los benchmarks en tu hardware
+2. Compara con los targets en [`benchmarks/README.md`](benchmarks/README.md)
+3. Abre un Issue con label `performance` incluyendo:
+   - Hardware (CPU, GPU, RAM)
+   - Versión de Rust (`rustc --version`)
+   - Resultados en formato tabla markdown
+
+#### Cómo proponer optimizaciones
+
+- **SIMD:** Propón optimizaciones AVX2/AVX-512 para operaciones de tensores
+- **CUDA:** Integra backends GPU vía `candle-core`
+- **Serialización:** Mejora FlatBuffers o propone formatos más eficientes
+- **Cuantización:** Implementa FP8/INT4 en [`src/sae/quantization.rs`](src/sae/quantization.rs)
+
+Consulta el [RFC-001: Latencia](docs/rfc/rfc-001-latency-mitigation-v1.7.md) para el plan completo.
+
 ### 4. Revisión de Pull Requests
 
 Los PRs serán revisados contra los siguientes criterios:

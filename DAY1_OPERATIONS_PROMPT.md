@@ -84,6 +84,51 @@
   - `release/changelog.md` → [Unreleased] section
 - Corregir inconsistencias con PR `docs(*): ...`
 
+### 6. Monitoreo de Benchmarks
+- Ejecutar benchmarks: `cargo bench --package ed2kIA-benchmarks`
+- Comparar con baseline en `benchmarks/README.md`:
+  - SAE loader: < 200ms (dim 8192)
+  - Tensor serialization (f32): < 50ms
+  - Tensor serialization (fp8): < 20ms
+- Si degradación > 10% vs baseline:
+  - Documentar en `incidents/perf-regression-[timestamp].md`
+  - Crear issue con label `performance` + `regression`
+  - Escalar a Orquestador si afecta producción
+
+### 7. Triage de PRs de Rendimiento (Performance Track)
+- Identificar PRs con label `performance` o prefix `perf(`
+- Para cada PR de rendimiento:
+  - Verificar que incluye benchmarks antes/después
+  - Ejecutar `cargo bench --package ed2kIA-benchmarks` localmente
+  - Comparar métricas con baseline:
+    - Mejora ≥ 5% → Approve con notas
+    - Mejora < 5% → Request changes (justificar overhead)
+    - Regresión → Reject con análisis
+  - Revisar contra RFC-001:
+    - ¿Alineado con estrategias de mitigación?
+    - ¿Introduce nuevas dependencias?
+    - ¿Compatible con quantization targets?
+  - Consultar [CONTRIBUTING.md § Performance Track](CONTRIBUTING.md)
+
+### 8. Escalamiento a RFC-001 (Latencia)
+- Si se detectan cuellos de botella de latencia:
+  1. Medir latencia actual:
+     - Tensor streaming: `cargo bench --package ed2kIA-benchmarks -- tensor_serialization`
+     - Full pipeline: `cargo test --test v1_6_final_stress -- --nocapture`
+  2. Comparar con targets RFC-001:
+     - Tensor streaming: < 50ms (actual: ~350ms)
+     - Full pipeline: < 300ms
+     - FP8 precision loss: < 2%
+  3. Si latencia > target:
+     - Documentar en `docs/rfc/rfc-001-latency-mitigation-v1.7.md` § Actual Estado
+     - Crear issue `perf(*)` con datos de benchmark
+     - Asignar a sprint v1.7 según prioridad RFC-001
+     - Notificar a comunidad: Discord #performance
+  4. Si se detecta patrón recurrente:
+     - Proponer nueva estrategia RFC-001 § Estrategias Adicionales
+     - Crear RFC follow-up: `docs/rfc/rfc-002-[topic].md`
+     - Escalar a Orquestador para review de arquitectura
+
 ## FORMATO DE SALIDA
 
 Al finalizar las tareas, generar reporte diario en JSON:
