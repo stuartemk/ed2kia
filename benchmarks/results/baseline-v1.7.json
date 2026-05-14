@@ -1,0 +1,53 @@
+{
+  "project": "ed2kIA",
+  "version": "1.6.0-stable",
+  "sprint": "v1.7",
+  "baseline_date": "2026-05-14",
+  "environment": {
+    "os": "Ubuntu 24.04 (GitHub Actions)",
+    "rust_version": "stable",
+    "cpu": "TODO: fill from CI runner",
+    "runner": "ubuntu-latest"
+  },
+  "note": "Baseline pending local execution. Run: cargo bench -p ed2kIA-benchmarks --features stable",
+  "metrics": {
+    "fp8_throughput_mbs": null,
+    "int4_throughput_mbs": null,
+    "precision_loss_pct": null,
+    "async_steering_latency_ms": null,
+    "sae_load_8192_ms": null,
+    "f32_serialization_mbs": null
+  },
+  "targets": {
+    "fp8_throughput_mbs": "> 500",
+    "int4_throughput_mbs": "> 200",
+    "precision_loss_pct": "< 2 (FP8), < 10 (INT4)",
+    "async_steering_latency_ms": "< 5",
+    "sae_load_8192_ms": "< 50",
+    "f32_serialization_mbs": "> 100"
+  },
+  "benchmarks": {
+    "tensor_serialization": {
+      "file": "benchmarks/benches/tensor_serialization.rs",
+      "groups": [
+        "tensor_serialization/f32",
+        "tensor_serialization/fp8",
+        "tensor_serialization/int4",
+        "tensor_serialization/json",
+        "tensor_serialization/bincode"
+      ],
+      "sizes": [128, 256, 512, 1024, 2048, 4096, 8192]
+    },
+    "sae_loader": {
+      "file": "benchmarks/benches/sae_loader.rs",
+      "groups": [
+        "sae_loader",
+        "sae_memory"
+      ],
+      "dimensions": [2048, 4096, 8192, 16384]
+    }
+  },
+  "execution_command": "cargo bench -p ed2kIA-benchmarks --features stable",
+  "results_directory": "benchmarks/criterion/",
+  "ci_workflow": ".github/workflows/benchmarks.yml"
+}
