@@ -17,6 +17,19 @@ Este proyecto es de código abierto, transparente y diseñado exclusivamente par
 
 **Licencia:** Apache 2.0 + Cláusula de Uso Ético (bienestar humano/IA)
 
+## 🌍 El Verdadero Poder de ed2kIA: Controlar a los Gigantes de la IA
+
+Hoy en día, empresas multimillonarias como Google, OpenAI o Meta controlan las Inteligencias Artificiales más potentes del planeta. Esas IA son como "cajas negras": nadie sabe realmente cómo piensan, en qué se basan para tomar decisiones ni si nos están ocultando información.
+
+Si solo las megacorporaciones pueden revisar el cerebro de los robots, ellas tendrán todo el poder del futuro. **ed2kIA cambia las reglas del juego.**
+
+### 🤝 ¿Cómo planeamos vencer a los gigantes?
+* **Un Supercomputador Humano:** En lugar de pagar millones de dólares en servidores, unimos las computadoras y teléfonos de miles de personas comunes en todo el mundo para crear una red de defensa digital.
+* **Rayos X para Robots:** Nuestro software desarma las matemáticas complejas de la IA y las traduce a palabras que cualquier humano puede entender. Es un detector de mentiras universal para máquinas.
+* **Poder para la Gente:** Al ser un proyecto 100% gratis y comunitario, le quitamos el monopolio a las grandes empresas. Cualquier estudiante o ciudadano podrá auditar a los robots para asegurarse de que no sean peligrosos, mentirosos o racistas.
+
+No necesitas ser un científico para cambiar el futuro. Al prestar un poco de la potencia de tu PC o tu teléfono mientras duermes, te conviertes en un detective digital protegiendo a la humanidad.
+
 ## 📐 Arquitectura
 
 ### Decisiones Arquitectónicas Fijas
