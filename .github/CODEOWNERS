@@ -1,0 +1,68 @@
+# ed2kIA Code Owners
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owners for the entire repository
+* @ed2kia/maintainers
+
+# Source code
+/src/ @ed2kia/core-team
+
+# P2P & Networking
+/src/p2p/ @ed2kia/network-team
+/src/scaling/ @ed2kia/network-team
+/src/bootstrap/ @ed2kia/network-team
+
+# SAE & ML Engine
+/src/sae/ @ed2kia/ml-team
+/src/interpret/ @ed2kia/ml-team
+/src/rlhf/ @ed2kia/ml-team
+
+# Zero-Knowledge Proofs
+/src/zkp/ @ed2kia/crypto-team
+/src/consensus/ @ed2kia/crypto-team
+/src/security/ @ed2kia/crypto-team
+
+# Federation & Bridge
+/src/federation/ @ed2kia/federation-team
+/src/bridge/ @ed2kia/federation-team
+/src/interop/ @ed2kia/federation-team
+
+# Governance & Reputation
+/src/governance/ @ed2kia/governance-team
+/src/reputation/ @ed2kia/governance-team
+/src/staking/ @ed2kia/governance-team
+
+# Web UI & API
+/src/web/ @ed2kia/web-team
+/src/ui/ @ed2kia/web-team
+/src/api/ @ed2kia/web-team
+
+# Monitoring & Runtime
+/src/monitoring/ @ed2kia/ops-team
+/src/monitoring_v2/ @ed2kia/ops-team
+/src/runtime/ @ed2kia/ops-team
+/src/storage/ @ed2kia/ops-team
+
+# Documentation
+/docs/ @ed2kia/docs-team
+
+# CI/CD & GitHub configuration
+.github/ @ed2kia/ops-team
+.github/workflows/ @ed2kia/ops-team
+
+# Deployment
+/deploy/ @ed2kia/ops-team
+
+# Security policies
+/security/ @ed2kia/crypto-team
+SECURITY.md @ed2kia/crypto-team
+
+# Release management
+/release/ @ed2kia/maintainers
+
+# Tests
+/tests/ @ed2kia/core-team
+
+# Examples & Quickstart
+/examples/ @ed2kia/docs-team
+/quickstart/ @ed2kia/docs-team

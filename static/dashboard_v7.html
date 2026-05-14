@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ed2kIA Dashboard v7 — Scaling v7, ZKP v13 & Bridge v6</title>
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #111827;
+            --bg-card: #1a2235;
+            --border: #2a3550;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-yellow: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-purple: #8b5cf6;
+            --accent-cyan: #06b6d4;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { font-size: 1.5rem; font-weight: 600; }
+        .header .status { display: flex; align-items: center; gap: 0.5rem; }
+        .header .status .dot {
+            width: 10px; height: 10px; border-radius: 50%;
+            background: var(--accent-green);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+        .card h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .metric-row:last-child { border-bottom: none; }
+        .metric-label { color: var(--text-secondary); }
+        .metric-value { font-weight: 600; font-variant-numeric: tabular-nums; }
+        .metric-value.good { color: var(--accent-green); }
+        .metric-value.warning { color: var(--accent-yellow); }
+        .metric-value.bad { color: var(--accent-red); }
+        .alert-list { list-style: none; }
+        .alert-item {
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            border-radius: 8px;
+            border-left: 4px solid;
+            background: rgba(255,255,255,0.03);
+        }
+        .alert-item.critical { border-color: var(--accent-red); }
+        .alert-item.warning { border-color: var(--accent-yellow); }
+        .alert-item.info { border-color: var(--accent-blue); }
+        .alert-severity {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 0.25rem;
+        }
+        .alert-message { font-size: 0.9rem; }
+        .stream-log {
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+        }
+        .stream-entry {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+        .stream-entry .timestamp { color: var(--accent-purple); }
+        .stream-entry .category { color: var(--accent-blue); }
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn:hover { background: var(--border); }
+        .btn.primary { background: var(--accent-blue); border-color: var(--accent-blue); }
+        .btn.primary:hover { background: #2563eb; }
+        .subscription-panel {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            margin-left: auto;
+        }
+        .subscription-panel label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        .subscription-panel input[type="checkbox"] {
+            accent-color: var(--accent-blue);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>ed2kIA Dashboard v7</h1>
+        <div class="status">
+            <div class="dot"></div>
+            <span>Live</span>
+        </div>
+    </div>
+    <div class="container">
+        <div class="controls">
+            <button class="btn primary" onclick="connect()">Conectar</button>
+            <button class="btn" onclick="disconnect()">Desconectar</button>
+            <button class="btn" onclick="refreshSnapshot()">Actualizar</button>
+            <div class="subscription-panel">
+                <label>
+                    <input type="checkbox" checked onchange="updateSubscriptions()"> Scaling
+                </label>
+                <label>
+                    <input type="checkbox" checked onchange="updateSubscriptions()"> ZKP
+                </label>
+                <label>
+                    <input type="checkbox" checked onchange="updateSubscriptions()"> Bridge
+                </label>
+                <label>
+                    <input type="checkbox" checked onchange="updateSubscriptions()"> Alerts
+                </label>
+            </div>
+        </div>
+        <div class="grid">
+            <!-- Federation Scaling v7 -->
+            <div class="card">
+                <h2>Federation Scaling v7</h2>
+                <div class="metric-row">
+                    <span class="metric-label">Nodos Activos</span>
+                    <span class="metric-value" id="scaling-nodes">0</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Shards Activos</span>
+                    <span class="metric-value" id="scaling-shards">0</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Partición Saludable</span>
+                    <span class="metric-value" id="scaling-partition">0%</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Reputación Promedio</span>
+                    <span class="metric-value" id="scaling-reputation">0%</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Latencia Promedio</span>
+                    <span class="metric-value" id="scaling-latency">0ms</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Carga Predictiva</span>
+                    <span class="metric-value" id="scaling-predictive-load">0%</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Decisiones de Scaling</span>
+                    <span class="metric-value" id="scaling-decisions">0</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Tiempo Decisión Prom.</span>
+                    <span class="metric-value" id="scaling-decision-ms">0ms</span>
+                </div>
+            </div>
+            <!-- Async ZKP v13 -->
+            <div class="card">
+                <h2>Async ZKP v13</h2>
+                <div class="metric-row">
+                    <span class="metric-label">Pruebas Enviadas</span>
+                    <span class="metric-value" id="zkp-submitted">0</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Pruebas Verificadas</span>
+                    <span class="metric-value good" id="zkp-verified">0</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Pruebas Fallidas</span>
+                    <span class="metric-value bad" id="zkp-failed">0</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Tasa Verificación</span>
+                    <span class="metric-value" id="zkp-verification-rate">0%</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Fallback Merkle+VRF</span>
+                    <span class="metric-value warning" id="zkp-fallback-rate">0%</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Tiempo Verificación Prom.</span>
+                    <span class="metric-value" id="zkp-verification-ms">0ms</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Batches Completados</span>
+                    <span class="metric-value" id="zkp-batches">0</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Tamaño Batch Prom.</span>
+                    <span class="metric-value" id="zkp-batch-size">0</span>
+                </div>
+            </div>
+            <!-- Federation ZKP Bridge v6 -->
+            <div class="card">
+                <h2>Federation ZKP Bridge v6</h2>
+                <div class="metric-row">
+                    <span class="metric-label">Pruebas Ruteadas</span>
+                    <span class="metric-value" id="bridge-routed">0</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Pruebas Verificadas</span>
+                    <span class="metric-value good" id="bridge-verified">0</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Credibilidad Promedio</span>
+                    <span class="metric-value" id="bridge-credibility">0%</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Tiempo Verificación Prom.</span>
+                    <span class="metric-value" id="bridge-verification-ms">0ms</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Fallback Activado</span>
+                    <span class="metric-value warning" id="bridge-fallbacks">0</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Gradiente Alineación</span>
+                    <span class="metric-value" id="bridge-gradient-alignment">0%</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Federaciones Activas</span>
+                    <span class="metric-value" id="bridge-federations">0</span>
+                </div>
+            </div>
+            <!-- Alerts -->
+            <div class="card">
+                <h2>Alertas</h2>
+                <ul class="alert-list" id="alert-list">
+                    <li class="alert-item info">
+                        <div class="alert-severity">Info</div>
+                        <div class="alert-message">Dashboard v7 listo. Conéctate para ver alertas en tiempo real.</div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <!-- Event Stream -->
+        <div class="card">
+            <h2>Stream de Eventos</h2>
+            <div class="stream-log" id="stream-log">
+                <div class="stream-entry">
+                    <span class="timestamp">[--:--:--]</span>
+                    <span class="category">[system]</span> Esperando conexión...
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        let ws = null;
+        const wsUrl = 'ws://localhost:3000/ws/federation/v2';
+
+        function connect() {
+            if (ws && ws.readyState === WebSocket.OPEN) return;
+            ws = new WebSocket(wsUrl);
+            ws.onopen = () => {
+                addStreamEntry('system', 'Conectado al servidor');
+                ws.send(JSON.stringify({ type: 'auth', client_id: 'dashboard-v7', signature: 'demo', timestamp_ms: Date.now() }));
+                updateSubscriptions();
+            };
+            ws.onmessage = (event) => {
+                const msg = JSON.parse(event.data);
+                handleMessage(msg);
+            };
+            ws.onclose = () => addStreamEntry('system', 'Desconectado del servidor');
+            ws.onerror = (err) => addStreamEntry('system', 'Error de conexión');
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        function updateSubscriptions() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            const categories = [];
+            const checkboxes = document.querySelectorAll('.subscription-panel input[type="checkbox"]');
+            const labels = ['scaling', 'zkp', 'bridge', 'alerts'];
+            checkboxes.forEach((cb, i) => {
+                if (cb.checked) categories.push(labels[i]);
+            });
+            if (categories.length === 0) categories.push('all');
+            ws.send(JSON.stringify({ type: 'subscribe', categories: categories }));
+            addStreamEntry('system', 'Suscrito a: ' + categories.join(', '));
+        }
+
+        function handleMessage(msg) {
+            switch (msg.type) {
+                case 'event':
+                    handleEvent(msg.event);
+                    break;
+                case 'auth_ok':
+                    addStreamEntry('system', 'Autenticación exitosa');
+                    break;
+                case 'subscribed':
+                    addStreamEntry('system', 'Suscrito a: ' + msg.categories.join(', '));
+                    break;
+                case 'pong':
+                    break;
+                case 'error':
+                    addStreamEntry('system', 'Error: ' + msg.message);
+                    break;
+                default:
+                    addStreamEntry('system', 'Mensaje: ' + msg.type);
+            }
+        }
+
+        function handleEvent(event) {
+            const ts = new Date(event.timestamp_ms).toLocaleTimeString();
+            addStreamEntry(event.category, '[' + event.id + '] ' + (event.payload.kind || event.payload.type || 'event'));
+            updateMetrics(event);
+        }
+
+        function updateMetrics(event) {
+            // Metrics are updated via periodic snapshot fetch
+        }
+
+        function refreshSnapshot() {
+            fetch('/api/dashboard/v7/snapshot')
+                .then(r => r.json())
+                .then(data => {
+                    updateScalingV7(data.scaling_v7);
+                    updateZkpV13(data.zkp_v13);
+                    updateBridgeV6(data.bridge_v6);
+                    updateAlerts(data.alerts || []);
+                    addStreamEntry('system', 'Snapshot actualizado');
+                })
+                .catch(() => addStreamEntry('system', 'Error al obtener snapshot'));
+        }
+
+        function updateScalingV7(data) {
+            if (!data) return;
+            document.getElementById('scaling-nodes').textContent = data.nodes_active || 0;
+            document.getElementById('scaling-shards').textContent = data.shards_active || 0;
+            document.getElementById('scaling-partition').textContent = ((data.partition_health || 0) * 100).toFixed(2) + '%';
+            document.getElementById('scaling-reputation').textContent = ((data.avg_reputation || 0) * 100).toFixed(1) + '%';
+            document.getElementById('scaling-latency').textContent = (data.avg_latency_ms || 0).toFixed(0) + 'ms';
+            document.getElementById('scaling-predictive-load').textContent = ((data.predictive_load || 0) * 100).toFixed(1) + '%';
+            document.getElementById('scaling-decisions').textContent = data.decisions_count || 0;
+            document.getElementById('scaling-decision-ms').textContent = (data.avg_decision_ms || 0).toFixed(1) + 'ms';
+
+            // Color coding for partition health
+            const partitionEl = document.getElementById('scaling-partition');
+            const partitionVal = data.partition_health || 0;
+            partitionEl.className = 'metric-value ' + (partitionVal >= 0.995 ? 'good' : partitionVal >= 0.95 ? 'warning' : 'bad');
+
+            // Color coding for predictive load
+            const loadEl = document.getElementById('scaling-predictive-load');
+            const loadVal = data.predictive_load || 0;
+            loadEl.className = 'metric-value ' + (loadVal < 0.7 ? 'good' : loadVal < 0.85 ? 'warning' : 'bad');
+        }
+
+        function updateZkpV13(data) {
+            if (!data) return;
+            document.getElementById('zkp-submitted').textContent = data.proofs_submitted || 0;
+            document.getElementById('zkp-verified').textContent = data.proofs_verified || 0;
+            document.getElementById('zkp-failed').textContent = data.proofs_failed || 0;
+            document.getElementById('zkp-verification-rate').textContent = ((data.verification_rate || 0) * 100).toFixed(1) + '%';
+            document.getElementById('zkp-fallback-rate').textContent = ((data.fallback_rate || 0) * 100).toFixed(1) + '%';
+            document.getElementById('zkp-verification-ms').textContent = (data.avg_verification_ms || 0).toFixed(0) + 'ms';
+            document.getElementById('zkp-batches').textContent = data.batches_completed || 0;
+            document.getElementById('zkp-batch-size').textContent = (data.avg_batch_size || 0).toFixed(1);
+
+            // Color coding for fallback rate
+            const fallbackEl = document.getElementById('zkp-fallback-rate');
+            const fallbackVal = data.fallback_rate || 0;
+            fallbackEl.className = 'metric-value ' + (fallbackVal < 0.15 ? 'good' : fallbackVal < 0.3 ? 'warning' : 'bad');
+        }
+
+        function updateBridgeV6(data) {
+            if (!data) return;
+            document.getElementById('bridge-routed').textContent = data.proofs_routed || 0;
+            document.getElementById('bridge-verified').textContent = data.proofs_verified || 0;
+            document.getElementById('bridge-credibility').textContent = ((data.avg_credibility || 0) * 100).toFixed(1) + '%';
+            document.getElementById('bridge-verification-ms').textContent = (data.avg_verification_ms || 0).toFixed(0) + 'ms';
+            document.getElementById('bridge-fallbacks').textContent = data.fallbacks_activated || 0;
+            document.getElementById('bridge-gradient-alignment').textContent = ((data.gradient_alignment || 0) * 100).toFixed(1) + '%';
+            document.getElementById('bridge-federations').textContent = data.active_federations || 0;
+
+            // Color coding for credibility
+            const credEl = document.getElementById('bridge-credibility');
+            const credVal = data.avg_credibility || 0;
+            credEl.className = 'metric-value ' + (credVal >= 0.8 ? 'good' : credVal >= 0.6 ? 'warning' : 'bad');
+
+            // Color coding for gradient alignment
+            const alignEl = document.getElementById('bridge-gradient-alignment');
+            const alignVal = data.gradient_alignment || 0;
+            alignEl.className = 'metric-value ' + (alignVal >= 0.85 ? 'good' : alignVal >= 0.7 ? 'warning' : 'bad');
+        }
+
+        function updateAlerts(alerts) {
+            const list = document.getElementById('alert-list');
+            list.innerHTML = '';
+            if (alerts.length === 0) {
+                list.innerHTML = '<li class="alert-item info"><div class="alert-severity">Info</div><div class="alert-message">Sin alertas activas — todos los sistemas operativos</div></li>';
+                return;
+            }
+            alerts.forEach(alert => {
+                const li = document.createElement('li');
+                const severityClass = (alert.severity || 'info').toLowerCase();
+                li.className = 'alert-item ' + severityClass;
+                li.innerHTML = '<div class="alert-severity">' + alert.severity + '</div><div class="alert-message">' + alert.message + '</div>';
+                list.appendChild(li);
+            });
+        }
+
+        function addStreamEntry(category, message) {
+            const log = document.getElementById('stream-log');
+            const ts = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = 'stream-entry';
+            entry.innerHTML = '<span class="timestamp">[' + ts + ']</span> <span class="category">[' + category + ']</span> ' + message;
+            log.insertBefore(entry, log.firstChild);
+            if (log.children.length > 100) {
+                log.removeChild(log.lastChild);
+            }
+        }
+
+        // Auto-refresh snapshot every 5 seconds
+        setInterval(() => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                refreshSnapshot();
+            }
+        }, 5000);
+
+        // Auto-ping every 10 seconds to keep connection alive
+        setInterval(() => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'ping', timestamp_ms: Date.now() }));
+            }
+        }, 10000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+# ed2kIA v0.5.0 - Genesis Network Configuration
+# =============================================
+# This file defines the initial parameters for network activation.
+# DO NOT modify after genesis without governance approval.
+#
+# License: Apache 2.0 + Ethical Use Clause
+# Generated: 2025-01-XX
+
+# ---------------------------------------------------------------------------
+# Network Parameters
+# ---------------------------------------------------------------------------
+[network]
+# Maximum concurrent peer connections per node
+max_peers = 100
+
+# Seed nodes for initial bootstrapping (overridden by seed_nodes.json at runtime)
+seed_nodes = []
+
+# Listen port for P2P communication
+listen_port = 3030
+
+# Connection timeout in seconds
+dial_timeout_secs = 30
+
+# GossipSub topic for SAE feature exchange
+gossip_topic = "/ed2kIA/sae/v0.5.0"
+
+# Rate limiting: max messages per peer per minute
+rate_limit_per_peer = 60
+
+# ---------------------------------------------------------------------------
+# Layer Lease Parameters
+# ---------------------------------------------------------------------------
+[lease]
+# Duration of layer leases in seconds (5 minutes)
+duration_secs = 300
+
+# Renewal threshold: renew when remaining < this percentage
+renewal_threshold_pct = 25
+
+# Maximum layers per node
+max_layers_per_node = 4
+
+# Total SAE layers in the network
+total_layers = 16
+
+# ---------------------------------------------------------------------------
+# Consensus Parameters
+# ---------------------------------------------------------------------------
+[consensus]
+# Minimum quorum for proposal acceptance (30% of active validators)
+quorum_threshold = 0.3
+
+# Agreement threshold for batch validation
+agreement_threshold = 0.7
+
+# Time window for vote collection (milliseconds)
+vote_window_ms = 30000
+
+# Maximum batch size (number of features per batch)
+max_batch_size = 64
+
+# Minimum votes required for consensus
+min_votes = 3
+
+# ---------------------------------------------------------------------------
+# ZKP / Crypto Parameters
+# ---------------------------------------------------------------------------
+[crypto]
+# Enable ZKP fallback to Merkle + VRF when ZKP unavailable
+zkb_fallback = true
+
+# Minimum confidence threshold for ZKP verification
+min_confidence = 0.8
+
+# Merkle tree depth limit
+merkle_max_depth = 8
+
+# VRF secret seed rotation interval (seconds)
+vrf_rotation_secs = 86400
+
+# ---------------------------------------------------------------------------
+# Steering Signal & Feedback
+# ---------------------------------------------------------------------------
+[steering]
+# Synchronization mode: "async" (fire-and-forget) or "sync" (await ack)
+sync_mode = "async"
+
+# Maximum steering signals per minute
+max_signals_per_min = 30
+
+# Confidence threshold for auto-applying steering signals
+auto_apply_threshold = 0.85
+
+# Feedback retention period (days)
+feedback_retention_days = 90
+
+# ---------------------------------------------------------------------------
+# Reputation Parameters
+# ---------------------------------------------------------------------------
+[reputation]
+# Initial reputation score for new nodes
+initial_score = 0.5
+
+# Decay half-life (days)
+decay_half_life_days = 30
+
+# Minimum reputation to participate in consensus
+min_consensus_reputation = 0.4
+
+# Minimum reputation to vote on governance proposals
+min_governance_reputation = 0.7
+
+# ZKP verification bonus multiplier
+zkp_bonus_multiplier = 1.2
+
+# ---------------------------------------------------------------------------
+# WASM Sandbox Parameters
+# ---------------------------------------------------------------------------
+[wasm]
+# Memory limit per WASM instance (MB)
+memory_limit_mb = 256
+
+# Execution timeout (milliseconds)
+execution_timeout_ms = 5000
+
+# Network access disabled by default
+allow_network = false
+
+# Host filesystem access disabled by default
+allow_host_fs = false
+
+# ---------------------------------------------------------------------------
+# Monitoring & Health
+# ---------------------------------------------------------------------------
+[monitoring]
+# Enable Prometheus metrics endpoint
+metrics_enabled = true
+
+# Metrics port
+metrics_port = 9090
+
+# Health check interval (seconds)
+health_check_interval_secs = 30
+
+# Log level: trace, debug, info, warn, error
+log_level = "info"
+
+# ---------------------------------------------------------------------------
+# Governance Parameters
+# ---------------------------------------------------------------------------
+[governance]
+# Voting period (seconds) - 72 hours
+voting_period_secs = 259200
+
+# Minimum participation for valid vote
+min_participation_pct = 0.3
+
+# Proposal execution delay after approval (seconds) - 24 hours
+execution_delay_secs = 86400
+
+# Maximum active proposals
+max_active_proposals = 10

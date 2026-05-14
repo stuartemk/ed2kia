@@ -1,0 +1,133 @@
+# =============================================================================
+# ed2kIA - Docker Compose para red de prueba (3 nodos)
+# =============================================================================
+# Uso:
+#   docker-compose up -d
+#   docker-compose logs -f node1
+#   docker-compose down
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # ---------------------------------------------------------------------------
+  # Nodo 1 - Coordinador principal
+  # ---------------------------------------------------------------------------
+  node1:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      target: runtime
+    container_name: ed2kia-node1
+    hostname: node1
+    ports:
+      - "9001:9000/tcp"
+      - "9001:9000/udp"
+    environment:
+      - RUST_LOG=ed2kia=debug
+      - NODE_ID=node1
+      - PORT=9000
+      - BOOTSTRAP_PEERS=
+    volumes:
+      - ./data/node1:/data/ed2kia
+      - ./models:/data/ed2kia/models:ro
+      - ./wasm:/data/ed2kia/wasm:ro
+    command: ["--port", "9000", "join"]
+    restart: unless-stopped
+    networks:
+      - ed2kia-net
+    healthcheck:
+      test: ["CMD", "ed2kia", "--help"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # Nodo 2 - Worker
+  # ---------------------------------------------------------------------------
+  node2:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      target: runtime
+    container_name: ed2kia-node2
+    hostname: node2
+    ports:
+      - "9002:9000/tcp"
+      - "9002:9000/udp"
+    environment:
+      - RUST_LOG=ed2kia=info
+      - NODE_ID=node2
+      - PORT=9000
+    volumes:
+      - ./data/node2:/data/ed2kia
+      - ./models:/data/ed2kia/models:ro
+      - ./wasm:/data/ed2kia/wasm:ro
+    command: ["--port", "9000", "join"]
+    restart: unless-stopped
+    networks:
+      - ed2kia-net
+    depends_on:
+      node1:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "ed2kia", "--help"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # Nodo 3 - Verificador ZKP
+  # ---------------------------------------------------------------------------
+  node3:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      target: runtime
+    container_name: ed2kia-node3
+    hostname: node3
+    ports:
+      - "9003:9000/tcp"
+      - "9003:9000/udp"
+    environment:
+      - RUST_LOG=ed2kia=info
+      - NODE_ID=node3
+      - PORT=9000
+    volumes:
+      - ./data/node3:/data/ed2kia
+      - ./models:/data/ed2kia/models:ro
+      - ./wasm:/data/ed2kia/wasm:ro
+    command: ["--port", "9000", "join"]
+    restart: unless-stopped
+    networks:
+      - ed2kia-net
+    depends_on:
+      node1:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "ed2kia", "--help"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+# ---------------------------------------------------------------------------
+# Redes
+# ---------------------------------------------------------------------------
+networks:
+  ed2kia-net:
+    driver: bridge
+    name: ed2kia-network
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# ---------------------------------------------------------------------------
+# Volumes compartidos (modelos y WASM modules)
+# ---------------------------------------------------------------------------
+volumes:
+  node1-data:
+  node2-data:
+  node3-data:

@@ -1,0 +1,162 @@
+   Compiling ed2kia v1.1.0 (C:\Users\cualo\Desktop\PROYECTOS\ed2kIA)
+warning: unnecessary parentheses around method argument
+   --> src\slo_v3\..\slo\slo_v3.rs:572:42
+    |
+572 |             engine.record_metric("test", (100.0 - i as f64 * 3.0)).unwrap();
+    |                                          ^                      ^
+    |
+    = note: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+help: remove these parentheses
+    |
+572 -             engine.record_metric("test", (100.0 - i as f64 * 3.0)).unwrap();
+572 +             engine.record_metric("test", 100.0 - i as f64 * 3.0).unwrap();
+    |
+
+error[E0689]: can't call method `sqrt` on ambiguous numeric type `{float}`
+   --> src\sae\distributed_finetune.rs:708:42
+    |
+708 |         let expected = (0.1 * 0.1 * 3.0).sqrt();
+    |                                          ^^^^
+
+warning: unreachable pattern
+   --> src\sae\distributed_finetune.rs:769:13
+    |
+768 |             e => assert!(format!("{}", e).contains("x")),
+    |             - matches any value
+769 |             _ => {}
+    |             ^ no value can reach this
+    |
+    = note: `#[warn(unreachable_patterns)]` (part of `#[warn(unused)]`) on by default
+
+warning: unreachable pattern
+   --> src\sae\checkpoint_manager.rs:868:13
+    |
+867 |             e => assert!(format!("{}", e).contains("test")),
+    |             - matches any value
+868 |             _ => {}
+    |             ^ no value can reach this
+
+warning: unreachable pattern
+   --> src\sae\fault_tolerance.rs:954:13
+    |
+953 |             e => assert!(format!("{}", e).contains("x")),
+    |             - matches any value
+954 |             _ => {}
+    |             ^ no value can reach this
+
+warning: unused variable: `exec_result`
+   --> src\security\wasm_sandbox_v2.rs:729:17
+    |
+729 |             let exec_result = result.unwrap();
+    |                 ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_exec_result`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> src\governance\voting.rs:446:13
+    |
+446 |         let mut manager = VotingManager::with_config(VotingConfig::default(), 10);
+    |             ----^^^^^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `proposal`
+   --> src\governance\voting.rs:437:13
+    |
+437 |         let proposal = Proposal::create(
+    |             ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_proposal`
+
+warning: unused variable: `manager`
+   --> src\governance\voting.rs:446:13
+    |
+446 |         let mut manager = VotingManager::with_config(VotingConfig::default(), 10);
+    |             ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_manager`
+
+warning: variable does not need to be mutable
+   --> src\federation\trust_sync.rs:715:13
+    |
+715 |         let mut record1 = make_record("node1", "net_a");
+    |             ----^^^^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> src\alignment\continuous.rs:527:13
+    |
+527 |         let mut fb = make_feedback(0, 5, f32::NAN, 0.7, 0.9);
+    |             ----^^
+    |             |
+    |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> src\alignment\continuous.rs:535:13
+    |
+535 |         let mut fb = make_feedback(0, 5, f32::INFINITY, 0.7, 0.9);
+    |             ----^^
+    |             |
+    |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> src\slo\enforcer.rs:673:13
+    |
+673 |         let mut enforcer = SLAEnforcer::with_config(EnforcerConfig {
+    |             ----^^^^^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: value assigned to `scaler` is never read
+   --> src\scaling_v3\..\scaling\cross_model_v2.rs:508:26
+    |
+508 |         let mut scaler = CrossModelScalerV2::new();
+    |                          ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+    = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> src\alignment_v3\..\alignment\loop_v3.rs:721:13
+    |
+721 |         let mut loop_v3 = AlignmentLoopV3::new();
+    |             ----^^^^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: unused variable: `loop_v3`
+   --> src\alignment_v3\..\alignment\loop_v3.rs:721:13
+    |
+721 |         let mut loop_v3 = AlignmentLoopV3::new();
+    |             ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_loop_v3`
+
+warning: unused variable: `i`
+   --> src\alignment_v3\..\alignment\bias_mitigator.rs:869:13
+    |
+869 |         for i in 0..15 {
+    |             ^ help: if this is intentional, prefix it with an underscore: `_i`
+
+warning: unused variable: `i`
+   --> src\alignment_v3\..\alignment\bias_mitigator.rs:920:13
+    |
+920 |         for i in 0..10 {
+    |             ^ help: if this is intentional, prefix it with an underscore: `_i`
+
+warning: variable does not need to be mutable
+   --> src\alignment_v3\..\alignment\bias_mitigator.rs:989:13
+    |
+989 |         let mut mitigator = BiasMitigator::new();
+    |             ----^^^^^^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+    --> src\alignment_v3\..\alignment\bias_mitigator.rs:1009:13
+     |
+1009 |         let mut detections = vec![
+     |             ----^^^^^^^^^^
+     |             |
+     |             help: remove this `mut`
+
+For more information about this error, try `rustc --explain E0689`.
+warning: `ed2kia` (lib test) generated 19 warnings
+error: could not compile `ed2kia` (lib test) due to 1 previous error; 19 warnings emitted

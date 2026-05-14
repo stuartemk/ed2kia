@@ -1,0 +1,18 @@
+# ed2kIA v0.5.0 - Ed25519 Signatures
+# Generated: 2026-05-03
+# Algorithm: Ed25519
+
+# Public Key (Release Signer)
+# PUBLIC_KEY: <TO_BE_SET_BY_MAINTAINER>
+
+# Signature for ed2kia-0.5.0.tar.gz
+# SIGNATURE: <TO_BE_GENERATED>
+
+# Verification:
+# 1. Descargar checksums.txt
+# 2. Verificar SHA-256: sha256sum -c checksums.txt
+# 3. Verificar firma: ed25519-verify PUBLIC_KEY SIGNATURE ed2kia-0.5.0.tar.gz
+
+---
+# Nota: Las firmas finales se generan durante el proceso de lanzamiento.
+# El mantenedor debe firmar con su clave Ed25519 privada antes de publicar.

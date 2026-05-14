@@ -1,0 +1,125 @@
+name: CI/CD Pipeline v1.2.0
+
+on:
+  push:
+    branches: [main, develop]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_VERSION: '1.75'
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  # ============================================
+  # 1. Lint & Clippy
+  # ============================================
+  lint:
+    name: Clippy & Fmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Rustfmt
+        run: cargo fmt -- --check
+
+      - name: Clippy (stable features)
+        run: cargo clippy --features stable -- -D warnings
+
+      - name: Clippy (E2E tests)
+        run: cargo clippy --test v1_2_sprint4_e2e --test sprint4_stress --features v1.2-sprint4 -- -D warnings
+
+  # ============================================
+  # 2. Build
+  # ============================================
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build Release
+        run: cargo build --release --features stable
+
+  # ============================================
+  # 3. Tests
+  # ============================================
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: E2E Tests
+        run: cargo test --test v1_2_sprint4_e2e --features v1.2-sprint4
+
+      - name: Stress Tests
+        run: cargo test --test sprint4_stress --features v1.2-sprint4
+
+  # ============================================
+  # 4. Security Audit
+  # ============================================
+  audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+
+      - name: Run cargo-audit
+        run: cargo audit || true
+
+  # ============================================
+  # 5. Release (on tag)
+  # ============================================
+  release:
+    name: Release
+    needs: [lint, build, test, audit]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build Release Binary
+        run: cargo build --release --features stable
+
+      - name: Package Release
+        run: |
+          chmod +x release/v1.2.0-stable/package_release.sh
+          bash release/v1.2.0-stable/package_release.sh
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ed2kIA-${{ github.ref_name }}
+          path: target/artifacts/
+
+      - name: GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: target/artifacts/*.tar.gz
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

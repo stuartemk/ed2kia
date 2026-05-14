@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📚 Documentation
+    url: https://github.com/ed2kIA/ed2kIA/docs
+    about: Check the documentation before opening an issue.
+  - name: 💬 Community Discord
+    url: https://discord.gg/ed2kIA
+    about: Ask questions and discuss with the community.
+  - name: ✉️ Security Issues
+    url: mailto:security@ed2kIA.org
+    about: Please report security vulnerabilities privately to security@ed2kIA.org.

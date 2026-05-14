@@ -1,0 +1,91 @@
+{
+  "release": {
+    "version": "1.6.0-stable",
+    "tag": "v1.6.0-stable",
+    "date": "2026-05-14",
+    "status": "ready-for-release"
+  },
+  "phases": {
+    "fase_7_changelog": {
+      "status": "completed",
+      "files": [
+        "release/changelog.md"
+      ],
+      "notes": "v1.6.0-stable entry added with Keep-a-Changelog format. Sections: Added, Changed, Security, Governance, Documentation."
+    },
+    "fase_8_github_scaffolding": {
+      "status": "completed",
+      "files": [
+        ".github/PULL_REQUEST_TEMPLATE.md",
+        ".github/ISSUE_TEMPLATE/config.yml",
+        ".github/ISSUE_TEMPLATE/bug_report.md",
+        ".github/ISSUE_TEMPLATE/feature_request.md",
+        ".github/ISSUE_TEMPLATE/node_operator_issue.md"
+      ],
+      "notes": "PR template updated (core-only → stable, MIT/Apache-2.0 → Apache-2.0 + Ethical Use). Issue template config created with contact links."
+    },
+    "fase_9_labels_automanagement": {
+      "status": "completed",
+      "files": [
+        ".github/labels.json",
+        ".github/labeler.yml",
+        ".github/workflows/labeler.yml"
+      ],
+      "notes": "9 labels defined: good first issue, bug, enhancement, documentation, security, governance, sae, p2p, zkr. Auto-labeler workflow configured."
+    },
+    "fase_10_git_release": {
+      "status": "completed",
+      "files": [
+        "release/v1.6.0-stable/release_commands.sh"
+      ],
+      "notes": "POSIX-compliant release script with pre-flight checks, conventional commit, annotated tag, push sequence."
+    },
+    "fase_11_post_launch": {
+      "status": "completed",
+      "files": [
+        "docs/post-launch-monitoring.md",
+        "docs/v1.7-roadmap-placeholder.md",
+        "release_v1.6.0.sh"
+      ],
+      "notes": "Monitoring protocol with 3 windows (Critical/Stabilization/Observation), incident response flow, rollback procedure. v1.7 roadmap placeholder with community input channels."
+    }
+  },
+  "validation": {
+    "changelog_format": "Keep-a-Changelog compliant",
+    "pr_template_checklist": "Updated to stable feature flag",
+    "license_reference": "Apache-2.0 + Ethical Use Clause",
+    "label_count": 9,
+    "labeler_paths": [
+      "docs/**/*",
+      "src/security/**/*",
+      "src/governance/**/*",
+      "src/sae/**/*",
+      "src/p2p/**/*",
+      "src/bootstrap/**/*",
+      "src/zkp/**/*"
+    ],
+    "release_script_posix": true,
+    "monitoring_windows": 3,
+    "severity_levels": 4
+  },
+  "guardrails": {
+    "zero_unsafe_code": true,
+    "zero_telemetry": true,
+    "zero_financial_logic": true,
+    "license": "Apache-2.0 + Ethical Use Clause",
+    "conventional_commits": true
+  },
+  "handover": {
+    "github_release_url": "https://github.com/ed2kIA/ed2kIA/releases/new?tag=v1.6.0-stable",
+    "monitoring_doc": "docs/post-launch-monitoring.md",
+    "rollback_doc": "docs/post-launch-monitoring.md#rollback-procedure",
+    "roadmap_doc": "docs/v1.7-roadmap-placeholder.md",
+    "release_script": "release_v1.6.0.sh"
+  },
+  "signoff": {
+    "timestamp": "2026-05-14T01:31:00Z",
+    "signoff_by": "Qweni (AI Assistant)",
+    "approval_required": "Core Team / Governance Council",
+    "next_action": "Execute release_v1.6.0.sh after approval"
+  }
+}

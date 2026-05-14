@@ -1,0 +1,141 @@
+name: ed2kIA v1.3.0 CI/CD
+
+on:
+  push:
+    branches: [main, stable]
+    tags: ["v1.3.*"]
+  pull_request:
+    branches: [main, stable]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  # ─── Static Analysis ───
+  check:
+    name: Cargo Check & Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: cargo check --features stable
+        run: cargo check --features stable
+
+      - name: cargo clippy --features stable -- -D warnings
+        run: cargo clippy --features stable -- -D warnings
+
+  # ─── Unit Tests ───
+  test:
+    name: Unit Tests (stable)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        module:
+          - federation_zkp_bridge
+          - fine_tuning_v3
+          - async_zkp_v5
+          - scaling_v3
+          - cross_model_aligner
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Run ${{ matrix.module }} tests
+        run: cargo test --features stable --lib -- ${{ matrix.module }}
+
+  # ─── Integration Tests ───
+  integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: E2E Tests
+        run: cargo test --features stable --test v1_3_sprint3_e2e
+
+      - name: Stress Tests
+        run: cargo test --features stable --test sprint3_stress_v1_3
+
+  # ─── Security Audit ───
+  audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+
+      - name: Run cargo audit
+        run: cargo audit || true
+
+  # ─── Build Release ───
+  build:
+    name: Build Release
+    needs: [check, test, integration]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            bin: ed2kia
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            bin: ed2kia.exe
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            bin: ed2kia
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Build release
+        run: cargo build --release --features stable --target ${{ matrix.target }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ed2kia-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/${{ matrix.bin }}
+
+  # ─── Publish Release ───
+  release:
+    name: Publish Release
+    needs: [build, audit]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v1.3.')
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ed2kia-*/ed2kia*
+          generate_release_notes: true
+          draft: false
+          prerelease: false

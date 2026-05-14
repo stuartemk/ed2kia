@@ -1,0 +1,349 @@
+# GitHub Actions Pipeline – v0.7.0-Alpha (Phase 7 Sprint 2)
+#
+# Usage: Place in .github/workflows/pipeline_alpha.yml
+#
+# Triggers:
+#   - Push to `phase7-sprint2` branch
+#   - Pull requests targeting `main`
+#   - Manual dispatch with feature flag selection
+
+name: ed2kIA v0.7.0-Alpha Pipeline
+
+on:
+  push:
+    branches:
+      - phase7-sprint2
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      feature_flags:
+        description: "Feature flags to enable (comma-separated)"
+        required: false
+        default: "phase7-sprint1,phase7-sprint2"
+        type: string
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  # =========================================================================
+  # Job 1: Build & Check
+  # =========================================================================
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+      fail-fast: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache Cargo build
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Check with phase7-sprint1
+        run: cargo check --features "phase7-sprint1"
+
+      - name: Check with phase7-sprint2
+        run: cargo check --features "phase7-sprint2"
+
+      - name: Check with both features
+        run: cargo check --features "phase7-sprint1,phase7-sprint2"
+
+      - name: Build release with phase7-sprint2
+        run: cargo build --release --features "phase7-sprint2"
+
+  # =========================================================================
+  # Job 2: Clippy (Linting)
+  # =========================================================================
+  clippy:
+    name: Clippy Linting
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Clippy phase7-sprint1
+        run: cargo clippy --features "phase7-sprint1" -- -D warnings
+
+      - name: Clippy phase7-sprint2
+        run: cargo clippy --features "phase7-sprint2" -- -D warnings
+
+      - name: Clippy both features
+        run: cargo clippy --features "phase7-sprint1,phase7-sprint2" -- -D warnings
+
+  # =========================================================================
+  # Job 3: Unit Tests
+  # =========================================================================
+  test:
+    name: Unit Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+      fail-fast: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Test phase7-sprint1
+        run: cargo test --features "phase7-sprint1" --lib
+
+      - name: Test phase7-sprint2
+        run: cargo test --features "phase7-sprint2" --lib
+
+      - name: Test both features
+        run: cargo test --features "phase7-sprint1,phase7-sprint2" --lib
+
+      - name: Test without features
+        run: cargo test --lib
+
+  # =========================================================================
+  # Job 4: E2E Integration Tests
+  # =========================================================================
+  e2e:
+    name: E2E Integration Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Run E2E tests (phase7-sprint2)
+        run: cargo test --features "phase7-sprint2" --test phase7_e2e -- --nocapture
+
+      - name: Run E2E tests (both features)
+        run: cargo test --features "phase7-sprint1,phase7-sprint2" --test phase7_e2e -- --nocapture
+
+  # =========================================================================
+  # Job 5: Coverage
+  # =========================================================================
+  coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+
+      - name: Install cargo-llvm-cov
+        run: cargo install cargo-llvm-cov
+
+      - name: Generate coverage (phase7-sprint2)
+        run: |
+          cargo llvm-cov --features "phase7-sprint2" --lib --json-output --output-path coverage.json
+          cargo llvm-cov --features "phase7-sprint2" --lib --html --output-dir coverage-html
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage-html/
+          retention-days: 14
+
+      - name: Upload coverage JSON
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-json
+          path: coverage.json
+          retention-days: 14
+
+  # =========================================================================
+  # Job 6: Formatting
+  # =========================================================================
+  format:
+    name: Code Formatting
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Check formatting
+        run: cargo fmt -- --check
+
+  # =========================================================================
+  # Job 7: Documentation
+  # =========================================================================
+  docs:
+    name: Build Documentation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build docs with features
+        run: cargo doc --features "phase7-sprint1,phase7-sprint2" --no-deps
+
+      - name: Upload docs
+        uses: actions/upload-artifact@v4
+        with:
+          name: rust-docs
+          path: target/doc/
+          retention-days: 14
+
+  # =========================================================================
+  # Job 8: Security Audit
+  # =========================================================================
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+
+      - name: Run cargo-audit
+        run: cargo audit || true
+
+  # =========================================================================
+  # Job 9: Release Artifacts (on tag)
+  # =========================================================================
+  release:
+    name: Build Release Artifacts
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build, clippy, test, e2e, coverage, format, docs, security]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build release binary
+        run: cargo build --release --features "phase7-sprint1,phase7-sprint2"
+
+      - name: Create release tarball
+        run: |
+          tar -czf ed2kIA-${{ github.ref_name }}-linux-x86_64.tar.gz \
+            -C target/release ed2kIA
+          sha256sum ed2kIA-${{ github.ref_name }}-linux-x86_64.tar.gz > checksums.txt
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-binary
+          path: |
+            ed2kIA-${{ github.ref_name }}-linux-x86_64.tar.gz
+            checksums.txt
+          retention-days: 30
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ed2kIA-${{ github.ref_name }}-linux-x86_64.tar.gz
+            checksums.txt
+          body_path: release/v0.7.0-alpha/changelog.md
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # =========================================================================
+  # Job 10: Validation Summary
+  # =========================================================================
+  validation-summary:
+    name: Validation Summary
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [build, clippy, test, e2e, coverage, format, docs, security]
+
+    steps:
+      - name: Check all jobs passed
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const jobs = [
+              'build', 'clippy', 'test', 'e2e',
+              'coverage', 'format', 'docs', 'security'
+            ];
+            const needed = ${{ toJSON(needs) }};
+
+            let allPassed = true;
+            for (const job of jobs) {
+              const result = needed[job]?.outcome;
+              if (result !== 'success') {
+                console.error(`Job '${job}' did not pass: ${result}`);
+                allPassed = false;
+              }
+            }
+
+            if (allPassed) {
+              console.log('✅ All validation jobs passed!');
+            } else {
+              core.setFailed('One or more validation jobs failed');
+            }

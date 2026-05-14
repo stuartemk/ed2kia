@@ -1,0 +1,128 @@
+{
+  "network": "ed2kIA",
+  "version": "0.5.0",
+  "genesis_timestamp": "2025-01-XXT00:00:00Z",
+  "description": "Initial seed nodes for ed2kIA network activation",
+  "nodes": [
+    {
+      "node_id": "seed-alpha-001",
+      "public_key": "ed25519:PLACEHOLDER_ALPHA_PUBLIC_KEY",
+      "ip": "203.0.113.10",
+      "port": 3030,
+      "multiaddr": "/ip4/203.0.113.10/tcp/3030/p2p/PLACEHOLDER_PEER_ID_ALPHA",
+      "operator": "ed2kIA Foundation",
+      "location": "US-East",
+      "resources": {
+        "cpu_cores": 8,
+        "ram_gb": 32,
+        "storage_gb": 500,
+        "bandwidth_mbps": 1000,
+        "gpu": "NVIDIA A100"
+      },
+      "layers_assigned": [0, 1, 2, 3],
+      "status": "active",
+      "role": "genesis_seed",
+      "contact": "ops-alpha@ed2kIA.org"
+    },
+    {
+      "node_id": "seed-bravo-002",
+      "public_key": "ed25519:PLACEHOLDER_BRavo_PUBLIC_KEY",
+      "ip": "203.0.113.20",
+      "port": 3030,
+      "multiaddr": "/ip4/203.0.113.20/tcp/3030/p2p/PLACEHOLDER_PEER_ID_BRavo",
+      "operator": "ed2kIA Foundation",
+      "location": "EU-West",
+      "resources": {
+        "cpu_cores": 8,
+        "ram_gb": 32,
+        "storage_gb": 500,
+        "bandwidth_mbps": 1000,
+        "gpu": "NVIDIA A100"
+      },
+      "layers_assigned": [4, 5, 6, 7],
+      "status": "active",
+      "role": "genesis_seed",
+      "contact": "ops-bravo@ed2kIA.org"
+    },
+    {
+      "node_id": "seed-charlie-003",
+      "public_key": "ed25519:PLACEHOLDER_CHARLIE_PUBLIC_KEY",
+      "ip": "203.0.113.30",
+      "port": 3030,
+      "multiaddr": "/ip4/203.0.113.30/tcp/3030/p2p/PLACEHOLDER_PEER_ID_CHARLIE",
+      "operator": "ed2kIA Foundation",
+      "location": "APAC-Tokyo",
+      "resources": {
+        "cpu_cores": 8,
+        "ram_gb": 32,
+        "storage_gb": 500,
+        "bandwidth_mbps": 1000,
+        "gpu": "NVIDIA A100"
+      },
+      "layers_assigned": [8, 9, 10, 11],
+      "status": "active",
+      "role": "genesis_seed",
+      "contact": "ops-charlie@ed2kIA.org"
+    },
+    {
+      "node_id": "seed-delta-004",
+      "public_key": "ed25519:PLACEHOLDER_DELTA_PUBLIC_KEY",
+      "ip": "203.0.113.40",
+      "port": 3030,
+      "multiaddr": "/ip4/203.0.113.40/tcp/3030/p2p/PLACEHOLDER_PEER_ID_DELTA",
+      "operator": "Community Validator",
+      "location": "SA-Brazil",
+      "resources": {
+        "cpu_cores": 4,
+        "ram_gb": 16,
+        "storage_gb": 200,
+        "bandwidth_mbps": 500,
+        "gpu": null
+      },
+      "layers_assigned": [12, 13],
+      "status": "active",
+      "role": "validator",
+      "contact": "ops-delta@community.org"
+    },
+    {
+      "node_id": "seed-echo-005",
+      "public_key": "ed25519:PLACEHOLDER_ECHO_PUBLIC_KEY",
+      "ip": "203.0.113.50",
+      "port": 3030,
+      "multiaddr": "/ip4/203.0.113.50/tcp/3030/p2p/PLACEHOLDER_PEER_ID_ECHO",
+      "operator": "Community Validator",
+      "location": "AF-SouthAfrica",
+      "resources": {
+        "cpu_cores": 4,
+        "ram_gb": 16,
+        "storage_gb": 200,
+        "bandwidth_mbps": 500,
+        "gpu": null
+      },
+      "layers_assigned": [14, 15],
+      "status": "active",
+      "role": "validator",
+      "contact": "ops-echo@community.org"
+    }
+  ],
+  "metadata": {
+    "total_nodes": 5,
+    "total_layers": 16,
+    "layers_per_seed": {
+      "seed-alpha-001": 4,
+      "seed-bravo-002": 4,
+      "seed-charlie-003": 4,
+      "seed-delta-004": 2,
+      "seed-echo-005": 2
+    },
+    "quorum_size": 3,
+    "min_validators": 2,
+    "notes": [
+      "Replace PLACEHOLDER values with actual keys before activation",
+      "Public keys must match Ed25519 verifying keys from node init",
+      "Peer IDs are derived from public keys via libp2p identity",
+      "Layer distribution ensures geographic diversity",
+      "Minimum 3 seeds required for network bootstrap"
+    ]
+  }
+}

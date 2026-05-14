@@ -1,0 +1,29 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'ed2kIA_nodes'
+    static_configs:
+      - targets: ['localhost:9090']  # Seed node 1
+        labels:
+          node_id: 'seed-01'
+          environment: 'production'
+      - targets: ['seed-02:9090']
+        labels:
+          node_id: 'seed-02'
+          environment: 'production'
+
+  - job_name: 'ed2kIA_consensus'
+    static_configs:
+      - targets: ['localhost:9091']
+        labels:
+          component: 'consensus'
+
+rule_files:
+  - 'alert_rules.yml'
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['localhost:9093']

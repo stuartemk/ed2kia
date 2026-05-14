@@ -1,0 +1,280 @@
+# =============================================================================
+# Prometheus Alert Rules for ed2kIA v0.6.0-RC
+# =============================================================================
+# Group: ed2k-canary
+# Purpose: Canary deployment monitoring with automated rollback triggers
+# Reference: release/v0.6.0-rc/rollout_plan.md
+# =============================================================================
+
+groups:
+  # ============================================================
+  # Group 1: Canary Deployment Critical Alerts
+  # ============================================================
+  - name: ed2k-canary-critical
+    interval: 30s
+    rules:
+      # Consensus below 70% for 3 consecutive cycles -> Auto-rollback trigger
+      - alert: ConsensusCriticalLow
+        expr: ed2k_consensus_participation_pct < 70
+        for: 9m
+        labels:
+          severity: critical
+          rollout_phase: canary
+          auto_rollback: "true"
+        annotations:
+          summary: "Consensus participation critically low ({{ $value }}%)"
+          description: "Consensus has been below 70% for 9 minutes. Auto-rollback triggered."
+          runbook_url: "https://github.com/ed2kIA/ed2kIA/blob/main/ops/rollback_v0.6.0.sh"
+
+      # Latency above 800ms p95 -> Auto-rollback trigger
+      - alert: SaeLatencyCriticalHigh
+        expr: histogram_quantile(0.95, rate(ed2k_sae_latency_seconds_bucket[5m])) > 0.8
+        for: 9m
+        labels:
+          severity: critical
+          rollout_phase: canary
+          auto_rollback: "true"
+        annotations:
+          summary: "SAE latency p95 critically high ({{ $value | humanizeDuration }})"
+          description: "SAE latency p95 has exceeded 800ms for 9 minutes. Auto-rollback triggered."
+          runbook_url: "https://github.com/ed2kIA/ed2kIA/blob/main/ops/rollback_v0.6.0.sh"
+
+      # API error rate above 2% -> Auto-rollback trigger
+      - alert: ApiErrorRateCritical
+        expr: rate(ed2k_api_errors_total[5m]) / rate(ed2k_api_requests_total[5m]) * 100 > 2
+        for: 9m
+        labels:
+          severity: critical
+          rollout_phase: canary
+          auto_rollback: "true"
+        annotations:
+          summary: "API error rate critically high ({{ $value }}%)"
+          description: "API error rate has exceeded 2% for 9 minutes. Auto-rollback triggered."
+          runbook_url: "https://github.com/ed2kIA/ed2kIA/blob/main/ops/rollback_v0.6.0.sh"
+
+      # WASM memory above 90% -> OOM risk
+      - alert: WasmMemoryNearOom
+        expr: ed2k_wasm_memory_pct > 90
+        for: 5m
+        labels:
+          severity: critical
+          component: wasm_sandbox
+        annotations:
+          summary: "WASM memory usage near OOM ({{ $value }}%)"
+          description: "WASM sandbox memory is above 90%. Risk of out-of-memory crash."
+
+      # Federation rounds stalled (no progress for 15 min)
+      - alert: FederationStalled
+        expr: time() - ed2k_federation_last_round_timestamp > 900
+        for: 15m
+        labels:
+          severity: critical
+          component: federation
+        annotations:
+          summary: "Federation rounds stalled for >15 minutes"
+          description: "No federation round progress detected in the last 15 minutes."
+
+  # ============================================================
+  # Group 2: Canary Deployment Warning Alerts
+  # ============================================================
+  - name: ed2k-canary-warning
+    interval: 1m
+    rules:
+      # Consensus below 85% -> Warning (investigate before rollback)
+      - alert: ConsensusBelowTarget
+        expr: ed2k_consensus_participation_pct < 85
+        for: 15m
+        labels:
+          severity: warning
+          rollout_phase: canary
+        annotations:
+          summary: "Consensus below target ({{ $value }}%)"
+          description: "Consensus participation is below 85% target for 15 minutes."
+
+      # SAE latency p95 above 400ms -> Warning
+      - alert: SaeLatencyElevated
+        expr: histogram_quantile(0.95, rate(ed2k_sae_latency_seconds_bucket[5m])) > 0.4
+        for: 15m
+        labels:
+          severity: warning
+          component: sae
+        annotations:
+          summary: "SAE latency p95 elevated ({{ $value | humanizeDuration }})"
+          description: "SAE latency p95 is above 400ms target for 15 minutes."
+
+      # API error rate above 0.5% -> Warning
+      - alert: ApiErrorRateElevated
+        expr: rate(ed2k_api_errors_total[5m]) / rate(ed2k_api_requests_total[5m]) * 100 > 0.5
+        for: 15m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "API error rate elevated ({{ $value }}%)"
+          description: "API error rate is above 0.5% target for 15 minutes."
+
+      # Reputation score dropping (average below 0.6)
+      - alert: ReputationDropping
+        expr: ed2k_reputation_avg < 0.6
+        for: 30m
+        labels:
+          severity: warning
+          component: reputation
+        annotations:
+          summary: "Average reputation score dropping ({{ $value }})"
+          description: "Average node reputation is below 0.6 for 30 minutes."
+
+      # Staking active nodes below 80% of expected
+      - alert: StakingNodesLow
+        expr: ed2k_staking_active_nodes / ed2k_staking_expected_nodes < 0.8
+        for: 20m
+        labels:
+          severity: warning
+          component: staking
+        annotations:
+          summary: "Active staking nodes below 80% ({{ $value | humanizePercentage }})"
+          description: "Fewer staking nodes active than expected."
+
+      # WASM memory above 75% -> Warning
+      - alert: WasmMemoryElevated
+        expr: ed2k_wasm_memory_pct > 75
+        for: 10m
+        labels:
+          severity: warning
+          component: wasm_sandbox
+        annotations:
+          summary: "WASM memory usage elevated ({{ $value }}%)"
+          description: "WASM sandbox memory is above 75%."
+
+  # ============================================================
+  # Group 3: Infrastructure Alerts
+  # ============================================================
+  - name: ed2k-infrastructure
+    interval: 1m
+    rules:
+      # Node count dropped significantly
+      - alert: NodeCountDrop
+        expr: deriv(ed2k_nodes_total[10m]) < -2
+        for: 5m
+        labels:
+          severity: warning
+          component: p2p
+        annotations:
+          summary: "Node count dropping rapidly ({{ $value }}/min)"
+          description: "More than 2 nodes leaving per minute for 5 minutes."
+
+      # Disk space below 10% (for redb storage)
+      - alert: DiskSpaceLow
+        expr: node_filesystem_avail_bytes / node_filesystem_size_bytes < 0.10
+        for: 10m
+        labels:
+          severity: warning
+          component: storage
+        annotations:
+          summary: "Disk space below 10% ({{ $value | humanizePercentage }})"
+          description: "Low disk space may affect redb storage operations."
+
+      # CPU usage sustained above 90%
+      - alert: CpuUsageSustainedHigh
+        expr: rate(process_cpu_seconds_total[5m]) > 0.9
+        for: 15m
+        labels:
+          severity: warning
+          component: runtime
+        annotations:
+          summary: "CPU usage sustained above 90%"
+          description: "Process CPU usage is above 90% for 15 minutes."
+
+      # Process restart count increasing
+      - alert: ProcessRestarting
+        expr: increase(process_restart_total[1h]) > 3
+        for: 5m
+        labels:
+          severity: critical
+          component: runtime
+        annotations:
+          summary: "Process restarting frequently ({{ $value }} in last hour)"
+          description: "More than 3 process restarts in the last hour."
+
+  # ============================================================
+  # Group 4: Governance & Security Alerts
+  # ============================================================
+  - name: ed2k-governance-security
+    interval: 2m
+    rules:
+      # Slash event detected
+      - alert: SlashEventDetected
+        expr: increase(ed2k_slash_events_total[1h]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          component: staking
+        annotations:
+          summary: "Node slash event detected"
+          description: "A node has been slashed. Investigate immediately."
+
+      # Governance proposal with unusual voting pattern
+      - alert: UnusualVotingPattern
+        expr: stddev_over_time(ed2k_governance_votes_total[30m]) > 2.0
+        for: 15m
+        labels:
+          severity: warning
+          component: governance
+        annotations:
+          summary: "Unusual voting pattern detected (stddev={{ $value }})"
+          description: "Voting pattern shows high variance. Possible coordination attack."
+
+      # ZKP verification failures increasing
+      - alert: ZkpVerificationFailures
+        expr: rate(ed2k_zkp_verification_failures_total[10m]) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+          component: zkp
+        annotations:
+          summary: "ZKP verification failures increasing ({{ $value }}/s)"
+          description: "Zero-knowledge proof verification is failing at an elevated rate."
+
+      # Memory leak suspected (monotonic increase)
+      - alert: MemoryLeakSuspected
+        expr: deriv(process_resident_memory_bytes[30m]) > 1048576
+        for: 30m
+        labels:
+          severity: warning
+          component: runtime
+        annotations:
+          summary: "Memory leak suspected ({{ $value | humanize1024 }}/s growth)"
+          description: "Process memory is growing at >1MB/s for 30 minutes."
+
+  # ============================================================
+  # Group 5: Recovery Alerts (Positive)
+  # ============================================================
+  - name: ed2k-recovery
+    interval: 1m
+    rules:
+      # Consensus recovered above 90%
+      - alert: ConsensusRecovered
+        expr: ed2k_consensus_participation_pct > 90
+        for: 10m
+        labels:
+          severity: info
+          rollout_phase: canary
+        annotations:
+          summary: "Consensus recovered above 90% ({{ $value }}%)"
+          description: "Consensus participation has recovered to healthy levels."
+        inhibit_rule:
+          source_match:
+            alertname: ConsensusCriticalLow
+          target_match:
+            alertname: ConsensusRecovered
+
+      # Latency recovered below 300ms
+      - alert: LatencyRecovered
+        expr: histogram_quantile(0.95, rate(ed2k_sae_latency_seconds_bucket[5m])) < 0.3
+        for: 10m
+        labels:
+          severity: info
+          component: sae
+        annotations:
+          summary: "SAE latency recovered ({{ $value | humanizeDuration }} p95)"
+          description: "SAE latency p95 is below 300ms for 10 minutes."

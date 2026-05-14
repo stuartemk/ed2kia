@@ -1,0 +1,27 @@
+documentation:
+  - changed-files:
+    - any-glob-to-any-file: ['docs/**/*', '*.md']
+
+security:
+  - changed-files:
+    - any-glob-to-any-file: ['src/security/**/*', 'security/**/*']
+
+governance:
+  - changed-files:
+    - any-glob-to-any-file: ['src/governance/**/*', 'docs/GOVERNANCE.md']
+
+sae:
+  - changed-files:
+    - any-glob-to-any-file: ['src/sae/**/*']
+
+p2p:
+  - changed-files:
+    - any-glob-to-any-file: ['src/p2p/**/*', 'src/bootstrap/**/*']
+
+zkr:
+  - changed-files:
+    - any-glob-to-any-file: ['src/zkp/**/*']
+
+enhancement:
+  - changed-files:
+    - any-glob-to-any-file: ['src/**/*', 'tests/**/*']

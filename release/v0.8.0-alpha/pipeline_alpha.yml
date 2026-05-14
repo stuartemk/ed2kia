@@ -1,0 +1,274 @@
+# GitHub Actions Pipeline - ed2kIA v0.8.0-alpha
+# Phase 8 Sprint 1 + Sprint 2 CI/CD Pipeline
+
+name: ed2kIA v0.8.0-alpha Pipeline
+
+on:
+  push:
+    branches: [main, develop, 'feature/phase8/**']
+    tags: ['v0.8.0-alpha.*']
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      features:
+        description: 'Features to enable'
+        required: false
+        default: 'phase8-sprint1,phase8-sprint2'
+        type: choice
+        options:
+          - phase8-sprint1
+          - phase8-sprint2
+          - phase8-sprint1,phase8-sprint2
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_VERSION: '1.75'
+
+jobs:
+  # ─── Linting & Formatting ───
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache Cargo git
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          components: rustfmt, clippy
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Clippy (no features)
+        run: cargo clippy -- -D warnings
+
+      - name: Clippy (phase8-sprint1)
+        run: cargo clippy --features phase8-sprint1 -- -D warnings
+
+      - name: Clippy (phase8-sprint2)
+        run: cargo clippy --features phase8-sprint2 -- -D warnings
+
+      - name: Clippy (all phase8)
+        run: cargo clippy --features "phase8-sprint1,phase8-sprint2" -- -D warnings
+
+  # ─── Build ───
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache target
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-build-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+
+      - name: Build (debug)
+        run: cargo build --features "phase8-sprint1,phase8-sprint2"
+
+      - name: Build (release)
+        run: cargo build --release --features "phase8-sprint1,phase8-sprint2"
+
+  # ─── Tests ───
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+
+      - name: Test (no features)
+        run: cargo test --lib
+
+      - name: Test (phase8-sprint1)
+        run: cargo test --features phase8-sprint1 --lib
+
+      - name: Test (phase8-sprint2)
+        run: cargo test --features phase8-sprint2 --lib
+
+      - name: Test (all phase8)
+        run: cargo test --features "phase8-sprint1,phase8-sprint2" --lib
+
+      - name: Integration tests (phase8-sprint1)
+        run: cargo test --features phase8-sprint1 --test '*'
+
+      - name: Integration tests (phase8-sprint2)
+        run: cargo test --features phase8-sprint2 --test '*'
+
+      - name: Integration tests (all phase8)
+        run: cargo test --features "phase8-sprint1,phase8-sprint2" --test '*'
+
+  # ─── Coverage ───
+  coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          components: llvm-tools-preview
+
+      - name: Install grcov
+        run: cargo install grcov
+
+      - name: Run tests with coverage
+        run: |
+          cargo test --features "phase8-sprint1,phase8-sprint2" --lib
+          RUSTFLAGS='-C instrument-coverage' cargo test --features "phase8-sprint1,phase8-sprint2"
+
+      - name: Generate coverage report
+        run: grcov . --binary-path target/debug/ -s . -t lcov --branch --ignore-not-existing --ignore='tests/*' --ignore='examples/*' -o lcov.info
+
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: lcov.info
+          fail_ci_if_error: false
+
+  # ─── Documentation ───
+  docs:
+    name: Build Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+
+      - name: Build docs
+        run: cargo doc --no-deps --features "phase8-sprint1,phase8-sprint2"
+
+      - name: Deploy docs (main branch)
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: target/doc
+
+  # ─── Security Audit ───
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+
+      - name: Run security audit
+        run: cargo audit
+
+  # ─── Release Artifacts ───
+  release:
+    name: Build Release Artifacts
+    needs: [lint, build, test]
+    if: startsWith(github.ref, 'refs/tags/v0.8.0-alpha')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+
+      - name: Build release binary
+        run: cargo build --release --features "phase8-sprint1,phase8-sprint2"
+
+      - name: Package artifacts
+        run: |
+          mkdir -p release-artifacts
+          cp target/release/ed2kia release-artifacts/
+          cp release/v0.8.0-alpha/changelog.md release-artifacts/
+          cp release/v0.8.0-alpha/integration_matrix.md release-artifacts/
+          cd release-artifacts && sha256sum * > checksums.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-artifacts/*
+          body_path: release/v0.8.0-alpha/changelog.md
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ─── Feature Validation Matrix ───
+  feature-matrix:
+    name: Feature Validation (${{ matrix.features }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        features:
+          - ''
+          - 'phase8-sprint1'
+          - 'phase8-sprint2'
+          - 'phase8-sprint1,phase8-sprint2'
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+
+      - name: Check
+        run: |
+          if [ -z "${{ matrix.features }}" ]; then
+            cargo check
+          else
+            cargo check --features "${{ matrix.features }}"
+          fi
+
+      - name: Test
+        run: |
+          if [ -z "${{ matrix.features }}" ]; then
+            cargo test --lib
+          else
+            cargo test --features "${{ matrix.features }}" --lib
+          fi

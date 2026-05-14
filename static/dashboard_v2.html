@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ed2kIA Dashboard v2</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
+            background: #0a0e17;
+            color: #e0e6ed;
+            min-height: 100vh;
+        }
+        .header {
+            background: #111827;
+            border-bottom: 1px solid #1e2a3a;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { font-size: 18px; color: #60a5fa; }
+        .header .status { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+        .header .status .dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #22c55e;
+        }
+        .header .status .dot.disconnected { background: #ef4444; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            padding: 16px;
+        }
+        .card {
+            background: #111827;
+            border: 1px solid #1e2a3a;
+            border-radius: 8px;
+            padding: 16px;
+        }
+        .card h2 {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #6b7280;
+            margin-bottom: 8px;
+            letter-spacing: 0.05em;
+        }
+        .card .value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #f0f4f8;
+        }
+        .card .sub {
+            font-size: 11px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+        .card.wide { grid-column: span 2; }
+        .nodes-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        .nodes-table th {
+            text-align: left;
+            padding: 8px;
+            border-bottom: 1px solid #1e2a3a;
+            color: #6b7280;
+            font-weight: 600;
+        }
+        .nodes-table td {
+            padding: 8px;
+            border-bottom: 1px solid #0f1724;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .badge.healthy { background: #064e3b; color: #6ee7b7; }
+        .badge.degraded { background: #78350f; color: #fcd34d; }
+        .badge.unhealthy { background: #7f1d1d; color: #fca5a5; }
+        .badge.offline { background: #374151; color: #9ca3af; }
+        .alerts-list { max-height: 200px; overflow-y: auto; }
+        .alert-item {
+            padding: 8px;
+            border-left: 3px solid #f59e0b;
+            background: #1a1f2e;
+            margin-bottom: 4px;
+            border-radius: 0 4px 4px 0;
+            font-size: 11px;
+        }
+        .alert-item.critical { border-left-color: #ef4444; }
+        .alert-item.warning { border-left-color: #f59e0b; }
+        .alert-item.info { border-left-color: #3b82f6; }
+        .alert-item .time { color: #6b7280; font-size: 10px; }
+        .chart-placeholder {
+            height: 120px;
+            background: #0f1724;
+            border-radius: 4px;
+            display: flex;
+            align-items: flex-end;
+            padding: 8px;
+            gap: 2px;
+        }
+        .chart-bar {
+            flex: 1;
+            background: #3b82f6;
+            border-radius: 2px 2px 0 0;
+            min-height: 2px;
+            transition: height 0.3s ease;
+        }
+        @media (max-width: 768px) {
+            .card.wide { grid-column: span 1; }
+            .grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body x-data="dashboard()" x-init="init()">
+    <div class="header">
+        <h1>ed2kIA Dashboard v2</h1>
+        <div class="status">
+            <span class="dot" :class="{ disconnected: !connected }"></span>
+            <span x-text="connected ? 'Conectado' : 'Desconectado'"></span>
+            <span style="color: #6b7280" x-text="'Seq: ' + (lastSequence || 0)"></span>
+        </div>
+    </div>
+
+    <div class="grid">
+        <!-- Summary Cards -->
+        <div class="card">
+            <h2>Nodos Totales</h2>
+            <div class="value" x-text="summary.total_nodes || 0"></div>
+            <div class="sub">
+                <span style="color: #22c55e" x-text="summary.healthy_nodes || 0"></span> healthy &middot;
+                <span style="color: #f59e0b" x-text="summary.degraded_nodes || 0"></span> degraded &middot;
+                <span style="color: #ef4444" x-text="summary.unhealthy_nodes || 0"></span> unhealthy &middot;
+                <span style="color: #6b7280" x-text="summary.offline_nodes || 0"></span> offline
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Confianza Alignment</h2>
+            <div class="value" x-text="formatPct(summary.avg_alignment_confidence)"></div>
+            <div class="sub">Promedio de confianza ponderada</div>
+        </div>
+
+        <div class="card">
+            <h2>Score de Confianza</h2>
+            <div class="value" x-text="formatPct(summary.avg_trust_score)"></div>
+            <div class="sub">Trust score federado</div>
+        </div>
+
+        <div class="card">
+            <h2>Alertas Activas</h2>
+            <div class="value" x-text="summary.active_alerts || 0"></div>
+            <div class="sub">Requieren atenci&oacute;n</div>
+        </div>
+
+        <!-- Metrics Chart -->
+        <div class="card wide">
+            <h2>Latencia de Red (ms) &mdash; &uarr; &uarr;</h2>
+            <div class="chart-placeholder">
+                <template x-for="(bar, i) in chartData" :key="i">
+                    <div class="chart-bar" :style="'height: ' + bar + '%'"></div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Nodes Table -->
+        <div class="card wide">
+            <h2>Nodos en Red</h2>
+            <table class="nodes-table">
+                <thead>
+                    <tr>
+                        <th>Nodo</th>
+                        <th>Estado</th>
+                        <th>CPU</th>
+                        <th>Mem</th>
+                        <th>Latencia</th>
+                        <th>Alignment</th>
+                        <th>Trust</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-for="node in nodes" :key="node.node_id">
+                        <tr>
+                            <td x-text="node.node_id.substring(0, 12)"></td>
+                            <td><span class="badge" :class="node.status" x-text="node.status"></span></td>
+                            <td x-text="formatPct(node.cpu_usage)"></td>
+                            <td x-text="formatPct(node.memory_usage)"></td>
+                            <td x-text="node.network_latency_ms.toFixed(1) + 'ms'"></td>
+                            <td x-text="formatPct(node.alignment_confidence)"></td>
+                            <td x-text="formatPct(node.trust_score)"></td>
+                        </tr>
+                    </template>
+                    <template x-if="!nodes || nodes.length === 0">
+                        <tr><td colspan="7" style="color: #6b7280; text-align: center;">Sin nodos conectados</td></tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Alerts -->
+        <div class="card">
+            <h2>Alertas Recientes</h2>
+            <div class="alerts-list">
+                <template x-for="alert in alerts" :key="alert.alert_id">
+                    <div class="alert-item" :class="alert.severity">
+                        <div x-text="alert.message"></div>
+                        <div class="time" x-text="formatTime(alert.timestamp_ms)"></div>
+                    </div>
+                </template>
+                <template x-if="!alerts || alerts.length === 0">
+                    <div style="color: #6b7280; font-size: 11px; padding: 8px;">Sin alertas</div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Active Metrics -->
+        <div class="card">
+            <h2>M&eacute;tricas Activas</h2>
+            <div style="font-size: 11px;">
+                <template x-for="(value, key) in activeMetrics" :key="key">
+                    <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #0f1724;">
+                        <span x-text="key" style="color: #6b7280;"></span>
+                        <span x-text="typeof value === 'number' ? value.toFixed(4) : value"></span>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function dashboard() {
+            return {
+                connected: false,
+                lastSequence: 0,
+                summary: {},
+                nodes: [],
+                alerts: [],
+                activeMetrics: {},
+                chartData: Array(30).fill(20),
+                ws: null,
+                reconnectTimer: null,
+
+                init() {
+                    this.connect();
+                },
+
+                connect() {
+                    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+                    const url = proto + '//' + location.host + '/ws/dashboard';
+                    this.ws = new WebSocket(url);
+
+                    this.ws.onopen = () => {
+                        this.connected = true;
+                        console.log('[Dashboard] WebSocket conectado');
+                    };
+
+                    this.ws.onmessage = (event) => {
+                        try {
+                            const data = JSON.parse(event.data);
+                            this.handleMessage(data);
+                        } catch (e) {
+                            console.error('[Dashboard] Error parseando mensaje:', e);
+                        }
+                    };
+
+                    this.ws.onclose = () => {
+                        this.connected = false;
+                        console.log('[Dashboard] WebSocket desconectado, reconectando...');
+                        this.reconnectTimer = setTimeout(() => this.connect(), 3000);
+                    };
+
+                    this.ws.onerror = (err) => {
+                        console.error('[Dashboard] WebSocket error:', err);
+                    };
+                },
+
+                handleMessage(data) {
+                    if (data.type === 'snapshot') {
+                        this.lastSequence = data.sequence;
+                        if (data.data) {
+                            if (data.data.summary) this.summary = data.data.summary;
+                            if (data.data.nodes) this.nodes = data.data.nodes;
+                            if (data.data.alerts) this.alerts = data.data.alerts.slice(0, 20);
+                            if (data.data.metrics) this.activeMetrics = data.data.metrics;
+                        }
+                        // Update chart with latest latency
+                        if (data.data && data.data.metrics && data.data.metrics.system_network_latency) {
+                            this.chartData.push(Math.min(data.data.metrics.system_network_latency, 100));
+                            if (this.chartData.length > 30) this.chartData.shift();
+                        }
+                    }
+                    if (data.type === 'alert') {
+                        this.alerts.unshift(data);
+                        if (this.alerts.length > 20) this.alerts.pop();
+                    }
+                },
+
+                formatPct(val) {
+                    if (val === undefined || val === null) return '0%';
+                    return (val * 100).toFixed(1) + '%';
+                },
+
+                formatTime(ts) {
+                    if (!ts) return '';
+                    const d = new Date(ts);
+                    return d.toLocaleTimeString();
+                }
+            };
+        }
+    </script>
+</body>
+</html>

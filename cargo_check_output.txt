@@ -1,0 +1,1360 @@
+    Checking ed2kia v0.5.0 (C:\Users\cualo\Desktop\PROYECTOS\ed2kIA)
+error[E0425]: cannot find type `Ed2kCodec` in this scope
+  --> src\p2p\swarm.rs:50:51
+   |
+50 |     request_response: request_response::Behaviour<Ed2kCodec>,
+   |                                                   ^^^^^^^^^ not found in this scope
+   |
+help: you might be missing a type parameter
+   |
+44 | pub struct Ed2kBehaviour<Ed2kCodec> {
+   |                         +++++++++++
+
+error[E0425]: cannot find type `Ed2kCodec` in this scope
+  --> src\p2p\swarm.rs:50:51
+   |
+50 |     request_response: request_response::Behaviour<Ed2kCodec>,
+   |                                                   ^^^^^^^^^ not found in this scope
+
+warning: unused import: `cbor`
+  --> src\p2p\swarm.rs:12:30
+   |
+12 |     request_response::{self, cbor},
+   |                              ^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `Path`
+  --> src\sae\loader.rs:11:17
+   |
+11 | use std::path::{Path, PathBuf};
+   |                 ^^^^
+
+warning: unused imports: `Context` and `Result`
+  --> src\sae\router.rs:11:14
+   |
+11 | use anyhow::{Context, Result};
+   |              ^^^^^^^  ^^^^^^
+
+warning: unused import: `parking_lot::RwLock`
+  --> src\sae\router.rs:12:5
+   |
+12 | use parking_lot::RwLock;
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `BinaryHeap`
+  --> src\sae\router.rs:13:24
+   |
+13 | use std::collections::{BinaryHeap, HashMap, HashSet};
+   |                        ^^^^^^^^^^
+
+warning: unused import: `warn`
+  --> src\sae\router.rs:15:28
+   |
+15 | use tracing::{debug, info, warn};
+   |                            ^^^^
+
+warning: unused import: `HashSet`
+  --> src\bridge\consciousness.rs:10:33
+   |
+10 | use std::collections::{HashMap, HashSet, VecDeque};
+   |                                 ^^^^^^^
+
+warning: unused import: `Duration`
+  --> src\bridge\consciousness.rs:11:17
+   |
+11 | use std::time::{Duration, Instant};
+   |                 ^^^^^^^^
+
+warning: unused imports: `ConsensusEvent` and `SignalType`
+  --> src\bridge\consciousness.rs:14:35
+   |
+14 | use crate::consensus::validator::{ConsensusEvent, ConsensusValidator, SignalType};
+   |                                   ^^^^^^^^^^^^^^                      ^^^^^^^^^^
+
+warning: unused import: `PatternType`
+  --> src\bridge\consciousness.rs:15:75
+   |
+15 | use crate::interpret::feature_analyzer::{AnalysisResult, FeatureAnalyzer, PatternType};
+   |                                                                           ^^^^^^^^^^^
+
+warning: unused import: `SemanticConcept`
+  --> src\bridge\consciousness.rs:16:51
+   |
+16 | use crate::interpret::semantic_map::{SemanticMap, SemanticConcept};
+   |                                                   ^^^^^^^^^^^^^^^
+
+warning: unused import: `HashSet`
+  --> src\consensus\validator.rs:10:33
+   |
+10 | use std::collections::{HashMap, HashSet};
+   |                                 ^^^^^^^
+
+warning: unused import: `MerkleTree`
+  --> src\consensus\validator.rs:14:39
+   |
+14 | use super::merkle::{FeatureBatchHash, MerkleTree};
+   |                                       ^^^^^^^^^^
+
+warning: unused import: `TensorResponse`
+  --> src\consensus\validator.rs:15:43
+   |
+15 | use crate::p2p::protocol::{SparseFeature, TensorResponse};
+   |                                           ^^^^^^^^^^^^^^
+
+warning: unused import: `tracing::debug`
+ --> src\consensus\merkle.rs:9:5
+  |
+9 | use tracing::debug;
+  |     ^^^^^^^^^^^^^^
+
+warning: unused import: `PathBuf`
+  --> src\security\wasm_sandbox.rs:10:23
+   |
+10 | use std::path::{Path, PathBuf};
+   |                       ^^^^^^^
+
+warning: unused imports: `Instance` and `WasmBacktraceDetails`
+  --> src\security\wasm_sandbox.rs:13:32
+   |
+13 | use wasmtime::{Config, Engine, Instance, Linker, Module, Store, WasmBacktraceDetails};
+   |                                ^^^^^^^^                         ^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `CurveGroup` and `Group`
+  --> src\zkp\circuit.rs:10:14
+   |
+10 | use ark_ec::{CurveGroup, Group};
+   |              ^^^^^^^^^^  ^^^^^
+
+warning: unused import: `Field`
+  --> src\zkp\circuit.rs:11:14
+   |
+11 | use ark_ff::{Field, UniformRand};
+   |              ^^^^^
+
+warning: unused import: `CanonicalDeserialize`
+  --> src\zkp\circuit.rs:13:21
+   |
+13 | use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
+   |                     ^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rand::SeedableRng`
+  --> src\zkp\circuit.rs:14:15
+   |
+14 | use ark_std::{rand::SeedableRng, Zero};
+   |               ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `ark_bn254::Fr`
+  --> src\zkp\verifier.rs:11:5
+   |
+11 | use ark_bn254::Fr;
+   |     ^^^^^^^^^^^^^
+
+warning: unused import: `human::concept_updater::ConceptUpdater`
+   --> src\main.rs:142:5
+    |
+142 | use human::concept_updater::ConceptUpdater;
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0107]: struct takes 1 generic argument but 0 generic arguments were supplied
+    --> src\security\wasm_sandbox.rs:339:28
+     |
+ 339 |         caller: &wasmtime::Caller<'_>,
+     |                            ^^^^^^ expected 1 generic argument
+     |
+note: struct defined here, with 1 generic parameter: `T`
+    --> C:\Users\cualo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wasmtime-17.0.3\src\func.rs:1776:12
+     |
+1776 | pub struct Caller<'a, T> {
+     |            ^^^^^^     -
+help: add missing generic argument
+     |
+ 339 |         caller: &wasmtime::Caller<'_, T>,
+     |                                     +++
+
+error[E0599]: no method named `context` found for enum `Result<T, E>` in the current scope
+   --> src\p2p\swarm.rs:121:14
+    |
+115 |           let gossipsub_config = gossipsub::ConfigBuilder::default()
+    |  ________________________________-
+116 | |             .validation_mode(gossipsub::ValidationMode::Permissive)
+117 | |             .mesh_n(6)
+118 | |             .mesh_n_low(4)
+119 | |             .mesh_n_high(12)
+120 | |             .build()
+121 | |             .context("Invalid gossipsub config")?;
+    | |_____________-^^^^^^^
+    |
+   ::: C:\Users\cualo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\anyhow-1.0.102\src\lib.rs:618:8
+    |
+618 |       fn context<C>(self, context: C) -> Result<T, Error>
+    |          ------- the method is available for `Result<libp2p::libp2p_gossipsub::Config, ConfigBuilderError>` here
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: trait `Context` which provides `context` is implemented but not in scope; perhaps you want to import it
+    |
+  6 + use anyhow::Context;
+    |
+help: there is a method `with_context` with a similar name
+    |
+121 |             .with_context("Invalid gossipsub config")?;
+    |              +++++
+
+error[E0599]: no method named `context` found for enum `Result<T, E>` in the current scope
+   --> src\p2p\swarm.rs:128:10
+    |
+124 |           let pubsub = gossipsub::Behaviour::new(
+    |  ______________________-
+125 | |             gossipsub::MessageAuthenticity::Signed(keypair.clone()),
+126 | |             gossipsub_config,
+127 | |         )
+128 | |         .context("Failed to create gossipsub behaviour")?;
+    | |         -^^^^^^^ method not found in `Result<libp2p::libp2p_gossipsub::Behaviour<_, _>, &'static str>`
+    | |_________|
+    |
+
+error[E0061]: this function takes 2 arguments but 1 argument was supplied
+   --> src\p2p\swarm.rs:132:19
+    |
+132 |             mdns: mdns::tokio::Behaviour::new(mdns::Config::default())
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^------------------------- argument #2 of type `PeerId` is missing
+    |
+note: associated function defined here
+   --> C:\Users\cualo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\libp2p-mdns-0.45.1\src\behaviour.rs:182:12
+    |
+182 |     pub fn new(config: Config, local_peer_id: PeerId) -> io::Result<Self> {
+    |            ^^^
+help: provide the argument
+    |
+132 |             mdns: mdns::tokio::Behaviour::new(mdns::Config::default(), /* PeerId */)
+    |                                                                      ++++++++++++++
+
+error[E0599]: no method named `context` found for enum `Result<T, E>` in the current scope
+   --> src\p2p\swarm.rs:133:18
+    |
+132 |               mdns: mdns::tokio::Behaviour::new(mdns::Config::default())
+    |  ___________________-
+133 | |                 .context("Failed to initialise mDNS behaviour")?,
+    | |_________________-^^^^^^^
+    |
+   ::: C:\Users\cualo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\anyhow-1.0.102\src\lib.rs:618:8
+    |
+618 |       fn context<C>(self, context: C) -> Result<T, Error>
+    |          ------- the method is available for `Result<libp2p::libp2p_mdns::Behaviour<Tokio>, std::io::Error>` here
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: trait `Context` which provides `context` is implemented but not in scope; perhaps you want to import it
+    |
+  6 + use anyhow::Context;
+    |
+help: there is a method `with_context` with a similar name
+    |
+133 |                 .with_context("Failed to initialise mDNS behaviour")?,
+    |                  +++++
+
+error[E0271]: type mismatch resolving `<Vec<StreamProtocol> as IntoIterator>::Item == (_, ProtocolSupport)`
+   --> src\p2p\swarm.rs:142:50
+    |
+142 |                 request_response::Behaviour::new(protocols, config)
+    |                 -------------------------------- ^^^^^^^^^ expected `(_, ProtocolSupport)`, found `StreamProtocol`
+    |                 |
+    |                 required by a bound introduced by this call
+    |
+    = note: expected tuple `(_, libp2p::libp2p_request_response::ProtocolSupport)`
+              found struct `StreamProtocol`
+note: required by a bound in `libp2p::libp2p_request_response::Behaviour::<TCodec>::new`
+   --> C:\Users\cualo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\libp2p-request-response-0.26.3\src\lib.rs:373:25
+    |
+371 |     pub fn new<I>(protocols: I, cfg: Config) -> Self
+    |            --- required by a bound in this associated function
+372 |     where
+373 |         I: IntoIterator<Item = (TCodec::Protocol, ProtocolSupport)>,
+    |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Behaviour::<TCodec>::new`
+
+error[E0277]: expected a `FnOnce(&libp2p::libp2p_identity::Keypair)` closure, found `Ed2kBehaviour`
+   --> src\p2p\swarm.rs:156:29
+    |
+156 |             .with_behaviour(behaviour)
+    |              -------------- ^^^^^^^^^ expected an `FnOnce(&libp2p::libp2p_identity::Keypair)` closure, found `Ed2kBehaviour`
+    |              |
+    |              required by a bound introduced by this call
+    |
+help: the trait `for<'a> FnOnce(&'a libp2p::libp2p_identity::Keypair)` is not implemented for `Ed2kBehaviour`
+   --> src\p2p\swarm.rs:44:1
+    |
+ 44 | pub struct Ed2kBehaviour {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^
+note: required by a bound in `libp2p::builder::phase::quic::<impl SwarmBuilder<Provider, libp2p::builder::phase::quic::QuicPhase<T>>>::with_behaviour`
+   --> C:\Users\cualo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\libp2p-0.53.2\src\builder\phase\quic.rs:141:27
+    |
+139 |     pub fn with_behaviour<B, R: TryIntoBehaviour<B>>(
+    |            -------------- required by a bound in this associated function
+140 |         self,
+141 |         constructor: impl FnOnce(&libp2p_identity::Keypair) -> R,
+    |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `libp2p::builder::phase::quic::<impl SwarmBuilder<Provider, QuicPhase<T>>>::with_behaviour`
+
+error[E0599]: no method named `context` found for enum `Result<T, E>` in the current scope
+   --> src\p2p\swarm.rs:165:14
+    |
+163 |           let listen_addr: Multiaddr = listen_addr
+    |  ______________________________________-
+164 | |             .parse()
+165 | |             .context("Invalid listen address")?;
+    | |_____________-^^^^^^^
+    |
+   ::: C:\Users\cualo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\anyhow-1.0.102\src\lib.rs:618:8
+    |
+618 |       fn context<C>(self, context: C) -> Result<T, Error>
+    |          ------- the method is available for `Result<_, _>` here
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: trait `Context` which provides `context` is implemented but not in scope; perhaps you want to import it
+    |
+  6 + use anyhow::Context;
+    |
+help: there is a method `with_context` with a similar name
+    |
+165 |             .with_context("Invalid listen address")?;
+    |              +++++
+
+error[E0599]: no method named `select_next_some` found for struct `Swarm<TBehaviour>` in the current scope
+    --> src\p2p\swarm.rs:249:30
+     |
+ 249 |             match self.swarm.select_next_some().await {
+     |                              ^^^^^^^^^^^^^^^^ method not found in `Swarm<Ed2kBehaviour>`
+     |
+    ::: C:\Users\cualo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\futures-util-0.3.32\src\stream\stream\mod.rs:1691:8
+     |
+1691 |     fn select_next_some(&mut self) -> SelectNextSome<'_, Self>
+     |        ---------------- the method is available for `Swarm<Ed2kBehaviour>` here
+     |
+     = help: items from traits can only be used if the trait is in scope
+help: trait `StreamExt` which provides `select_next_some` is implemented but not in scope; perhaps you want to import it
+     |
+   6 + use libp2p::futures::StreamExt;
+     |
+
+error[E0599]: no variant named `ListenerNewAddress` found for enum `SwarmEvent<_>`
+   --> src\p2p\swarm.rs:251:29
+    |
+251 |                 SwarmEvent::ListenerNewAddress { listener_id, address, .. } => {
+    |                             ^^^^^^^^^^^^^^^^^^ variant not found in `SwarmEvent<_>`
+
+error[E0277]: `libp2p::Multiaddr` is not an iterator
+   --> src\p2p\swarm.rs:278:42
+    |
+278 |                         for multiaddr in multiaddrs {
+    |                                          ^^^^^^^^^^ the trait `IntoIterator` is not implemented for `libp2p::Multiaddr`
+    |
+    = note: the trait bound `libp2p::Multiaddr: IntoIterator` is not satisfied
+    = note: required for `libp2p::Multiaddr` to implement `IntoIterator`
+help: consider borrowing here
+    |
+278 |                         for multiaddr in &multiaddrs {
+    |                                          +
+
+error[E0282]: type annotations needed
+   --> src\p2p\swarm.rs:281:49
+    |
+281 | ...                   self.swarm.dial(multiaddr.clone()).ok();
+    |                                       ^^^^^^^^^ cannot infer type
+
+error[E0599]: no method named `peers` found for struct `GetClosestPeersOk` in the current scope
+   --> src\p2p\swarm.rs:291:40
+    |
+291 |                     for peer in result.peers() {
+    |                                        ^^^^^-- help: remove the arguments
+    |                                        |
+    |                                        field, not a method
+
+error[E0308]: mismatched types
+   --> src\p2p\swarm.rs:300:47
+    |
+300 |                     self.handle_message(peer, message).await?;
+    |                          --------------       ^^^^^^^ expected `Ed2kMessage`, found `Message<_, _, _>`
+    |                          |
+    |                          arguments to this method are incorrect
+    |
+    = note: expected enum `Ed2kMessage`
+               found enum `libp2p::libp2p_request_response::Message<_, _, _>`
+note: method defined here
+   --> src\p2p\swarm.rs:352:14
+    |
+352 |     async fn handle_message(&mut self, peer: PeerId, message: Ed2kMessage) -> Result<()> {
+    |              ^^^^^^^^^^^^^^                          --------------------
+
+error[E0308]: mismatched types
+   --> src\p2p\swarm.rs:403:48
+    |
+403 |                     peer_info.resources = Some(resources.clone());
+    |                                           ---- ^^^^^^^^^^^^^^^^^ expected `p2p::swarm::NodeResources`, found `protocol::NodeResources`
+    |                                           |
+    |                                           arguments to this enum variant are incorrect
+    |
+    = note: `protocol::NodeResources` and `p2p::swarm::NodeResources` have similar names, but are actually distinct types
+note: `protocol::NodeResources` is defined in module `crate::p2p::protocol` of the current crate
+   --> src\p2p\protocol.rs:158:1
+    |
+158 | pub struct NodeResources {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^
+note: `p2p::swarm::NodeResources` is defined in module `crate::p2p::swarm` of the current crate
+   --> src\p2p\swarm.rs:66:1
+    |
+ 66 | pub struct NodeResources {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^
+help: the type constructed contains `protocol::NodeResources` due to the type of the argument passed
+   --> src\p2p\swarm.rs:403:43
+    |
+403 |                     peer_info.resources = Some(resources.clone());
+    |                                           ^^^^^-----------------^
+    |                                                |
+    |                                                this argument influences the type of `Some`
+note: tuple variant defined here
+   --> /rustc/e408947bfd200af42db322daf0fadfe7e26d3bd1/library\core\src\option.rs:608:4
+
+error[E0063]: missing fields `priority` and `timestamp` in initializer of `SteeringSignal`
+   --> src\p2p\swarm.rs:464:45
+    |
+464 |                 Ed2kMessage::SteeringSignal(crate::p2p::protocol::SteeringSignal {
+    |                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ missing `priority` and `timestamp`
+
+error[E0594]: cannot assign to `entry.state`, as `entry` is not declared as mutable
+   --> src\bridge\tensor_flow.rs:311:9
+    |
+311 |         entry.state = PipelineState::Sent {
+    |         ^^^^^^^^^^^ cannot assign
+    |
+help: consider changing this to be mutable
+    |
+279 |         let mut entry = PipelineEntry {
+    |             +++
+
+error[E0277]: `PipelineState` doesn't implement `std::fmt::Display`
+   --> src\bridge\tensor_flow.rs:344:31
+    |
+343 |                     "Error en respuesta SAE: request={}, error={}",
+    |                                                                -- required by this formatting parameter
+344 |                     entry_id, entry.state
+    |                               ^^^^^^^^^^^ `PipelineState` cannot be formatted with the default formatter
+    |
+help: the trait `std::fmt::Display` is not implemented for `PipelineState`
+   --> src\bridge\tensor_flow.rs:185:1
+    |
+185 | pub enum PipelineState {
+    | ^^^^^^^^^^^^^^^^^^^^^^
+    = note: in format strings you may be able to use `{:?}` (or {:#?} for pretty-print) instead
+    = note: this error originates in the macro `$crate::__macro_support::format_args` which comes from the expansion of the macro `error` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0592]: duplicate definitions with name `protocol_name`
+   --> src\p2p\protocol.rs:263:5
+    |
+263 |     pub fn protocol_name() -> libp2p::StreamProtocol {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ duplicate definitions for `protocol_name`
+...
+281 |     pub fn protocol_name() -> libp2p::StreamProtocol {
+    |     ------------------------------------------------ other definition for `protocol_name`
+
+error[E0592]: duplicate definitions with name `priority`
+   --> src\p2p\protocol.rs:268:5
+    |
+268 |     pub fn priority() -> u32 {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^ duplicate definitions for `priority`
+...
+286 |     pub fn priority() -> u32 {
+    |     ------------------------ other definition for `priority`
+
+error[E0034]: multiple applicable items in scope
+   --> src\p2p\protocol.rs:274:20
+    |
+274 |         vec![Self::protocol_name()]
+    |                    ^^^^^^^^^^^^^ multiple `protocol_name` found
+    |
+note: candidate #1 is defined in an impl for the type `Ed2kMessageCodec`
+   --> src\p2p\protocol.rs:263:5
+    |
+263 |     pub fn protocol_name() -> libp2p::StreamProtocol {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: candidate #2 is defined in an impl for the type `Ed2kMessageCodec`
+   --> src\p2p\protocol.rs:281:5
+    |
+281 |     pub fn protocol_name() -> libp2p::StreamProtocol {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0034]: multiple applicable items in scope
+   --> src\p2p\protocol.rs:292:20
+    |
+292 |         vec![Self::protocol_name()]
+    |                    ^^^^^^^^^^^^^ multiple `protocol_name` found
+    |
+note: candidate #1 is defined in an impl for the type `Ed2kMessageCodec`
+   --> src\p2p\protocol.rs:263:5
+    |
+263 |     pub fn protocol_name() -> libp2p::StreamProtocol {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: candidate #2 is defined in an impl for the type `Ed2kMessageCodec`
+   --> src\p2p\protocol.rs:281:5
+    |
+281 |     pub fn protocol_name() -> libp2p::StreamProtocol {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0369]: binary operation `==` cannot be applied to type `&LayerLease`
+   --> src\sae\router.rs:215:9
+    |
+208 | #[derive(Debug, Clone, PartialEq)]
+    |                        --------- in this derive macro expansion
+...
+215 |         lease: LayerLease,
+    |         ^^^^^^^^^^^^^^^^^
+    |
+note: an implementation of `PartialEq` might be missing for `LayerLease`
+   --> src\sae\router.rs:37:1
+    |
+ 37 | pub struct LayerLease {
+    | ^^^^^^^^^^^^^^^^^^^^^ must implement `PartialEq`
+help: consider annotating `LayerLease` with `#[derive(PartialEq)]`
+    |
+ 37 + #[derive(PartialEq)]
+ 38 | pub struct LayerLease {
+    |
+
+error[E0599]: no method named `try_clone` found for slice `[u8]` in the current scope
+   --> src\bridge\tensor_flow.rs:108:18
+    |
+107 | /             buffer[pos..pos + 4]
+108 | |                 .try_clone()
+    | |                 -^^^^^^^^^ method not found in `[u8]`
+    | |_________________|
+    |
+
+error[E0599]: no method named `try_clone` found for slice `[u8]` in the current scope
+   --> src\bridge\tensor_flow.rs:117:22
+    |
+116 | /                 buffer[pos..pos + 4]
+117 | |                     .try_clone()
+    | |                     -^^^^^^^^^ method not found in `[u8]`
+    | |_____________________|
+    |
+
+error[E0599]: no method named `try_clone` found for slice `[u8]` in the current scope
+   --> src\bridge\tensor_flow.rs:127:18
+    |
+126 | /             buffer[pos..pos + 4]
+127 | |                 .try_clone()
+    | |                 -^^^^^^^^^ method not found in `[u8]`
+    | |_________________|
+    |
+
+error[E0599]: no method named `try_clone` found for slice `[u8]` in the current scope
+   --> src\bridge\tensor_flow.rs:136:22
+    |
+135 | /                 buffer[pos..pos + 4]
+136 | |                     .try_clone()
+    | |                     -^^^^^^^^^ method not found in `[u8]`
+    | |_____________________|
+    |
+
+error[E0599]: no method named `try_clone` found for slice `[u8]` in the current scope
+   --> src\bridge\tensor_flow.rs:146:18
+    |
+145 | /             buffer[pos..pos + 4]
+146 | |                 .try_clone()
+    | |                 -^^^^^^^^^ method not found in `[u8]`
+    | |_________________|
+    |
+
+error[E0599]: no method named `try_clone` found for slice `[u8]` in the current scope
+   --> src\bridge\tensor_flow.rs:157:18
+    |
+156 | /             buffer[pos..pos + 4]
+157 | |                 .try_clone()
+    | |                 -^^^^^^^^^ method not found in `[u8]`
+    | |_________________|
+    |
+
+error[E0277]: the trait bound `std::time::Instant: Default` is not satisfied
+  --> src\bridge\consciousness.rs:71:35
+   |
+71 | #[derive(Debug, Clone, Serialize, Deserialize)]
+   |                                   ^^^^^^^^^^^ the trait `Default` is not implemented for `std::time::Instant`
+   |
+   = note: this error originates in the derive macro `Deserialize` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0560]: struct `ConflictReport` has no field named `activation`
+   --> src\bridge\consciousness.rs:358:21
+    |
+358 |                     activation: *activation,
+    |                     ^^^^^^^^^^ `ConflictReport` does not have this field
+    |
+    = note: available fields are: `activation_value`
+
+error[E0599]: the method `entry` exists for struct `HashMap<ConceptCategory, Vec<std::string::String>>`, but its trait bounds were not satisfied
+   --> src\interpret\semantic_map.rs:239:14
+    |
+ 57 |   pub enum ConceptCategory {
+    |   ------------------------ doesn't satisfy `ConceptCategory: Hash` or `ConceptCategory: std::cmp::Eq`
+...
+238 | /         self.category_to_concepts
+239 | |             .entry(concept.category.clone())
+    | |             -^^^^^ method cannot be called on `HashMap<ConceptCategory, Vec<std::string::String>>` due to unsatisfied trait bounds
+    | |_____________|
+    |
+    |
+    = note: the following trait bounds were not satisfied:
+            `ConceptCategory: std::cmp::Eq`
+            `ConceptCategory: Hash`
+help: consider annotating `ConceptCategory` with `#[derive(Eq, Hash, PartialEq)]`
+    |
+ 57 + #[derive(Eq, Hash, PartialEq)]
+ 58 | pub enum ConceptCategory {
+    |
+
+error[E0599]: the method `get` exists for struct `HashMap<ConceptCategory, Vec<std::string::String>>`, but its trait bounds were not satisfied
+   --> src\interpret\semantic_map.rs:261:53
+    |
+ 57 | pub enum ConceptCategory {
+    | ------------------------ doesn't satisfy `ConceptCategory: Hash` or `ConceptCategory: std::cmp::Eq`
+...
+261 |         let concept_ids = self.category_to_concepts.get(category);
+    |                                                     ^^^ method cannot be called on `HashMap<ConceptCategory, Vec<std::string::String>>` due to unsatisfied trait bounds
+    |
+    = note: the following trait bounds were not satisfied:
+            `ConceptCategory: std::cmp::Eq`
+            `ConceptCategory: Hash`
+help: consider annotating `ConceptCategory` with `#[derive(Eq, Hash, PartialEq)]`
+    |
+ 57 + #[derive(Eq, Hash, PartialEq)]
+ 58 | pub enum ConceptCategory {
+    |
+
+error[E0282]: type annotations needed
+   --> src\interpret\semantic_map.rs:263:26
+    |
+263 |             Some(ids) => ids
+    |                          ^^^ cannot infer type
+
+error[E0277]: the trait bound `std::time::Instant: serde::Serialize` is not satisfied
+    --> src\consensus\validator.rs:66:24
+     |
+  66 | #[derive(Debug, Clone, Serialize, Deserialize)]
+     |                        ^^^^^^^^^ the trait `Serialize` is not implemented for `std::time::Instant`
+...
+  78 |     /// Timestamp del voto
+     |     ---------------------- required by a bound introduced by this call
+     |
+     = note: for local types consider adding `#[derive(serde::Serialize)]` to your `std::time::Instant` type
+     = note: for types from other crates check whether the crate offers a `serde` feature flag
+     = help: the following other types implement trait `Serialize`:
+               &'a T
+               &'a mut T
+               ()
+               (T,)
+               (T0, T1)
+               (T0, T1, T2)
+               (T0, T1, T2, T3)
+               (T0, T1, T2, T3, T4)
+             and 265 others
+note: required by a bound in `protocol::_::_serde::ser::SerializeStruct::serialize_field`
+    --> C:\Users\cualo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde_core-1.0.228\src\ser\mod.rs:1917:21
+     |
+1915 |     fn serialize_field<T>(&mut self, key: &'static str, value: &T) -> Result<(), Self::Error>
+     |        --------------- required by a bound in this associated function
+1916 |     where
+1917 |         T: ?Sized + Serialize;
+     |                     ^^^^^^^^^ required by this bound in `SerializeStruct::serialize_field`
+     = note: this error originates in the derive macro `Serialize` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `std::time::Instant: serde::Deserialize<'de>` is not satisfied
+    --> src\consensus\validator.rs:79:20
+     |
+  79 |     pub timestamp: Instant,
+     |                    ^^^^^^^ the trait `Deserialize<'_>` is not implemented for `std::time::Instant`
+     |
+     = note: for local types consider adding `#[derive(serde::Deserialize)]` to your `std::time::Instant` type
+     = note: for types from other crates check whether the crate offers a `serde` feature flag
+     = help: the following other types implement trait `Deserialize<'de>`:
+               &'a Path
+               &'a [u8]
+               &'a serde_json::value::RawValue
+               &'a str
+               ()
+               (T,)
+               (T0, T1)
+               (T0, T1, T2)
+             and 285 others
+note: required by a bound in `next_element`
+    --> C:\Users\cualo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde_core-1.0.228\src\de\mod.rs:1771:12
+     |
+1769 |     fn next_element<T>(&mut self) -> Result<Option<T>, Self::Error>
+     |        ------------ required by a bound in this associated function
+1770 |     where
+1771 |         T: Deserialize<'de>,
+     |            ^^^^^^^^^^^^^^^^ required by this bound in `SeqAccess::next_element`
+
+error[E0277]: the trait bound `std::time::Instant: serde::Deserialize<'de>` is not satisfied
+    --> src\consensus\validator.rs:79:20
+     |
+  79 |     pub timestamp: Instant,
+     |                    ^^^^^^^ the trait `Deserialize<'_>` is not implemented for `std::time::Instant`
+     |
+     = note: for local types consider adding `#[derive(serde::Deserialize)]` to your `std::time::Instant` type
+     = note: for types from other crates check whether the crate offers a `serde` feature flag
+     = help: the following other types implement trait `Deserialize<'de>`:
+               &'a Path
+               &'a [u8]
+               &'a serde_json::value::RawValue
+               &'a str
+               ()
+               (T,)
+               (T0, T1)
+               (T0, T1, T2)
+             and 285 others
+note: required by a bound in `next_value`
+    --> C:\Users\cualo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde_core-1.0.228\src\de\mod.rs:1916:12
+     |
+1914 |     fn next_value<V>(&mut self) -> Result<V, Self::Error>
+     |        ---------- required by a bound in this associated function
+1915 |     where
+1916 |         V: Deserialize<'de>,
+     |            ^^^^^^^^^^^^^^^^ required by this bound in `MapAccess::next_value`
+
+error[E0277]: the trait bound `std::time::Instant: serde::Deserialize<'de>` is not satisfied
+  --> src\consensus\validator.rs:66:35
+   |
+66 | #[derive(Debug, Clone, Serialize, Deserialize)]
+   |                                   ^^^^^^^^^^^ the trait `Deserialize<'_>` is not implemented for `std::time::Instant`
+   |
+   = note: for local types consider adding `#[derive(serde::Deserialize)]` to your `std::time::Instant` type
+   = note: for types from other crates check whether the crate offers a `serde` feature flag
+   = help: the following other types implement trait `Deserialize<'de>`:
+             &'a Path
+             &'a [u8]
+             &'a serde_json::value::RawValue
+             &'a str
+             ()
+             (T,)
+             (T0, T1)
+             (T0, T1, T2)
+           and 285 others
+note: required by a bound in `protocol::_::_serde::__private228::de::missing_field`
+  --> C:\Users\cualo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\de.rs:26:8
+   |
+24 | pub fn missing_field<'de, V, E>(field: &'static str) -> Result<V, E>
+   |        ------------- required by a bound in this function
+25 | where
+26 |     V: Deserialize<'de>,
+   |        ^^^^^^^^^^^^^^^^ required by this bound in `missing_field`
+   = note: this error originates in the derive macro `Deserialize` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0599]: no method named `find_batch_key` found for reference `&validator::ConsensusValidator` in the current scope
+   --> src\consensus\validator.rs:300:30
+    |
+300 |         let batch_key = self.find_batch_key(vote.layer_id, vote.time_window);
+    |                              ^^^^^^^^^^^^^^ method not found in `&validator::ConsensusValidator`
+
+error[E0277]: the size for values of type `str` cannot be known at compilation time
+   --> src\consensus\validator.rs:302:16
+    |
+302 |         if let Some(key) = batch_key {
+    |                ^^^^^^^^^ doesn't have a size known at compile-time
+    |
+    = help: the trait `Sized` is not implemented for `str`
+note: required by a bound in `std::prelude::v1::Some`
+   --> /rustc/e408947bfd200af42db322daf0fadfe7e26d3bd1/library\core\src\option.rs:608:4
+
+error[E0277]: the size for values of type `str` cannot be known at compilation time
+   --> src\consensus\validator.rs:309:25
+    |
+308 |                         "Voto recibido: batch={}, votes={}",
+    |                                               -- required by this formatting parameter
+309 |                         key,
+    |                         ^^^ doesn't have a size known at compile-time
+    |
+    = help: the trait `Sized` is not implemented for `str`
+    = note: this error originates in the macro `$crate::__macro_support::format_args` which comes from the expansion of the macro `debug` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0599]: no method named `parallel_compilation` found for mutable reference `&mut wasmtime::Config` in the current scope
+  --> src\security\wasm_sandbox.rs:99:14
+   |
+93 | /         wasm_config
+94 | |             .wasm_reference_types(false) // Sin referencias para evitar escapes
+95 | |             .wasm_multi_value(config.wasm_multi_value)
+96 | |             .wasm_bulk_memory(config.wasm_bulk_memory)
+97 | |             .wasm_simd(true) // SIMD para rendimiento en tensores
+98 | |             .debug_info(false) // Sin debug info en producción
+99 | |             .parallel_compilation(true);
+   | |             -^^^^^^^^^^^^^^^^^^^^ private field, not a method
+   | |_____________|
+   |
+
+error[E0277]: the trait bound `Vec<u8>: WasmParams` is not satisfied
+   --> src\security\wasm_sandbox.rs:261:31
+    |
+261 |             .get_typed_func::<Vec<u8>, Vec<u8>>(&mut store, function_name)
+    |              --------------   ^^^^^^^ the trait `WasmTy` is not implemented for `Vec<u8>`
+    |              |
+    |              required by a bound introduced by this call
+    |
+    = help: the following other types implement trait `WasmTy`:
+              f32
+              f64
+              i32
+              i64
+              std::option::Option<wasmtime::ExternRef>
+              std::option::Option<wasmtime::Func>
+              u32
+              u64
+              wasmtime::V128
+    = note: required for `Vec<u8>` to implement `WasmParams`
+note: required by a bound in `Instance::get_typed_func`
+   --> C:\Users\cualo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wasmtime-17.0.3\src\instance.rs:482:17
+    |
+476 |     pub fn get_typed_func<Params, Results>(
+    |            -------------- required by a bound in this associated function
+...
+482 |         Params: crate::WasmParams,
+    |                 ^^^^^^^^^^^^^^^^^ required by this bound in `Instance::get_typed_func`
+
+error[E0599]: the method `call` exists for struct `TypedFunc<Vec<u8>, Vec<u8>>`, but its trait bounds were not satisfied
+   --> src\security\wasm_sandbox.rs:276:14
+    |
+275 |           let output = sae_forward
+    |  ______________________-
+276 | |             .call(&mut store, input_data)
+    | |             -^^^^ method cannot be called on `TypedFunc<Vec<u8>, Vec<u8>>` due to unsatisfied trait bounds
+    | |_____________|
+    |
+    |
+    = note: the following trait bounds were not satisfied:
+            `Vec<u8>: WasmTy`
+            which is required by `Vec<u8>: WasmParams`
+
+error[E0107]: struct takes 1 generic argument but 0 generic arguments were supplied
+    --> src\security\wasm_sandbox.rs:308:40
+     |
+ 308 |                 |mut caller: wasmtime::Caller<'_>, msg_ptr: u32, msg_len: u32| {
+     |                                        ^^^^^^ expected 1 generic argument
+     |
+note: struct defined here, with 1 generic parameter: `T`
+    --> C:\Users\cualo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wasmtime-17.0.3\src\func.rs:1776:12
+     |
+1776 | pub struct Caller<'a, T> {
+     |            ^^^^^^     -
+help: add missing generic argument
+     |
+ 308 |                 |mut caller: wasmtime::Caller<'_, T>, msg_ptr: u32, msg_len: u32| {
+     |                                                 +++
+
+error[E0282]: type annotations needed
+   --> src\security\wasm_sandbox.rs:345:24
+    |
+345 |             .and_then(|e| e.into_memory())
+    |                        ^  - type must be known at this point
+    |
+help: consider giving this closure parameter an explicit type
+    |
+345 |             .and_then(|e: /* Type */| e.into_memory())
+    |                         ++++++++++++
+
+error[E0277]: can't compare `&[u8]` with `[u8]`
+   --> src\security\memory_guard.rs:223:59
+    |
+223 |             let repetitions = data.chunks(8).filter(|c| c == first_block).count();
+    |                                                           ^^ no implementation for `&[u8] == [u8]`
+    |
+    = help: the trait `PartialEq<[u8]>` is not implemented for `&[u8]`
+    = note: required for `&&[u8]` to implement `PartialEq<&[u8]>`
+help: consider dereferencing here
+    |
+223 |             let repetitions = data.chunks(8).filter(|c| *c == first_block).count();
+    |                                                         +
+
+error[E0599]: no method named `format_with` found for struct `CoreWrapper<T>` in the current scope
+   --> src\zkp\circuit.rs:103:16
+    |
+103 |         hasher.format_with(|mut h| index.serialize_compressed(&mut h).unwrap());
+    |                ^^^^^^^^^^^ method not found in `CoreWrapper<CtVariableCoreWrapper<Sha256VarCore, UInt<..., ...>, ...>>`
+    |
+    = note: the full name for the type has been written to 'c:\Users\cualo\Desktop\PROYECTOS\ed2kIA\target\debug\deps\ed2kia-41cbc0ad1b8f8513.long-type-8553940672089675836.txt'
+    = note: consider using `--verbose` to print the full type name to the console
+
+error[E0599]: no method named `to_ascii_hex_digit` found for reference `&u8` in the current scope
+   --> src\zkp\circuit.rs:283:94
+    |
+283 | ...   if proof.batch_id != format!("batch-{}", commitment.batch_hash[..8].iter().map(|b| b.to_ascii_hex_digit()).collect::<String>(...
+    |                                                                                            ^^^^^^^^^^^^^^^^^^
+    |
+help: there is a method `is_ascii_hexdigit` with a similar name
+    |
+283 -         if proof.batch_id != format!("batch-{}", commitment.batch_hash[..8].iter().map(|b| b.to_ascii_hex_digit()).collect::<String>()) {
+283 +         if proof.batch_id != format!("batch-{}", commitment.batch_hash[..8].iter().map(|b| b.is_ascii_hexdigit()).collect::<String>()) {
+    |
+
+error[E0599]: no method named `is_zero` found for struct `ark_ec::short_weierstrass::Affine<P>` in the current scope
+   --> src\zkp\circuit.rs:305:20
+    |
+305 |         if proof.a.is_zero() || proof.c.is_zero() {
+    |                    ^^^^^^^ method not found in `ark_ec::short_weierstrass::Affine<ark_bn254::g1::Config>`
+    |
+   ::: C:\Users\cualo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\ark-ec-0.4.2\src\lib.rs:224:8
+    |
+224 |     fn is_zero(&self) -> bool {
+    |        ------- the method is available for `ark_ec::short_weierstrass::Affine<ark_bn254::g1::Config>` here
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: trait `AffineRepr` which provides `is_zero` is implemented but not in scope; perhaps you want to import it
+    |
+  9 + use ark_ec::AffineRepr;
+    |
+
+error[E0599]: no method named `is_zero` found for struct `ark_ec::short_weierstrass::Affine<P>` in the current scope
+   --> src\zkp\circuit.rs:305:41
+    |
+305 |         if proof.a.is_zero() || proof.c.is_zero() {
+    |                                         ^^^^^^^ method not found in `ark_ec::short_weierstrass::Affine<ark_bn254::g1::Config>`
+    |
+   ::: C:\Users\cualo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\ark-ec-0.4.2\src\lib.rs:224:8
+    |
+224 |     fn is_zero(&self) -> bool {
+    |        ------- the method is available for `ark_ec::short_weierstrass::Affine<ark_bn254::g1::Config>` here
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: trait `AffineRepr` which provides `is_zero` is implemented but not in scope; perhaps you want to import it
+    |
+  9 + use ark_ec::AffineRepr;
+    |
+
+error[E0599]: no method named `into_big` found for struct `ark_ff::Fp<P, N>` in the current scope
+   --> src\zkp\circuit.rs:344:40
+    |
+344 |             hasher.update(&field_value.into_big().to_bytes_le());
+    |                                        ^^^^^^^^
+    |
+help: there is a method `into_bigint` with a similar name
+    |
+344 |             hasher.update(&field_value.into_bigint().to_bytes_le());
+    |                                                +++
+
+error[E0277]: the trait bound `f64: std::cmp::Eq` is not satisfied
+  --> src\zkp\verifier.rs:27:9
+   |
+21 | #[derive(Debug, Clone, PartialEq, Eq)]
+   |                                   -- in this derive macro expansion
+...
+27 |         confidence: f64,
+   |         ^^^^^^^^^^^^^^^ the trait `std::cmp::Eq` is not implemented for `f64`
+   |
+   = help: the following other types implement trait `std::cmp::Eq`:
+             i128
+             i16
+             i32
+             i64
+             i8
+             isize
+             u128
+             u16
+           and 4 others
+note: required by a bound in `AssertParamIsEq`
+  --> /rustc/e408947bfd200af42db322daf0fadfe7e26d3bd1/library\core\src\cmp.rs:371:0
+
+error[E0599]: the function or associated item `new` exists for struct `MerkleTree`, but its trait bounds were not satisfied
+   --> src\zkp\verifier.rs:262:39
+    |
+262 |         let merkle_tree = MerkleTree::new(leaf_data);
+    |                                       ^^^ function or associated item cannot be called on `MerkleTree` due to unsatisfied trait bounds
+    |
+   ::: src\consensus\merkle.rs:30:1
+    |
+ 30 | pub struct MerkleTree {
+    | --------------------- doesn't satisfy 5 bounds
+    |
+note: if you're trying to build a new `MerkleTree`, consider using `MerkleTree::from_data` which returns `Result<MerkleTree, anyhow::Error>`
+   --> src\consensus\merkle.rs:47:5
+    |
+ 47 |     pub fn from_data(data: Vec<Vec<u8>>) -> Result<Self> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = note: the following trait bounds were not satisfied:
+            `MerkleTree: FixedOutput`
+            which is required by `MerkleTree: Digest`
+            `MerkleTree: Default`
+            which is required by `MerkleTree: Digest`
+            `MerkleTree: Update`
+            which is required by `MerkleTree: Digest`
+            `MerkleTree: HashMarker`
+            which is required by `MerkleTree: Digest`
+            `&MerkleTree: FixedOutput`
+            which is required by `&MerkleTree: Digest`
+            `&MerkleTree: Default`
+            which is required by `&MerkleTree: Digest`
+            `&MerkleTree: Update`
+            which is required by `&MerkleTree: Digest`
+            `&MerkleTree: HashMarker`
+            which is required by `&MerkleTree: Digest`
+            `&mut MerkleTree: FixedOutput`
+            which is required by `&mut MerkleTree: Digest`
+            `&mut MerkleTree: Default`
+            which is required by `&mut MerkleTree: Digest`
+            `&mut MerkleTree: Update`
+            which is required by `&mut MerkleTree: Digest`
+            `&mut MerkleTree: HashMarker`
+            which is required by `&mut MerkleTree: Digest`
+note: the traits `FixedOutput`, `HashMarker`,  and `Update` must be implemented
+   --> C:\Users\cualo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\digest-0.10.7\src\lib.rs:77:1
+    |
+ 77 | pub trait Update {
+    | ^^^^^^^^^^^^^^^^
+...
+ 93 | pub trait FixedOutput: Update + OutputSizeUser + Sized {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: C:\Users\cualo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\digest-0.10.7\src\digest.rs:8:1
+    |
+  8 | pub trait HashMarker {}
+    | ^^^^^^^^^^^^^^^^^^^^
+help: consider annotating `MerkleTree` with `#[derive(Default)]`
+   --> src\consensus\merkle.rs:30:1
+    |
+ 30 + #[derive(Default)]
+ 31 | pub struct MerkleTree {
+    |
+
+error[E0560]: struct `FeedbackStats` has no field named `total`
+   --> src\human\feedback_cli.rs:427:13
+    |
+427 |             total,
+    |             ^^^^^ `FeedbackStats` does not have this field
+    |
+    = note: available fields are: `total_feedback`
+
+error[E0282]: type annotations needed for `Vec<_>`
+   --> src\main.rs:526:9
+    |
+526 |     let mut features = Vec::new();
+    |         ^^^^^^^^^^^^   ---------- type must be known at this point
+    |
+help: consider giving `features` an explicit type, where the type for type parameter `T` is specified
+    |
+526 |     let mut features: Vec<T> = Vec::new();
+    |                     ++++++++
+
+error[E0283]: type annotations needed for `Vec<_>`
+   --> src\main.rs:526:9
+    |
+526 |     let mut features = Vec::new();
+    |         ^^^^^^^^^^^^
+...
+538 |         features.join(", ")
+    |                  ---- type must be known at this point
+    |
+    = note: multiple `impl`s satisfying `_: Borrow<str>` found in the following crates: `alloc`, `clap_builder`, `http`, `toml`:
+            - impl Borrow<str> for clap::Id;
+            - impl Borrow<str> for clap::builder::Str;
+            - impl Borrow<str> for http::HeaderName;
+            - impl Borrow<str> for std::string::String;
+            - impl Borrow<str> for toml::Spanned<std::string::String>;
+    = note: required for `[_]` to implement `std::slice::Join<&str>`
+help: consider giving `features` an explicit type, where the type for type parameter `S` is specified
+    |
+526 |     let mut features: Vec<T> = Vec::new();
+    |                     ++++++++
+
+error[E0283]: type annotations needed for `Vec<_>`
+   --> src\main.rs:526:9
+    |
+526 |     let mut features = Vec::new();
+    |         ^^^^^^^^^^^^
+...
+538 |         features.join(", ")
+    |         -------- ---- required by a bound introduced by this call
+    |         |
+    |         type must be known at this point
+    |
+    = note: multiple `impl`s satisfying `_: Borrow<str>` found in the following crates: `alloc`, `clap_builder`, `http`, `toml`:
+            - impl Borrow<str> for clap::Id;
+            - impl Borrow<str> for clap::builder::Str;
+            - impl Borrow<str> for http::HeaderName;
+            - impl Borrow<str> for std::string::String;
+            - impl Borrow<str> for toml::Spanned<std::string::String>;
+    = note: required for `[_]` to implement `std::slice::Join<&str>`
+note: required by a bound in `std::slice::<impl [T]>::join`
+   --> /rustc/e408947bfd200af42db322daf0fadfe7e26d3bd1/library\alloc\src\slice.rs:594:4
+help: consider giving `features` an explicit type, where the type for type parameter `S` is specified
+    |
+526 |     let mut features: Vec<T> = Vec::new();
+    |                     ++++++++
+
+warning: unused variable: `activations`
+   --> src\sae\loader.rs:110:13
+    |
+110 |         let activations = self.forward(input)?;
+    |             ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_activations`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+error[E0506]: cannot assign to `*state` because it is borrowed
+   --> src\sae\router.rs:401:21
+    |
+398 |             if let LayerState::Assigned { peer_id, lease } = state {
+    |                                                    ----- `*state` is borrowed here
+...
+401 |                     *state = LayerState::Unassigned;
+    |                     ^^^^^^ `*state` is assigned to here but it was already borrowed
+402 |                     expired.push(lease.clone());
+    |                                  ----- borrow later used here
+
+error[E0502]: cannot borrow `self.peer_leases` as mutable because it is also borrowed as immutable
+   --> src\sae\router.rs:412:35
+    |
+411 |         for peer_id in self.peer_leases.keys().cloned() {
+    |                        --------------------------------
+    |                        |
+    |                        immutable borrow occurs here
+    |                        immutable borrow later used here
+412 |             if let Some(leases) = self.peer_leases.get_mut(&peer_id) {
+    |                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ mutable borrow occurs here
+
+error[E0502]: cannot borrow `self.peer_leases` as mutable because it is also borrowed as immutable
+   --> src\sae\router.rs:415:21
+    |
+411 |         for peer_id in self.peer_leases.keys().cloned() {
+    |                        --------------------------------
+    |                        |
+    |                        immutable borrow occurs here
+    |                        immutable borrow later used here
+...
+415 |                     self.peer_leases.remove(&peer_id);
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ mutable borrow occurs here
+
+warning: unused variable: `request`
+   --> src\bridge\tensor_flow.rs:299:13
+    |
+299 |         let request = TensorRequest {
+    |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_request`
+
+warning: unused variable: `now`
+   --> src\bridge\tensor_flow.rs:400:13
+    |
+400 |         let now = Instant::now();
+    |             ^^^ help: if this is intentional, prefix it with an underscore: `_now`
+
+error[E0594]: cannot assign to `self.steering_signals_generated`, which is behind a `&` reference
+   --> src\bridge\consciousness.rs:408:17
+    |
+408 |                 self.steering_signals_generated += 1;
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `self` is a `&` reference, so it cannot be written to
+    |
+help: consider changing this to be a mutable reference
+    |
+397 |     pub fn process_feedback_queue(&mut self) -> Vec<SteeringSignal> {
+    |                                    +++
+
+error[E0382]: borrow of moved value: `batch_id`
+   --> src\consensus\validator.rs:275:13
+    |
+233 |         batch_id: String,
+    |         -------- move occurs because `batch_id` has type `std::string::String`, which does not implement the `Copy` trait
+...
+271 |             .insert(batch_id, pending);
+    |                     -------- value moved here
+...
+275 |             batch_id, layer_id, batch_hash.merkle_root
+    |             ^^^^^^^^ value borrowed here after move
+    |
+    = note: this error originates in the macro `$crate::__macro_support::format_args` which comes from the expansion of the macro `info` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider cloning the value if the performance cost is acceptable
+    |
+271 |             .insert(batch_id.clone(), pending);
+    |                             ++++++++
+
+warning: unused variable: `rep`
+   --> src\consensus\validator.rs:548:17
+    |
+548 |             let rep = crypto_rep
+    |                 ^^^ help: if this is intentional, prefix it with an underscore: `_rep`
+
+warning: unused variable: `is_zkp`
+  --> src\zkp\verifier.rs:88:59
+   |
+88 |     pub fn update(&mut self, result: &VerificationResult, is_zkp: bool, is_merkle: bool, is_vrf: bool) {
+   |                                                           ^^^^^^ help: if this is intentional, prefix it with an underscore: `_is_zkp`
+
+warning: unused variable: `is_merkle`
+  --> src\zkp\verifier.rs:88:73
+   |
+88 |     pub fn update(&mut self, result: &VerificationResult, is_zkp: bool, is_merkle: bool, is_vrf: bool) {
+   |                                                                         ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_is_merkle`
+
+warning: unused variable: `is_vrf`
+  --> src\zkp\verifier.rs:88:90
+   |
+88 |     pub fn update(&mut self, result: &VerificationResult, is_zkp: bool, is_merkle: bool, is_vrf: bool) {
+   |                                                                                          ^^^^^^ help: if this is intentional, prefix it with an underscore: `_is_vrf`
+
+warning: unused variable: `commitment`
+   --> src\zkp\verifier.rs:341:58
+    |
+341 |     fn calculate_zkp_confidence(&self, proof: &ZKPProof, commitment: &BatchCommitment) -> f64 {
+    |                                                          ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_commitment`
+
+error[E0502]: cannot borrow `history` as immutable because it is also borrowed as mutable
+   --> src\zkp\verifier.rs:416:34
+    |
+416 |                 history.drain(0..history.len() - 10000);
+    |                 ------- -----    ^^^^^^^ immutable borrow occurs here
+    |                 |       |
+    |                 |       mutable borrow later used by call
+    |                 mutable borrow occurs here
+
+error[E0594]: cannot assign to `self.min_confidence_threshold`, which is behind a `&` reference
+   --> src\zkp\verifier.rs:501:9
+    |
+501 |         self.min_confidence_threshold = threshold.clamp(0.0, 1.0);
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `self` is a `&` reference, so it cannot be written to
+    |
+help: consider changing this to be a mutable reference
+    |
+500 |     pub fn set_min_confidence(&mut self, threshold: f64) {
+    |                                +++
+
+warning: unused variable: `annotator_id`
+   --> src\human\feedback_cli.rs:286:9
+    |
+286 |         annotator_id: &str,
+    |         ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_annotator_id`
+
+error[E0382]: borrow of moved value: `feedback`
+   --> src\human\feedback_cli.rs:352:44
+    |
+323 |     fn submit_feedback(&mut self, feedback: HumanFeedback) -> Result<()> {
+    |                                   -------- move occurs because `feedback` has type `HumanFeedback`, which does not implement the `Copy` trait
+...
+350 |         self.pending_queue.push(feedback);
+    |                                 -------- value moved here
+351 |
+352 |         debug!("Feedback submitted: {:?}", feedback.id);
+    |                                            ^^^^^^^^^^^ value borrowed here after move
+    |
+    = note: this error originates in the macro `$crate::__macro_support::format_args` which comes from the expansion of the macro `debug` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider cloning the value if the performance cost is acceptable
+    |
+350 |         self.pending_queue.push(feedback.clone());
+    |                                         ++++++++
+
+error[E0382]: use of moved value: `pending`
+   --> src\human\concept_updater.rs:196:29
+    |
+172 |         let pending = PendingChange {
+    |             ------- move occurs because `pending` has type `PendingChange`, which does not implement the `Copy` trait
+...
+191 |         self.pending_changes.push(pending);
+    |                                   ------- value moved here
+...
+196 |             required_votes: pending.required_votes,
+    |                             ^^^^^^^^^^^^^^^^^^^^^^ value used here after move
+    |
+help: consider cloning the value if the performance cost is acceptable
+    |
+191 |         self.pending_changes.push(pending.clone());
+    |                                          ++++++++
+
+error[E0502]: cannot borrow `*self` as immutable because it is also borrowed as mutable
+   --> src\human\concept_updater.rs:265:29
+    |
+261 |         if let Some(ref mut snapshot) = self.current_snapshot {
+    |                     ---------------- mutable borrow occurs here
+...
+265 |             snapshot.hash = self.compute_snapshot_hash(snapshot);
+    |                             ^^^^                       -------- mutable borrow later used here
+    |                             |
+    |                             immutable borrow occurs here
+
+error[E0382]: use of moved value: `applied`
+   --> src\human\concept_updater.rs:266:34
+    |
+245 |         let applied = AppliedChange {
+    |             ------- move occurs because `applied` has type `AppliedChange`, which does not implement the `Copy` trait
+...
+258 |         self.applied_history.push(applied);
+    |                                   ------- value moved here
+...
+266 |             snapshot.timestamp = applied.timestamp;
+    |                                  ^^^^^^^^^^^^^^^^^ value used here after move
+    |
+help: consider cloning the value if the performance cost is acceptable
+    |
+258 |         self.applied_history.push(applied.clone());
+    |                                          ++++++++
+
+warning: unused variable: `a`
+   --> src\human\concept_updater.rs:404:25
+    |
+404 |             .rposition(|a| {
+    |                         ^ help: if this is intentional, prefix it with an underscore: `_a`
+
+warning: unused variable: `idx`
+   --> src\human\concept_updater.rs:413:18
+    |
+413 |             Some(idx) => {
+    |                  ^^^ help: if this is intentional, prefix it with an underscore: `_idx`
+
+error[E0382]: borrow of moved value: `concept`
+   --> src\human\concept_updater.rs:532:50
+    |
+529 |     pub fn add_reserved_concept(&mut self, concept: String) {
+    |                                            ------- move occurs because `concept` has type `std::string::String`, which does not implement the `Copy` trait
+530 |         if !self.reserved_concepts.contains(&concept) {
+531 |             self.reserved_concepts.push(concept);
+    |                                         ------- value moved here
+532 |             debug!("Added reserved concept: {}", concept);
+    |                                                  ^^^^^^^ value borrowed here after move
+    |
+    = note: this error originates in the macro `$crate::__macro_support::format_args` which comes from the expansion of the macro `debug` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider cloning the value if the performance cost is acceptable
+    |
+531 |             self.reserved_concepts.push(concept.clone());
+    |                                                ++++++++
+
+warning: variable does not need to be mutable
+   --> src\main.rs:610:17
+    |
+610 |             let mut router = LayerRouter::new();
+    |                 ----^^^^^^
+    |                 |
+    |                 help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> src\main.rs:701:21
+    |
+701 |                 let mut bridge = ConsciousnessBridge::new(16384);
+    |                     ----^^^^^^
+    |                     |
+    |                     help: remove this `mut`
+
+error[E0596]: cannot borrow `analyzer` as mutable, as it is not declared as mutable
+   --> src\main.rs:661:26
+    |
+661 |             let result = analyzer.analyze(&features, layer);
+    |                          ^^^^^^^^ cannot borrow as mutable
+    |
+help: consider changing this to be mutable
+    |
+640 |             let mut analyzer = FeatureAnalyzer::new(16384);
+    |                 +++
+
+warning: unused variable: `loader`
+   --> src\main.rs:598:17
+    |
+598 |             let loader = if let Some(sae_path) = &cli.sae_path {
+    |                 ^^^^^^ help: if this is intentional, prefix it with an underscore: `_loader`
+
+warning: unused variable: `router`
+   --> src\main.rs:610:17
+    |
+610 |             let mut router = LayerRouter::new();
+    |                 ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_router`
+
+Some errors have detailed explanations: E0034, E0061, E0063, E0107, E0271, E0277, E0282, E0283, E0308...
+For more information about an error, try `rustc --explain E0034`.
+warning: `ed2kia` (bin "ed2kia") generated 38 warnings
+error: could not compile `ed2kia` (bin "ed2kia") due to 76 previous errors; 38 warnings emitted

@@ -1,0 +1,175 @@
+# CI/CD Pipeline — v0.9.0-alpha.1 (Phase 9 Sprint 1)
+# GitHub Actions workflow for alpha validation
+
+name: Phase 9 Sprint 1 Alpha Pipeline
+
+on:
+  push:
+    branches: [main, dev, 'phase9/**']
+    tags: ['v0.9.0-*']
+  pull_request:
+    branches: [main, dev]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  # ─── 1. Lint & Format ─────────────────────────────────────────
+  lint:
+    name: Lint (phase9-sprint1)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache Cargo git
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache target
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-target-${{ hashFiles('**/Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-target-${{ hashFiles('**/Cargo.lock') }}-
+
+      - name: Check formatting
+        run: cargo fmt --check
+
+      - name: Clippy with phase9-sprint1
+        run: cargo clippy --features phase9-sprint1 -- -D warnings
+
+  # ─── 2. Build ─────────────────────────────────────────────────
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ matrix.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build debug
+        run: cargo build --features phase9-sprint1
+
+      - name: Build release
+        run: cargo build --release --features phase9-sprint1
+
+  # ─── 3. Unit Tests ────────────────────────────────────────────
+  test:
+    name: Tests (phase9-sprint1)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Run unit tests
+        run: cargo test --features phase9-sprint1 --lib --bins
+
+      - name: Run integration tests
+        run: cargo test --features phase9-sprint1 --test '*'
+
+      - name: Run doctests
+        run: cargo test --features phase9-sprint1 --doc
+
+  # ─── 4. Feature Isolation Check ───────────────────────────────
+  feature-isolation:
+    name: Feature Isolation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify default build (no phase9)
+        run: cargo check
+
+      - name: Verify phase9-sprint1 build
+        run: cargo check --features phase9-sprint1
+
+      - name: Verify phase9 does not break default
+        run: |
+          cargo check --features phase9-sprint1 2>&1 | tee /tmp/phase9_check.txt
+          if grep -q "error" /tmp/phase9_check.txt; then
+            echo "ERROR: phase9-sprint1 introduced compilation errors"
+            exit 1
+          fi
+
+  # ─── 5. Documentation ─────────────────────────────────────────
+  docs:
+    name: Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build docs
+        run: cargo doc --features phase9-sprint1 --no-deps
+
+      - name: Check for doc warnings
+        run: cargo doc --features phase9-sprint1 --no-deps 2>&1 | grep -v "warning: undocumented" || true
+
+  # ─── 6. Security Audit ────────────────────────────────────────
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+
+      - name: Run audit
+        run: cargo audit || true
+
+  # ─── 7. Alpha Release Artifacts ───────────────────────────────
+  release-artifacts:
+    name: Release Artifacts
+    runs-on: ubuntu-latest
+    needs: [lint, build, test, feature-isolation]
+    if: startsWith(github.ref, 'refs/tags/v0.9.0-')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build release binary
+        run: cargo build --release --features phase9-sprint1
+
+      - name: Package artifacts
+        run: |
+          mkdir -p release-artifacts
+          cp target/release/ed2kia release-artifacts/
+          cp release/v0.9.0-alpha/changelog.md release-artifacts/
+          cp release/v0.9.0-alpha/integration_matrix.md release-artifacts/
+          sha256sum release-artifacts/* > release-artifacts/checksums.sha256
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ed2kia-v0.9.0-alpha
+          path: release-artifacts/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: release-artifacts/*
+          body_path: release/v0.9.0-alpha/changelog.md
+          prerelease: true

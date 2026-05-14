@@ -1,0 +1,230 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ed2kIA Community Feedback Schema",
+  "description": "Structured schema for community feedback, bug reports, feature requests, and security disclosures for ed2kIA v0.6.0-RC",
+  "type": "object",
+  "definitions": {
+    "feedback_id": {
+      "type": "string",
+      "pattern": "^FB-[0-9]{4}-[A-Z0-9]{6}$",
+      "description": "Unique feedback identifier (e.g., FB-0001-ABC123)"
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["critical", "high", "medium", "low", "info"],
+      "description": "Severity level of the feedback item"
+    },
+    "feedback_type": {
+      "type": "string",
+      "enum": ["bug_report", "feature_request", "security_disclosure", "performance_issue", "usability_feedback", "documentation", "research_contribution"],
+      "description": "Category of feedback"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["submitted", "triaged", "acknowledged", "in_progress", "resolved", "rejected", "duplicate"],
+      "description": "Current triage status"
+    },
+    "priority": {
+      "type": "string",
+      "enum": ["p0_immediate", "p1_sprint", "p2_backlog", "p3_future"],
+      "description": "Priority assignment after triage"
+    },
+    "component": {
+      "type": "string",
+      "enum": ["sae", "federation", "staking", "governance", "api", "p2p", "zkp", "wasm_sandbox", "ui", "docs", "ci_cd", "monitoring", "unknown"],
+      "description": "Affected system component"
+    },
+    "contact_info": {
+      "type": "object",
+      "properties": {
+        "github_handle": {
+          "type": "string",
+          "description": "GitHub username of the reporter"
+        },
+        "discord_handle": {
+          "type": "string",
+          "description": "Discord username for follow-up"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Optional email for private communication (security disclosures)"
+        },
+        "pgp_key_id": {
+          "type": "string",
+          "description": "PGP key ID for encrypted security disclosures"
+        }
+      },
+      "required": ["github_handle"],
+      "additionalProperties": false
+    },
+    "reproduction_steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "step_number": { "type": "integer", "minimum": 1 },
+          "action": { "type": "string", "description": "Action taken in this step" },
+          "expected_result": { "type": "string", "description": "What was expected to happen" },
+          "actual_result": { "type": "string", "description": "What actually happened" },
+          "command": { "type": "string", "description": "CLI command or code snippet (optional)" }
+        },
+        "required": ["step_number", "action"]
+      },
+      "minItems": 1
+    },
+    "environment": {
+      "type": "object",
+      "properties": {
+        "ed2k_version": {
+          "type": "string",
+          "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+(-[a-zA-Z0-9.]+)?$",
+          "description": "ed2kIA version (e.g., v0.6.0-RC)"
+        },
+        "rust_version": { "type": "string", "description": "Rust compiler version" },
+        "os": { "type": "string", "description": "Operating system" },
+        "cpu_arch": { "type": "string", "enum": ["x86_64", "aarch64", "other"] },
+        "features_enabled": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Cargo features enabled (e.g., phase6-sprint2)"
+        },
+        "network": {
+          "type": "string",
+          "enum": ["local", "testnet", "mainnet"],
+          "description": "Network environment"
+        }
+      },
+      "required": ["ed2k_version", "os"]
+    },
+    "metrics_snapshot": {
+      "type": "object",
+      "description": "Optional Prometheus metrics snapshot at time of report",
+      "properties": {
+        "sae_latency_p95_ms": { "type": "number" },
+        "consensus_participation_pct": { "type": "number" },
+        "api_error_rate_pct": { "type": "number" },
+        "wasm_memory_pct": { "type": "number" },
+        "active_nodes": { "type": "integer" },
+        "federation_rounds_completed": { "type": "integer" }
+      },
+      "additionalProperties": false
+    },
+    "attachment": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["log_file", "screenshot", "core_dump", "trace_file", "config_file", "other"]
+        },
+        "url": { "type": "string", "format": "uri" },
+        "sha256": { "type": "string", "description": "SHA-256 hash for integrity verification" },
+        "size_bytes": { "type": "integer", "minimum": 0 }
+      },
+      "required": ["type", "url"]
+    },
+    "triage_decision": {
+      "type": "object",
+      "properties": {
+        "triaged_by": { "type": "string", "description": "GitHub handle of triager" },
+        "triaged_at": { "type": "string", "format": "date-time" },
+        "priority": { "$ref": "#/definitions/priority" },
+        "assigned_to": { "type": "string", "description": "GitHub handle of assignee" },
+        "sprint_target": { "type": "string", "description": "Target sprint (e.g., phase7-sprint1)" },
+        "related_issues": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Related GitHub issue numbers"
+        },
+        "rejection_reason": {
+          "type": "string",
+          "description": "Reason if status=rejected or status=duplicate"
+        },
+        "resolution_notes": {
+          "type": "string",
+          "description": "Notes when status=resolved"
+        }
+      },
+      "required": ["triaged_by", "triaged_at", "priority"]
+    }
+  },
+  "properties": {
+    "id": { "$ref": "#/definitions/feedback_id" },
+    "type": { "$ref": "#/definitions/feedback_type" },
+    "title": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 200,
+      "description": "Concise title of the feedback item"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 20,
+      "description": "Detailed description of the issue or request"
+    },
+    "severity": { "$ref": "#/definitions/severity" },
+    "component": { "$ref": "#/definitions/component" },
+    "status": {
+      "type": "string",
+      "enum": ["submitted"],
+      "description": "Initial status is always 'submitted'"
+    },
+    "submitted_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of submission"
+    },
+    "contact": { "$ref": "#/definitions/contact_info" },
+    "environment": { "$ref": "#/definitions/environment" },
+    "reproduction_steps": { "$ref": "#/definitions/reproduction_steps" },
+    "metrics_snapshot": { "$ref": "#/definitions/metrics_snapshot" },
+    "attachments": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/attachment" },
+      "maxItems": 5
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "maxItems": 10,
+      "description": "User-defined tags for categorization"
+    },
+    "is_security_disclosure": {
+      "type": "boolean",
+      "default": false,
+      "description": "If true, handle per SECURITY_DISCLOSURE.md policy"
+    },
+    "triage": { "$ref": "#/definitions/triage_decision" }
+  },
+  "required": [
+    "type",
+    "title",
+    "description",
+    "severity",
+    "component",
+    "status",
+    "submitted_at",
+    "contact"
+  ],
+  "if": {
+    "properties": {
+      "type": { "const": "bug_report" }
+    }
+  },
+  "then": {
+    "required": ["reproduction_steps", "environment"]
+  },
+  "if": {
+    "properties": {
+      "is_security_disclosure": { "const": true }
+    }
+  },
+  "then": {
+    "properties": {
+      "severity": {
+        "enum": ["critical", "high"]
+      }
+    },
+    "required": ["contact.email"]
+  }
+}

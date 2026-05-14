@@ -1,0 +1,501 @@
+[package]
+name = "ed2kia"
+version = "1.6.0-stable"
+edition = "2021"
+description = "Descentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
+license = "Apache-2.0"
+authors = ["ed2kIA Contributors"]
+repository = "https://github.com/ed2kia/ed2kia"
+readme = "README.md"
+keywords = ["p2p", "sae", "interpretability", "distributed-ml", "libp2p"]
+categories = ["network-programming", "command-line-utilities"]
+
+# Apache 2.0 + Ethical Use Clause
+# This software is provided for the benefit of humanity and responsible AI development.
+# It must be used transparently, auditable, free of backdoors, and compatible with voluntary global infrastructure.
+
+[dependencies]
+# Async runtime
+tokio = { version = "1.38", features = ["full"] }
+async-trait = "0.1"
+futures = "0.3"
+
+# P2P - libp2p
+libp2p = { version = "0.53", features = ["identify", "kad", "mdns", "request-response", "gossipsub", "plaintext", "tcp", "noise", "yamux", "cbor", "tokio"] }
+libp2p-identity = { version = "0.2", features = ["secp256k1"] }
+
+# Serialization
+prost = "0.12"
+flatbuffers = "23.5"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+bincode = "1.3"
+
+# ML / Candle
+candle-core = "0.6"
+candle-nn = "0.6"
+safetensors = "0.3"
+
+# Pin half to 2.4.x to avoid rand 0.9 conflict (candle-core 0.6 needs rand 0.8)
+half = ">=2.4, <2.5"
+
+# CLI & Config
+clap = { version = "4.5", features = ["derive"] }
+dirs = "5.0"
+config = "0.13"
+
+# Logging & Telemetry
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Utils
+hex = "0.4"
+num_cpus = "1.16"
+bytemuck = { version = "1.14", features = ["extern_crate_alloc"] }
+sha2 = "0.10"
+uuid = { version = "1.7", features = ["v4", "serde"] }
+thiserror = "1.0"
+anyhow = "1.0"
+once_cell = "1.19"
+parking_lot = "0.12"
+
+# WASM Sandbox - Fase 3
+wasmtime = { version = "17.0", default-features = false, features = ["cranelift"] }
+
+# ZKP - Fase 3
+ark-ec = "0.4"
+ark-ff = "0.4"
+ark-std = "0.4"
+ark-bn254 = "0.4"
+ark-serialize = "0.4"
+
+# Human-in-the-loop - Fase 3
+crossterm = "0.27"
+
+# Web UI - Fase 4
+axum = { version = "0.7", features = ["json", "ws"] }
+tower-http = { version = "0.5", features = ["fs", "trace"] }
+
+# Embedded DB - Fase 4
+redb = "1.5"
+
+# Monitoring - Fase 4
+prometheus = "0.13"
+lazy_static = "1.4"
+
+# Dashmap - thread-safe concurrent HashMap for session management
+dashmap = "6.0"
+
+# Governance - Fase 5
+ed25519-dalek = { version = "2.1", features = ["rand_core"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Ecosystem Sync - Fase 5
+reqwest = { version = "0.11", features = ["json", "stream"] }
+
+# Bootstrap - Fase 5
+fastrand = "2.1"
+
+# Cross-platform
+[target.'cfg(target_os = "windows")'.dependencies]
+windows = { version = "0.52", features = ["Win32_System_Console"] }
+
+[features]
+# CONSOLIDATION: v1.0.0 stable feature structure
+# `default` enables all stable modules (Fases 1-9 unified)
+default = ["stable"]
+
+# ─── Stable Features (Production) ───
+# `stable` enables all validated modules from Fases 1-9
+# Includes legacy feature flags for backward compatibility
+stable = [
+    "phase6-core",
+    "phase6-sprint2",
+    "phase6-experimental",
+    "phase7-sprint1",
+    "phase7-sprint2",
+    "phase8-sprint1",
+    "phase8-sprint2",
+    "phase9-sprint1",
+    "v1.1-sprint1",
+    "v1.1-sprint2",
+    "v1.1-sprint3",
+    "v1.1-sprint5",
+    "v1.2-sprint1",
+    "v1.2-sprint2",
+    "v1.2-sprint3",
+    "v1.2-sprint4",
+    "v1.3-sprint1",
+    "v1.3-sprint2",
+    "v1.3-sprint3",
+    "v1.4-sprint3",
+    "v1.6-sprint1",
+    "v1.6-sprint2",
+    "v1.6-sprint3",
+]
+
+# v1.5.0 Sprint 1 — SAE Fine-Tuning v5, Cross-Chain Pools v4, DAO Ledger v5, Async ZKP v9
+"v1.5-sprint1" = []
+
+# v1.5.0 Sprint 2 — Federation Scaling v5, Async ZKP v10, UI Dashboard v6
+"v1.5-sprint2" = []
+
+# v1.5.0 Sprint 3 — SAE Fine-Tuning v6, Federation Scaling v6, Async ZKP v11 & Final Consolidation
+"v1.5-sprint3" = []
+
+# v1.6.0 Sprint 1 — Cross-Chain Interoperability Foundation
+"v1.6-sprint1" = []
+
+# v1.6.0 Sprint 2 — Federation Scaling v7, Async ZKP v13, UI Dashboard v7
+"v1.6-sprint2" = []
+
+# v1.6.0 Sprint 3 — SAE Fine-Tuning v7, Cross-Model Federation Scaling v7, Async ZKP v14 & Final Consolidation
+"v1.6-sprint3" = []
+
+# ─── Hardware Acceleration ───
+cpu = []
+cuda = ["candle-core/cuda", "candle-nn/cuda"]
+metal = ["candle-core/metal", "candle-nn/metal"]
+
+# ─── Legacy Feature Flags (Deprecated - maintained for backward compatibility) ───
+# These are now sub-features of `stable`. Will be removed in v2.0.0.
+core-only = []
+phase6-core = []
+phase6-sprint2 = []
+phase6-experimental = []
+phase7-sprint1 = []
+phase7-sprint2 = []
+phase8-sprint1 = []
+phase8-sprint2 = []
+phase9-sprint1 = []
+
+# ─── Dev/Experimental Features (Not included in stable) ───
+debug = []
+test-mocks = []
+
+# ─── v1.1.0 Sprint Features (Now part of `stable`) ───
+# These are sub-features of `stable` for backward compatibility.
+# Will be removed in v2.0.0.
+"v1.1-sprint1" = []
+"v1.1-sprint2" = []
+"v1.1-sprint3" = []
+"v1.1-sprint4" = []
+"v1.1-sprint5" = []
+
+# ─── v1.2.0 Sprint Features (Development) ───
+# Multi-Chain Federation & SAE Distributed Fine-Tuning
+"v1.2-sprint1" = []
+# Cross-Chain Consensus, DAO Governance v3 & Distributed Fine-Tuning
+"v1.2-sprint2" = []
+# SLO/SLA v3, Cross-Model Scaling v2, UI Dashboard v3 & Async ZKP v2
+"v1.2-sprint3" = []
+# Marketplace v3, Alignment Loop v3, Federation Scaling v3 & Final Consolidation
+"v1.2-sprint4" = []
+
+# ─── v1.3.0 Sprint Features (Development) ───
+# SAE Fine-Tuning v2, Cross-Node Compute Routing, Reputation Ledger v2, Async ZKP v3
+"v1.3-sprint1" = []
+# Technical Resource Pools, DAO Ledger v2, Async ZKP v4, UI Dashboard v4
+"v1.3-sprint2" = []
+# SAE Fine-Tuning v3, Federation Scaling v3, Async ZKP v5 & Final Consolidation
+"v1.3-sprint3" = []
+
+# ─── v1.4.0 Sprint 1 Features (Production Foundation) ───
+# Halo2 ZKP Engine, Tokio Async Optimization, LZ4 Compression, Advanced Metrics
+"v1.4-sprint1" = []
+
+# ─── v1.4.0 Sprint 2 Features (Development) ───
+# Cross-Chain Pools v3, DAO Ledger v4, Async ZKP v7, UI Dashboard v5
+"v1.4-sprint2" = []
+
+# ─── v1.4.0 Sprint 3 Features (Final) ───
+# SAE Fine-Tuning v4, Federation Scaling v4, Async ZKP v8, Final Consolidation
+"v1.4-sprint3" = []
+
+[dev-dependencies]
+tempfile = "3.10"
+criterion = { version = "0.5", features = ["html_reports"] }
+tower = { version = "0.5", features = ["util"] }
+# WASM encoder for generating valid test modules
+wasm-encoder = "0.248"
+# Cross-compilation - Fase 3 (usado vía `cross` crate, no como dep directa)
+
+
+[build-dependencies]
+prost-build = "0.12"
+
+[[bin]]
+name = "ed2kia"
+path = "src/main.rs"
+
+[lib]
+name = "ed2kia"
+path = "src/lib.rs"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+
+[profile.dev]
+opt-level = 0
+debug = true
+
+# Stress test for load testing (tests/load/)
+[[test]]
+name = "stress_test"
+path = "tests/load/stress_test.rs"
+
+# v1.1.0 Sprint 1 E2E integration tests
+[[test]]
+name = "v1_1_sprint1_e2e"
+path = "tests/integration/v1_1_sprint1_e2e.rs"
+required-features = ["stable"]
+
+# v1.1.0 Sprint 1 benchmarks (criterion-style, harness = false)
+[[test]]
+name = "sprint1_bench"
+path = "tests/benchmarks/sprint1_bench.rs"
+harness = false
+required-features = ["stable"]
+
+# v1.1.0 Sprint 2 E2E integration tests
+[[test]]
+name = "v1_1_sprint2_e2e"
+path = "tests/integration/v1_1_sprint2_e2e.rs"
+required-features = ["stable"]
+
+# v1.1.0 Sprint 2 governance stress tests
+[[test]]
+name = "governance_stress"
+path = "tests/load/governance_stress.rs"
+required-features = ["stable"]
+
+# v1.1.0 Sprint 3 E2E integration tests
+[[test]]
+name = "v1_1_sprint3_e2e"
+path = "tests/integration/v1_1_sprint3_e2e.rs"
+required-features = ["stable"]
+
+# v1.1.0 Sprint 3 benchmarks
+[[test]]
+name = "sprint3_bench"
+path = "tests/benchmarks/sprint3_bench.rs"
+harness = false
+required-features = ["stable"]
+
+# v1.1.0 Sprint 4 E2E integration tests
+[[test]]
+name = "v1_1_sprint4_e2e"
+path = "tests/integration/v1_1_sprint4_e2e.rs"
+required-features = ["stable"]
+
+# v1.1.0 Sprint 4 benchmarks
+[[test]]
+name = "sprint4_bench"
+path = "tests/benchmarks/sprint4_bench.rs"
+harness = false
+required-features = ["stable"]
+
+# v1.1.0 Sprint 5 E2E integration tests
+[[test]]
+name = "v1_1_sprint5_e2e"
+path = "tests/integration/v1_1_sprint5_e2e.rs"
+required-features = ["stable"]
+
+# v1.1.0 Sprint 5 full network stress tests
+[[test]]
+name = "full_network_stress"
+path = "tests/load/full_network_stress.rs"
+required-features = ["stable"]
+
+# v1.2.0 Sprint 1 E2E integration tests
+[[test]]
+name = "v1_2_sprint1_e2e"
+path = "tests/integration/v1_2_sprint1_e2e.rs"
+required-features = ["v1.2-sprint1"]
+
+# v1.2.0 Sprint 1 benchmarks
+[[test]]
+name = "v1_2_sprint1_bench"
+path = "tests/benchmarks/v1_2_sprint1_bench.rs"
+harness = false
+required-features = ["v1.2-sprint1"]
+
+# v1.2.0 Sprint 2 E2E integration tests
+[[test]]
+name = "v1_2_sprint2_e2e"
+path = "tests/integration/v1_2_sprint2_e2e.rs"
+required-features = ["v1.2-sprint2"]
+
+# v1.2.0 Sprint 2 stress tests
+[[test]]
+name = "cross_chain_stress"
+path = "tests/load/cross_chain_stress.rs"
+required-features = ["v1.2-sprint2"]
+
+# v1.2.0 Sprint 3 E2E integration tests
+[[test]]
+name = "v1_2_sprint3_e2e"
+path = "tests/integration/v1_2_sprint3_e2e.rs"
+required-features = ["v1.2-sprint3"]
+
+# v1.2.0 Sprint 3 stress tests
+[[test]]
+name = "sprint3_stress"
+path = "tests/load/sprint3_stress.rs"
+required-features = ["v1.2-sprint3"]
+
+# v1.2.0 Sprint 4 E2E integration tests
+[[test]]
+name = "v1_2_sprint4_e2e"
+path = "tests/integration/v1_2_sprint4_e2e.rs"
+required-features = ["v1.2-sprint4"]
+
+# v1.2.0 Sprint 4 stress tests
+[[test]]
+name = "sprint4_stress"
+path = "tests/load/sprint4_stress.rs"
+required-features = ["v1.2-sprint4"]
+
+# v1.3.0 Sprint 1 E2E integration tests
+[[test]]
+name = "v1_3_sprint1_e2e"
+path = "tests/integration/v1_3_sprint1_e2e.rs"
+required-features = ["v1.3-sprint1"]
+
+# v1.3.0 Sprint 1 stress tests
+[[test]]
+name = "sprint1_stress"
+path = "tests/load/sprint1_stress.rs"
+required-features = ["v1.3-sprint1"]
+
+# v1.3.0 Sprint 2 E2E integration tests
+[[test]]
+name = "v1_3_sprint2_e2e"
+path = "tests/integration/v1_3_sprint2_e2e.rs"
+required-features = ["v1.3-sprint2"]
+
+# v1.3.0 Sprint 3 E2E integration tests
+[[test]]
+name = "v1_3_sprint3_e2e"
+path = "tests/integration/v1_3_sprint3_e2e.rs"
+required-features = ["v1.3-sprint3"]
+
+# v1.3.0 Sprint 3 stress tests
+[[test]]
+name = "sprint3_stress_v1_3"
+path = "tests/load/sprint3_stress_v1_3.rs"
+required-features = ["v1.3-sprint3"]
+
+# v1.4.0 Sprint 1 E2E integration tests
+[[test]]
+name = "v1_4_sprint1_e2e"
+path = "tests/integration/v1_4_sprint1_e2e.rs"
+required-features = ["v1.4-sprint1"]
+
+# v1.4.0 Sprint 1 benchmarks
+[[test]]
+name = "v1_4_sprint1_bench"
+path = "tests/benchmarks/v1_4_sprint1_bench.rs"
+harness = false
+required-features = ["v1.4-sprint1"]
+
+# v1.4.0 Sprint 2 E2E integration tests
+[[test]]
+name = "v1_4_sprint2_e2e"
+path = "tests/integration/v1_4_sprint2_e2e.rs"
+required-features = ["v1.4-sprint2"]
+
+# v1.4.0 Sprint 2 benchmarks
+[[test]]
+name = "v1_4_sprint2_bench"
+path = "tests/benchmarks/v1_4_sprint2_bench.rs"
+harness = false
+required-features = ["v1.4-sprint2"]
+
+# v1.4.0 Sprint 3 E2E integration tests
+[[test]]
+name = "v1_4_sprint3_e2e"
+path = "tests/integration/v1_4_sprint3_e2e.rs"
+required-features = ["v1.4-sprint3"]
+
+# v1.4.0 Sprint 3 final stress tests
+[[test]]
+name = "v1_4_final_stress"
+path = "tests/load/v1_4_final_stress.rs"
+required-features = ["v1.4-sprint3"]
+
+# v1.5.0 Sprint 1 E2E integration tests
+[[test]]
+name = "v1_5_sprint1_e2e"
+path = "tests/integration/v1_5_sprint1_e2e.rs"
+required-features = ["v1.5-sprint1"]
+
+# v1.5.0 Sprint 1 benchmarks
+[[test]]
+name = "v1_5_sprint1_bench"
+path = "tests/benchmarks/v1_5_sprint1_bench.rs"
+harness = false
+required-features = ["v1.5-sprint1"]
+
+# v1.5.0 Sprint 2 E2E integration tests
+[[test]]
+name = "v1_5_sprint2_e2e"
+path = "tests/integration/v1_5_sprint2_e2e.rs"
+required-features = ["v1.5-sprint2"]
+
+# v1.5.0 Sprint 2 stress tests
+[[test]]
+name = "v1_5_sprint2_stress"
+path = "tests/load/sprint2_stress.rs"
+required-features = ["v1.5-sprint2"]
+
+# v1.5.0 Sprint 3 E2E integration tests
+[[test]]
+name = "v1_5_sprint3_e2e"
+path = "tests/integration/v1_5_sprint3_e2e.rs"
+required-features = ["v1.5-sprint3"]
+
+# v1.5.0 Sprint 3 stress tests
+[[test]]
+name = "v1_5_sprint3_stress"
+path = "tests/load/sprint3_stress.rs"
+required-features = ["v1.5-sprint3"]
+
+# v1.6.0 Sprint 1 E2E integration tests
+[[test]]
+name = "v1_6_sprint1_e2e"
+path = "tests/integration/v1_6_sprint1_e2e.rs"
+required-features = ["v1.6-sprint1"]
+
+# v1.6.0 Sprint 1 benchmarks
+[[test]]
+name = "v1_6_sprint1_bench"
+path = "tests/benchmarks/v1_6_sprint1_bench.rs"
+required-features = ["v1.6-sprint1"]
+
+# v1.6.0 Sprint 2 E2E integration tests
+[[test]]
+name = "v1_6_sprint2_e2e"
+path = "tests/integration/v1_6_sprint2_e2e.rs"
+required-features = ["v1.6-sprint2"]
+
+# v1.6.0 Sprint 2 stress tests
+[[test]]
+name = "v1_6_sprint2_stress"
+path = "tests/benchmarks/v1_6_sprint2_stress.rs"
+required-features = ["v1.6-sprint2"]
+
+# v1.6.0 Sprint 3 E2E integration tests
+[[test]]
+name = "v1_6_sprint3_e2e"
+path = "tests/integration/v1_6_sprint3_e2e.rs"
+required-features = ["v1.6-sprint3"]
+
+# v1.6.0 Sprint 3 final stress tests
+[[test]]
+name = "v1_6_final_stress"
+path = "tests/load/v1_6_final_stress.rs"
+required-features = ["v1.6-sprint3"]

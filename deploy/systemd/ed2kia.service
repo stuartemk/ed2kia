@@ -1,0 +1,56 @@
+[Unit]
+Description=ed2kIA Node - Sistema de IA descentralizada con SAE + ZKP
+Documentation=https://github.com/ed2kIA/ed2kIA
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ed2kia
+Group=ed2kia
+EnvironmentFile=/etc/ed2kia/ed2kia.env
+WorkingDirectory=/opt/ed2kia
+ExecStart=/opt/ed2kia/ed2kia run --config /etc/ed2kia/config.toml
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=10
+StartLimitBurst=5
+StartLimitIntervalSec=60
+
+# Recursos y límites
+LimitNOFILE=65536
+LimitNPROC=4096
+MemoryMax=2G
+MemoryHigh=1.5G
+CPUQuota=200%
+
+# Seguridad
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+ReadWritePaths=/opt/ed2kia/data /opt/ed2kia/logs
+ReadOnlyPaths=/opt/ed2kia/models /opt/ed2kia/wasm_modules
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ed2kia
+LogLevelMax=info
+
+# Salud y monitoreo
+ExecStartPre=/bin/mkdir -p /opt/ed2kia/data /opt/ed2kia/logs
+ExecStartPre=/bin/chown -R ed2kia:ed2kia /opt/ed2kia
+TimeoutStartSec=120
+TimeoutStopSec=60
+
+[Install]
+WantedBy=multi-user.target

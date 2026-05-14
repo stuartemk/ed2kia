@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ed2kIA Dashboard</title>
+    <link rel="stylesheet" href="/assets/style.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body>
+    <div x-data="dashboard()" class="container">
+        <header>
+            <h1>ed2kIA Dashboard</h1>
+            <div class="status-bar">
+                <span class="status-indicator" :class="healthStatus"></span>
+                <span x-text="healthText"></span>
+                <span class="uptime" x-text="'Uptime: ' + formatUptime(uptime)"></span>
+            </div>
+        </header>
+
+        <nav>
+            <button :class="{active: tab === 'status'}" @click="tab = 'status'; loadStatus()">Estado</button>
+            <button :class="{active: tab === 'network'}" @click="tab = 'network'; loadNetwork()">Red</button>
+            <button :class="{active: tab === 'feedback'}" @click="tab = 'feedback'; loadFeedback()">Feedback</button>
+            <button :class="{active: tab === 'metrics'}" @click="tab = 'metrics'; loadMetrics()">Métricas</button>
+        </nav>
+
+        <main>
+            <!-- Status Tab -->
+            <section x-show="tab === 'status'" class="panel">
+                <h2>Estado del Nodo</h2>
+                <div class="grid" x-show="status">
+                    <div class="card">
+                        <h3>Node ID</h3>
+                        <p class="mono" x-text="status.node?.id || 'N/A'"></p>
+                    </div>
+                    <div class="card">
+                        <h3>SAE Layers</h3>
+                        <p x-text="status.node?.sae_layers || 0"></p>
+                    </div>
+                    <div class="card">
+                        <h3>Active Leases</h3>
+                        <p x-text="status.node?.active_leases || 0"></p>
+                    </div>
+                    <div class="card">
+                        <h3>Version</h3>
+                        <p class="mono" x-text="status.server_version || 'N/A'"></p>
+                    </div>
+                </div>
+                <p x-show="!status && loaded">Cargando...</p>
+            </section>
+
+            <!-- Network Tab -->
+            <section x-show="tab === 'network'" class="panel">
+                <h2>Red P2P</h2>
+                <div class="grid" x-show="network">
+                    <div class="card">
+                        <h3>Peers Conectados</h3>
+                        <p class="big" x-text="network.peer_count || 0"></p>
+                    </div>
+                    <div class="card">
+                        <h3>Mensajes Enviados</h3>
+                        <p x-text="network.messages_sent || 0"></p>
+                    </div>
+                    <div class="card">
+                        <h3>Mensajes Recibidos</h3>
+                        <p x-text="network.messages_received || 0"></p>
+                    </div>
+                    <div class="card">
+                        <h3>Topics GossipSub</h3>
+                        <p x-text="network.topics?.length || 0"></p>
+                    </div>
+                </div>
+                <p x-show="!network && loaded">Cargando...</p>
+            </section>
+
+            <!-- Feedback Tab -->
+            <section x-show="tab === 'feedback'" class="panel">
+                <h2>Feedback Humano</h2>
+                <div class="grid" x-show="feedback">
+                    <div class="card">
+                        <h3>Total Entradas</h3>
+                        <p class="big" x-text="feedback.total_entries || 0"></p>
+                    </div>
+                    <div class="card">
+                        <h3>Aprobados</h3>
+                        <p class="success" x-text="feedback.approved || 0"></p>
+                    </div>
+                    <div class="card">
+                        <h3>Rechazados</h3>
+                        <p class="error" x-text="feedback.rejected || 0"></p>
+                    </div>
+                    <div class="card">
+                        <h3>Tasa Aprobación</h3>
+                        <p x-text="(feedback.approval_rate * 100).toFixed(1) + '%'"></p>
+                    </div>
+                </div>
+
+                <form @submit.prevent="submitFeedback" class="feedback-form">
+                    <h3>Enviar Feedback</h3>
+                    <div class="form-group">
+                        <label>Layer ID</label>
+                        <input type="text" x-model="newFeedback.layer_id" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Feature Index</label>
+                        <input type="number" x-model="newFeedback.feature_idx" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Decisión</label>
+                        <select x-model="newFeedback.decision" required>
+                            <option value="approved">Aprobar</option>
+                            <option value="rejected">Rechazar</option>
+                            <option value="corrected">Corregir</option>
+                            <option value="uncertain">Incierto</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Concepto (opcional)</label>
+                        <input type="text" x-model="newFeedback.concept">
+                    </div>
+                    <button type="submit" :disabled="submitting">
+                        <span x-text="submitting ? 'Enviando...' : 'Enviar Feedback'"></span>
+                    </button>
+                    <p class="success-msg" x-show="submitSuccess" x-text="submitSuccess"></p>
+                    <p class="error-msg" x-show="submitError" x-text="submitError"></p>
+                </form>
+            </section>
+
+            <!-- Metrics Tab -->
+            <section x-show="tab === 'metrics'" class="panel">
+                <h2>Métricas Prometheus</h2>
+                <pre class="metrics" x-text="metrics || 'Cargando...'"></pre>
+                <button @click="loadMetrics()" class="refresh-btn">Refrescar</button>
+            </section>
+        </main>
+
+        <footer>
+            <p>ed2kIA - Descentralizando la interpretabilidad de IA</p>
+            <p class="mono">Apache 2.0 + Ethical Use Clause</p>
+        </footer>
+    </div>
+
+    <script src="/assets/app.js"></script>
+</body>
+</html>

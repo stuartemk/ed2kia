@@ -1,0 +1,191 @@
+{
+  "dashboard": {
+    "title": "ed2kIA v0.6.0 - Network Overview",
+    "tags": ["ed2kIA", "v0.6.0", "network"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Network Health Summary",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "ed2k_nodes_total",
+            "legendFormat": "Total Nodes"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "yellow", "value": 10},
+                {"color": "green", "value": 50}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Consensus Participation %",
+        "type": "gauge",
+        "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+        "targets": [
+          {
+            "expr": "ed2k_consensus_participation_pct",
+            "legendFormat": "Consensus %"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "orange", "value": 70},
+                {"color": "yellow", "value": 85},
+                {"color": "green", "value": 90}
+              ]
+            },
+            "unit": "percent"
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Active Staking Nodes",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "ed2k_staking_active_nodes",
+            "legendFormat": "Active"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "API v2 Error Rate %",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+        "targets": [
+          {
+            "expr": "ed2k_api_v2_error_rate_pct",
+            "legendFormat": "Error Rate %"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 0.5},
+                {"color": "red", "value": 2}
+              ]
+            },
+            "unit": "percent"
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "SAE Latency p95 (ms)",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(ed2k_sae_latency_ms_bucket[5m]))",
+            "legendFormat": "SAE Latency p95"
+          }
+        ],
+        "yaxes": [
+          {"label": "ms", "min": 0},
+          {}
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 400},
+                {"color": "red", "value": 800}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "Federation Rounds Completed",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+        "targets": [
+          {
+            "expr": "rate(ed2k_federation_rounds_completed_total[5m])",
+            "legendFormat": "Rounds/min"
+          },
+          {
+            "expr": "rate(ed2k_federation_rounds_failed_total[5m])",
+            "legendFormat": "Failed/min"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "WASM Sandbox Memory Usage %",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+        "targets": [
+          {
+            "expr": "ed2k_wasm_memory_usage_pct",
+            "legendFormat": "{{node_id}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 70},
+                {"color": "red", "value": 80}
+              ]
+            },
+            "unit": "percent"
+          }
+        }
+      },
+      {
+        "id": 8,
+        "title": "Average Node Reputation",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+        "targets": [
+          {
+            "expr": "avg(ed2k_node_reputation_score)",
+            "legendFormat": "Avg Reputation"
+          }
+        ],
+        "yaxes": [
+          {"label": "score", "min": 0, "max": 1},
+          {}
+        ]
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "node_id",
+          "type": "query",
+          "query": "label_values(node_id)",
+          "refresh": 2,
+          "multi": true
+        }
+      ]
+    },
+    "time": {"from": "now-24h", "to": "now"},
+    "refresh": "30s"
+  }
+}

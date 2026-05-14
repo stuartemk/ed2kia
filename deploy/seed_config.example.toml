@@ -1,0 +1,27 @@
+# ed2kIA Seed Node Configuration
+# ================================
+# Copy this file to seed_config.toml and fill in the values.
+# Do NOT commit real keys or IPs to version control.
+
+[node]
+id = "seed-01"
+listen_addr = "/ip4/0.0.0.0/tcp/9000"
+announce_addr = "/ip4/<YOUR_IP>/tcp/9000"
+seed_phrase = "<YOUR_SEED_PHRASE>"  # Deterministic key generation (ed25519)
+
+[p2p]
+protocol = "gossipsub"
+max_peers = 100
+bootstrap_peers = []  # Other seed nodes, e.g. ["/ip4/<IP>/tcp/9000/p2p/<PEER_ID>"]
+
+[consensus]
+enabled = true
+block_time_ms = 1000
+
+[monitoring]
+prometheus_enabled = true
+metrics_port = 9090
+
+[logging]
+level = "info"
+file = "/var/log/ed2kIA/seed-01.log"

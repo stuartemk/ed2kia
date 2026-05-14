@@ -1,0 +1,47 @@
+[
+  {
+    "name": "good first issue",
+    "color": "7057ff",
+    "description": "Good for newcomers"
+  },
+  {
+    "name": "bug",
+    "color": "d73a4a",
+    "description": "Something isn't working"
+  },
+  {
+    "name": "enhancement",
+    "color": "a2eeef",
+    "description": "New feature or request"
+  },
+  {
+    "name": "documentation",
+    "color": "0075ca",
+    "description": "Improvements or additions to documentation"
+  },
+  {
+    "name": "security",
+    "color": "d00000",
+    "description": "Security vulnerability or hardening"
+  },
+  {
+    "name": "governance",
+    "color": "c5def5",
+    "description": "Governance, proposals, voting"
+  },
+  {
+    "name": "sae",
+    "color": "ff9800",
+    "description": "SAE Fine-Tuning module"
+  },
+  {
+    "name": "p2p",
+    "color": "0e8a16",
+    "description": "P2P network, sharding, bootstrap"
+  },
+  {
+    "name": "zkr",
+    "color": "e4e669",
+    "description": "Zero-Knowledge Proofs module"
+  }
+]

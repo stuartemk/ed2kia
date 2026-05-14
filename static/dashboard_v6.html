@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ed2kIA Dashboard v6 — Federation Scaling v5 & ZKP v10</title>
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #111827;
+            --bg-card: #1a2235;
+            --border: #2a3550;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-yellow: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-purple: #8b5cf6;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { font-size: 1.5rem; font-weight: 600; }
+        .header .status { display: flex; align-items: center; gap: 0.5rem; }
+        .header .status .dot {
+            width: 10px; height: 10px; border-radius: 50%;
+            background: var(--accent-green);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+        .card h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .metric-row:last-child { border-bottom: none; }
+        .metric-label { color: var(--text-secondary); }
+        .metric-value { font-weight: 600; font-variant-numeric: tabular-nums; }
+        .metric-value.good { color: var(--accent-green); }
+        .metric-value.warning { color: var(--accent-yellow); }
+        .metric-value.bad { color: var(--accent-red); }
+        .alert-list { list-style: none; }
+        .alert-item {
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            border-radius: 8px;
+            border-left: 4px solid;
+            background: rgba(255,255,255,0.03);
+        }
+        .alert-item.critical { border-color: var(--accent-red); }
+        .alert-item.warning { border-color: var(--accent-yellow); }
+        .alert-item.info { border-color: var(--accent-blue); }
+        .alert-severity {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 0.25rem;
+        }
+        .alert-message { font-size: 0.9rem; }
+        .stream-log {
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+        }
+        .stream-entry {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+        .stream-entry .timestamp { color: var(--accent-purple); }
+        .stream-entry .category { color: var(--accent-blue); }
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn:hover { background: var(--border); }
+        .btn.primary { background: var(--accent-blue); border-color: var(--accent-blue); }
+        .btn.primary:hover { background: #2563eb; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>ed2kIA Dashboard v6</h1>
+        <div class="status">
+            <div class="dot"></div>
+            <span>Live</span>
+        </div>
+    </div>
+    <div class="container">
+        <div class="controls">
+            <button class="btn primary" onclick="connect()">Conectar</button>
+            <button class="btn" onclick="disconnect()">Desconectar</button>
+            <button class="btn" onclick="refreshSnapshot()">Actualizar</button>
+        </div>
+        <div class="grid">
+            <!-- Federation Scaling v5 -->
+            <div class="card">
+                <h2>Federation Scaling v5</h2>
+                <div class="metric-row">
+                    <span class="metric-label">Nodos Activos</span>
+                    <span class="metric-value" id="scaling-nodes">0</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Shards Activos</span>
+                    <span class="metric-value" id="scaling-shards">0</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Partición Saludable</span>
+                    <span class="metric-value" id="scaling-partition">0%</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Asignaciones Éxito</span>
+                    <span class="metric-value" id="scaling-assignments">0/0</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Rebalances</span>
+                    <span class="metric-value" id="scaling-rebalances">0</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Cross-Model Syncs</span>
+                    <span class="metric-value" id="scaling-syncs">0</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Reputación Promedio</span>
+                    <span class="metric-value" id="scaling-reputation">0%</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Latencia Promedio</span>
+                    <span class="metric-value" id="scaling-latency">0ms</span>
+                </div>
+            </div>
+            <!-- Async ZKP v10 -->
+            <div class="card">
+                <h2>Async ZKP v10</h2>
+                <div class="metric-row">
+                    <span class="metric-label">Pruebas Enviadas</span>
+                    <span class="metric-value" id="zkp-submitted">0</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Pruebas Verificadas</span>
+                    <span class="metric-value good" id="zkp-verified">0</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Pruebas Fallidas</span>
+                    <span class="metric-value bad" id="zkp-failed">0</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Delegaciones</span>
+                    <span class="metric-value" id="zkp-delegations">0</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Replays Detectados</span>
+                    <span class="metric-value bad" id="zkp-replays">0</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Verificación Promedio</span>
+                    <span class="metric-value" id="zkp-verification-ms">0ms</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Costo Predicho Promedio</span>
+                    <span class="metric-value" id="zkp-cost">0</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Precisión Predicción</span>
+                    <span class="metric-value" id="zkp-accuracy">0%</span>
+                </div>
+            </div>
+            <!-- Bridge v4 -->
+            <div class="card">
+                <h2>Federation ZKP Bridge v4</h2>
+                <div class="metric-row">
+                    <span class="metric-label">Pruebas Ruteadas</span>
+                    <span class="metric-value" id="bridge-routed">0</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Pruebas Verificadas</span>
+                    <span class="metric-value good" id="bridge-verified">0</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Fallos de Consenso</span>
+                    <span class="metric-value bad" id="bridge-consensus-failures">0</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Ruteo Promedio</span>
+                    <span class="metric-value" id="bridge-routing-ms">0ms</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Agregaciones Cross-Fed</span>
+                    <span class="metric-value" id="bridge-aggregations">0</span>
+                </div>
+            </div>
+            <!-- Alerts -->
+            <div class="card">
+                <h2>Alertas</h2>
+                <ul class="alert-list" id="alert-list">
+                    <li class="alert-item info">
+                        <div class="alert-severity">Info</div>
+                        <div class="alert-message">Dashboard listo. Conéctate para ver alertas en tiempo real.</div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <!-- Event Stream -->
+        <div class="card">
+            <h2>Stream de Eventos</h2>
+            <div class="stream-log" id="stream-log">
+                <div class="stream-entry">
+                    <span class="timestamp">[--:--:--]</span>
+                    <span class="category">[system]</span> Esperando conexión...
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        let ws = null;
+        const wsUrl = 'ws://localhost:3000/ws/federation';
+
+        function connect() {
+            if (ws && ws.readyState === WebSocket.OPEN) return;
+            ws = new WebSocket(wsUrl);
+            ws.onopen = () => {
+                addStreamEntry('system', 'Conectado al servidor');
+                ws.send(JSON.stringify({ type: 'auth', client_id: 'dashboard-v6', signature: 'demo', timestamp_ms: Date.now() }));
+                ws.send(JSON.stringify({ type: 'subscribe', categories: ['all'] }));
+            };
+            ws.onmessage = (event) => {
+                const msg = JSON.parse(event.data);
+                handleMessage(msg);
+            };
+            ws.onclose = () => addStreamEntry('system', 'Desconectado del servidor');
+            ws.onerror = (err) => addStreamEntry('system', 'Error de conexión');
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        function handleMessage(msg) {
+            switch (msg.type) {
+                case 'event':
+                    handleEvent(msg.event);
+                    break;
+                case 'auth_ok':
+                    addStreamEntry('system', 'Autenticación exitosa');
+                    break;
+                case 'subscribed':
+                    addStreamEntry('system', 'Suscrito a: ' + msg.categories.join(', '));
+                    break;
+                case 'pong':
+                    break;
+                default:
+                    addStreamEntry('system', 'Mensaje: ' + msg.type);
+            }
+        }
+
+        function handleEvent(event) {
+            const ts = new Date(event.timestamp_ms).toLocaleTimeString();
+            addStreamEntry(event.category, `[${event.id}] ${event.payload.kind}`);
+            updateMetrics(event);
+        }
+
+        function updateMetrics(event) {
+            // Metrics are updated via periodic snapshot fetch
+        }
+
+        function refreshSnapshot() {
+            fetch('/api/dashboard/v6/snapshot')
+                .then(r => r.json())
+                .then(data => {
+                    updateScalingV5(data.scaling_v5);
+                    updateZkpV10(data.zkp_v10);
+                    updateBridgeV4(data.bridge_v4);
+                    updateAlerts(data.alerts || []);
+                    addStreamEntry('system', 'Snapshot actualizado');
+                })
+                .catch(() => addStreamEntry('system', 'Error al obtener snapshot'));
+        }
+
+        function updateScalingV5(data) {
+            document.getElementById('scaling-nodes').textContent = data.nodes_active || 0;
+            document.getElementById('scaling-shards').textContent = data.shards_active || 0;
+            document.getElementById('scaling-partition').textContent = ((data.partition_health || 0) * 100).toFixed(2) + '%';
+            document.getElementById('scaling-assignments').textContent = `${data.assignments_success || 0}/${(data.assignments_success || 0) + (data.assignments_failed || 0)}`;
+            document.getElementById('scaling-rebalances').textContent = data.rebalances || 0;
+            document.getElementById('scaling-syncs').textContent = data.cross_model_syncs || 0;
+            document.getElementById('scaling-reputation').textContent = ((data.avg_reputation || 0) * 100).toFixed(1) + '%';
+            document.getElementById('scaling-latency').textContent = (data.avg_latency_ms || 0).toFixed(0) + 'ms';
+        }
+
+        function updateZkpV10(data) {
+            document.getElementById('zkp-submitted').textContent = data.proofs_submitted || 0;
+            document.getElementById('zkp-verified').textContent = data.proofs_verified || 0;
+            document.getElementById('zkp-failed').textContent = data.proofs_failed || 0;
+            document.getElementById('zkp-delegations').textContent = data.delegations || 0;
+            document.getElementById('zkp-replays').textContent = data.replays_detected || 0;
+            document.getElementById('zkp-verification-ms').textContent = (data.avg_verification_ms || 0).toFixed(0) + 'ms';
+            document.getElementById('zkp-cost').textContent = (data.avg_predicted_cost || 0).toFixed(2);
+            document.getElementById('zkp-accuracy').textContent = ((data.cost_prediction_accuracy || 0) * 100).toFixed(1) + '%';
+        }
+
+        function updateBridgeV4(data) {
+            document.getElementById('bridge-routed').textContent = data.proofs_routed || 0;
+            document.getElementById('bridge-verified').textContent = data.proofs_verified || 0;
+            document.getElementById('bridge-consensus-failures').textContent = data.consensus_failures || 0;
+            document.getElementById('bridge-routing-ms').textContent = (data.avg_routing_ms || 0).toFixed(0) + 'ms';
+            document.getElementById('bridge-aggregations').textContent = data.cross_fed_aggregations || 0;
+        }
+
+        function updateAlerts(alerts) {
+            const list = document.getElementById('alert-list');
+            list.innerHTML = '';
+            if (alerts.length === 0) {
+                list.innerHTML = '<li class="alert-item info"><div class="alert-severity">Info</div><div class="alert-message">Sin alertas activas</div></li>';
+                return;
+            }
+            alerts.forEach(alert => {
+                const li = document.createElement('li');
+                li.className = `alert-item ${alert.severity.toLowerCase()}`;
+                li.innerHTML = `<div class="alert-severity">${alert.severity}</div><div class="alert-message">${alert.message}</div>`;
+                list.appendChild(li);
+            });
+        }
+
+        function addStreamEntry(category, message) {
+            const log = document.getElementById('stream-log');
+            const ts = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = 'stream-entry';
+            entry.innerHTML = `<span class="timestamp">[${ts}]</span> <span class="category">[${category}]</span> ${message}`;
+            log.insertBefore(entry, log.firstChild);
+            if (log.children.length > 100) {
+                log.removeChild(log.lastChild);
+            }
+        }
+
+        // Auto-refresh every 5 seconds
+        setInterval(() => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'ping', timestamp_ms: Date.now() }));
+            }
+        }, 5000);
+    </script>
+</body>
+</html>
