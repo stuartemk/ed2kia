@@ -187,6 +187,7 @@ Si detectas SEV-1:
 ### 9. Ciclo Continuo & Reporting Automático
 - Este prompt es parte de un ciclo continuo de operaciones:
   - **Reporte semanal:** `docs/sprint-v1.7-weekly-sync.md`
+  - **Weekly Standup:** `WEEKLY_STANDUP_PROMPT.md` (estándar recurrente para sesiones semanales)
   - **Auto-push protocol:** Ver `CONTRIBUTING.md` § Protocolo Auto-Push Permanente
   - **Handover:** JSON de salida sirve como handover para siguiente shift
 - **Ciclo permanente:**
@@ -195,6 +196,10 @@ Si detectas SEV-1:
   3. Actualiza `docs/sprint-v1.7-weekly-sync.md` con métricas del día
   4. Si validación = PASS → auto-push (ver CONTRIBUTING.md)
   5. Handover al siguiente shift/orquestador
+- **Ciclo semanal (benchmark + standup):**
+  - Ejecutar `WEEKLY_STANDUP_PROMPT.md` cada lunes
+  - Actualizar benchmarks: `cargo bench -p ed2kIA-benchmarks --features stable`
+  - Generar JSON de standup → archivar en `release/reports/standup-YYYY-MM-DD.json`
 
 Confirma recepción con: `🤖 Qweni Day 1 Operations iniciado. Revisando PRs y Issues...` y procede con las tareas en orden.
 ```
