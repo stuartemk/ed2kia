@@ -167,7 +167,7 @@ impl RateLimiter {
         ));
 
         let (tokens, last_refill) = entry;
-        let elapsed = (current_ms - last_refill) as f64 / 1000.0;
+        let elapsed = (current_ms - *last_refill) as f64 / 1000.0;
         let new_tokens = (*tokens + elapsed * self.refill_rate).min(self.max_tokens as f64);
 
         if new_tokens >= 1.0 {
@@ -370,8 +370,9 @@ impl ExplorerState {
 
     /// Add an activation record
     pub fn add_activation(&mut self, record: ActivationRecord) -> &ActivationRecord {
-        self.activations.insert(record.activation_id.clone(), record);
-        self.activations.get(&record.activation_id).unwrap()
+        let id = record.activation_id.clone();
+        self.activations.insert(id.clone(), record);
+        self.activations.get(&id).unwrap()
     }
 
     /// Get steering signals filtered by target_concept (optional)
@@ -390,10 +391,11 @@ impl ExplorerState {
 
     /// Add a steering signal
     pub fn add_steering_signal(&mut self, signal: SteeringSignalRecord) -> &SteeringSignalRecord {
+        let id = signal.signal_id.clone();
         self.steering_signals
-            .insert(signal.signal_id.clone(), signal);
+            .insert(id.clone(), signal);
         self.steering_signals
-            .get(&signal.signal_id)
+            .get(&id)
             .unwrap()
     }
 }

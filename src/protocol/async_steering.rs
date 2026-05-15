@@ -2,9 +2,13 @@
 //!
 //! Provides async channel-based steering signals that allow downstream consumers
 //! to apply late corrections to context windows when upstream data arrives delayed.
+//!
+//! v1.8 additions: backpressure handling, latency metrics, timeout tracking.
 
 mod internal {
+    use std::collections::HashMap;
     use std::fmt;
+    use std::time::Instant;
 
     // ============================================================================
     // Errors
@@ -19,6 +23,10 @@ mod internal {
         WindowTooSmall,
         /// Signal magnitude exceeds bounds
         SignalOutOfBounds,
+        /// Channel full — backpressure active
+        Backpressure,
+        /// Signal timed out before processing
+        Timeout,
     }
 
     impl fmt::Display for AsyncSteeringError {
@@ -30,6 +38,12 @@ mod internal {
                 }
                 AsyncSteeringError::SignalOutOfBounds => {
                     write!(f, "async_steering: signal magnitude exceeds [-1.0, 1.0] bounds")
+                }
+                AsyncSteeringError::Backpressure => {
+                    write!(f, "async_steering: backpressure")
+                }
+                AsyncSteeringError::Timeout => {
+                    write!(f, "async_steering: timeout")
                 }
             }
         }
@@ -108,6 +122,15 @@ mod internal {
             Ok(())
         }
 
+        /// Try to send without blocking. Returns Backpressure when full.
+        pub fn try_send(&mut self, signal: SteeringSignal) -> Result<(), AsyncSteeringError> {
+            if self.buffer.len() >= self.capacity {
+                return Err(AsyncSteeringError::Backpressure);
+            }
+            self.buffer.push_back(signal);
+            Ok(())
+        }
+
         /// Receive the next steering signal (sync).
         pub fn recv(&mut self) -> Option<SteeringSignal> {
             self.buffer.pop_front()
@@ -126,6 +149,74 @@ mod internal {
         /// Check if buffer is empty.
         pub fn is_empty(&self) -> bool {
             self.buffer.is_empty()
+        }
+    }
+
+    // ============================================================================
+    // Steering Metrics
+    // ============================================================================
+
+    /// Metrics for async steering channel performance.
+    #[derive(Debug, Clone, Default)]
+    pub struct SteeringMetrics {
+        /// Total signals sent successfully
+        pub total_sent: u64,
+        /// Total signals received
+        pub total_received: u64,
+        /// Total signals dropped due to backpressure
+        pub total_dropped: u64,
+        /// Total timeouts
+        pub total_timeouts: u64,
+        /// Cumulative latency in milliseconds
+        pub cumulative_latency_ms: f64,
+    }
+
+    impl SteeringMetrics {
+        /// Record a successful send with latency.
+        pub fn record_send(&mut self, latency_ms: f64) {
+            self.total_sent += 1;
+            self.cumulative_latency_ms += latency_ms;
+        }
+
+        /// Record a successful receive.
+        pub fn record_recv(&mut self) {
+            self.total_received += 1;
+        }
+
+        /// Record a dropped signal (backpressure).
+        pub fn record_drop(&mut self) {
+            self.total_dropped += 1;
+        }
+
+        /// Record a timeout.
+        pub fn record_timeout(&mut self) {
+            self.total_timeouts += 1;
+        }
+
+        /// Calculate average latency in milliseconds.
+        pub fn avg_latency_ms(&self) -> f64 {
+            if self.total_sent == 0 {
+                return 0.0;
+            }
+            self.cumulative_latency_ms / (self.total_sent as f64)
+        }
+
+        /// Calculate drop rate as fraction of total attempts.
+        pub fn drop_rate(&self) -> f64 {
+            let total = self.total_sent + self.total_dropped;
+            if total == 0 {
+                return 0.0;
+            }
+            (self.total_dropped as f64) / (total as f64)
+        }
+
+        /// Reset all metrics to zero.
+        pub fn reset(&mut self) {
+            self.total_sent = 0;
+            self.total_received = 0;
+            self.total_dropped = 0;
+            self.total_timeouts = 0;
+            self.cumulative_latency_ms = 0.0;
         }
     }
 
@@ -328,10 +419,86 @@ mod internal {
                 "Earlier position should have larger correction"
             );
         }
+
+        #[test]
+        fn test_try_send_success() {
+            let mut channel = AsyncSteeringChannelMock::new(2);
+            let signal = SteeringSignal::new(0.5, 100, "fed1".to_string(), 1).unwrap();
+            assert!(channel.try_send(signal).is_ok());
+            assert_eq!(channel.len(), 1);
+        }
+
+        #[test]
+        fn test_try_send_backpressure() {
+            let mut channel = AsyncSteeringChannelMock::new(1);
+            channel
+                .try_send(SteeringSignal::new(0.1, 0, "s".to_string(), 0).unwrap())
+                .unwrap();
+            let result = channel.try_send(SteeringSignal::new(0.2, 0, "s".to_string(), 1).unwrap());
+            assert_eq!(result.unwrap_err(), AsyncSteeringError::Backpressure);
+        }
+
+        #[test]
+        fn test_metrics_default() {
+            let metrics = SteeringMetrics::default();
+            assert_eq!(metrics.total_sent, 0);
+            assert_eq!(metrics.total_received, 0);
+            assert_eq!(metrics.total_dropped, 0);
+            assert_eq!(metrics.total_timeouts, 0);
+            assert_eq!(metrics.avg_latency_ms(), 0.0);
+            assert_eq!(metrics.drop_rate(), 0.0);
+        }
+
+        #[test]
+        fn test_metrics_record_send() {
+            let mut metrics = SteeringMetrics::default();
+            metrics.record_send(10.0);
+            metrics.record_send(20.0);
+            assert_eq!(metrics.total_sent, 2);
+            assert_eq!(metrics.avg_latency_ms(), 15.0);
+        }
+
+        #[test]
+        fn test_metrics_record_drop() {
+            let mut metrics = SteeringMetrics::default();
+            metrics.record_send(10.0);
+            metrics.record_drop();
+            assert_eq!(metrics.total_dropped, 1);
+            assert!((metrics.drop_rate() - 0.5).abs() < f64::EPSILON);
+        }
+
+        #[test]
+        fn test_metrics_record_timeout() {
+            let mut metrics = SteeringMetrics::default();
+            metrics.record_timeout();
+            assert_eq!(metrics.total_timeouts, 1);
+        }
+
+        #[test]
+        fn test_metrics_reset() {
+            let mut metrics = SteeringMetrics::default();
+            metrics.record_send(10.0);
+            metrics.record_drop();
+            metrics.reset();
+            assert_eq!(metrics.total_sent, 0);
+            assert_eq!(metrics.total_dropped, 0);
+            assert_eq!(metrics.cumulative_latency_ms, 0.0);
+        }
+
+        #[test]
+        fn test_backpressure_display() {
+            assert!(AsyncSteeringError::Backpressure.to_string().contains("backpressure"));
+        }
+
+        #[test]
+        fn test_timeout_display() {
+            assert!(AsyncSteeringError::Timeout.to_string().contains("timeout"));
+        }
     }
 }
 
 pub use internal::{
-    apply_late_correction, AsyncSteeringChannelMock, AsyncSteeringError, SteeringSignal,
+    apply_late_correction, AsyncSteeringChannelMock, AsyncSteeringError, SteeringMetrics,
+    SteeringSignal,
 };
 

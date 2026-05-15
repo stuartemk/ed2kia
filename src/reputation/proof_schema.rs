@@ -237,11 +237,7 @@ impl ReputationProof {
         }
 
         // Validate timestamp (±10 minutes)
-        let diff = if current_ms > self.timestamp_ms {
-            current_ms - self.timestamp_ms
-        } else {
-            self.timestamp_ms - current_ms
-        };
+        let diff = current_ms.abs_diff(self.timestamp_ms);
         if diff > 600_000 {
             return Err(ProofError::TimestampExpired);
         }
@@ -324,6 +320,94 @@ impl ProofBatch {
 }
 
 // ============================================================================
+// Batch Verification & Anti-Sybil
+// ============================================================================
+
+/// Result of batch verification
+#[derive(Debug, Clone)]
+pub struct BatchVerifyResult {
+    /// Total proofs processed
+    pub total: usize,
+    /// Proofs that passed verification
+    pub passed: usize,
+    /// Proofs that failed verification
+    pub failed: usize,
+    /// Total credits from valid proofs
+    pub valid_credits: f64,
+    /// List of (proof_id, error) for failed proofs
+    pub errors: Vec<(String, ProofError)>,
+}
+
+/// Verify a batch of reputation proofs.
+///
+/// Runs format validation on each proof and aggregates results.
+pub fn verify_batch(proofs: &[ReputationProof], current_ms: u64) -> BatchVerifyResult {
+    let mut passed = 0usize;
+    let mut failed = 0usize;
+    let mut valid_credits = 0.0f64;
+    let mut errors = Vec::new();
+
+    for proof in proofs {
+        match proof.verify_format(current_ms) {
+            Ok(()) => {
+                passed += 1;
+                valid_credits += proof.credits;
+            }
+            Err(e) => {
+                failed += 1;
+                errors.push((proof.proof_id.clone(), e));
+            }
+        }
+    }
+
+    BatchVerifyResult {
+        total: proofs.len(),
+        passed,
+        failed,
+        valid_credits,
+        errors,
+    }
+}
+
+/// Anti-Sybil rate limiter — tracks proof submissions by public key.
+#[derive(Debug, Clone)]
+pub struct AntiSybilLimiter {
+    /// Maximum proofs per public key within the window
+    max_proofs_per_window: usize,
+    /// Window size in milliseconds
+    window_ms: u64,
+}
+
+impl AntiSybilLimiter {
+    /// Create a new anti-Sybil limiter.
+    pub fn new(max_proofs_per_window: usize, window_ms: u64) -> Self {
+        Self {
+            max_proofs_per_window,
+            window_ms,
+        }
+    }
+
+    /// Check if a proof is allowed under rate limiting.
+    ///
+    /// Returns `true` if the proof is allowed, `false` if rate limited.
+    pub fn is_allowed(
+        &self,
+        public_key: &str,
+        timestamp_ms: u64,
+        recent_submissions: &[(String, u64)],
+    ) -> bool {
+        let window_start = timestamp_ms.saturating_sub(self.window_ms);
+
+        let count = recent_submissions
+            .iter()
+            .filter(|(pk, ts)| pk == public_key && *ts >= window_start && *ts <= timestamp_ms)
+            .count();
+
+        count < self.max_proofs_per_window
+    }
+}
+
+// ============================================================================
 // FlatBuffers-Compatible Serialization Helpers
 // ============================================================================
 
@@ -352,12 +436,12 @@ mod tests {
         ReputationProof::new(
             "proof_001".to_string(),
             "node_001".to_string(),
-            "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+            "a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2"
                 .to_string(),
-            "b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+            "b2c3b2c3b2c3b2c3b2c3b2c3b2c3b2c3b2c3b2c3b2c3b2c3b2c3b2c3b2c3b2c3"
                 .to_string(),
             1_700_000_000_000,
-            "c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3"
+            "c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4"
                 .to_string(),
             ReputationTier::Validator,
             750,
@@ -616,5 +700,90 @@ mod tests {
             ProofError::InvalidSignature,
             ProofError::TimestampExpired
         );
+    }
+
+    // --- Batch Verification Tests ---
+
+    #[test]
+    fn test_verify_batch_all_valid() {
+        let proofs = vec![make_proof()];
+        let result = verify_batch(&proofs, 1_700_000_000_000);
+        assert_eq!(result.total, 1);
+        assert_eq!(result.passed, 1);
+        assert_eq!(result.failed, 0);
+        assert_eq!(result.valid_credits, 10.0);
+        assert!(result.errors.is_empty());
+    }
+
+    #[test]
+    fn test_verify_batch_mixed() {
+        let mut proof1 = make_proof();
+        let mut proof2 = make_proof();
+        proof1.proof_id = "p1".to_string();
+        proof2.proof_id = "p2".to_string();
+        proof2.signature = "invalid".to_string(); // Will fail
+        let result = verify_batch(&[proof1, proof2], 1_700_000_000_000);
+        assert_eq!(result.total, 2);
+        assert_eq!(result.passed, 1);
+        assert_eq!(result.failed, 1);
+        assert_eq!(result.valid_credits, 10.0);
+        assert_eq!(result.errors.len(), 1);
+    }
+
+    #[test]
+    fn test_verify_batch_empty() {
+        let result = verify_batch(&[], 1_700_000_000_000);
+        assert_eq!(result.total, 0);
+        assert_eq!(result.passed, 0);
+        assert_eq!(result.failed, 0);
+        assert_eq!(result.valid_credits, 0.0);
+    }
+
+    // --- Anti-Sybil Tests ---
+
+    #[test]
+    fn test_antisybil_allowed() {
+        let limiter = AntiSybilLimiter::new(5, 60_000); // 5 proofs per 60s
+        let pk = "abc123";
+        let submissions: Vec<(String, u64)> = vec![
+            (pk.to_string(), 1_00_000),
+            (pk.to_string(), 1_10_000),
+        ];
+        assert!(limiter.is_allowed(pk, 1_20_000, &submissions));
+    }
+
+    #[test]
+    fn test_antisybil_rate_limited() {
+        let limiter = AntiSybilLimiter::new(3, 60_000); // 3 proofs per 60s
+        let pk = "abc123";
+        let submissions: Vec<(String, u64)> = vec![
+            (pk.to_string(), 1_00_000),
+            (pk.to_string(), 1_10_000),
+            (pk.to_string(), 1_20_000),
+        ];
+        assert!(!limiter.is_allowed(pk, 1_30_000, &submissions));
+    }
+
+    #[test]
+    fn test_antisybil_window_expires() {
+        let limiter = AntiSybilLimiter::new(2, 60_000); // 2 proofs per 60s
+        let pk = "abc123";
+        let submissions: Vec<(String, u64)> = vec![
+            (pk.to_string(), 1_00_000),
+            (pk.to_string(), 1_10_000),
+        ];
+        // After window expires, should be allowed again
+        assert!(limiter.is_allowed(pk, 1_80_000, &submissions));
+    }
+
+    #[test]
+    fn test_antisybil_different_key() {
+        let limiter = AntiSybilLimiter::new(1, 60_000);
+        let submissions: Vec<(String, u64)> = vec![(
+            "key1".to_string(),
+            1_000_000,
+        )];
+        // Different key should not be limited
+        assert!(limiter.is_allowed("key2", 1_10_000, &submissions));
     }
 }
