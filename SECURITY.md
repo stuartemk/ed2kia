@@ -1,7 +1,7 @@
 # Security Policy — ed2kIA
 
-**Versión:** v1.6.0-stable
-**Actualizado:** 2026-05-14
+**Versión:** v1.8-prep
+**Actualizado:** 2026-05-15
 
 ---
 
@@ -93,6 +93,39 @@ cargo install cargo-audit
 cargo audit
 ```
 
+### Automated Dependency Audit
+
+Use the included audit script for comprehensive dependency analysis:
+
+```bash
+bash scripts/dependency_audit.sh
+```
+
+This script performs:
+1. CVE vulnerability scan (`cargo audit`)
+2. Dependency tree analysis
+3. Duplicate dependency detection
+4. Version pinning verification
+5. Security-relevant dependency checks
+
+Reports are saved to `docs/security/audit-reports/`.
+
+---
+
+## Pre-Audit Preparation
+
+See [`docs/security/audit-prep-checklist.md`](docs/security/audit-prep-checklist.md) for the complete security audit preparation checklist covering:
+
+- Code quality gates (clippy, tests, audit)
+- Dependency audit procedures
+- Cryptographic review checklist
+- Memory safety verification
+- Runtime security controls
+- Governance & reputation security
+- Data integrity measures
+- Build & deployment security
+- Documentation requirements
+
 ---
 
 ## Build Security
@@ -159,4 +192,15 @@ cargo build --features debug,test-mocks
 
 ---
 
-*Última actualización: 2026-05-14 (v1.6.0-stable)*
+## Security Contacts & Resources
+
+- **Security Advisories:** [GitHub Security Tab](https://github.com/Stuartemk/ed2kIA/security/advisories/new)
+- **General Issues:** [GitHub Issues](https://github.com/Stuartemk/ed2kIA/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/Stuartemk/ed2kIA/discussions)
+- **Audit Prep Checklist:** [`docs/security/audit-prep-checklist.md`](docs/security/audit-prep-checklist.md)
+- **Dependency Audit Script:** [`scripts/dependency_audit.sh`](scripts/dependency_audit.sh)
+- **Threat Model:** [`security/threat_model_v1.1.md`](security/threat_model_v1.1.md)
+
+---
+
+*Última actualización: 2026-05-15 (v1.8-prep)*
