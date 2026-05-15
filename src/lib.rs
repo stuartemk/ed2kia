@@ -772,6 +772,15 @@ pub mod zkp_v9 {
     pub mod async_zkp_v9;
 }
 
+/// v1.9.0 Sprint 1 — Production Hardening & Mobile GUI Foundation (FASE 69)
+#[cfg(feature = "v1.9-sprint1")]
+#[path = "gui/mobile_foundation.rs"]
+pub mod mobile_foundation;
+
+#[cfg(feature = "v1.9-sprint1")]
+#[path = "zkp/circuit_optimization.rs"]
+pub mod circuit_optimization;
+
 /// WebSocket Pool Stream (v1.3-sprint2)
 #[cfg(feature = "v1.3-sprint2")]
 #[path = "web/ws_pool_stream.rs"]

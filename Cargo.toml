@@ -152,6 +152,10 @@ stable = [
 # v1.6.0 Sprint 3 — SAE Fine-Tuning v7, Cross-Model Federation Scaling v7, Async ZKP v14 & Final Consolidation
 "v1.6-sprint3" = []
 
+# v1.9.0 Sprint 1 — Production Hardening & Mobile GUI Foundation (FASE 69)
+# Mobile Foundation (Tauri/React Native bridge), Async Steering hardening, ZKP Circuit Optimization
+"v1.9-sprint1" = []
+
 # v1.7.0 Sprint 1 — RFC-001 PoC: FP8/INT4 Quantization + Async Steering Signals
 "v1.7-sprint1" = []
 

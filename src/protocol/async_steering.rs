@@ -157,6 +157,8 @@ mod internal {
     // ============================================================================
 
     /// Metrics for async steering channel performance.
+    ///
+    /// v1.9 hardening: P95/P99 latency tracking, timeout budget enforcement.
     #[derive(Debug, Clone, Default)]
     pub struct SteeringMetrics {
         /// Total signals sent successfully
@@ -169,6 +171,12 @@ mod internal {
         pub total_timeouts: u64,
         /// Cumulative latency in milliseconds
         pub cumulative_latency_ms: f64,
+        /// Latency samples for percentile calculation (bounded to 1024)
+        latency_samples: Vec<f64>,
+        /// Timeout budget in milliseconds (0 = unlimited)
+        pub timeout_budget_ms: u64,
+        /// Accumulated timeout time
+        pub accumulated_timeout_ms: u64,
     }
 
     impl SteeringMetrics {
@@ -176,6 +184,11 @@ mod internal {
         pub fn record_send(&mut self, latency_ms: f64) {
             self.total_sent += 1;
             self.cumulative_latency_ms += latency_ms;
+            // Bounded latency sample ring buffer (max 1024)
+            if self.latency_samples.len() >= 1024 {
+                self.latency_samples.remove(0);
+            }
+            self.latency_samples.push(latency_ms);
         }
 
         /// Record a successful receive.
@@ -201,6 +214,47 @@ mod internal {
             self.cumulative_latency_ms / (self.total_sent as f64)
         }
 
+        /// Calculate P95 latency in milliseconds.
+        ///
+        /// Returns 0.0 if fewer than 2 samples.
+        pub fn p95_latency_ms(&self) -> f64 {
+            if self.latency_samples.len() < 2 {
+                return 0.0;
+            }
+            let mut sorted = self.latency_samples.clone();
+            sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+            let idx = ((0.95 * sorted.len() as f64) as usize).min(sorted.len() - 1);
+            sorted[idx]
+        }
+
+        /// Calculate P99 latency in milliseconds.
+        ///
+        /// Returns 0.0 if fewer than 2 samples.
+        pub fn p99_latency_ms(&self) -> f64 {
+            if self.latency_samples.len() < 2 {
+                return 0.0;
+            }
+            let mut sorted = self.latency_samples.clone();
+            sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+            let idx = ((0.99 * sorted.len() as f64) as usize).min(sorted.len() - 1);
+            sorted[idx]
+        }
+
+        /// Check if timeout budget is exhausted.
+        ///
+        /// Returns true if `timeout_budget_ms > 0` and accumulated timeouts exceed budget.
+        pub fn is_timeout_budget_exhausted(&self) -> bool {
+            if self.timeout_budget_ms == 0 {
+                return false;
+            }
+            self.accumulated_timeout_ms >= self.timeout_budget_ms
+        }
+
+        /// Add timeout time to accumulated budget.
+        pub fn add_timeout_ms(&mut self, ms: u64) {
+            self.accumulated_timeout_ms += ms;
+        }
+
         /// Calculate drop rate as fraction of total attempts.
         pub fn drop_rate(&self) -> f64 {
             let total = self.total_sent + self.total_dropped;
@@ -217,6 +271,109 @@ mod internal {
             self.total_dropped = 0;
             self.total_timeouts = 0;
             self.cumulative_latency_ms = 0.0;
+            self.latency_samples.clear();
+            self.timeout_budget_ms = 0;
+            self.accumulated_timeout_ms = 0;
+        }
+    }
+
+    // ============================================================================
+    // Exponential Backoff Retry
+    // ============================================================================
+
+    /// Exponential backoff retry configuration.
+    #[derive(Debug, Clone, Default)]
+    pub struct RetryConfig {
+        /// Initial delay in milliseconds.
+        pub initial_delay_ms: u64,
+        /// Backoff multiplier.
+        pub multiplier: f64,
+        /// Maximum delay in milliseconds.
+        pub max_delay_ms: u64,
+        /// Maximum number of retry attempts.
+        pub max_retries: u32,
+        /// Jitter factor [0.0, 1.0].
+        pub jitter: f64,
+    }
+
+    impl RetryConfig {
+        /// Create a new retry configuration.
+        pub fn new(initial_delay_ms: u64, multiplier: f64, max_delay_ms: u64, max_retries: u32) -> Self {
+            Self {
+                initial_delay_ms,
+                multiplier,
+                max_delay_ms,
+                max_retries,
+                jitter: 0.1,
+            }
+        }
+
+        /// Calculate the delay for a given attempt number.
+        ///
+        /// Formula: `min(initial * multiplier^attempt, max_delay) * (1 + jitter * random)`
+        /// For deterministic behavior, jitter is applied as a fixed fraction.
+        pub fn delay_for_attempt(&self, attempt: u32) -> u64 {
+            let base = self.initial_delay_ms as f64 * self.multiplier.powi(attempt as i32);
+            let capped = base.min(self.max_delay_ms as f64);
+            // Deterministic jitter: use attempt-based pseudo-random
+            let jitter_factor = 1.0 + self.jitter * ((attempt as f64 * 0.61803398875) % 1.0);
+            (capped * jitter_factor) as u64
+        }
+
+        /// Check if retries are exhausted.
+        pub fn is_exhausted(&self, attempt: u32) -> bool {
+            attempt >= self.max_retries
+        }
+    }
+
+    /// Retry state tracker with exponential backoff.
+    #[derive(Debug, Clone, Default)]
+    pub struct RetryState {
+        /// Current attempt count.
+        pub attempt: u32,
+        /// Configuration.
+        config: RetryConfig,
+        /// Last delay applied.
+        pub last_delay_ms: u64,
+    }
+
+    impl RetryState {
+        /// Create a new retry state with the given config.
+        pub fn new(config: RetryConfig) -> Self {
+            Self {
+                config,
+                attempt: 0,
+                last_delay_ms: 0,
+            }
+        }
+
+        /// Advance to the next retry attempt.
+        ///
+        /// Returns the delay to wait before next attempt.
+        /// Returns `None` if retries are exhausted.
+        pub fn next_attempt(&mut self) -> Option<u64> {
+            if self.config.is_exhausted(self.attempt) {
+                return None;
+            }
+            self.attempt += 1;
+            self.last_delay_ms = self.config.delay_for_attempt(self.attempt);
+            Some(self.last_delay_ms)
+        }
+
+        /// Reset retry state.
+        pub fn reset(&mut self) {
+            self.attempt = 0;
+            self.last_delay_ms = 0;
+        }
+
+        /// Get current attempt count.
+        pub fn attempt_count(&self) -> u32 {
+            self.attempt
+        }
+
+        /// Check if retries are exhausted.
+        pub fn is_exhausted(&self) -> bool {
+            self.config.is_exhausted(self.attempt)
         }
     }
 
@@ -498,7 +655,7 @@ mod internal {
 }
 
 pub use internal::{
-    apply_late_correction, AsyncSteeringChannelMock, AsyncSteeringError, SteeringMetrics,
-    SteeringSignal,
+    apply_late_correction, AsyncSteeringChannelMock, AsyncSteeringError, RetryConfig, RetryState,
+    SteeringMetrics, SteeringSignal,
 };
 
