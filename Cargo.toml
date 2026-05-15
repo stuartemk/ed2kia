@@ -155,6 +155,9 @@ stable = [
 # v1.7.0 Sprint 1 — RFC-001 PoC: FP8/INT4 Quantization + Async Steering Signals
 "v1.7-sprint1" = []
 
+# v1.8.0 Sprint 1 — "ChatGPT Moment": API Explorer, Reputation Proof Schema, QuantConfig
+"v1.8-sprint1" = []
+
 # ─── Hardware Acceleration ───
 cpu = []
 cuda = ["candle-core/cuda", "candle-nn/cuda"]

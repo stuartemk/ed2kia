@@ -323,6 +323,139 @@ mod internal {
     }
 
     // ============================================================================
+    // QuantConfig — v1.8 Sprint 1 baseline
+    // ============================================================================
+
+    /// Quantization configuration for v1.8 benchmark hooks.
+    ///
+    /// Controls format, block size, clamping, and scaling strategy.
+    #[derive(Debug, Clone, PartialEq)]
+    pub struct QuantConfig {
+        /// Quantization format: "fp8" or "int4"
+        pub format: String,
+        /// Block size for block-based scaling (0 = per-element)
+        pub block_size: usize,
+        /// Enable value clamping to [-max_val, max_val]
+        pub clamp_max: Option<f32>,
+        /// Scaling strategy: "per-element" or "per-block"
+        pub scaling: String,
+    }
+
+    impl QuantConfig {
+        /// Create FP8 config with per-element scaling
+        pub fn fp8_per_element() -> Self {
+            Self {
+                format: "fp8".to_string(),
+                block_size: 0,
+                clamp_max: None,
+                scaling: "per-element".to_string(),
+            }
+        }
+
+        /// Create INT4 config with per-element scaling
+        pub fn int4_per_element() -> Self {
+            Self {
+                format: "int4".to_string(),
+                block_size: 0,
+                clamp_max: None,
+                scaling: "per-element".to_string(),
+            }
+        }
+
+        /// Create FP8 config with block-based scaling
+        pub fn fp8_per_block(block_size: usize) -> Self {
+            Self {
+                format: "fp8".to_string(),
+                block_size,
+                clamp_max: None,
+                scaling: "per-block".to_string(),
+            }
+        }
+
+        /// Apply clamping to input data before quantization
+        pub fn apply_clamp(&self, data: &[f32]) -> Vec<f32> {
+            match self.clamp_max {
+                Some(max) => data.iter().map(|v| v.clamp(-max, max)).collect(),
+                None => data.to_vec(),
+            }
+        }
+    }
+
+    impl Default for QuantConfig {
+        fn default() -> Self {
+            Self::fp8_per_element()
+        }
+    }
+
+    // ============================================================================
+    // Benchmark Hooks — Criterion-compatible
+    // ============================================================================
+
+    /// Benchmark result for a single quantization run.
+    ///
+    /// Used by criterion benchmarks to track throughput and precision.
+    #[derive(Debug, Clone)]
+    pub struct QuantBenchmarkResult {
+        /// Format used ("fp8" or "int4")
+        pub format: String,
+        /// Input tensor size (number of f32 elements)
+        pub input_size: usize,
+        /// Quantized payload size in bytes (data + scales)
+        pub quantized_bytes: usize,
+        /// MAPE (Mean Absolute Percentage Error) in percent
+        pub mape_pct: f64,
+        /// Throughput in MB/s (input f32 bytes / duration_ms * 1000)
+        pub throughput_mbs: f64,
+        /// Duration in milliseconds
+        pub duration_ms: f64,
+    }
+
+    /// Run a quantization benchmark with the given config and data.
+    ///
+    /// Returns a `QuantBenchmarkResult` with throughput and precision metrics.
+    /// This function is designed to be called from criterion benchmarks.
+    pub fn benchmark_quantize(
+        config: &QuantConfig,
+        data: &[f32],
+    ) -> Result<QuantBenchmarkResult, QuantizationError> {
+        let start = std::time::Instant::now();
+
+        let (quantized, scales) = if config.format == "fp8" {
+            let clamped = config.apply_clamp(data);
+            quantize_f32_to_fp8(&clamped)?
+        } else if config.format == "int4" {
+            let clamped = config.apply_clamp(data);
+            quantize_f32_to_int4(&clamped)?
+        } else {
+            return Err(QuantizationError::EmptyInput); // Used as "unsupported format"
+        };
+
+        let duration = start.elapsed();
+        let duration_ms = duration.as_secs_f64() * 1000.0;
+
+        // Dequantize for precision measurement
+        let reconstructed = if config.format == "fp8" {
+            dequantize_fp8_to_f32(&quantized, &scales)?
+        } else {
+            dequantize_int4_to_f32(&quantized, &scales)?
+        };
+
+        let mape = compute_mape(data, &reconstructed);
+        let input_bytes = data.len() * 4;
+        let quantized_bytes = quantized.len() + scales.len() * 4;
+        let throughput = (input_bytes as f64 / 1_000_000.0) / (duration_ms / 1000.0);
+
+        Ok(QuantBenchmarkResult {
+            format: config.format.clone(),
+            input_size: data.len(),
+            quantized_bytes,
+            mape_pct: mape,
+            throughput_mbs: throughput,
+            duration_ms,
+        })
+    }
+
+    // ============================================================================
     // Tests
     // ============================================================================
 
@@ -507,6 +640,7 @@ mod internal {
 }
 
 pub use internal::{
-    compute_mape, dequantize_fp8_to_f32, dequantize_int4_to_f32, payload_reduction_ratio,
-    quantize_f32_to_fp8, quantize_f32_to_int4, QuantizationError, BLOCK_SIZE,
+    benchmark_quantize, compute_mape, dequantize_fp8_to_f32, dequantize_int4_to_f32,
+    payload_reduction_ratio, quantize_f32_to_fp8, quantize_f32_to_int4, QuantBenchmarkResult,
+    QuantConfig, QuantizationError, BLOCK_SIZE,
 };

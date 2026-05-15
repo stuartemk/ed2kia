@@ -336,6 +336,20 @@ pub mod governance {
 pub mod reputation {
     pub mod ledger;
     pub mod scoring;
+    #[cfg(feature = "v1.8-sprint1")]
+    #[path = "../reputation/proof_schema.rs"]
+    pub mod proof_schema;
+}
+
+// ============================================================================
+// API Explorer — v1.8 "ChatGPT Moment" Sprint
+// ============================================================================
+
+/// API Explorer v1 — 3D concept visualization endpoints
+#[cfg(feature = "v1.8-sprint1")]
+pub mod api_explorer {
+    #[path = "../api/explorer_v1.rs"]
+    pub mod explorer_v1;
 }
 
 /// Ecosystem sync (HuggingFace, model registry)
