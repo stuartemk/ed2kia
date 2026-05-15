@@ -6,7 +6,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ethical-blue)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-2021-orange)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/Version-1.6.0_STABLE-brightgreen)](docs/official_launch_announcement_v1.6.md)
+[![Version](https://img.shields.io/badge/Version-1.8.0_BETA-brightgreen)](release/v1.8.0-beta.1/RELEASE_NOTES.md)
 [![Tests](https://img.shields.io/badge/Tests-187_passed%20/%200_failed-success)](release/v1.6.0-stable/final_signoff.json)
 [![Build](https://img.shields.io/badge/Build-0_errors%2C_0_warnings-success)](release/v1.6.0-stable/final_signoff.json)
 [![CI](https://github.com/ed2kia/ed2kIA/actions/workflows/ci.yml/badge.svg)](https://github.com/ed2kia/ed2kIA/actions)
@@ -611,11 +611,13 @@ cargo build --target aarch64-unknown-linux-gnu --release
 - ✅ Changelog (semantic versioning v0.1.0 → v0.5.0)
 - ✅ CLI Fase 5 (govern, reputation, sync, bootstrap, release)
 
-### Fase 6 - Integración y Producción (Próximo)
-- [ ] Integración real con LLMs (hidden state extraction)
-- [ ] Tests de integración P2P
-- [ ] Benchmark de inferencia SAE
-- [ ] Documentación API
+### ✅ Fase 6 - Integración y Producción (Completada en v1.7/v1.8)
+- ✅ Integración real con LLMs: Async Steering v1 + API Explorer v1 + Quantization v3 ([`src/protocol/async_steering.rs`](src/protocol/async_steering.rs), [`src/api/explorer_v1.rs`](src/api/explorer_v1.rs), [`src/bridge/quantization.rs`](src/bridge/quantization.rs))
+- ✅ Tests de integración P2P: 6 integration test files + stress tests ([`tests/integration/`](tests/integration/))
+- ✅ Benchmark de inferencia SAE: Criterion benchmarks + CI comparison ([`benchmarks/`](benchmarks/))
+- ✅ Documentación API: OpenAPI spec + API Explorer v1 + Auth v2 ([`src/api/`](src/api/))
+- 📄 Auditoría completa: [`docs/roadmap/phase6-audit-mapping.md`](docs/roadmap/phase6-audit-mapping.md)
+- 📄 Roadmap v1.9: [`docs/roadmap/v1.9-roadmap-draft.md`](docs/roadmap/v1.9-roadmap-draft.md)
 
 ## 🔒 Seguridad y Ética
 
