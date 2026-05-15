@@ -277,6 +277,41 @@ ed2kIA usa un sistema de tiers progresivos para reconocer y promover contribuido
 - **Benchmark Runner:** [benchmarks/README.md](benchmarks/README.md)
 - **Baseline v1.7:** [benchmarks/results/baseline-v1.7.json](benchmarks/results/baseline-v1.7.json)
 
+## 🎓 Programa de Mentorship
+
+¿Quieres contribuir pero no sabes por dónde empezar? Nuestro programa de mentorship te guía paso a paso.
+
+### Niveles de Mentorship
+
+| Nivel | Requisitos | Descripción |
+|-------|-----------|-------------|
+| 🌱 **Seed** | Primer PR | Guía completa desde setup hasta primer merge |
+| 🌿 **Sprout** | 2+ PRs mergeados | Asignación a módulo específico + mentor dedicado |
+| 🌳 **Tree** | Dueño de módulo | Mentor de otros contribuidores + code review |
+
+### Cómo Unirse
+
+1. Abre un issue con el template "Mentorship Request"
+2. Indica tu área de interés: `p2p`, `sae`, `zkp`, `governance`, `bridge`, `ui`
+3. Un mentor te asignará dentro de 48 horas
+4. Check-ins semanales durante 4 semanas (extendible)
+
+### Recursos para Mentores
+
+- [Onboarding Script](scripts/mentorship_onboarding.sh) — Automatización de asignación y seguimiento
+- [First Contributor Guide](docs/community/first-contributor-guide.md) — Walkthrough paso a paso
+- [Grant Follow-up Tracker](docs/grants/follow-up-tracker.md) — Estado de grants activos
+
+### Para Mentees
+
+```bash
+# Verificar que el onboarding está completo
+bash scripts/mentorship_onboarding.sh onboarding-check
+
+# Verificar estado de grants
+bash scripts/mentorship_onboarding.sh grants-status
+```
+
 ## Contacto
 
 - Issues: https://github.com/ed2kia/ed2kIA/issues
