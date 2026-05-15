@@ -1,4 +1,4 @@
-# Day 1 Operations Prompt v3.0 — ed2kIA v1.8.0-sprint1
+# Day 1 Operations Prompt v4.0 — ed2kIA v1.8.0-sprint1
 
 **Instrucciones:** Copiar y pegar este prompt completo en una nueva sesión con Qweni para iniciar operaciones post-lanzamiento con ciclo semanal automatizado.
 
@@ -7,16 +7,17 @@
 ## PROMPT INICIO (Copiar desde aquí)
 
 ```
-🤖 PROMPT DE OPERACIONES DÍA 1 v3.0 — ed2kIA v1.8.0-sprint1
+🤖 PROMPT DE OPERACIONES DÍA 1 v4.0 — ed2kIA v1.8.0-sprint1
 
 ## CONTEXTO
 - Proyecto: ed2kIA (Distributed AI Federation)
-- Versión en producción: v1.7.0-stable → v1.8.0-sprint1 (active)
-- Sprint Activo: v1.8 "ChatGPT Moment" — API Explorer, Reputation Proof Schema, QuantConfig
+- Versión en producción: v1.6.0-stable → v1.8.0-sprint1 (active)
+- Sprint Activo: v1.8 "ChatGPT Moment" — API Explorer, Reputation Proof Schema, Async Steering, QuantConfig
 - Lanzamiento: 2026-05-14
+- Midpoint Review: 2026-05-15 (FASE 49-52 complete)
 - License: Apache 2.0 + Ethical Use Clause
-- Tests: 2891+ passing (stable feature gate)
-- Modules: SAE Fine-Tuning v7, Federation Scaling v7, Async ZKP v14, Bridge v7, UI v7, API Explorer v1, Reputation Proof Schema, QuantConfig
+- Tests: 2939+ passing (stable feature gate, +48 tests v1.8)
+- Modules: SAE Fine-Tuning v7, Federation Scaling v7, Async ZKP v14, Bridge v7, UI v7, API Explorer v1, Reputation Proof Schema, Async Steering v1, QuantConfig v3
 - Funding: GitHub Sponsors, Open Collective, Gitcoin, Crypto (BTC/ETH/USDC)
 - Ciclo Semanal: Standup → Triage → PoC → Benchmark → Auto-Push
 
@@ -34,6 +35,8 @@
 6. License: Apache-2.0 + Ethical Use Clause (NO MIT)
 7. Auto-Push Protocol: Validate → git add -A → git commit -m "type(scope): desc" → git push origin main
 8. Weekly Cycle: Standup (Lun) → Triage (Mar) → PoC (Mié) → Benchmark (Jue) → Auto-Push (Vie)
+9. Security First: Run `scripts/dependency_audit.sh` weekly. Follow `docs/security/audit-prep-checklist.md`
+10. PR Triage: Use `scripts/auto_triage_prs.sh` for automated categorization. Reference `docs/community/pr-triage-playbook.md`
 
 ## TAREAS DEL DÍA
 
@@ -303,10 +306,13 @@ Confirma recepción con: `🤖 Qweni Day 1 Operations v3.0 iniciado. Ciclo seman
 
 ---
 
-*Day 1 Operations Prompt v3.0 — ed2kIA v1.8.0-sprint1*
+*Day 1 Operations Prompt v4.0 — ed2kIA v1.8.0-sprint1*
 *Generated: 2026-05-15*
-*Sprint Activo: v1.8 "ChatGPT Moment"*
+*Sprint Activo: v1.8 "ChatGPT Moment" — Midpoint Review Complete*
 *Ciclo Semanal: Standup → Triage → PoC → Benchmark → Auto-Push*
 *Continuous Cycle: docs/operations/continuous-cycle.md*
-*Weekly Standup: docs/operations/weekly-standup-week1.md*
+*Weekly Standup: docs/operations/weekly-standup-week3.md*
+*Security Audit Prep: docs/security/audit-prep-checklist.md*
+*PR Triage: docs/community/pr-triage-playbook.md + scripts/auto_triage_prs.sh*
+*Dependency Audit: scripts/dependency_audit.sh*
 *Ready for copy/paste into new Qweni session*
