@@ -1,0 +1,82 @@
+# Codecov Configuration — ed2kIA v1.8
+# Thresholds, comments, flags for v1.8 modules
+
+codecov:
+  require_ci_to_pass: true
+  max_wait_seconds: 1800
+
+coverage:
+  # Minimum coverage threshold
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 5%
+        informational: true
+      v1.8-modules:
+        target: 80%
+        threshold: 10%
+        flags:
+          - v1.8-modules
+        informational: true
+    patch:
+      default:
+        target: 80%
+        threshold: 10%
+        informational: true
+
+  # Default coverage settings
+  default:
+    status:
+      default:
+        target: 80%
+        threshold: 5%
+
+# Pull request comments
+comment:
+  layout: "header, diff, components, files"
+  behavior: default
+  require_changes: true
+  require_base: false
+  require_head: true
+  flags:
+    - v1.8-modules
+  paths:
+    - "src/"
+
+# Flags for v1.8 modules
+flags:
+  v1.8-modules:
+    paths:
+      - "src/api/explorer_v1.rs"
+      - "src/reputation/proof_schema.rs"
+      - "src/bridge/quantization.rs"
+    carryforward: true
+
+# Ignore paths (not part of v1.8 coverage)
+ignore:
+  - "tests/**"
+  - "benchmarks/**"
+  - "examples/**"
+  - "src/main.rs"
+
+# Components for modular tracking
+component_management:
+  default_rules:
+    statuses:
+      - type: project
+        target: 80%
+        threshold: 5%
+  individual_components:
+    - component_id: api-explorer
+      name: API Explorer v1
+      paths:
+        - "src/api/explorer_v1.rs"
+    - component_id: reputation-proof
+      name: Reputation Proof Schema
+      paths:
+        - "src/reputation/proof_schema.rs"
+    - component_id: quantization
+      name: QuantConfig & Benchmarks
+      paths:
+        - "src/bridge/quantization.rs"
