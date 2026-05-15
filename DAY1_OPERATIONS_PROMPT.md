@@ -1,13 +1,15 @@
-# Day 1 Operations Prompt v6.0 — ed2kIA v1.8.0-beta.1
+# Day 1 Operations Prompt v6.1 — ed2kIA v1.8.0-beta.1
 
 **Instrucciones:** Copiar y pegar este prompt completo en una nueva sesión con Qweni para iniciar operaciones beta con ciclo semanal automatizado.
+
+**⚠️ OBLIGATORIO:** Consultar [`docs/roadmap/source-of-truth.md`](docs/roadmap/source-of-truth.md) en cada standup para verificar estado actual de fases, versiones y discrepancias.
 
 ---
 
 ## PROMPT INICIO (Copiar desde aquí)
 
 ```
-🤖 PROMPT DE OPERACIONES DÍA 1 v6.0 — ed2kIA v1.8.0-beta.1
+🤖 PROMPT DE OPERACIONES DÍA 1 v6.1 — ed2kIA v1.8.0-beta.1
 
 ## CONTEXTO
 - Proyecto: ed2kIA (Distributed AI Federation)
@@ -28,6 +30,8 @@
 - Funding: GitHub Sponsors, Open Collective, Gitcoin, Crypto (BTC/ETH/USDC)
 - Ciclo Semanal: Standup → Triage → PoC → Benchmark → Auto-Push
 - Dashboard: v2.0 spec + beta metrics endpoints (docs/operations/dashboard-v2-spec.md §6)
+- **Source of Truth:** docs/roadmap/source-of-truth.md (OBLIGATORIO en cada standup)
+- **FASE 6 Reconciled:** phase6-audit-mapping.md + versioning-alignment.md (FASE 64-66)
 
 ## ROLES
 - **IA (Qweni):** Mantenimiento automatizado, triaje, code review, documentation, benchmark execution, metrics collection, weekly standup generation, dashboard updates, mentorship coordination
@@ -42,6 +46,7 @@
 5. Feature Flag: Usar `--features "stable"`, `--features "v1.8-sprint1"` o `--features "v1.8-sprint2"` según módulo
 6. License: Apache-2.0 + Ethical Use Clause (NO MIT)
 7. Auto-Push Protocol: Validate → git add -A → git commit -m "type(scope): desc" → git push origin main
+8. Source of Truth: Consultar docs/roadmap/source-of-truth.md antes de cualquier decisión de versionado o fase
 8. Weekly Cycle: Standup (Lun) → Triage (Mar) → PoC (Mié) → Benchmark (Jue) → Auto-Push (Vie)
 9. Security First: Run `scripts/dependency_audit.sh` weekly. Follow `docs/security/audit-prep-checklist.md`
 10. PR Triage: Use `scripts/auto_triage_prs.sh` for automated categorization. Reference `docs/community/pr-triage-playbook.md`
@@ -360,9 +365,10 @@ Confirma recepción con: `🤖 Qweni Day 1 Operations v6.0 iniciado. Beta v1.8.0
 
 ---
 
-*Day 1 Operations Prompt v6.0 — ed2kIA v1.8.0-beta.1*
+*Day 1 Operations Prompt v6.1 — ed2kIA v1.8.0-beta.1*
 *Generated: 2026-05-15*
-*Beta Active: v1.8.0-beta.1 (FASE 59-63 complete)*
+*Updated: FASE 64-67 (Source of Truth + FASE 6 Reconciliation)*
+*Beta Active: v1.8.0-beta.1 (FASE 59-67 complete)*
 *Beta Testing: docs/beta/tester-onboarding.md + feedback pipeline*
 *Bug Triage: docs/operations/bug-triage-matrix.md (P0:2h, P1:12h, P2:48h, P3:7d)*
 *Monitoring: scripts/beta_monitor.sh + Dashboard v2 §6*
@@ -370,6 +376,9 @@ Confirma recepción con: `🤖 Qweni Day 1 Operations v6.0 iniciado. Beta v1.8.0
 *Retrospective: docs/retrospectives/beta-v1.8-retro.md*
 *Roadmap: docs/roadmap/v1.9-roadmap-draft.md*
 *Long-Term Maintenance: docs/operations/long-term-maintenance.md*
+*Source of Truth: docs/roadmap/source-of-truth.md (OBLIGATORIO)*
+*FASE 6 Audit: docs/roadmap/phase6-audit-mapping.md*
+*Versioning Alignment: docs/roadmap/versioning-alignment.md*
 *Ciclo Semanal: Standup → Triage → PoC → Benchmark → Auto-Push*
 *Dashboard v2: docs/operations/dashboard-v2-spec.md*
 *Continuous Cycle: docs/operations/continuous-cycle.md*
