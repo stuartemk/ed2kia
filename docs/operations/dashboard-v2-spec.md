@@ -336,6 +336,70 @@ bash scripts/beta_release_prep.sh --dry-run
 
 ---
 
+## 6. Beta Metrics Endpoints (FASE 61)
+
+The following endpoints are added to Dashboard v2 to support beta performance monitoring and bug triage automation.
+
+### 6.1 Beta Performance Endpoints
+
+| Endpoint | Method | Description | Source | Refresh |
+|----------|--------|-------------|--------|---------|
+| `/api/v2/metrics/beta/status` | GET | Beta release status (active/paused/completed) | Git tag + release notes | 5min |
+| `/api/v2/metrics/beta/testers` | GET | Active beta tester count | GitHub issues + feedback tracker | 1h |
+| `/api/v2/metrics/beta/monitor` | GET | Latest monitor report summary | `scripts/beta_monitor.sh` output | On-demand |
+| `/api/v2/metrics/beta/ci` | GET | CI validation results by feature flag | `scripts/beta_ci_validation.sh` | Per run |
+
+### 6.2 Bug Triage Endpoints
+
+| Endpoint | Method | Description | Source | Refresh |
+|----------|--------|-------------|--------|---------|
+| `/api/v2/metrics/issues` | GET | Open issues by severity (P0-P3) | GitHub API | 5min |
+| `/api/v2/metrics/triage` | GET | Mean time to triage by module | Issue timestamps | 1h |
+| `/api/v2/metrics/fix` | GET | Mean time to fix by module | Issue → PR → Merge | 1h |
+| `/api/v2/metrics/sla` | GET | SLA compliance rate | SLA vs actual response | 1h |
+| `/api/v2/metrics/defects` | GET | Module defect density (issues/LOC) | GitHub + source count | Daily |
+
+### 6.3 Beta Dashboard Widget
+
+```
+┌─────────────────────────────────────┐
+│  BETA STATUS                        │
+├─────────────────────────────────────┤
+│  Release: v1.8.0-beta.1             │
+│  Status: ACTIVE                     │
+│  Testers: N active                  │
+│  Open Issues: P0:N P1:N P2:N P3:N   │
+│  SLA Compliance: N%                 │
+│  CI Status: PASS/FAIL               │
+│  Monitor: Last run X min ago        │
+└─────────────────────────────────────┘
+```
+
+### 6.4 Monitor Script Integration
+
+The [`scripts/beta_monitor.sh`](../../scripts/beta_monitor.sh) script generates reports that feed into the beta metrics:
+
+```bash
+# Run full monitoring
+./scripts/beta_monitor.sh --output release/v1.8.0-beta.1/monitor-report.md
+
+# Dry run (no cargo commands)
+./scripts/beta_monitor.sh --dry-run
+
+# Custom interval for continuous monitoring
+./scripts/beta_monitor.sh --interval 300
+```
+
+### 6.5 Bug Triage Matrix Integration
+
+The [`docs/operations/bug-triage-matrix.md`](bug-triage-matrix.md) defines:
+- Severity SLAs (P0: 2h, P1: 12h, P2: 48h, P3: 7d)
+- Module categories for auto-assignment
+- Triage workflow + escalation path
+- Emergency procedures (beta pause/rollback)
+
+---
+
 ## 7. Criterios de Aprobación
 
 - [ ] Todas las secciones documentadas
