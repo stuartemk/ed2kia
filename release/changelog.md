@@ -6,6 +6,61 @@ El formato sigue [Semantic Versioning](https://semver.org/) y [Keep a Changelog]
 
 ---
 
+## [v1.8.0-beta] - 2026-05-15 (ChatGPT Moment — API Explorer, Reputation Proofs, Geographic Routing, WASM Mobile)
+
+### ✨ Agregado
+
+#### API Explorer v1 (Sprint 1)
+- REST endpoints para visualización 3D de conceptos SAE
+- Activation records con tracking temporal
+- Steering signals con ordenamiento por prioridad
+- Rate limiting per-node con token bucket
+- Ed25519 proof validation para API auth
+
+#### Reputation Proof Schema (Sprint 1)
+- Ed25519-based reputation proofs con 6 tiers (Bronze→Diamond)
+- Proof batching con batch verification
+- Anti-Sybil rate limiting por ventana temporal
+- Metadata-attached proofs con content hashing
+
+#### QuantConfig (Sprint 1)
+- FP8/INT4 quantization config con clamp ranges
+- Per-element y per-block quantization modes
+- Payload reduction ratio tracking
+
+#### Async Steering v1 (Sprint 1)
+- Late correction signals para pipelines tensor distribuidos
+- Priority-based signal scheduling
+- Drop rate tracking con metrics
+
+#### Geographic Routing (Sprint 2)
+- Haversine distance calculation para peer proximity scoring
+- RTT measurement con EMA smoothing
+- Composite routing score (base - RTT penalty - distance penalty)
+- KAD fallback cuando geo data es insuficiente
+- Stale peer detection & cleanup
+
+#### WASM Mobile Bridge (Sprint 2)
+- Memory-limited WASM compilation (64MB default)
+- Priority background task scheduler
+- Adaptive P2P sync con battery awareness
+- Sync timeout detection & recovery
+
+#### Developer Experience
+- Justfile con 30+ recetas de desarrollo
+- devtools/setup.sh para setup automático
+- devtools/docker-compose.yml (3 nodos + Prometheus + Grafana)
+- Programa de mentorship (Seed/Sprout/Tree)
+- Grant follow-up tracker & automation
+
+### 🔧 Cambios
+
+- Feature flags: `v1.8-sprint1`, `v1.8-sprint2`
+- README.md con sección Local Development completa
+- CONTRIBUTING.md con mentorship program
+
+---
+
 ## [v1.6.0-stable] - 2026-05-14 (Fase 7-11: Release Preparation & GitHub Handover)
 
 ### ✨ Agregado
