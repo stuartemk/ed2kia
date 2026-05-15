@@ -1,0 +1,67 @@
+# First Interaction Bot — ed2kIA
+# Auto-welcome for first-time contributors
+
+# Welcome message for first-time issue creators
+issueOpened: >-
+  ¡Hola @{{ author }}! 👋
+
+  Bienvenido/a a ed2kIA. Gracias por abrir tu primer issue.
+
+  Este es un proyecto de infraestructura pública de código abierto para interpretabilidad de IA,
+  construido bajo principios de transparencia, meritocracia y uso ético.
+
+  **Próximos pasos:**
+  - Un maintainer revisará tu issue en las próximas 24-48 horas
+  - Asegúrate de incluir pasos para reproducir (si es un bug) o una descripción clara (si es una feature)
+  - Revisa nuestra [Guía de Contribución](CONTRIBUTING.md) para más detalles
+
+  **Recursos útiles:**
+  - [Guía del Primer Contribuidor](docs/community/first-contributor-guide.md) — Paso a paso desde cero hasta tu primer PR
+  - [Issues good-first-issue](https://github.com/Stuartemk/ed2kIA/issues?q=label:good-first-issue) — Issues recomendados para empezar
+  - [RFC-001: Latencia](docs/rfc/rfc-001-latency-mitigation-v1.7.md) — Plan de optimización de latencia
+  - [Roadmap v1.8](docs/roadmap/v1.8-chatgpt-moment.md) — Planificación técnica actual
+
+  **Principios del proyecto:**
+  - Cero lógica financiera (no tokens, no pagos)
+  - Cero telemetría (no datos salientes, no tracking)
+  - Cero unsafe (todo el código Rust es memory-safe)
+  - Licencia Apache 2.0 + Ethical Use
+
+  ¡Gracias por contribuir a la interpretabilidad de IA abierta! 🚀
+
+# Welcome message for first-time PR creators
+pullRequestOpened: >-
+  ¡Hola @{{ author }}! 🎉
+
+  ¡Bienvenido/a a ed2kIA! Gracias por abrir tu primer Pull Request.
+
+  Este es un proyecto de infraestructura pública de código abierto para interpretabilidad de IA,
+  construido bajo principios de transparencia, meritocracia y uso ético.
+
+  **Proceso de review:**
+  - Un reviewer será asignado en las próximas 24-48 horas
+  - Verificaremos que tu PR pase los checks de CI/CD
+  - Te daremos feedback constructivo para mejorar tu contribución
+
+  **Checklist de validación (asegúrate de que tu PR pasa estos checks):**
+  - [ ] `cargo check --features stable` pasa
+  - [ ] `cargo clippy --features stable -- -D warnings` pasa
+  - [ ] `cargo test --features stable` pasa
+  - [ ] No contiene `unsafe` blocks
+  - [ ] No contiene lógica financiera
+  - [ ] No contiene telemetría
+  - [ ] Sigue el patrón de módulos (`mod internal` + `pub use internal::*`)
+
+  **Recursos útiles:**
+  - [Guía del Primer Contribuidor](docs/community/first-contributor-guide.md) — Guía completa de onboarding
+  - [Contributing Guide](CONTRIBUTING.md) — Pautas de código y proceso de contribución
+  - [Pipeline CI/CD](.github/workflows/ci.yml) — Configuración del pipeline de validación
+  - [Issues good-first-issue](https://github.com/Stuartemk/ed2kIA/issues?q=label:good-first-issue) — Más issues para contribuir
+
+  **Después de tu primer merge:**
+  - Ganarás créditos de reputación en el sistema
+  - Serás promovido/a a **Contributor** (Tier 2)
+  - Tendrás acceso a issues más complejos y participación en triage
+  - Revisa el [Embudo de Contribuidores](docs/community/contributor-funnel.md) para el camino completo
+
+  ¡Gracias por contribuir a la interpretabilidad de IA abierta! 🚀

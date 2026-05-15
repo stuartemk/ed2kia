@@ -10,6 +10,14 @@ Gracias por tu interés en contribuir a ed2kIA. Este proyecto es infraestructura
 4. **Cero Unsafe:** Todo el código Rust debe ser memory-safe sin `unsafe`
 5. **Licencia Apache 2.0 + Ethical Use:** Todo el código contribuido debe ser compatible
 
+## 🚀 Primeros Pasos
+
+**¿Eres nuevo/a?** Consulta la [Guía del Primer Contribuidor](docs/community/first-contributor-guide.md) para un walkthrough paso a paso desde cero hasta tu primer PR mergeado.
+
+- [Issues good-first-issue](https://github.com/Stuartemk/ed2kIA/issues?q=label:good-first-issue) — Issues recomendados para empezar
+- [Pipeline CI/CD](.github/workflows/ci.yml) — Configuración del pipeline de validación
+- [Codecov Config](.github/codecov.yml) — Umbrales de coverage
+
 ## Cómo Contribuir
 
 ### 1. Reportar Issues
@@ -239,17 +247,35 @@ ed2kIA usa un sistema de tiers progresivos para reconocer y promover contribuido
 
 ## Recursos
 
-- **Arquitectura:** [`docs/architecture_v1.6.0.md`](docs/architecture_v1.6.0.md)
-- **Transparencia:** [`docs/TRANSPARENCY_FRAMEWORK.md`](docs/TRANSPARENCY_FRAMEWORK.md)
-- **Gobernanza:** [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md)
-- **Embudo de Contribuidores:** [`docs/community/contributor-funnel.md`](docs/community/contributor-funnel.md)
-- **Migración:** [`docs/migration_guide_v1.5_to_v1.6.md`](docs/migration_guide_v1.5_to_v1.6.md)
-- **Roadmap v1.7:** [`docs/v1.7-roadmap-placeholder.md`](docs/v1.7-roadmap-placeholder.md)
-- **Roadmap v1.8 (ChatGPT Moment):** [`docs/roadmap/v1.8-chatgpt-moment.md`](docs/roadmap/v1.8-chatgpt-moment.md)
-- **Arquitectura Reputación:** [`docs/architecture/reputation-gamification.md`](docs/architecture/reputation-gamification.md)
-- **Arquitectura WASM/Mobile:** [`docs/architecture/mobile-browser-expansion.md`](docs/architecture/mobile-browser-expansion.md)
-- **Estrategia de Financiamiento:** [`docs/funding-strategy.md`](docs/funding-strategy.md)
-- **RFC-001:** [`docs/rfc/rfc-001-latency-mitigation-v1.7.md`](docs/rfc/rfc-001-latency-mitigation-v1.7.md)
+### Onboarding
+
+- **Guía del Primer Contribuidor:** [docs/community/first-contributor-guide.md](docs/community/first-contributor-guide.md)
+- **Embudo de Contribuidores:** [docs/community/contributor-funnel.md](docs/community/contributor-funnel.md)
+- **Issues good-first-issue:** https://github.com/Stuartemk/ed2kIA/issues?q=label:good-first-issue
+
+### Pipeline CI/CD
+
+- **CI Pipeline:** [.github/workflows/ci.yml](.github/workflows/ci.yml)
+- **CI v1.8 Pipeline:** [.github/workflows/ci-v1.8.yml](.github/workflows/ci-v1.8.yml)
+- **Codecov Config:** [.github/codecov.yml](.github/codecov.yml)
+
+### Arquitectura & Documentación
+
+- **Arquitectura:** [docs/architecture_v1.6.0.md](docs/architecture_v1.6.0.md)
+- **Transparencia:** [docs/TRANSPARENCY_FRAMEWORK.md](docs/TRANSPARENCY_FRAMEWORK.md)
+- **Gobernanza:** [docs/GOVERNANCE.md](docs/GOVERNANCE.md)
+- **Migración:** [docs/migration_guide_v1.5_to_v1.6.md](docs/migration_guide_v1.5_to_v1.6.md)
+- **Roadmap v1.7:** [docs/v1.7-roadmap-placeholder.md](docs/v1.7-roadmap-placeholder.md)
+- **Roadmap v1.8 (ChatGPT Moment):** [docs/roadmap/v1.8-chatgpt-moment.md](docs/roadmap/v1.8-chatgpt-moment.md)
+- **Arquitectura Reputación:** [docs/architecture/reputation-gamification.md](docs/architecture/reputation-gamification.md)
+- **Arquitectura WASM/Mobile:** [docs/architecture/mobile-browser-expansion.md](docs/architecture/mobile-browser-expansion.md)
+- **Estrategia de Financiamiento:** [docs/funding-strategy.md](docs/funding-strategy.md)
+
+### RFC & Benchmarks
+
+- **RFC-001: Latencia Mitigation:** [docs/rfc/rfc-001-latency-mitigation-v1.7.md](docs/rfc/rfc-001-latency-mitigation-v1.7.md)
+- **Benchmark Runner:** [benchmarks/README.md](benchmarks/README.md)
+- **Baseline v1.7:** [benchmarks/results/baseline-v1.7.json](benchmarks/results/baseline-v1.7.json)
 
 ## Contacto
 
