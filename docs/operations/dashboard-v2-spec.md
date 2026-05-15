@@ -420,5 +420,70 @@ The [`docs/operations/bug-triage-matrix.md`](bug-triage-matrix.md) defines:
 
 *Generated: 2026-05-15T17:09:00Z*  
 *Sprint: v1.8 "ChatGPT Moment" — Sprint 2*  
-*Dashboard Version: v2.0*  
+*Dashboard Version: v2.0*
 *Previous: docs/operations/daily-metrics-dashboard.md (v1)*
+
+---
+
+## 9. Dashboard v3 — FASE 7 / v1.9 Metrics
+
+> **FASE 70 Update:** Extension v2 → v3 para métricas FASE 7 / v1.9.
+
+### 9.1 Nuevas Secciones
+
+| Sección | Métricas | Source |
+|---------|----------|--------|
+| **Hardening** | P95/P99 latency, timeout budget, retry rate | SteeringMetrics, RetryState |
+| **Mobile GUI** | Platform count, resource sliders, thermal/battery | ResourceSliderConfig, MobileBridge |
+| **ZKP Optimization** | Constraint pool util, pedersen precompute, bench results | CircuitBenchmark, ConstraintPool |
+| **FASE 7 Progress** | Sprint tracking, deliverable status, feature gates | phase7-tracking.md |
+
+### 9.2 KPIs FASE 7
+
+| KPI | Target | Source |
+|-----|--------|--------|
+| Hardening success rate | ≥ 99% | SteeringMetrics.total_sent / (total_sent + total_dropped) |
+| P95 latency | < 50ms | SteeringMetrics.p95_latency_ms() |
+| P99 latency | < 100ms | SteeringMetrics.p99_latency_ms() |
+| Timeout budget compliance | 100% | SteeringMetrics.is_timeout_budget_exhausted() |
+| Retry success rate | ≥ 95% | RetryState.attempt_count() < max_retries |
+| GUI platform coverage | ≥ 2 platforms | MobileBridge.platform() |
+| ZKP constraint reduction | ≥ 10% | CircuitBenchmark.avg_gen_time_ms() |
+| Constraint pool utilization | 60-80% | ConstraintPool.utilization() |
+
+### 9.3 Data Flow
+
+```
+┌─────────────────────────────────────────────────────┐
+│              Dashboard v3 Data Flow                  │
+├─────────────────────────────────────────────────────┤
+│  SteeringMetrics → P95/P99, timeout, retry          │
+│  ResourceSliderConfig → thermal, battery, sliders   │
+│  CircuitBenchmark → gen_time, constraint_count      │
+│  ConstraintPool → utilization, alloc/dealloc        │
+│  PedersenPrecompute → init_status, base_count       │
+│  phase7-tracking.md → sprint status, deliverables   │
+├─────────────────────────────────────────────────────┤
+│  Aggregation: cargo test --features v1.9-sprint1    │
+│  Output: JSON + Markdown table                      │
+└─────────────────────────────────────────────────────┘
+```
+
+### 9.4 Validation Commands
+
+```bash
+# FASE 7 metrics validation
+cargo test --features v1.9-sprint1 mobile_foundation 2>&1 | grep "test result"
+cargo test --features v1.9-sprint1 circuit_optimization 2>&1 | grep "test result"
+cargo test --features v1.9-sprint1 async_steering 2>&1 | grep "test result"
+
+# Tracking document
+test -f docs/operations/phase7-tracking.md && echo "✓ FASE 7 Tracking"
+grep -c "Sprint\|FASE\|Dashboard\|Metrics" docs/operations/phase7-tracking.md
+```
+
+---
+
+*FASE 70 Update: 2026-05-15T23:51:00Z*
+*Dashboard Version: v3.0 (FASE 7 extension)*
+*Tracking: docs/operations/phase7-tracking.md*
