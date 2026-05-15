@@ -1,9 +1,155 @@
 # Community Posts — Execution Ready
 
-**Version:** v1.7.0-stable
-**Fecha:** 2026-05-14
-**Estado:** COPY/PASTE READY
-**Sprint Activo:** v1.8 "ChatGPT Moment"
+**Version:** v1.8.0-beta.1
+**Fecha:** 2026-05-15
+**Estado:** BETA LAUNCH ACTIVE
+**Sprint Activo:** v1.8 "ChatGPT Moment" — Sprint 2 Complete
+
+---
+
+## Platform 0: Beta Testing Program Launch
+
+**Channel:** All platforms + dedicated beta announcement
+**Tono:** Oficial, técnico, comunitario, enfocado en feedback estructurado
+
+### Beta Announcement Copy/Paste
+
+```
+🧪 ed2kIA v1.8.0-beta.1 — BETA TESTING PROGRAM IS LIVE
+
+The ed2kIA v1.8.0-beta.1 release is now available for community testing!
+
+What's in this beta:
+• Geographic Routing v2 — Adaptive P2P routing by region
+• WASM Mobile Bridge — Browser-based activation exploration
+• DX Tools — API Explorer v1, reputation proofs, steering signals
+• Mentorship & Grants program bootstrap
+• Full Sprint 1 + Sprint 2 feature set
+
+📋 Beta Tester Onboarding Guide:
+https://github.com/Stuartemk/ed2kIA/blob/main/docs/beta/tester-onboarding.md
+
+🐛 Report Bugs:
+https://github.com/Stuartemk/ed2kIA/issues/new?template=beta-bug-report.md
+
+💡 Share Feedback:
+https://github.com/Stuartemk/ed2kIA/issues/new?template=beta-feedback.md
+
+📊 Track Issues:
+https://github.com/Stuartemk/ed2kIA/blob/main/docs/beta/feedback-tracker.md
+
+Quick Start:
+1. Clone: git clone https://github.com/Stuartemk/ed2kIA.git
+2. Build: cargo build --features v1.8-sprint2
+3. Test: cargo test --features v1.8-sprint2
+4. Run: cargo run --features v1.8-sprint2 -- --mode beta
+
+Feature Flags:
+• stable — Production-stable features only
+• v1.8-sprint1 — Sprint 1 features (Geographic Routing, WASM Bridge)
+• v1.8-sprint2 — Full beta features (DX Tools, Mentorship, Grants)
+
+Severity SLAs:
+• P0 (Critical): 2h response
+• P1 (High): 12h response
+• P2 (Medium): 48h response
+• P3 (Low): 7d response
+
+Help us ship a production-ready v1.8.0! Your feedback shapes the roadmap.
+```
+
+### Beta-Specific Engagement Tracking
+
+| Día | Métrica | Target | Actual |
+|-----|---------|--------|--------|
+| Día 0 | Beta announcement published | 1 | [ ] |
+| Día 0 | Onboarding guide linked | 1 | [ ] |
+| Día 1 | Beta testers registered | ≥5 | [ ] |
+| Día 1 | Bug reports received | ≥2 | [ ] |
+| Día 3 | Feedback issues | ≥5 | [ ] |
+| Día 3 | P0/P1 issues resolved | 100% | [ ] |
+| Día 7 | Active beta testers | ≥10 | [ ] |
+| Día 7 | Feedback tracker updated | Daily | [ ] |
+
+---
+
+### Beta Announcement — Social Media Variants
+
+#### Twitter/X Beta Thread
+
+```
+🧪 ed2kIA v1.8.0-beta.1 is LIVE for community testing!
+
+Geographic Routing, WASM Mobile Bridge, DX Tools & more.
+
+Help us shape v1.8.0 production release.
+
+Beta onboarding + bug templates ready 🧵👇
+#OpenSource #AI #Rust #BetaTesting
+```
+
+```
+1/ What's new in beta:
+• Geographic Routing v2 — Adaptive P2P by region
+• WASM Mobile Bridge — Browser activation explorer
+• API Explorer v1 — 3D concept visualization
+• Reputation proofs + steering signals
+• Full DX tooling stack
+
+Run: cargo build --features v1.8-sprint2
+```
+
+```
+2/ We need your feedback:
+🐛 Bug reports: beta-bug-report.md template
+💡 Feature feedback: beta-feedback.md template
+📊 Live tracker: docs/beta/feedback-tracker.md
+
+SLAs: P0=2h, P1=12h, P2=48h, P3=7d
+
+Onboarding guide → github.com/Stuartemk/ed2kIA/tree/main/docs/beta
+```
+
+#### Discord/Mattermost Beta Announcement
+
+```
+🧪 BETA TESTING PROGRAM — v1.8.0-beta.1
+
+¡Comunidad! El programa de beta testing de ed2kIA v1.8.0 está activo.
+
+📦 QUÉ INCLUYE:
+• Geographic Routing v2 — Enrutamiento P2P adaptativo por región
+• WASM Mobile Bridge — Explorador de activaciones en navegador
+• DX Tools — API Explorer v1, reputation proofs, steering signals
+• Mentorship & Grants program bootstrap
+• Sprint 1 + Sprint 2 completo
+
+🔗 ENLACES CLAVE:
+• Onboarding: docs/beta/tester-onboarding.md
+• Bug Report: .github/ISSUE_TEMPLATE/beta-bug-report.md
+• Feedback: .github/ISSUE_TEMPLATE/beta-feedback.md
+• Tracker: docs/beta/feedback-tracker.md
+• Release Notes: release/v1.8.0-beta.1/RELEASE_NOTES.md
+
+🚀 QUICK START:
+1. git clone https://github.com/Stuartemk/ed2kIA.git
+2. cargo build --features v1.8-sprint2
+3. cargo test --features v1.8-sprint2
+4. cargo run --features v1.8-sprint2 -- --mode beta
+
+📊 SEVERITY SLAs:
+• P0 (Critical): 2h response
+• P1 (High): 12h response
+• P2 (Medium): 48h response
+• P3 (Low): 7d response
+
+💬 CANALES BETA:
+• #beta-testing — Coordinación y preguntas
+• #bug-reports — Issues encontrados
+• #feedback — Sugerencias y mejoras
+
+¡Tu feedback define v1.8.0 production! 🙏
+```
 
 ---
 
@@ -378,10 +524,18 @@ grep -c "Apache" README.md
 
 # Contar referencias clave
 grep -c "ed2kIA\|RFC-001\|benchmark\|good-first-issue" COMMUNITY_POSTS_EXECUTION_READY.md
+
+# Verificar archivos beta (FASE 60)
+test -f docs/beta/tester-onboarding.md && echo "PASS: onboarding" || echo "FAIL: onboarding"
+test -f docs/beta/feedback-tracker.md && echo "PASS: tracker" || echo "FAIL: tracker"
+test -f .github/ISSUE_TEMPLATE/beta-bug-report.md && echo "PASS: bug template" || echo "FAIL: bug template"
+test -f .github/ISSUE_TEMPLATE/beta-feedback.md && echo "PASS: feedback template" || echo "FAIL: feedback template"
+grep -c "severity\|logs\|repro\|beta" .github/ISSUE_TEMPLATE/beta-bug-report.md
 ```
 
 ---
 
-**Estado:** READY FOR EXECUTION
-**Última actualización:** 2026-05-14T23:28:00Z
+**Estado:** BETA LAUNCH ACTIVE
+**Última actualización:** 2026-05-15T21:00:00Z
 **Autor:** Qweni (Auto-Push Protocol)
+**Beta:** v1.8.0-beta.1 — FASE 60 Complete
