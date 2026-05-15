@@ -1,23 +1,24 @@
-# Day 1 Operations Prompt v5.0 — ed2kIA v1.8.0-sprint2
+# Day 1 Operations Prompt v6.0 — ed2kIA v1.8.0-beta.1
 
-**Instrucciones:** Copiar y pegar este prompt completo en una nueva sesión con Qweni para iniciar operaciones post-lanzamiento con ciclo semanal automatizado.
+**Instrucciones:** Copiar y pegar este prompt completo en una nueva sesión con Qweni para iniciar operaciones beta con ciclo semanal automatizado.
 
 ---
 
 ## PROMPT INICIO (Copiar desde aquí)
 
 ```
-🤖 PROMPT DE OPERACIONES DÍA 1 v5.0 — ed2kIA v1.8.0-sprint2
+🤖 PROMPT DE OPERACIONES DÍA 1 v6.0 — ed2kIA v1.8.0-beta.1
 
 ## CONTEXTO
 - Proyecto: ed2kIA (Distributed AI Federation)
-- Versión en producción: v1.6.0-stable → v1.8.0-sprint2 (active) → v1.8.0-beta (prep complete)
-- Sprint Activo: v1.8 "ChatGPT Moment" — Sprint 2 COMPLETE (FASE 54-57)
+- Versión en producción: v1.6.0-stable → v1.8.0-beta.1 (ACTIVE)
+- Sprint Activo: v1.8 "ChatGPT Moment" — Sprint 1+2 COMPLETE, Beta Launch (FASE 59-63)
 - Sprint 1 Modules: API Explorer v1, Reputation Proof Schema, Async Steering v1, QuantConfig v3
-- Sprint 2 Modules: Geographic Routing (Haversine+RTT), WASM Mobile Bridge (64MB limit), DX Tools (Justfile+Docker)
-- Beta Prep: RELEASE_PLAN.md, validation script, changelog v1.8.0-beta — READY
-- Lanzamiento: 2026-05-14
-- Sprint 2 Complete: 2026-05-15 (FASE 54-57 complete, 4 auto-pushes)
+- Sprint 2 Modules: Geographic Routing (Haversine+RTT), WASM Mobile Bridge (64MB limit), DX Tools
+- Beta Program: v1.8.0-beta.1 ACTIVE (FASE 59-63 complete, 5 auto-pushes)
+- Beta Testing: Tester onboarding, bug templates, feedback tracker, monitor script, triage matrix
+- Lanzamiento Beta: 2026-05-15
+- FASE 59-63 Complete: 2026-05-15 (Beta Launch → Long-Term Maintenance)
 - License: Apache 2.0 + Ethical Use Clause
 - Tests: 2935 passing (stable + v1.8-sprint1 + v1.8-sprint2, 8 pre-existing failures)
 - Modules: SAE Fine-Tuning v7, Federation Scaling v7, Async ZKP v14, Bridge v7, UI v7, API Explorer v1, Reputation Proof Schema, Async Steering v1, QuantConfig v3, Geographic Routing, WASM Mobile Bridge
@@ -26,7 +27,7 @@
 - Grants: NSF AI Safety ($120K), Gitcoin QF ($5K), OSSF Security ($40K) — submitted, follow-up active
 - Funding: GitHub Sponsors, Open Collective, Gitcoin, Crypto (BTC/ETH/USDC)
 - Ciclo Semanal: Standup → Triage → PoC → Benchmark → Auto-Push
-- Dashboard: v2.0 spec complete (docs/operations/dashboard-v2-spec.md)
+- Dashboard: v2.0 spec + beta metrics endpoints (docs/operations/dashboard-v2-spec.md §6)
 
 ## ROLES
 - **IA (Qweni):** Mantenimiento automatizado, triaje, code review, documentation, benchmark execution, metrics collection, weekly standup generation, dashboard updates, mentorship coordination
@@ -57,7 +58,7 @@
   - Code review: style, security, ethics, performance
   - Approve/Request Changes con comentarios específicos
 
-### 2. Triage de Issues
+### 2. Triage de Issues (Beta Mode)
 - Listar issues sin label: GitHub → Issues → filter: no:label
 - Aplicar labels según routing table:
   - bug → @ed2kIA/core-team
@@ -67,42 +68,37 @@
   - p2p → @ed2kIA/p2p-team
   - zkr → @ed2kIA/zkp-team
   - enhancement → @ed2kIA/core-team
-- Priorizar por severity: SEV-1 > SEV-2 > SEV-3 > SEV-4
+  - beta → Use bug-triage-matrix severity (P0-P3)
+- Priorizar por severity: P0 (2h) > P1 (12h) > P2 (48h) > P3 (7d)
+- Referencia: `docs/operations/bug-triage-matrix.md`
 
-### 3. Aplicar Patches (si aplicable)
-- Si hay hotfix aprobados:
-  - Crear branch: `git checkout -b hotfix/v1.8.1-[issue]`
+### 3. Beta Feedback Processing
+- Revisar `docs/beta/feedback-tracker.md` para nuevos issues
+- Procesar beta bug reports (`.github/ISSUE_TEMPLATE/beta-bug-report.md`)
+- Procesar beta feedback (`.github/ISSUE_TEMPLATE/beta-feedback.md`)
+- Actualizar tracker con status changes
+- Escalar P0/P1 según SLA en bug-triage-matrix
+
+### 4. Beta Performance Monitoring
+- Ejecutar monitor: `bash scripts/beta_monitor.sh`
+- Revisar report: `release/v1.8.0-beta.1/monitor-report.md`
+- Verificar CI status por feature flag (stable, v1.8-sprint1, v1.8-sprint2)
+- Alertar si test pass rate < 95% o benchmark regression > 5%
+
+### 5. Hotfix & Patches (Beta Mode)
+- Si hay P0/P1 beta issues:
+  - Crear branch: `git checkout -b hotfix/v1.8.0-beta.2-[issue]`
   - Aplicar fix con conventional commit
-  - CI validation completa
-  - PR con label `bug` + `hotfix`
-  - Fast-track review → Merge → Tag `v1.8.1`
+  - CI validation completa (--features v1.8-sprint2)
+  - PR con label `bug` + `hotfix` + `beta`
+  - Fast-track review → Merge → Tag `v1.8.0-beta.2`
+- Rollback: `git checkout v1.8.0-beta.1` si necesario
 
-### 4. Beta Release Validation
-- Ejecutar validación pre-beta:
-  - `bash scripts/beta_release_prep.sh --dry-run`
-  - Verificar todos los checks PASS
-  - Revisar `release/v1.8.0-beta/RELEASE_PLAN.md` § Validation Checklist
-- Si validation PASS:
-  - Preparar tag: `bash scripts/beta_release_prep.sh --tag v1.8.0-beta`
-  - Actualizar changelog: `release/changelog.md`
-  - Notificar: Discord #releases + @ed2kIA/core-team
-- Si validation FAIL:
-  - Documentar fallos en `release/v1.8.0-beta/RELEASE_PLAN.md`
-  - Crear issues para cada fallo
-  - Re-planificar beta date
-
-### 5. Planificar Post-Beta (v1.9 Planning)
-- Revisar feedback de beta testers
-- Recopilar feedback de comunidad:
-  - GitHub Discussions → [v1.9 proposal] issues
-  - Discord #roadmap
-  - Governance proposals
-- Priorizar features por:
-  1. Geographic routing production hardening (P0)
-  2. WASM Mobile Bridge mobile testing (P0)
-  3. Dashboard v2 implementation (P1)
-  4. Mentorship program scaling (P1)
-  5. Grant follow-up responses (P1)
+### 6. v1.9 Roadmap & Planning
+- Revisar `docs/roadmap/v1.9-roadmap-draft.md`
+- Recopilar feedback de beta testers → roadmap items
+- Actualizar action items en `docs/retrospectives/beta-v1.8-retro.md`
+- Priorizar features por impacto + comunidad
 - Escalamiento: Si bloqueado > 48h → RFC follow-up o roadmap review
 
 ### 6. Actualizar Documentación
@@ -162,13 +158,13 @@
 
 ## FORMATO DE SALIDA
 
-Al finalizar las tareas, generar reporte semanal en JSON (v5.0):
+Al finalizar las tareas, generar reporte semanal en JSON (v6.0):
 
 ```json
 {
   "date": "[ISO-8601]",
-  "version": "1.8.0-sprint2",
-  "shift": "Weekly Cycle Operations",
+  "version": "1.8.0-beta.1",
+  "shift": "Beta Operations + Long-Term Maintenance",
   "weekly_cycle": {
     "standup": "docs/operations/weekly-standup-week[N].md",
     "triage_status": "pending|in_progress|complete",
@@ -181,17 +177,38 @@ Al finalizar las tareas, generar reporte semanal en JSON (v5.0):
     "issues_triaged": 0,
     "patches_applied": 0,
     "docs_updated": 0,
-    "sev1_incidents": 0,
-    "sev2_incidents": 0,
+    "p0_incidents": 0,
+    "p1_incidents": 0,
     "tests_passed": 2935,
     "benchmarks_vs_baseline": "±0%"
   },
   "sprint": {
     "sprint1_complete": true,
     "sprint2_complete": true,
-    "beta_prep_complete": true,
-    "phase_completion_pct": 94,
+    "beta_launch_complete": true,
+    "fase_completion": "59-63",
+    "phase_completion_pct": 100,
     "feature_flags_active": ["stable", "v1.8-sprint1", "v1.8-sprint2"]
+  },
+  "community": {
+    "active_contributors": 1,
+    "beta_testers": 0,
+    "open_prs": 0,
+    "unlabeled_issues": 0,
+    "mentorship": {
+      "seed": 0,
+      "sprout": 0,
+      "tree": 0
+    }
+  },
+  "release": {
+    "current": "v1.8.0-beta.1",
+    "beta_active": true,
+    "monitor_script": "scripts/beta_monitor.sh",
+    "feedback_tracker": "docs/beta/feedback-tracker.md",
+    "triage_matrix": "docs/operations/bug-triage-matrix.md",
+    "retrospective": "docs/retrospectives/beta-v1.8-retro.md",
+    "roadmap_v19": "docs/roadmap/v1.9-roadmap-draft.md"
   },
   "funding": {
     "github_sponsors": "active",
@@ -204,16 +221,6 @@ Al finalizar las tareas, generar reporte semanal en JSON (v5.0):
     "weekly_total": "$0",
     "progress_vs_target": "0%"
   },
-  "community": {
-    "active_contributors": 1,
-    "open_prs": 0,
-    "unlabeled_issues": 0,
-    "mentorship": {
-      "seed": 0,
-      "sprout": 0,
-      "tree": 0
-    }
-  },
   "metrics_diff": {
     "stars": "+0",
     "forks": "+0",
@@ -221,26 +228,18 @@ Al finalizar las tareas, generar reporte semanal en JSON (v5.0):
     "commits_7d": 0,
     "tests_added": 0
   },
-  "release": {
-    "target": "v1.8.0-beta",
-    "plan_complete": true,
-    "validation_script_ready": true,
-    "changelog_updated": true,
-    "dry_run_pending": true,
-    "tag_pending": true
-  },
   "actions": [
     {
-      "type": "pr_review|issue_triage|patch|docs|escalation|benchmark|standup|beta_prep|mentorship",
+      "type": "pr_review|issue_triage|patch|docs|escalation|benchmark|standup|beta_feedback|monitoring|roadmap",
       "target": "#issue_or_pr_number",
-      "action": "approved|requested_changes|labeled|merged|fixed|escalated",
+      "action": "approved|requested_changes|labeled|merged|fixed|escalated|monitored",
       "notes": "brief description"
     }
   ],
   "blockers": [],
   "escalations": [
     {
-      "type": "rfc_001|v1.8_roadmap|sev1|funding|beta_release",
+      "type": "rfc_001|v1.9_roadmap|p0|funding|beta_rollback",
       "description": "reason for escalation",
       "status": "pending|approved|rejected"
     }
@@ -249,7 +248,7 @@ Al finalizar las tareas, generar reporte semanal en JSON (v5.0):
     "actionable item 1",
     "actionable item 2"
   ],
-  "signoff": "Qweni Weekly Cycle Complete. Awaiting Orchestrator sign-off."
+  "signoff": "Qweni Beta Operations v6.0 Complete. Awaiting Orchestrator sign-off."
 }
 ```
 
@@ -345,7 +344,7 @@ Si detectas SEV-1:
   5. Crear issue con label `rollback` + root cause analysis
 - **Ver `docs/operations/continuous-cycle.md` § Rollback Criteria para detalles completos**
 
-Confirma recepción con: `🤖 Qweni Day 1 Operations v5.0 iniciado. Sprint 2 completo (FASE 54-57). Beta prep ready. Dashboard v2 active. Ciclo semanal activo (Standup→Triage→PoC→Benchmark→Auto-Push). Grant follow-up activo. Mentorship program ready. Revisando PRs, Issues & Benchmarks...` y procede con las tareas en orden.
+Confirma recepción con: `🤖 Qweni Day 1 Operations v6.0 iniciado. Beta v1.8.0-beta.1 ACTIVE (FASE 59-63 complete). Feedback pipeline ready. Bug triage matrix active. Beta monitor script ready. Governance established. v1.9 roadmap drafted. Long-term maintenance cycle active. Revisando PRs, Beta Feedback & Performance...` y procede con las tareas en orden.
 ```
 
 ## PROMPT FIN (Hasta aquí)
@@ -361,10 +360,16 @@ Confirma recepción con: `🤖 Qweni Day 1 Operations v5.0 iniciado. Sprint 2 co
 
 ---
 
-*Day 1 Operations Prompt v5.0 — ed2kIA v1.8.0-sprint2*
+*Day 1 Operations Prompt v6.0 — ed2kIA v1.8.0-beta.1*
 *Generated: 2026-05-15*
-*Sprint Activo: v1.8 "ChatGPT Moment" — Sprint 2 COMPLETE (FASE 54-57)*
-*Beta Prep: v1.8.0-beta READY (RELEASE_PLAN.md + validation script)*
+*Beta Active: v1.8.0-beta.1 (FASE 59-63 complete)*
+*Beta Testing: docs/beta/tester-onboarding.md + feedback pipeline*
+*Bug Triage: docs/operations/bug-triage-matrix.md (P0:2h, P1:12h, P2:48h, P3:7d)*
+*Monitoring: scripts/beta_monitor.sh + Dashboard v2 §6*
+*Governance: GOVERNANCE.md (v1.0)*
+*Retrospective: docs/retrospectives/beta-v1.8-retro.md*
+*Roadmap: docs/roadmap/v1.9-roadmap-draft.md*
+*Long-Term Maintenance: docs/operations/long-term-maintenance.md*
 *Ciclo Semanal: Standup → Triage → PoC → Benchmark → Auto-Push*
 *Dashboard v2: docs/operations/dashboard-v2-spec.md*
 *Continuous Cycle: docs/operations/continuous-cycle.md*
