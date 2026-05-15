@@ -158,6 +158,9 @@ stable = [
 # v1.8.0 Sprint 1 — "ChatGPT Moment": API Explorer, Reputation Proof Schema, QuantConfig
 "v1.8-sprint1" = []
 
+# v1.8.0 Sprint 2 — Geographic Routing & WASM Mobile Bridge
+"v1.8-sprint2" = []
+
 # ─── Hardware Acceleration ───
 cpu = []
 cuda = ["candle-core/cuda", "candle-nn/cuda"]

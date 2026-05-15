@@ -36,7 +36,14 @@ pub const SPRINT_IDENTIFIER: &str = "v1.6.0-stable";
 pub mod p2p {
     pub mod swarm;
     pub mod protocol;
+    #[cfg(feature = "v1.8-sprint2")]
+    pub mod geographic_routing;
 }
+
+/// WASM mobile bridge (feature-gated)
+#[cfg(feature = "v1.8-sprint2")]
+#[path = "wasm/mobile_bridge.rs"]
+pub mod mobile_bridge;
 
 /// Sparse Autoencoder (SAE) loading and routing
 pub mod sae {
