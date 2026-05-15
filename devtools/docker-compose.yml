@@ -1,0 +1,160 @@
+# ed2kIA Local Development Environment
+# Usage: docker compose -f devtools/docker-compose.yml up -d
+#
+# Services:
+#   - ed2kIA-node: Main P2P node (port 9000)
+#   - ed2kIA-node2: Second node for mesh testing (port 9001)
+#   - ed2kIA-node3: Third node for consensus testing (port 9002)
+#   - prometheus: Metrics collection
+#   - grafana: Dashboard visualization
+
+version: "3.9"
+
+services:
+  # ─── Main Node ───
+  ed2kIA-node:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: ed2kIA-node
+    ports:
+      - "9000:9000"   # HTTP API
+      - "9001:9001/tcp"  # P2P libp2p
+      - "9001:9001/udp"  # P2P libp2p
+    environment:
+      - RUST_LOG=info
+      - ED2KIA_PORT=9000
+      - ED2KIA_P2P_PORT=9001
+      - ED2KIA_NODE_ID=node1
+      - ED2KIA_BOOTSTRAP_PEERS=/dns/ed2kIA-node2/tcp/9002
+      - ED2KIA_FEATURES=stable
+      - ED2KIA_DB_PATH=/data/ed2kIA.db
+    volumes:
+      - node1-data:/data
+    networks:
+      - ed2kIA-dev
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9000/api/v2/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ─── Second Node (Mesh Testing) ───
+  ed2kIA-node2:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: ed2kIA-node2
+    ports:
+      - "9002:9000"
+      - "9003:9002/tcp"
+      - "9003:9002/udp"
+    environment:
+      - RUST_LOG=info
+      - ED2KIA_PORT=9000
+      - ED2KIA_P2P_PORT=9002
+      - ED2KIA_NODE_ID=node2
+      - ED2KIA_BOOTSTRAP_PEERS=/dns/ed2kIA-node/tcp/9001
+      - ED2KIA_FEATURES=stable
+      - ED2KIA_DB_PATH=/data/ed2kIA.db
+    volumes:
+      - node2-data:/data
+    networks:
+      - ed2kIA-dev
+    restart: unless-stopped
+    depends_on:
+      ed2kIA-node:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9000/api/v2/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ─── Third Node (Consensus Testing) ───
+  ed2kIA-node3:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: ed2kIA-node3
+    ports:
+      - "9004:9000"
+      - "9005:9003/tcp"
+      - "9005:9003/udp"
+    environment:
+      - RUST_LOG=info
+      - ED2KIA_PORT=9000
+      - ED2KIA_P2P_PORT=9003
+      - ED2KIA_NODE_ID=node3
+      - ED2KIA_BOOTSTRAP_PEERS=/dns/ed2kIA-node/tcp/9001,/dns/ed2kIA-node2/tcp/9002
+      - ED2KIA_FEATURES=stable
+      - ED2KIA_DB_PATH=/data/ed2kIA.db
+    volumes:
+      - node3-data:/data
+    networks:
+      - ed2kIA-dev
+    restart: unless-stopped
+    depends_on:
+      ed2kIA-node:
+        condition: service_started
+      ed2kIA-node2:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9000/api/v2/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ─── Prometheus (Metrics Collection) ───
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: ed2kIA-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ../monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=7d'
+    networks:
+      - ed2kIA-dev
+    restart: unless-stopped
+
+  # ─── Grafana (Dashboard Visualization) ───
+  grafana:
+    image: grafana/grafana:latest
+    container_name: ed2kIA-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ../monitoring/grafana:/etc/grafana/provisioning/dashboards:ro
+    networks:
+      - ed2kIA-dev
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+# ─── Volumes ───
+volumes:
+  node1-data:
+  node2-data:
+  node3-data:
+  prometheus-data:
+  grafana-data:
+
+# ─── Networks ───
+networks:
+  ed2kIA-dev:
+    driver: bridge

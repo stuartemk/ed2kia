@@ -125,6 +125,62 @@ ed2kIA/
 │       └── network_init.rs  # Genesis mode + migration + fallback
 └──
 
+## 💻 Desarrollo Local
+
+### Setup Rápido
+
+```bash
+# Instalar herramienta de desarrollo
+cargo install just
+
+# Setup automático del entorno
+bash devtools/setup.sh
+
+# Setup completo (incluye tooling opcional)
+bash devtools/setup.sh --full
+```
+
+### Comandos de Desarrollo
+
+| Comando | Descripción |
+|---------|-------------|
+| `just build` | Build debug (CPU) |
+| `just build-release` | Build release (CPU) |
+| `just build-cuda` | Build con CUDA GPU |
+| `just build-metal` | Build con Metal (Apple Silicon) |
+| `just build-wasm` | Build para WASM |
+| `just check` | Syntax check |
+| `just clippy` | Lint con Clippy |
+| `just test` | Ejecutar tests |
+| `just test-sprint2` | Tests v1.8 Sprint 2 |
+| `just dev` | Ejecutar nodo local |
+| `just docker-compose` | Entorno completo Docker |
+
+### Entorno Docker Completo
+
+```bash
+# Iniciar 3 nodos P2P + Prometheus + Grafana
+just docker-compose
+
+# Acceder a dashboards:
+#   - Node 1 API: http://localhost:9000
+#   - Node 2 API: http://localhost:9002
+#   - Node 3 API: http://localhost:9004
+#   - Prometheus: http://localhost:9090
+#   - Grafana: http://localhost:3000 (admin/admin)
+
+# Detener entorno
+just docker-compose-down
+```
+
+### Estructura de DevTools
+
+```
+devtools/
+├── setup.sh            # Setup automático del entorno
+└── docker-compose.yml  # Entorno local completo (3 nodos + monitoring)
+```
+
 ## 🛠️ Requisitos
 
 - **Rust 1.75+** (edición 2021)
