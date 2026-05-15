@@ -312,6 +312,54 @@ bash scripts/mentorship_onboarding.sh onboarding-check
 bash scripts/mentorship_onboarding.sh grants-status
 ```
 
+## 📦 Versioning & Release Strategy
+
+ed2kIA usa **Semantic Versioning** (`vMAJOR.MINOR.PATCH`) con identificadores pre-release (`alpha`, `beta`, `rc`).
+
+### Feature Gates
+
+El proyecto usa feature gates en `Cargo.toml` para controlar el scope de cada build:
+
+| Feature Gate | Uso | Ejemplo |
+|--------------|-----|---------|
+| `stable` | Producción | `cargo build --features stable` |
+| `v1.8-sprint1` | Beta features | `cargo build --features v1.8-sprint1` |
+| `v1.8-sprint2` | Beta features | `cargo build --features v1.8-sprint2` |
+| `cuda` / `metal` | Hardware acceleration | `cargo build --features cuda` |
+
+### Cómo Verificar tu Build
+
+```bash
+# Build de producción (recomendado)
+cargo build --release --features stable
+
+# Build con features beta
+cargo build --features "stable,v1.8-sprint1,v1.8-sprint2"
+
+# Validación completa
+cargo check --features stable
+cargo clippy --features stable -- -D warnings
+cargo test --features stable
+```
+
+### Release Tags
+
+Los releases se marcan con tags anotados: `v1.8.0-beta.1`, `v1.7.0-stable`, etc.
+
+```bash
+# Ver tags disponibles
+git tag -l 'v*' | sort -v
+
+# Checkout versión específica
+git checkout v1.8.0-beta.1
+```
+
+### Referencias
+
+- **Versioning Alignment:** [`docs/roadmap/versioning-alignment.md`](docs/roadmap/versioning-alignment.md) — Matriz completa Fase ↔ Versión
+- **Changelog:** [`release/changelog.md`](release/changelog.md) — Historial de cambios
+- **Source of Truth:** [`docs/roadmap/source-of-truth.md`](docs/roadmap/source-of-truth.md) — Referencia maestra
+
 ## Contacto
 
 - Issues: https://github.com/ed2kia/ed2kIA/issues
