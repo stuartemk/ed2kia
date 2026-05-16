@@ -1,6 +1,6 @@
 # Security Policy — ed2kIA
 
-**Versión:** v1.9-stable
+**Versión:** v2.0-sprint2
 **Actualizado:** 2026-05-16
 
 ---
@@ -224,8 +224,35 @@ cargo build --features debug,test-mocks
 - **Discussions:** [GitHub Discussions](https://github.com/Stuartemk/ed2kIA/discussions)
 - **Audit Prep Checklist:** [`docs/security/audit-prep-checklist.md`](docs/security/audit-prep-checklist.md)
 - **Dependency Audit Script:** [`scripts/dependency_audit.sh`](scripts/dependency_audit.sh)
-- **Threat Model:** [`security/threat_model_v1.1.md`](security/threat_model_v1.1.md)
+- **Threat Model v1.1:** [`security/threat_model_v1.1.md`](security/threat_model_v1.1.md)
+- **Threat Model v2.0:** [`security/threat_model_v2.0.md`](security/threat_model_v2.0.md)
+- **Security Audit v2.0 Sprint 2:** [`security/audit_v2.0_sprint2.md`](security/audit_v2.0_sprint2.md)
 
 ---
 
-*Última actualización: 2026-05-15 (v1.8-prep)*
+## v2.0 Security Updates
+
+### New Security Controls (v2.0-sprint2)
+
+| Control | Module | Description |
+|---------|--------|-------------|
+| Ethical Bounds Enforcement | Neural Tauri Bridge | Hardcoded immutable limits for empathy, creativity, safety |
+| Config Validation & Clamping | Neural Tauri Bridge | Automatic value clamping with rollback capability |
+| Memory Limits | WASM Mobile Hardening | Per-task and total memory enforcement |
+| Syscall Filtering | WASM Mobile Hardening | Allowlist-based syscall filtering with blocked tracking |
+| Thermal Monitoring | WASM Mobile Hardening | Adaptive temperature-based task throttling |
+| Priority Scheduling | WASM Mobile Hardening | Thermal/memory-aware task scheduling |
+| Commitment Pool Validation | ZKP Commitment Pool | Capacity limits, memory accounting, algorithm validation |
+| K8s Security Controls | K8s Manifests | RBAC, NetworkPolicies, resource quotas |
+
+### Audit Results
+
+- **Overall Verdict:** ✅ PASS — 0 Critical, 0 High, 2 Medium, 3 Low findings
+- **Test Coverage:** 100% pass rate on all v2.0-sprint2 modules (86+ tests)
+- **Compilation:** Clean with zero new warnings
+
+See [`security/audit_v2.0_sprint2.md`](security/audit_v2.0_sprint2.md) for complete audit report.
+
+---
+
+*Última actualización: 2026-05-16 (v2.0-sprint2 / FASE 86)*
