@@ -1,9 +1,11 @@
 # ed2kIA Governance
 
-**Version:** v1.0
-**Fecha:** 2026-05-15
+**Version:** v2.0
+**Fecha:** 2026-05-16
 **Estado:** ACTIVE
-**FASE:** 62 — Post-Beta Retrospective & v1.9 Roadmap
+**FASE:** 92 — Project Constitution & Governance Charter
+
+> **Constitution Reference:** This governance document operates under the [Project Constitution](docs/governance/project-constitution.md). For mission, vision, ethical principles, and amendment processes, see the Constitution.
 
 ---
 
