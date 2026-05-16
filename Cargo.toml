@@ -165,6 +165,12 @@ stable = [
 # K8s operator CRDs (Node/Lease/SteeringConfig) with reconciliation loop
 "v2.0-sprint1" = []
 
+# v2.0.0 Sprint 2 — Neural Steer Integration, ZKP Optimization & WASM Hardening (FASE 85)
+# Neural Tauri Bridge (slider validation, ethical bounds), Commitment Pool (batch ZKP opt),
+# WASM Mobile Hardening (memory limits, thermal fallback, adaptive scheduler),
+# K8s manifests (node-deployment, lease-configmap, steering-service)
+"v2.0-sprint2" = []
+
 # v1.7.0 Sprint 1 — RFC-001 PoC: FP8/INT4 Quantization + Async Steering Signals
 "v1.7-sprint1" = []
 

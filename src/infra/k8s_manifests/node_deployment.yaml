@@ -1,0 +1,205 @@
+# ============================================================================
+# ed2kIA v2.0 — Node Deployment Manifest
+# ============================================================================
+# K8s Deployment for ed2kIA node with resource limits, health checks,
+# and security context. Part of v2.0-sprint2 infrastructure.
+# ============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ed2k-node
+  namespace: ed2k-system
+  labels:
+    app: ed2k-node
+    version: v2.0-sprint2
+    component: node
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ed2k-node
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: ed2k-node
+        version: v2.0-sprint2
+    spec:
+      # Security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      # Node affinity for optimal placement
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: ed2k.io/node-type
+                    operator: In
+                    value:
+                      - compute
+                      - balanced
+      # Resource limits
+      containers:
+        - name: ed2k-node
+          image: ed2k/node:v2.0-sprint2
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: p2p
+              containerPort: 9000
+              protocol: TCP
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          # Resource requests and limits
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2000m"
+              memory: "2Gi"
+          # Health checks
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          # Environment variables
+          env:
+            - name: ED2K_NODE_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+            - name: ED2K_LOG_LEVEL
+              value: "info"
+            - name: ED2K_P2P_PORT
+              value: "9000"
+            - name: ED2K_HTTP_PORT
+              value: "8080"
+            - name: ED2K_MAX_MEMORY_BYTES
+              value: "2147483648"  # 2Gi
+          # Volume mounts
+          volumeMounts:
+            - name: config
+              mountPath: /etc/ed2k
+              readOnly: true
+            - name: data
+              mountPath: /var/lib/ed2k
+            - name: tmp
+              mountPath: /tmp
+      # Volumes
+      volumes:
+        - name: config
+          configMap:
+            name: ed2k-config
+        - name: data
+          persistentVolumeClaim:
+            claimName: ed2k-data-pvc
+        - name: tmp
+          emptyDir:
+            sizeLimit: "128Mi"
+      # Tolerations
+      tolerations:
+        - key: "ed2k.io/workload"
+          operator: "Equal"
+          value: "compute"
+          effect: "NoSchedule"
+---
+# ============================================================================
+# Service — Node internal communication
+# ============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: ed2k-node-service
+  namespace: ed2k-system
+  labels:
+    app: ed2k-node
+    version: v2.0-sprint2
+spec:
+  type: ClusterIP
+  selector:
+    app: ed2k-node
+  ports:
+    - name: p2p
+      port: 9000
+      targetPort: p2p
+      protocol: TCP
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP
+---
+# ============================================================================
+# PersistentVolumeClaim — Node data storage
+# ============================================================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ed2k-data-pvc
+  namespace: ed2k-system
+  labels:
+    app: ed2k-node
+    version: v2.0-sprint2
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard
+---
+# ============================================================================
+# ConfigMap — Node configuration
+# ============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ed2k-config
+  namespace: ed2k-system
+  labels:
+    app: ed2k-node
+    version: v2.0-sprint2
+data:
+  ed2k.conf: |
+    # ed2kIA Node Configuration
+    [network]
+    p2p_port = 9000
+    max_peers = 50
+    sync_interval_ms = 5000
+
+    [zkp]
+    max_batch_size = 100
+    proof_timeout_ms = 30000
+
+    [steering]
+    empathy_min = -0.5
+    empathy_max = 0.8
+    creativity_min = -0.3
+    creativity_max = 0.9
+    safety_min = 0.2
+    safety_max = 1.0
+
+    [logging]
+    level = info
+    format = json

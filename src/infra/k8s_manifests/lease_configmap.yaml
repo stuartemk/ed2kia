@@ -1,0 +1,205 @@
+# ============================================================================
+# ed2kIA v2.0 — Lease ConfigMap Manifest
+# ============================================================================
+# K8s ConfigMap for leader election leases and distributed coordination.
+# Part of v2.0-sprint2 infrastructure.
+# ============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ed2k-lease-config
+  namespace: ed2k-system
+  labels:
+    app: ed2k-node
+    version: v2.0-sprint2
+    component: lease
+data:
+  # ============================================================================
+  # Leader Election Configuration
+  # ============================================================================
+  lease-policy.conf: |
+    # Leader Election Policy
+    [lease]
+    # Lease duration in seconds
+    duration_seconds = 30
+    # Renew deadline before lease expires
+    renew_deadline_seconds = 15
+    # Retry period between renewal attempts
+    retry_period_seconds = 5
+    # Maximum number of lease holders (for HA)
+    max_holders = 1
+
+    [leader_election]
+    # Enable leader election
+    enabled = true
+    # Election timeout in milliseconds
+    election_timeout_ms = 5000
+    # Heartbeat interval in milliseconds
+    heartbeat_interval_ms = 1000
+    # Maximum missed heartbeats before re-election
+    max_missed_heartbeats = 3
+
+  # ============================================================================
+  # Resource Lease Configuration
+  # ============================================================================
+  resource-lease.conf: |
+    [resource_lease]
+    # Maximum concurrent resource leases per node
+    max_concurrent_leases = 10
+    # Lease timeout in milliseconds
+    lease_timeout_ms = 60000
+    # Auto-renewal enabled
+    auto_renewal = true
+    # Renewal buffer time in milliseconds
+    renewal_buffer_ms = 10000
+
+    [compute_resources]
+    # CPU lease limits
+    max_cpu_per_lease = "1000m"
+    # Memory lease limits
+    max_memory_per_lease = "1Gi"
+    # GPU lease limits (if available)
+    max_gpu_per_lease = 1
+
+  # ============================================================================
+  # Lease Health Monitoring
+  # ============================================================================
+  lease-monitoring.conf: |
+    [monitoring]
+    # Enable lease health monitoring
+    enabled = true
+    # Check interval in seconds
+    check_interval_seconds = 10
+    # Alert on lease expiration within this threshold
+    expiration_alert_threshold_seconds = 5
+    # Metrics export interval
+    metrics_export_interval_seconds = 30
+
+    [alerts]
+    # Alert channels
+    channels = ["log", "metrics"]
+    # Alert on leader change
+    alert_on_leader_change = true
+    # Alert on lease conflict
+    alert_on_conflict = true
+---
+# ============================================================================
+# Lease CRD (Custom Resource Definition) — For K8s Operator
+# ============================================================================
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: ed2kleases.ed2k.io
+  labels:
+    app: ed2k-node
+    version: v2.0-sprint2
+spec:
+  group: ed2k.io
+  names:
+    kind: Ed2kLease
+    listKind: Ed2kLeaseList
+    singular: ed2klease
+    plural: ed2kleases
+    shortNames:
+      - lease
+      - leases
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                holderIdentity:
+                  type: string
+                  description: "Unique identifier of the lease holder"
+                leaseDurationSeconds:
+                  type: integer
+                  description: "Lease duration in seconds"
+                  minimum: 1
+                  maximum: 3600
+                renewDeadlineSeconds:
+                  type: integer
+                  description: "Renew deadline in seconds"
+                retryPeriodSeconds:
+                  type: integer
+                  description: "Retry period in seconds"
+                resourceType:
+                  type: string
+                  description: "Type of resource being leased"
+                  enum:
+                    - leader
+                    - compute
+                    - storage
+                    - network
+              required:
+                - holderIdentity
+                - leaseDurationSeconds
+            status:
+              type: object
+              properties:
+                acquiredAt:
+                  type: string
+                  format: date-time
+                  description: "Timestamp when lease was acquired"
+                expiresAt:
+                  type: string
+                  format: date-time
+                  description: "Timestamp when lease expires"
+                lastRenewedAt:
+                  type: string
+                  format: date-time
+                  description: "Last renewal timestamp"
+                renewCount:
+                  type: integer
+                  description: "Number of times lease was renewed"
+                state:
+                  type: string
+                  description: "Current lease state"
+                  enum:
+                    - active
+                    - expired
+                    - revoked
+                    - pending
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - jsonPath: .spec.holderIdentity
+          name: Holder
+          type: string
+        - jsonPath: .status.state
+          name: State
+          type: string
+        - jsonPath: .spec.leaseDurationSeconds
+          name: Duration
+          type: integer
+        - jsonPath: .status.expiresAt
+          name: Expires
+          type: date
+---
+# ============================================================================
+# Sample Lease Instance
+# ============================================================================
+apiVersion: ed2k.io/v1alpha1
+kind: Ed2kLease
+metadata:
+  name: ed2k-leader-lease
+  namespace: ed2k-system
+  labels:
+    app: ed2k-node
+    version: v2.0-sprint2
+    component: leader-election
+spec:
+  holderIdentity: "ed2k-node-0"
+  leaseDurationSeconds: 30
+  renewDeadlineSeconds: 15
+  retryPeriodSeconds: 5
+  resourceType: "leader"
+status:
+  state: "active"
+  renewCount: 0

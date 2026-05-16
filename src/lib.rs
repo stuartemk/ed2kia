@@ -825,6 +825,25 @@ pub mod multi_curve_setup;
 pub mod k8s_operator_base;
 
 // ============================================================================
+// v2.0.0 Sprint 2 — Neural Steer Integration, ZKP Optimization & WASM Hardening (FASE 85)
+// ============================================================================
+
+/// Neural Tauri Bridge — Integration between Neural Steer UI and Tauri GUI scaffold
+#[cfg(feature = "v2.0-sprint2")]
+#[path = "gui/neural_tauri_bridge.rs"]
+pub mod neural_tauri_bridge;
+
+/// Commitment Pool — Optimized commitment pooling for batch ZKP verification
+#[cfg(feature = "v2.0-sprint2")]
+#[path = "zkp/commitment_pool.rs"]
+pub mod commitment_pool;
+
+/// WASM Mobile Hardening — Memory limits, thermal fallback & adaptive scheduler
+#[cfg(feature = "v2.0-sprint2")]
+#[path = "wasm/mobile_hardening.rs"]
+pub mod mobile_hardening;
+
+// ============================================================================
 // Feature Detection Utilities
 // ============================================================================
 

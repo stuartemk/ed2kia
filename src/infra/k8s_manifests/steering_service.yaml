@@ -1,0 +1,255 @@
+# ============================================================================
+# ed2kIA v2.0 — Steering Service Manifest
+# ============================================================================
+# K8s Service and associated resources for the Neural Steering API.
+# Part of v2.0-sprint2 infrastructure.
+# ============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: ed2k-steering-service
+  namespace: ed2k-system
+  labels:
+    app: ed2k-steering
+    version: v2.0-sprint2
+    component: steering
+spec:
+  type: ClusterIP
+  selector:
+    app: ed2k-node
+    component: steering
+  ports:
+    - name: http
+      port: 8081
+      targetPort: 8081
+      protocol: TCP
+    - name: ws
+      port: 8082
+      targetPort: 8082
+      protocol: TCP
+---
+# ============================================================================
+# Steering Service Deployment
+# ============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ed2k-steering
+  namespace: ed2k-system
+  labels:
+    app: ed2k-steering
+    version: v2.0-sprint2
+    component: steering
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ed2k-steering
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: ed2k-steering
+        version: v2.0-sprint2
+        component: steering
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+      containers:
+        - name: steering
+          image: ed2k/steering:v2.0-sprint2
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8081
+              protocol: TCP
+            - name: ws
+              containerPort: 8082
+              protocol: TCP
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          env:
+            - name: ED2K_STEERING_PORT
+              value: "8081"
+            - name: ED2K_WS_PORT
+              value: "8082"
+            - name: ED2K_ETHICAL_BOUNDS_ENABLED
+              value: "true"
+            - name: ED2K_MAX_REQUESTS_PER_SECOND
+              value: "100"
+          volumeMounts:
+            - name: steering-config
+              mountPath: /etc/ed2k/steering
+              readOnly: true
+      volumes:
+        - name: steering-config
+          configMap:
+            name: ed2k-steering-config
+---
+# ============================================================================
+# Steering ConfigMap
+# ============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ed2k-steering-config
+  namespace: ed2k-system
+  labels:
+    app: ed2k-steering
+    version: v2.0-sprint2
+data:
+  steering.conf: |
+    # Neural Steering Configuration
+    [steering]
+    # Enable ethical bounds enforcement
+    ethical_bounds_enabled = true
+    # Empathy bounds
+    empathy_min = -0.5
+    empathy_max = 0.8
+    # Creativity bounds
+    creativity_min = -0.3
+    creativity_max = 0.9
+    # Safety bounds (minimum safety is enforced)
+    safety_min = 0.2
+    safety_max = 1.0
+
+    [api]
+    # Rate limiting
+    max_requests_per_second = 100
+    # Request timeout in milliseconds
+    request_timeout_ms = 5000
+    # Enable request logging
+    request_logging = true
+
+    [websocket]
+    # Max concurrent connections
+    max_connections = 1000
+    # Ping interval in seconds
+    ping_interval_seconds = 30
+    # Message size limit in bytes
+    max_message_size = 65536
+
+    [monitoring]
+    # Enable metrics export
+    metrics_enabled = true
+    # Metrics path
+    metrics_path = /metrics
+    # Health check path
+    health_path = /health
+---
+# ============================================================================
+# HorizontalPodAutoscaler — Steering Service
+# ============================================================================
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ed2k-steering-hpa
+  namespace: ed2k-system
+  labels:
+    app: ed2k-steering
+    version: v2.0-sprint2
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ed2k-steering
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Pods
+          value: 2
+          periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 120
+---
+# ============================================================================
+# NetworkPolicy — Restrict steering service access
+# ============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ed2k-steering-network-policy
+  namespace: ed2k-system
+  labels:
+    app: ed2k-steering
+    version: v2.0-sprint2
+spec:
+  podSelector:
+    matchLabels:
+      app: ed2k-steering
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: ed2k-node
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ed2k-gui
+      ports:
+        - protocol: TCP
+          port: 8081
+        - protocol: TCP
+          port: 8082
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: ed2k-node
+      ports:
+        - protocol: TCP
+          port: 9000
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53  # DNS
