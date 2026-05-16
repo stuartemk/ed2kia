@@ -1,0 +1,42 @@
+# ed2kIA Node v2.1 — Systemd Service Template
+# License: Apache 2.0 + Ethical Use Clause
+#
+# TODO: RFC-003 approval required for production hardening
+# This is a scaffold only — review all paths and security settings before deployment
+
+[Unit]
+Description=ed2kIA Node v2.1 Testnet
+Documentation=https://github.com/Stuartemk/ed2kIA
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ed2k
+Group=ed2k
+ExecStart=/opt/ed2kIA/target/release/ed2kia --config /etc/ed2k/node.toml
+WorkingDirectory=/opt/ed2kIA
+EnvironmentFile=/etc/ed2k/ed2k-node.env
+Restart=on-failure
+RestartSec=10
+StartLimitBurst=5
+StartLimitIntervalSec=60
+
+# Resource limits
+MemoryMax=4G
+CPUQuota=400%
+
+# Security hardening (TODO: Review with RFC-003)
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/data/ed2k
+PrivateTmp=true
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ed2k-node-v2.1
+
+[Install]
+WantedBy=multi-user.target

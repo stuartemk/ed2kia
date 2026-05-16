@@ -1,0 +1,93 @@
+# Testnet v2.1 Infrastructure Scaffold
+# Placeholder services for local/testnet development
+# License: Apache 2.0 + Ethical Use Clause
+#
+# TODO: RFC-003 approval required for production hardening
+# This is a scaffold only — no custom images, no production config
+
+version: '3.8'
+
+services:
+  # ed2kIA Node — Placeholder for v2.1 testnet node
+  ed2k-node:
+    image: alpine:latest
+    command: sleep infinity
+    container_name: ed2k-node-v2.1
+    ports:
+      - "30333:30333"    # P2P libp2p
+      - "9944:9944"      # RPC (placeholder)
+      - "9615:9615"      # Metrics endpoint
+    environment:
+      - RUST_LOG=info
+      - ED2K_NODE_ID=testnet-node-001
+      - ED2K_P2P_PORT=30333
+      - ED2K_METRICS_ENABLED=true
+      - ED2K_FEATURES=v2.1-sprint1,v2.1-observability
+    volumes:
+      - ed2k-data:/data/ed2k
+      - ./config/node.toml:/etc/ed2k/node.toml:ro
+    networks:
+      - testnet
+    restart: unless-stopped
+    # TODO: Add healthcheck once observability scaffold is implemented
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:9615/health"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+
+  # Prometheus — Metrics collection (placeholder)
+  prometheus:
+    image: alpine:latest
+    command: sleep infinity
+    container_name: ed2k-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - prometheus-data:/prometheus
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks:
+      - testnet
+    restart: unless-stopped
+
+  # Grafana — Metrics visualization (placeholder)
+  grafana:
+    image: alpine:latest
+    command: sleep infinity
+    container_name: ed2k-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./config/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+    networks:
+      - testnet
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+  # Redis — Metrics cache / pub-sub (placeholder)
+  redis:
+    image: alpine:latest
+    command: sleep infinity
+    container_name: ed2k-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - testnet
+    restart: unless-stopped
+
+volumes:
+  ed2k-data:
+  prometheus-data:
+  grafana-data:
+  redis-data:
+
+networks:
+  testnet:
+    driver: bridge

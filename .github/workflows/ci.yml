@@ -245,3 +245,44 @@ jobs:
 
       - name: Run security audit
         run: cargo audit
+
+  # ============================================
+  # 6. Feature Gate Check — Ensure v2.1 features are not in default
+  # ============================================
+  feature-gate-check:
+    name: Feature Gate Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify v2.1 features not in default
+        run: |
+          # Extract default feature list from Cargo.toml
+          DEFAULT_FEATURES=$(grep -A 20 '^default = \[' Cargo.toml | grep '"' | tr -d '", ' | sort)
+          # Check that no v2.1-* features are in default
+          if echo "$DEFAULT_FEATURES" | grep -q "^v2\.1"; then
+            echo "ERROR: v2.1 features found in default feature gate!"
+            echo "Features in default: $DEFAULT_FEATURES"
+            exit 1
+          fi
+          echo "PASS: No v2.1 features in default gate"
+
+      - name: Verify default build compiles
+        run: cargo check
+
+  # ============================================
+  # 7. Voting Script Validation
+  # ============================================
+  voting-script-validation:
+    name: Voting Script Syntax Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate voting-tally.sh syntax
+        run: bash -n scripts/voting-tally.sh
+
+      - name: Validate security-alert.sh syntax
+        run: bash -n scripts/security-alert.sh
