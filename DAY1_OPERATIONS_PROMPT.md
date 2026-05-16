@@ -1,4 +1,4 @@
-# Day 1 Operations Prompt v7.0 — ed2kIA v1.9.0 (FASE 7 Unified)
+# Day 1 Operations Prompt v8.0 — ed2kIA v1.9.0 (FASE 7 Unified + Sprint 2)
 
 **Instrucciones:** Copiar y pegar este prompt completo en una nueva sesión con Qweni para iniciar operaciones con ciclo FASE 7 = v1.9 unificado (Sprint → Hardening → GUI → ZKP → Auto-Push).
 
@@ -9,35 +9,42 @@
 ## PROMPT INICIO (Copiar desde aquí)
 
 ```
-🤖 PROMPT DE OPERACIONES DÍA 1 v7.0 — ed2kIA v1.9.0 (FASE 7 Unified)
+🤖 PROMPT DE OPERACIONES DÍA 1 v8.0 — ed2kIA v1.9.0 (FASE 7 Unified + Sprint 2)
 
 ## CONTEXTO
 - Proyecto: ed2kIA (Distributed AI Federation)
 - Versión en producción: v1.6.0-stable → v1.9.0 (FASE 7 ACTIVE)
 - **UNIFICACIÓN:** FASE 7 = v1.9 (Estratégica = Táctica, mismo ciclo)
-- Sprint Activo: v1.9 "Production Hardening & Mobile GUI Foundation" — FASE 68-71
+- Sprint Activo: v1.9 "Production Hardening & Mobile GUI Foundation" — FASE 68-75
 - FASE 68: Unificación Estratégica FASE 7 ↔ v1.9 (commit `6604403`)
 - FASE 69: Sprint 1 — Production Hardening & Mobile GUI Foundation (commit `5921253`)
 - FASE 70: Tracking Unificado & Dashboard v3 (commit `fca7e7b`)
-- FASE 71: Operational Prompt v7.0 & Handover Final (IN PROGRESS)
+- FASE 71: Operational Prompt v7.0 & Handover Final (commit `2f6f2c1`)
+- FASE 72: v1.9 Sprint 2 — ZKP Aggregation & Neural Steer UI (commit `eeb5bfd`)
+- FASE 73: Integración Feedback Beta & Paquete Grants (commit `afca75e`)
+- FASE 74: Automatización Primeros PRs & Onboarding Externo (commit `ba17b3d`)
+- FASE 75: Weekly Cycle 5 & Operational Prompt v8.0 (IN PROGRESS)
 - Sprint 1 Modules (v1.9-sprint1):
   * src/gui/mobile_foundation.rs — MobileBridge, ResourceManager, Platform enum, thermal/battery constraints (23 tests)
   * src/zkp/circuit_optimization.rs — ConstraintPool, PedersenPrecompute, CircuitBenchmark (29 tests)
   * src/protocol/async_steering.rs — HARDENED: P95/P99 latency, timeout budget, RetryConfig/RetryState (exponential backoff + jitter)
-- Feature Gate: "v1.9-sprint1" = [] (Cargo.toml)
+- Sprint 2 Modules (v1.9-sprint2):
+  * src/zkp/proof_aggregation.rs — ProofAggregator, AggregationBatch, AggregationMetrics (33 tests)
+  * src/gui/neural_steer_ui.rs — SteeringSlider, NeuralSteerConfig, SteeringSignalBridge (31 tests)
+- Feature Gates: "v1.9-sprint1" = [], "v1.9-sprint2" = [] (Cargo.toml)
 - License: Apache 2.0 + Ethical Use Clause
-- Tests: 2935 + 52 new (stable + v1.9-sprint1, 8 pre-existing failures)
-- Modules: SAE Fine-Tuning v7, Federation Scaling v7, Async ZKP v14, Bridge v7, UI v7, API Explorer v1, Reputation Proof Schema, Async Steering v1.9 (HARDENED), QuantConfig v3, Geographic Routing, WASM Mobile Bridge, Mobile Foundation v1.9, Circuit Optimization v1.9
+- Tests: 2935 + 116 new (stable + v1.9-sprint1 + v1.9-sprint2, 8 pre-existing failures)
+- Modules: SAE Fine-Tuning v7, Federation Scaling v7, Async ZKP v14, Bridge v7, UI v7, API Explorer v1, Reputation Proof Schema, Async Steering v1.9 (HARDENED), QuantConfig v3, Geographic Routing, WASM Mobile Bridge, Mobile Foundation v1.9, Circuit Optimization v1.9, Proof Aggregation v1.9, Neural Steer UI v1.9
 - DX Tools: Justfile (30+ recipes), docker-compose dev (3 nodes + Prometheus + Grafana), setup.sh
-- Mentorship: 3 tiers (Seed/Sprout/Tree), onboarding automation script
-- Grants: NSF AI Safety ($120K), Gitcoin QF ($5K), OSSF Security ($40K) — submitted, follow-up active
+- Mentorship: 3 tiers (Seed/Sprout/Tree), onboarding automation script, first-PR automation
+- Grants: NSF AI Safety ($120K), Gitcoin QF ($5K), OSSF Security ($40K) — preparation phase
 - Funding: GitHub Sponsors, Open Collective, Gitcoin, Crypto (BTC/ETH/USDC)
 - Ciclo Semanal: Standup → Triage → PoC → Benchmark → Auto-Push
 - Ciclo FASE 7: Sprint → Hardening → GUI → ZKP → Auto-Push
 - Dashboard: v3.0 spec — FASE 7 metrics (hardening success rate, GUI adoption, ZKP constraint reduction, P95/P99 latency)
 - **Source of Truth:** docs/roadmap/source-of-truth.md (OBLIGATORIO en cada standup)
 - **FASE 6 Reconciled:** phase6-audit-mapping.md + versioning-alignment.md (FASE 64-66)
-- **FASE 7 Unified:** phase7-v1.9-unification.md + phase7-tracking.md (FASE 68-71)
+- **FASE 7 Unified:** phase7-v1.9-unification.md + phase7-tracking.md (FASE 68-75)
 
 ## ROLES
 - **IA (Qweni):** Mantenimiento automatizado, triaje, code review, documentation, benchmark execution, metrics collection, weekly standup generation, dashboard v3 updates, mentorship coordination, FASE 7 cycle execution
