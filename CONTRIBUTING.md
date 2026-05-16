@@ -382,6 +382,56 @@ El proyecto participa en programas de financiamiento (Gitcoin, NSF, OSSF). Para 
 
 **IMPORTANTE:** Los grants requieren autenticación humana en portales externos. Los scripts solo preparan paquetes — nunca simulan envíos.
 
+## 🏆 Sistema de Reconocimiento
+
+### Niveles de Contribuidor
+
+| Nivel | Requisitos | Beneficios |
+|-------|-----------|------------|
+| **Bronze** | 1 PR mergeado | Badge, página de contribuidor |
+| **Silver** | 5 PRs, 10 tests | Early access, reconocimiento mensual |
+| **Gold** | 20 PRs, 50 tests | Derechos de voto, path a maintainer |
+| **Platinum** | 50 PRs, 150 tests | Nominación maintainer |
+| **Diamond** | 100 PRs, 300 tests | Hall of Fame |
+
+### Insignias (Badges)
+
+Las insignias se generan automáticamente basadas en contribuciones:
+
+| Insignia | Criterio |
+|----------|---------|
+| 🌱 Seed | Primer PR mergeado |
+| 🐛 Bug Hunter | 5 bugs arreglados |
+| 🔨 Builder | 3 features implementadas |
+| ✅ Test Master | 50 tests escritos |
+| 📚 Wizard | 10 docs mejorados |
+| ⚡ Guru | Mejora de performance |
+| 🛡️ Sentinel | Issue de seguridad encontrado |
+| 🚀 Engineer | Release validado |
+| 🏛️ Sage | RFC aprobado |
+| 🌟 Pioneer | Contribuyó a v2.0 |
+
+### Generar Badges
+
+```bash
+./scripts/generate_contributor_badges.sh --output ./badges --tier all
+```
+
+### Hall of Fame
+
+Miembros destacados por contribuciones excepcionales:
+
+| Nombre | Contribución | Inducido |
+|--------|-------------|----------|
+| @Stuartemk | Fundador, lead developer | 2026-05-16 |
+| Roo (AI) | Operaciones autónomas, CI/CD | 2026-05-16 |
+
+### Referencias
+
+- [Milestone Tracker](docs/community/milestone-tracker.md) — Tracking completo de hitos
+- [Project Constitution](docs/governance/project-constitution.md) — Principios del proyecto
+- [GOVERNANCE.md](GOVERNANCE.md) — Framework de gobernanza
+
 ## Contacto
 
 - Issues: https://github.com/ed2kia/ed2kIA/issues
