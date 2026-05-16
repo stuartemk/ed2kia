@@ -360,6 +360,28 @@ git checkout v1.8.0-beta.1
 - **Changelog:** [`release/changelog.md`](release/changelog.md) — Historial de cambios
 - **Source of Truth:** [`docs/roadmap/source-of-truth.md`](docs/roadmap/source-of-truth.md) — Referencia maestra
 
+## 🌍 Ambassador & Grant Support
+
+### Ambassador Program
+
+¿Quieres representar a ed2kIA en tu comunidad? Únete al programa de embajadores:
+
+- **Programa completo:** [`docs/community/ambassador-program.md`](docs/community/ambassador-program.md)
+- **Niveles:** Seed → Sprout → Tree (con beneficios crecientes)
+- **Responsabilidades:** Eventos, contenido educativo, mentoría, feedback comunitario
+- **Aplicar:** Join Discord #ambassadors channel o abre un issue con label `ambassador`
+
+### Grant Execution Support
+
+El proyecto participa en programas de financiamiento (Gitcoin, NSF, OSSF). Para apoyar:
+
+- **Grant drafts:** [`docs/grants/`](docs/grants/) — Revisar y mejorar propuestas
+- **Submission tracker:** [`docs/grants/submission-tracker.md`](docs/grants/submission-tracker.md)
+- **Execution script:** [`scripts/grant_execution_support.sh`](scripts/grant_execution_support.sh) — Genera paquetes con checksums SHA256
+- **Manifest:** Ejecuta `./scripts/grant_execution_support.sh --manifest` para ver el estado actual
+
+**IMPORTANTE:** Los grants requieren autenticación humana en portales externos. Los scripts solo preparan paquetes — nunca simulan envíos.
+
 ## Contacto
 
 - Issues: https://github.com/ed2kia/ed2kIA/issues
