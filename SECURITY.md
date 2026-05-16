@@ -1,7 +1,7 @@
 # Security Policy — ed2kIA
 
-**Versión:** v1.8-prep
-**Actualizado:** 2026-05-15
+**Versión:** v1.9-stable
+**Actualizado:** 2026-05-16
 
 ---
 
@@ -109,6 +109,31 @@ This script performs:
 5. Security-relevant dependency checks
 
 Reports are saved to `docs/security/audit-reports/`.
+
+---
+
+## Audit & Compliance
+
+### OSSF Compliance Report (v1.9-stable)
+
+See [`docs/security/ossf-compliance-report.md`](docs/security/ossf-compliance-report.md) for the complete Open Source Security Foundation compliance report including:
+
+- **CVE Scan Results:** 22 findings (0 Critical, 3 High, 8 Medium, 11 Low)
+- **Dependency Tree:** 28 direct deps, 624 total crates, 100% locked versions
+- **License Compliance:** All OSI-approved, Apache-2.0 compatible
+- **WASM Sandbox Verification:** Cranelift-only, 256MB memory cap, minimal WASI
+- **Risk Matrix:** Overall 🟡 MEDIUM — mitigations documented
+- **OSSF Scorecard:** Estimated 8.5/10 (Passing)
+
+**Key Findings:**
+| Severity | Count | Primary Source | Mitigation |
+|----------|-------|---------------|------------|
+| Critical | 0 | — | — |
+| High | 3 | wasmtime 17.0, lru 0.12.5 | Minimal WASI, transitive only |
+| Medium | 8 | rustls-webpki, ring 0.16 | Not in security-critical paths |
+| Low | 11 | Unmaintained crates | Compile-time or non-security paths |
+
+**Next Audit:** Pre-v1.9.0-stable release gate.
 
 ---
 
