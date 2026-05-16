@@ -1,0 +1,80 @@
+name: 💬 v2.0 Early Access Feature Feedback
+description: Provide feedback on v2.0 pre-release features (Early Access participants)
+title: "[EA-v2.0] Feedback: "
+labels: ["early-access", "v2.0", "feedback"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for your feedback on ed2kIA v2.0! Your input shapes the final product.
+
+  - type: dropdown
+    id: module
+    attributes:
+      label: Module
+      description: Which v2.0 module are you providing feedback on?
+      options:
+        - neural_steer_ui
+        - neural_tauri_bridge
+        - tauri_scaffold
+        - commitment_pool
+        - mobile_hardening
+        - k8s_manifests
+        - multi_curve_setup
+        - overall
+    validations:
+      required: true
+
+  - type: textarea
+    id: works-well
+    attributes:
+      label: What Works Well
+      description: What do you like about this feature?
+      placeholder: "The ethical bounds enforcement is intuitive and well-designed..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: improve
+    attributes:
+      label: What Could Be Improved
+      description: What aspects need improvement?
+      placeholder: "The config history could have a size limit..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: missing
+    attributes:
+      label: Missing Functionality
+      description: What functionality is missing?
+      placeholder: "It would be helpful to have..."
+
+  - type: textarea
+    id: suggestions
+    attributes:
+      label: Suggestions
+      description: Any specific suggestions?
+      placeholder: "Consider adding..."
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case Context
+      description: Briefly describe your use case
+      placeholder: "I'm using this for..."
+
+  - type: dropdown
+    id: satisfaction
+    attributes:
+      label: Overall Satisfaction
+      description: How satisfied are you with this feature?
+      options:
+        - "5 - Excellent"
+        - "4 - Good"
+        - "3 - Acceptable"
+        - "2 - Needs Work"
+        - "1 - Poor"
+    validations:
+      required: true

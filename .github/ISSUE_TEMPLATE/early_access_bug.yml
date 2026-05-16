@@ -1,0 +1,99 @@
+name: 🐛 v2.0 Early Access Bug Report
+description: Report a bug in v2.0 pre-release features (Early Access participants)
+title: "[EA-v2.0] "
+labels: ["early-access", "v2.0", "bug"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for participating in the ed2kIA v2.0 Early Access Program!
+        Please fill out this form to help us identify and fix issues quickly.
+
+  - type: dropdown
+    id: module
+    attributes:
+      label: Module
+      description: Which v2.0 module is affected?
+      options:
+        - neural_steer_ui
+        - neural_tauri_bridge
+        - tauri_scaffold
+        - commitment_pool
+        - mobile_hardening
+        - k8s_manifests
+        - multi_curve_setup
+        - other
+    validations:
+      required: true
+
+  - type: input
+    id: environment-os
+    attributes:
+      label: Operating System
+      placeholder: "Windows 11 / macOS 14 / Ubuntu 24.04"
+    validations:
+      required: true
+
+  - type: input
+    id: environment-rust
+    attributes:
+      label: Rust Version
+      placeholder: "rustc 1.75.0"
+    validations:
+      required: true
+
+  - type: input
+    id: features
+    attributes:
+      label: Cargo Features
+      placeholder: "v2.0-sprint2"
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction Steps
+      description: Steps to reproduce the bug
+      placeholder: |
+        1. Build with `cargo build --features v2.0-sprint2`
+        2. Run ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      placeholder: What should have happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      placeholder: What actually happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Output
+      description: Relevant logs or error output
+      render: shell
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - Critical (blocks all usage)
+        - High (major feature broken)
+        - Medium (feature degraded)
+        - Low (minor issue)
+    validations:
+      required: true
