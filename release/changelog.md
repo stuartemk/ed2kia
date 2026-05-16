@@ -8,6 +8,79 @@ El formato sigue [Semantic Versioning](https://semver.org/) y [Keep a Changelog]
 
 ## [Unreleased]
 
+## [v2.0.0-stable] - 2026-05-16 (FASE 85-89 Complete — Neural Tauri Bridge, ZKP Commitment Pool, WASM Hardening, K8s, Threat Model v2.0, Early Access, Sustainability)
+
+### ✨ Agregado
+
+#### Neural Tauri Bridge (FASE 85)
+- EthicalBounds con validación de rangos empathy/creativity/safety
+- NeuralTauriBridge con serialización JSON, clamping y rollback
+- NeuralTauriState para gestión de estado Tauri
+- 26 tests unitarios
+
+#### ZKP Commitment Pool (FASE 85)
+- PrecomputeAlgo: Pedersen/InnerProduct/Lagrange
+- CommitmentPool con precomputación de bases
+- CriterionAdapter para benchmarks
+- 30+ tests unitarios
+
+#### WASM Mobile Hardening (FASE 85)
+- MemoryLimiter con tracking de allocations
+- SyscallFilter whitelist/blacklist
+- ThermalMonitor con throttling por temperatura
+- PriorityScheduler para gestión de tareas
+- 30+ tests unitarios
+
+#### Kubernetes Manifests (FASE 85)
+- node_deployment.yaml: Deployment, Service, PVC, ConfigMap
+- lease_configmap.yaml: Lease ConfigMap, CRD, sample lease
+- steering_service.yaml: Steering Service, Deployment, HPA, NetworkPolicy
+
+#### Threat Model v2.0 (FASE 86)
+- 7 nuevas amenazas (T-010 a T-017)
+- Clasificación STRIDE+DREAD
+- Matriz de riesgo y mitigaciones
+
+#### Security Audit v2.0 (FASE 86)
+- 0 Critical, 0 High, 2 Medium, 3 Low → PASS
+- SECURITY.md actualizado v2.0
+
+#### Early Access Program (FASE 87)
+- Programa 8 semanas, 50 participantes, 4 tiers
+- Templates de bug report y feature feedback
+- Script de procesamiento automatizado
+
+#### Sustainability Framework (FASE 88)
+- Pilares: funding, community, technical, governance
+- Partnership playbook con outreach strategy
+
+#### Operational Prompt v11.0 (FASE 89)
+- Framework completo de operaciones autónomas
+- Decision matrix y handover protocol
+
+### 🔧 Cambios
+
+- Feature flags: `v2.0-sprint1`, `v2.0-sprint2`
+- FASE 85-89 completadas (5 commits)
+- 160+ tests nuevos agregados
+
+### 🔒 Seguridad
+
+- Threat model v2.0 con 7 nuevas amenazas
+- Security audit v2.0: PASS (0 Critical, 0 High)
+- SECURITY.md actualizado con controles v2.0
+
+### 📚 Documentación
+
+- `docs/early_access_program_v2.0.md`
+- `docs/sustainability_framework_v2.0.md`
+- `docs/partnership_playbook_v2.0.md`
+- `docs/OPERATIONAL_PROMPT_v11.0.md`
+- `security/threat_model_v2.0.md`
+- `security/audit_v2.0_sprint2.md`
+
+---
+
 ## [v1.9.0-stable] - 2026-05-16 (FASE 7 Complete — ZKP Aggregation, Neural Steer UI, OSSF Compliance, Community Scaling)
 
 ### ✨ Agregado
