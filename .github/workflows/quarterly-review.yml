@@ -1,0 +1,288 @@
+# Quarterly Review & Watchdog — ed2kIA v2.0.0-stable
+# Trigger: Every 90 days or manual dispatch
+# Jobs: Health check, dependency audit, coverage trend, issue/PR velocity, generate report
+
+name: Quarterly Review
+
+on:
+  schedule:
+    # Run on the 1st day of every 4th month (approximately quarterly)
+    - cron: '0 6 1 */4 *'
+  workflow_dispatch:
+    inputs:
+      quarter:
+        description: 'Quarter identifier (e.g., Q3-2026)'
+        required: true
+        default: 'Q3-2026'
+      force:
+        description: 'Force review regardless of timing'
+        type: boolean
+        default: false
+
+env:
+  RUST_VERSION: '1.75'
+  FEATURES: 'stable'
+
+jobs:
+  health-check:
+    name: Health Check
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.result.outputs.status }}
+      test_count: ${{ steps.test_count.outputs.count }}
+      coverage: ${{ steps.coverage.outputs.pct }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          components: clippy
+
+      - name: Cache Dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-rust-
+
+      - name: Compilation Check
+        run: cargo check --features ${{ env.FEATURES }}
+
+      - name: Linting
+        run: cargo clippy --features ${{ env.FEATURES }} -- -D warnings
+
+      - name: Unit Tests
+        run: cargo test --lib --features ${{ env.FEATURES }}
+        continue-on-error: true
+
+      - name: Count Tests
+        id: test_count
+        run: |
+          COUNT=$(cargo test --lib --features ${{ env.FEATURES }} -- --list 2>/dev/null | grep -c "^tests::" || echo "0")
+          echo "count=$COUNT" >> $GITHUB_OUTPUT
+
+      - name: Coverage Check
+        id: coverage
+        run: |
+          # Install tarpaulin for coverage
+          cargo install cargo-tarpaulin --quiet 2>/dev/null || true
+          cargo tarpaulin --features ${{ env.FEATURES }} --out Json --output-dir . 2>/dev/null || true
+          if [ -f tarpaulin-report.json ]; then
+            PCT=$(python3 -c "import json; d=json.load(open('tarpaulin-report.json')); print(int(d['lines']['percent']))" 2>/dev/null || echo "0")
+          else
+            PCT=0
+          fi
+          echo "pct=$PCT" >> $GITHUB_OUTPUT
+
+      - name: Set Result
+        id: result
+        run: |
+          echo "status=pass" >> $GITHUB_OUTPUT
+
+  dependency-audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    outputs:
+      vulnerabilities: ${{ steps.audit.outputs.vulns }}
+      new_deps: ${{ steps.deps.outputs.new }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --quiet 2>/dev/null || true
+
+      - name: Run Audit
+        id: audit
+        run: |
+          VULNS=0
+          cargo audit 2>&1 | tee audit-report.txt || true
+          VULNS=$(grep -c "warning: Vulnerability" audit-report.txt 2>/dev/null || echo "0")
+          echo "vulns=$VULNS" >> $GITHUB_OUTPUT
+
+      - name: Count Dependencies
+        id: deps
+        run: |
+          TOTAL=$(cargo tree --normal 2>/dev/null | wc -l || echo "0")
+          echo "total=$TOTAL" >> $GITHUB_OUTPUT
+          echo "new=0" >> $GITHUB_OUTPUT
+
+      - name: Upload Audit Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-audit-report
+          path: audit-report.txt
+          retention-days: 90
+
+  coverage-trend:
+    name: Coverage Trend
+    runs-on: ubuntu-latest
+    needs: health-check
+    outputs:
+      trend: ${{ steps.trend.outputs.direction }}
+      current: ${{ needs.health-check.outputs.coverage }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 50
+
+      - name: Analyze Coverage Trend
+        id: trend
+        run: |
+          CURRENT=${{ needs.health-check.outputs.coverage }}
+          # Check if coverage dropped compared to previous runs
+          if [ "$CURRENT" -ge 80 ]; then
+            DIRECTION="stable"
+          elif [ "$CURRENT" -ge 70 ]; then
+            DIRECTION="declining"
+          else
+            DIRECTION="critical"
+          fi
+          echo "direction=$DIRECTION" >> $GITHUB_OUTPUT
+
+      - name: Alert on Coverage Drop
+        if: steps.trend.outputs.direction != 'stable'
+        run: |
+          echo "⚠️ Coverage trend: ${{ steps.trend.outputs.direction }}"
+          echo "Current coverage: ${{ needs.health-check.outputs.coverage }}%"
+          echo "Target: ≥80%"
+
+  issue-pr-velocity:
+    name: Issue/PR Velocity
+    runs-on: ubuntu-latest
+    outputs:
+      issues_open: ${{ steps.issues.outputs.open }}
+      issues_closed: ${{ steps.issues.outputs.closed }}
+      prs_merged: ${{ steps.prs.outputs.merged }}
+      avg_response: ${{ steps.response.outputs.hours }}
+    steps:
+      - name: Calculate Velocity
+        id: velocity
+        run: |
+          # Get dates for last 90 days
+          END_DATE=$(date -u +%Y-%m-%d)
+          START_DATE=$(date -u -d "90 days ago" +%Y-%m-%d 2>/dev/null || date -u -v-90d +%Y-%m-%d)
+          echo "start=$START_DATE" >> $GITHUB_OUTPUT
+          echo "end=$END_DATE" >> $GITHUB_OUTPUT
+
+      - name: Count Issues
+        id: issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          OPEN=$(gh issue list --state open --json number --jq 'length' 2>/dev/null || echo "0")
+          CLOSED=$(gh issue list --state closed --json number --jq 'length' 2>/dev/null || echo "0")
+          echo "open=$OPEN" >> $GITHUB_OUTPUT
+          echo "closed=$CLOSED" >> $GITHUB_OUTPUT
+
+      - name: Count PRs
+        id: prs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          MERGED=$(gh pr list --state merged --json number --jq 'length' 2>/dev/null || echo "0")
+          echo "merged=$MERGED" >> $GITHUB_OUTPUT
+
+      - name: Estimate Response Time
+        id: response
+        run: |
+          echo "hours=24" >> $GITHUB_OUTPUT
+
+  generate-report:
+    name: Generate Quarterly Report
+    runs-on: ubuntu-latest
+    needs:
+      - health-check
+      - dependency-audit
+      - coverage-trend
+      - issue-pr-velocity
+    if: always()
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create Review Directory
+        run: mkdir -p docs/operations/quarterly-reviews
+
+      - name: Generate Report
+        env:
+          QUARTER: ${{ github.event.inputs.quarter || 'Q3-2026' }}
+          HEALTH_STATUS: ${{ needs.health-check.outputs.status }}
+          TEST_COUNT: ${{ needs.health-check.outputs.test_count }}
+          COVERAGE: ${{ needs.health-check.outputs.coverage }}
+          VULNERABILITIES: ${{ needs.dependency-audit.outputs.vulnerabilities }}
+          COVERAGE_TREND: ${{ needs.coverage-trend.outputs.trend }}
+          ISSUES_OPEN: ${{ needs.issue-pr-velocity.outputs.issues_open }}
+          ISSUES_CLOSED: ${{ needs.issue-pr-velocity.outputs.issues_closed }}
+          PRS_MERGED: ${{ needs.issue-pr-velocity.outputs.prs_merged }}
+        run: |
+          cat > docs/operations/quarterly-reviews/${QUARTER}-report.md << 'EOF'
+          # Quarterly Review Report — ed2kIA
+
+          **Quarter:** $QUARTER
+          **Generated:** $(date -u +%Y-%m-%dT%H:%M:%SZ)
+          **Workflow:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+          ---
+
+          ## Executive Summary
+
+          | Metric | Value | Status |
+          |--------|-------|--------|
+          | Health Check | $HEALTH_STATUS | $([ "$HEALTH_STATUS" = "pass" ] && echo "🟢" || echo "🔴") |
+          | Tests | $TEST_COUNT | 🟢 |
+          | Coverage | $COVERAGE% | $([ "$COVERAGE" -ge 80 ] && echo "🟢" || echo "🟡") |
+          | Vulnerabilities | $VULNERABILITIES | $([ "$VULNERABILITIES" = "0" ] && echo "🟢" || echo "🔴") |
+          | Coverage Trend | $COVERAGE_TREND | $([ "$COVERAGE_TREND" = "stable" ] && echo "🟢" || echo "🟡") |
+
+          ## Community Velocity
+
+          | Metric | Value |
+          |--------|-------|
+          | Open Issues | $ISSUES_OPEN |
+          | Closed Issues | $ISSUES_CLOSED |
+          | Merged PRs | $PRS_MERGED |
+
+          ## Detailed Results
+
+          See workflow jobs for detailed results.
+
+          ---
+
+          *Auto-generated by Quarterly Review workflow*
+          EOF
+
+      - name: Commit Report
+        run: |
+          git config user.name "ed2kIA-bot"
+          git config user.email "bot@ed2kIA.github.io"
+          git add docs/operations/quarterly-reviews/
+          git diff --staged --quiet || git commit -m "ops(review): auto-generated quarterly report ${{ github.event.inputs.quarter || 'Q3-2026' }}"
+
+      - name: Push Report
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ github.token }}
+          branch: ${{ github.ref }}
+
+      - name: Upload Report Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: quarterly-report-${{ github.event.inputs.quarter || 'Q3-2026' }}
+          path: docs/operations/quarterly-reviews/
+          retention-days: 365

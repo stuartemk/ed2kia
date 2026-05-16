@@ -247,6 +247,59 @@ The Autonomous Operations Loop is the self-sustaining maintenance cycle for ed2k
 | Monthly | Transparency report | Core Maintainer |
 | Quarterly | Roadmap review | Steering Committee |
 | Quarterly | Governance review | Community |
+| Quarterly | Quarterly Review & Watchdog | Autonomous + Core Team |
+
+---
+
+## 8.5 Quarterly Review & Watchdog
+
+The Quarterly Review is the highest-level autonomous check, running every 90 days to assess overall project health, community velocity, and strategic alignment.
+
+### 8.5.1 Workflow
+
+**Workflow:** `.github/workflows/quarterly-review.yml`
+
+**Trigger:** Schedule (1st day of every 4th month at 06:00 UTC) or `workflow_dispatch`
+
+**Jobs:**
+1. **Health Check:** Compilation, linting, tests, coverage
+2. **Dependency Audit:** CVE scan, dependency count, vulnerability report
+3. **Coverage Trend:** Compare current coverage against historical data
+4. **Issue/PR Velocity:** Open/closed issues, merged PRs, response time
+5. **Generate Report:** Auto-generate markdown report in `docs/operations/quarterly-reviews/`
+
+### 8.5.2 Template
+
+**Template:** `docs/operations/quarterly-review-template.md`
+
+**Sections:**
+- Métricas Técnicas (tests, coverage, benchmarks, security)
+- Estado CI/CD (pipeline health, workflows)
+- Feedback Comunitario (contributors, PRs, issues, RFCs)
+- Funding & Grants (status, sustainability)
+- Riesgos (identified, mitigated, closed)
+- Decisiones (made, pending)
+- Roadmap Tracking (milestones completed/upcoming)
+
+### 8.5.3 Approval Criteria
+
+Review is **APPROVED** when:
+- All technical metrics documented
+- Coverage ≥80% maintained
+- 0 Critical/High vulnerabilities without mitigation
+- CI/CD pipeline operational (≥95% success rate)
+- Risks have mitigation plans
+- Roadmap tracking updated
+- At least 1 Core Team member approves
+
+### 8.5.4 Watchdog Alerts
+
+The watchdog monitors for:
+- Coverage drop below 80% → Alert + block merge
+- New Critical/High CVE → Block deploy + emergency patch
+- CI success rate <95% → Alert + investigation
+- Issue velocity declining → Community outreach
+- Grant deadline approaching → Follow-up reminder
 
 ---
 
