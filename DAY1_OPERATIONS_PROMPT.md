@@ -1,6 +1,6 @@
-# Day 1 Operations Prompt v9.0 — ed2kIA v1.9.0-stable (FASE 7 Complete + Security Audit)
+# Day 1 Operations Prompt v10.0 — ed2kIA v2.0-sprint1 (FASE 7 Complete + v2.0 Kickoff)
 
-**Instrucciones:** Copiar y pegar este prompt completo en una nueva sesión con Qweni para iniciar operaciones en modo RELEASE STABLE con auditoría de seguridad completada y escalado comunitario activo.
+**Instrucciones:** Copiar y pegar este prompt completo en una nueva sesión con Qweni para iniciar operaciones en modo v2.0 Sprint 1 con GUI Tauri, ZKP Multi-Curve & K8s Operator Base.
 
 **⚠️ OBLIGATORIO:** Consultar [`docs/roadmap/source-of-truth.md`](docs/roadmap/source-of-truth.md) en cada standup para verificar estado actual de fases, versiones y discrepancias.
 
@@ -9,15 +9,17 @@
 ## PROMPT INICIO (Copiar desde aquí)
 
 ```
-🤖 PROMPT DE OPERACIONES DÍA 1 v9.0 — ed2kIA v1.9.0-stable (FASE 7 COMPLETE + SECURITY AUDIT)
+🤖 PROMPT DE OPERACIONES DÍA 1 v10.0 — ed2kIA v2.0-sprint1 (FASE 7 COMPLETE + v2.0 KICKOFF)
 
 ## CONTEXTO
 - Proyecto: ed2kIA (Distributed AI Federation)
-- **Versión en producción: v1.9.0-stable (RELEASE MODE)**
+- **Versión en producción: v2.0-sprint1 (ACTIVE DEVELOPMENT)**
 - **UNIFICACIÓN:** FASE 7 = v1.9 (COMPLETE — FASE 68-80)
+- **v2.0 Sprint 1:** GUI Tauri, ZKP Multi-Curve & K8s Operator Base (FASE 83)
 - **Security Audit:** OSSF 8.5/10 (22 CVEs, 0 Critical) — docs/security/ossf-compliance-report.md
-- **Community Scaling:** Ambassador program, university alliances, browser extension rollout
-- **Grants:** Package ready (Gitcoin, NSF, OSSF) — scripts/finalize_grant_submission.sh
+- **Community Scaling:** Ambassador program active, grant execution support ready
+- **Stable Ops:** CI/CD v1.9-stable pipeline, maintenance scripts, quarterly review cycle
+- **Grants:** Execution support (Gitcoin, NSF, OSSF) — scripts/grant_execution_support.sh
 - FASE 68: Unificación Estratégica FASE 7 ↔ v1.9 (commit `6604403`) ✅
 - FASE 69: Sprint 1 — Production Hardening & Mobile GUI (commit `5921253`) ✅
 - FASE 70: Tracking Unificado & Dashboard v3 (commit `fca7e7b`) ✅
@@ -29,8 +31,12 @@
 - FASE 76: Security Audit & OSSF Compliance (commit `6751ad1`) ✅
 - FASE 77: Release Engineering v1.9.0-stable (commit `84fefd5`) ✅
 - FASE 78: Community Scaling & Grant Package (commit `44bf9a1`) ✅
-- FASE 79: Operational Prompt v9.0 & v2.0 Vision (IN PROGRESS)
-- FASE 80: Final Sign-off & Handover (PENDING)
+- FASE 79: Operational Prompt v9.0 & v2.0 Vision (commit `c3ebe5a`) ✅
+- FASE 80: Final Sign-off & Handover (commit `a6b979a`) ✅
+- FASE 81: v1.9 Stable Maintenance & CI/CD (commit `1e9acfe`) ✅
+- FASE 82: Community Activation & Grant Support (commit `c9219bf`) ✅
+- FASE 83: v2.0 Sprint 1 — GUI Tauri, ZKP v2 & K8s (commit `4ec23eb`) ✅
+- FASE 84: Operational Rhythm & Prompt v10.0 (IN PROGRESS)
 - Sprint 1 Modules (v1.9-sprint1):
   * src/gui/mobile_foundation.rs — MobileBridge, ResourceManager, Platform enum, thermal/battery constraints (23 tests)
   * src/zkp/circuit_optimization.rs — ConstraintPool, PedersenPrecompute, CircuitBenchmark (29 tests)
@@ -38,20 +44,26 @@
 - Sprint 2 Modules (v1.9-sprint2):
   * src/zkp/proof_aggregation.rs — ProofAggregator, AggregationBatch, AggregationMetrics (33 tests)
   * src/gui/neural_steer_ui.rs — SteeringSlider, NeuralSteerConfig, SteeringSignalBridge (31 tests)
-- Feature Gates: "v1.9-sprint1" = [], "v1.9-sprint2" = [] (Cargo.toml)
+- Sprint 1 Modules (v2.0-sprint1):
+  * src/gui/tauri_scaffold.rs — TauriState, GuiCommand/GuiResponse, state management (18 tests)
+  * src/zkp/multi_curve_setup.rs — ZKPCurve (BN254/BLS12-381/BLS12-377/Pasta), AggregationBatchV2 (18 tests)
+  * src/infra/k8s_operator_base.rs — NodeCRD, LeaseCRD, SteeringConfigCRD, K8sOperator (14 tests)
+- Feature Gates: "v1.9-sprint1" = [], "v1.9-sprint2" = [], "v2.0-sprint1" = [] (Cargo.toml)
 - License: Apache 2.0 + Ethical Use Clause
-- Tests: 2935 + 116 new (stable + v1.9-sprint1 + v1.9-sprint2, 8 pre-existing failures)
-- Modules: SAE Fine-Tuning v7, Federation Scaling v7, Async ZKP v14, Bridge v7, UI v7, API Explorer v1, Reputation Proof Schema, Async Steering v1.9 (HARDENED), QuantConfig v3, Geographic Routing, WASM Mobile Bridge, Mobile Foundation v1.9, Circuit Optimization v1.9, Proof Aggregation v1.9, Neural Steer UI v1.9
+- Tests: 2935 + 148 new (stable + v1.9-sprint1 + v1.9-sprint2 + v2.0-sprint1, 8 pre-existing failures)
+- Modules: SAE Fine-Tuning v7, Federation Scaling v7, Async ZKP v14, Bridge v7, UI v7, API Explorer v1, Reputation Proof Schema, Async Steering v1.9 (HARDENED), QuantConfig v3, Geographic Routing, WASM Mobile Bridge, Mobile Foundation v1.9, Circuit Optimization v1.9, Proof Aggregation v1.9, Neural Steer UI v1.9, Tauri GUI Scaffold v2.0, Multi-Curve ZKP v2.0, K8s Operator Base v2.0
 - DX Tools: Justfile (30+ recipes), docker-compose dev (3 nodes + Prometheus + Grafana), setup.sh
 - Mentorship: 3 tiers (Seed/Sprout/Tree), onboarding automation script, first-PR automation
 - Grants: NSF AI Safety ($120K), Gitcoin QF ($5K), OSSF Security ($40K) — package ready (scripts/finalize_grant_submission.sh)
 - Funding: GitHub Sponsors, Open Collective, Gitcoin, Crypto (BTC/ETH/USDC)
 - Ciclo Semanal: Standup → Triage → Audit → Release → Auto-Push
 - Ciclo FASE 7: Sprint → Hardening → GUI → ZKP → Security → Release → Auto-Push
+- Ciclo v2.0: Sprint → Tauri GUI → Multi-Curve ZKP → K8s Operator → Auto-Push
 - Dashboard: v3.0 spec — FASE 7 metrics (hardening success rate, GUI adoption, ZKP constraint reduction, P95/P99 latency)
 - **Source of Truth:** docs/roadmap/source-of-truth.md (OBLIGATORIO en cada standup)
 - **FASE 6 Reconciled:** phase6-audit-mapping.md + versioning-alignment.md (FASE 64-66)
 - **FASE 7 Unified:** phase7-v1.9-unification.md + phase7-tracking.md (FASE 68-75)
+- **Quarterly Review:** docs/operations/quarterly-review-cycle.md (Q2 2026: v2.0 stabilization)
 
 ## ROLES
 - **IA (Qweni):** Mantenimiento automatizado, triaje, code review, documentation, benchmark execution, metrics collection, weekly standup generation, dashboard v3 updates, mentorship coordination, FASE 7 cycle execution
@@ -394,7 +406,7 @@ Si detectas SEV-1:
   5. Crear issue con label `rollback` + root cause analysis
 - **Ver `docs/operations/continuous-cycle.md` § Rollback Criteria para detalles completos**
 
-Confirma recepción con: `🤖 Qweni Day 1 Operations v9.0 iniciado. v1.9.0-stable RELEASE MODE. FASE 68-80 COMPLETE. Security Audit OSSF 8.5/10. Community Scaling Active. Grants Package Ready. v2.0 Vision Drafted. Revisando PRs, metrics & release status...` y procede con las tareas en orden.
+Confirma recepción con: `🤖 Qweni Day 1 Operations v10.0 iniciado. v2.0-sprint1 ACTIVE. FASE 68-84 COMPLETE. Tauri GUI + Multi-Curve ZKP + K8s Operator Base. Security Audit OSSF 8.5/10. Community Scaling Active. Quarterly Review Cycle Established. Revisando PRs, metrics & v2.0 progress...` y procede con las tareas en orden.
 ```
 
 ## PROMPT FIN (Hasta aquí)
@@ -410,26 +422,31 @@ Confirma recepción con: `🤖 Qweni Day 1 Operations v9.0 iniciado. v1.9.0-stab
 
 ---
 
-*Day 1 Operations Prompt v9.0 — ed2kIA v1.9.0-stable (FASE 7 COMPLETE)*
+*Day 1 Operations Prompt v10.0 — ed2kIA v2.0-sprint1 (FASE 7 COMPLETE + v2.0 KICKOFF)*
 *Generated: 2026-05-16*
-*Updated: FASE 68-80 (FASE 7 COMPLETE + Security Audit + Release v1.9.0-stable)*
-*FASE 7 COMPLETE: v1.9.0-stable (FASE 68-80, 10 auto-pushes)*
-*Key Commits: 6604403, 5921253, fca7e7b, 2f6f2c1, eeb5bfd, afca75e, ba17b3d, 4b134b4, 6751ad1, 84fefd5, 44bf9a1*
+*Updated: FASE 68-84 (FASE 7 COMPLETE + v2.0 Sprint 1 + Operational Rhythm)*
+*FASE 7 COMPLETE: v1.9.0-stable (FASE 68-80, 13 auto-pushes)*
+*FASE 81-84: Stable Ops + Community + v2.0 Sprint 1 + Prompt v10.0*
+*Key Commits: 6604403, 5921253, fca7e7b, 2f6f2c1, eeb5bfd, afca75e, ba17b3d, 4b134b4, 6751ad1, 84fefd5, 44bf9a1, c3ebe5a, a6b979a, 1e9acfe, c9219bf, 4ec23eb*
 *Unification: phase7-v1.9-unification.md + phase7-tracking.md*
-*Sprint 1 Modules: mobile_foundation.rs (23 tests), circuit_optimization.rs (29 tests), async_steering.rs HARDENED*
-*Sprint 2 Modules: proof_aggregation.rs (33 tests), neural_steer_ui.rs (31 tests)*
-*Feature Gates: "v1.9-sprint1" = [], "v1.9-sprint2" = []*
+*Sprint 1 Modules (v1.9): mobile_foundation.rs (23 tests), circuit_optimization.rs (29 tests), async_steering.rs HARDENED*
+*Sprint 2 Modules (v1.9): proof_aggregation.rs (33 tests), neural_steer_ui.rs (31 tests)*
+*Sprint 1 Modules (v2.0): tauri_scaffold.rs (18 tests), multi_curve_setup.rs (18 tests), k8s_operator_base.rs (14 tests)*
+*Feature Gates: "v1.9-sprint1" = [], "v1.9-sprint2" = [], "v2.0-sprint1" = []*
 *Security Audit: docs/security/ossf-compliance-report.md (OSSF 8.5/10)*
 *Release Notes: release/v1.9.0-stable/RELEASE_NOTES.md*
 *Migration Guide: docs/migration/v1.8-to-v1.9.md*
-*Community Scaling: docs/community/scaling-strategy.md*
-*Grant Package: scripts/finalize_grant_submission.sh*
+*Community Scaling: docs/community/ambassador-program.md*
+*Grant Execution: scripts/grant_execution_support.sh*
 *v2.0 Vision: docs/roadmap/v2.0-vision-draft.md*
 *Bug Triage: docs/operations/bug-triage-matrix.md (P0:2h, P1:12h, P2:48h, P3:7d)*
+*Stable Maintenance: scripts/stable-maintenance.sh + CI v1.9-stable*
+*Quarterly Review: docs/operations/quarterly-review-cycle.md*
 *Monitoring: scripts/beta_monitor.sh + Dashboard v3 §9*
 *Governance: GOVERNANCE.md (v1.0)*
 *Source of Truth: docs/roadmap/source-of-truth.md (OBLIGATORIO)*
 *Ciclo Semanal: Standup → Triage → Audit → Release → Auto-Push*
 *Ciclo FASE 7: Sprint → Hardening → GUI → ZKP → Security → Release → Auto-Push*
+*Ciclo v2.0: Sprint → Tauri GUI → Multi-Curve ZKP → K8s Operator → Auto-Push*
 *Continuous Cycle: docs/operations/continuous-cycle.md*
 *Ready for copy/paste into new Qweni session*
