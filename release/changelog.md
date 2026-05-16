@@ -6,6 +6,53 @@ El formato sigue [Semantic Versioning](https://semver.org/) y [Keep a Changelog]
 
 ---
 
+## [Unreleased]
+
+## [v1.9.0-stable] - 2026-05-16 (FASE 7 Complete — ZKP Aggregation, Neural Steer UI, OSSF Compliance, Community Scaling)
+
+### ✨ Agregado
+
+#### ZKP Proof Aggregation (FASE 72)
+- Batch verification y commitment pooling para ZKP proofs
+- AggregationBatch con límites de tamaño, finalización y verificación
+- ProofAggregator multi-batch con cleanup automático
+- AggregationMetrics: tiempos verificación, success rate, reduction ratio
+- 33 tests unitarios
+
+#### Neural Steer UI (FASE 72)
+- Sliders éticos: empathy, creativity, safety con validación de bounds
+- NeuralSteerConfig con serialización JSON y safety checks
+- SteeringSignalBridge con soporte rollback
+- Safety thresholds con detección automática de violaciones
+- 31 tests unitarios
+
+#### Security Audit & OSSF Compliance (FASE 76)
+- Reporte OSSF completo: `docs/security/ossf-compliance-report.md`
+- CVE scan: 22 findings (0 Critical, 3 High, 8 Medium, 11 Low)
+- WASM sandbox verification: Cranelift-only, 256MB cap, minimal WASI
+- OSSF Scorecard: 8.5/10 (Passing)
+- SECURITY.md actualizado v1.9-stable
+
+#### Community Infrastructure (FASE 73-74)
+- First PR automation pipeline
+- Feedback processing automation
+- Auto-merge PR scripts
+- Contributor funnel documentation
+
+### 🔧 Cambios
+
+- Feature flags: `v1.9-sprint1`, `v1.9-sprint2`
+- FASE 68-76 completadas (8 commits)
+- 64 tests nuevos agregados
+
+### 🔒 Seguridad
+
+- OSSF compliance audit completado
+- 22 CVEs documentados con mitigaciones
+- WASM sandbox verificado
+
+---
+
 ## [v1.8.0-beta] - 2026-05-15 (ChatGPT Moment — API Explorer, Reputation Proofs, Geographic Routing, WASM Mobile)
 
 ### ✨ Agregado
