@@ -1,9 +1,10 @@
 # Evolution Roadmap — ed2kIA
 
-> **Version:** 1.0
+> **Version:** 1.1
 > **Date:** 2026-05-16
-> **Status:** Active — FASE 92
+> **Status:** Active — FASE 98
 > **Scope:** Long-term project evolution, versioning strategy, community growth
+> **Cross-Reference:** See [`docs/roadmap/long-term-evolution-v2.1-to-v3.0.md`](../roadmap/long-term-evolution-v2.1-to-v3.0.md) for detailed v2.1→v3.0 roadmap
 
 ---
 
@@ -285,6 +286,7 @@ Triggered by:
 - [Operational Prompt v11.0](../OPERATIONAL_PROMPT_v11.0.md)
 - [Sustainability Framework](../sustainability_framework_v2.0.md)
 - [Early Access Program](../early_access_program_v2.0.md)
+- [Long-Term Evolution Roadmap v2.1→v3.0](../roadmap/long-term-evolution-v2.1-to-v3.0.md) — Detailed technical roadmap with metrics, dependencies, and timelines
 
 ---
 
