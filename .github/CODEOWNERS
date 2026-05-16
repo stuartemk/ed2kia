@@ -66,3 +66,12 @@ SECURITY.md @ed2kia/crypto-team
 # Examples & Quickstart
 /examples/ @ed2kia/docs-team
 /quickstart/ @ed2kia/docs-team
+
+# v1.9 Sprint 2 — ZKP Aggregation & Neural Steer UI
+/src/zkp/proof_aggregation.rs @ed2kia/crypto-team
+/src/gui/neural_steer_ui.rs @ed2kia/web-team
+
+# Community & Onboarding
+/docs/community/ @ed2kia/docs-team
+/scripts/auto_merge_pr.sh @ed2kia/ops-team
+/scripts/process_feedback.sh @ed2kia/ops-team
