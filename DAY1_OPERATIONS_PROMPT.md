@@ -1,8 +1,8 @@
-# Day 1 Operations Prompt v10.0 — ed2kIA v2.0-sprint1 (FASE 7 Complete + v2.0 Kickoff)
+# Day 1 Operations Prompt v12.0 — ed2kIA v2.0.0-stable (FASE 90-94 Complete — Autonomous Mode Active)
 
-**Instrucciones:** Copiar y pegar este prompt completo en una nueva sesión con Qweni para iniciar operaciones en modo v2.0 Sprint 1 con GUI Tauri, ZKP Multi-Curve & K8s Operator Base.
+**Instrucciones:** Copiar y pegar este prompt completo en una nueva sesión con Roo para iniciar operaciones en modo autónomo v2.0.0-stable con ciclo trimestral, gobernanza comunitaria y operaciones autónomas.
 
-**⚠️ OBLIGATORIO:** Consultar [`docs/roadmap/source-of-truth.md`](docs/roadmap/source-of-truth.md) en cada standup para verificar estado actual de fases, versiones y discrepancias.
+**⚠️ OBLIGATORIO:** Consultar [`docs/governance/project-constitution.md`](docs/governance/project-constitution.md) y [`docs/operations/autonomous-loop.md`](docs/operations/autonomous-loop.md) en cada standup para verificar estado actual del proyecto.
 
 ---
 
