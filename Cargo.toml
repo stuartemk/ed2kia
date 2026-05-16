@@ -160,6 +160,11 @@ stable = [
 # Proof Aggregation (batch verification, commitment pooling), Neural Steer UI (ethical sliders)
 "v1.9-sprint2" = []
 
+# v2.0.0 Sprint 1 — GUI Tauri, ZKP v2 Multi-Curve & K8s Operator Base (FASE 83)
+# Tauri GUI scaffold (desktop bridge), Multi-curve ZKP (BN254/BLS12-381/BLS12-377/Pasta),
+# K8s operator CRDs (Node/Lease/SteeringConfig) with reconciliation loop
+"v2.0-sprint1" = []
+
 # v1.7.0 Sprint 1 — RFC-001 PoC: FP8/INT4 Quantization + Async Steering Signals
 "v1.7-sprint1" = []
 

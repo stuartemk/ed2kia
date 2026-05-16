@@ -806,6 +806,25 @@ pub mod dashboard_v6;
 pub mod ws_federation_stream;
 
 // ============================================================================
+// v2.0.0 Sprint 1 — GUI Tauri, ZKP v2 Multi-Curve & K8s Operator Base (FASE 83)
+// ============================================================================
+
+/// Tauri GUI scaffold — Desktop bridge with state management and commands
+#[cfg(feature = "v2.0-sprint1")]
+#[path = "gui/tauri_scaffold.rs"]
+pub mod tauri_scaffold;
+
+/// Multi-curve ZKP setup — BN254, BLS12-381, BLS12-377, Pasta with aggregation v2
+#[cfg(feature = "v2.0-sprint1")]
+#[path = "zkp/multi_curve_setup.rs"]
+pub mod multi_curve_setup;
+
+/// K8s operator base — CRDs (Node/Lease/SteeringConfig) with reconciliation loop
+#[cfg(feature = "v2.0-sprint1")]
+#[path = "infra/k8s_operator_base.rs"]
+pub mod k8s_operator_base;
+
+// ============================================================================
 // Feature Detection Utilities
 // ============================================================================
 
