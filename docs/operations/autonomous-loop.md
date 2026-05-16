@@ -327,11 +327,13 @@ The watchdog monitors for:
 
 ## 10. References
 
-- [Operational Prompt v11.0](../OPERATIONAL_PROMPT_v11.0.md)
+- [Operational Prompt v13.0](../DAY1_OPERATIONS_PROMPT.md)
 - [Security Audit v2.0](../../security/audit_v2.0_sprint2.md)
 - [Threat Model v2.0](../../security/threat_model_v2.0.md)
 - [Early Access Program](../early_access_program_v2.0.md)
 - [Sustainability Framework](../sustainability_framework_v2.0.md)
+- [Quarterly Review Q1 2027](../reports/quarterly-review-Q1-2027.md)
+- [RFC Triage Q1 2027](../reports/rfc-triage-Q1-2027.md)
 
 ---
 
