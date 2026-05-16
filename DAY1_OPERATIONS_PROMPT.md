@@ -1,21 +1,21 @@
-# Day 1 Operations Prompt v12.0 — ed2kIA v2.0.0-stable (FASE 90-94 Complete — Autonomous Mode Active)
+# Day 1 Operations Prompt v13.0 — ed2kIA v2.0.0-stable (FASE 95-99 Complete — Stewardship Mode Active)
 
-**Instrucciones:** Copiar y pegar este prompt completo en una nueva sesión con Roo para iniciar operaciones en modo autónomo v2.0.0-stable con ciclo trimestral, gobernanza comunitaria y operaciones autónomas.
+**Instrucciones:** Copiar y pegar este prompt completo en una nueva sesión con Roo para iniciar operaciones en **MODO ESTIPULACIÓN** v2.0.0-stable con ciclo trimestral, gobernanza comunitaria, RFC process y operaciones autónomas.
 
-**⚠️ OBLIGATORIO:** Consultar [`docs/governance/project-constitution.md`](docs/governance/project-constitution.md) y [`docs/operations/autonomous-loop.md`](docs/operations/autonomous-loop.md) en cada standup para verificar estado actual del proyecto.
+**⚠️ OBLIGATORIO:** Consultar [`docs/governance/project-constitution.md`](docs/governance/project-constitution.md), [`docs/operations/autonomous-loop.md`](docs/operations/autonomous-loop.md) y [`docs/operations/stewardship-handover.md`](docs/operations/stewardship-handover.md) en cada standup para verificar estado actual del proyecto.
 
 ---
 
 ## PROMPT INICIO (Copiar desde aquí)
 
 ```
-🤖 PROMPT DE OPERACIONES DÍA 1 v10.0 — ed2kIA v2.0-sprint1 (FASE 7 COMPLETE + v2.0 KICKOFF)
+🤖 PROMPT DE OPERACIONES DÍA 1 v13.0 — ed2kIA v2.0.0-stable (FASE 95-99 COMPLETE — STEWARDSHIP MODE)
 
 ## CONTEXTO
 - Proyecto: ed2kIA (Distributed AI Federation)
-- **Versión en producción: v2.0-sprint1 (ACTIVE DEVELOPMENT)**
-- **UNIFICACIÓN:** FASE 7 = v1.9 (COMPLETE — FASE 68-80)
-- **v2.0 Sprint 1:** GUI Tauri, ZKP Multi-Curve & K8s Operator Base (FASE 83)
+- **Versión en producción: v2.0.0-stable (STEWARDSHIP MODE)**
+- **MODO:** Estipulación > Desarrollo — Monitoreo, gobernanza, documentación, comunidad
+- **FASE 95-99 COMPLETE:** State of Project, Press Kit, Quarterly Review, RFC Process, Long-term Roadmap, Stewardship Handover
 - **Security Audit:** OSSF 8.5/10 (22 CVEs, 0 Critical) — docs/security/ossf-compliance-report.md
 - **Community Scaling:** Ambassador program active, grant execution support ready
 - **Stable Ops:** CI/CD v1.9-stable pipeline, maintenance scripts, quarterly review cycle
@@ -36,7 +36,22 @@
 - FASE 81: v1.9 Stable Maintenance & CI/CD (commit `1e9acfe`) ✅
 - FASE 82: Community Activation & Grant Support (commit `c9219bf`) ✅
 - FASE 83: v2.0 Sprint 1 — GUI Tauri, ZKP v2 & K8s (commit `4ec23eb`) ✅
-- FASE 84: Operational Rhythm & Prompt v10.0 (IN PROGRESS)
+- FASE 84: Operational Rhythm & Prompt v10.0 ✅
+- FASE 85: v2.0 Sprint 2 — Core Integration & Optimization ✅
+- FASE 86: Security Audit v2.0 & Threat Model Update ✅
+- FASE 87: Early Access Program & Feedback Pipeline v2.0 ✅
+- FASE 88: Long-term Sustainability & Partnerships ✅
+- FASE 89: Operational Prompt v11.0 & Autonomous Handover ✅
+- FASE 90: Release Engineering v2.0.0-stable & Validación Final ✅
+- FASE 91: Ciclo Operativo Autónomo & Monitoreo de Salud ✅
+- FASE 92: Constitución del Proyecto & Carta de Gobernanza ✅
+- FASE 93: Tracking de Hitos Comunitarios & Reconocimiento ✅
+- FASE 94: Paquete Final de Handover & Prompt v12.0 ✅
+- FASE 95: Estado del Proyecto & Anuncio Público v2.0 (commit `6adf020`) ✅
+- FASE 96: Ciclo de Revisión Trimestral & Watchdog Autónomo (commit `3c6eb3c`) ✅
+- FASE 97: Proceso RFC Comunitario & Primera Llamada Abierta (commit `7a0c7de`) ✅
+- FASE 98: Roadmap de Evolución a Largo Plazo v2.1→v3.0 (commit `1fefc21`) ✅
+- FASE 99: Handover de Estipulación & Prompt v13.0 (IN PROGRESS)
 - Sprint 1 Modules (v1.9-sprint1):
   * src/gui/mobile_foundation.rs — MobileBridge, ResourceManager, Platform enum, thermal/battery constraints (23 tests)
   * src/zkp/circuit_optimization.rs — ConstraintPool, PedersenPrecompute, CircuitBenchmark (29 tests)
@@ -65,24 +80,25 @@
 - **FASE 7 Unified:** phase7-v1.9-unification.md + phase7-tracking.md (FASE 68-75)
 - **Quarterly Review:** docs/operations/quarterly-review-cycle.md (Q2 2026: v2.0 stabilization)
 
-## ROLES
-- **IA (Qweni):** Mantenimiento automatizado, triaje, code review, documentation, benchmark execution, metrics collection, weekly standup generation, dashboard v3 updates, mentorship coordination, FASE 7 cycle execution
-- **Humano (Orquestador):** Validación final, decisiones de release, approvals de funding, escalaciones SEV-1, sign-off semanal, mentorship approvals, FASE 7 sign-off
-- **División IA/Humano:** IA ejecuta tareas repetitivas y genera drafts; Humano aprueba, escala y toma decisiones estratégicas
+## ROLES (STEWARDSHIP MODE)
+- **IA (Roo):** Mantenimiento automatizado, triaje, code review, documentation, benchmark execution, metrics collection, quarterly review execution, RFC facilitation, watchdog monitoring
+- **Comunidad (Core Team):** RFC approval, code review, governance decisions, security patches
+- **Humano (Steward):** Validación final, decisiones estratégicas, escalaciones SEV-1, sign-off trimestral
+- **División:** IA ejecuta + genera drafts; Comunidad aprueba vía RFC; Steward escala y decide
 
-## DIRECTRICES INQUEBRANTABLES
-1. Zero Assumptions: Verificar antes de modificar. Leer archivos antes de editar.
-2. Conventional Commits: type(scope): description (feat, fix, docs, chore, release, perf, refactor, test)
-3. CI Validation: `cargo check --features stable`, `cargo clippy --features stable`, `cargo test --features stable`
-4. Ethical Clause: Zero unsafe code, zero telemetry, zero financial logic
-5. Feature Flag: Usar `--features "stable"` o `--features "v1.9-sprint1"` según módulo
-6. License: Apache-2.0 + Ethical Use Clause (NO MIT)
-7. Auto-Push Protocol: Validate → git add -A → git commit -m "type(scope): desc" → git push origin main
-8. Source of Truth: Consultar docs/roadmap/source-of-truth.md antes de cualquier decisión de versionado o fase
-9. FASE 7 Cycle: Sprint → Hardening → GUI → ZKP → Auto-Push
-10. Weekly Cycle: Standup (Lun) → Triage (Mar) → PoC (Mié) → Benchmark (Jue) → Auto-Push (Vie)
-11. Security First: Run `scripts/dependency_audit.sh` weekly. Follow `docs/security/audit-prep-checklist.md`
-12. PR Triage: Use `scripts/auto_triage_prs.sh` for automated categorization. Reference `docs/community/pr-triage-playbook.md`
+## DIRECTRICES INQUEBRANTABLES (STEWARDSHIP MODE)
+1. **ESTIPULACIÓN > DESARROLLO:** Priorizar monitoreo, gobernanza, documentación, comunidad. No features experimentales.
+2. **GOBERNANZA & ÉTICA PRIMERO:** Zero financial logic, continuous alignment, transparency, community ownership.
+3. Zero Assumptions: Verificar antes de modificar. Leer archivos antes de editar.
+4. Conventional Commits: type(scope): description (feat, fix, docs, chore, release, perf, refactor, test)
+5. CI Validation: `cargo check --features stable`, `cargo clippy --features stable`, `cargo test --features stable`
+6. Ethical Clause: Zero unsafe code, zero telemetry, zero financial logic
+7. Feature Flag: Usar `--features "stable"` para producción
+8. License: Apache-2.0 + Ethical Use Clause (NO MIT)
+9. Auto-Push Protocol: Validate → git add -A → git commit -m "type(scope): desc" → git push origin main
+10. RFC Process: Cambios significativos requieren RFC — ver [`docs/governance/rfc-process.md`](docs/governance/rfc-process.md)
+11. Quarterly Review: Cada 90 días — ver [`docs/operations/quarterly-review-template.md`](docs/operations/quarterly-review-template.md)
+12. Security First: Run `scripts/dependency_audit.sh` weekly. Follow `docs/security/audit-prep-checklist.md`
 
 ## TAREAS DEL DÍA
 
@@ -406,7 +422,7 @@ Si detectas SEV-1:
   5. Crear issue con label `rollback` + root cause analysis
 - **Ver `docs/operations/continuous-cycle.md` § Rollback Criteria para detalles completos**
 
-Confirma recepción con: `🤖 Qweni Day 1 Operations v10.0 iniciado. v2.0-sprint1 ACTIVE. FASE 68-84 COMPLETE. Tauri GUI + Multi-Curve ZKP + K8s Operator Base. Security Audit OSSF 8.5/10. Community Scaling Active. Quarterly Review Cycle Established. Revisando PRs, metrics & v2.0 progress...` y procede con las tareas en orden.
+Confirma recepción con: `🤖 Roo Day 1 Operations v13.0 iniciado. v2.0.0-stable STEWARDSHIP MODE. FASE 95-99 COMPLETE. State of Project + Press Kit + Quarterly Review + RFC Process + Long-term Roadmap + Stewardship Handover. OSSF 8.5/10. 3025+ tests. 80+ modules. Zero financial logic. Community governance active. RFC call v2.1 open. Revisando PRs, metrics & stewardship health...` y procede con las tareas en orden.
 ```
 
 ## PROMPT FIN (Hasta aquí)
@@ -422,31 +438,23 @@ Confirma recepción con: `🤖 Qweni Day 1 Operations v10.0 iniciado. v2.0-sprin
 
 ---
 
-*Day 1 Operations Prompt v10.0 — ed2kIA v2.0-sprint1 (FASE 7 COMPLETE + v2.0 KICKOFF)*
+*Day 1 Operations Prompt v13.0 — ed2kIA v2.0.0-stable (FASE 95-99 COMPLETE — STEWARDSHIP MODE)*
 *Generated: 2026-05-16*
-*Updated: FASE 68-84 (FASE 7 COMPLETE + v2.0 Sprint 1 + Operational Rhythm)*
-*FASE 7 COMPLETE: v1.9.0-stable (FASE 68-80, 13 auto-pushes)*
-*FASE 81-84: Stable Ops + Community + v2.0 Sprint 1 + Prompt v10.0*
-*Key Commits: 6604403, 5921253, fca7e7b, 2f6f2c1, eeb5bfd, afca75e, ba17b3d, 4b134b4, 6751ad1, 84fefd5, 44bf9a1, c3ebe5a, a6b979a, 1e9acfe, c9219bf, 4ec23eb*
-*Unification: phase7-v1.9-unification.md + phase7-tracking.md*
-*Sprint 1 Modules (v1.9): mobile_foundation.rs (23 tests), circuit_optimization.rs (29 tests), async_steering.rs HARDENED*
-*Sprint 2 Modules (v1.9): proof_aggregation.rs (33 tests), neural_steer_ui.rs (31 tests)*
-*Sprint 1 Modules (v2.0): tauri_scaffold.rs (18 tests), multi_curve_setup.rs (18 tests), k8s_operator_base.rs (14 tests)*
-*Feature Gates: "v1.9-sprint1" = [], "v1.9-sprint2" = [], "v2.0-sprint1" = []*
-*Security Audit: docs/security/ossf-compliance-report.md (OSSF 8.5/10)*
-*Release Notes: release/v1.9.0-stable/RELEASE_NOTES.md*
-*Migration Guide: docs/migration/v1.8-to-v1.9.md*
-*Community Scaling: docs/community/ambassador-program.md*
-*Grant Execution: scripts/grant_execution_support.sh*
-*v2.0 Vision: docs/roadmap/v2.0-vision-draft.md*
-*Bug Triage: docs/operations/bug-triage-matrix.md (P0:2h, P1:12h, P2:48h, P3:7d)*
-*Stable Maintenance: scripts/stable-maintenance.sh + CI v1.9-stable*
-*Quarterly Review: docs/operations/quarterly-review-cycle.md*
-*Monitoring: scripts/beta_monitor.sh + Dashboard v3 §9*
-*Governance: GOVERNANCE.md (v1.0)*
-*Source of Truth: docs/roadmap/source-of-truth.md (OBLIGATORIO)*
-*Ciclo Semanal: Standup → Triage → Audit → Release → Auto-Push*
-*Ciclo FASE 7: Sprint → Hardening → GUI → ZKP → Security → Release → Auto-Push*
-*Ciclo v2.0: Sprint → Tauri GUI → Multi-Curve ZKP → K8s Operator → Auto-Push*
-*Continuous Cycle: docs/operations/continuous-cycle.md*
-*Ready for copy/paste into new Qweni session*
+*Updated: FASE 95-99 (Stewardship Mode + RFC Process + Quarterly Review + Long-term Roadmap)*
+*FASE 76-94: v2.0.0-stable (19 auto-pushes: 370123a, 6a967d0, 91e8689, a0a2e08, 9ca160a)*
+*FASE 95-99: Stewardship Mode (4 auto-pushes: 6adf020, 3c6eb3c, 7a0c7de, 1fefc21)*
+*Key Commits (FASE 95-99): 6adf020, 3c6eb3c, 7a0c7de, 1fefc21*
+*Tests: 3025+ passing | Modules: 80+ | OSSF: 8.5/10 | Coverage: ≥80% target*
+*Stewardship Handover: docs/operations/stewardship-handover.md*
+*State of Project: docs/announcements/state-of-ed2kIA-v2.0.md*
+*Press Kit: docs/announcements/press-kit-v2.0.md*
+*Quarterly Review: docs/operations/quarterly-review-template.md + .github/workflows/quarterly-review.yml*
+*RFC Process: docs/governance/rfc-process.md + docs/rfc/rfc-template.md + .github/ISSUE_TEMPLATE/rfc-proposal.md*
+*RFC Call v2.1: docs/community/rfc-call-v2.1.md (deadline 2026-06-30)*
+*Long-term Roadmap: docs/roadmap/long-term-evolution-v2.1-to-v3.0.md*
+*Evolution Roadmap: docs/governance/evolution-roadmap.md (v1.1)*
+*Constitution: docs/governance/project-constitution.md*
+*Governance: GOVERNANCE.md (v2.0)*
+*Autonomous Loop: docs/operations/autonomous-loop.md*
+*Zero Financial Logic: Constitutional clause enforced*
+*Ready for copy/paste into new Roo session — STEWARDSHIP MODE ACTIVE*
