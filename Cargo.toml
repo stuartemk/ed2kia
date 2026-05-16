@@ -188,6 +188,11 @@ stable = [
 "v2.1-zkp-v3" = []
 "v2.1-enterprise" = []
 
+# v2.1 Observability — Prometheus/Grafana metrics scaffold (Post-RFC-002)
+# Feature-gated placeholder for observability infrastructure.
+# Zero functional logic — requires explicit feature flag to enable.
+"v2.1-observability" = []
+
 # ─── Hardware Acceleration ───
 cpu = []
 cuda = ["candle-core/cuda", "candle-nn/cuda"]

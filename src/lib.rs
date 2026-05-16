@@ -897,11 +897,14 @@ pub fn sprint_identifier() -> &'static str {
 }
 
 // ============================================================================
-// v2.1 Structural Scaffold — Placeholder modules for post-RFC-001 development
+// v2.1 Structural Scaffold — Placeholder modules for post-RFC development
 // ============================================================================
 
 #[cfg(feature = "v2.1-sprint1")]
 pub mod v2_1;
+
+#[cfg(feature = "v2.1-observability")]
+pub mod observability;
 
 #[cfg(test)]
 mod tests {
