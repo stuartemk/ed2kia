@@ -156,6 +156,10 @@ stable = [
 # Mobile Foundation (Tauri/React Native bridge), Async Steering hardening, ZKP Circuit Optimization
 "v1.9-sprint1" = []
 
+# v1.9.0 Sprint 2 — ZKP Aggregation & Neural Steer UI (FASE 72)
+# Proof Aggregation (batch verification, commitment pooling), Neural Steer UI (ethical sliders)
+"v1.9-sprint2" = []
+
 # v1.7.0 Sprint 1 — RFC-001 PoC: FP8/INT4 Quantization + Async Steering Signals
 "v1.7-sprint1" = []
 

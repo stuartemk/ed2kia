@@ -703,6 +703,15 @@ pub mod pools {
     pub mod pool_matcher;
 }
 
+/// ZKP Aggregation & Neural Steer UI (v1.9-sprint2)
+#[cfg(feature = "v1.9-sprint2")]
+#[path = "zkp/proof_aggregation.rs"]
+pub mod proof_aggregation;
+
+#[cfg(feature = "v1.9-sprint2")]
+#[path = "gui/neural_steer_ui.rs"]
+pub mod neural_steer_ui;
+
 /// UI Dashboard v4 & Real-time Streams (v1.3-sprint2)
 #[cfg(feature = "v1.3-sprint2")]
 pub mod ui_v4 {
