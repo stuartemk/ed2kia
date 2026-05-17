@@ -45,6 +45,14 @@ pub mod p2p {
 #[path = "wasm/mobile_bridge.rs"]
 pub mod mobile_bridge;
 
+/// Browser Node — WASM P2P node for browser environments (feature-gated)
+#[cfg(feature = "v2.1-wasm-browser")]
+pub mod browser_node;
+
+/// MVP Core Loop — Isolated basic cycle (feature-gated)
+#[cfg(feature = "v2.1-mvp-core")]
+pub mod mvp_core;
+
 /// Sparse Autoencoder (SAE) loading and routing
 pub mod sae {
     pub mod loader;

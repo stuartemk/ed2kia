@@ -55,8 +55,35 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 | `v2.1-zkp-v3` | ZKP v3, Recursive Prover, Cross-Chain | Draft |
 | `v2.1-enterprise` | SSO, K8s Operator, Compliance | Draft |
 | `v2.1-observability` | Metrics, Health Check, Health Endpoint | Draft (RFC-002) |
+| `v2.1-wasm-browser` | Browser Node — WASM P2P para navegadores | ✅ Scaffold |
+| `v2.1-mvp-core` | MVP Core Loop — Discovery → Tensor → SAE → Resultado | ✅ Scaffold |
 
 > **Nota:** Los feature gates `v2.1-*` NO están incluidos en `default = ["stable"]`. Requieren activación explícita vía RFC comunitario.
+
+## 🌐 Nodo en el Navegador — Participación sin Barreras
+
+**ed2kIA v2.1 introduce el primer nodo P2P que funciona directamente en tu navegador web**, sin instalaciones, sin software adicional.
+
+### ¿Qué significa para la comunidad?
+
+- **Cero fricción de entrada:** Cualquier persona con un navegador moderno puede unirse a la red como verificador, sin instalar Rust, Docker o herramientas de desarrollo.
+- **Participación global instantánea:** Estudiantes, investigadores y ciudadanos de cualquier país pueden contribuir con capacidad de cómputo desde su dispositivo actual.
+- **Transparencia verificable:** El nodo WASM ejecuta Sparse Autoencoders (SAE) directamente en el cliente, permitiendo auditoría visual del proceso de interpretabilidad.
+- **Arquitectura P2P real:** Usa WebRTC y WebSockets a través de `libp2p` para descubrimiento de pares KAD y comunicación descentralizada.
+
+### MVP Core Loop — Ciclo Básico Validado
+
+El ciclo operativo mínimo (Discovery → Distribution → Inference → Collection) está aislado y validado con **27 tests unitarios**, permitiendo iteración rápida sin depender de módulos avanzados (ZKP, Gobernanza, Reputación) que permanecen detrás de feature gates separados.
+
+```
+Navegador ──→ [WASM Node] ──→ [KAD Discovery] ──→ [Tensor Distribution]
+                                                    ↓
+                                            [SAE Inference] ──→ [Result Collection]
+                                                    ↓
+                                            Red P2P Global
+```
+
+> **Ética primero:** Toda participación es voluntaria, auditable y compatible con la [Constitución del Proyecto](docs/governance/project-constitution.md).
 
 ## 📦 Estructura del Proyecto
 

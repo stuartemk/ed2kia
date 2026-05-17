@@ -100,6 +100,13 @@ fastrand = "2.1"
 [target.'cfg(target_os = "windows")'.dependencies]
 windows = { version = "0.52", features = ["Win32_System_Console"] }
 
+# WASM Browser Node — v2.1-wasm-browser (optional, wasm32-unknown-unknown target)
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = { version = "0.2", optional = true }
+js-sys = { version = "0.3", optional = true }
+web-sys = { version = "0.3", features = ["Worker", "WorkerGlobalScope", "WorkerOptions", "MessagePort", "MessageEvent", "Navigator", "Window"], optional = true }
+getrandom = { version = "0.2", features = ["js"], optional = true }
+
 [features]
 # CONSOLIDATION: v1.0.0 stable feature structure
 # `default` enables all stable modules (Fases 1-9 unified)
@@ -197,6 +204,15 @@ stable = [
 # Feature-gated placeholder for security infrastructure.
 # Zero functional logic — requires explicit feature flag to enable.
 "v2.1-security-hardening" = []
+
+# v2.1 WASM Browser Node — Browser-based P2P node (wasm32-unknown-unknown)
+# WebRTC/WebSocket transport via libp2p-webrtc-websys + libp2p-websocket-websys
+# Web Worker bridge for background compute, zero inference logic (scaffold only)
+"v2.1-wasm-browser" = []
+
+# v2.1 MVP Core Loop — Isolated core cycle (KAD discovery → tensor dist → SAE → result)
+# Advanced modules (ZKP, Governance, Reputation) stubbed behind feature gates
+"v2.1-mvp-core" = []
 
 # ─── Hardware Acceleration ───
 cpu = []

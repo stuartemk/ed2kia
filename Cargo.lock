@@ -1437,8 +1437,10 @@ dependencies = [
  "fastrand",
  "flatbuffers",
  "futures",
+ "getrandom 0.2.17",
  "half",
  "hex",
+ "js-sys",
  "lazy_static",
  "libp2p",
  "libp2p-identity",
@@ -1462,8 +1464,10 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "uuid",
+ "wasm-bindgen",
  "wasm-encoder 0.248.0",
  "wasmtime",
+ "web-sys",
  "windows 0.52.0",
 ]
 
