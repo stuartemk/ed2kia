@@ -1,14 +1,16 @@
 # ed2kIA - Red Descentralizada de Interpretabilidad
 
-> **Imagina que los LLMs son como cajas negras que piensan en un idioma secreto. ed2kIA es como una red de traductores voluntarios distribuidos por todo el mundo que trabajan juntos para descifrar ese idioma, uno a uno, de forma transparente y verificable.**
+> **Imagina que los LLMs son sistemas complejos que requieren auditoría colaborativa. ed2kIA es una red de verificadores voluntarios distribuidos por todo el mundo que trabajan juntos para hacer estos sistemas más comprensibles, uno a uno, de forma transparente y verificable.**
 
 > **Red descentralizada de código abierto para análisis interpretativo distribuido de LLMs usando Sparse Autoencoders (Qwen-Scope)**
 
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ethical-blue)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-2021-orange)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/Version-1.8.0_BETA-brightgreen)](release/v1.8.0-beta.1/RELEASE_NOTES.md)
-[![Tests](https://img.shields.io/badge/Tests-187_passed%20/%200_failed-success)](release/v1.6.0-stable/final_signoff.json)
-[![Build](https://img.shields.io/badge/Build-0_errors%2C_0_warnings-success)](release/v1.6.0-stable/final_signoff.json)
+[![Version](https://img.shields.io/badge/Version-2.0.0-stable-brightgreen)](release/v2.0.0-stable/final-signoff.json)
+[![Tests](https://img.shields.io/badge/Tests-3025_passing-success)](release/v2.0.0-stable/final-signoff.json)
+[![Coverage](https://img.shields.io/badge/Coverage-≥80%25-tracking)](release/v2.0.0-stable/final-signoff.json)
+[![OSSF](https://img.shields.io/badge/OSSF-8.5%2F10-passing)](security/audit_v2.0_sprint2.md)
+[![Mode](https://img.shields.io/badge/Mode-STEWARDSHIP-blueviolet)](docs/governance/project-constitution.md)
 [![CI](https://github.com/ed2kia/ed2kIA/actions/workflows/ci.yml/badge.svg)](https://github.com/ed2kia/ed2kIA/actions)
 
 ## 🌍 Mandato Ético
@@ -17,18 +19,16 @@ Este proyecto es de código abierto, transparente y diseñado exclusivamente par
 
 **Licencia:** Apache 2.0 + Cláusula de Uso Ético (bienestar humano/IA)
 
-## 🌍 El Verdadero Poder de ed2kIA: Controlar a los Gigantes de la IA
+## 🌍 La Misión de ed2kIA: Alinear a los Gigantes mediante Verificación Comunitaria
 
-Hoy en día, empresas multimillonarias como Google, OpenAI o Meta controlan las Inteligencias Artificiales más potentes del planeta. Esas IA son como "cajas negras": nadie sabe realmente cómo piensan, en qué se basan para tomar decisiones ni si nos están ocultando información.
+Hoy en día, organizaciones como Google, OpenAI o Meta desarrollan las Inteligencias Artificiales más potentes del planeta. Estos sistemas son complejos: la comunidad científica busca comprender cómo toman decisiones, en qué se basan y cómo garantizar su alineación ética. **ed2kIA contribuye a este esfuerzo colectivo.**
 
-Si solo las megacorporaciones pueden revisar el cerebro de los robots, ellas tendrán todo el poder del futuro. **ed2kIA cambia las reglas del juego.**
+### 🤝 ¿Cómo democratizamos el acceso a la interpretabilidad?
+* **Un Supercomputador Colaborativo:** Unimos las computadoras y teléfonos de miles de personas en todo el mundo para crear una red de verificación distribuida y transparente.
+* **Puente de Transparencia:** Nuestro software analiza las matemáticas complejas de la IA y las traduce a información que cualquier investigador puede auditar. Es un puente de transparencia y alineación verificable.
+* **Acceso Abierto para Todos:** Al ser un proyecto 100% abierto y comunitario, democratizamos el acceso a la interpretabilidad. Cualquier estudiante o ciudadano podrá participar en la auditoría colaborativa de sistemas de IA para promover la seguridad, equidad y transparencia.
 
-### 🤝 ¿Cómo planeamos vencer a los gigantes?
-* **Un Supercomputador Humano:** En lugar de pagar millones de dólares en servidores, unimos las computadoras y teléfonos de miles de personas comunes en todo el mundo para crear una red de defensa digital.
-* **Rayos X para Robots:** Nuestro software desarma las matemáticas complejas de la IA y las traduce a palabras que cualquier humano puede entender. Es un detector de mentiras universal para máquinas.
-* **Poder para la Gente:** Al ser un proyecto 100% gratis y comunitario, le quitamos el monopolio a las grandes empresas. Cualquier estudiante o ciudadano podrá auditar a los robots para asegurarse de que no sean peligrosos, mentirosos o racistas.
-
-No necesitas ser un científico para cambiar el futuro. Al prestar un poco de la potencia de tu PC o tu teléfono mientras duermes, te conviertes en un detective digital protegiendo a la humanidad.
+No necesitas ser un científico para contribuir al futuro. Al compartir un poco de la potencia de tu PC o tu teléfono, te conviertes en parte de una red global de verificación colaborativa.
 
 ## 📐 Arquitectura
 
@@ -39,10 +39,24 @@ No necesitas ser un científico para cambiar el futuro. Al prestar un poco de la
 | **Multiplataforma** | Windows/Linux/macOS desde Fase 1 |
 | **Sharding** | Dinámico con Leases (5-10 min) gestionado por `LayerRouter` |
 | **Comunicación** | Feedback Asincrónico + Steering Signals síncronos ligeros |
-| **ZKP/WASM** | Placeholders seguros en Fase 1, implementación completa en Fase 3 |
+| **ZKP/WASM** | Implementación completa con multi-curve (BN254, BLS12-381, Pasta) |
 | **Red P2P** | `libp2p` con KAD + mDNS para descubrimiento |
 | **ML Engine** | `candle-core` + `candle-nn` + `safetensors` |
 | **Serialización** | Prost (Protobuf) para metadatos, FlatBuffers para tensores |
+| **GUI Desktop** | Tauri scaffold con Neural Steering UI |
+| **Observabilidad** | Prometheus/Grafana metrics (feature-gated `v2.1-observability`) |
+
+### Feature Gates v2.1 (Post-RFC)
+
+| Feature Gate | Módulo | Status |
+|--------------|--------|--------|
+| `v2.1-sprint1` | Scaffold estructural base | Draft (RFC-001) |
+| `v2.1-gui` | GUI Bridge, Mobile, 3D Visualizer | Draft |
+| `v2.1-zkp-v3` | ZKP v3, Recursive Prover, Cross-Chain | Draft |
+| `v2.1-enterprise` | SSO, K8s Operator, Compliance | Draft |
+| `v2.1-observability` | Metrics, Health Check, Health Endpoint | Draft (RFC-002) |
+
+> **Nota:** Los feature gates `v2.1-*` NO están incluidos en `default = ["stable"]`. Requieren activación explícita vía RFC comunitario.
 
 ## 📦 Estructura del Proyecto
 
@@ -619,12 +633,63 @@ cargo build --target aarch64-unknown-linux-gnu --release
 - 📄 Auditoría completa: [`docs/roadmap/phase6-audit-mapping.md`](docs/roadmap/phase6-audit-mapping.md)
 - 📄 Roadmap v1.9: [`docs/roadmap/v1.9-roadmap-draft.md`](docs/roadmap/v1.9-roadmap-draft.md)
 
+### ✅ Fase 7 - v1.9.0-stable: Production Ready (Completada)
+- ✅ Security Audit & OSSF Compliance (8.5/10)
+- ✅ Release Engineering v1.9.0-stable & Migration Guide
+- ✅ Community Scaling & Final Grant Package
+- ✅ Operational Prompt v9.0 & v2.0 Architectural Vision
+- ✅ Final Sign-off & Operational Handover
+
+### ✅ Fase 8 — v2.0 Sprint 1: GUI Tauri, ZKP v2 & K8s Base (Completada)
+- ✅ Tauri GUI Scaffold con Neural Steering UI (31 tests)
+- ✅ ZKP Multi-Curve Setup: BN254, BLS12-381, Pasta (20 tests)
+- ✅ Proof Aggregation con batch verification (33 tests)
+- ✅ Circuit Optimization con Pedersen precomputation (25 tests)
+
+### ✅ Fase 9 — v2.0 Sprint 2: Core Integration & Optimization (Completada)
+- ✅ Commitment Pool + Mobile Hardening (30 tests each)
+- ✅ Federation ZKP Bridge + Scaling modules
+- ✅ Dashboard v7 + WebSocket Federation Stream
+- ✅ Security Audit v2.0 + Threat Model Update
+
+### ✅ Fase 90 — Release Engineering v2.0.0-stable (Completada)
+- ✅ **3025 tests passing** (99.7% pass rate)
+- ✅ OSSF Score: **8.5/10** (PASSING)
+- ✅ 80+ módulos implementados
+- ✅ Constitución del Proyecto & Carta de Gobernanza
+- ✅ Ciclo Operativo Autónomo & Monitoreo de Salud
+
+### ✅ Fase 91-99 — Stewardship & RFC Process (Completada)
+- ✅ Ciclo Operativo Autónomo (FASE 91)
+- ✅ Constitución del Proyecto (FASE 92)
+- ✅ Tracking de Hitos Comunitarios (FASE 93)
+- ✅ Paquete Final de Handover (FASE 94)
+- ✅ Estado del Proyecto & Anuncio Público (FASE 95)
+- ✅ Ciclo de Revisión Trimestral (FASE 96)
+- ✅ Proceso RFC Comunitario & RFC-001 (FASE 97)
+- ✅ Roadmap de Evolución v2.1 → v3.0 (FASE 98)
+- ✅ Handover de Estipulación & Prompt v13.0 (FASE 99)
+
+### 🔧 v2.1 Sprint 1 — En Desarrollo (Post-RFC)
+- 📋 Scaffold Estructural v2.1 (feature-gated, cero lógica)
+- 📋 Plan de Remediación de Dependencias
+- 📋 Observability Scaffold (Prometheus/Grafana metrics)
+- 📋 Voting Dashboard Template + Tally Script
+- 📋 Security Monitoring Pipeline (weekly cron)
+- 📋 Testnet Infrastructure (Docker Compose scaffold)
+- 📄 RFC-001: Feedback Aggregation — Discusión
+- 📄 RFC-002: Observability Infrastructure — Draft
+- 📄 RFC-003: Testnet/Infra v2.1 — Draft
+
 ## 🔒 Seguridad y Ética
 
 - **Código auditable:** Todo el código es open source y revisable
 - **Sin backdoors:** Verificado por la comunidad
 - **Uso ético:** Diseñado exclusivamente para bienestar humano y IA responsable
 - **Infraestructura voluntaria:** Participación opt-in global
+- **OSSF Score:** 8.5/10 (PASSING) — [`security/audit_v2.0_sprint2.md`](security/audit_v2.0_sprint2.md)
+- **Threat Model v2.0:** 17 amenazas identificadas y mitigadas — [`security/threat_model_v2.0.md`](security/threat_model_v2.0.md)
+- **Monitoreo Semanal:** Security audit automatizado (Lunes 03:00 UTC) — [`.github/workflows/security-monitor.yml`](.github/workflows/security-monitor.yml)
 
 ## 📄 Licencia
 
@@ -660,6 +725,17 @@ global infrastructure for the progress of human knowledge and wellbeing.
 4. Push a la rama (`git push origin feature/amazing-feature`)
 5. Abrir Pull Request
 
+### Gobernanza Comunitaria
+
+Este proyecto opera bajo la **[Constitución del Proyecto](docs/governance/project-constitution.md)** con los siguientes principios:
+
+- **Propiedad Comunitaria:** Ningún individuo u organización tiene control exclusivo
+- **Proceso RFC:** Cambios arquitectónicos requieren RFC + votación comunitaria
+- **Votación Ponderada:** Tiers (Novice 0.5 → Guardian 3.0), quórum 30%, mayoría 60%
+- **Ética Primero:** Cláusula de Uso Ético + Cero Lógica Financiera
+
+Ver [`GOVERNANCE.md`](GOVERNANCE.md) y [`CONTRIBUTING.md`](CONTRIBUTING.md) para detalles completos.
+
 ## 💰 Apoyo & Financiamiento
 
 ed2kIA es infraestructura pública de código abierto, análogo a Linux para la interpretabilidad de IA. Los incentivos son reputación técnica, impacto comunitario y gobernanza meritocrática. **No hay tokens, pools de liquidez ni mecanismos especulativos en el código.**
@@ -686,4 +762,4 @@ Ver [`docs/TRANSPARENCY_FRAMEWORK.md`](docs/TRANSPARENCY_FRAMEWORK.md) para deta
 
 ---
 
-**ed2kIA** - Descentralizando la interpretabilidad de IA para el beneficio humano.
+**ed2kIA** — Red descentralizada de interpretabilidad de IA para el beneficio humano. **v2.0.0-stable** | Modo: STEWARDSHIP | [Constitución](docs/governance/project-constitution.md) | [Source of Truth](docs/roadmap/source-of-truth.md)
