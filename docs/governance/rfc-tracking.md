@@ -27,9 +27,21 @@
 
 ## 2. Integración con Dashboard de Votación
 
+- **Dashboard Activo:** [`docs/community/voting-dashboard-active.md`](../community/voting-dashboard-active.md) ✅ OPERATIONAL
 - **Template de votación:** [`docs/community/voting-dashboard-template.md`](../community/voting-dashboard-template.md)
 - **Script de tally:** [`scripts/voting-tally.sh`](../../scripts/voting-tally.sh)
 - **Reglas de quórum:** 30% participación, 60% mayoría, veto Guardian (2 en contra)
+
+### 2.1 Triggers de Votación
+
+| Condición | Acción |
+|-----------|--------|
+| RFC con status **Draft** + formato válido | Steward → **Active** |
+| 7 días desde activación | Auto-cierre → **Under Review** |
+| Quórum < 30% al cierre | **Deferred** (siguiente ciclo) |
+| Mayoría < 60% | **Rejected** |
+| 2+ Guardianes en contra | **Rejected** (veto) |
+| Mayoría ≥ 60% + quórum ≥ 30% | **Accepted** |
 
 ---
 
