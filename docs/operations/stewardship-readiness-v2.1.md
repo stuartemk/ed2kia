@@ -7,6 +7,79 @@
 
 ---
 
+## 🧭 Índice Operativo v2.1
+
+| Categoría | Documento | Estado |
+|-----------|-----------|--------|
+| **Pre-Flight Validation** | [`docs/reports/pre-flight-validation-v2.1.md`](../reports/pre-flight-validation-v2.1.md) | ✅ PASADO |
+| **Activation Package** | [`docs/operations/activation-package-v2.1.md`](./activation-package-v2.1.md) | ✅ LISTO |
+| **Post-Activation Monitor** | [`.github/workflows/post-activation-monitor.yml`](../../.github/workflows/post-activation-monitor.yml) | ✅ PENDIENTE COMMIT |
+| **Alert Escalation Matrix** | [`docs/operations/alert-escalation-matrix.md`](./alert-escalation-matrix.md) | ✅ PENDIENTE COMMIT |
+| **Launch Workflow** | [`docs/community/launch-workflow-v2.1.md`](../community/launch-workflow-v2.1.md) | ✅ PENDIENTE COMMIT |
+| **Ambassador Simulation** | [`docs/community/ambassador-onboarding-simulation.md`](../community/ambassador-onboarding-simulation.md) | ✅ PASADO |
+| **PR Template v2.1** | [`docs/templates/pr-v2.1-feature-gate.md`](../templates/pr-v2.1-feature-gate.md) | ✅ PASADO |
+| **Stewardship Readiness** | _(este documento)_ | 🔄 EN PROGRESO |
+| **Final Signoff** | [`release/v2.1-preparation/signoff.json`](../../release/v2.1-preparation/signoff.json) | 🔄 EN PROGRESO |
+
+---
+
+## 🔑 Quick Commands
+
+```bash
+# 1. Verificar estado del proyecto
+git status && git log --oneline -5
+cargo check --all-targets
+cargo clippy --all-targets -- -D warnings 2>&1 | grep -c "error:"
+
+# 2. Validar feature gates v2.1
+cargo check --tests --features v2.1-observability
+cargo check --tests --features v2.1-security-hardening
+cargo bench --features v2.1-observability --no-run
+
+# 3. Ejecutar dry-run de testnet
+bash scripts/run-v21-dryrun.sh --report-only
+
+# 4. Verificar scripts de shell
+find . -name "*.sh" -exec bash -n {} \; 2>&1 | grep -v "syntax ok" || echo "All scripts valid"
+
+# 5. Activación (REQUIERE APROBACIÓN HUMANA)
+# cargo build --release --features v2.1-sprint1
+# Ver activation-package-v2.1.md para procedimiento completo
+```
+
+---
+
+## ⚠️ Emergency Protocols
+
+| Escenario | Acción Inmediata | Escalación | SLA |
+|-----------|------------------|------------|-----|
+| **CVE Crítico Activo** | Desactivar feature gate afectado → `git revert` | Orquestador → Comunidad → Público | 15 min |
+| **Error Rate >5%** | Quarantine automático (CI/CD) → Desactivar feature | Steward → Orquestador | 1 hora |
+| **Error Rate >1%** | Alerta de monitoreo → Investigar logs | Steward → Orquestador | 4 horas |
+| **Regresión de Tests** | Bloquear merge → Revertir PR | Steward → Core Team | 4 horas |
+| **Licencia/Etica Violación** | Bloquear código → Notificar Governance | Governance Team → Público | Inmediato |
+
+**Contactos de Emergencia:**
+- Security Lead: @ed2kia/crypto-team
+- Maintainers: @ed2kia/maintainers
+- Disclosure: security@ed2kIA.org
+
+**Rollback Rápido:**
+```bash
+# Revertir último commit
+git revert HEAD --no-edit && git push origin main
+
+# Desactivar feature gate específico
+# Editar Cargo.toml: remover feature de 'default' o 'stable'
+git commit -am "emergency: disable v2.1-* feature gate" && git push origin main
+
+# Restaurar CI/CD anterior
+git checkout HEAD~1 -- .github/workflows/ci.yml
+git commit -am "emergency: restore previous CI/CD" && git push origin main
+```
+
+---
+
 ## 1. Pre-Activation Checklist
 
 All items must be verified before activating `v2.1-sprint1` feature gates in production.
