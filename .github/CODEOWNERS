@@ -75,3 +75,22 @@ SECURITY.md @ed2kia/crypto-team
 /docs/community/ @ed2kia/docs-team
 /scripts/auto_merge_pr.sh @ed2kia/ops-team
 /scripts/process_feedback.sh @ed2kia/ops-team
+
+# v2.1 — Governance & RFC Tracking
+/docs/governance/ @ed2kia/governance-team
+
+# v2.1 — Grants
+/docs/grants/ @ed2kia/maintainers
+
+# v2.1 — Infrastructure
+/infra/ @ed2kia/ops-team
+
+# v2.1 — Integration Tests
+/tests/integration/ @ed2kia/core-team
+
+# v2.1 — Benchmarks
+/benchmarks/ @ed2kia/core-team
+
+# v2.1 — Protected Documents
+CHANGELOG.md @ed2kia/maintainers
+Cargo.toml @ed2kia/core-team

@@ -193,6 +193,11 @@ stable = [
 # Zero functional logic — requires explicit feature flag to enable.
 "v2.1-observability" = []
 
+# v2.1 Security Hardening — CVE remediation, dependency upgrades (Post-Q1 2027 audit)
+# Feature-gated placeholder for security infrastructure.
+# Zero functional logic — requires explicit feature flag to enable.
+"v2.1-security-hardening" = []
+
 # ─── Hardware Acceleration ───
 cpu = []
 cuda = ["candle-core/cuda", "candle-nn/cuda"]

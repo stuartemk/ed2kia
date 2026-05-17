@@ -1,0 +1,161 @@
+# Alerts Workflow — ed2kIA v2.1
+# Triggers on push and workflow_run events for monitoring and notifications.
+#
+# Purpose: Detect failures in CI/CD pipeline and alert maintainers.
+# Guardrails: Zero assumptions — alerts only, no automated fixes.
+
+name: Alerts
+
+on:
+  push:
+    branches:
+      - main
+      - release/**
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+  workflow_run:
+    workflows:
+      - "CI"
+      - "Security"
+      - "Build"
+    types:
+      - completed
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  # -----------------------------------------------------------------------
+  # Alert on push — Verify critical paths after merge
+  # -----------------------------------------------------------------------
+  alert-on-push:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Alert — Push to ${{ github.ref_name }}
+        run: |
+          echo "✅ Push detected on ${{ github.ref_name }}"
+          echo "  Commit: ${{ github.sha }}"
+          echo "  Author: ${{ github.actor }}"
+          echo "  Message: ${{ github.event.head_commit.message }}"
+
+      - name: Check Cargo.toml integrity
+        run: |
+          if ! command -v cargo &> /dev/null; then
+            echo "::warning::Cargo not available in this runner — skipping Cargo.toml check"
+            exit 0
+          fi
+          cargo verify-project --manifest-path Cargo.toml || {
+            echo "::error::Cargo.toml verification failed"
+            exit 1
+          }
+
+  # -----------------------------------------------------------------------
+  # Alert on workflow_run — Report CI/CD status
+  # -----------------------------------------------------------------------
+  alert-on-workflow:
+    if: github.event_name == 'workflow_run'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Report Workflow Status
+        run: |
+          WORKFLOW_NAME="${{ github.event.workflow_run.name }}"
+          WORKFLOW_CONCLUSION="${{ github.event.workflow_run.conclusion }}"
+          WORKFLOW_HEAD_BRANCH="${{ github.event.workflow_run.head_branch }}"
+
+          echo "📊 Workflow Completed:"
+          echo "  Name: $WORKFLOW_NAME"
+          echo "  Branch: $WORKFLOW_HEAD_BRANCH"
+          echo "  Conclusion: $WORKFLOW_CONCLUSION"
+
+          if [ "$WORKFLOW_CONCLUSION" == "failure" ]; then
+            echo "::error::$WORKFLOW_NAME failed on $WORKFLOW_HEAD_BRANCH"
+            echo "🔴 ALERT: Workflow failure detected — review required"
+          elif [ "$WORKFLOW_CONCLUSION" == "success" ]; then
+            echo "✅ $WORKFLOW_NAME passed on $WORKFLOW_HEAD_BRANCH"
+          else
+            echo "⚠️ $WORKFLOW_NAME status: $WORKFLOW_CONCLUSION"
+          fi
+
+      - name: Create Issue on Critical Failure
+        if: github.event.workflow_run.conclusion == 'failure' && github.event.workflow_run.head_branch == 'main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ISSUE_TITLE="🚨 CI Failure on main: ${{ github.event.workflow_run.name }}"
+          ISSUE_BODY="## Automated Alert
+
+          **Workflow**: ${{ github.event.workflow_run.name }}
+          **Branch**: main
+          **Conclusion**: ${{ github.event.workflow_run.conclusion }}
+          **Commit**: ${{ github.event.workflow_run.head_sha }}
+          **URL**: ${{ github.event.workflow_run.html_url }}
+
+          ---
+          *This issue was automatically created by the Alerts workflow.*
+          *Please review the workflow logs and take appropriate action.*"
+
+          # Check if similar issue already exists
+          EXISTING=$(gh issue list --search "$ISSUE_TITLE" --state open --json number --jq 'length')
+          if [ "$EXISTING" -eq 0 ]; then
+            gh issue create \
+              --title "$ISSUE_TITLE" \
+              --body "$ISSUE_BODY" \
+              --label "alert,critical" || echo "::warning::Failed to create issue — may be duplicate"
+          else
+            echo "ℹ️ Similar issue already exists — skipping"
+          fi
+
+  # -----------------------------------------------------------------------
+  # Daily health check — Verify repository accessibility
+  # -----------------------------------------------------------------------
+  daily-health:
+    schedule:
+      - cron: "0 8 * * 1-5"  # Mon-Fri 08:00 UTC
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Daily Health Check
+        run: |
+          echo "🏥 Daily Health Check — $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "  Repository: ${{ github.repository }}"
+          echo "  Branch: ${{ github.ref_name }}"
+          echo "  Commit: ${{ github.sha }}"
+
+      - name: Verify README.md
+        run: |
+          if [ -f README.md ]; then
+            echo "✅ README.md exists ($(wc -l < README.md) lines)"
+          else
+            echo "::error::README.md not found"
+            exit 1
+          fi
+
+      - name: Verify LICENSE
+        run: |
+          if [ -f LICENSE ]; then
+            echo "✅ LICENSE exists"
+          else
+            echo "::warning::LICENSE not found"
+          fi
+
+      - name: Verify SECURITY.md
+        run: |
+          if [ -f SECURITY.md ]; then
+            echo "✅ SECURITY.md exists"
+          else
+            echo "::warning::SECURITY.md not found"
+          fi
