@@ -6,6 +6,56 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.1.0-sprint1] — 2026-05-17
+
+### 🎉 Sprint Summary
+
+**v2.1.0-sprint1** delivers the **MVP Core Loop validation**, **WASM Browser Node pipeline**, **CI/CD automation** and **activation runbook** for community stewards. This sprint focuses on operational readiness for the Discovery → Distribution → Inference → Collection cycle.
+
+| Metric | Value |
+|--------|-------|
+| **Feature Gates** | 4 active (`v2.1-mvp-core`, `v2.1-wasm-browser`, `v2.1-observability`, `v2.1-security-hardening`) |
+| **CI Jobs** | 11 jobs in matrix (wasm-build, mvp-core-validation, clippy, test, audit, ...) |
+| **Tests** | 27 PASS (MVP Core Loop) + 3025 PASS (stable) |
+| **Coverage** | ≥80% (tracking via cargo-llvm-cov) |
+| **OSSF Score** | 8.5/10 (PASSING) |
+| **Security** | 0 CVEs introduced, 0 unsafe code |
+
+### Added
+
+- **MVP Core Loop Module** — Isolated Discovery → Distribution → Inference → Collection cycle with 27 unit tests ([`src/mvp_core/`](src/mvp_core/))
+- **WASM Browser Node Scaffold** — `wasm32-unknown-unknown` target for P2P in browser ([`src/wasm/`](src/wasm/))
+- **Build Script: build-wasm.sh** — POSIX script for CI WASM builds with trunk ([`scripts/build-wasm.sh`](scripts/build-wasm.sh))
+- **Trunk.toml** — Trunk configuration for WASM bundling
+- **Browser Node HTML** — Minimal HTML page for testing WASM node in browser ([`browser-node.html`](browser-node.html))
+- **Validation Script: validate-mvp-flow.sh** — Automated MVP Core Loop validation (tests, bench, check) ([`scripts/validate-mvp-flow.sh`](scripts/validate-mvp-flow.sh))
+- **CI/CD: WASM Build Job** — GitHub Actions job for WASM compilation + trunk build ([`.github/workflows/ci.yml`](.github/workflows/ci.yml))
+- **CI/CD: MVP Core Validation Job** — Runs `cargo test --features v2.1-mvp-core --lib mvp_core`
+- **Activation Runbook** — Pre-flight, activation, post-activation, rollback procedures ([`docs/operations/activation-package-v2.1.md`](docs/operations/activation-package-v2.1.md))
+- **Stewardship Readiness Doc** — Quick commands, emergency protocols, MVP/WASM pipeline ([`docs/operations/stewardship-readiness-v2.1.md`](docs/operations/stewardship-readiness-v2.1.md))
+- **Adoption Manifesto** — Community-facing narrative for v2.1 features ([`docs/operations/adoption-manifesto-v2.1.md`](docs/operations/adoption-manifesto-v2.1.md))
+
+### Changed
+
+- **CI/CD Pipeline** — Added `wasm-build` and `mvp-core-validation` jobs to matrix (11 total jobs)
+- **Feature Gates** — 4 active gates in CI matrix, NOT in default/stable
+- **Cargo.toml** — Updated feature gates for `v2.1-mvp-core` and `v2.1-wasm-browser`
+
+### Security
+
+- **Zero unsafe code** — `#![forbid(unsafe_code)]` enforced
+- **Zero telemetry** — No external network calls, no analytics
+- **0 CVEs introduced** in this sprint
+- **Feature-gated isolation** — v2.1 features strictly excluded from default build
+
+### Operations
+
+- **MVP Core Loop validated** — 27 tests PASS, 0 panics, cycle steps verified
+- **Activation Runbook ready** — Human operator procedures documented
+- **CI/CD automation** — WASM + MVP validation in every PR
+
+---
+
 ## [v2.0.0-stable] — 2026-05-16
 
 ### 🎉 Release Summary

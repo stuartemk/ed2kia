@@ -6,8 +6,8 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ethical-blue)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-2021-orange)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/Version-2.0.0-stable-brightgreen)](release/v2.0.0-stable/final-signoff.json)
-[![Tests](https://img.shields.io/badge/Tests-3025_passing-success)](release/v2.0.0-stable/final-signoff.json)
+[![Version](https://img.shields.io/badge/Version-2.1.0-sprint1-yellowgreen)](CHANGELOG.md)
+[![Tests](https://img.shields.io/badge/Tests-3052_passing-success)](CHANGELOG.md)
 [![Coverage](https://img.shields.io/badge/Coverage-≥80%25-tracking)](release/v2.0.0-stable/final-signoff.json)
 [![OSSF](https://img.shields.io/badge/OSSF-8.5%2F10-passing)](security/audit_v2.0_sprint2.md)
 [![Mode](https://img.shields.io/badge/Mode-STEWARDSHIP-blueviolet)](docs/governance/project-constitution.md)
@@ -50,13 +50,13 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 
 | Feature Gate | Módulo | Status |
 |--------------|--------|--------|
-| `v2.1-sprint1` | Scaffold estructural base | Draft (RFC-001) |
+| `v2.1-mvp-core` | MVP Core Loop — Discovery → Distribution → Inference → Collection | ✅ Implementado (27 tests) |
+| `v2.1-wasm-browser` | Browser Node — WASM P2P para navegadores | ✅ Pipeline CI/CD |
+| `v2.1-observability` | Metrics, Health Check, Health Endpoint | Draft (RFC-002) |
+| `v2.1-security-hardening` | wasmtime ≥24.0.7, rustls-webpki ≥0.103.13 | Planificado Q2-Q3 2027 |
 | `v2.1-gui` | GUI Bridge, Mobile, 3D Visualizer | Draft |
 | `v2.1-zkp-v3` | ZKP v3, Recursive Prover, Cross-Chain | Draft |
 | `v2.1-enterprise` | SSO, K8s Operator, Compliance | Draft |
-| `v2.1-observability` | Metrics, Health Check, Health Endpoint | Draft (RFC-002) |
-| `v2.1-wasm-browser` | Browser Node — WASM P2P para navegadores | ✅ Scaffold |
-| `v2.1-mvp-core` | MVP Core Loop — Discovery → Tensor → SAE → Resultado | ✅ Scaffold |
 
 > **Nota:** Los feature gates `v2.1-*` NO están incluidos en `default = ["stable"]`. Requieren activación explícita vía RFC comunitario.
 
