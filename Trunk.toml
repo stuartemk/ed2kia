@@ -1,0 +1,6 @@
+[build]
+target = "web/browser-node.html"
+dist = "dist/wasm"
+
+[features]
+default = ["v2.1-wasm-browser"]

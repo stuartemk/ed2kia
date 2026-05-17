@@ -300,6 +300,8 @@ jobs:
         feature:
           - v2.1-observability
           - v2.1-security-hardening
+          - v2.1-wasm-browser
+          - v2.1-mvp-core
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -384,3 +386,90 @@ jobs:
           if [ "$FOUND_PROTECTED" = false ]; then
             echo "INFO: No protected paths touched in this PR"
           fi
+
+  # ============================================
+  # 10. WASM Build — Browser Node compilation
+  # ============================================
+  wasm-build:
+    name: WASM Build (Browser Node)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+
+      - name: Add wasm32-unknown-unknown target
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-wasm-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+
+      - name: Install wasm-pack
+        run: |
+          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Build WASM with build-wasm.sh
+        run: bash scripts/build-wasm.sh
+
+      - name: List WASM artifacts
+        run: ls -la dist/wasm/
+
+      - name: Upload WASM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-node-wasm
+          path: dist/wasm/
+          retention-days: 7
+
+  # ============================================
+  # 11. MVP Core Validation — v2.1-mvp-core tests
+  # ============================================
+  mvp-core-validation:
+    name: MVP Core Loop Validation
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          components: clippy
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-mvp-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+
+      - name: Cache target directory
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-target-mvp-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-target-
+
+      - name: cargo check --features v2.1-mvp-core
+        run: cargo check --features v2.1-mvp-core
+
+      - name: cargo test --features v2.1-mvp-core --lib mvp_core
+        run: cargo test --features v2.1-mvp-core --lib mvp_core -- --nocapture
+
+      - name: cargo bench --features v2.1-mvp-core --no-run
+        run: cargo bench --features v2.1-mvp-core --no-run
+        continue-on-error: true
