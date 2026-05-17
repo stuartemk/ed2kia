@@ -7,6 +7,43 @@
 
 ---
 
+## 🔑 Runbook de Activación Humana
+
+### Pre-flight
+```bash
+# Verificar feature gates v2.1 compilan
+cargo check --features v2.1-mvp-core,v2.1-wasm-browser
+# Ejecutar validación simulada del MVP Core Loop
+bash scripts/validate-mvp-flow.sh
+# Verificar CI/CD jobs
+grep -E "v2.1-mvp-core|v2.1-wasm-browser" .github/workflows/ci.yml
+```
+
+### Comando de activación
+```bash
+git commit -m "feat(v2.1): activate sprint1 feature gates" && git push
+```
+
+### Post-activation
+```bash
+# Verificar workflow de monitoreo
+gh workflow run post-activation-monitor.yml
+# Revisar reporte de salud
+cat docs/reports/post-activation-health.md
+```
+
+### Rollback
+```bash
+# Desactivar feature gates
+cargo feature remove v2.1-*
+# Revertir CI matrix
+git revert HEAD --no-edit && git push origin main
+# Escalar CVEs si aplica
+bash scripts/security-alert.sh
+```
+
+---
+
 ## 1. Comando de Activacion
 
 ```bash
@@ -195,13 +232,16 @@ git push origin main
 
 | KPI | Target | Actual |
 |-----|--------|--------|
-| Feature Gates Compilados | 6/6 | 6/6 |
-| CI/CD Jobs Confirmados | 3/3 | 3/3 |
+| Feature Gates Compilados | 8/8 | 8/8 |
+| CI/CD Jobs Confirmados | 11/11 | 11/11 |
 | CODEOWNERS Paths | 7/7 | 7/7 |
-| Scripts Validados | 3/3 | 3/3 |
+| Scripts Validados | 4/4 | 4/4 |
 | Documentacion Verificada | 4/4 | 4/4 |
 | Onboarding Simulation | 8/8 PASADO | 8/8 PASADO |
 | Voting Simulation | 83.3% approval | 83.3% |
+| MVP Core Loop Tests | ≥27 PASS | 27 PASS |
+| WASM Build Pipeline | ≤5min | CI validated |
+| CVEs Críticos | 0 | 0 |
 
 ### 6.2 OSSF Score
 

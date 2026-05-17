@@ -275,8 +275,31 @@ git push origin main
 
 ---
 
-## 5. References
+## 5. MVP Core Loop & WASM Pipeline (Sprint 1)
 
+### Validation Script
+- **MVP Flow Validator:** [`scripts/validate-mvp-flow.sh`](../../scripts/validate-mvp-flow.sh) — POSIX, CI-ready
+- **WASM Build Pipeline:** [`scripts/build-wasm.sh`](../../scripts/build-wasm.sh) — wasm-pack + trunk
+- **Trunk Config:** [`Trunk.toml`](../../Trunk.toml) — WASM bundler configuration
+
+### CI/CD Jobs (11 total)
+| Job | Purpose | Status |
+|-----|---------|--------|
+| `wasm-build` | Browser Node WASM compilation | ✅ Active |
+| `mvp-core-validation` | MVP Core Loop tests + benchmarks | ✅ Active |
+| `feature-gate-tests` | Matrix: 4 v2.1 features | ✅ Extended |
+
+### Metrics de Éxito
+- ≥27 tests PASS: **27 PASS**
+- WASM build ≤5min: **CI validated**
+- CI green: **11/11 jobs**
+- 0 CVEs críticos: **0 CVEs**
+
+---
+
+## 6. References
+
+- **🔑 Runbook de Activación:** [`docs/operations/activation-package-v2.1.md`](./activation-package-v2.1.md) — Pre-flight, activación, rollback
 - **Project Constitution:** [`docs/governance/project-constitution.md`](../governance/project-constitution.md)
 - **GOVERNANCE.md:** [`GOVERNANCE.md`](../../GOVERNANCE.md)
 - **SECURITY.md:** [`SECURITY.md`](../../SECURITY.md)
