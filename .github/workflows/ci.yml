@@ -286,3 +286,101 @@ jobs:
 
       - name: Validate security-alert.sh syntax
         run: bash -n scripts/security-alert.sh
+
+  # ============================================
+  # 8. Feature Gate Tests — v2.1 feature validation
+  # ============================================
+  feature-gate-tests:
+    name: Feature Gate Tests (v2.1)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        feature:
+          - v2.1-observability
+          - v2.1-security-hardening
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          components: clippy
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+
+      - name: Cache target directory
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-target-v2.1-${{ matrix.feature }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-target-v2.1-
+
+      - name: cargo check with ${{ matrix.feature }}
+        run: cargo check --tests --features ${{ matrix.feature }}
+
+      - name: cargo test with ${{ matrix.feature }}
+        run: cargo test --features ${{ matrix.feature }} -- --nocapture
+        continue-on-error: false
+
+      - name: cargo bench compile check (no-run)
+        run: cargo bench --features ${{ matrix.feature }} --no-run
+        continue-on-error: true
+
+  # ============================================
+  # 9. CODEOWNERS Sync — Verify protected paths
+  # ============================================
+  codeowners-sync:
+    name: CODEOWNERS Sync Verification
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify CODEOWNERS exists
+        run: |
+          if [ ! -f .github/CODEOWNERS ]; then
+            echo "::error::.github/CODEOWNERS not found"
+            exit 1
+          fi
+          echo "PASS: CODEOWNERS exists"
+
+      - name: Check for protected path changes
+        run: |
+          # Get changed files in PR
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} 2>/dev/null || echo "")
+
+          # Protected paths that require steward review
+          PROTECTED_PATTERNS=(
+            "docs/governance/"
+            "docs/grants/"
+            "infra/"
+            "tests/integration/"
+            "benchmarks/"
+            "CHANGELOG.md"
+            "Cargo.toml"
+            "SECURITY.md"
+          )
+
+          FOUND_PROTECTED=false
+          for pattern in "${PROTECTED_PATTERNS[@]}"; do
+            if echo "$CHANGED_FILES" | grep -q "$pattern"; then
+              echo "::warning::Protected path touched: $pattern — steward review required"
+              FOUND_PROTECTED=true
+            fi
+          done
+
+          if [ "$FOUND_PROTECTED" = false ]; then
+            echo "INFO: No protected paths touched in this PR"
+          fi

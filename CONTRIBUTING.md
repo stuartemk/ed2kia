@@ -432,6 +432,95 @@ Miembros destacados por contribuciones excepcionales:
 - [Project Constitution](docs/governance/project-constitution.md) — Principios del proyecto
 - [GOVERNANCE.md](GOVERNANCE.md) — Framework de gobernanza
 
+## 🌐 v2.1 Ambassador Workflow
+
+Esta sección describe cómo los embajadores y contribuidores pueden participar en el desarrollo de v2.1 usando feature gates, testing protocol y gobernanza comunitaria.
+
+### Feature Gates v2.1
+
+Los módulos v2.1 están protegidos con feature gates para mantener la estabilidad de v2.0.0-stable:
+
+| Feature Gate | Módulo | Descripción |
+|--------------|--------|-------------|
+| `v2.1-sprint1` | Core scaffolds | Infraestructura base v2.1 |
+| `v2.1-observability` | NodeMetrics, HealthEndpoint | Métricas Prometheus, health checks |
+| `v2.1-security-hardening` | DependencyPin, CVE tracking | Remediation de 14 CVEs (wasmtime, rustls-webpki) |
+| `v2.1-zkp-v3` | Multi-curve ZKP | BN254/BLS12-381/Pasta curves |
+| `v2.1-gui` | Tauri scaffold | Desktop GUI foundation |
+| `v2.1-enterprise` | Federation v5+ | Multi-tenant federation |
+
+**Activar feature gates:**
+```bash
+# Build con observability
+cargo build --features v2.1-observability
+
+# Build con security hardening
+cargo build --features v2.1-security-hardening
+
+# Build con múltiples features
+cargo build --features "v2.1-observability,v2.1-security-hardening"
+```
+
+### Testing Protocol v2.1
+
+```bash
+# Tests de integración con feature gates
+cargo test --features v2.1-observability
+cargo test --features v2.1-security-hardening
+
+# Benchmarks (placeholders — miden overhead de scaffolds)
+cargo bench --features v2.1-observability --no-run
+cargo bench --features v2.1-security-hardening --no-run
+
+# Validación completa v2.1
+cargo check --all-targets --features "v2.1-observability,v2.1-security-hardening"
+```
+
+**Criterios de aceptación:**
+- `cargo check` → 0 errores
+- `cargo test --features v2.1-*` → Todos los tests pasan
+- Benchmarks → Compilan sin errores (resultados son referencia)
+
+### Governance & RFCs
+
+Participa en la gobernanza comunitaria de v2.1:
+
+- **Voting Dashboard:** [`docs/community/voting-dashboard-active.md`](docs/community/voting-dashboard-active.md) — Propuestas activas, pesos de votación
+- **RFC Tracking:** [`docs/governance/rfc-tracking.md`](docs/governance/rfc-tracking.md) — Estado de RFCs abiertos/cerrados
+- **Pesos de votación:** Spectator (0x) → Contributor (0.5x) → Advocate (1x) → Steward (2x) → Guardian (3x)
+
+**Flujo de votación:**
+1. Revisa propuestas activas en el Voting Dashboard
+2. Verifica tu peso de votación en el Milestone Tracker
+3. Vota vía GitHub Issues (reacción + comentario justificado)
+4. Tally automático vía `scripts/voting-tally.sh`
+
+### Ethics & Licensing
+
+- **Licencia:** Apache 2.0 + Cláusula de Uso Ética
+- **Cero lógica financiera:** No tokens, no pagos, no mecanismos financieros
+- **Transparencia de datos:** Cero telemetría, cero tracking, datos locales
+- **Cero unsafe:** Todo el código Rust debe ser memory-safe
+
+### CI/CD Integration
+
+Los PRs que toquen paths protegidos requieren review de CODEOWNERS:
+
+| Path | Equipo Responsable |
+|------|-------------------|
+| `/docs/governance/` | @ed2kia/governance-team |
+| `/docs/grants/` | @ed2kia/maintainers |
+| `/infra/` | @ed2kia/ops-team |
+| `/tests/integration/` | @ed2kia/core-team |
+| `/benchmarks/` | @ed2kia/core-team |
+| `CHANGELOG.md` | @ed2kia/maintainers |
+| `Cargo.toml` | @ed2kia/core-team |
+
+**Validación automática:**
+- `feature-gate-check`: Verifica que v2.1 features no estén en default
+- `feature-gate-tests`: Ejecuta tests con cada feature gate v2.1
+- `codeowners-sync`: Verifica que PRs toquen paths protegidos
+
 ## Contacto
 
 - Issues: https://github.com/ed2kia/ed2kIA/issues
