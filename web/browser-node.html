@@ -8,11 +8,53 @@
         body { font-family: monospace; background: #1a1a2e; color: #e0e0e0; padding: 2rem; }
         #status { color: #00ff88; }
         #error { color: #ff4444; }
+        #telemetry-log {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #0a0a1a;
+            border: 1px solid #333;
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 0.85rem;
+        }
+        .telemetry-entry {
+            padding: 0.25rem 0;
+            border-bottom: 1px solid #222;
+        }
+        .telemetry-entry:last-child { border-bottom: none; }
     </style>
 </head>
 <body>
     <h1>ed2kIA Browser Node</h1>
     <p id="status">Initializing...</p>
+    <div id="telemetry-log"></div>
     <script src="browser_node.js"></script>
+    <script>
+        // v2.1-wasm-telemetry: Listen for inference_complete CustomEvents from WASM
+        (function() {
+            var log = document.getElementById('telemetry-log');
+            var entryCount = 0;
+
+            document.addEventListener('inference_complete', function(e) {
+                var detail = e.detail || {};
+                entryCount++;
+                var entry = document.createElement('div');
+                entry.className = 'telemetry-entry';
+                entry.textContent = '[' + entryCount + '] task=' + (detail.task_id || '?') +
+                    ' conf=' + (detail.confidence || 0) +
+                    ' ms=' + (detail.processing_time_ms || 0) +
+                    ' activations=' + (detail.activations ? detail.activations.length : 0);
+                if (log.firstChild) {
+                    log.insertBefore(entry, log.firstChild);
+                } else {
+                    log.appendChild(entry);
+                }
+                // Keep max 50 entries.
+                while (log.children.length > 50) {
+                    log.removeChild(log.lastChild);
+                }
+            });
+        })();
+    </script>
 </body>
 </html>

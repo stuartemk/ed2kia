@@ -53,10 +53,16 @@ pub mod browser_node;
 #[cfg(feature = "v2.1-mvp-core")]
 pub mod mvp_core;
 
+/// Relay Server — WebRTC/Circuit Relay v2 signaling (feature-gated)
+#[cfg(feature = "v2.1-relay-server")]
+pub mod relay_server;
+
 /// Sparse Autoencoder (SAE) loading and routing
 pub mod sae {
     pub mod loader;
     pub mod router;
+    #[cfg(feature = "v2.1-wasm-micro-sharding")]
+    pub mod wasm_sharding;
     #[cfg(feature = "v1.2-sprint1")]
     pub mod fine_tuning_engine;
     #[cfg(feature = "v1.2-sprint2")]

@@ -214,6 +214,18 @@ stable = [
 # Advanced modules (ZKP, Governance, Reputation) stubbed behind feature gates
 "v2.1-mvp-core" = []
 
+# v2.1 Relay Server — WebRTC/Circuit Relay v2 signaling scaffold
+# libp2p-webrtc + libp2p-relay for browser node connectivity
+"v2.1-relay-server" = []
+
+# v2.1 WASM Micro-Sharding — Tensor chunking for wasm32 peers (≤50MB)
+# Safe slicing via candle-core, stride/shape preservation
+"v2.1-wasm-micro-sharding" = []
+
+# v2.1 WASM Telemetry Bridge — wasm-bindgen events for DOM real-time updates
+# CustomEvent dispatch from inference_bridge to browser JS
+"v2.1-wasm-telemetry" = []
+
 # ─── Hardware Acceleration ───
 cpu = []
 cuda = ["candle-core/cuda", "candle-nn/cuda"]

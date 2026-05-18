@@ -3,10 +3,51 @@
 //! Feature-gated behind `v2.1-mvp-core`. Provides the bridge between distributed
 //! tensor tasks and SAE (Sparse Autoencoder) inference execution.
 //!
+//! When compiled for wasm32 with `v2.1-wasm-telemetry`, provides
+//! `#[wasm_bindgen]` annotated `emit_inference_complete` that dispatches
+//! a `CustomEvent` to the browser DOM for real-time JS consumption.
+//!
 //! **Status:** Scaffold — mock data for validation.
 //! **License:** Apache 2.0 + Ethical Use Clause
 
 use thiserror::Error;
+
+// ─── WASM Telemetry Bridge (feature-gated) ───
+#[cfg(all(target_arch = "wasm32", feature = "v2.1-wasm-telemetry"))]
+use wasm_bindgen::prelude::*;
+
+#[cfg(all(target_arch = "wasm32", feature = "v2.1-wasm-telemetry"))]
+#[wasm_bindgen]
+/// Emit inference_complete event to browser DOM.
+///
+/// Dispatches a `CustomEvent` named `inference_complete` with detail:
+/// `{ task_id, activations, confidence, processing_time_ms }`
+pub fn emit_inference_complete(
+    task_id: &str,
+    activations: &[f32],
+    confidence: f64,
+    processing_time_ms: u64,
+) -> Result<(), JsValue> {
+    use wasm_bindgen::JsCast;
+
+    let window = web_sys::window().ok_or_else(|| JsValue::from_str("No window"))?;
+    let document = window.document().ok_or_else(|| JsValue::from_str("No document"))?;
+
+    // Build detail object.
+    let mut detail_obj = js_sys::Object::new();
+    js_sys::Reflect::set_str(&detail_obj, "task_id", task_id)?;
+    js_sys::Reflect::set(&detail_obj, "activations".into(), &JsValue::from(activations))?;
+    js_sys::Reflect::set(&detail_obj, "confidence".into(), &JsValue::from(confidence))?;
+    js_sys::Reflect::set(&detail_obj, "processing_time_ms".into(), &JsValue::from(processing_time_ms))?;
+
+    // Create CustomEvent.
+    let event = web_sys::CustomEvent::new("inference_complete")?;
+    js_sys::Reflect::set(&event, "detail".into(), &detail_obj)?;
+
+    // Dispatch on document.
+    document.dispatch_event(&event)?;
+    Ok(())
+}
 
 /// Errors specific to inference bridge operations.
 #[derive(Debug, Error)]
