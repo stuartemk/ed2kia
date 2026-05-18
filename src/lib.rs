@@ -63,6 +63,10 @@ pub mod sae {
     pub mod router;
     #[cfg(feature = "v2.1-wasm-micro-sharding")]
     pub mod wasm_sharding;
+    #[cfg(feature = "v2.1-qwen-scope-sae")]
+    pub mod qwen_scope_sae;
+    #[cfg(feature = "v2.1-qwen-scope-loader")]
+    pub mod qwen_scope_loader;
     #[cfg(feature = "v1.2-sprint1")]
     pub mod fine_tuning_engine;
     #[cfg(feature = "v1.2-sprint2")]
@@ -138,6 +142,9 @@ pub mod bridge {
 pub mod protocol {
     #[path = "../protocol/async_steering.rs"]
     pub mod async_steering;
+    #[cfg(feature = "v2.1-audit-payloads")]
+    #[path = "../protocol/audit_payloads.rs"]
+    pub mod audit_payloads;
 }
 
 // ============================================================================

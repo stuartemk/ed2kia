@@ -226,6 +226,15 @@ stable = [
 # CustomEvent dispatch from inference_bridge to browser JS
 "v2.1-wasm-telemetry" = []
 
+# v2.1 Qwen Scope SAE — Top-k SAE architecture in candle-core (4 tensors, forward pass, WASM-compatible)
+"v2.1-qwen-scope-sae" = []
+
+# v2.1 Qwen Scope Loader — Safetensors ingestion + micro-sharding integration
+"v2.1-qwen-scope-loader" = []
+
+# v2.1 Audit Payloads — AuditTaskPayload → AuditResultPayload, WASM-friendly serialization
+"v2.1-audit-payloads" = []
+
 # ─── Hardware Acceleration ───
 cpu = []
 cuda = ["candle-core/cuda", "candle-nn/cuda"]

@@ -161,6 +161,127 @@ impl InferenceBridge {
     pub fn get_results(&self) -> &[InferenceResult] {
         &self.results
     }
+
+    /// Execute a full audit task: Deserialize payload → SAE forward → Serialize result.
+    ///
+    /// This is the core WASM flow for P2P audit:
+    /// 1. Deserialize `AuditTaskPayload` (bincode)
+    /// 2. Reconstruct QwenScopeSAE from shard weights
+    /// 3. Execute `forward()` on input activation
+    /// 4. Serialize `AuditResultPayload` (bincode)
+    ///
+    /// Feature-gated behind `v2.1-audit-payloads` + `v2.1-qwen-scope-sae`.
+    #[cfg(all(feature = "v2.1-audit-payloads", feature = "v2.1-qwen-scope-sae"))]
+    pub async fn execute_audit_task(
+        &mut self,
+        payload_bytes: &[u8],
+        node_id: String,
+    ) -> Result<Vec<u8>, InferenceError> {
+        use crate::protocol::audit_payloads::{AuditPayloadError, AuditResultPayload, AuditTaskPayload};
+        use crate::sae::qwen_scope_sae::QwenScopeSAE;
+        use candle_core::Device;
+        use std::time::Instant;
+
+        // Step 1: Deserialize AuditTaskPayload
+        let task = AuditTaskPayload::deserialize(payload_bytes).map_err(|e| {
+            InferenceError::SaeForward(format!("Payload deserialization failed: {}", e))
+        })?;
+
+        // Validate payload
+        task.validate().map_err(|e| {
+            InferenceError::SaeForward(format!("Payload validation failed: {}", e))
+        })?;
+
+        let start = Instant::now();
+
+        // Step 2: Reconstruct QwenScopeSAE from shard weights
+        let device = Device::Cpu;
+        let (d_sae, d_model) = task.shard_shape;
+        let k = task.k;
+
+        // Extract weights from flat shard: w_enc + w_dec + b_enc + b_dec
+        let w_enc_size = d_sae * d_model;
+        let w_dec_size = d_model * d_sae;
+        let b_enc_size = d_sae;
+        // b_dec_size = d_model
+
+        let w_enc_data = &task.shard_weights[0..w_enc_size];
+        let w_dec_data = &task.shard_weights[w_enc_size..w_enc_size + w_dec_size];
+        let b_enc_data = &task.shard_weights[w_enc_size + w_dec_size..w_enc_size + w_dec_size + b_enc_size];
+        let b_dec_data = &task.shard_weights[w_enc_size + w_dec_size + b_enc_size..];
+
+        // Create tensors from weight data
+        let w_enc = Tensor::from_vec(w_enc_data.to_vec(), (d_sae, d_model), &device).map_err(|e| {
+            InferenceError::SaeForward(format!("w_enc tensor creation failed: {}", e))
+        })?;
+        let w_dec = Tensor::from_vec(w_dec_data.to_vec(), (d_model, d_sae), &device).map_err(|e| {
+            InferenceError::SaeForward(format!("w_dec tensor creation failed: {}", e))
+        })?;
+        let b_enc = Tensor::from_vec(b_enc_data.to_vec(), d_sae, &device).map_err(|e| {
+            InferenceError::SaeForward(format!("b_enc tensor creation failed: {}", e))
+        })?;
+        let b_dec = Tensor::from_vec(b_dec_data.to_vec(), d_model, &device).map_err(|e| {
+            InferenceError::SaeForward(format!("b_dec tensor creation failed: {}", e))
+        })?;
+
+        // Create SAE model
+        let sae = QwenScopeSAE::new(w_enc, w_dec, b_enc, b_dec, k).map_err(|e| {
+            InferenceError::SaeForward(format!("SAE construction failed: {}", e))
+        })?;
+
+        // Step 3: Execute forward pass
+        let input_tensor = Tensor::from_vec(task.input_activation.clone(), (task.batch_size, d_model), &device).map_err(|e| {
+            InferenceError::SaeForward(format!("Input tensor creation failed: {}", e))
+        })?;
+
+        let (sparse_values, sparse_indices) = sae.forward(&input_tensor).map_err(|e| {
+            InferenceError::SaeForward(format!("SAE forward failed: {}", e))
+        })?;
+
+        let compute_time_ms = start.elapsed().as_millis() as u64;
+
+        // Extract results to vectors
+        let values_vec: Vec<f32> = sparse_values.to_vec1().map_err(|e| {
+            InferenceError::SaeForward(format!("Values extraction failed: {}", e))
+        })?;
+        let indices_vec: Vec<usize> = sparse_indices.to_vec1().map_err(|e| {
+            InferenceError::SaeForward(format!("Indices extraction failed: {}", e))
+        })?;
+
+        // Step 4: Create and serialize AuditResultPayload
+        let result = AuditResultPayload::new(
+            task.task_id,
+            values_vec,
+            indices_vec,
+            compute_time_ms,
+            node_id,
+        );
+
+        result.serialize().map_err(|e| {
+            InferenceError::ResultReturn(format!("Result serialization failed: {}", e))
+        })
+    }
+
+    /// Execute audit task with error result (for error propagation).
+    #[cfg(feature = "v2.1-audit-payloads")]
+    pub fn create_error_result(
+        task_id: uuid::Uuid,
+        node_id: String,
+        error_message: String,
+    ) -> Result<Vec<u8>, InferenceError> {
+        #[cfg(feature = "v2.1-audit-payloads")]
+        {
+            use crate::protocol::audit_payloads::AuditResultPayload;
+            let result = AuditResultPayload::error(task_id, node_id, error_message);
+            result.serialize().map_err(|e| {
+                InferenceError::ResultReturn(format!("Error result serialization failed: {}", e))
+            })
+        }
+        #[cfg(not(feature = "v2.1-audit-payloads"))]
+        {
+            Err(InferenceError::SaeForward("audit-payloads feature not enabled".to_string()))
+        }
+    }
 }
 
 impl Default for InferenceBridge {
