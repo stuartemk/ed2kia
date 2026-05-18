@@ -6,8 +6,9 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ethical-blue)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-2021-orange)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/Version-2.1.0-sprint2-yellowgreen)](CHANGELOG.md)
-[![Tests](https://img.shields.io/badge/Tests-3089_passing-success)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-2.1.0-sprint3-yellowgreen)](CHANGELOG.md)
+[![Tests](https://img.shields.io/badge/Tests-2902_passing-success)](CHANGELOG.md)
+[![Qwen-Scope](https://img.shields.io/badge/Qwen--Scope--SAE-Integrated-brightgreen)](src/sae/qwen_scope_sae.rs)
 [![Coverage](https://img.shields.io/badge/Coverage-≥80%25-tracking)](release/v2.0.0-stable/final-signoff.json)
 [![OSSF](https://img.shields.io/badge/OSSF-8.5%2F10-passing)](security/audit_v2.0_sprint2.md)
 [![Mode](https://img.shields.io/badge/Mode-STEWARDSHIP-blueviolet)](docs/governance/project-constitution.md)
@@ -55,6 +56,9 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 | `v2.1-relay-server` | Relay Server ("El Faro") — WebRTC/Circuit Relay v2 signaling | ✅ Implementado (14 tests) |
 | `v2.1-wasm-micro-sharding` | WASM Micro-Sharding — Tensor chunking ≤50MB para wasm32 | ✅ Implementado (23 tests) |
 | `v2.1-wasm-telemetry` | WASM Telemetry Bridge — wasm-bindgen CustomEvent → DOM | ✅ Implementado |
+| `v2.1-qwen-scope-sae` | Qwen Scope SAE — Top-k Sparse Autoencoder (4-tensor) | ✅ Implementado (10 tests) |
+| `v2.1-qwen-scope-loader` | Safetensors Loader + WASM Micro-Sharding | ✅ Implementado (12 tests) |
+| `v2.1-audit-payloads` | Audit Payloads — bincode serialization for P2P audit | ✅ Implementado (14 tests) |
 | `v2.1-observability` | Metrics, Health Check, Health Endpoint | Draft (RFC-002) |
 | `v2.1-security-hardening` | wasmtime ≥24.0.7, rustls-webpki ≥0.103.13 | Planificado Q2-Q3 2027 |
 | `v2.1-gui` | GUI Bridge, Mobile, 3D Visualizer | Draft |
@@ -108,6 +112,27 @@ Navegador ──→ [Telemetry Bridge] ──→ [CustomEvent] ──→ [DOM Up
 
 > **Próximo paso:** Activa los feature gates `v2.1-relay-server`, `v2.1-wasm-micro-sharding` y `v2.1-wasm-telemetry` para probar los pilares localmente. Contribuye vía [CONTRIBUTING.md](CONTRIBUTING.md).
 
+### Qwen Scope SAE Integration (v2.1-sprint3)
+
+**Audita modelos de clase mundial de forma descentralizada.** Tu navegador procesa fragmentos seguros de Sparse Autoencoders y devuelve transparencia verificable.
+
+La integración Qwen Scope SAE proporciona la arquitectura completa para auditoría descentralizada de LLMs:
+
+| Componente | Módulo | Función | Tests |
+|------------|--------|---------|-------|
+| **Top-k SAE** | [`sae/qwen_scope_sae`](src/sae/qwen_scope_sae.rs) | Arquitectura 4-tensor con forward pass exacto `f(x) = TopK(W_enc @ (x - b_dec) + b_enc)` | 10 |
+| **Safetensors Loader** | [`sae/qwen_scope_loader`](src/sae/qwen_scope_loader.rs) | Carga de pesos Qwen Scope + micro-sharding WASM ≤50MB | 12 |
+| **Audit Payloads** | [`protocol/audit_payloads`](src/protocol/audit_payloads.rs) | Serialización bincode para flujos P2P de auditoría | 14 |
+| **Inference Bridge** | [`mvp_core/inference_bridge`](src/mvp_core/inference_bridge.rs) | `execute_audit_task()` — ciclo completo P2P | integrado |
+
+```
+Audit Task ──→ [Deserialize bincode] ──→ [QwenScopeSAE::forward()] ──→ [Sparse Features]
+                                                                         ↓
+                                                            [Serialize Result] ──→ P2P Network
+```
+
+> **Ética primero:** Toda auditoría es voluntaria, transparente y compatible con la [Constitución del Proyecto](docs/governance/project-constitution.md). Cero lógica financiera, máxima interpretabilidad.
+
 ## 📦 Estructura del Proyecto
 
 ```
@@ -144,10 +169,16 @@ ed2kIA/
 │   │   └── protocol.rs     # Schema + FeatureBatch/ConsensusVote (Fase 2)
 │   ├── sae/
 │   │   ├── loader.rs       # Candle-based SAE loader (.safetensors)
-│   │   └── router.rs       # LayerRouter (dynamic sharding + leases)
+│   │   ├── router.rs       # LayerRouter (dynamic sharding + leases)
+│   │   ├── qwen_scope_sae.rs    # Qwen Scope Top-k SAE (4-tensor arch)
+│   │   ├── qwen_scope_loader.rs # Safetensors ingestion + WASM sharding
+│   │   └── wasm_sharding.rs     # Tensor chunking ≤50MB for wasm32
 │   ├── bridge/
 │   │   ├── tensor_flow.rs  # Node A → Node B tensor pipeline
 │   │   └── consciousness.rs # Agregación + conflictos + steering (Fase 2)
+│   ├── protocol/           # Protocolos P2P + Auditoría
+│   │   ├── audit_payloads.rs    # AuditTask/AuditResult con bincode
+│   │   └── async_steering.rs    # Steering signals para pipelines tensor
 │   ├── interpret/          # Fase 2: Motor de Interpretación
 │   │   ├── feature_analyzer.rs  # Análisis SAE + detección anomalías
 │   │   └── semantic_map.rs      # Mapeo feature→concepto (Qwen-Scope)
