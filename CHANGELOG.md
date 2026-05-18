@@ -6,6 +6,55 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.1.0-sprint2] — 2026-05-18
+
+### 🎉 Sprint Summary
+
+**v2.1.0-sprint2** delivers the **3 Web Viability Pillars** required for browser-based P2P node operation: **Relay Server** (WebRTC/Circuit Relay v2 signaling), **WASM Micro-Sharding** (tensor chunking for wasm32 peers ≤50MB), and **WASM Telemetry Bridge** (wasm-bindgen CustomEvent dispatch to browser DOM). These pillars enable reliable connectivity, memory-safe tensor processing, and real-time inference feedback for web peers.
+
+| Metric | Value |
+|--------|-------|
+| **Feature Gates** | 3 new (`v2.1-relay-server`, `v2.1-wasm-micro-sharding`, `v2.1-wasm-telemetry`) + 4 inherited |
+| **Tests** | +37 new (14 relay + 23 sharding) = 3089 total PASS |
+| **CI Jobs** | 12 jobs (matrix extended + wasm-telemetry-check) |
+| **Coverage** | ≥80% (tracking via cargo-llvm-cov) |
+| **OSSF Score** | 8.5/10 (PASSING) |
+| **Security** | 0 CVEs introduced, 0 unsafe code |
+
+### Added
+
+- **Relay Server ("El Faro")** — WebRTC/Circuit Relay v2 signaling scaffold for browser P2P connectivity ([`src/relay_server/mod.rs`](src/relay_server/mod.rs))
+  - `RelayNode`, `RelayCircuit`, `RelayTransport`, `RelayConfig` structs
+  - Circuit creation, validity checking, expiration cleanup
+  - 14 unit tests covering full lifecycle
+
+- **WASM Micro-Sharding** — Tensor chunking for wasm32 peers with ≤50MB size limits ([`src/sae/wasm_sharding.rs`](src/sae/wasm_sharding.rs))
+  - `WasmPeerProfile`, `TensorShard`, `ShardedTensor` structs
+  - `shard_tensor_for_wasm()` with candle-core slicing
+  - `reconstruct_tensor()` for lossless reassembly
+  - `detect_wasm_peer()` + `estimate_tensor_size_mb()` utilities
+  - 23 unit tests covering sharding lifecycle
+
+- **WASM Telemetry Bridge** — wasm-bindgen + web-sys CustomEvent dispatch from Rust to browser DOM ([`src/mvp_core/inference_bridge.rs`](src/mvp_core/inference_bridge.rs))
+  - `emit_inference_complete()` function for real-time inference events
+  - Browser Node HTML updated with telemetry log UI + event listener
+
+### Changed
+
+- **CI/CD Pipeline** — Feature gate matrix extended with `v2.1-relay-server` + `v2.1-wasm-micro-sharding`
+- **CI/CD Pipeline** — New `wasm-telemetry-check` job (job #12) with wasm32 target + HTML listener verification
+- **Cargo.toml** — 3 new feature gates added (NOT in default/stable)
+- **lib.rs** — Relay server + WASM sharding modules conditionally compiled
+
+### Security
+
+- **Zero unsafe code** — `#![forbid(unsafe_code)]` enforced
+- **Zero telemetry** — No external network calls, no analytics
+- **0 CVEs introduced** in this sprint
+- **Feature-gated isolation** — v2.1 features strictly excluded from default build
+
+---
+
 ## [v2.1.0-sprint1] — 2026-05-17
 
 ### 🎉 Sprint Summary

@@ -6,8 +6,8 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ethical-blue)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-2021-orange)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/Version-2.1.0-sprint1-yellowgreen)](CHANGELOG.md)
-[![Tests](https://img.shields.io/badge/Tests-3052_passing-success)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-2.1.0-sprint2-yellowgreen)](CHANGELOG.md)
+[![Tests](https://img.shields.io/badge/Tests-3089_passing-success)](CHANGELOG.md)
 [![Coverage](https://img.shields.io/badge/Coverage-≥80%25-tracking)](release/v2.0.0-stable/final-signoff.json)
 [![OSSF](https://img.shields.io/badge/OSSF-8.5%2F10-passing)](security/audit_v2.0_sprint2.md)
 [![Mode](https://img.shields.io/badge/Mode-STEWARDSHIP-blueviolet)](docs/governance/project-constitution.md)
@@ -52,6 +52,9 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 |--------------|--------|--------|
 | `v2.1-mvp-core` | MVP Core Loop — Discovery → Distribution → Inference → Collection | ✅ Implementado (27 tests) |
 | `v2.1-wasm-browser` | Browser Node — WASM P2P para navegadores | ✅ Pipeline CI/CD |
+| `v2.1-relay-server` | Relay Server ("El Faro") — WebRTC/Circuit Relay v2 signaling | ✅ Implementado (14 tests) |
+| `v2.1-wasm-micro-sharding` | WASM Micro-Sharding — Tensor chunking ≤50MB para wasm32 | ✅ Implementado (23 tests) |
+| `v2.1-wasm-telemetry` | WASM Telemetry Bridge — wasm-bindgen CustomEvent → DOM | ✅ Implementado |
 | `v2.1-observability` | Metrics, Health Check, Health Endpoint | Draft (RFC-002) |
 | `v2.1-security-hardening` | wasmtime ≥24.0.7, rustls-webpki ≥0.103.13 | Planificado Q2-Q3 2027 |
 | `v2.1-gui` | GUI Bridge, Mobile, 3D Visualizer | Draft |
@@ -84,6 +87,26 @@ Navegador ──→ [WASM Node] ──→ [KAD Discovery] ──→ [Tensor Dist
 ```
 
 > **Ética primero:** Toda participación es voluntaria, auditable y compatible con la [Constitución del Proyecto](docs/governance/project-constitution.md).
+
+### 3 Pilares Críticos de Viabilidad Web (v2.1-sprint2)
+
+La viabilidad del nodo WASM en navegador se sustenta en **3 pilares técnicos** implementados y validados:
+
+| Pilar | Módulo | Función | Tests |
+|-------|--------|---------|-------|
+| **Relay Server ("El Faro")** | [`relay_server`](src/relay_server/mod.rs) | WebRTC/Circuit Relay v2 signaling para conectividad P2P en navegadores | 14 |
+| **Micro-Sharding WASM** | [`sae/wasm_sharding`](src/sae/wasm_sharding.rs) | Tensor chunking ≤50MB para peers wasm32 con límites de memoria seguros | 23 |
+| **Telemetry Bridge** | [`mvp_core/inference_bridge`](src/mvp_core/inference_bridge.rs) | wasm-bindgen CustomEvent dispatch → DOM para feedback en tiempo real | integrado |
+
+```
+Navegador ──→ [Relay Server] ──→ [Circuit Relay v2] ──→ [Peer Discovery]
+                                                        ↓
+Navegador ──→ [WASM Node] ──→ [Micro-Sharding] ──→ [SAE Inference]
+                                                        ↓
+Navegador ──→ [Telemetry Bridge] ──→ [CustomEvent] ──→ [DOM Update]
+```
+
+> **Próximo paso:** Activa los feature gates `v2.1-relay-server`, `v2.1-wasm-micro-sharding` y `v2.1-wasm-telemetry` para probar los pilares localmente. Contribuye vía [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## 📦 Estructura del Proyecto
 
