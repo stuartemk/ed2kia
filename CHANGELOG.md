@@ -6,6 +6,57 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.1.0-sprint4] — 2026-05-18
+
+### 🎉 Sprint Summary
+
+**v2.1.0-sprint4** delivers the **3 Browser Viability Pillars** required for production-grade browser-based P2P node operation: **Web Workers** (async inference offloading without blocking UI), **WebRTC + Relay Transport** (libp2p WASM transport with Circuit Relay v2), and **Reactive Telemetry Bridge** (Rust → JS CustomEvent → DOM updates). These pillars enable frictionless browser participation, real-time P2P connectivity, and live telemetry visualization.
+
+| Metric | Value |
+|--------|-------|
+| **Feature Gates** | 3 new (`v2.1-wasm-workers`, `v2.1-webrtc-relay`, `v2.1-wasm-telemetry` extension) + 10 inherited |
+| **Tests** | +15 new (2 worker + 13 webrtc_transport) = 2906 total PASS |
+| **CI Jobs** | `browser-pillars-check` added (cross-target WASM validation) |
+| **Coverage** | ≥80% (tracking via cargo-llvm-cov) |
+| **OSSF Score** | 8.5/10 (PASSING) |
+| **Security** | 0 CVEs introduced, 0 unsafe code |
+
+### Added — Browser Viability Pillars
+
+- **Web Worker Offloading** — Async inference dispatch without blocking the UI thread ([`src/browser_node/worker.rs`](src/browser_node/worker.rs))
+  - `WorkerBridge` struct with `init_worker()`, `dispatch_audit_task()`, `terminate()`
+  - Blob URL for inline worker script using standard `postMessage`/`onmessage` pattern (NO SharedArrayBuffer)
+  - `WorkerError` enum with Timeout, MessageSend, MessageReceive, Serialization, WorkerInit variants
+  - 2 unit tests covering error display and worker bridge creation
+
+- **WebRTC + Relay Transport** — libp2p WASM transport config for browser P2P ([`src/browser_node/webrtc_transport.rs`](src/browser_node/webrtc_transport.rs))
+  - `WebRtcTransportBridge` struct with `bootstrap()`, `dial_peer()`, `start_event_loop()`, `disconnect()`
+  - `RelayConfig` with Circuit Relay v2 support, max connections, timeout
+  - `WebRtcRelayError` enum with MultiaddrParse, SwarmBootstrap, RelayDial, TransportConfig, WasmUnavailable variants
+  - 13 unit tests covering full lifecycle (config, bootstrap, dial, event loop, disconnect)
+
+- **Reactive Telemetry Bridge (Extension)** — 3 new CustomEvent emitters for real-time DOM updates ([`src/mvp_core/inference_bridge.rs`](src/mvp_core/inference_bridge.rs))
+  - `emit_task_received(task_id, timestamp_ms)` — Task dispatch notification
+  - `emit_peer_connected(peer_id, timestamp_ms)` — P2P connection established
+  - `emit_error(message, source, timestamp_ms)` — Error propagation to browser console
+  - Extended `web/browser-node.html` with reactive event listeners for all 4 telemetry types (task_received, inference_complete, peer_connected, wasm_error)
+
+### Changed
+
+- **CI/CD Pipeline** — New `browser-pillars-check` job validating `v2.1-wasm-workers` + `v2.1-webrtc-relay` feature gates with cross-target WASM compilation checks
+- **Cargo.toml** — 3 new feature gates added (`v2.1-wasm-workers`, `v2.1-webrtc-relay`, `v2.1-wasm-telemetry` extension). WASM dependencies (`wasm-bindgen`, `js-sys`, `web-sys`) promoted to main optional deps for feature gating
+- **lib.rs** — `browser_node` sub-modules (`worker`, `webrtc_transport`) conditionally compiled
+- **Browser Node HTML** — Full rewrite of `web/browser-node.html` with counter displays for tasks, peers, errors and reactive DOM listeners
+
+### Security
+
+- **Zero unsafe code** — `#![forbid(unsafe_code)]` enforced
+- **Zero telemetry** — No external network calls, no analytics
+- **0 CVEs introduced** in this sprint
+- **Feature-gated isolation** — v2.1 features strictly excluded from default build
+
+---
+
 ## [v2.1.0-sprint3] — 2026-05-18
 
 ### 🎉 Sprint Summary

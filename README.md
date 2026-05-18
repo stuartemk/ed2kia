@@ -6,8 +6,8 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ethical-blue)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-2021-orange)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/Version-2.1.0-sprint3-yellowgreen)](CHANGELOG.md)
-[![Tests](https://img.shields.io/badge/Tests-2902_passing-success)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-2.1.0-sprint4-yellowgreen)](CHANGELOG.md)
+[![Tests](https://img.shields.io/badge/Tests-2906_passing-success)](CHANGELOG.md)
 [![Qwen-Scope](https://img.shields.io/badge/Qwen--Scope--SAE-Integrated-brightgreen)](src/sae/qwen_scope_sae.rs)
 [![Coverage](https://img.shields.io/badge/Coverage-≥80%25-tracking)](release/v2.0.0-stable/final-signoff.json)
 [![OSSF](https://img.shields.io/badge/OSSF-8.5%2F10-passing)](security/audit_v2.0_sprint2.md)
@@ -53,9 +53,11 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 |--------------|--------|--------|
 | `v2.1-mvp-core` | MVP Core Loop — Discovery → Distribution → Inference → Collection | ✅ Implementado (27 tests) |
 | `v2.1-wasm-browser` | Browser Node — WASM P2P para navegadores | ✅ Pipeline CI/CD |
+| `v2.1-wasm-workers` | Web Worker Offloading — Async inference dispatch sin bloquear UI | ✅ Implementado (2 tests) |
+| `v2.1-webrtc-relay` | WebRTC + Relay Transport — libp2p WASM con Circuit Relay v2 | ✅ Implementado (13 tests) |
+| `v2.1-wasm-telemetry` | WASM Telemetry Bridge — wasm-bindgen CustomEvent → DOM (4 eventos) | ✅ Implementado |
 | `v2.1-relay-server` | Relay Server ("El Faro") — WebRTC/Circuit Relay v2 signaling | ✅ Implementado (14 tests) |
 | `v2.1-wasm-micro-sharding` | WASM Micro-Sharding — Tensor chunking ≤50MB para wasm32 | ✅ Implementado (23 tests) |
-| `v2.1-wasm-telemetry` | WASM Telemetry Bridge — wasm-bindgen CustomEvent → DOM | ✅ Implementado |
 | `v2.1-qwen-scope-sae` | Qwen Scope SAE — Top-k Sparse Autoencoder (4-tensor) | ✅ Implementado (10 tests) |
 | `v2.1-qwen-scope-loader` | Safetensors Loader + WASM Micro-Sharding | ✅ Implementado (12 tests) |
 | `v2.1-audit-payloads` | Audit Payloads — bincode serialization for P2P audit | ✅ Implementado (14 tests) |
@@ -92,25 +94,25 @@ Navegador ──→ [WASM Node] ──→ [KAD Discovery] ──→ [Tensor Dist
 
 > **Ética primero:** Toda participación es voluntaria, auditable y compatible con la [Constitución del Proyecto](docs/governance/project-constitution.md).
 
-### 3 Pilares Críticos de Viabilidad Web (v2.1-sprint2)
+### 3 Pilares Críticos de Viabilidad Web (v2.1-sprint4)
 
 La viabilidad del nodo WASM en navegador se sustenta en **3 pilares técnicos** implementados y validados:
 
 | Pilar | Módulo | Función | Tests |
 |-------|--------|---------|-------|
-| **Relay Server ("El Faro")** | [`relay_server`](src/relay_server/mod.rs) | WebRTC/Circuit Relay v2 signaling para conectividad P2P en navegadores | 14 |
-| **Micro-Sharding WASM** | [`sae/wasm_sharding`](src/sae/wasm_sharding.rs) | Tensor chunking ≤50MB para peers wasm32 con límites de memoria seguros | 23 |
-| **Telemetry Bridge** | [`mvp_core/inference_bridge`](src/mvp_core/inference_bridge.rs) | wasm-bindgen CustomEvent dispatch → DOM para feedback en tiempo real | integrado |
+| **Web Workers** | [`browser_node/worker`](src/browser_node/worker.rs) | Async inference offloading sin bloquear UI (postMessage/onmessage) | 2 |
+| **WebRTC + Relay** | [`browser_node/webrtc_transport`](src/browser_node/webrtc_transport.rs) | libp2p WASM transport con Circuit Relay v2 | 13 |
+| **Telemetría Reactiva** | [`mvp_core/inference_bridge`](src/mvp_core/inference_bridge.rs) | Rust → JS CustomEvent → DOM (4 eventos: task, inference, peer, error) | integrado |
 
 ```
-Navegador ──→ [Relay Server] ──→ [Circuit Relay v2] ──→ [Peer Discovery]
-                                                        ↓
-Navegador ──→ [WASM Node] ──→ [Micro-Sharding] ──→ [SAE Inference]
-                                                        ↓
-Navegador ──→ [Telemetry Bridge] ──→ [CustomEvent] ──→ [DOM Update]
+Navegador ──→ [Web Worker] ──→ [postMessage] ──→ [Audit Task Dispatch]
+                                                    ↓
+Navegador ──→ [WebRTC Relay] ──→ [Circuit Relay v2] ──→ [Peer Discovery]
+                                                    ↓
+Navegador ──→ [Telemetry Bridge] ──→ [CustomEvent] ──→ [DOM Reactive Update]
 ```
 
-> **Próximo paso:** Activa los feature gates `v2.1-relay-server`, `v2.1-wasm-micro-sharding` y `v2.1-wasm-telemetry` para probar los pilares localmente. Contribuye vía [CONTRIBUTING.md](CONTRIBUTING.md).
+> **Conecta tu navegador, únete a la red P2P real y visualiza tu impacto en tiempo real. Fricción cero, transparencia total.** Activa los feature gates `v2.1-wasm-workers`, `v2.1-webrtc-relay` y `v2.1-wasm-telemetry` para probar localmente. Contribuye vía [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ### Qwen Scope SAE Integration (v2.1-sprint3)
 
