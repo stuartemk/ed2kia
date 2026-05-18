@@ -113,6 +113,46 @@ services:
       retries: 3
       start_period: 10s
 
+  # ---------------------------------------------------------------------------
+  # Orchestrator Node — Native orchestrator with task distribution
+  # ---------------------------------------------------------------------------
+  orchestrator-node:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      target: runtime
+      args:
+        FEATURES: "v2.1-orchestrator,v2.1-task-manager"
+    container_name: ed2kia-orchestrator
+    hostname: orchestrator
+    ports:
+      - "9010:9000/tcp"
+      - "9010:9000/udp"
+    environment:
+      - RUST_LOG=ed2kia=info
+      - NODE_ID=orchestrator
+      - PORT=9000
+      - RELAY_ADDRESS=/ip4/127.0.0.1/tcp/9000
+      - SAE_PATH=/data/ed2kia/models/qwen-scope.safetensors
+      - MAX_QUEUE_SIZE=1024
+      - TASK_TIMEOUT_SECS=300
+    volumes:
+      - ./data/orchestrator:/data/ed2kia
+      - ./models:/data/ed2kia/models:ro
+    command: ["--port", "9000", "orchestrator"]
+    restart: unless-stopped
+    networks:
+      - ed2kia-net
+    depends_on:
+      node1:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "ed2kia", "--help"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
 # ---------------------------------------------------------------------------
 # Redes
 # ---------------------------------------------------------------------------

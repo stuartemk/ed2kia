@@ -32,8 +32,9 @@ RUN mkdir src && \
 # Copiar código fuente real
 COPY src ./src
 
-# Construir binario optimizado
-RUN cargo build --release --bin ed2kia
+# Construir binario optimizado con features de orquestador
+ARG FEATURES="v2.1-orchestrator,v2.1-task-manager"
+RUN cargo build --release --bin ed2kia --features "${FEATURES}"
 
 # -----------------------------------------------------------------------------
 # Stage 2: Runtime

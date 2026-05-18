@@ -248,6 +248,18 @@ stable = [
 # libp2p-webrtc-websys + RelayBehaviour + Identify for browser P2P
 "v2.1-webrtc-relay" = []
 
+# v2.1 Orchestrator Node — Native orchestrator with libp2p swarm, task queue, SAE loading
+# Async-safe with tokio::spawn and mpsc channels for task distribution
+# Requires v1.7-sprint1 to access protocol::audit_payloads
+"v2.1-orchestrator" = ["v2.1-audit-payloads", "v2.1-qwen-scope-loader", "v1.7-sprint1"]
+
+# v2.1 Task Manager — Dispatch loop, peer assignment, result aggregation
+# Timeout-based retry, checksum validation, progress events
+"v2.1-task-manager" = ["v2.1-orchestrator"]
+
+# v2.1 Docker Deploy — Multi-stage Dockerfile + docker-compose for zero-friction deployment
+"v2.1-docker-deploy" = []
+
 # ─── Hardware Acceleration ───
 cpu = []
 cuda = ["candle-core/cuda", "candle-nn/cuda"]

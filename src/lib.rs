@@ -57,6 +57,10 @@ pub mod mvp_core;
 #[cfg(feature = "v2.1-relay-server")]
 pub mod relay_server;
 
+/// Orchestrator Node — Native orchestrator with task distribution (feature-gated)
+#[cfg(feature = "v2.1-orchestrator")]
+pub mod orchestrator;
+
 /// Sparse Autoencoder (SAE) loading and routing
 pub mod sae {
     pub mod loader;

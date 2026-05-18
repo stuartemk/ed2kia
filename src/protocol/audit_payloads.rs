@@ -1,1 +1,368 @@
-//! Audit Payloads — AuditTaskPayload → AuditResultPayload for WASM-friendly serialization.\n//!\n//! Feature-gated behind `v2.1-audit-payloads`. Provides serializable payloads\n//! for audit task distribution and result collection across P2P peers.\n//!\n//! **Status:** Functional scaffold with serialization + unit tests.\n//! **License:** Apache 2.0 + Ethical Use Clause\n\n#[cfg(feature = "v2.1-qwen-scope-sae")]\nuse crate::sae::qwen_scope_sae::QwenScopeSAE;\nuse serde::{Deserialize, Serialize};\nuse thiserror::Error;\nuse uuid::Uuid;\n\n/// Errors specific to audit payload operations.\n#[derive(Debug, Error)]\npub enum AuditPayloadError {\n    #[error("Serialization failed: {0}")]\n    Serialization(#[from] bincode::Error),\n\n    #[error("Invalid payload: {0}")]\n    InvalidPayload(String),\n\n    #[cfg(feature = "v2.1-qwen-scope-sae")]\n    #[error("SAE operation failed: {0}")]\n    SaeError(#[from] crate::sae::qwen_scope_sae::QwenScopeError),\n}\n\n/// Audit Task Payload — Distributed to peers for SAE inference.\n///\n/// Contains the SAE shard, input activation, and inference parameters\n/// needed to execute a sparse autoencoder forward pass.\n#[derive(Debug, Clone, Serialize, Deserialize)]\npub struct AuditTaskPayload {\n    /// Unique task identifier\n    pub task_id: Uuid,\n    /// SAE shard weights (flattened f32: [w_enc, w_dec, b_enc, b_dec])\n    pub shard_weights: Vec<f32>,\n    /// Shard shape metadata: (d_sae, d_model)\n    pub shard_shape: (usize, usize),\n    /// Input activation vector [batch_size * d_model]\n    pub input_activation: Vec<f32>,\n    /// Input batch size\n    pub batch_size: usize,\n    /// Top-k sparsity parameter\n    pub k: usize,\n    /// Sparsity threshold (0.0 - 1.0)\n    pub sparsity_threshold: f32,\n}\n\n/// Audit Result Payload — Returned from peers after SAE inference.\n///\n/// Contains sparse activations, indices, and metadata for audit trail.\n#[derive(Debug, Clone, Serialize, Deserialize)]\npub struct AuditResultPayload {\n    /// Original task identifier\n    pub task_id: Uuid,\n    /// Sparse activation values [batch_size * k]\n    pub sparse_values: Vec<f32>,\n    /// Sparse activation indices [batch_size * k]\n    pub sparse_indices: Vec<usize>,\n    /// Compute time in milliseconds\n    pub compute_time_ms: u64,\n    /// Source node identifier\n    pub node_id: String,\n    /// Optional error message (if partial failure)\n    pub error: Option<String>,\n}\n\nimpl AuditTaskPayload {\n    /// Create a new audit task payload.\n    pub fn new(\n        shard_weights: Vec<f32>,\n        shard_shape: (usize, usize),\n        input_activation: Vec<f32>,\n        batch_size: usize,\n        k: usize,\n        sparsity_threshold: f32,\n    ) -> Self {\n        Self {\n            task_id: Uuid::new_v4(),\n            shard_weights,\n            shard_shape,\n            input_activation,\n            batch_size,\n            k,\n            sparsity_threshold,\n        }\n    }\n\n    /// Create a payload with a specific task ID.\n    pub fn with_task_id(mut self, task_id: Uuid) -> Self {\n        self.task_id = task_id;\n        self\n    }\n\n    /// Validate payload integrity.\n    pub fn validate(&self) -> Result<(), AuditPayloadError> {\n        let (d_sae, d_model) = self.shard_shape;\n\n        if d_sae == 0 || d_model == 0 {\n            return Err(AuditPayloadError::InvalidPayload(\n                \"shard_shape must have non-zero dimensions\".to_string(),\n            ));\n        }\n\n        if self.k == 0 || self.k >= d_sae {\n            return Err(AuditPayloadError::InvalidPayload(format!(\n                \"k must be in range 1..{}\", d_sae\n            )));\n        }\n\n        if self.input_activation.is_empty() {\n            return Err(AuditPayloadError::InvalidPayload(\n                \"input_activation must not be empty\".to_string(),\n            ));\n        }\n\n        let expected_input_len = self.batch_size * d_model;\n        if self.input_activation.len() != expected_input_len {\n            return Err(AuditPayloadError::InvalidPayload(format!(\n                \"input_activation length {} doesn't match batch_size * d_model = {}\",\n                self.input_activation.len(),\n                expected_input_len\n            )));\n        }\n\n        // Validate shard weights size: w_enc + w_dec + b_enc + b_dec\n        let expected_weights = d_sae * d_model + d_model * d_sae + d_sae + d_model;\n        if self.shard_weights.len() != expected_weights {\n            return Err(AuditPayloadError::InvalidPayload(format!(\n                \"shard_weights length {} doesn't match expected {}\",\n                self.shard_weights.len(),\n                expected_weights\n            )));\n        }\n\n        Ok(())\n    }\n\n    /// Serialize payload to bytes using bincode.\n    pub fn serialize(&self) -> Result<Vec<u8>, AuditPayloadError> {\n        Ok(bincode::serialize(self)?)\n    }\n\n    /// Deserialize payload from bytes.\n    pub fn deserialize(data: &[u8]) -> Result<Self, AuditPayloadError> {\n        Ok(bincode::deserialize(data)?)\n    }\n\n    /// Estimate payload size in bytes.\n    pub fn estimate_size_bytes(&self) -> usize {\n        self.shard_weights.len() * 4\n            + self.input_activation.len() * 4\n            + std::mem::size_of::<AuditTaskPayload>()\n    }\n}\n\nimpl AuditResultPayload {\n    /// Create a new audit result payload.\n    pub fn new(\n        task_id: Uuid,\n        sparse_values: Vec<f32>,\n        sparse_indices: Vec<usize>,\n        compute_time_ms: u64,\n        node_id: String,\n    ) -> Self {\n        Self {\n            task_id,\n            sparse_values,\n            sparse_indices,\n            compute_time_ms,\n            node_id,\n            error: None,\n        }\n    }\n\n    /// Create an error result payload.\n    pub fn error(task_id: Uuid, node_id: String, error: String) -> Self {\n        Self {\n            task_id,\n            sparse_values: Vec::new(),\n            sparse_indices: Vec::new(),\n            compute_time_ms: 0,\n            node_id,\n            error: Some(error),\n        }\n    }\n\n    /// Check if this result contains an error.\n    pub fn is_error(&self) -> bool {\n        self.error.is_some()\n    }\n\n    /// Serialize result to bytes using bincode.\n    pub fn serialize(&self) -> Result<Vec<u8>, AuditPayloadError> {\n        Ok(bincode::serialize(self)?)\n    }\n\n    /// Deserialize result from bytes.\n    pub fn deserialize(data: &[u8]) -> Result<Self, AuditPayloadError> {\n        Ok(bincode::deserialize(data)?)\n    }\n\n    /// Estimate result size in bytes.\n    pub fn estimate_size_bytes(&self) -> usize {\n        self.sparse_values.len() * 4\n            + self.sparse_indices.len() * 8\n            + std::mem::size_of::<AuditResultPayload>()\n    }\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    fn create_valid_task() -> AuditTaskPayload {\n        let d_sae = 128;\n        let d_model = 32;\n        let k = 8;\n        let batch_size = 2;\n\n        // Create shard weights: w_enc + w_dec + b_enc + b_dec\n        let mut weights = Vec::new();\n        weights.extend(vec![1.0f32; d_sae * d_model]); // w_enc\n        weights.extend(vec![1.0f32; d_model * d_sae]); // w_dec\n        weights.extend(vec![0.0f32; d_sae]);           // b_enc\n        weights.extend(vec![0.0f32; d_model]);         // b_dec\n\n        // Create input activation\n        let input = vec![0.5f32; batch_size * d_model];\n\n        AuditTaskPayload::new(weights, (d_sae, d_model), input, batch_size, k, 0.9)\n    }\n\n    #[test]\n    fn test_task_payload_creation() {\n        let task = create_valid_task();\n        assert_eq!(task.shard_shape, (128, 32));\n        assert_eq!(task.k, 8);\n        assert_eq!(task.batch_size, 2);\n    }\n\n    #[test]\n    fn test_task_payload_validate_valid() {\n        let task = create_valid_task();\n        assert!(task.validate().is_ok());\n    }\n\n    #[test]\n    fn test_task_payload_validate_empty_input() {\n        let mut task = create_valid_task();\n        task.input_activation.clear();\n        assert!(task.validate().is_err());\n    }\n\n    #[test]\n    fn test_task_payload_validate_wrong_input_length() {\n        let mut task = create_valid_task();\n        task.input_activation = vec![0.0; 10]; // Wrong length\n        assert!(task.validate().is_err());\n    }\n\n    #[test]\n    fn test_task_payload_validate_k_too_large() {\n        let mut task = create_valid_task();\n        task.k = 256; // > d_sae\n        assert!(task.validate().is_err());\n    }\n\n    #[test]\n    fn test_task_payload_validate_zero_shape() {\n        let mut task = create_valid_task();\n        task.shard_shape = (0, 32);\n        assert!(task.validate().is_err());\n    }\n\n    #[test]\n    fn test_task_payload_with_task_id() {\n        let task = create_valid_task();\n        let custom_id = Uuid::parse_str(\"00000000-0000-0000-0000-000000000001\").unwrap();\n        let task = task.with_task_id(custom_id);\n        assert_eq!(task.task_id, custom_id);\n    }\n\n    #[test]\n    fn test_task_payload_serialize_deserialize() {\n        let task = create_valid_task();\n        let bytes = task.serialize().unwrap();\n        let deserialized = AuditTaskPayload::deserialize(&bytes).unwrap();\n        assert_eq!(deserialized.task_id, task.task_id);\n        assert_eq!(deserialized.shard_shape, task.shard_shape);\n        assert_eq!(deserialized.k, task.k);\n        assert_eq!(deserialized.shard_weights.len(), task.shard_weights.len());\n    }\n\n    #[test]\n    fn test_task_payload_estimate_size() {\n        let task = create_valid_task();\n        let size = task.estimate_size_bytes();\n        assert!(size > 0);\n    }\n\n    #[test]\n    fn test_result_payload_creation() {\n        let task_id = Uuid::new_v4();\n        let result = AuditResultPayload::new(\n            task_id,\n            vec![0.8, 0.9, 0.7],\n            vec![10, 20, 30],\n            42,\n            \"node-1\".to_string(),\n        );\n        assert_eq!(result.task_id, task_id);\n        assert_eq!(result.compute_time_ms, 42);\n        assert_eq!(result.node_id, \"node-1\");\n        assert!(!result.is_error());\n    }\n\n    #[test]\n    fn test_result_payload_error() {\n        let task_id = Uuid::new_v4();\n        let result = AuditResultPayload::error(\n            task_id,\n            \"node-1\".to_string(),\n            \"SAE forward failed\".to_string(),\n        );\n        assert!(result.is_error());\n        assert_eq!(result.error.as_deref(), Some(\"SAE forward failed\"));\n    }\n\n    #[test]\n    fn test_result_payload_serialize_deserialize() {\n        let task_id = Uuid::new_v4();\n        let result = AuditResultPayload::new(\n            task_id,\n            vec![0.8, 0.9, 0.7],\n            vec![10, 20, 30],\n            42,\n            \"node-1\".to_string(),\n        );\n        let bytes = result.serialize().unwrap();\n        let deserialized = AuditResultPayload::deserialize(&bytes).unwrap();\n        assert_eq!(deserialized.task_id, result.task_id);\n        assert_eq!(deserialized.sparse_values, result.sparse_values);\n        assert_eq!(deserialized.sparse_indices, result.sparse_indices);\n    }\n\n    #[test]\n    fn test_result_payload_estimate_size() {\n        let result = AuditResultPayload::new(\n            Uuid::new_v4(),\n            vec![0.0; 100],\n            vec![0; 100],\n            10,\n            \"node\".to_string(),\n        );\n        let size = result.estimate_size_bytes();\n        assert!(size > 0);\n    }\n\n    #[test]\n    fn test_error_display() {\n        let err = AuditPayloadError::InvalidPayload(\"test\".to_string());\n        assert!(!format!(\"{}\", err).is_empty());\n    }\n}\n
+//! Audit Payloads — AuditTaskPayload → AuditResultPayload for WASM-friendly serialization.
+//!
+//! Feature-gated behind `v2.1-audit-payloads`. Provides serializable payloads
+//! for audit task distribution and result collection across P2P peers.
+//!
+//! **Status:** Functional scaffold with serialization + unit tests.
+//! **License:** Apache 2.0 + Ethical Use Clause
+
+#[cfg(feature = "v2.1-qwen-scope-sae")]
+use crate::sae::qwen_scope_sae::QwenScopeSAE;
+use serde::{Deserialize, Serialize};
+use thiserror::Error;
+use uuid::Uuid;
+
+/// Errors specific to audit payload operations.
+#[derive(Debug, Error)]
+pub enum AuditPayloadError {
+    #[error("Serialization failed: {0}")]
+    Serialization(#[from] bincode::Error),
+
+    #[error("Invalid payload: {0}")]
+    InvalidPayload(String),
+
+    #[cfg(feature = "v2.1-qwen-scope-sae")]
+    #[error("SAE operation failed: {0}")]
+    SaeError(#[from] crate::sae::qwen_scope_sae::QwenScopeError),
+}
+
+/// Audit Task Payload — Distributed to peers for SAE inference.
+///
+/// Contains the SAE shard, input activation, and inference parameters
+/// needed to execute a sparse autoencoder forward pass.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AuditTaskPayload {
+    /// Unique task identifier
+    pub task_id: Uuid,
+    /// SAE shard weights (flattened f32: [w_enc, w_dec, b_enc, b_dec])
+    pub shard_weights: Vec<f32>,
+    /// Shard shape metadata: (d_sae, d_model)
+    pub shard_shape: (usize, usize),
+    /// Input activation vector [batch_size * d_model]
+    pub input_activation: Vec<f32>,
+    /// Input batch size
+    pub batch_size: usize,
+    /// Top-k sparsity parameter
+    pub k: usize,
+    /// Sparsity threshold (0.0 - 1.0)
+    pub sparsity_threshold: f32,
+}
+
+/// Audit Result Payload — Returned from peers after SAE inference.
+///
+/// Contains sparse activations, indices, and metadata for audit trail.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AuditResultPayload {
+    /// Original task identifier
+    pub task_id: Uuid,
+    /// Sparse activation values [batch_size * k]
+    pub sparse_values: Vec<f32>,
+    /// Sparse activation indices [batch_size * k]
+    pub sparse_indices: Vec<usize>,
+    /// Compute time in milliseconds
+    pub compute_time_ms: u64,
+    /// Source node identifier
+    pub node_id: String,
+    /// Optional error message (if partial failure)
+    pub error: Option<String>,
+}
+
+impl AuditTaskPayload {
+    /// Create a new audit task payload.
+    pub fn new(
+        shard_weights: Vec<f32>,
+        shard_shape: (usize, usize),
+        input_activation: Vec<f32>,
+        batch_size: usize,
+        k: usize,
+        sparsity_threshold: f32,
+    ) -> Self {
+        Self {
+            task_id: Uuid::new_v4(),
+            shard_weights,
+            shard_shape,
+            input_activation,
+            batch_size,
+            k,
+            sparsity_threshold,
+        }
+    }
+
+    /// Create a payload with a specific task ID.
+    pub fn with_task_id(mut self, task_id: Uuid) -> Self {
+        self.task_id = task_id;
+        self
+    }
+
+    /// Validate payload integrity.
+    pub fn validate(&self) -> Result<(), AuditPayloadError> {
+        let (d_sae, d_model) = self.shard_shape;
+
+        if d_sae == 0 || d_model == 0 {
+            return Err(AuditPayloadError::InvalidPayload(
+                "shard_shape must have non-zero dimensions".to_string(),
+            ));
+        }
+
+        if self.k == 0 || self.k >= d_sae {
+            return Err(AuditPayloadError::InvalidPayload(format!(
+                "k must be in range 1..{}",
+                d_sae
+            )));
+        }
+
+        if self.input_activation.is_empty() {
+            return Err(AuditPayloadError::InvalidPayload(
+                "input_activation must not be empty".to_string(),
+            ));
+        }
+
+        let expected_input_len = self.batch_size * d_model;
+        if self.input_activation.len() != expected_input_len {
+            return Err(AuditPayloadError::InvalidPayload(format!(
+                "input_activation length {} doesn't match batch_size * d_model = {}",
+                self.input_activation.len(),
+                expected_input_len
+            )));
+        }
+
+        // Validate shard weights size: w_enc + w_dec + b_enc + b_dec
+        let expected_weights = d_sae * d_model + d_model * d_sae + d_sae + d_model;
+        if self.shard_weights.len() != expected_weights {
+            return Err(AuditPayloadError::InvalidPayload(format!(
+                "shard_weights length {} doesn't match expected {}",
+                self.shard_weights.len(),
+                expected_weights
+            )));
+        }
+
+        Ok(())
+    }
+
+    /// Serialize payload to bytes using bincode.
+    pub fn serialize(&self) -> Result<Vec<u8>, AuditPayloadError> {
+        Ok(bincode::serialize(self)?)
+    }
+
+    /// Deserialize payload from bytes.
+    pub fn deserialize(data: &[u8]) -> Result<Self, AuditPayloadError> {
+        Ok(bincode::deserialize(data)?)
+    }
+
+    /// Estimate memory footprint in bytes.
+    pub fn estimate_size_bytes(&self) -> usize {
+        self.shard_weights.len() * 4
+            + self.input_activation.len() * 4
+            + std::mem::size_of::<AuditTaskPayload>()
+    }
+}
+
+impl AuditResultPayload {
+    /// Create a new audit result payload.
+    pub fn new(
+        task_id: Uuid,
+        sparse_values: Vec<f32>,
+        sparse_indices: Vec<usize>,
+        compute_time_ms: u64,
+        node_id: String,
+    ) -> Self {
+        Self {
+            task_id,
+            sparse_values,
+            sparse_indices,
+            compute_time_ms,
+            node_id,
+            error: None,
+        }
+    }
+
+    /// Create an error result payload.
+    pub fn error(task_id: Uuid, node_id: String, error_msg: String) -> Self {
+        Self {
+            task_id,
+            sparse_values: Vec::new(),
+            sparse_indices: Vec::new(),
+            compute_time_ms: 0,
+            node_id,
+            error: Some(error_msg),
+        }
+    }
+
+    /// Check if this result represents an error.
+    pub fn is_error(&self) -> bool {
+        self.error.is_some()
+    }
+
+    /// Serialize result to bytes using bincode.
+    pub fn serialize(&self) -> Result<Vec<u8>, AuditPayloadError> {
+        Ok(bincode::serialize(self)?)
+    }
+
+    /// Deserialize result from bytes.
+    pub fn deserialize(data: &[u8]) -> Result<Self, AuditPayloadError> {
+        Ok(bincode::deserialize(data)?)
+    }
+
+    /// Estimate memory footprint in bytes.
+    pub fn estimate_size_bytes(&self) -> usize {
+        self.sparse_values.len() * 4
+            + self.sparse_indices.len() * 8
+            + std::mem::size_of::<AuditResultPayload>()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn create_valid_task() -> AuditTaskPayload {
+        let d_sae = 128;
+        let d_model = 32;
+        let k = 8;
+        let batch_size = 2;
+
+        // Create shard weights: w_enc + w_dec + b_enc + b_dec
+        let mut weights = Vec::new();
+        weights.extend(vec![1.0f32; d_sae * d_model]); // w_enc
+        weights.extend(vec![1.0f32; d_model * d_sae]); // w_dec
+        weights.extend(vec![0.0f32; d_sae]);           // b_enc
+        weights.extend(vec![0.0f32; d_model]);         // b_dec
+
+        // Create input activation
+        let input = vec![0.5f32; batch_size * d_model];
+
+        AuditTaskPayload::new(weights, (d_sae, d_model), input, batch_size, k, 0.9)
+    }
+
+    #[test]
+    fn test_task_payload_creation() {
+        let task = create_valid_task();
+        assert_eq!(task.shard_shape, (128, 32));
+        assert_eq!(task.k, 8);
+        assert_eq!(task.batch_size, 2);
+    }
+
+    #[test]
+    fn test_task_payload_validate_valid() {
+        let task = create_valid_task();
+        assert!(task.validate().is_ok());
+    }
+
+    #[test]
+    fn test_task_payload_validate_empty_input() {
+        let mut task = create_valid_task();
+        task.input_activation.clear();
+        assert!(task.validate().is_err());
+    }
+
+    #[test]
+    fn test_task_payload_validate_wrong_input_length() {
+        let mut task = create_valid_task();
+        task.input_activation = vec![0.0; 10]; // Wrong length
+        assert!(task.validate().is_err());
+    }
+
+    #[test]
+    fn test_task_payload_validate_k_too_large() {
+        let mut task = create_valid_task();
+        task.k = 256; // > d_sae
+        assert!(task.validate().is_err());
+    }
+
+    #[test]
+    fn test_task_payload_validate_zero_shape() {
+        let mut task = create_valid_task();
+        task.shard_shape = (0, 32);
+        assert!(task.validate().is_err());
+    }
+
+    #[test]
+    fn test_task_payload_with_task_id() {
+        let task = create_valid_task();
+        let custom_id = Uuid::parse_str("00000000-0000-0000-0000-000000000001").unwrap();
+        let task = task.with_task_id(custom_id);
+        assert_eq!(task.task_id, custom_id);
+    }
+
+    #[test]
+    fn test_task_payload_serialize_deserialize() {
+        let task = create_valid_task();
+        let bytes = task.serialize().unwrap();
+        let deserialized = AuditTaskPayload::deserialize(&bytes).unwrap();
+        assert_eq!(deserialized.task_id, task.task_id);
+        assert_eq!(deserialized.shard_shape, task.shard_shape);
+        assert_eq!(deserialized.k, task.k);
+        assert_eq!(deserialized.shard_weights.len(), task.shard_weights.len());
+    }
+
+    #[test]
+    fn test_task_payload_estimate_size() {
+        let task = create_valid_task();
+        let size = task.estimate_size_bytes();
+        assert!(size > 0);
+    }
+
+    #[test]
+    fn test_result_payload_creation() {
+        let task_id = Uuid::new_v4();
+        let result = AuditResultPayload::new(
+            task_id,
+            vec![0.8, 0.9, 0.7],
+            vec![10, 20, 30],
+            42,
+            "node-1".to_string(),
+        );
+        assert_eq!(result.task_id, task_id);
+        assert_eq!(result.compute_time_ms, 42);
+        assert_eq!(result.node_id, "node-1");
+        assert!(!result.is_error());
+    }
+
+    #[test]
+    fn test_result_payload_error() {
+        let task_id = Uuid::new_v4();
+        let result = AuditResultPayload::error(
+            task_id,
+            "node-1".to_string(),
+            "SAE forward failed".to_string(),
+        );
+        assert!(result.is_error());
+        assert_eq!(result.error.as_deref(), Some("SAE forward failed"));
+    }
+
+    #[test]
+    fn test_result_payload_serialize_deserialize() {
+        let task_id = Uuid::new_v4();
+        let result = AuditResultPayload::new(
+            task_id,
+            vec![0.8, 0.9, 0.7],
+            vec![10, 20, 30],
+            42,
+            "node-1".to_string(),
+        );
+        let bytes = result.serialize().unwrap();
+        let deserialized = AuditResultPayload::deserialize(&bytes).unwrap();
+        assert_eq!(deserialized.task_id, result.task_id);
+        assert_eq!(deserialized.sparse_values, result.sparse_values);
+        assert_eq!(deserialized.sparse_indices, result.sparse_indices);
+    }
+
+    #[test]
+    fn test_result_payload_estimate_size() {
+        let result = AuditResultPayload::new(
+            Uuid::new_v4(),
+            vec![0.0; 100],
+            vec![0; 100],
+            10,
+            "node".to_string(),
+        );
+        let size = result.estimate_size_bytes();
+        assert!(size > 0);
+    }
+
+    #[test]
+    fn test_error_display() {
+        let err = AuditPayloadError::InvalidPayload("test".to_string());
+        assert!(!format!("{}", err).is_empty());
+    }
+}
