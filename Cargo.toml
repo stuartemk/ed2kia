@@ -86,6 +86,9 @@ lazy_static = "1.4"
 # Dashmap - thread-safe concurrent HashMap for session management
 dashmap = "6.0"
 
+# Graph - Semantic Atlas (v2.1-atlas)
+petgraph = "0.6"
+
 # Governance - Fase 5
 ed25519-dalek = { version = "2.1", features = ["rand_core"] }
 chrono = { version = "0.4", features = ["serde"] }
@@ -259,6 +262,17 @@ stable = [
 
 # v2.1 Docker Deploy — Multi-stage Dockerfile + docker-compose for zero-friction deployment
 "v2.1-docker-deploy" = []
+
+# v2.1 Semantic Graph — In-memory semantic graph using petgraph + dashmap
+# ConceptNode/ActivationEdge, insert_activation, get_top_features_for_token, get_top_tokens_for_feature
+"v2.1-semantic-graph" = []
+
+# v2.1 Rosetta API — axum HTTP endpoints for semantic graph queries
+# GET /api/feature/{id}, GET /api/token/{word}, integrated via tokio::spawn
+"v2.1-rosetta-api" = ["v2.1-semantic-graph"]
+
+# v2.1 Atlas UI — 3D force-graph visualizer (web/atlas-visualizer.js + web/atlas.html)
+"v2.1-atlas-ui" = []
 
 # ─── Hardware Acceleration ───
 cpu = []

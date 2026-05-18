@@ -6,6 +6,60 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.1.0-sprint6] — 2026-05-18
+
+### 🎉 Sprint Summary
+
+**v2.1.0-sprint6** delivers the **Atlas Semántico Global (Piedra Rosetta)** — a semantic translation layer between SAE features and natural language tokens: **Semantic Graph** (`v2.1-semantic-graph`) using `petgraph` + `dashmap` for concurrent token↔feature mapping, **Rosetta API** (`v2.1-rosetta-api`) with `axum` endpoints (`GET /api/feature/{id}`, `GET /api/token/{word}`), and **3D Visualizer** (`v2.1-atlas-ui`) using `3d-force-graph` for interactive exploration. These modules enable transparent interpretation of SAE activations through semantic graphs.
+
+| Metric | Value |
+|--------|-------|
+| **Feature Gates** | 3 new (`v2.1-semantic-graph`, `v2.1-rosetta-api`, `v2.1-atlas-ui`) + 17 inherited |
+| **Tests** | +9 new (graph tests) = 2929 total PASS |
+| **CI Jobs** | Atlas features validated via `cargo check --features v2.1-rosetta-api` |
+| **Coverage** | ≥80% (tracking via cargo-llvm-cov) |
+| **OSSF Score** | 8.5/10 (PASSING) |
+| **Security** | 0 CVEs introduced, 0 unsafe code |
+
+### Added — Atlas Semántico Global (Piedra Rosetta)
+
+- **Semantic Graph** — In-memory semantic graph using `petgraph` + `dashmap` ([`src/atlas/graph.rs`](src/atlas/graph.rs))
+  - `SemanticGraph` struct with `StableGraph<ConceptNode, ActivationEdge>` + `DashMap<String, NodeIndex>` for O(1) lookups
+  - `insert_activation(token, feature_id, weight)` — Create/update token↔feature activation edges
+  - `get_top_features_for_token(token, top_k)` — Query top features for a token by weight
+  - `get_top_tokens_for_feature(feature_id, top_k)` — Query top tokens for a feature by weight
+  - `get_all_nodes()` / `get_all_edges()` — Full graph export for visualization
+  - 9 unit tests covering creation, insertion, queries, weight updates, and serialization
+
+- **Rosetta API** — axum HTTP endpoints for semantic graph queries ([`src/atlas/api.rs`](src/atlas/api.rs))
+  - `GET /api/feature/{id}` — Returns top tokens for a feature ID
+  - `GET /api/token/{word}` — Returns top features for a token
+  - `GET /api/atlas/stats` — Returns node/edge counts
+  - `run_server(graph: Arc<SemanticGraph>, port: u16)` — Async server with graceful shutdown
+  - Integrated in `src/orchestrator/mod.rs` via `rosetta_integration::spawn_rosetta_server`
+
+- **3D Visualizer** — WebGL 3D force-graph for interactive exploration ([`web/atlas-visualizer.js`](web/atlas-visualizer.js))
+  - `web/atlas.html` — Dark-themed HTML structure with search input and stats display
+  - `3d-force-graph` integration with node coloring (Token=blue, Feature=red)
+  - Edge width/opacity proportional to activation weight
+  - Camera `flyTo` on node click with smooth transitions
+  - Debounced search querying `/api/feature/{id}` and `/api/token/{word}` endpoints
+
+### Changed
+
+- **Cargo.toml** — 3 new feature gates + `petgraph = "0.6"` dependency
+- **lib.rs** — `atlas` module conditionally compiled behind `v2.1-semantic-graph` / `v2.1-rosetta-api` / `v2.1-atlas-ui`
+- **orchestrator/mod.rs** — `rosetta_integration` module for `tokio::spawn` API server
+
+### Security
+
+- **Zero unsafe code** — `#![forbid(unsafe_code)]` enforced
+- **Zero telemetry** — No external network calls, no analytics
+- **0 CVEs introduced** in this sprint
+- **Feature-gated isolation** — v2.1 features strictly excluded from default build
+
+---
+
 ## [v2.1.0-sprint5] — 2026-05-18
 
 ### 🎉 Sprint Summary

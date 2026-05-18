@@ -18,6 +18,24 @@ use crate::protocol::audit_payloads::{AuditResultPayload, AuditTaskPayload};
 #[cfg(feature = "v2.1-task-manager")]
 pub mod task_manager;
 
+/// Optional Rosetta API integration — spawns HTTP server alongside orchestrator.
+#[cfg(feature = "v2.1-rosetta-api")]
+pub mod rosetta_integration {
+    use std::sync::Arc;
+    use crate::atlas::graph::SemanticGraph;
+    use crate::atlas::api::run_server;
+
+    /// Spawn the Rosetta API server on a background task.
+    ///
+    /// The server shares the `SemanticGraph` instance with the orchestrator
+    /// via `Arc`, allowing concurrent reads from both the API and the task pipeline.
+    pub fn spawn_rosetta_server(graph: Arc<SemanticGraph>, port: u16) {
+        tokio::spawn(async move {
+            run_server(graph, port).await;
+        });
+    }
+}
+
 /// Errors specific to orchestrator operations.
 #[derive(Debug, Error)]
 pub enum OrchestratorError {

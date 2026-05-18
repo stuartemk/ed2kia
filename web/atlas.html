@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ed2kIA — Atlas Semántico Global</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0a0f;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            overflow: hidden;
+        }
+        #header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: rgba(10, 10, 15, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 12px 20px;
+            border-bottom: 1px solid #1a1a2e;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        #header h1 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #00d4ff;
+        }
+        #search-input {
+            flex: 1;
+            max-width: 400px;
+            padding: 8px 12px;
+            background: #1a1a2e;
+            border: 1px solid #2a2a4e;
+            border-radius: 6px;
+            color: #e0e0e0;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        #search-input:focus {
+            border-color: #00d4ff;
+        }
+        #search-input::placeholder {
+            color: #666;
+        }
+        #stats {
+            margin-left: auto;
+            font-size: 12px;
+            color: #888;
+        }
+        #atlas-canvas {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+        }
+        #loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 14px;
+            color: #00d4ff;
+            z-index: 50;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h1>Atlas Semántico</h1>
+        <input
+            id="search-input"
+            type="text"
+            placeholder="Search token or feature (e.g., neural, feat-1)..."
+            autocomplete="off"
+        />
+        <div id="stats">Nodes: <span id="node-count">0</span> | Edges: <span id="edge-count">0</span></div>
+    </div>
+    <canvas id="atlas-canvas"></canvas>
+    <div id="loading">Loading graph...</div>
+    <script>
+        // Configurable API base (defaults to same origin)
+        window.ATLAS_API_BASE = window.ATLAS_API_BASE || '';
+    </script>
+    <script src="atlas-visualizer.js"></script>
+</body>
+</html>

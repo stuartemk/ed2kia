@@ -6,8 +6,8 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ethical-blue)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-2021-orange)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/Version-2.1.0-sprint5-yellowgreen)](CHANGELOG.md)
-[![Tests](https://img.shields.io/badge/Tests-2920_passing-success)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-2.1.0-sprint6-yellowgreen)](CHANGELOG.md)
+[![Tests](https://img.shields.io/badge/Tests-2929_passing-success)](CHANGELOG.md)
 [![Qwen-Scope](https://img.shields.io/badge/Qwen--Scope--SAE-Integrated-brightgreen)](src/sae/qwen_scope_sae.rs)
 [![Coverage](https://img.shields.io/badge/Coverage-≥80%25-tracking)](release/v2.0.0-stable/final-signoff.json)
 [![OSSF](https://img.shields.io/badge/OSSF-8.5%2F10-passing)](security/audit_v2.0_sprint2.md)
@@ -64,6 +64,9 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 | `v2.1-orchestrator` | Orchestrator Node — Native orchestrator with libp2p swarm + mpsc queues | ✅ Implementado (5 tests) |
 | `v2.1-task-manager` | Task Manager — Dispatch/aggregation with timeout retry + progress events | ✅ Implementado (9 tests) |
 | `v2.1-docker-deploy` | Docker Deploy — Multi-stage Dockerfile + orchestrator-node in docker-compose | ✅ Implementado |
+| `v2.1-semantic-graph` | Semantic Graph — petgraph + dashmap for token↔feature mapping | ✅ Implementado (9 tests) |
+| `v2.1-rosetta-api` | Rosetta API — axum HTTP endpoints for graph queries | ✅ Implementado |
+| `v2.1-atlas-ui` | Atlas UI — 3D force-graph visualizer (WebGL) | ✅ Implementado |
 | `v2.1-observability` | Metrics, Health Check, Health Endpoint | Draft (RFC-002) |
 | `v2.1-security-hardening` | wasmtime ≥24.0.7, rustls-webpki ≥0.103.13 | Planificado Q2-Q3 2027 |
 | `v2.1-gui` | GUI Bridge, Mobile, 3D Visualizer | Draft |

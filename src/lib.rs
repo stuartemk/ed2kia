@@ -61,6 +61,14 @@ pub mod relay_server;
 #[cfg(feature = "v2.1-orchestrator")]
 pub mod orchestrator;
 
+/// Atlas Semántico Global — Piedra Rosetta (feature-gated)
+#[cfg(any(
+    feature = "v2.1-semantic-graph",
+    feature = "v2.1-rosetta-api",
+    feature = "v2.1-atlas-ui"
+))]
+pub mod atlas;
+
 /// Sparse Autoencoder (SAE) loading and routing
 pub mod sae {
     pub mod loader;
