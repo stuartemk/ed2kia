@@ -506,10 +506,74 @@ jobs:
       - name: cargo check --target wasm32 --features v2.1-wasm-telemetry,v2.1-mvp-core
         run: cargo check --target wasm32-unknown-unknown --features v2.1-wasm-telemetry,v2.1-mvp-core
 
-      - name: Verify browser-node.html has telemetry listener
+      - name: Verify browser-node.html has telemetry listeners
         run: |
           if ! grep -q "inference_complete" web/browser-node.html; then
             echo "::error::browser-node.html missing inference_complete listener"
             exit 1
           fi
-          echo "PASS: browser-node.html contains telemetry listener"
+          if ! grep -q "task_received" web/browser-node.html; then
+            echo "::error::browser-node.html missing task_received listener"
+            exit 1
+          fi
+          if ! grep -q "peer_connected" web/browser-node.html; then
+            echo "::error::browser-node.html missing peer_connected listener"
+            exit 1
+          fi
+          if ! grep -q "wasm_error" web/browser-node.html; then
+            echo "::error::browser-node.html missing wasm_error listener"
+            exit 1
+          fi
+          echo "PASS: browser-node.html contains all telemetry listeners"
+
+  # ============================================
+  # 13. Browser Pillars Check — WASM Workers + WebRTC Relay
+  # ============================================
+  browser-pillars-check:
+    name: Browser Viability Pillars Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+
+      - name: Add wasm32-unknown-unknown target
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-pillars-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+
+      - name: cargo check --features v2.1-wasm-browser,v2.1-wasm-workers
+        run: cargo check --features v2.1-wasm-browser,v2.1-wasm-workers
+
+      - name: cargo check --features v2.1-wasm-browser,v2.1-webrtc-relay
+        run: cargo check --features v2.1-wasm-browser,v2.1-webrtc-relay
+
+      - name: cargo check --target wasm32 --features v2.1-wasm-browser,v2.1-wasm-workers,v2.1-webrtc-relay
+        run: cargo check --target wasm32-unknown-unknown --features v2.1-wasm-browser,v2.1-wasm-workers,v2.1-webrtc-relay
+
+      - name: Verify worker.rs exists
+        run: |
+          if [ ! -f src/browser_node/worker.rs ]; then
+            echo "::error::src/browser_node/worker.rs not found"
+            exit 1
+          fi
+          echo "PASS: worker.rs present"
+
+      - name: Verify webrtc_transport.rs exists
+        run: |
+          if [ ! -f src/browser_node/webrtc_transport.rs ]; then
+            echo "::error::src/browser_node/webrtc_transport.rs not found"
+            exit 1
+          fi
+          echo "PASS: webrtc_transport.rs present"

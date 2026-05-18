@@ -26,33 +26,63 @@
 </head>
 <body>
     <h1>ed2kIA Browser Node</h1>
+    <div id="counters">
+        <span id="task-count">Tasks: 0</span> |
+        <span id="peer-count">Peers: 0</span> |
+        <span id="error-count">Errors: 0</span>
+    </div>
     <p id="status">Initializing...</p>
     <div id="telemetry-log"></div>
     <script src="browser_node.js"></script>
     <script>
-        // v2.1-wasm-telemetry: Listen for inference_complete CustomEvents from WASM
+        // v2.1-wasm-telemetry: Reactive event listeners for all telemetry events
         (function() {
             var log = document.getElementById('telemetry-log');
             var entryCount = 0;
+            var tasks = 0, peers = 0, errors = 0;
+            var taskEl = document.getElementById('task-count');
+            var peerEl = document.getElementById('peer-count');
+            var errorEl = document.getElementById('error-count');
 
-            document.addEventListener('inference_complete', function(e) {
-                var detail = e.detail || {};
+            function addEntry(prefix, detail) {
                 entryCount++;
                 var entry = document.createElement('div');
                 entry.className = 'telemetry-entry';
-                entry.textContent = '[' + entryCount + '] task=' + (detail.task_id || '?') +
-                    ' conf=' + (detail.confidence || 0) +
-                    ' ms=' + (detail.processing_time_ms || 0) +
-                    ' activations=' + (detail.activations ? detail.activations.length : 0);
+                entry.textContent = '[' + entryCount + '] ' + prefix + ': ' + JSON.stringify(detail);
                 if (log.firstChild) {
                     log.insertBefore(entry, log.firstChild);
                 } else {
                     log.appendChild(entry);
                 }
-                // Keep max 50 entries.
                 while (log.children.length > 50) {
                     log.removeChild(log.lastChild);
                 }
+            }
+
+            // task_received — fired when audit task is dispatched to worker
+            document.addEventListener('task_received', function(e) {
+                tasks++;
+                if (taskEl) taskEl.textContent = 'Tasks: ' + tasks;
+                addEntry('TASK', e.detail || {});
+            });
+
+            // inference_complete — fired when SAE inference finishes
+            document.addEventListener('inference_complete', function(e) {
+                addEntry('INF', e.detail || {});
+            });
+
+            // peer_connected — fired when P2P peer connects via WebRTC
+            document.addEventListener('peer_connected', function(e) {
+                peers++;
+                if (peerEl) peerEl.textContent = 'Peers: ' + peers;
+                addEntry('PEER', e.detail || {});
+            });
+
+            // wasm_error — fired on runtime errors from WASM
+            document.addEventListener('wasm_error', function(e) {
+                errors++;
+                if (errorEl) errorEl.textContent = 'Errors: ' + errors;
+                addEntry('ERR', e.detail || {});
             });
         })();
     </script>

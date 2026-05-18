@@ -1465,6 +1465,7 @@ dependencies = [
  "tracing-subscriber",
  "uuid",
  "wasm-bindgen",
+ "wasm-bindgen-futures",
  "wasm-encoder 0.248.0",
  "wasmtime",
  "web-sys",

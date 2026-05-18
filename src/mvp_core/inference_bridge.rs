@@ -40,11 +40,85 @@ pub fn emit_inference_complete(
     js_sys::Reflect::set(&detail_obj, "confidence".into(), &JsValue::from(confidence))?;
     js_sys::Reflect::set(&detail_obj, "processing_time_ms".into(), &JsValue::from(processing_time_ms))?;
 
-    // Create CustomEvent.
-    let event = web_sys::CustomEvent::new("inference_complete")?;
-    js_sys::Reflect::set(&event, "detail".into(), &detail_obj)?;
+    // Create CustomEvent with detail.
+    let event_init = web_sys::CustomEventInit::new();
+    event_init.detail(&detail_obj);
+    let event = web_sys::CustomEvent::new_with_event_init_dict("inference_complete", &event_init)?;
 
     // Dispatch on document.
+    document.dispatch_event(&event)?;
+    Ok(())
+}
+
+#[cfg(all(target_arch = "wasm32", feature = "v2.1-wasm-telemetry"))]
+#[wasm_bindgen]
+/// Emit task_received event to browser DOM.
+///
+/// Dispatches a `CustomEvent` named `task_received` with detail:
+/// `{ task_id, timestamp_ms }`
+pub fn emit_task_received(task_id: &str, timestamp_ms: u64) -> Result<(), JsValue> {
+    use wasm_bindgen::JsCast;
+
+    let window = web_sys::window().ok_or_else(|| JsValue::from_str("No window"))?;
+    let document = window.document().ok_or_else(|| JsValue::from_str("No document"))?;
+
+    let mut detail_obj = js_sys::Object::new();
+    js_sys::Reflect::set_str(&detail_obj, "task_id", task_id)?;
+    js_sys::Reflect::set(&detail_obj, "timestamp_ms".into(), &JsValue::from(timestamp_ms))?;
+
+    let event_init = web_sys::CustomEventInit::new();
+    event_init.detail(&detail_obj);
+    let event = web_sys::CustomEvent::new_with_event_init_dict("task_received", &event_init)?;
+
+    document.dispatch_event(&event)?;
+    Ok(())
+}
+
+#[cfg(all(target_arch = "wasm32", feature = "v2.1-wasm-telemetry"))]
+#[wasm_bindgen]
+/// Emit peer_connected event to browser DOM.
+///
+/// Dispatches a `CustomEvent` named `peer_connected` with detail:
+/// `{ peer_id, timestamp_ms }`
+pub fn emit_peer_connected(peer_id: &str, timestamp_ms: u64) -> Result<(), JsValue> {
+    use wasm_bindgen::JsCast;
+
+    let window = web_sys::window().ok_or_else(|| JsValue::from_str("No window"))?;
+    let document = window.document().ok_or_else(|| JsValue::from_str("No document"))?;
+
+    let mut detail_obj = js_sys::Object::new();
+    js_sys::Reflect::set_str(&detail_obj, "peer_id", peer_id)?;
+    js_sys::Reflect::set(&detail_obj, "timestamp_ms".into(), &JsValue::from(timestamp_ms))?;
+
+    let event_init = web_sys::CustomEventInit::new();
+    event_init.detail(&detail_obj);
+    let event = web_sys::CustomEvent::new_with_event_init_dict("peer_connected", &event_init)?;
+
+    document.dispatch_event(&event)?;
+    Ok(())
+}
+
+#[cfg(all(target_arch = "wasm32", feature = "v2.1-wasm-telemetry"))]
+#[wasm_bindgen]
+/// Emit error event to browser DOM.
+///
+/// Dispatches a `CustomEvent` named `error` with detail:
+/// `{ message, source, timestamp_ms }`
+pub fn emit_error(message: &str, source: &str, timestamp_ms: u64) -> Result<(), JsValue> {
+    use wasm_bindgen::JsCast;
+
+    let window = web_sys::window().ok_or_else(|| JsValue::from_str("No window"))?;
+    let document = window.document().ok_or_else(|| JsValue::from_str("No document"))?;
+
+    let mut detail_obj = js_sys::Object::new();
+    js_sys::Reflect::set_str(&detail_obj, "message", message)?;
+    js_sys::Reflect::set_str(&detail_obj, "source", source)?;
+    js_sys::Reflect::set(&detail_obj, "timestamp_ms".into(), &JsValue::from(timestamp_ms))?;
+
+    let event_init = web_sys::CustomEventInit::new();
+    event_init.detail(&detail_obj);
+    let event = web_sys::CustomEvent::new_with_event_init_dict("wasm_error", &event_init)?;
+
     document.dispatch_event(&event)?;
     Ok(())
 }

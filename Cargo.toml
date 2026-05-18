@@ -96,16 +96,21 @@ reqwest = { version = "0.11", features = ["json", "stream"] }
 # Bootstrap - Fase 5
 fastrand = "2.1"
 
+# WASM Browser Node dependencies (optional, feature-gated)
+wasm-bindgen = { version = "0.2", optional = true }
+wasm-bindgen-futures = { version = "0.4", optional = true }
+js-sys = { version = "0.3", optional = true }
+web-sys = { version = "0.3", features = ["Worker", "WorkerGlobalScope", "WorkerOptions", "MessagePort", "MessageEvent", "Navigator", "Window", "CustomEvent", "Event", "EventInit", "EventTarget", "Url", "Blob"], optional = true }
+
 # Cross-platform
 [target.'cfg(target_os = "windows")'.dependencies]
 windows = { version = "0.52", features = ["Win32_System_Console"] }
 
-# WASM Browser Node — v2.1-wasm-browser (optional, wasm32-unknown-unknown target)
+# WASM Browser Node — v2.1-wasm-browser (wasm32-unknown-unknown target)
+# Note: These are optional and only activated via feature flags.
+# On wasm32 target, getrandom requires "js" feature.
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-wasm-bindgen = { version = "0.2", optional = true }
-js-sys = { version = "0.3", optional = true }
-web-sys = { version = "0.3", features = ["Worker", "WorkerGlobalScope", "WorkerOptions", "MessagePort", "MessageEvent", "Navigator", "Window"], optional = true }
-getrandom = { version = "0.2", features = ["js"], optional = true }
+getrandom = { version = "0.2", features = ["js"] }
 
 [features]
 # CONSOLIDATION: v1.0.0 stable feature structure
@@ -208,7 +213,7 @@ stable = [
 # v2.1 WASM Browser Node — Browser-based P2P node (wasm32-unknown-unknown)
 # WebRTC/WebSocket transport via libp2p-webrtc-websys + libp2p-websocket-websys
 # Web Worker bridge for background compute, zero inference logic (scaffold only)
-"v2.1-wasm-browser" = []
+"v2.1-wasm-browser" = ["wasm-bindgen", "js-sys", "web-sys"]
 
 # v2.1 MVP Core Loop — Isolated core cycle (KAD discovery → tensor dist → SAE → result)
 # Advanced modules (ZKP, Governance, Reputation) stubbed behind feature gates
@@ -234,6 +239,14 @@ stable = [
 
 # v2.1 Audit Payloads — AuditTaskPayload → AuditResultPayload, WASM-friendly serialization
 "v2.1-audit-payloads" = []
+
+# v2.1 WASM Web Workers — Offloading inference to Web Workers (no SharedArrayBuffer)
+# postMessage/onmessage standard, wasm-bindgen-futures for async response
+"v2.1-wasm-workers" = []
+
+# v2.1 WebRTC + Relay — libp2p WASM transport config, Faro/Relay dial via Multiaddr
+# libp2p-webrtc-websys + RelayBehaviour + Identify for browser P2P
+"v2.1-webrtc-relay" = []
 
 # ─── Hardware Acceleration ───
 cpu = []
