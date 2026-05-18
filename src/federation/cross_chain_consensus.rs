@@ -464,7 +464,10 @@ impl CrossChainConsensus {
             ConsensusError::ProposalNotFound(proposal_id.to_string()),
         )?;
 
-        if proposal.state != ConsensusState::Voting {
+        if proposal.state != ConsensusState::Voting
+            && proposal.state != ConsensusState::QuorumReached
+            && proposal.state != ConsensusState::Ready
+        {
             return Err(ConsensusError::ProposalExpired);
         }
 
@@ -702,6 +705,10 @@ mod tests {
     }
 
     fn make_proof(source: &str, target: &str) -> ChainProof {
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
         ChainProof::new(
             ProofType::MerkleInclusion,
             source.to_string(),

@@ -431,7 +431,10 @@ impl DaoGovernanceV3 {
             DaoError::ProposalNotFound(proposal_id.to_string())
         )?;
 
-        if proposal.state != DaoProposalState::Voting {
+        if proposal.state != DaoProposalState::Voting
+            && proposal.state != DaoProposalState::Approved
+            && proposal.state != DaoProposalState::Ready
+        {
             return Err(DaoError::VotingNotActive(proposal_id.to_string()));
         }
 

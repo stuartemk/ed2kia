@@ -858,7 +858,7 @@ mod tests {
         assert_eq!(cb.state, CircuitState::Closed);
 
         cb.record_failure();
-        assert_eq!(cb.state, CircuitState::Open(Instant::now())); // Approximate
+        assert!(matches!(cb.state, CircuitState::Open(_))); // State is Open with some timestamp
 
         std::thread::sleep(Duration::from_millis(150));
         cb.allow_request();
