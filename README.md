@@ -6,8 +6,8 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ethical-blue)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-2021-orange)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/Version-2.1.0-sprint8-yellowgreen)](CHANGELOG.md)
-[![Tests](https://img.shields.io/badge/Tests-3006_passing-success)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-2.1.0-sprint9-yellowgreen)](CHANGELOG.md)
+[![Tests](https://img.shields.io/badge/Tests-3038_passing-success)](CHANGELOG.md)
 [![Qwen-Scope](https://img.shields.io/badge/Qwen--Scope--SAE-Integrated-brightgreen)](src/sae/qwen_scope_sae.rs)
 [![Coverage](https://img.shields.io/badge/Coverage-≥80%25-tracking)](release/v2.0.0-stable/final-signoff.json)
 [![OSSF](https://img.shields.io/badge/OSSF-8.5%2F10-passing)](security/audit_v2.0_sprint2.md)
@@ -73,6 +73,9 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 | `v2.1-hf-bridge` | HuggingFace Streaming Bridge — Progressive .safetensors ingestion via reqwest bytes_stream + SHA256 | ✅ Validado (11 tests) |
 | `v2.1-merit-system` | Cryptographic Merit System — Ed25519-signed proofs, ethical recognition, zero financial logic | ✅ Validado (24 tests) |
 | `v2.1-portal-prod` | Production Portal — Alpine.js dashboard, browser node connection, real-time stats, merit badges | ✅ Validado |
+| `v2.1-sybil-micropow` | Ethical Sybil Resistance — SHA-256 Micro-PoW handshake, rate limiting, exponential backoff | ✅ Validado (12 tests) |
+| `v2.1-orchestrator-federation` | GossipSub Federation — libp2p 0.53 `MessageAuthenticity::Signed`, multi-node orchestrator mesh | ✅ Validado (9 tests) |
+| `v2.1-rlhf-bridge` | RLHF Feedback Bridge — Human-in-the-loop semantic alignment via REST API + interactive UI | ✅ Validado (11 tests) |
 | `v2.1-observability` | Metrics, Health Check, Health Endpoint | Draft (RFC-002) |
 | `v2.1-security-hardening` | wasmtime ≥24.0.7, rustls-webpki ≥0.103.13 | Planificado Q2-Q3 2027 |
 | `v2.1-gui` | GUI Bridge, Mobile, 3D Visualizer | Draft |
@@ -129,6 +132,55 @@ bash scripts/ignite-local-testnet.sh
 ```
 
 **Resultados esperados:** 5/5 tests PASS, 0 warnings, consenso determinista validado con peers mock (2 honestos, 1 malicioso).
+
+---
+
+## 🛡️ Resiliencia & Alineación Humana — Defensa de Tercer Orden
+
+**ed2kIA v2.1.0-sprint9** introduce la capa de **Resiliencia Absoluta**, un flujo de defensa de tercer orden que protege la integridad semántica de la red mediante resistencia computacional ética, federación criptográfica y corrección humana continua:
+
+```
+Micro-PoW handshake → GossipSub federado → Feedback RLHF → Corrección comunitaria de sesgos
+```
+
+### Fase 4: Resistencia Sybil Ética (Micro-PoW)
+
+Challenge SHA-256 con dificultad configurable (1–4 leading zeros, ~2s/nodo) que previene inundación de identidades sin barreras financieras:
+
+```rust
+let engine = SybilEngine::with_difficulty(2).unwrap();
+let challenge = engine.generate_challenge();
+let solution = solve_challenge(challenge.nonce, challenge.difficulty);
+assert!(engine.verify(&challenge, &solution, "node-42").is_ok());
+```
+
+**Cero staking, cero KYC** — Resistencia puramente computacional, accesible desde cualquier dispositivo.
+
+### Fase 5: Federación GossipSub (Orchestrator Mesh)
+
+Coordinación multi-nodo vía `libp2p 0.53` con `MessageAuthenticity::Signed` para proveniencia criptográfica en topics ATLAS_SYNC y REPUTATION_SYNC:
+
+```rust
+let swarm = build_federation_swarm(peer_id, listen_addr).await?;
+// ATLAS_SYNC: Propagación de deltas semánticos
+// REPUTATION_SYNC: Sincronización federada de slashing
+```
+
+### Fase 6: Puente RLHF (Alineación Humana Continua)
+
+Corrección comunitaria de sesgos semánticos vía API REST + UI interactiva. Cualquier usuario puede corregir activaciones erróneas en el Atlas Semántico:
+
+```bash
+# Submit human correction
+curl -X POST http://localhost:3030/api/feedback \
+  -H "Content-Type: application/json" \
+  -d '{"node_id":"user-1","token":"justicia","feature":"feat-42","decision":"correct","note":"Se refiere a equity, no legal justice"}'
+
+# Export feedback for training pipeline
+curl http://localhost:3030/api/feedback/export
+```
+
+**Principios éticos:** Cero PII, almacenamiento local, export opt-in, gobernanza distribuida.
 
 ---
 

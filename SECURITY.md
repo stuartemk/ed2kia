@@ -68,7 +68,8 @@ See [`security/threat_model_v2.0.md`](security/threat_model_v2.0.md) for our com
 | **Denial of Service** | Rate limiting + scoring | Reputation-based peer scoring + connection limits |
 | **Elevation of Privilege** | Governance controls | ≥30% quorum + ≥51% reputation-weighted approval |
 | **WASM Sandbox Escape** | Isolation | wasmtime (256MB memory limit, no host I/O) |
-| **Sybil Attacks** | Identity flooding | Anti-Sybil scoring + 50%/30d decay + Ed25519 proofs |
+| **Sybil Attacks** | Identity flooding | Micro-PoW handshake + Anti-Sybil scoring + 50%/30d decay + Ed25519 proofs |
+| **API Abuse** | Feedback spam | Per-node rate limiting (10/300s) + exponential backoff ban |
 
 ### Security Controls
 
@@ -82,6 +83,22 @@ See [`security/threat_model_v2.0.md`](security/threat_model_v2.0.md) for our com
 | **Governance quorum** | ≥30% participation + ≥51% approval | ✅ Active |
 | **Audit trail** | Immutable ledger + signed proposals | ✅ Active |
 | **Automated monitoring** | Weekly cargo audit + security alerts | ✅ Active |
+| **Micro-PoW Sybil Resistance** | SHA-256 challenge (~2s/nodo) + rate limiting + ban matrix | ✅ Active (v2.1-sprint9) |
+| **Signed GossipSub** | `MessageAuthenticity::Signed` + libp2p 0.53 SwarmBuilder | ✅ Active (v2.1-sprint9) |
+| **RLHF Rate Limiting** | Per-node FeedbackStore (10 submissions/300s window) | ✅ Active (v2.1-sprint9) |
+
+### Sprint 9: Sybil Resistance & Federated Consensus
+
+**v2.1.0-sprint9 "Resiliencia Absoluta"** añade tres controles de seguridad críticos:
+
+| Control | Módulo | Mitigación |
+|---------|--------|------------|
+| **Micro-PoW Handshake** | `src/orchestrator/sybil.rs` | SHA-256 con 1-4 leading zeros (~2s solve), previene inundación Sybil sin barreras financieras |
+| **Rate Limiting** | `src/orchestrator/sybil.rs` | 10 submissions/300s por nodo, ban exponencial (3 fallos → temp, 5 → perm) |
+| **Signed Federation** | `src/orchestrator/network.rs` | `MessageAuthenticity::Signed` asegura proveniencia criptográfica en GossipSub |
+| **Reputation Sync** | `src/orchestrator/network.rs` | Sincronización federada de slashing previene Sybil hopping entre clusters |
+| **RLHF Rate Limit** | `src/atlas/api.rs` | `FeedbackStore` con rate limiting per-node, previene spam API |
+| **Zero PII** | `web/atlas-visualizer.js` | Feedback almacenado localmente, export opt-in, cero datos personales |
 
 ### Dependencies
 
