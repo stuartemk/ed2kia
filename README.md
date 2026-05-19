@@ -6,8 +6,8 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ethical-blue)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-2021-orange)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/Version-2.1.0-sprint7-yellowgreen)](CHANGELOG.md)
-[![Tests](https://img.shields.io/badge/Tests-2971_passing-success)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-2.1.0-sprint8-yellowgreen)](CHANGELOG.md)
+[![Tests](https://img.shields.io/badge/Tests-3006_passing-success)](CHANGELOG.md)
 [![Qwen-Scope](https://img.shields.io/badge/Qwen--Scope--SAE-Integrated-brightgreen)](src/sae/qwen_scope_sae.rs)
 [![Coverage](https://img.shields.io/badge/Coverage-≥80%25-tracking)](release/v2.0.0-stable/final-signoff.json)
 [![OSSF](https://img.shields.io/badge/OSSF-8.5%2F10-passing)](security/audit_v2.0_sprint2.md)
@@ -70,6 +70,9 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 | `v2.1-task-redundancy` | N-Node Dispatch — Configurable replication_factor for redundant task assignment | ✅ Validado (E2E, 5 tests) |
 | `v2.1-consensus-engine` | Consensus Engine — O(N) index-hash grouping + epsilon-tolerant majority rule | ✅ Validado (E2E, 10 tests) |
 | `v2.1-reputation-system` | Reputation Matrix — DashMap scores (+1/-50) + auto-ban on negative | ✅ Validado (E2E, 13 tests) |
+| `v2.1-hf-bridge` | HuggingFace Streaming Bridge — Progressive .safetensors ingestion via reqwest bytes_stream + SHA256 | ✅ Validado (11 tests) |
+| `v2.1-merit-system` | Cryptographic Merit System — Ed25519-signed proofs, ethical recognition, zero financial logic | ✅ Validado (24 tests) |
+| `v2.1-portal-prod` | Production Portal — Alpine.js dashboard, browser node connection, real-time stats, merit badges | ✅ Validado |
 | `v2.1-observability` | Metrics, Health Check, Health Endpoint | Draft (RFC-002) |
 | `v2.1-security-hardening` | wasmtime ≥24.0.7, rustls-webpki ≥0.103.13 | Planificado Q2-Q3 2027 |
 | `v2.1-gui` | GUI Bridge, Mobile, 3D Visualizer | Draft |

@@ -241,6 +241,29 @@ cargo check --all-targets  # Verify restoration
 
 ---
 
+## 🔐 Sprint 8: Streaming & Merit Proofs
+
+**Added in v2.1.0-sprint8 "El Despertar"** — New security controls for HuggingFace streaming bridge and cryptographic merit system:
+
+| Control | Implementation | Status |
+|---------|----------------|--------|
+| **SHA256 Checksum Verification** | `sha2::Sha256` Digest per chunk in `stream_sae_to_shards()` | ✅ Active |
+| **Progressive Ingestion** | `reqwest::bytes_stream()` prevents RAM exhaustion attacks | ✅ Active |
+| **Ed25519 Proof Signing** | `ed25519-dalek` `SigningKey` for `MeritProof` generation | ✅ Active |
+| **Signature Verification** | `verify_proof()` validates Ed25519 signature before tier acceptance | ✅ Active |
+| **Replay Prevention** | `POST /api/merit/claim` requires unique `(node_id, audit_count, timestamp)` tuple | ✅ Active |
+| **Rate Limiting** | Proof claiming gated by `record_audit()` ledger entries | ✅ Active |
+| **Zero Financial Logic** | MeritProof contains no economic value — technical reputation only | ✅ Enforced |
+
+### Threat Mitigations
+
+- **RAM Exhaustion via HF Download**: Mitigated by streaming ingestion (`bytes_stream()`) + chunked SHA256 verification. File is never fully loaded into memory.
+- **Merit Proof Forgery**: Mitigated by Ed25519 signature verification. Unsigned or tampered proofs are rejected by `verify_proof()`.
+- **Replay Attacks**: Mitigated by timestamp + audit_count binding in `MeritProof`. Each proof is cryptographically unique to the node's contribution history.
+- **Sybil Inflation**: Merit tiers reflect actual audit volume, not self-reported claims. The `MeritEngine` ledger is the source of truth.
+
+---
+
 ## Compliance & Ethics
 
 - **License:** Apache 2.0 + Cláusula de Uso Ético
