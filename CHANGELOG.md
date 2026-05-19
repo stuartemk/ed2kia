@@ -46,6 +46,36 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - **Cargo.toml** — 3 new feature gates after `v2.1-atlas-ui`
 - **orchestrator/mod.rs** — Conditional module registration for `consensus` and `reputation`
 
+### Added — E2E Ignition Sequence (Dry-run Validation)
+
+- **E2E Consensus Immune Test** — Full immune sequence validation ([`tests/e2e_consensus_test.rs`](tests/e2e_consensus_test.rs))
+  - 5 tokio async tests: honest majority consensus, reputation scoring, full immune sequence, malicious rejection, reputation recovery after unban
+  - Mock peers (2 honest, 1 malicious) validating TaskManager → ConsensusEngine → ReputationEngine pipeline
+  - `make_honest_result()` / `make_malicious_result()` helpers for deterministic test data
+  - Feature gates: `v2.1-consensus-engine`, `v2.1-reputation-system`, `v2.1-task-manager`
+  - Command: `cargo test --features "v2.1-reputation-system v2.1-task-manager" --test e2e_consensus_test`
+
+- **Dummy SAE Generator** — Python script for local testing ([`scripts/generate_dummy_sae.py`](scripts/generate_dummy_sae.py))
+  - Generates valid safetensors with W_enc, W_dec, b_enc, b_dec tensors (d_model=64, d_sae=256)
+  - Output: `models/dummy_qwen_scope.safetensors` (~129.6 KB)
+  - Usage: `python scripts/generate_dummy_sae.py`
+
+- **Local Testnet Bootstrap** — Bash script for controlled E2E environment ([`scripts/ignite-local-testnet.sh`](scripts/ignite-local-testnet.sh))
+  - `set -euo pipefail` with `trap cleanup EXIT INT TERM`
+  - Steps: pre-flight checks → clean → generate Dummy SAE → build WASM → start Relay → start Orchestrator → run E2E tests → status report
+  - Usage: `bash scripts/ignite-local-testnet.sh`
+
+### Validated
+
+| Metric | Value |
+|--------|-------|
+| **E2E Tests** | 5/5 PASS (`tests/e2e_consensus_test.rs`) |
+| **cargo check** | 0 warnings, 0 errors |
+| **cargo test** | 5/5 E2E + 2966 unit = 2971 total PASS |
+| **Commit** | `7e14b95` — auto-pushed to `origin/main` |
+| **Slashing** | Reputation `-50` + auto-ban validated in controlled environment |
+| **Consensus** | Deterministic epsilon-tolerant majority rule confirmed with mock peers |
+
 ### Security
 
 - **Zero unsafe code** — `#![forbid(unsafe_code)]` enforced
@@ -53,6 +83,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - **0 CVEs introduced** in this sprint
 - **Feature-gated isolation** — v2.1 features strictly excluded from default build
 - **Data Poisoning Defense** — Redundant dispatch + consensus + reputation forms complete immune response
+- **Sandbox WASM activo** — E2E valida consenso determinista con tolerancia epsilon y auto-ban por poisoning
 
 ---
 

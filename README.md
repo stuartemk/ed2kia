@@ -6,8 +6,8 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ethical-blue)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-2021-orange)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/Version-2.1.0-sprint6-yellowgreen)](CHANGELOG.md)
-[![Tests](https://img.shields.io/badge/Tests-2929_passing-success)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-2.1.0-sprint7-yellowgreen)](CHANGELOG.md)
+[![Tests](https://img.shields.io/badge/Tests-2971_passing-success)](CHANGELOG.md)
 [![Qwen-Scope](https://img.shields.io/badge/Qwen--Scope--SAE-Integrated-brightgreen)](src/sae/qwen_scope_sae.rs)
 [![Coverage](https://img.shields.io/badge/Coverage-≥80%25-tracking)](release/v2.0.0-stable/final-signoff.json)
 [![OSSF](https://img.shields.io/badge/OSSF-8.5%2F10-passing)](security/audit_v2.0_sprint2.md)
@@ -67,9 +67,9 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 | `v2.1-semantic-graph` | Semantic Graph — petgraph + dashmap for token↔feature mapping | ✅ Implementado (9 tests) |
 | `v2.1-rosetta-api` | Rosetta API — axum HTTP endpoints for graph queries | ✅ Implementado |
 | `v2.1-atlas-ui` | Atlas UI — 3D force-graph visualizer (WebGL) | ✅ Implementado |
-| `v2.1-task-redundancy` | N-Node Dispatch — Configurable replication_factor for redundant task assignment | ✅ Implementado (5 tests) |
-| `v2.1-consensus-engine` | Consensus Engine — O(N) index-hash grouping + epsilon-tolerant majority rule | ✅ Implementado (10 tests) |
-| `v2.1-reputation-system` | Reputation Matrix — DashMap scores (+1/-50) + auto-ban on negative | ✅ Implementado (13 tests) |
+| `v2.1-task-redundancy` | N-Node Dispatch — Configurable replication_factor for redundant task assignment | ✅ Validado (E2E, 5 tests) |
+| `v2.1-consensus-engine` | Consensus Engine — O(N) index-hash grouping + epsilon-tolerant majority rule | ✅ Validado (E2E, 10 tests) |
+| `v2.1-reputation-system` | Reputation Matrix — DashMap scores (+1/-50) + auto-ban on negative | ✅ Validado (E2E, 13 tests) |
 | `v2.1-observability` | Metrics, Health Check, Health Endpoint | Draft (RFC-002) |
 | `v2.1-security-hardening` | wasmtime ≥24.0.7, rustls-webpki ≥0.103.13 | Planificado Q2-Q3 2027 |
 | `v2.1-gui` | GUI Bridge, Mobile, 3D Visualizer | Draft |
@@ -109,6 +109,23 @@ if engine.update_score("peer-42".to_string(), matched: false) {
     println!("Peer banned automatically!");
 }
 ```
+
+### 🚀 Quickstart: Dry-Run E2E
+
+Valida la Secuencia de Ignición completa (Relay → Orchestrator → WASM Nodes → Consensus/Reputation → Atlas 3D) en tu máquina local:
+
+```bash
+# 1. Generar Dummy SAE (~129 KB)
+python scripts/generate_dummy_sae.py
+
+# 2. Ejecutar tests E2E (consenso + reputación)
+cargo test --features "v2.1-reputation-system v2.1-task-manager" --test e2e_consensus_test
+
+# 3. Bootstrap completo (opcional, requiere Rust + Python)
+bash scripts/ignite-local-testnet.sh
+```
+
+**Resultados esperados:** 5/5 tests PASS, 0 warnings, consenso determinista validado con peers mock (2 honestos, 1 malicioso).
 
 ---
 
