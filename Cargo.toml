@@ -298,6 +298,19 @@ stable = [
 # Real-time stats: voluntarios activos, neuronas auditadas, ataques bloqueados
 "v2.1-portal-prod" = []
 
+# v2.1 Sybil Resistance — Ethical Micro-PoW handshake
+# SHA-256 challenge with configurable difficulty, rate limiting + ban tracking
+# Web Worker isolation via postMessage (zero main-thread blocking)
+"v2.1-sybil-micropow" = []
+
+# v2.1 Orchestrator Federation — GossipSub mesh for multi-orchestrator coordination
+# libp2p gossipsub with StrictSign, ATLAS_SYNC + REPUTATION_SYNC topics
+"v2.1-orchestrator-federation" = []
+
+# v2.1 RLHF Feedback Bridge — Human correction pipeline for semantic alignment
+# POST /api/feedback + GET /api/feedback/export, rate limiting per node_id
+"v2.1-rlhf-bridge" = ["v2.1-rosetta-api"]
+
 # ─── Hardware Acceleration ───
 cpu = []
 cuda = ["candle-core/cuda", "candle-nn/cuda"]

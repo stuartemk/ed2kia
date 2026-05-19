@@ -4,6 +4,9 @@
  * Uses 3d-force-graph (WebGL) to render the semantic graph from the Rosetta API.
  * Nodes are sized by weight, edges show activation strength via opacity.
  * Camera flies to queried nodes with smooth transitions.
+ *
+ * **Sprint9 RLHF Bridge**: "Flag Error / Reportar Sesgo" button on node click
+ * sends human feedback via `POST /api/feedback` without interrupting render.
  */
 (function () {
     'use strict';
@@ -22,6 +25,26 @@
     let Graph = null;
     let graphRef = null;
     let graphData = { nodes: [], links: [] };
+    let selectedNode = null;
+
+    // ─── RLHF Feedback Rate Limiting (Client-side) ────────────────────────────
+    const feedbackCooldown = new Map();
+    const FEEDBACK_COOLDOWN_MS = 5000; // 5s between submissions per node
+
+    function getNodeIdentifier() {
+        return window.NODE_ID || ('anon-' + Math.random().toString(36).slice(2, 8));
+    }
+
+    function canSubmitFeedback() {
+        const nodeId = getNodeIdentifier();
+        const last = feedbackCooldown.get(nodeId) || 0;
+        return Date.now() - last > FEEDBACK_COOLDOWN_MS;
+    }
+
+    function markFeedbackSent() {
+        const nodeId = getNodeIdentifier();
+        feedbackCooldown.set(nodeId, Date.now());
+    }
 
     // ─── Dynamic script load ──────────────────────────────────────────────────
     function loadScript(src) {
@@ -59,6 +82,7 @@
             loadingEl.style.display = 'none';
             fetchGraphStats();
             setupSearch();
+            createFeedbackButton();
         } catch (err) {
             loadingEl.textContent = 'Failed to load visualizer: ' + err.message;
             console.error('Atlas init error:', err);
@@ -78,9 +102,10 @@
         return Math.max(0.15, Math.min(0.8, Math.abs(link.weight || 0.5)));
     }
 
-    // ─── Camera fly-to ────────────────────────────────────────────────────────
+    // ─── Camera fly-to + RLHF Feedback Prompt ─────────────────────────────────
     function onNodeClick(node) {
         if (!graphRef) return;
+        selectedNode = node;
         const sprite = graphRef.nodeThreeObject(node);
         if (!sprite) return;
         const pos = sprite.position;
@@ -89,6 +114,135 @@
             { x: pos.x, y: pos.y, z: pos.z },
             1200
         );
+        // Show feedback prompt for this node
+        showFeedbackPrompt(node);
+    }
+
+    // ─── RLHF Feedback UI (Sprint9) ───────────────────────────────────────────
+    function createFeedbackButton() {
+        // Create floating feedback button (hidden by default)
+        const btn = document.createElement('button');
+        btn.id = 'feedback-btn';
+        btn.textContent = '🚩 Flag Error / Reportar Sesgo';
+        btn.style.cssText = `
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            background: rgba(255, 50, 50, 0.9);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-family: inherit;
+            display: none;
+            z-index: 1000;
+            transition: background 0.2s;
+        `;
+        btn.addEventListener('mouseenter', () => btn.style.background = 'rgba(255, 30, 30, 1)');
+        btn.addEventListener('mouseleave', () => btn.style.background = 'rgba(255, 50, 50, 0.9)');
+        btn.addEventListener('click', submitFeedback);
+        if (canvas) {
+            const container = canvas.parentElement;
+            if (container) container.appendChild(btn);
+        }
+    }
+
+    function showFeedbackPrompt(node) {
+        const btn = document.getElementById('feedback-btn');
+        if (!btn) return;
+        btn.style.display = 'block';
+        btn.title = `Report issue with: ${node.label}`;
+    }
+
+    function hideFeedbackPrompt() {
+        const btn = document.getElementById('feedback-btn');
+        if (btn) btn.style.display = 'none';
+    }
+
+    async function submitFeedback() {
+        if (!selectedNode) return;
+        if (!canSubmitFeedback()) {
+            showFeedbackStatus('⏳ Wait before submitting again.', false);
+            return;
+        }
+
+        const reason = prompt(
+            `Explain the issue with "${selectedNode.label}":\n` +
+            '(e.g., wrong feature mapping, biased association)'
+        );
+        if (!reason || reason.trim().length < 2) {
+            return; // Cancelled or too short
+        }
+
+        const payload = {
+            feature_id: selectedNode.type === 'Feature' ? selectedNode.label : '',
+            token: selectedNode.type === 'Token' ? selectedNode.label : '',
+            reason: reason.trim(),
+            node_id: getNodeIdentifier(),
+            timestamp: Date.now(),
+        };
+
+        try {
+            const res = await fetch(`${API_BASE}/api/feedback`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            const data = await res.json();
+            if (res.ok && data.accepted) {
+                markFeedbackSent();
+                showFeedbackStatus('✅ Feedback recorded. Thank you!', true);
+                hideFeedbackPrompt();
+            } else {
+                showFeedbackStatus('❌ ' + (data.message || 'Submission failed.'), false);
+            }
+        } catch (err) {
+            console.warn('Feedback submission error:', err);
+            showFeedbackStatus('⚠ Network error. Feedback queued locally.', false);
+            // Store locally for later retry
+            storeFeedbackLocally(payload);
+        }
+    }
+
+    function showFeedbackStatus(message, success) {
+        // Remove existing status
+        const existing = document.getElementById('feedback-status');
+        if (existing) existing.remove();
+
+        const status = document.createElement('div');
+        status.id = 'feedback-status';
+        status.textContent = message;
+        status.style.cssText = `
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 8px 16px;
+            background: ${success ? 'rgba(0, 180, 0, 0.9)' : 'rgba(200, 50, 50, 0.9)'};
+            color: white;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: inherit;
+            z-index: 1001;
+            animation: fadeIn 0.3s;
+        `;
+        if (canvas && canvas.parentElement) {
+            canvas.parentElement.appendChild(status);
+            setTimeout(() => status.remove(), 3000);
+        }
+    }
+
+    function storeFeedbackLocally(payload) {
+        try {
+            const queue = JSON.parse(localStorage.getItem('ed2kia_feedback_queue') || '[]');
+            queue.push(payload);
+            localStorage.setItem('ed2kia_feedback_queue', JSON.stringify(queue));
+        } catch (e) {
+            console.warn('Failed to queue feedback locally:', e);
+        }
     }
 
     // ─── Fetch helpers ────────────────────────────────────────────────────────

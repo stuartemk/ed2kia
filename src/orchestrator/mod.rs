@@ -27,6 +27,12 @@ pub mod reputation;
 #[cfg(feature = "v2.1-merit-system")]
 pub mod merit;
 
+#[cfg(feature = "v2.1-sybil-micropow")]
+pub mod sybil;
+
+#[cfg(feature = "v2.1-orchestrator-federation")]
+pub mod network;
+
 /// Optional Rosetta API integration — spawns HTTP server alongside orchestrator.
 #[cfg(feature = "v2.1-rosetta-api")]
 pub mod rosetta_integration {
