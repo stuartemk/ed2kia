@@ -274,6 +274,18 @@ stable = [
 # v2.1 Atlas UI — 3D force-graph visualizer (web/atlas-visualizer.js + web/atlas.html)
 "v2.1-atlas-ui" = []
 
+# v2.1 Task Redundancy — N-Node Dispatch (same task to replication_factor peers)
+# Timeout-based re-assignment, peer tracking per task
+"v2.1-task-redundancy" = ["v2.1-task-manager"]
+
+# v2.1 Consensus Engine — Deterministic majority rule with f32 epsilon tolerance
+# O(N) grouping by index hash, threshold = (N/2)+1
+"v2.1-consensus-engine" = []
+
+# v2.1 Reputation System — Slashing & Banning matrix
+# DashMap scores + DashSet ban_list, auto-disconnect on score < 0
+"v2.1-reputation-system" = ["v2.1-consensus-engine"]
+
 # ─── Hardware Acceleration ───
 cpu = []
 cuda = ["candle-core/cuda", "candle-nn/cuda"]

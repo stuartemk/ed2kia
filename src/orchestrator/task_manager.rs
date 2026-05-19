@@ -64,6 +64,9 @@ pub struct TaskManager {
     pub max_retries: u32,
     /// Progress event emitter
     pub progress_tx: Option<mpsc::UnboundedSender<ProgressEvent>>,
+    /// Replication factor for N-Node dispatch (default: 1, no redundancy)
+    #[cfg(feature = "v2.1-task-redundancy")]
+    pub replication_factor: usize,
 }
 
 impl TaskManager {
@@ -77,7 +80,16 @@ impl TaskManager {
             task_timeout,
             max_retries,
             progress_tx: None,
+            #[cfg(feature = "v2.1-task-redundancy")]
+            replication_factor: 1,
         }
+    }
+
+    /// Sets the replication factor for N-Node dispatch.
+    #[cfg(feature = "v2.1-task-redundancy")]
+    pub fn with_replication(mut self, factor: usize) -> Self {
+        self.replication_factor = factor.max(1);
+        self
     }
 
     /// Sets the progress event emitter.
@@ -102,15 +114,43 @@ impl TaskManager {
     }
 
     /// Dispatches pending tasks to idle peers (non-blocking).
+    /// When `v2.1-task-redundancy` is enabled, dispatches to `replication_factor` distinct peers.
     pub fn dispatch_pending(&mut self) -> Vec<(AuditTaskPayload, String)> {
         let mut dispatched = Vec::new();
+        #[cfg(feature = "v2.1-task-redundancy")]
+        let factor = self.replication_factor;
 
         while let Some(task) = self.pending_tasks.pop_front() {
-            if let Some(peer_id) = self.idle_peers.keys().next() {
-                let peer_id = peer_id.clone();
-                let dispatch_time = Instant::now();
+            let peers_to_dispatch: Vec<String> = {
+                #[cfg(feature = "v2.1-task-redundancy")]
+                {
+                    self.idle_peers.keys()
+                        .cloned()
+                        .take(factor)
+                        .collect()
+                }
+                #[cfg(not(feature = "v2.1-task-redundancy"))]
+                {
+                    self.idle_peers.keys()
+                        .cloned()
+                        .take(1)
+                        .collect()
+                }
+            };
 
-                self.in_flight.insert(task.task_id, (dispatch_time, peer_id.clone()));
+            if peers_to_dispatch.is_empty() {
+                // No idle peers — re-enqueue and stop
+                self.pending_tasks.push_front(task);
+                break;
+            }
+
+            let dispatch_time = Instant::now();
+
+            // Use the first peer as the primary for in_flight tracking
+            let primary_peer = peers_to_dispatch[0].clone();
+            self.in_flight.insert(task.task_id, (dispatch_time, primary_peer));
+
+            for peer_id in peers_to_dispatch {
                 self.idle_peers.remove(&peer_id);
 
                 self.emit(ProgressEvent::Dispatched {
@@ -118,11 +158,7 @@ impl TaskManager {
                     peer_id: peer_id.clone(),
                 });
 
-                dispatched.push((task, peer_id));
-            } else {
-                // No idle peers — re-enqueue and stop
-                self.pending_tasks.push_front(task);
-                break;
+                dispatched.push((task.clone(), peer_id));
             }
         }
 
@@ -344,5 +380,69 @@ mod tests {
         let tm = TaskManager::default();
         assert_eq!(tm.task_timeout, Duration::from_secs(300));
         assert_eq!(tm.max_retries, 3);
+    }
+
+    // ─── N-Node Dispatch Tests (v2.1-task-redundancy) ───
+    #[cfg(feature = "v2.1-task-redundancy")]
+    #[test]
+    fn test_replication_factor_default() {
+        let tm = TaskManager::default();
+        assert_eq!(tm.replication_factor, 1);
+    }
+
+    #[cfg(feature = "v2.1-task-redundancy")]
+    #[test]
+    fn test_with_replication() {
+        let tm = TaskManager::default().with_replication(3);
+        assert_eq!(tm.replication_factor, 3);
+    }
+
+    #[cfg(feature = "v2.1-task-redundancy")]
+    #[test]
+    fn test_with_replication_min_one() {
+        let tm = TaskManager::default().with_replication(0);
+        assert_eq!(tm.replication_factor, 1);
+    }
+
+    #[cfg(feature = "v2.1-task-redundancy")]
+    #[test]
+    fn test_dispatch_pending_with_replication() {
+        let mut tm = TaskManager::default().with_replication(3);
+        tm.register_idle_peer("peer-1".to_string());
+        tm.register_idle_peer("peer-2".to_string());
+        tm.register_idle_peer("peer-3".to_string());
+        tm.register_idle_peer("peer-4".to_string());
+
+        let task = make_task(Uuid::new_v4());
+        tm.enqueue_task(task);
+
+        let dispatched = tm.dispatch_pending();
+        // Should dispatch to 3 peers (replication_factor)
+        assert_eq!(dispatched.len(), 3);
+        // All dispatched entries should have the same task_id
+        let task_id = dispatched[0].0.task_id;
+        for (t, _) in &dispatched {
+            assert_eq!(t.task_id, task_id);
+        }
+        // Should have 1 in_flight entry (primary peer)
+        assert_eq!(tm.in_flight_count(), 1);
+        // Remaining idle peers: 4 - 3 = 1
+        assert_eq!(tm.idle_peers.len(), 1);
+    }
+
+    #[cfg(feature = "v2.1-task-redundancy")]
+    #[test]
+    fn test_dispatch_replication_more_than_peers() {
+        let mut tm = TaskManager::default().with_replication(5);
+        tm.register_idle_peer("peer-1".to_string());
+        tm.register_idle_peer("peer-2".to_string());
+
+        let task = make_task(Uuid::new_v4());
+        tm.enqueue_task(task);
+
+        let dispatched = tm.dispatch_pending();
+        // Only 2 peers available, so dispatch to 2
+        assert_eq!(dispatched.len(), 2);
+        assert_eq!(tm.idle_peers.len(), 0);
     }
 }

@@ -18,6 +18,12 @@ use crate::protocol::audit_payloads::{AuditResultPayload, AuditTaskPayload};
 #[cfg(feature = "v2.1-task-manager")]
 pub mod task_manager;
 
+#[cfg(feature = "v2.1-consensus-engine")]
+pub mod consensus;
+
+#[cfg(feature = "v2.1-reputation-system")]
+pub mod reputation;
+
 /// Optional Rosetta API integration — spawns HTTP server alongside orchestrator.
 #[cfg(feature = "v2.1-rosetta-api")]
 pub mod rosetta_integration {

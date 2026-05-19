@@ -67,6 +67,9 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 | `v2.1-semantic-graph` | Semantic Graph — petgraph + dashmap for token↔feature mapping | ✅ Implementado (9 tests) |
 | `v2.1-rosetta-api` | Rosetta API — axum HTTP endpoints for graph queries | ✅ Implementado |
 | `v2.1-atlas-ui` | Atlas UI — 3D force-graph visualizer (WebGL) | ✅ Implementado |
+| `v2.1-task-redundancy` | N-Node Dispatch — Configurable replication_factor for redundant task assignment | ✅ Implementado (5 tests) |
+| `v2.1-consensus-engine` | Consensus Engine — O(N) index-hash grouping + epsilon-tolerant majority rule | ✅ Implementado (10 tests) |
+| `v2.1-reputation-system` | Reputation Matrix — DashMap scores (+1/-50) + auto-ban on negative | ✅ Implementado (13 tests) |
 | `v2.1-observability` | Metrics, Health Check, Health Endpoint | Draft (RFC-002) |
 | `v2.1-security-hardening` | wasmtime ≥24.0.7, rustls-webpki ≥0.103.13 | Planificado Q2-Q3 2027 |
 | `v2.1-gui` | GUI Bridge, Mobile, 3D Visualizer | Draft |
@@ -74,6 +77,40 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 | `v2.1-enterprise` | SSO, K8s Operator, Compliance | Draft |
 
 > **Nota:** Los feature gates `v2.1-*` NO están incluidos en `default = ["stable"]`. Requieren activación explícita vía RFC comunitario.
+
+## 🛡️ Sistema Inmunológico — Defensa contra Data Poisoning
+
+**ed2kIA v2.1.0-sprint7** introduce el Sistema Inmunológico, una capa defensiva de tres fases contra Data Poisoning en redes permissionless:
+
+### Fase 1: Redundancia de Tareas (N-Node Dispatch)
+
+El mismo task de auditoría se envía a **N nodos distintos** (configurable vía `replication_factor`), eliminando puntos únicos de fallo:
+
+```rust
+let manager = TaskManager::new(timeout, 3)
+    .with_replication(3);  // Dispatch to 3 distinct peers
+```
+
+### Fase 2: Consenso Determinista
+
+Motor de consenso O(N) que agrupa resultados por hash de índices y aplica regla de mayoría con tolerancia epsilon para f32:
+
+```rust
+let winner = validate_consensus(results, 1e-4);  // Some(result) o None
+```
+
+### Fase 3: Matriz de Reputación (Slashing & Banning)
+
+Sistema de reputación concurrente con penalización asimétrica: **+1** por acierto, **-50** por fallo, auto-ban cuando score < 0:
+
+```rust
+let engine = ReputationEngine::new();
+if engine.update_score("peer-42".to_string(), matched: false) {
+    println!("Peer banned automatically!");
+}
+```
+
+---
 
 ## 🌐 Nodo en el Navegador — Participación sin Barreras
 
