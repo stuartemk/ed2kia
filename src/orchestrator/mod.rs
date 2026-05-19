@@ -24,6 +24,9 @@ pub mod consensus;
 #[cfg(feature = "v2.1-reputation-system")]
 pub mod reputation;
 
+#[cfg(feature = "v2.1-merit-system")]
+pub mod merit;
+
 /// Optional Rosetta API integration — spawns HTTP server alongside orchestrator.
 #[cfg(feature = "v2.1-rosetta-api")]
 pub mod rosetta_integration {

@@ -286,6 +286,18 @@ stable = [
 # DashMap scores + DashSet ban_list, auto-disconnect on score < 0
 "v2.1-reputation-system" = ["v2.1-consensus-engine"]
 
+# v2.1 HuggingFace Bridge — Progressive .safetensors ingestion via reqwest streaming
+# stream_sae_to_shards(repo_id, target_dir) → SHA256 verified, ≤50MB shards
+"v2.1-hf-bridge" = ["v2.1-qwen-scope-loader"]
+
+# v2.1 Merit System — Cryptographic merit proofs via ed25519-dalek signing
+# MeritProof = {node_id, audit_count, timestamp, signature}, zero economic value
+"v2.1-merit-system" = ["v2.1-consensus-engine"]
+
+# v2.1 Production Portal — Alpine.js dashboard with WASM Worker + WebRTC integration
+# Real-time stats: voluntarios activos, neuronas auditadas, ataques bloqueados
+"v2.1-portal-prod" = []
+
 # ─── Hardware Acceleration ───
 cpu = []
 cuda = ["candle-core/cuda", "candle-nn/cuda"]

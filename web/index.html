@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ed2kIA Dashboard</title>
+    <title>ed2kIA — Red de la Verdad</title>
     <link rel="stylesheet" href="/assets/style.css">
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body>
     <div x-data="dashboard()" class="container">
         <header>
-            <h1>ed2kIA Dashboard</h1>
+            <h1>ed2kIA — Red de la Verdad</h1>
             <div class="status-bar">
                 <span class="status-indicator" :class="healthStatus"></span>
                 <span x-text="healthText"></span>
@@ -18,9 +18,28 @@
             </div>
         </header>
 
+        <!-- Connection Hero (Sprint8) -->
+        <section x-show="!connected" class="hero-connection">
+            <h2>Únete a la Red de la Verdad</h2>
+            <p>Inicializa WASM Worker + WebRTC en segundo plano para contribuir con tu navegador.</p>
+            <button @click="connectBrowserNode()" class="btn-primary" :disabled="connecting">
+                <span x-text="connecting ? 'Conectando...' : 'Conectar mi Navegador a la Red de la Verdad'"></span>
+            </button>
+            <p x-show="connectError" class="error-msg" x-text="connectError"></p>
+        </section>
+
+        <!-- Connected Status (Sprint8) -->
+        <section x-show="connected" class="connected-banner">
+            <span class="pulse"></span>
+            <span>Navegador conectado — Contribuyendo a la Red de la Verdad</span>
+            <button @click="disconnectBrowserNode()" class="btn-small">Desconectar</button>
+        </section>
+
         <nav>
             <button :class="{active: tab === 'status'}" @click="tab = 'status'; loadStatus()">Estado</button>
             <button :class="{active: tab === 'network'}" @click="tab = 'network'; loadNetwork()">Red</button>
+            <button :class="{active: tab === 'atlas'}" @click="tab = 'atlas'; loadAtlasStats()">Atlas</button>
+            <button :class="{active: tab === 'merit'}" @click="tab = 'merit'; loadMerit()">Mérito</button>
             <button :class="{active: tab === 'feedback'}" @click="tab = 'feedback'; loadFeedback()">Feedback</button>
             <button :class="{active: tab === 'metrics'}" @click="tab = 'metrics'; loadMetrics()">Métricas</button>
         </nav>
@@ -72,6 +91,91 @@
                     </div>
                 </div>
                 <p x-show="!network && loaded">Cargando...</p>
+            </section>
+
+            <!-- Atlas Stats Tab (Sprint8) -->
+            <section x-show="tab === 'atlas'" class="panel">
+                <h2>Atlas de la Verdad</h2>
+                <div class="grid" x-show="atlasStats">
+                    <div class="card highlight">
+                        <h3>Voluntarios Activos</h3>
+                        <p class="big" x-text="atlasStats.voluntarios_activos || 0"></p>
+                    </div>
+                    <div class="card highlight">
+                        <h3>Neuronas Auditadas</h3>
+                        <p class="big" x-text="atlasStats.neuronas_auditadas || 0"></p>
+                    </div>
+                    <div class="card highlight">
+                        <h3>Ataques Bloqueados</h3>
+                        <p class="big success" x-text="atlasStats.ataques_bloqueados || 0"></p>
+                    </div>
+                    <div class="card">
+                        <h3>Consenso Global</h3>
+                        <p x-text="(atlasStats.consenso_global * 100).toFixed(1) + '%'"></p>
+                    </div>
+                </div>
+                <div class="atlas-actions">
+                    <a href="/atlas.html" target="_blank" class="btn-secondary">Visualizar en 3D</a>
+                    <button @click="loadAtlasStats()" class="btn-small">Refrescar</button>
+                </div>
+                <p x-show="!atlasStats && loaded">Cargando...</p>
+            </section>
+
+            <!-- Merit Tab (Sprint8) -->
+            <section x-show="tab === 'merit'" class="panel">
+                <h2>Medallas de Mérito</h2>
+                <p class="subtitle">Reconocimiento criptográfico — Cero valor financiero, puro mérito técnico.</p>
+
+                <!-- Current Tier -->
+                <div class="grid" x-show="meritData">
+                    <div class="card tier-card" :class="meritData.tier?.toLowerCase()">
+                        <h3>Tu Rango</h3>
+                        <div class="tier-badge" x-html="getTierBadge(meritData.tier)"></div>
+                        <p class="tier-label" x-text="getTierLabel(meritData.tier)"></p>
+                        <p class="mono" x-text="meritData.audit_count || 0 + ' auditorías'"></p>
+                    </div>
+                    <div class="card">
+                        <h3>Próximo Rango</h3>
+                        <p x-text="getNextTierInfo()"></p>
+                    </div>
+                </div>
+
+                <!-- Claim Button -->
+                <div class="merit-actions">
+                    <button @click="claimMerit()" :disabled="claiming" class="btn-primary">
+                        <span x-text="claiming ? 'Firmando...' : 'Solicitar Proof de Mérito'"></span>
+                    </button>
+                    <p x-show="claimSuccess" class="success-msg" x-text="claimSuccess"></p>
+                    <p x-show="claimError" class="error-msg" x-text="claimError"></p>
+                </div>
+
+                <!-- Proof Log -->
+                <div x-show="proofs && proofs.length > 0">
+                    <h3>Historial de Proofs</h3>
+                    <table class="proofs-table">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Auditorías</th>
+                                <th>Rango</th>
+                                <th>Firma</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="proof in proofs.slice(0, 10)" :key="proof.hash">
+                                <tr>
+                                    <td x-text="new Date(proof.timestamp * 1000).toLocaleString()"></td>
+                                    <td x-text="proof.audit_count"></td>
+                                    <td>
+                                        <span class="tier-badge small" x-html="getTierBadge(proof.tier)"></span>
+                                    </td>
+                                    <td class="mono" x-text="proof.signature ? '0x' + proof.signature.substring(0, 16) + '...' : 'N/A'"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+                <p x-show="!meritData && loaded">Cargando...</p>
             </section>
 
             <!-- Feedback Tab -->
@@ -136,8 +240,8 @@
         </main>
 
         <footer>
-            <p>ed2kIA - Descentralizando la interpretabilidad de IA</p>
-            <p class="mono">Apache 2.0 + Ethical Use Clause</p>
+            <p>ed2kIA — Descentralizando la interpretabilidad de IA</p>
+            <p class="mono">Apache 2.0 + Ethical Use Clause | v2.1.0-sprint8</p>
         </footer>
     </div>
 

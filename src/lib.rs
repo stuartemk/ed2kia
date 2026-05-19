@@ -117,6 +117,8 @@ pub mod sae {
     pub mod cross_model_aligner_v5;
     #[cfg(feature = "v1.6-sprint3")]
     pub mod adaptive_checkpoint_v5;
+    #[cfg(feature = "v2.1-hf-bridge")]
+    pub mod hf_bridge;
 }
 
 /// Tensor flow and consciousness bridge
