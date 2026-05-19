@@ -6,6 +6,47 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.1.0-sprint10] — 2026-05-19
+
+### 🎉 Sprint Summary
+
+**v2.1.0-sprint10 "Despliegue Viral & Grito de Guerra"** delivers the launch infrastructure: **GitHub Pages Auto-Deploy** via `.github/workflows/deploy-pages.yml` (WASM build → Pages artifact → `actions/deploy-pages@v4`), **Demo Traffic Simulator** (`scripts/simulate_traffic.sh`) for 15s "Aha! Moment" video recordings, and the **Viral Launch Kit** (`docs/launch-kit/`) with platform-specific copywriting for Hacker News, Reddit and Twitter/X. Zero friction para que cualquier hacker pruebe un browser node en <30s.
+
+| Artifact | Path | Purpose |
+|----------|------|---------|
+| GH Pages Workflow | `.github/workflows/deploy-pages.yml` | Zero-friction browser node deployment |
+| Demo Traffic Script | `scripts/simulate_traffic.sh` | 15s demo video injection (nodes → audits → RLHF) |
+| HN Post | `docs/launch-kit/show-hn.md` | Show HN copy (technical, disruptive) |
+| Reddit Post | `docs/launch-kit/reddit-ml-rust.md` | r/machinelearning + r/rust + r/open_source |
+| X Thread | `docs/launch-kit/x-thread.md` | 5-tweet thread (problem → solution → arch → ethics → CTA) |
+
+### Added — Launch Infrastructure
+
+- **GitHub Pages Auto-Deploy** — `.github/workflows/deploy-pages.yml`
+  - Trigger: `push` to `main`
+  - Rust+WASM toolchain setup → `bash scripts/build-wasm.sh` → copy `web/` to Pages artifact
+  - `actions/deploy-pages@v4` for modern GitHub Pages workflow
+  - Permissions: `contents: read, pages: write, id-token: write`
+
+- **Demo Traffic Simulator** — `scripts/simulate_traffic.sh`
+  - 4 phases: Node connections (0-3s) → Audit tasks (3-10s) → RLHF feedback → Final stats
+  - Preflight check for orchestrator availability + offline simulation fallback
+  - Configurable: `ED2KIA_PORT`, `DEMO_DURATION`
+  - `set -euo pipefail` + `trap cleanup EXIT INT TERM`
+
+- **Viral Launch Kit** — `docs/launch-kit/`
+  - `show-hn.md`: Hacker News Show HN (technical, humble, disruptive)
+  - `reddit-ml-rust.md`: Reddit multi-sub (community-focused, strong hook)
+  - `x-thread.md`: Twitter/X 5-tweet thread (problem → solution → arch → ethics → CTA)
+  - Anti-corporate tone, zero financial logic, hacker ethos
+
+### Changed
+
+- **README.md** — Version badge updated to `v2.1.0-sprint10`, 🚀 Launch & Demo section added
+- **CHANGELOG.md** — Sprint10 entry with launch artifacts inventory
+
+---
+
 ## [v2.1.0-sprint9] — 2026-05-19
 
 ### 🎉 Sprint Summary

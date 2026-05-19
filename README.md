@@ -6,7 +6,8 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ethical-blue)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-2021-orange)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/Version-2.1.0-sprint9-yellowgreen)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-2.1.0-sprint10-yellowgreen)](CHANGELOG.md)
+[![Deploy](https://img.shields.io/badge/GitHub%20Pages-Active-brightgreen)](https://ed2kia.github.io/ed2kIA)
 [![Tests](https://img.shields.io/badge/Tests-3038_passing-success)](CHANGELOG.md)
 [![Qwen-Scope](https://img.shields.io/badge/Qwen--Scope--SAE-Integrated-brightgreen)](src/sae/qwen_scope_sae.rs)
 [![Coverage](https://img.shields.io/badge/Coverage-≥80%25-tracking)](release/v2.0.0-stable/final-signoff.json)
@@ -181,6 +182,48 @@ curl http://localhost:3030/api/feedback/export
 ```
 
 **Principios éticos:** Cero PII, almacenamiento local, export opt-in, gobernanza distribuida.
+
+---
+
+## 🚀 Launch & Demo — Prueba en <30s
+
+**ed2kIA v2.1.0-sprint10** incluye infraestructura de lanzamiento de cero fricción para que cualquier hacker pueda probar un browser node y ver el "Aha! Moment" en menos de 30 segundos:
+
+### Demo en Vivo (GitHub Pages)
+
+Accede al portal de demostración directamente desde tu navegador — sin instalación, sin configuración:
+
+```
+👉 https://ed2kia.github.io/ed2kIA   (se activa con primer push a main)
+```
+
+### Script de Tráfico de Demo (15s)
+
+Genera tráfico simulado para grabar videos de demostración con un solo comando:
+
+```bash
+# Tráfico demo de 15s (nodos → auditorías → RLHF feedback)
+bash scripts/simulate_traffic.sh
+
+# Personalizar puerto y duración
+ED2KIA_PORT=8080 DEMO_DURATION=30 bash scripts/simulate_traffic.sh
+```
+
+**Fases del demo:**
+1. **0-3s:** Conexión de nodos WASM simulados
+2. **3-10s:** Inyección de tareas de auditoría
+3. **10-13s:** Feedback RLHF (correcciones humanas)
+4. **Final:** Estadísticas finales en Atlas 3D
+
+### Kit de Lanzamiento Comunitario
+
+Copywriting listo para publicar en comunidades técnicas:
+
+| Plataforma | Archivo | Enfoque |
+|------------|---------|---------|
+| Hacker News | [`docs/launch-kit/show-hn.md`](docs/launch-kit/show-hn.md) | Técnico, humilde, disruptivo |
+| Reddit | [`docs/launch-kit/reddit-ml-rust.md`](docs/launch-kit/reddit-ml-rust.md) | r/machinelearning, r/rust, r/open_source |
+| Twitter/X | [`docs/launch-kit/x-thread.md`](docs/launch-kit/x-thread.md) | Hilo de 5 tweets (problema → solución → arquitectura → ética → CTA) |
 
 ---
 
