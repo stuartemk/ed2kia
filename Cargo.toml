@@ -633,3 +633,9 @@ required-features = ["v1.6-sprint3"]
 name = "v1_6_final_stress"
 path = "tests/load/v1_6_final_stress.rs"
 required-features = ["v1.6-sprint3"]
+
+# v2.1.0-sprint7 E2E Consensus Immune Test
+[[test]]
+name = "e2e_consensus_test"
+path = "tests/e2e_consensus_test.rs"
+required-features = ["v2.1-reputation-system", "v2.1-task-manager"]
