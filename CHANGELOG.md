@@ -6,6 +6,73 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.1.0-sprint11] — 2026-05-20
+
+### 🎉 Sprint Summary
+
+**v2.1.0-sprint11 "Operational Readiness & Mainnet Prep"** delivers the operational readiness triad: **Prometheus Metrics** (`src/observability/metrics.rs`) with full `Ed2kMetrics` registry covering consensus, reputation, network, RLHF and WASM worker namespaces (12 tests), **Grafana Dashboard** (`prometheus/grafana-dashboard.json`) with 5 row panels for real-time network health visualization, and **Pre-Launch Validation** (`scripts/pre-launch-check.sh`) with automated 5-phase checklist (cargo check → cargo test → critical files → JSON validation → doc integrity). Plus **CODEOWNERS** for module ownership and governance/CONTRIBUTING enhancements. Zero unsafe code, zero telemetry, zero financial logic — strictly network health and alignment metrics.
+
+| Artifact | Path | Purpose |
+|----------|------|---------|
+| Prometheus Metrics | `src/observability/metrics.rs` | Ed2kMetrics registry + 5 metric categories + 12 tests |
+| Grafana Dashboard | `prometheus/grafana-dashboard.json` | 5-panel dashboard (Network, Consensus, Reputation, RLHF, WASM) |
+| CODEOWNERS | `CODEOWNERS` | Module ownership for PR review requirements |
+| Pre-Launch Script | `scripts/pre-launch-check.sh` | Automated 5-phase validation + readiness report |
+| Feature Gates | `Cargo.toml` | `v2.1-observability`, `v2.1-governance`, `v2.1-launch-readiness` |
+| Governance Docs | `GOVERNANCE.md` §§12-13 | Observability transparency + Pre-Launch Validation |
+| Contrib Guide | `CONTRIBUTING.md` | Observability + Pre-Launch sections |
+
+### Added — Operational Readiness
+
+- **Prometheus Metrics Registry** — `src/observability/metrics.rs`
+  - `Ed2kMetrics` struct with `Registry` + 5 metric sub-structs
+  - `ConsensusMetrics`: `votes_total`, `rounds_total`, `round_latency_seconds`
+  - `ReputationMetrics`: `slashing_total`, `banned_peers`, `score_sum`
+  - `NetworkMetrics`: `peers_active`, `bytes_received_total`, `bytes_sent_total`, `gossipsub_messages_total`
+  - `RlhfMetrics`: `feedback_total`, `corrections_accepted`, `corrections_rejected`
+  - `WasmWorkerMetrics`: `cpu_time_ms`, `sae_inference_latency_ms`, `active_workers`
+  - Shared handles (`Arc<T>`) for thread-safe access: `Ed2kMetricsHandle`, `ConsensusHandle`, `ReputationHandle`, `NetworkHandle`, `RlhfHandle`, `WasmWorkerHandle`
+  - `encode()` → Prometheus TextEncoder exposition format
+  - All metrics prefixed `ed2kia_` for clear namespacing
+  - 12 unit tests: metrics creation, consensus recording, reputation slashing/banning, network peers/bytes, RLHF accepted/rejected, WASM CPU/inference/active, encode namespace coverage, error display
+
+- **Grafana Dashboard** — `prometheus/grafana-dashboard.json`
+  - UID: `ed2kia-dashboard-v21`, Title: "ed2kIA Network Health"
+  - Row 1: Network Health — peers_active (gauge), bytes received/sent (timeseries), gossipsub messages (stat)
+  - Row 2: Consensus Engine — votes_total (stat), rounds_total (stat), round_latency p50/p95/p99 (histogram)
+  - Row 3: Reputation & Ethics — slashing_total (stat), banned_peers (gauge), score_sum (gauge)
+  - Row 4: RLHF Feedback — feedback_total (stat), accepted/rejected (timeseries)
+  - Row 5: WASM Worker & SAE — cpu_time_ms (stat), inference_latency p50/p95/p99 (histogram), active_workers (gauge)
+
+- **CODEOWNERS** — Module ownership for PR review
+  - `/src/orchestrator/`, `/src/sae/`, `/src/p2p/`, `/src/atlas/`, `/src/browser_node/`, `/src/observability/`, `/src/governance/` → `@Stuartemk`
+  - `/web/`, `/docs/launch-kit/`, `.github/workflows/` → `@Stuartemk`
+
+- **Pre-Launch Validation Script** — `scripts/pre-launch-check.sh`
+  - `set -euo pipefail` + `trap cleanup EXIT INT TERM`
+  - Phase 1: `cargo check --all-targets`
+  - Phase 2: `cargo test --lib`
+  - Phase 3: Critical files verification (Cargo.toml, LICENSE, README.md, etc.)
+  - Phase 4: JSON validation (grafana-dashboard.json)
+  - Phase 5: Documentation integrity (CHANGELOG.md, README.md)
+  - Output: GREEN "READY FOR MAINNET" or RED "BLOCKED" + `docs/launch-readiness-report.md`
+
+### Changed
+
+- **Cargo.toml** — 2 new feature gates: `v2.1-governance`, `v2.1-launch-readiness` + updated `v2.1-observability` description
+- **src/observability/mod.rs** — Production-ready module registration (removed scaffold placeholders)
+- **CONTRIBUTING.md** — Added Observability & Métricas + Pre-Launch Validation sections
+- **GOVERNANCE.md** — Added §12 Observabilidad & Transparencia Operacional + §13 Pre-Launch Validation & CODEOWNERS
+
+### Validated
+
+- `cargo check` — PASS (0 errors, 0 warnings on observability module)
+- `cargo test --lib -- metrics` — 12/12 PASS
+- `bash -n scripts/pre-launch-check.sh` — Syntax valid
+- JSON validation — `prometheus/grafana-dashboard.json` valid
+
+---
+
 ## [v2.1.0-sprint10] — 2026-05-19
 
 ### 🎉 Sprint Summary

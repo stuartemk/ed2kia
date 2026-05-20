@@ -6,7 +6,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ethical-blue)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-2021-orange)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/Version-2.1.0-sprint10-yellowgreen)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-2.1.0-sprint11-yellowgreen)](CHANGELOG.md)
 [![Deploy](https://img.shields.io/badge/GitHub%20Pages-Active-brightgreen)](https://ed2kia.github.io/ed2kIA)
 [![Tests](https://img.shields.io/badge/Tests-3038_passing-success)](CHANGELOG.md)
 [![Qwen-Scope](https://img.shields.io/badge/Qwen--Scope--SAE-Integrated-brightgreen)](src/sae/qwen_scope_sae.rs)
@@ -77,7 +77,9 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 | `v2.1-sybil-micropow` | Ethical Sybil Resistance — SHA-256 Micro-PoW handshake, rate limiting, exponential backoff | ✅ Validado (12 tests) |
 | `v2.1-orchestrator-federation` | GossipSub Federation — libp2p 0.53 `MessageAuthenticity::Signed`, multi-node orchestrator mesh | ✅ Validado (9 tests) |
 | `v2.1-rlhf-bridge` | RLHF Feedback Bridge — Human-in-the-loop semantic alignment via REST API + interactive UI | ✅ Validado (11 tests) |
-| `v2.1-observability` | Metrics, Health Check, Health Endpoint | Draft (RFC-002) |
+| `v2.1-observability` | Prometheus Metrics — Ed2kMetrics registry, 5 categories (consensus/reputation/network/rlhf/wasm), 12 tests | ✅ Implementado (12 tests) |
+| `v2.1-governance` | CODEOWNERS + GOVERNANCE §§12-13 — Observability transparency & Pre-Launch Validation | ✅ Implementado |
+| `v2.1-launch-readiness` | Pre-Launch Checklist — Automated 5-phase validation script + readiness report | ✅ Implementado |
 | `v2.1-security-hardening` | wasmtime ≥24.0.7, rustls-webpki ≥0.103.13 | Planificado Q2-Q3 2027 |
 | `v2.1-gui` | GUI Bridge, Mobile, 3D Visualizer | Draft |
 | `v2.1-zkp-v3` | ZKP v3, Recursive Prover, Cross-Chain | Draft |
@@ -224,6 +226,59 @@ Copywriting listo para publicar en comunidades técnicas:
 | Hacker News | [`docs/launch-kit/show-hn.md`](docs/launch-kit/show-hn.md) | Técnico, humilde, disruptivo |
 | Reddit | [`docs/launch-kit/reddit-ml-rust.md`](docs/launch-kit/reddit-ml-rust.md) | r/machinelearning, r/rust, r/open_source |
 | Twitter/X | [`docs/launch-kit/x-thread.md`](docs/launch-kit/x-thread.md) | Hilo de 5 tweets (problema → solución → arquitectura → ética → CTA) |
+
+---
+
+## 📊 Observabilidad & Gobernanza — Preparación para Mainnet
+
+**ed2kIA v2.1.0-sprint11** introduce la infraestructura de **Operational Readiness**, el conjunto de herramientas de observabilidad, gobernanza y validación automática requeridas antes del despliegue en mainnet:
+
+```
+Prometheus Metrics → Grafana Dashboard → Pre-Launch Validation → Mainnet Ready
+```
+
+### Métricas Prometheus (5 categorías, 12+ métricas)
+
+Registro ligero de métricas de salud de red con namespace `ed2kia_`, cero telemetría externa, cero lógica financiera:
+
+| Categoría | Métricas |
+|-----------|----------|
+| **Consensus** | `ed2kia_consensus_votes_total`, `ed2kia_consensus_rounds_total`, `ed2kia_consensus_round_latency_seconds` |
+| **Reputation** | `ed2kia_reputation_slashing_total`, `ed2kia_reputation_banned_peers`, `ed2kia_reputation_score_sum` |
+| **Network** | `ed2kia_network_peers_active`, `ed2kia_network_bytes_received_total`, `ed2kia_network_bytes_sent_total`, `ed2kia_network_gossipsub_messages_total` |
+| **RLHF** | `ed2kia_rlhf_feedback_total`, `ed2kia_rlhf_corrections_accepted`, `ed2kia_rlhf_corrections_rejected` |
+| **WASM Worker** | `ed2kia_wasm_worker_cpu_ms`, `ed2kia_wasm_worker_sae_inference_latency_ms`, `ed2kia_wasm_worker_active_workers` |
+
+### Dashboard Grafana
+
+Panel de visualización en tiempo real con 5 filas de paneles (Network, Consensus, Reputation, RLHF, WASM) incluyendo histogramas p50/p95/p99, gauges y timeseries:
+
+```
+📊 Dashboard: prometheus/grafana-dashboard.json (UID: ed2kia-dashboard-v21)
+```
+
+### Validación Pre-Launch Automatizada
+
+Script de validación de 5 fases con reporte de readiness automático:
+
+```bash
+# Ejecutar checklist pre-launch
+bash scripts/pre-launch-check.sh
+
+# Reporte: docs/launch-readiness-report.md
+# Resultado: GREEN READY FOR MAINNET o RED BLOCKED
+```
+
+**Fases de validación:**
+1. `cargo check --all-targets` — Compilación limpia
+2. `cargo test --lib` — Tests unitarios PASS
+3. Verificación de archivos críticos (Cargo.toml, LICENSE, README.md, etc.)
+4. Validación JSON (grafana-dashboard.json)
+5. Integridad documental (CHANGELOG.md, README.md)
+
+### CODEOWNERS & Gobernanza
+
+Propiedad modular para revisiones de PR obligatorias — cada módulo tiene owner asignado en [`CODEOWNERS`](CODEOWNERS). Gobernanza operativa documentada en [`GOVERNANCE.md`](GOVERNANCE.md) §§12-13.
 
 ---
 

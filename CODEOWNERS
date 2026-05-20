@@ -1,0 +1,67 @@
+# ed2kIA CODEOWNERS — Module Ownership & Review Requirements
+# Format: <pattern> <owner>...
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Global maintainers (fallback for unowned paths)
+* @Stuartemk
+
+# Orchestrator — Task distribution, consensus, reputation, sybil resistance
+/src/orchestrator/ @Stuartemk
+
+# SAE — Sparse Autoencoders, loaders, fine-tuning, routing
+/src/sae/ @Stuartemk
+
+# P2P — libp2p swarm, protocol, transport
+/src/p2p/ @Stuartemk
+
+# Atlas — Semantic graph, Rosetta API, 3D visualizer
+/src/atlas/ @Stuartemk
+
+# Browser Node — WASM P2P, WebRTC, Web Workers
+/src/browser_node/ @Stuartemk
+
+# Observability — Prometheus metrics, health checks
+/src/observability/ @Stuartemk
+
+# Governance — DAO, merit, voting
+/src/governance/ @Stuartemk
+
+# Federation — Cross-chain consensus, gossipsub mesh
+/src/federation/ @Stuartemk
+
+# Security — Threat models, audit prep, ZKP
+/security/ @Stuartemk
+/src/zkp/ @Stuartemk
+/src/security/ @Stuartemk
+
+# Web / Frontend — Portal, Atlas UI, Browser Node HTML/JS/CSS
+/web/ @Stuartemk
+
+# Launch Kit — Copywriting, community posts
+/docs/launch-kit/ @Stuartemk
+
+# CI/CD — GitHub Actions workflows
+.github/workflows/ @Stuartemk
+
+# Infrastructure — Docker, systemd, deploy
+/deploy/ @Stuartemk
+/infra/ @Stuartemk
+/Dockerfile @Stuartemk
+
+# Documentation — Architecture, guides, release notes
+/docs/ @Stuartemk
+
+# Scripts — Build, test, launch, monitoring
+/scripts/ @Stuartemk
+
+# Configuration — Cargo, CI config, toolchain
+/Cargo.toml @Stuartemk
+/rust-toolchain.toml @Stuartemk
+
+# Root documentation — README, CHANGELOG, LICENSE, GOVERNANCE, CONTRIBUTING, SECURITY
+/README.md @Stuartemk
+/CHANGELOG.md @Stuartemk
+/LICENSE @Stuartemk
+/GOVERNANCE.md @Stuartemk
+/CONTRIBUTING.md @Stuartemk
+/SECURITY.md @Stuartemk

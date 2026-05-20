@@ -1,0 +1,387 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "ed2kIA v2.1.0 — Network Health, Consensus, Reputation, RLHF & WASM Worker Metrics",
+  "editable": true,
+  "fiscalYearStart": "january",
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "title": "Network Health",
+      "type": "row",
+      "panels": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "thresholds": { "mode": "absolute", "steps": [
+                { "color": "red", "value": null },
+                { "color": "yellow", "value": 5 },
+                { "color": "green", "value": 20 }
+              ]}
+            }
+          },
+          "gridPos": { "h": 8, "w": 6, "x": 0, "y": 1 },
+          "id": 1,
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto" },
+          "targets": [
+            {
+              "expr": "ed2kia_network_peers_active",
+              "legendFormat": "Active Peers"
+            }
+          ],
+          "title": "Active Peers",
+          "type": "gauge"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "bytes"
+            }
+          },
+          "gridPos": { "h": 8, "w": 9, "x": 6, "y": 1 },
+          "id": 2,
+          "targets": [
+            {
+              "expr": "rate(ed2kia_network_bytes_received_total[5m]) * 1000",
+              "legendFormat": "Received"
+            },
+            {
+              "expr": "rate(ed2kia_network_bytes_sent_total[5m]) * 1000",
+              "legendFormat": "Sent"
+            }
+          ],
+          "title": "P2P Bandwidth (bytes/s)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "ops"
+            }
+          },
+          "gridPos": { "h": 8, "w": 9, "x": 15, "y": 1 },
+          "id": 3,
+          "targets": [
+            {
+              "expr": "rate(ed2kia_network_gossipsub_messages_total[5m])",
+              "legendFormat": "GossipSub msg/s"
+            }
+          ],
+          "title": "GossipSub Messages Rate",
+          "type": "timeseries"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 10 },
+      "id": 200,
+      "title": "Consensus Engine",
+      "type": "row",
+      "panels": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "thresholds": { "mode": "absolute", "steps": [
+                { "color": "blue", "value": null }
+              ]}
+            }
+          },
+          "gridPos": { "h": 8, "w": 6, "x": 0, "y": 11 },
+          "id": 10,
+          "targets": [
+            {
+              "expr": "ed2kia_consensus_votes_total",
+              "legendFormat": "Total Votes"
+            }
+          ],
+          "title": "Total Consensus Votes",
+          "type": "stat"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "s"
+            }
+          },
+          "gridPos": { "h": 8, "w": 9, "x": 6, "y": 11 },
+          "id": 11,
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.50, rate(ed2kia_consensus_round_latency_seconds_bucket[5m]))",
+              "legendFormat": "p50"
+            },
+            {
+              "expr": "histogram_quantile(0.95, rate(ed2kia_consensus_round_latency_seconds_bucket[5m]))",
+              "legendFormat": "p95"
+            },
+            {
+              "expr": "histogram_quantile(0.99, rate(ed2kia_consensus_round_latency_seconds_bucket[5m]))",
+              "legendFormat": "p99"
+            }
+          ],
+          "title": "Consensus Round Latency",
+          "type": "timeseries"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" }
+            }
+          },
+          "gridPos": { "h": 8, "w": 9, "x": 15, "y": 11 },
+          "id": 12,
+          "targets": [
+            {
+              "expr": "ed2kia_consensus_rounds_total",
+              "legendFormat": "Rounds"
+            }
+          ],
+          "title": "Total Consensus Rounds",
+          "type": "stat"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 20 },
+      "id": 300,
+      "title": "Reputation & Ethics",
+      "type": "row",
+      "panels": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": { "mode": "absolute", "steps": [
+                { "color": "green", "value": null },
+                { "color": "red", "value": 1 }
+              ]}
+            }
+          },
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 21 },
+          "id": 20,
+          "targets": [
+            {
+              "expr": "ed2kia_reputation_slashing_total",
+              "legendFormat": "Slashings"
+            }
+          ],
+          "title": "Total Slashing Events",
+          "type": "stat"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": { "mode": "absolute", "steps": [
+                { "color": "green", "value": null },
+                { "color": "orange", "value": 3 },
+                { "color": "red", "value": 10 }
+              ]}
+            }
+          },
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 21 },
+          "id": 21,
+          "targets": [
+            {
+              "expr": "ed2kia_reputation_banned_peers",
+              "legendFormat": "Banned"
+            }
+          ],
+          "title": "Banned Peers",
+          "type": "gauge"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" }
+            }
+          },
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 21 },
+          "id": 22,
+          "targets": [
+            {
+              "expr": "ed2kia_reputation_score_sum",
+              "legendFormat": "Score Sum"
+            }
+          ],
+          "title": "Reputation Score Sum",
+          "type": "stat"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 30 },
+      "id": 400,
+      "title": "RLHF Feedback",
+      "type": "row",
+      "panels": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" }
+            }
+          },
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 31 },
+          "id": 30,
+          "targets": [
+            {
+              "expr": "ed2kia_rlhf_feedback_total",
+              "legendFormat": "Total Feedback"
+            }
+          ],
+          "title": "Total RLHF Feedback",
+          "type": "stat"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" }
+            }
+          },
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 31 },
+          "id": 31,
+          "targets": [
+            {
+              "expr": "ed2kia_rlhf_corrections_accepted",
+              "legendFormat": "Accepted"
+            },
+            {
+              "expr": "ed2kia_rlhf_corrections_rejected",
+              "legendFormat": "Rejected"
+            }
+          ],
+          "title": "Corrections: Accepted vs Rejected",
+          "type": "bargauge"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "percentunit"
+            }
+          },
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 31 },
+          "id": 32,
+          "targets": [
+            {
+              "expr": "ed2kia_rlhf_corrections_accepted / ed2kia_rlhf_feedback_total",
+              "legendFormat": "Acceptance Rate"
+            }
+          ],
+          "title": "Correction Acceptance Rate",
+          "type": "gauge"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 40 },
+      "id": 500,
+      "title": "WASM Worker & SAE Inference",
+      "type": "row",
+      "panels": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "ms"
+            }
+          },
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 41 },
+          "id": 40,
+          "targets": [
+            {
+              "expr": "ed2kia_wasm_worker_cpu_ms",
+              "legendFormat": "CPU ms"
+            }
+          ],
+          "title": "WASM Worker CPU Time (ms)",
+          "type": "stat"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "ms"
+            }
+          },
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 41 },
+          "id": 41,
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.50, rate(ed2kia_sae_inference_latency_ms_bucket[5m]))",
+              "legendFormat": "p50"
+            },
+            {
+              "expr": "histogram_quantile(0.95, rate(ed2kia_sae_inference_latency_ms_bucket[5m]))",
+              "legendFormat": "p95"
+            },
+            {
+              "expr": "histogram_quantile(0.99, rate(ed2kia_sae_inference_latency_ms_bucket[5m]))",
+              "legendFormat": "p99"
+            }
+          ],
+          "title": "SAE Inference Latency",
+          "type": "timeseries"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" }
+            }
+          },
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 41 },
+          "id": 42,
+          "targets": [
+            {
+              "expr": "ed2kia_wasm_worker_active",
+              "legendFormat": "Active Workers"
+            }
+          ],
+          "title": "Active WASM Workers",
+          "type": "gauge"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["ed2kIA", "p2p", "sae", "interpretability"],
+  "templating": {
+    "list": []
+  },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "ed2kIA — Network Health & Alignment Dashboard",
+  "uid": "ed2kia-dashboard-v21",
+  "version": 1
+}

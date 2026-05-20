@@ -283,7 +283,54 @@ This governance document can be amended through:
 
 ---
 
+## 12. Observabilidad & Transparencia Operacional (Sprint11)
+
+**ed2kIA v2.1.0-sprint11** introduce infraestructura de observabilidad para transparencia operativa:
+
+### Métricas Prometheus
+
+Todas las métricas son públicas y accesibles vía `GET /api/metrics`. Son exclusivamente para salud de red y alineación comunitaria:
+
+| Categoría | Métricas | Propósito |
+|-----------|----------|-----------|
+| Consenso | `ed2kia_consensus_votes_total`, `ed2kia_consensus_round_latency_seconds` | Salud del motor de consenso |
+| Reputación | `ed2kia_reputation_slashing_total`, `ed2kia_reputation_banned_peers` | Detección de comportamiento malicioso |
+| Red | `ed2kia_network_peers_active`, `ed2kia_network_bytes_received_total` | Conectividad P2P |
+| RLHF | `ed2kia_rlhf_feedback_total`, `ed2kia_rlhf_corrections_accepted` | Alineación humana continua |
+| WASM | `ed2kia_wasm_worker_cpu_ms`, `ed2kia_sae_inference_latency_ms` | Rendimiento de nodos browser |
+
+### Dashboard Grafana
+
+Dashboard importable: [`prometheus/grafana-dashboard.json`](prometheus/grafana-dashboard.json)
+
+### Principios de Observabilidad
+
+1. **Cero telemetría:** Métricas locales, sin datos salientes
+2. **Cero monetización:** Métricas solo para salud de red, nunca para fines comerciales
+3. **Transparencia total:** Cualquier nodo puede exponer sus métricas
+4. **Propiedad comunitaria:** Los datos de métricas pertenecen a la red, no a individuos
+
+## 13. Pre-Launch Validation & CODEOWNERS (Sprint11)
+
+### CODEOWNERS
+
+El archivo [`CODEOWNERS`](CODEOWNERS) define ownership por módulo. Los PRs que toquen paths protegidos requieren review explícita de los owners asignados.
+
+### Pre-Launch Checklist
+
+Antes de cualquier despliegue público, se debe ejecutar [`scripts/pre-launch-check.sh`](scripts/pre-launch-check.sh):
+
+1. `cargo check --all-targets` (feature gates activas)
+2. `cargo test --lib` (≥80% coverage)
+3. Verificación de archivos críticos (CODEOWNERS, CONTRIBUTING.md, deploy-pages.yml)
+4. Validación de integridad documental (CHANGELOG.md, README.md)
+5. Generación de `docs/launch-readiness-report.md`
+
+Resultado: `🟢 READY FOR MAINNET` o `🔴 BLOCKED: [lista de fallos]`
+
+---
+
 **Estado:** ACTIVE
-**Última actualización:** 2026-05-15T21:25:00Z
+**Última actualización:** 2026-05-19T23:48:00Z
 **Autor:** Qweni (Auto-Push Protocol)
-**FASE:** 62 — Post-Beta Retrospective & v1.9 Roadmap
+**FASE:** Sprint11 — Operational Readiness & Mainnet Prep

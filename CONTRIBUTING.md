@@ -521,6 +521,27 @@ Los PRs que toquen paths protegidos requieren review de CODEOWNERS:
 - `feature-gate-tests`: Ejecuta tests con cada feature gate v2.1
 - `codeowners-sync`: Verifica que PRs toquen paths protegidos
 
+## Observabilidad & Métricas (Sprint11)
+
+Los contribuidores pueden exponer métricas Prometheus para monitoreo de salud de red:
+
+- **Feature gate:** `v2.1-observability`
+- **Endpoint:** `GET /api/metrics` (rate-limited)
+- **Dashboard:** [`prometheus/grafana-dashboard.json`](prometheus/grafana-dashboard.json)
+- **Métricas clave:** `ed2kia_consensus_votes_total`, `ed2kia_network_peers_active`, `ed2kia_rlhf_feedback_total`, `ed2kia_sae_inference_latency_ms`
+
+**Nota:** Las métricas son exclusivamente para salud de red y alineación. Cero telemetría, cero monetización.
+
+## Pre-Launch Validation (Sprint11)
+
+Antes de cualquier release público, ejecuta:
+
+```bash
+bash scripts/pre-launch-check.sh
+```
+
+Este script valida: `cargo check`, `cargo test`, archivos críticos, integridad documental y genera `docs/launch-readiness-report.md`.
+
 ## Contacto
 
 - Issues: https://github.com/ed2kia/ed2kIA/issues

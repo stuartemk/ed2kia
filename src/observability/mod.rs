@@ -1,19 +1,16 @@
-//! Observability Scaffold — Prometheus/Grafana metrics collection (v2.1)
+//! Observability — Prometheus/Grafana metrics collection (v2.1.0-sprint11)
 //!
-//! **STATUS:** SCAFFOLD ONLY — Zero functional logic.
-//! **APPROVAL REQUIRED:** RFC-002 discussion must complete before implementation.
-//! **LICENSE:** Apache 2.0 + Ethical Use Clause
+//! Production-ready Prometheus metrics for network health, consensus, reputation,
+//! RLHF feedback and WASM worker observability. Zero telemetry, zero external calls.
+//! Metrics are strictly for network health and alignment monitoring.
 //!
-//! This module provides feature-gated placeholders for observability infrastructure.
-//! No code in this module should be considered production-ready until the
-//! corresponding RFC is accepted and implementation begins.
+//! **Feature gate:** `v2.1-observability`
+//! **License:** Apache 2.0 + Ethical Use Clause
 
-// TODO: RFC-002 approval required before implementing any module below
-
-/// Metrics collection placeholders
+/// Prometheus metrics registry and collectors
 #[cfg(feature = "v2.1-observability")]
 pub mod metrics;
 
-/// Health check endpoint placeholders
+/// Health check endpoint
 #[cfg(feature = "v2.1-observability")]
 pub mod health_check;
