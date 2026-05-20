@@ -99,6 +99,10 @@ reqwest = { version = "0.11", features = ["json", "stream"] }
 # Bootstrap - Fase 5
 fastrand = "2.1"
 
+# CLI Wizard - dialoguer (Sprint15 — v2.1-operator-cli)
+dialoguer = { version = "0.11", optional = true }
+env_logger = { version = "0.11", optional = true }
+
 # Property-based fuzzing (Sprint13 — v2.1-fuzzing)
 proptest = { version = "1.5", optional = true }
 
@@ -347,6 +351,37 @@ stable = [
 # Backend commands: start_worker, sync_atlas, get_merit_proof, stop_worker
 # Sandboxed, no external telemetry, minimal permissions
 "v2.1-tauri-bridge" = []
+
+# v2.1 Federated Aggregation — Secure gradient aggregation with differential privacy (Sprint14)
+# src/federated/aggregator.rs: FedAvg weighted by reputation, INT8/FP8 compression,
+# Gaussian noise (ε=1.0, δ=1e-5), Ed25519 signature verification, divergence threshold rejection
+"v2.1-federated-agg" = []
+
+# v2.1 SAE Training Pipeline — Distributed SAE training with candle-core (Sprint14)
+# src/sae/training_pipeline.rs: forward → sparsity mask → backward → gradient clipping → compression
+# Automatic checkpointing every N steps, hooks: on_step, on_epoch, on_convergence
+"v2.1-sae-training" = []
+
+# v2.1 Ethical Audit — Automated ethical compliance verification (Sprint14)
+# scripts/verify-ethical-compliance.sh: LICENSE ethical clause, financial pattern scan,
+# telemetry check, generates docs/ethical-compliance-report.md
+"v2.1-ethical-audit" = []
+
+# v2.1 Chaos Engine — Controlled fault injection for operational resilience (Sprint15)
+# src/chaos/engine.rs: Async motor (tokio) for fault injection in local/testnet.
+# Scenarios: WASM node failure, network partition, artificial latency, malicious votes,
+# task queue saturation. Only active with --chaos-mode, limited duration, auto rollback.
+"v2.1-chaos-engine" = []
+
+# v2.1 Operator CLI Wizard — Standalone TUI binary for guided node setup (Sprint15)
+# src/bin/ed2kia-cli.rs: clap + dialoguer, role selection, config generation,
+# environment verification, health checks, log export.
+"v2.1-operator-cli" = ["dialoguer", "env_logger"]
+
+# v2.1 Auto-Remediation — Automated incident response pipeline (Sprint15)
+# scripts/auto-remediate.sh: set -euo pipefail, trap cleanup, active monitoring,
+# graceful restart, rollback to checkpoint, incident report generation, webhooks.
+"v2.1-auto-remediation" = []
 
 # ─── Hardware Acceleration ───
 cpu = []

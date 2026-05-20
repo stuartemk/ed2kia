@@ -119,7 +119,17 @@ pub mod sae {
     pub mod adaptive_checkpoint_v5;
     #[cfg(feature = "v2.1-hf-bridge")]
     pub mod hf_bridge;
+    #[cfg(feature = "v2.1-sae-training")]
+    pub mod training_pipeline;
 }
+
+// ============================================================================
+// Sprint14 — Aprendizaje Federado & Alineación Continua
+// ============================================================================
+
+/// Federated Learning — Secure gradient aggregation with differential privacy
+#[cfg(feature = "v2.1-federated-agg")]
+pub mod federated;
 
 /// Tensor flow and consciousness bridge
 pub mod bridge {
@@ -940,6 +950,10 @@ pub mod v2_1;
 
 #[cfg(feature = "v2.1-observability")]
 pub mod observability;
+
+/// Chaos Engine — Controlled fault injection for operational resilience (Sprint15)
+#[cfg(feature = "v2.1-chaos-engine")]
+pub mod chaos;
 
 #[cfg(test)]
 mod tests {

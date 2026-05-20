@@ -6,6 +6,112 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.1.0-sprint15] — 2026-05-20
+
+### 🎉 Sprint Summary
+
+**v2.1.0-sprint15 "Resiliencia Operativa & Automatización de Respuesta"** delivers the operational resilience triad: **Chaos Engine** (`src/chaos/engine.rs`) with tokio async motor for controlled fault injection in local/testnet — WASM node failure, network partition (GossipSub isolation), artificial latency, malicious vote injection, task queue saturation — strict control with `--chaos-mode` flag, limited duration, automatic rollback and detailed logs, **Operator CLI Wizard** (`src/bin/ed2kia-cli.rs`) — a standalone binary (clap + dialoguer) with TUI interface for guided node setup: role selection (Relay, Orchestrator, WASM Node, Auditor), config generation with real-time validation, environment verification, health checks and log export, and **Auto-Remediation Pipeline** (`scripts/auto-remediate.sh`) — `set -euo pipefail` with `trap cleanup EXIT INT TERM`, active monitoring (health, metrics, consensus, slashing/partition detection), auto actions (graceful restart, rollback to checkpoint, incident report generation, optional webhook notification). Community resilience, operational transparency, zero financial logic.
+
+| Artifact | Path | Purpose |
+|----------|------|---------|
+| Chaos Engine | `src/chaos/engine.rs` | Async fault injection engine (WASM failure, partition, latency, malicious votes, queue saturation) |
+| Chaos Module | `src/chaos/mod.rs` | Module registration for chaos engine |
+| Operator CLI | `src/bin/ed2kia-cli.rs` | Standalone TUI wizard (clap + dialoguer) for guided node setup |
+| Auto-Remediation | `scripts/auto-remediate.sh` | Automated incident response with monitoring, restart, rollback, reporting |
+| Feature Gates | `Cargo.toml` | `v2.1-chaos-engine`, `v2.1-operator-cli`, `v2.1-auto-remediation` |
+
+### Added — Chaos Engine
+
+- **Chaos Engine** — `src/chaos/engine.rs`
+  - Feature-gated behind `v2.1-chaos-engine`
+  - Async motor (tokio) for controlled fault injection in local/testnet
+  - Simulable faults: WASM node failure, network partition (GossipSub isolation), artificial latency, malicious vote injection, task queue saturation
+  - Strict control: only active with `--chaos-mode` flag, limited duration, automatic rollback, detailed logs
+  - `ChaosScenario` and `ChaosConfig` with `#[derive(Debug, Clone)]`
+  - `ChaosEngine` with `activate()`, `rollback()`, `status()`, `shutdown()` async API
+  - Background event loop with cooldown periods and scenario history
+
+### Added — Operator CLI Wizard
+
+- **Operator CLI** — `src/bin/ed2kia-cli.rs`
+  - Feature-gated behind `v2.1-operator-cli`
+  - Standalone binary using clap + dialoguer for TUI interaction
+  - Guided flow: role selection (Relay, Orchestrator, WASM Node, Auditor)
+  - Config generation with real-time validation
+  - Environment verification (Rust toolchain, disk space)
+  - Health checks against API endpoint
+  - Log export with time range filtering
+
+### Added — Auto-Remediation Pipeline
+
+- **Auto-Remediation Script** — `scripts/auto-remediate.sh`
+  - Feature-gated behind `v2.1-auto-remediation`
+  - `set -euo pipefail`, `trap cleanup EXIT INT TERM`
+  - Active monitoring: `/api/health`, `/api/metrics`, consensus verification, slashing/partition detection
+  - Auto actions: graceful restart, rollback to checkpoint, incident report generation
+  - Optional webhook notifications
+  - Configurable via environment variables
+
+### Changed — Feature Gates
+
+- Added `v2.1-chaos-engine`, `v2.1-operator-cli`, `v2.1-auto-remediation` to `Cargo.toml`
+- Added `dialoguer` and `env_logger` dependencies for CLI wizard
+- Registered `chaos` module in `src/lib.rs` with `#[cfg(feature = "v2.1-chaos-engine")]`
+
+---
+
+## [v2.1.0-sprint14] — 2026-05-20
+
+### 🎉 Sprint Summary
+
+**v2.1.0-sprint14 "Aprendizaje Federado & Alineación Continua"** delivers the federated learning infrastructure triad: **Secure Gradient Aggregation** (`src/federated/aggregator.rs`) with FedAvg weighted by reputation, INT8/FP8 compression, Gaussian noise (ε=1.0, δ=1e-5) for differential privacy, Ed25519 signature verification and divergence threshold rejection (anti-poisoning), **Distributed SAE Training Pipeline** (`src/sae/training_pipeline.rs`) with candle-core compatible training loop (forward → sparsity mask → backward → gradient clipping → compression), automatic checkpointing every N steps and validation hooks (on_step, on_epoch, on_convergence), and **Automated Ethical Compliance Audit** (`scripts/verify-ethical-compliance.sh`) — sequential validation of ethical clause in LICENSE, financial pattern scanning, telemetry absence check, generating `docs/ethical-compliance-report.md`. Zero telemetry, zero financial logic, privacy differential, community weight ownership.
+
+| Artifact | Path | Purpose |
+|----------|------|---------|
+| Federated Aggregator | `src/federated/aggregator.rs` | Secure gradient aggregation + differential privacy (FedAvg, Ed25519, Gaussian noise) |
+| Training Pipeline | `src/sae/training_pipeline.rs` | Distributed SAE training loop with candle-core, checkpointing, hooks |
+| Ethical Audit | `scripts/verify-ethical-compliance.sh` | Automated ethical compliance audit + report generation |
+| Feature Gates | `Cargo.toml` | `v2.1-federated-agg`, `v2.1-sae-training`, `v2.1-ethical-audit` |
+
+### Added — Secure Gradient Aggregation
+
+- **Federated Aggregator** — `src/federated/aggregator.rs`
+  - Feature-gated behind `v2.1-federated-agg`
+  - FedAvg adapted: weighted average by `reputation_score`, INT8/FP8 compression
+  - Gaussian noise calibration (ε=1.0, δ=1e-5) for differential privacy
+  - Ed25519 signature verification for gradient updates
+  - Divergence threshold rejection (anti-poisoning)
+  - `AggregationPayload` and `AggregationResult` with `#[derive(Serialize, Deserialize)]`
+  - Async engine (tokio) for receiving updates from WASM nodes
+
+### Added — Distributed SAE Training Pipeline
+
+- **Training Pipeline** — `src/sae/training_pipeline.rs`
+  - Feature-gated behind `v2.1-sae-training`
+  - Training loop compatible with candle-core/candle-nn
+  - Phases: forward pass → sparsity mask → backward pass → gradient clipping → compression → send to aggregator
+  - Automatic checkpointing (redb or .safetensors partial) every N steps
+  - Validation hooks: `on_step`, `on_epoch`, `on_convergence`
+  - `TrainingConfig` with learning_rate, batch_size, sparsity_threshold, gradient_clip_norm
+  - `TrainingMetrics` with loss, sparsity_ratio, gradient_norm, step_duration_ms
+
+### Added — Automated Ethical Compliance Audit
+
+- **Ethical Compliance Script** — `scripts/verify-ethical-compliance.sh`
+  - Feature-gated behind `v2.1-ethical-audit`
+  - `set -euo pipefail`, `trap cleanup EXIT INT TERM`
+  - Sequential validations: ethical clause in LICENSE, scan for financial patterns, validate no external telemetry
+  - Generate `docs/ethical-compliance-report.md`
+  - Output: 🟢 ÉTICA VALIDADA or 🔴 BLOQUEADO: [infracciones]
+
+### Changed — Feature Gates
+
+- Added `v2.1-federated-agg`, `v2.1-sae-training`, `v2.1-ethical-audit` to `Cargo.toml`
+- Registered `federated` module in `src/lib.rs` with `#[cfg(feature = "v2.1-federated-agg")]`
+- Registered `training_pipeline` in `src/sae` with `#[cfg(feature = "v2.1-sae-training")]`
+
+---
+
 ## [v2.1.0-sprint13] — 2026-05-20
 
 ### 🎉 Sprint Summary

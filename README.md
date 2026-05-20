@@ -6,7 +6,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ethical-blue)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-2021-orange)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/Version-2.1.0-sprint13-yellowgreen)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-2.1.0-sprint15-yellowgreen)](CHANGELOG.md)
 [![Deploy](https://img.shields.io/badge/GitHub%20Pages-Active-brightgreen)](https://ed2kia.github.io/ed2kIA)
 [![Tests](https://img.shields.io/badge/Tests-3038_passing-success)](CHANGELOG.md)
 [![Qwen-Scope](https://img.shields.io/badge/Qwen--Scope--SAE-Integrated-brightgreen)](src/sae/qwen_scope_sae.rs)
@@ -84,6 +84,12 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 | `v2.1-load-testing` | Load Testing — Concurrent WASM node stress tests + metrics capture (p95, throughput, CPU, memory) | ✅ Implementado |
 | `v2.1-fuzzing` | Property-Based Fuzzing — proptest for consensus/reputation/sybil invariants | ✅ Implementado |
 | `v2.1-tauri-bridge` | Tauri Desktop Bridge — Cross-platform client (WASM ↔ Tauri IPC ↔ Rust) | ✅ Implementado |
+| `v2.1-federated-agg` | Federated Aggregation — FedAvg + differential privacy (ε=1.0, δ=1e-5), Ed25519 verification | ✅ Implementado |
+| `v2.1-sae-training` | SAE Training Pipeline — Distributed training loop with candle-core, checkpointing, hooks | ✅ Implementado |
+| `v2.1-ethical-audit` | Ethical Compliance Audit — Automated verification of ethical clause, zero financial logic | ✅ Implementado |
+| `v2.1-chaos-engine` | Chaos Engine — Async fault injection (WASM failure, partition, latency, malicious votes, queue saturation) | ✅ Implementado |
+| `v2.1-operator-cli` | Operator CLI Wizard — Standalone TUI (clap + dialoguer) for guided node setup | ✅ Implementado |
+| `v2.1-auto-remediation` | Auto-Remediation Pipeline — Automated incident response with monitoring, restart, rollback, reporting | ✅ Implementado |
 | `v2.1-governance` | CODEOWNERS + GOVERNANCE §§12-13 — Observability transparency & Pre-Launch Validation | ✅ Implementado |
 | `v2.1-launch-readiness` | Pre-Launch Checklist — Automated 5-phase validation script + readiness report | ✅ Implementado |
 | `v2.1-security-hardening` | wasmtime ≥24.0.7, rustls-webpki ≥0.103.13 | Planificado Q2-Q3 2027 |
@@ -149,7 +155,153 @@ Cliente desktop cross-platform (WASM ↔ Tauri IPC ↔ Rust):
 - **Multi-plataforma:** Windows, Linux, macOS
 - **Build:** Multi-stage Docker, bundles nativos
 
-## 🛡️ Sistema Inmunológico — Defensa contra Data Poisoning
+## 🧠 Aprendizaje Federado & Alineación Continua (Sprint14)
+
+**ed2kIA v2.1.0-sprint14** introduce infraestructura de aprendizaje federado con privacidad diferencial y auditoría ética automatizada:
+
+### Secure Gradient Aggregation — `v2.1-federated-agg`
+
+Agregación segura de gradientes con FedAvg ponderado por reputación y privacidad diferencial:
+
+```bash
+# Verificar compilación del agregador federado
+cargo check --features "v2.1-federated-agg"
+```
+
+- **FedAvg adaptado:** Promedio ponderado por `reputation_score`, compresión INT8/FP8
+- **Privacidad diferencial:** Ruido Gaussiano (ε=1.0, δ=1e-5) calibrado por sensibilidad L-infinito
+- **Verificación Ed25519:** Firmas criptográficas para cada actualización de gradiente
+- **Anti-poisoning:** Rechazo por umbral de divergencia respecto a la media actual
+
+### Distributed SAE Training Pipeline — `v2.1-sae-training`
+
+Pipeline de entrenamiento distribuido compatible con candle-core:
+
+```bash
+# Verificar compilación del pipeline de entrenamiento
+cargo check --features "v2.1-sae-training"
+```
+
+- **Fases:** forward pass → sparsity mask → backward pass → gradient clipping → compresión INT8
+- **Checkpointing automático:** Cada N pasos con estado completo (epoch, step, loss, best_loss)
+- **Hooks de validación:** `on_step`, `on_epoch`, `on_convergence`
+- **Early stopping:** Patiencia configurable + tolerancia de convergencia
+
+### Automated Ethical Compliance — `v2.1-ethical-audit`
+
+Auditoría automatizada de cumplimiento ético:
+
+```bash
+# Ejecutar auditoría ética
+bash scripts/verify-ethical-compliance.sh
+```
+
+- **Cláusula ética:** Validación de patrones éticos en LICENSE
+- **Zero financial logic:** Escaneo de patrones financieros prohibidos en src/
+- **Zero telemetry:** Validación de ausencia de telemetría externa
+- **Reporte:** Generación automática de `docs/ethical-compliance-report.md`
+- **Salida:** 🟢 ÉTICA VALIDADA o 🔴 BLOQUEADO: [infracciones]
+
+```
+┌─────────────────────────────────────────────────────┐
+│  Federated Learning Architecture                    │
+│                                                      │
+│  ┌──────────┐    ┌──────────┐    ┌──────────┐      │
+│  │ WASM Node│    │ WASM Node│    │ WASM Node│      │
+│  │ (Train)  │    │ (Train)  │    │ (Train)  │      │
+│  └────┬─────┘    └────┬─────┘    └────┬─────┘      │
+│       │ gradients     │ gradients     │ gradients   │
+│       │ (Ed25519)     │ (Ed25519)     │ (Ed25519)   │
+│       └───────────────┼───────────────┘             │
+│                      │                              │
+│             ┌────────▼────────┐                     │
+│             │ FederatedAgg    │                     │
+│             │ FedAvg + DP     │                     │
+│             │ (ε=1.0, δ=1e-5) │                     │
+│             └────────┬────────┘                     │
+│                      │ aggregated weights            │
+│             ┌────────▼────────┐                     │
+│             │ SAE Model       │                     │
+│             │ (Community)     │                     │
+│             └─────────────────┘                     │
+└─────────────────────────────────────────────────────┘
+```
+
+## 🛠️ Resiliencia Operativa & Automatización de Respuesta (Sprint15)
+
+**ed2kIA v2.1.0-sprint15** introduce infraestructura de resiliencia operativa para transparencia y respuesta automatizada:
+
+### Chaos Engine — `v2.1-chaos-engine`
+
+Motor asíncrono (tokio) para inyección controlada de fallos en local/testnet:
+
+```bash
+# Verificar compilación del Chaos Engine
+cargo check --features "v2.1-chaos-engine"
+```
+
+- **Escenarios:** WASM node failure, network partition (GossipSub isolation), artificial latency, malicious vote injection, task queue saturation
+- **Control estricto:** Solo activo con `--chaos-mode`, duración limitada, rollback automático, logs detallados
+- **API async:** `activate()`, `rollback()`, `status()`, `shutdown()`
+- **Seguridad:** Cero inyección sin flag explícito, cooldown entre escenarios, historial de eventos
+
+### Operator CLI Wizard — `v2.1-operator-cli`
+
+Binario standalone con interfaz TUI para configuración guiada de nodos:
+
+```bash
+# Construir y ejecutar el wizard
+cargo build --bin ed2kia-cli --features "v2.1-operator-cli"
+./target/debug/ed2kia-cli wizard
+```
+
+- **Selección de rol:** Relay, Orchestrator, WASM Node, Auditor
+- **Generación de config:** Validación en tiempo real, formato TOML/JSON
+- **Verificación de entorno:** Rust toolchain, espacio en disco
+- **Health checks:** Verificación contra endpoint API
+- **Export de logs:** Filtrado por rango temporal
+
+### Auto-Remediation Pipeline — `v2.1-auto-remediation`
+
+Script de respuesta automatizada a incidentes:
+
+```bash
+# Ejecutar monitoreo continuo
+bash scripts/auto-remediate.sh --monitor
+
+# Rollback manual a checkpoint
+bash scripts/auto-remediate.sh --rollback
+
+# Verificación de salud
+bash scripts/auto-remediate.sh --health
+```
+
+- **Monitoreo activo:** `/api/health`, `/api/metrics`, consenso, slashing/partición
+- **Acciones automáticas:** Restart graceful, rollback a checkpoint, generación de reportes
+- **Notificaciones:** Webhooks opcionales (Slack, Discord, etc.)
+- **Configuración:** Variables de entorno (`ED2KIA_API`, `ED2KIA_MAX_RESTARTS`, etc.)
+
+```
+┌─────────────────────────────────────────────────────┐
+│  Operational Resilience Architecture                 │
+│                                                       │
+│  ┌──────────────┐  ┌──────────────┐  ┌───────────┐ │
+│  │ Chaos Engine │  │ CLI Wizard   │  │ Auto-     │ │
+│  │ (Fault      │  │ (Setup &    │  │ Remediate)│ │
+│  │  Injection) │  │  Validate)  │  │           │ │
+│  └──────┬───────┘  └──────┬───────┘  └─────┬─────┘ │
+│         │                 │                │       │
+│         └─────────────────┼────────────────┘       │
+│                    │                                │
+│         ┌──────────▼──────────┐                    │
+│         │  ed2kIA Node       │                    │
+│         │  (Monitored &      │                    │
+│         │   Resilient)       │                    │
+│         └────────────────────┘                    │
+└─────────────────────────────────────────────────────┘
+```
+
+## ️ Sistema Inmunológico — Defensa contra Data Poisoning
 
 **ed2kIA v2.1.0-sprint7** introduce el Sistema Inmunológico, una capa defensiva de tres fases contra Data Poisoning en redes permissionless:
 
