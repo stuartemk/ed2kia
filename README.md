@@ -6,7 +6,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ethical-blue)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-2021-orange)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/Version-2.1.0-sprint12-yellowgreen)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-2.1.0-sprint13-yellowgreen)](CHANGELOG.md)
 [![Deploy](https://img.shields.io/badge/GitHub%20Pages-Active-brightgreen)](https://ed2kia.github.io/ed2kIA)
 [![Tests](https://img.shields.io/badge/Tests-3038_passing-success)](CHANGELOG.md)
 [![Qwen-Scope](https://img.shields.io/badge/Qwen--Scope--SAE-Integrated-brightgreen)](src/sae/qwen_scope_sae.rs)
@@ -81,6 +81,9 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 | `v2.1-stewardship` | Stewardship Dashboard — Alpine.js governance dashboard (Network/Governance/Audit panels) | ✅ Implementado |
 | `v2.1-rfc-pipeline` | RFC Triage Workflow — Auto-label, milestone assign, voting guide comments | ✅ Implementado |
 | `v2.1-mainnet-bootstrap` | Mainnet Bootstrap — Docker Compose launch + healthchecks + pre-launch validation | ✅ Implementado |
+| `v2.1-load-testing` | Load Testing — Concurrent WASM node stress tests + metrics capture (p95, throughput, CPU, memory) | ✅ Implementado |
+| `v2.1-fuzzing` | Property-Based Fuzzing — proptest for consensus/reputation/sybil invariants | ✅ Implementado |
+| `v2.1-tauri-bridge` | Tauri Desktop Bridge — Cross-platform client (WASM ↔ Tauri IPC ↔ Rust) | ✅ Implementado |
 | `v2.1-governance` | CODEOWNERS + GOVERNANCE §§12-13 — Observability transparency & Pre-Launch Validation | ✅ Implementado |
 | `v2.1-launch-readiness` | Pre-Launch Checklist — Automated 5-phase validation script + readiness report | ✅ Implementado |
 | `v2.1-security-hardening` | wasmtime ≥24.0.7, rustls-webpki ≥0.103.13 | Planificado Q2-Q3 2027 |
@@ -89,6 +92,62 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 | `v2.1-enterprise` | SSO, K8s Operator, Compliance | Draft |
 
 > **Nota:** Los feature gates `v2.1-*` NO están incluidos en `default = ["stable"]`. Requieren activación explícita vía RFC comunitario.
+
+## ⚡ Hardening & Cross-Platform (Sprint13)
+
+**ed2kIA v2.1.0-sprint13** introduce infraestructura de hardening para escalabilidad y resiliencia de mainnet:
+
+### Load Testing — `v2.1-load-testing`
+
+Pruebas de estrés concurrentes con nodos WASM simulados:
+
+```bash
+# Ejecutar stress tests con control de recursos
+cargo test --test stress_test --features "v2.1-load-testing" -- --test-threads=4
+```
+
+- **Métricas:** p95 latencia, throughput (tasks/s), footprint de memoria, uso de CPU, tasa de slashing
+- **Control de recursos:** `--test-threads=4`, límites de iteración para CI, `tokio::time::timeout`
+
+### Property-Based Fuzzing — `v2.1-fuzzing`
+
+Fuzzing basado en propiedades con `proptest` para invariantes criptográficos:
+
+```bash
+# Ejecuar fuzz tests (1000 casos, single-threaded)
+cargo test --test consensus_fuzz --features "v2.1-fuzzing,v2.1-consensus-engine,v2.1-reputation-system,v2.1-sybil-micropow,v1.7-sprint1" -- --test-threads=1
+```
+
+- **Consensus:** Determinismo, tolerancia Byzantine (≤f/3 maliciosos)
+- **Reputation:** Monotonía de scores, ban persistente sin unban explícito
+- **Sybil:** Rechazo de nonces inválidos, rate-limiting activo
+
+### Tauri Desktop Bridge — `v2.1-tauri-bridge`
+
+Cliente desktop cross-platform (WASM ↔ Tauri IPC ↔ Rust):
+
+```
+┌──────────────────────────────────────────────────┐
+│  Frontend (web/)                                 │
+│  ┌─────────────┐  ┌──────────────────────────┐  │
+│  │ Atlas 3D    │  │ Stewardship Dashboard    │  │
+│  │ Visualizer  │  │ (Alpine.js)              │  │
+│  └──────┬──────┘  └────────────┬─────────────┘  │
+│         │                      │                 │
+│         └──────────┬───────────┘                 │
+│                    │ Tauri IPC                    │
+├────────────────────┼─────────────────────────────┤
+│  Backend (Rust)    │                              │
+│  ┌─────────────────▼────────────────────────┐   │
+│  │ Commands: start_worker, stop_worker,     │   │
+│  │         sync_atlas, get_merit_proof      │   │
+│  └──────────────────────────────────────────┘   │
+└──────────────────────────────────────────────────┘
+```
+
+- **Sandboxed:** Sin telemetría externa, permisos mínimos
+- **Multi-plataforma:** Windows, Linux, macOS
+- **Build:** Multi-stage Docker, bundles nativos
 
 ## 🛡️ Sistema Inmunológico — Defensa contra Data Poisoning
 

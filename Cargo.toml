@@ -99,6 +99,9 @@ reqwest = { version = "0.11", features = ["json", "stream"] }
 # Bootstrap - Fase 5
 fastrand = "2.1"
 
+# Property-based fuzzing (Sprint13 — v2.1-fuzzing)
+proptest = { version = "1.5", optional = true }
+
 # WASM Browser Node dependencies (optional, feature-gated)
 wasm-bindgen = { version = "0.2", optional = true }
 wasm-bindgen-futures = { version = "0.4", optional = true }
@@ -327,6 +330,24 @@ stable = [
 "v2.1-rfc-pipeline" = []
 "v2.1-mainnet-bootstrap" = []
 
+# v2.1 Load Testing — Concurrent WASM node stress tests (Sprint13)
+# tests/load/stress_test.rs: N concurrent nodes, SAE dummy inference, consensus under load
+# Metrics: p95 latency, throughput (tasks/s), memory footprint, CPU usage, slashing rate
+# Resource control: --test-threads=4, iteration limits for CI, tokio::time::timeout
+"v2.1-load-testing" = []
+
+# v2.1 Fuzzing — Property-based fuzzing with proptest (Sprint13)
+# tests/fuzz/consensus_fuzz.rs: Consensus determinism, Byzantine tolerance,
+# reputation monotonicity, Sybil resistance invariants
+# CI config: proptest::config::FuzzyConfig::default().with_cases(1000)
+"v2.1-fuzzing" = ["proptest"]
+
+# v2.1 Tauri Bridge — Cross-platform desktop client (Sprint13)
+# src-tauri/: Tauri v2 scaffold, integrate with web/ (Atlas 3D + Stewardship Dashboard)
+# Backend commands: start_worker, sync_atlas, get_merit_proof, stop_worker
+# Sandboxed, no external telemetry, minimal permissions
+"v2.1-tauri-bridge" = []
+
 # ─── Hardware Acceleration ───
 cpu = []
 cuda = ["candle-core/cuda", "candle-nn/cuda"]
@@ -393,7 +414,6 @@ criterion = { version = "0.5", features = ["html_reports"] }
 tower = { version = "0.5", features = ["util"] }
 # WASM encoder for generating valid test modules
 wasm-encoder = "0.248"
-# Cross-compilation - Fase 3 (usado vía `cross` crate, no como dep directa)
 
 
 [build-dependencies]
@@ -417,10 +437,11 @@ strip = true
 opt-level = 0
 debug = true
 
-# Stress test for load testing (tests/load/)
+# Stress test for load testing (tests/load/) — feature-gated v2.1-load-testing
 [[test]]
 name = "stress_test"
 path = "tests/load/stress_test.rs"
+required-features = ["v2.1-load-testing"]
 
 # v1.1.0 Sprint 1 E2E integration tests
 [[test]]
@@ -680,3 +701,9 @@ required-features = ["v1.6-sprint3"]
 name = "e2e_consensus_test"
 path = "tests/e2e_consensus_test.rs"
 required-features = ["v2.1-reputation-system", "v2.1-task-manager"]
+
+# v2.1.0-sprint13 Property-Based Fuzzing — Consensus, Reputation & Sybil invariants
+[[test]]
+name = "consensus_fuzz"
+path = "tests/fuzz/consensus_fuzz.rs"
+required-features = ["v2.1-fuzzing", "v2.1-consensus-engine", "v2.1-reputation-system", "v2.1-sybil-micropow", "v1.7-sprint1"]

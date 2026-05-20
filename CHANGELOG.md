@@ -6,6 +6,56 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.1.0-sprint13] — 2026-05-20
+
+### 🎉 Sprint Summary
+
+**v2.1.0-sprint13 "Escalabilidad & Hardening de Mainnet"** delivers the hardening infrastructure triad: **Load Testing** (`tests/load/stress_test.rs`) with concurrent WASM node simulation, SAE dummy inference, consensus under load and metrics capture (p95 latency, throughput, memory, CPU, slashing rate), **Property-Based Fuzzing** (`tests/fuzz/consensus_fuzz.rs`) with proptest for consensus determinism, Byzantine tolerance, reputation monotonicity and Sybil resistance invariants, and **Tauri Desktop Bridge** (`src-tauri/`) — a cross-platform desktop scaffold integrating web/ frontend (Atlas 3D + Stewardship Dashboard) with Rust backend commands (`start_worker`, `sync_atlas`, `get_merit_proof`, `stop_worker`). Zero telemetry, zero financial logic, full transparency.
+
+| Artifact | Path | Purpose |
+|----------|------|---------|
+| Load Testing | `tests/load/stress_test.rs` | Concurrent WASM node stress tests + metrics capture |
+| Fuzz Testing | `tests/fuzz/consensus_fuzz.rs` | Property-based fuzzing (proptest) for consensus/reputation/sybil |
+| Tauri Config | `src-tauri/tauri.conf.json` | Tauri v2 config with security CSP + bundle settings |
+| Tauri Cargo | `src-tauri/Cargo.toml` | Tauri v2 Cargo manifest + dependencies |
+| Tauri Main | `src-tauri/src/main.rs` | Entry point + backend commands (start_worker, sync_atlas, get_merit_proof, stop_worker) |
+| Feature Gates | `Cargo.toml` | `v2.1-load-testing`, `v2.1-fuzzing`, `v2.1-tauri-bridge` |
+
+### Added — Load Testing
+
+- **Stress Test Enhancement** — `tests/load/stress_test.rs`
+  - Feature-gated behind `v2.1-load-testing`
+  - N concurrent WASM nodes via `tokio::spawn`
+  - SAE dummy inference tasks + consensus under load
+  - Metrics: p95 latency, throughput (tasks/s), memory footprint, CPU usage, slashing rate
+  - Resource control: `--test-threads=4`, iteration limits for CI, `tokio::time::timeout`
+
+### Added — Property-Based Fuzzing
+
+- **Consensus Fuzz Tests** — `tests/fuzz/consensus_fuzz.rs`
+  - Feature-gated behind `v2.1-fuzzing` (activates `proptest` dependency)
+  - Consensus properties: determinism, empty input, single result, epsilon tolerance, Byzantine tolerance
+  - Reputation properties: never negative without slashing, ban persistent, score monotonicity
+  - Sybil properties: valid solution verifies, invalid nonce rejected, rate limiting active, difficulty bounds
+  - CI config: `proptest::config::FuzzyConfig::default().with_cases(1000)`
+
+### Added — Tauri Desktop Bridge
+
+- **Tauri v2 Scaffold** — `src-tauri/`
+  - `tauri.conf.json`: Product "ed2kIA Desktop", v2.1.0-sprint13, security CSP, window 1200x800
+  - `Cargo.toml`: Tauri v2 + serde + tokio + reqwest dependencies
+  - `src/main.rs`: Entry point + 4 backend commands (`start_worker`, `stop_worker`, `sync_atlas`, `get_merit_proof`)
+  - `build.rs`: Tauri build script
+  - Architecture: WASM ↔ Tauri IPC ↔ MainThread (Rust)
+  - Sandboxed, no external telemetry, minimal permissions
+
+### Changed — Feature Gates
+
+- Added `v2.1-load-testing`, `v2.1-fuzzing`, `v2.1-tauri-bridge` to `Cargo.toml`
+- Added `proptest` as optional dependency (activated by `v2.1-fuzzing`)
+
+---
+
 ## [v2.1.0-sprint12] — 2026-05-20
 
 ### 🎉 Sprint Summary

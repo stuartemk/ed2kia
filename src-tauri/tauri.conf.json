@@ -1,0 +1,47 @@
+{
+  "productName": "ed2kIA Desktop",
+  "version": "2.1.0-sprint13",
+  "identifier": "com.ed2kia.desktop",
+  "build": {
+    "frontendDist": "../web",
+    "devUrl": "http://localhost:3000",
+    "frontendDistIsNative": false
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "ed2kIA — Red de la Verdad",
+        "width": 1200,
+        "height": 800,
+        "resizable": true,
+        "fullscreen": false,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js; style-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:*",
+      "dangerousRemoteDomainIpcAccess": []
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [],
+    "copyright": "Apache 2.0 + Ethical Use Clause",
+    "category": "DeveloperTool",
+    "shortDescription": "Decentralized interpretability network desktop client",
+    "longDescription": "ed2kIA Desktop — Cross-platform client for the decentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope). Zero telemetry, zero financial logic, full transparency.",
+    "externalBin": [],
+    "linux": {
+      "deb": {
+        "depends": []
+      }
+    }
+  },
+  "plugins": {
+    "shell": {
+      "open": true
+    }
+  }
+}
