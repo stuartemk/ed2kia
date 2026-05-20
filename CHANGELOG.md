@@ -6,6 +6,64 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.1.0-sprint16.1] — 2026-05-20
+
+### 🎉 Sprint Summary
+
+**v2.1.0-sprint16.1 "QLoRA/GGUF Implementation"** delivers the full implementation of the QLoRA/GGUF module: GGUF memory-mapped loading with SHA256 validation, QLoRA forward pass via candle-core (`W' = W + B @ A`), and compressed P2P payloads with zstd for GossipSub distribution. 33/33 unit tests passing, zero clippy warnings.
+
+| Artifact | Path | Purpose |
+|----------|------|---------|
+| GGUF Loader | `src/qlora_gguf/loader.rs` | Memory-mapped GGUF parsing with SHA256 checksums, magic byte validation |
+| QLoRA Adapter | `src/qlora_gguf/adapter.rs` | Low-rank adaptation forward pass `x @ W + x @ A @ B` via candle-core |
+| QLoRA Payload | `src/qlora_gguf/payload.rs` | zstd compression, GossipSub serialization, MAX_PAYLOAD_BYTES validation |
+| Public API | `src/qlora_gguf/mod.rs` | Clean exports with feature gate `v2.1-qlora-gguf` |
+
+### Added — GGUF Loader
+
+- **GgufLoader** — `src/qlora_gguf/loader.rs`
+  - GGUF magic byte validation ("GGUF" / 0x47475546)
+  - SHA256 checksum computation and validation
+  - Memory-mapped loading via `memmap2` (feature-gated `v2.1-qlora-gguf`)
+  - `GgufModelInfo` with path, version, architecture, num_layers, embedding_dim, size_bytes, sha256
+  - `GgufBaseModel` with mmap-backed immutable access
+  - 9 unit tests
+
+### Added — QLoRA Adapter
+
+- **QloraAdapter** — `src/qlora_gguf/adapter.rs`
+  - Low-rank matrices A (d_model × r) and B (r × d_model) where `r << d_model`
+  - Forward pass: `x + (alpha/rank) * x @ A @ B` via candle-core `matmul()`
+  - `compute_delta()` returns `(alpha/rank) * A @ B` for weight consolidation
+  - Quantization types: Int8 (U8), Fp8 (FP16 fallback), Fp16, Fp32
+  - bincode serialization (`to_bytes` / `from_bytes`)
+  - `validate()` checks rank > 0, alpha in [0, 1], dimension consistency
+  - 14 unit tests including `W' = W + B @ A` validation with tolerance 1e-5
+
+### Added — QLoRA Payload
+
+- **QloraPayload** — `src/qlora_gguf/payload.rs`
+  - zstd compression (feature-gated `v2.1-qlora-gguf`) with fallback
+  - `MAX_PAYLOAD_BYTES = 1_048_576` (1 MB) validation
+  - GossipSub wire format: `[adapter_id][base_sha256][original_size][compressed_data]`
+  - `to_gossipsub_bytes()` / `from_gossipsub_bytes()` for P2P distribution
+  - `compression_ratio()` tracking
+  - 12 unit tests including compression roundtrip and GossipSub serialization
+
+### Changed — Dependencies
+
+- Added `memmap2` 0.9 (optional, feature-gated)
+- Added `zstd` 0.13 (optional, feature-gated)
+- Updated feature gate: `"v2.1-qlora-gguf" = ["memmap2", "zstd"]`
+
+### Validation
+
+- `cargo check --lib --features v2.1-qlora-gguf` ✅ PASSED
+- `cargo test --lib --features v2.1-qlora-gguf qlora_gguf` ✅ 33/33 PASSED
+- `cargo clippy --lib --features v2.1-qlora-gguf` ✅ PASSED (zero warnings)
+
+---
+
 ## [v2.1.0-sprint16] — 2026-05-20
 
 ### 🎉 Sprint Summary

@@ -106,6 +106,10 @@ env_logger = { version = "0.11", optional = true }
 # Property-based fuzzing (Sprint13 — v2.1-fuzzing)
 proptest = { version = "1.5", optional = true }
 
+# QLoRA/GGUF (Sprint16.1 — v2.1-qlora-gguf)
+memmap2 = { version = "0.9", optional = true }
+zstd = { version = "0.13", optional = true }
+
 # WASM Browser Node dependencies (optional, feature-gated)
 wasm-bindgen = { version = "0.2", optional = true }
 wasm-bindgen-futures = { version = "0.4", optional = true }
@@ -388,7 +392,7 @@ stable = [
 # v2.1 QLoRA/GGUF — Quantized LoRA adapters over immutable GGUF base models (Sprint16)
 # src/qlora_gguf/: GGUF parsing (loader.rs), QLoRA diff application (adapter.rs),
 # KB/MB compression for GossipSub (payload.rs). Law 3: Zero computational waste.
-"v2.1-qlora-gguf" = []
+"v2.1-qlora-gguf" = ["memmap2", "zstd"]
 
 # v2.1 Proof of Comprehension — Cryptographic proof of useful work via SAE activations (Sprint16)
 # src/proof_of_comprehension/: SAE activation batches (task.rs), gradient validation,
