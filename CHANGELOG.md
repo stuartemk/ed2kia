@@ -6,6 +6,95 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.1.0-sprint16.2] — 2026-05-20
+
+### 🎉 Sprint Summary
+
+**v2.1.0-sprint16.2 "Entrenamiento Distribuido 100% & Robustez BFT"** delivers hierarchical aggregation committees with reputation-based and VRF-based selectors, staleness-aware gradient weighting with exponential decay, and BFT-tolerant gradient aggregation using coordinate-wise median with MAD-based outlier filtering. 48/48 unit tests passing, zero clippy warnings.
+
+| Artifact | Path | Purpose |
+|----------|------|---------|
+| Committees | `src/federated/committees.rs` | Hierarchical committee selection (Reputation + VRF), LocalAggregator, GlobalMesh |
+| Staleness | `src/federated/staleness.rs` | Staleness-aware weight decay `w = 1/(1+tau)^alpha`, StalenessConfig |
+| BFT Aggregator | `src/federated/bft_aggregator.rs` | Coordinate-wise median, Multi-Krum selection, MAD-based outlier filtering |
+| Public API | `src/federated/mod.rs` | Clean exports with feature gates `v2.1-agg-committees`, `v2.1-staleness-aware`, `v2.1-bft-aggregation` |
+
+### Added — Hierarchical Committees
+
+- **ReputationSelector** — `src/federated/committees.rs`
+  - Top-N node selection sorted descending by reputation score
+  - Empty pool and insufficient pool error handling
+  - 5 unit tests
+
+- **VrfSelector** — `src/federated/committees.rs`
+  - Deterministic VRF-based selection with Fisher-Yates shuffle
+  - Seed-based reproducibility for auditability
+  - 4 unit tests including determinism verification
+
+- **LocalAggregator** — `src/federated/committees.rs`
+  - Weighted gradient aggregation with fan-out limits
+  - 3 unit tests
+
+- **GlobalMesh** — `src/federated/committees.rs`
+  - Committee registry with max-committee tracking
+  - Register/unregister lifecycle management
+  - 3 unit tests
+
+### Added — Staleness-Aware Weighting
+
+- **apply_staleness_decay** — `src/federated/staleness.rs`
+  - Exponential decay: `w = 1 / (1 + tau)^alpha` where `tau = global_version - local_version`
+  - Weight bounds validation [0.0, 1.0]
+  - 10 unit tests covering decay curves and edge cases
+
+- **StalenessConfig** — `src/federated/staleness.rs`
+  - Configurable alpha, min_weight, global_version
+  - `evaluate()` for per-node weight computation
+  - `advance_version()` for epoch progression
+  - 8 unit tests
+
+- **weight_gradients** — `src/federated/staleness.rs`
+  - Element-wise gradient scaling by staleness weight
+  - 3 unit tests
+
+### Added — BFT Aggregation
+
+- **coordinate_wise_median** — `src/federated/bft_aggregator.rs`
+  - Dimension-wise median computation tolerating up to 1/3 Byzantine gradients
+  - Dimension mismatch validation
+  - 7 unit tests
+
+- **multi_krum_select** — `src/federated/bft_aggregator.rs`
+  - Multi-Krum gradient selection based on pairwise Euclidean distances
+  - Requires `2*m+1` minimum gradients where `m` is number of Byzantine nodes
+  - 2 unit tests
+
+- **filter_outliers** — `src/federated/bft_aggregator.rs`
+  - MAD (Median Absolute Deviation) based outlier rejection with 1.4826 normalization factor
+  - Configurable sigma threshold (default 3.0)
+  - Robust to up to 50% outliers in the dataset
+  - 2 unit tests including Byzantine rejection verification
+
+- **BftAggregator** — `src/federated/bft_aggregator.rs`
+  - Full pipeline: outlier filtering → coordinate-wise median
+  - `BftConfig` with outlier_sigma, max_byzantine_fraction, min_valid_gradients
+  - 2 unit tests
+
+### Changed — Algorithm Improvements
+
+- Replaced std-dev based outlier filtering with MAD-based approach for Byzantine robustness
+- Fixed Fisher-Yates shuffle termination (missing index decrement)
+- Fixed ReputationSelector sort order (ascending → descending)
+
+### Validation
+
+- `cargo check`: ✅ PASSED (0 errors)
+- `cargo test`: ✅ PASSED (48/48 tests)
+- `cargo clippy`: ✅ PASSED (0 warnings with `-D warnings`)
+- Feature gates: `v2.1-agg-committees`, `v2.1-staleness-aware`, `v2.1-bft-aggregation`
+
+---
+
 ## [v2.1.0-sprint16.1] — 2026-05-20
 
 ### 🎉 Sprint Summary

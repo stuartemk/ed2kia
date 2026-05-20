@@ -128,7 +128,12 @@ pub mod sae {
 // ============================================================================
 
 /// Federated Learning — Secure gradient aggregation with differential privacy
-#[cfg(feature = "v2.1-federated-agg")]
+#[cfg(any(
+    feature = "v2.1-federated-agg",
+    feature = "v2.1-agg-committees",
+    feature = "v2.1-staleness-aware",
+    feature = "v2.1-bft-aggregation"
+))]
 pub mod federated;
 
 /// Tensor flow and consciousness bridge

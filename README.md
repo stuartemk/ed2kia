@@ -6,9 +6,9 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ethical-blue)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-2021-orange)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/Version-2.1.0-sprint16.1-yellowgreen)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-2.1.0-sprint16.2-yellowgreen)](CHANGELOG.md)
 [![Deploy](https://img.shields.io/badge/GitHub%20Pages-Active-brightgreen)](https://ed2kia.github.io/ed2kIA)
-[![Tests](https://img.shields.io/badge/Tests-3071_passing-success)](CHANGELOG.md)
+[![Tests](https://img.shields.io/badge/Tests-3119_passing-success)](CHANGELOG.md)
 [![Qwen-Scope](https://img.shields.io/badge/Qwen--Scope--SAE-Integrated-brightgreen)](src/sae/qwen_scope_sae.rs)
 [![Coverage](https://img.shields.io/badge/Coverage-≥80%25-tracking)](release/v2.0.0-stable/final-signoff.json)
 [![OSSF](https://img.shields.io/badge/OSSF-8.5%2F10-passing)](security/audit_v2.0_sprint2.md)
@@ -92,6 +92,9 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 | `v2.1-auto-remediation` | Auto-Remediation Pipeline — Automated incident response with monitoring, restart, rollback, reporting | ✅ Implementado |
 | `v2.1-governance` | CODEOWNERS + GOVERNANCE §§12-13 — Observability transparency & Pre-Launch Validation | ✅ Implementado |
 | `v2.1-launch-readiness` | Pre-Launch Checklist — Automated 5-phase validation script + readiness report | ✅ Implementado |
+| `v2.1-agg-committees` | Hierarchical Committees — Reputation-based + VRF-based selectors, LocalAggregator, GlobalMesh | ✅ Implementado (14 tests) |
+| `v2.1-staleness-aware` | Staleness-Aware Weighting — Exponential decay `w=1/(1+tau)^alpha`, StalenessConfig | ✅ Implementado (18 tests) |
+| `v2.1-bft-aggregation` | BFT Aggregation — Coordinate-wise median, Multi-Krum, MAD-based outlier filtering | ✅ Implementado (16 tests) |
 | `v2.1-qlora-gguf` | QLoRA/GGUF — GGUF mmap loader, QLoRA forward pass, zstd P2P payloads (Law 3) | ✅ Implementado (33 tests) |
 | `v2.1-proof-of-comprehension` | Proof of Comprehension — Cryptographic proof of useful work via SAE activations (Law 2) | 🏗️ Scaffold (Sprint16) |
 | `v2.1-stuartian-filter` | Stuartian Filter — Deterministic alignment filter with KL divergence detection (Law 2) | 🏗️ Scaffold (Sprint16) |

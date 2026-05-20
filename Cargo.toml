@@ -409,6 +409,14 @@ stable = [
 # reputation/state CRDTs (crdt.rs). Law 5: Multiple possibilities, eventual consistency.
 "v2.1-async-gossip-crdt" = []
 
+# v2.1 Distributed Training — Hierarchical committees, staleness-aware weighting & BFT aggregation (Sprint16.2)
+# src/federated/committees.rs: CommitteeSelector trait, LocalAggregator, GlobalMesh topology (Law 3)
+# src/federated/staleness.rs: Staleness decay w = 1/(1+tau)^alpha for async convergence (Law 2)
+# src/federated/bft_aggregator.rs: Coordinate-wise Median + Multi-Krum BFT aggregation (Law 2)
+"v2.1-agg-committees" = []
+"v2.1-staleness-aware" = []
+"v2.1-bft-aggregation" = []
+
 # ─── Hardware Acceleration ───
 cpu = []
 cuda = ["candle-core/cuda", "candle-nn/cuda"]
