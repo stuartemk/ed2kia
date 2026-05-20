@@ -955,6 +955,30 @@ pub mod observability;
 #[cfg(feature = "v2.1-chaos-engine")]
 pub mod chaos;
 
+// ============================================================================
+// Sprint16: Kernel Estuardiano & Arquitectura v2.1
+// ============================================================================
+
+/// QLoRA/GGUF — Quantized LoRA adapters over immutable GGUF base models (Sprint16)
+/// **Stuartian Law 3:** Cero desperdicio computacional, payloads ≤MB.
+#[cfg(feature = "v2.1-qlora-gguf")]
+pub mod qlora_gguf;
+
+/// Proof of Comprehension — Cryptographic proof of useful work via SAE activations (Sprint16)
+/// **Stuartian Law 2:** SAEs, validación de gradientes, auditoría transparente.
+#[cfg(feature = "v2.1-proof-of-comprehension")]
+pub mod proof_of_comprehension;
+
+/// Stuartian Filter — Deterministic alignment filter with KL divergence (Sprint16)
+/// **Stuartian Law 2:** Detección de divergencia, rechazo determinista.
+#[cfg(feature = "v2.1-stuartian-filter")]
+pub mod stuartian_filter;
+
+/// Async Gossip with CRDTs — Partition-tolerant GossipSub (Sprint16)
+/// **Stuartian Law 5:** Async, tolerancia a particiones, CRDTs, eventual consistency.
+#[cfg(feature = "v2.1-async-gossip-crdt")]
+pub mod async_gossip;
+
 #[cfg(test)]
 mod tests {
     use super::*;

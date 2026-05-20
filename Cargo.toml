@@ -383,6 +383,28 @@ stable = [
 # graceful restart, rollback to checkpoint, incident report generation, webhooks.
 "v2.1-auto-remediation" = []
 
+# ─── Sprint16: Kernel Estuardiano & Arquitectura v2.1 ───
+
+# v2.1 QLoRA/GGUF — Quantized LoRA adapters over immutable GGUF base models (Sprint16)
+# src/qlora_gguf/: GGUF parsing (loader.rs), QLoRA diff application (adapter.rs),
+# KB/MB compression for GossipSub (payload.rs). Law 3: Zero computational waste.
+"v2.1-qlora-gguf" = []
+
+# v2.1 Proof of Comprehension — Cryptographic proof of useful work via SAE activations (Sprint16)
+# src/proof_of_comprehension/: SAE activation batches (task.rs), gradient validation,
+# cryptographic proof verification (verifier.rs). Law 2: Transparent audit.
+"v2.1-proof-of-comprehension" = []
+
+# v2.1 Stuartian Filter — Deterministic alignment filter with KL divergence detection (Sprint16)
+# src/stuartian_filter/: KL divergence monitoring (divergence.rs), deterministic rejection
+# with reputation penalty (slashing.rs). Law 2: Error recognition.
+"v2.1-stuartian-filter" = []
+
+# v2.1 Async Gossip with CRDTs — Partition-tolerant GossipSub with conflict-free convergence (Sprint16)
+# src/async_gossip/: libp2p GossipSub config (mesh.rs), SQLite/redb offline cache (cache.rs),
+# reputation/state CRDTs (crdt.rs). Law 5: Multiple possibilities, eventual consistency.
+"v2.1-async-gossip-crdt" = []
+
 # ─── Hardware Acceleration ───
 cpu = []
 cuda = ["candle-core/cuda", "candle-nn/cuda"]

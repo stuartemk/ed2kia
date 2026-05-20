@@ -6,7 +6,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ethical-blue)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-2021-orange)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/Version-2.1.0-sprint15-yellowgreen)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-2.1.0-sprint16-yellowgreen)](CHANGELOG.md)
 [![Deploy](https://img.shields.io/badge/GitHub%20Pages-Active-brightgreen)](https://ed2kia.github.io/ed2kIA)
 [![Tests](https://img.shields.io/badge/Tests-3038_passing-success)](CHANGELOG.md)
 [![Qwen-Scope](https://img.shields.io/badge/Qwen--Scope--SAE-Integrated-brightgreen)](src/sae/qwen_scope_sae.rs)
@@ -92,12 +92,66 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 | `v2.1-auto-remediation` | Auto-Remediation Pipeline — Automated incident response with monitoring, restart, rollback, reporting | ✅ Implementado |
 | `v2.1-governance` | CODEOWNERS + GOVERNANCE §§12-13 — Observability transparency & Pre-Launch Validation | ✅ Implementado |
 | `v2.1-launch-readiness` | Pre-Launch Checklist — Automated 5-phase validation script + readiness report | ✅ Implementado |
+| `v2.1-qlora-gguf` | QLoRA/GGUF — Quantized LoRA adapters over immutable GGUF base models (Law 3) | 🏗️ Scaffold (Sprint16) |
+| `v2.1-proof-of-comprehension` | Proof of Comprehension — Cryptographic proof of useful work via SAE activations (Law 2) | 🏗️ Scaffold (Sprint16) |
+| `v2.1-stuartian-filter` | Stuartian Filter — Deterministic alignment filter with KL divergence detection (Law 2) | 🏗️ Scaffold (Sprint16) |
+| `v2.1-async-gossip-crdt` | Async Gossip with CRDTs — Partition-tolerant GossipSub with conflict-free convergence (Law 5) | 🏗️ Scaffold (Sprint16) |
 | `v2.1-security-hardening` | wasmtime ≥24.0.7, rustls-webpki ≥0.103.13 | Planificado Q2-Q3 2027 |
 | `v2.1-gui` | GUI Bridge, Mobile, 3D Visualizer | Draft |
 | `v2.1-zkp-v3` | ZKP v3, Recursive Prover, Cross-Chain | Draft |
 | `v2.1-enterprise` | SSO, K8s Operator, Compliance | Draft |
 
 > **Nota:** Los feature gates `v2.1-*` NO están incluidos en `default = ["stable"]`. Requieren activación explícita vía RFC comunitario.
+
+## 🧬 Kernel Estuardiano & Arquitectura v2.1 (Sprint16)
+
+**ed2kIA v2.1.0-sprint16** internaliza el Kernel Estuardiano como ley base: 5 leyes estuardianas mapeadas directamente a decisiones técnicas a través de 4 módulos feature-gated.
+
+### Leyes Estuardianas → Decisiones Técnicas
+
+| Ley | Principio | Decisión Técnica |
+|-----|-----------|------------------|
+| Law 1 (Diversidad) | P2P puro, sin maestros | GossipSub mesh dinámico, sin nodos maestros |
+| Law 2 (Error) | Reconocimiento de error | SAEs, validación de gradientes, auditoría transparente |
+| Law 3 (Holística) | Cero desperdicio computacional | QLoRA/GGUF, payloads ≤MB, eficiencia termodinámica |
+| Law 4 (Simbiosis) | Existencia simbiótica | WASM en navegador, hardware modesto, fricción cero |
+| Law 5 (Posibilidades) | Múltiples posibilidades | Async, tolerancia a particiones, CRDTs, eventual consistency |
+
+### Flujo Arquitectónico
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Kernel Estuardiano v2.1                     │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌──────────────┐    ┌──────────────────┐    ┌──────────────┐  │
+│  │ QLoRA/GGUF   │───▶│ Stuartian Filter │───▶│ Async Gossip │  │
+│  │ (Law 3)      │    │ (Law 2)          │    │ + CRDTs      │  │
+│  │              │    │                  │    │ (Law 5)      │  │
+│  │ GGUF base    │    │ KL divergence    │    │ GossipSub    │  │
+│  │ QLoRA diff   │    │ Alignment check  │    │ Offline cache│  │
+│  │ ≤MB payload  │    │ Reputation slash │    │ CRDT merge   │  │
+│  └──────────────┘    └──────────────────┘    └──────────────┘  │
+│         │                    │                    │             │
+│         ▼                    ▼                    ▼             │
+│  ┌────────────────────────────────────────────────────────┐    │
+│  │         Proof of Comprehension (Law 2)                 │    │
+│  │  SAE activation batches → Gradient validation → Proof │    │
+│  └────────────────────────────────────────────────────────┘    │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Módulos v2.1
+
+| Módulo | Feature Gate | Archivos | Estado |
+|--------|-------------|----------|--------|
+| QLoRA/GGUF | `v2.1-qlora-gguf` | `loader.rs`, `adapter.rs`, `payload.rs` | 🏗️ Scaffold |
+| Proof of Comprehension | `v2.1-proof-of-comprehension` | `task.rs`, `verifier.rs` | 🏗️ Scaffold |
+| Stuartian Filter | `v2.1-stuartian-filter` | `divergence.rs`, `slashing.rs` | 🏗️ Scaffold |
+| Async Gossip + CRDTs | `v2.1-async-gossip-crdt` | `mesh.rs`, `cache.rs`, `crdt.rs` | 🏗️ Scaffold |
+
+> **Nota:** Los módulos se encuentran en fase de scaffold (estructura pura, cero lógica de negocio). La implementación módulo por módulo se realizará en sprints subsiguientes (Sprint16.1 → Sprint16.4).
 
 ## ⚡ Hardening & Cross-Platform (Sprint13)
 

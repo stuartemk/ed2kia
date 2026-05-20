@@ -6,6 +6,66 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.1.0-sprint16] — 2026-05-20
+
+### 🎉 Sprint Summary
+
+**v2.1.0-sprint16 "Kernel Estuardiano & Refactorización Estructural"** delivers the Stuartian Kernel architecture proposal: 5 laws mapping directly to technical decisions across 4 new feature-gated modules. **QLoRA/GGUF** (`src/qlora_gguf/`) — Law 3 (Zero computational waste) — GGUF base model parsing, QLoRA diff application, KB/MB compression for GossipSub distribution, **Proof of Comprehension** (`src/proof_of_comprehension/`) — Law 2 (Error recognition) — SAE activation batch tasks, gradient validation, cryptographic proof of useful work as alternative to PoW, **Stuartian Filter** (`src/stuartian_filter/`) — Law 2 (Error recognition) — KL divergence detection for alignment monitoring, deterministic rejection with reputation penalty (slashing), and **Async Gossip with CRDTs** (`src/async_gossip/`) — Law 5 (Multiple possibilities) — libp2p GossipSub mesh configuration, offline cache with sync-on-reconnect, conflict-free reputation/state convergence via version vectors. Architecture scaffold only, zero business logic, ready for module-by-module implementation.
+
+| Artifact | Path | Purpose |
+|----------|------|---------|
+| QLoRA/GGUF | `src/qlora_gguf/` | Quantized LoRA adapters over immutable GGUF base models (Law 3) |
+| Proof of Comprehension | `src/proof_of_comprehension/` | Cryptographic proof of useful work via SAE activations (Law 2) |
+| Stuartian Filter | `src/stuartian_filter/` | Deterministic alignment filter with KL divergence detection (Law 2) |
+| Async Gossip + CRDTs | `src/async_gossip/` | Partition-tolerant GossipSub with conflict-free convergence (Law 5) |
+| Feature Gates | `Cargo.toml` | `v2.1-qlora-gguf`, `v2.1-proof-of-comprehension`, `v2.1-stuartian-filter`, `v2.1-async-gossip-crdt` |
+
+### Added — QLoRA/GGUF (Scaffold)
+
+- **QLoRA/GGUF Module** — `src/qlora_gguf/`
+  - Feature-gated behind `v2.1-qlora-gguf`
+  - **Stuartian Law 3:** Cero desperdicio computacional, payloads ≤MB
+  - `GgufLoader` — GGUF model parsing and validation (`loader.rs`)
+  - `QloraAdapter` — QLoRA diff application over immutable base models (`adapter.rs`)
+  - `QloraPayload` — KB/MB compression for GossipSub distribution (`payload.rs`)
+  - Status: Scaffold only, zero business logic. `TODO(Sprint16.1)` for implementation.
+
+### Added — Proof of Comprehension (Scaffold)
+
+- **Proof of Comprehension Module** — `src/proof_of_comprehension/`
+  - Feature-gated behind `v2.1-proof-of-comprehension`
+  - **Stuartian Law 2:** SAEs, validación de gradientes, auditoría transparente
+  - `ComprehensionTask` — SAE activation batch tasks with state machine (`task.rs`)
+  - `ComprehensionVerifier` — Cryptographic verification of comprehension proofs (`verifier.rs`)
+  - Status: Scaffold only, zero business logic. `TODO(Sprint16.2)` for implementation.
+
+### Added — Stuartian Filter (Scaffold)
+
+- **Stuartian Filter Module** — `src/stuartian_filter/`
+  - Feature-gated behind `v2.1-stuartian-filter`
+  - **Stuartian Law 2:** Detección de divergencia, rechazo determinista
+  - `DivergenceChecker` — KL divergence detection for alignment monitoring (`divergence.rs`)
+  - `AlignmentSlasher` — Deterministic reputation penalty for misalignment (`slashing.rs`)
+  - Status: Scaffold only, zero business logic. `TODO(Sprint16.3)` for implementation.
+
+### Added — Async Gossip with CRDTs (Scaffold)
+
+- **Async Gossip Module** — `src/async_gossip/`
+  - Feature-gated behind `v2.1-async-gossip-crdt`
+  - **Stuartian Law 5:** Async, tolerancia a particiones, CRDTs, eventual consistency
+  - `GossipMesh` — libp2p GossipSub mesh configuration with async tolerance (`mesh.rs`)
+  - `GossipCache` — Offline storage with sync-on-reconnect (`cache.rs`)
+  - `ReputationCrdt` — Conflict-free reputation convergence via version vectors (`crdt.rs`)
+  - Status: Scaffold only, zero business logic. `TODO(Sprint16.4)` for implementation.
+
+### Changed — Feature Gates
+
+- Added `v2.1-qlora-gguf`, `v2.1-proof-of-comprehension`, `v2.1-stuartian-filter`, `v2.1-async-gossip-crdt` to `Cargo.toml`
+- Registered 4 new modules in `src/lib.rs` with `#[cfg(feature = "...")]`
+- All modules follow existing pattern: public trait/struct stubs, error types with Display/Error traits, unit tests
+
+---
+
 ## [v2.1.0-sprint15] — 2026-05-20
 
 ### 🎉 Sprint Summary
