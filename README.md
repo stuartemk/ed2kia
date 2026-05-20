@@ -6,7 +6,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ethical-blue)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-2021-orange)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/Version-2.1.0-sprint11-yellowgreen)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-2.1.0-sprint12-yellowgreen)](CHANGELOG.md)
 [![Deploy](https://img.shields.io/badge/GitHub%20Pages-Active-brightgreen)](https://ed2kia.github.io/ed2kIA)
 [![Tests](https://img.shields.io/badge/Tests-3038_passing-success)](CHANGELOG.md)
 [![Qwen-Scope](https://img.shields.io/badge/Qwen--Scope--SAE-Integrated-brightgreen)](src/sae/qwen_scope_sae.rs)
@@ -78,6 +78,9 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 | `v2.1-orchestrator-federation` | GossipSub Federation — libp2p 0.53 `MessageAuthenticity::Signed`, multi-node orchestrator mesh | ✅ Validado (9 tests) |
 | `v2.1-rlhf-bridge` | RLHF Feedback Bridge — Human-in-the-loop semantic alignment via REST API + interactive UI | ✅ Validado (11 tests) |
 | `v2.1-observability` | Prometheus Metrics — Ed2kMetrics registry, 5 categories (consensus/reputation/network/rlhf/wasm), 12 tests | ✅ Implementado (12 tests) |
+| `v2.1-stewardship` | Stewardship Dashboard — Alpine.js governance dashboard (Network/Governance/Audit panels) | ✅ Implementado |
+| `v2.1-rfc-pipeline` | RFC Triage Workflow — Auto-label, milestone assign, voting guide comments | ✅ Implementado |
+| `v2.1-mainnet-bootstrap` | Mainnet Bootstrap — Docker Compose launch + healthchecks + pre-launch validation | ✅ Implementado |
 | `v2.1-governance` | CODEOWNERS + GOVERNANCE §§12-13 — Observability transparency & Pre-Launch Validation | ✅ Implementado |
 | `v2.1-launch-readiness` | Pre-Launch Checklist — Automated 5-phase validation script + readiness report | ✅ Implementado |
 | `v2.1-security-hardening` | wasmtime ≥24.0.7, rustls-webpki ≥0.103.13 | Planificado Q2-Q3 2027 |

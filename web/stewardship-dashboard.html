@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ed2kIA — Stewardship Dashboard</title>
+    <link rel="stylesheet" href="/assets/style.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="/assets/stewardship.js"></script>
+    <style>
+        /* Stewardship Dashboard — Lightweight overrides */
+        .stewardship-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .stewardship-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #2d3748;
+        }
+        .stewardship-header h1 {
+            font-size: 1.5rem;
+            color: #e2e8f0;
+        }
+        .governance-badge {
+            background: #4a5568;
+            color: #e2e8f0;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+        .tab-nav {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #4a5568;
+            padding-bottom: 10px;
+        }
+        .tab-nav button {
+            background: transparent;
+            border: 1px solid #4a5568;
+            color: #a0aec0;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tab-nav button:hover {
+            background: #2d3748;
+            color: #e2e8f0;
+        }
+        .tab-nav button.active {
+            background: #3182ce;
+            border-color: #3182ce;
+            color: white;
+        }
+        .panel {
+            background: #1a202c;
+            border: 1px solid #2d3748;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .panel h2 {
+            color: #e2e8f0;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .metric-card {
+            background: #2d3748;
+            border-radius: 8px;
+            padding: 15px;
+            border-left: 4px solid #3182ce;
+        }
+        .metric-card.warning {
+            border-left-color: #d69e2e;
+        }
+        .metric-card.danger {
+            border-left-color: #e53e3e;
+        }
+        .metric-card.success {
+            border-left-color: #38a169;
+        }
+        .metric-label {
+            color: #a0aec0;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+        }
+        .metric-value {
+            color: #e2e8f0;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        .metric-unit {
+            color: #718096;
+            font-size: 0.8rem;
+            margin-left: 4px;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .data-table th,
+        .data-table td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid #2d3748;
+        }
+        .data-table th {
+            background: #2d3748;
+            color: #a0aec0;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        .data-table td {
+            color: #e2e8f0;
+        }
+        .data-table tr:hover {
+            background: #2d3748;
+        }
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        .status-dot.green {
+            background: #38a169;
+        }
+        .status-dot.yellow {
+            background: #d69e2e;
+        }
+        .status-dot.red {
+            background: #e53e3e;
+        }
+        .tier-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .tier-badge.novice {
+            background: #4a5568;
+            color: #e2e8f0;
+        }
+        .tier-badge.contributor {
+            background: #3182ce;
+            color: white;
+        }
+        .tier-badge.auditor {
+            background: #805ad5;
+            color: white;
+        }
+        .tier-badge.steward {
+            background: #d69e2e;
+            color: #1a202c;
+        }
+        .refresh-indicator {
+            color: #718096;
+            font-size: 0.8rem;
+            text-align: right;
+            margin-top: 10px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div x-data="stewardship()" class="stewardship-container">
+        <!-- Header -->
+        <header class="stewardship-header">
+            <h1>🛡️ Stewardship Dashboard</h1>
+            <span class="governance-badge">v2.1.0-sprint12</span>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="tab-nav">
+            <button :class="{active: tab === 'network'}" @click="switchTab('network')">Red & Salud</button>
+            <button :class="{active: tab === 'governance'}" @click="switchTab('governance')">Gobernanza</button>
+            <button :class="{active: tab === 'audit'}" @click="switchTab('audit')">Audit Trail</button>
+        </nav>
+
+        <!-- Network Health Panel -->
+        <section x-show="tab === 'network'" class="panel">
+            <h2>Salud de la Red</h2>
+
+            <div x-show="loading.network" class="loading">Cargando métricas de red...</div>
+
+            <div x-show="!loading.network" class="metrics-grid">
+                <div class="metric-card" :class="healthClass(networkData.peers)">
+                    <div class="metric-label">Nodos Conectados</div>
+                    <div class="metric-value">
+                        <span x-text="networkData.peers ?? '—'"></span>
+                        <span class="metric-unit">peers</span>
+                    </div>
+                </div>
+                <div class="metric-card" :class="healthClass(networkData.consensusLatency)">
+                    <div class="metric-label">Latencia de Consenso</div>
+                    <div class="metric-value">
+                        <span x-text="formatLatency(networkData.consensusLatency)"></span>
+                        <span class="metric-unit">ms</span>
+                    </div>
+                </div>
+                <div class="metric-card" :class="healthClass(networkData.slashingRate)">
+                    <div class="metric-label">Tasa de Slashing</div>
+                    <div class="metric-value">
+                        <span x-text="formatPercent(networkData.slashingRate)"></span>
+                        <span class="metric-unit">%</span>
+                    </div>
+                </div>
+                <div class="metric-card success">
+                    <div class="metric-label">WASM Workers Activos</div>
+                    <div class="metric-value">
+                        <span x-text="networkData.wasmWorkers ?? '—'"></span>
+                        <span class="metric-unit">workers</span>
+                    </div>
+                </div>
+            </div>
+
+            <div x-show="!loading.network && networkData.lastUpdated" class="refresh-indicator">
+                Última actualización: <span x-text="networkData.lastUpdated"></span>
+            </div>
+        </section>
+
+        <!-- Governance Panel -->
+        <section x-show="tab === 'governance'" class="panel">
+            <h2>Gobernanza & Alineación</h2>
+
+            <div x-show="loading.governance" class="loading">Cargando datos de gobernanza...</div>
+
+            <div x-show="!loading.governance" class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">RFCs Activas</div>
+                    <div class="metric-value">
+                        <span x-text="governanceData.activeRfcs ?? '—'"></span>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Propuestas en Votación</div>
+                    <div class="metric-value">
+                        <span x-text="governanceData.votingProposals ?? '—'"></span>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Correcciones RLHF</div>
+                    <div class="metric-value">
+                        <span x-text="governanceData.rlhfCorrections ?? '—'"></span>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Niveles de Mérito</div>
+                    <div class="metric-value">
+                        <span x-text="governanceData.meritTiers ?? '—'"></span>
+                        <span class="metric-unit">tiers</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Merit Tiers Table -->
+            <h3 style="color: #e2e8f0; margin-top: 20px; margin-bottom: 10px;">Distribución de Mérito</h3>
+            <div x-show="!loading.governance && meritTiers && meritTiers.length > 0">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Nivel</th>
+                            <th>Contribuidores</th>
+                            <th>Peso de Voto</th>
+                            <th>Requisitos</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="tier in meritTiers" :key="tier.name">
+                            <tr>
+                                <td>
+                                    <span class="tier-badge" :class="tier.class" x-text="tier.name"></span>
+                                </td>
+                                <td x-text="tier.count"></td>
+                                <td x-text="tier.weight + 'x'"></td>
+                                <td x-text="tier.requirements"></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+            <div x-show="!loading.governance && (!meritTiers || meritTiers.length === 0)" class="empty-state">
+                Sin datos de mérito disponibles
+            </div>
+        </section>
+
+        <!-- Audit Trail Panel -->
+        <section x-show="tab === 'audit'" class="panel">
+            <h2>Audit Trail</h2>
+
+            <div x-show="loading.audit" class="loading">Cargando registro de auditoría...</div>
+
+            <div x-show="!loading.audit" class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Commits (últimos 7 días)</div>
+                    <div class="metric-value">
+                        <span x-text="auditData.recentCommits ?? '—'"></span>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">CI/CD Builds</div>
+                    <div class="metric-value">
+                        <span x-text="auditData.ciCdBuilds ?? '—'"></span>
+                        <span class="metric-unit">builds</span>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Feature Gates Activos</div>
+                    <div class="metric-value">
+                        <span x-text="auditData.activeFeatureGates ?? '—'"></span>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Pruebas Pasadas</div>
+                    <div class="metric-value">
+                        <span x-text="auditData.testsPassed ?? '—'"></span>
+                        <span class="metric-unit">tests</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity Table -->
+            <h3 style="color: #e2e8f0; margin-top: 20px; margin-bottom: 10px;">Actividad Reciente</h3>
+            <div x-show="!loading.audit && recentActivity && recentActivity.length > 0">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Tiempo</th>
+                            <th>Evento</th>
+                            <th>Detalles</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="entry in recentActivity.slice(0, 10)" :key="entry.timestamp">
+                            <tr>
+                                <td x-text="entry.time"></td>
+                                <td>
+                                    <span class="status-dot" :class="entry.statusDot"></span>
+                                    <span x-text="entry.event"></span>
+                                </td>
+                                <td x-text="entry.details"></td>
+                                <td x-text="entry.status"></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+            <div x-show="!loading.audit && (!recentActivity || recentActivity.length === 0)" class="empty-state">
+                Sin actividad reciente
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer style="text-align: center; color: #718096; font-size: 0.8rem; margin-top: 30px; padding-top: 15px; border-top: 1px solid #2d3748;">
+            <p>ed2kIA v2.1.0-sprint12 — Stewardship Dashboard</p>
+            <p>
+                <a href="/GOVERNANCE.md" style="color: #3182ce;">GOVERNANCE.md</a> ·
+                <a href="/api/metrics" style="color: #3182ce;">/api/metrics</a> ·
+                <a href="/atlas.html" style="color: #3182ce;">Atlas Semántico</a>
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

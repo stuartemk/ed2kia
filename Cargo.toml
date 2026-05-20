@@ -319,6 +319,14 @@ stable = [
 # POST /api/feedback + GET /api/feedback/export, rate limiting per node_id
 "v2.1-rlhf-bridge" = ["v2.1-rosetta-api"]
 
+# v2.1 Stewardship — Mainnet bootstrap, RFC pipeline & community dashboard (Sprint12)
+# scripts/bootstrap-mainnet.sh: Docker Compose launch + healthchecks + pre-launch validation
+# .github/workflows/rfc-triage.yml: Auto-label, milestone assign, voting guide comment
+# web/stewardship-dashboard.html: Alpine.js governance dashboard (Network, Governance, Audit)
+"v2.1-stewardship" = []
+"v2.1-rfc-pipeline" = []
+"v2.1-mainnet-bootstrap" = []
+
 # ─── Hardware Acceleration ───
 cpu = []
 cuda = ["candle-core/cuda", "candle-nn/cuda"]

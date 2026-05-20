@@ -6,6 +6,50 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.1.0-sprint12] — 2026-05-20
+
+### 🎉 Sprint Summary
+
+**v2.1.0-sprint12 "Stewardship Activation & Community Pipeline"** delivers the stewardship activation triad: **Mainnet Bootstrap** (`scripts/bootstrap-mainnet.sh`) with automated environment validation, Docker Compose launch, pre-launch checks, healthcheck polling and status output, **RFC Pipeline** (`.github/workflows/rfc-triage.yml`) with auto-label, milestone assignment and voting guide comments, and **Stewardship Dashboard** (`web/stewardship-dashboard.html` + `web/assets/stewardship.js`) — a lightweight Alpine.js governance dashboard with Network Health, Governance and Audit Trail panels. Zero financial logic, zero telemetry — strictly network health, alignment metrics and community governance.
+
+| Artifact | Path | Purpose |
+|----------|------|---------|
+| Bootstrap Script | `scripts/bootstrap-mainnet.sh` | Automated mainnet bootstrap with env validation + healthchecks |
+| RFC Triage Workflow | `.github/workflows/rfc-triage.yml` | Auto-label, milestone assign, voting guide comment |
+| Stewardship Dashboard | `web/stewardship-dashboard.html` | Alpine.js governance dashboard (3 panels) |
+| Dashboard JS | `web/assets/stewardship.js` | Alpine.js component with requestAnimationFrame + debounce |
+| Feature Gates | `Cargo.toml` | `v2.1-stewardship`, `v2.1-rfc-pipeline`, `v2.1-mainnet-bootstrap` |
+
+### Added — Stewardship Activation
+
+- **Mainnet Bootstrap Script** — `scripts/bootstrap-mainnet.sh`
+  - `set -euo pipefail` + `trap cleanup EXIT INT TERM`
+  - Parameters: `--replicas`, `--difficulty`, `--log-level`
+  - Flow: Validate environment (Docker, Docker Compose, Rust, Python) → Launch `docker-compose.yml` → Run `scripts/pre-launch-check.sh` → Healthcheck polling (`/api/health`, `/api/metrics`) → Print `🟢 MAINNET ACTIVE` + service URLs
+  - Auto-cleanup on failure with `docker-compose down --remove-orphans`
+
+- **RFC Triage Workflow** — `.github/workflows/rfc-triage.yml`
+  - Trigger: `issues.opened` with RFC-related labels
+  - Auto-label: `rfc`, `needs-review`, `feature-gate`
+  - Auto-assign to v2.1 milestone
+  - Comment with voting guide (Novice→Steward tiers + weights)
+  - Links to GOVERNANCE.md, RFC template, feature gates
+
+- **Stewardship Dashboard** — `web/stewardship-dashboard.html` + `web/assets/stewardship.js`
+  - Alpine.js + vanilla CSS (lightweight, no heavy frameworks)
+  - Panel 1: Network Health — peers, consensus latency, slashing rate, WASM workers
+  - Panel 2: Governance — RFCs, voting proposals, RLHF corrections, merit tiers table
+  - Panel 3: Audit Trail — recent commits, CI/CD builds, feature gates, tests passed, activity log
+  - API consumption: `/api/metrics`, `/api/merit/tiers`, `/api/features`, `/api/governance/rfcs`
+  - Optimized: `requestAnimationFrame`, debounce (500ms), lazy loading per tab
+  - Simulated data fallback when API unavailable
+
+### Changed — Feature Gates
+
+- Added `v2.1-stewardship`, `v2.1-rfc-pipeline`, `v2.1-mainnet-bootstrap` to `Cargo.toml`
+
+---
+
 ## [v2.1.0-sprint11] — 2026-05-20
 
 ### 🎉 Sprint Summary
