@@ -549,6 +549,26 @@ pub mod alignment {
     pub mod sct_guard;
 }
 
+/// Async Gossip with CRDTs — Partition-tolerant GossipSub mesh (Sprint16.4)
+#[cfg(any(
+    feature = "v2.1-async-gossip",
+    feature = "v2.1-offline-cache",
+    feature = "v2.1-crdt-state"
+))]
+pub mod async_gossip {
+    #[cfg(feature = "v2.1-async-gossip")]
+    #[path = "../async_gossip/mesh.rs"]
+    pub mod mesh;
+
+    #[cfg(feature = "v2.1-offline-cache")]
+    #[path = "../async_gossip/cache.rs"]
+    pub mod cache;
+
+    #[cfg(feature = "v2.1-crdt-state")]
+    #[path = "../async_gossip/crdt.rs"]
+    pub mod crdt;
+}
+
 /// Cross-network federation bridge and trust scoring
 #[cfg(feature = "stable")]
 pub mod federation_v2 {

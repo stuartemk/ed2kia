@@ -425,6 +425,18 @@ stable = [
 "v2.1-sct-reward" = []
 "v2.1-sct-guard" = []
 
+# v2.1 Async Gossip Mesh — GossipSub async config with partition tolerance (Sprint16.4)
+# src/async_gossip/mesh.rs: MeshConfig with heartbeat 500ms, fanout_ttl 120s, mesh_n 6/4/12
+"v2.1-async-gossip" = []
+
+# v2.1 Offline Cache — redb-based offline storage with priority sync queue (Sprint16.4)
+# src/async_gossip/cache.rs: PendingQueue prioritized by timestamp, exponential backoff sync
+"v2.1-offline-cache" = []
+
+# v2.1 CRDT State — GCounter, PNCounter, ORSet for conflict-free reputation (Sprint16.4)
+# src/async_gossip/crdt.rs: Commutative/associative/idempotent merge, bincode serialization
+"v2.1-crdt-state" = []
+
 # ─── Hardware Acceleration ───
 cpu = []
 cuda = ["candle-core/cuda", "candle-nn/cuda"]

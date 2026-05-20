@@ -6,6 +6,87 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.1.0-sprint16.4] — 2026-05-20
+
+### 🎉 Sprint Summary
+
+**v2.1.0-sprint16.4 "Async Gossip + CRDTs"** implements a partition-tolerant GossipSub async mesh, redb-based offline cache with priority sync queue, and conflict-free CRDTs (GCounter, PNCounter, ORSet) for eventual-convergence reputation state. Aligned with Stuartian Law 5 (Múltiples Posibilidades & Resiliencia al Caos). 97/97 unit tests passing, zero clippy warnings.
+
+| Artifact | Path | Purpose |
+|----------|------|---------|
+| GossipSub Mesh | `src/async_gossip/mesh.rs` | Async GossipSub config: heartbeat 500ms, fanout_ttl 120s, mesh_n 6/4/12, deterministic message_id, slow peer backoff |
+| Offline Cache | `src/async_gossip/cache.rs` | redb-based storage with priority queue (Critical/Normal/Low), batch sync, exponential backoff |
+| CRDTs | `src/async_gossip/crdt.rs` | GCounter (merit), PNCounter (bounded reputation), ORSet (banned peers), VersionVector — commutative/associative/idempotent merge |
+| Feature Gates | `Cargo.toml` | `v2.1-async-gossip`, `v2.1-offline-cache`, `v2.1-crdt-state` |
+
+### Added — GossipSub Async Mesh
+
+- **GossipMesh** — `src/async_gossip/mesh.rs`
+  - Configurable mesh: mesh_size=6, mesh_min=4, mesh_max=12, heartbeat=500ms, fanout_ttl=120s
+  - Deterministic message_id via FNV hash of payload
+  - Slow peer detection with exponential backoff (capped at 30s)
+  - Message deduplication by message_id
+  - 25+ unit tests covering config validation, peer management, message dedup, health checks
+
+- **PeerInfo / PeerState** — `src/async_gossip/mesh.rs`
+  - Peer states: Meshed, Fanout, Pruned, GracefulDisconnect
+  - `backoff_ms()` with exponential backoff: `min(2^count * 1000, 30000)`
+  - `is_slow()` detection when latency > 2x heartbeat interval
+
+### Added — Offline Cache with Priority Sync
+
+- **GossipCache** — `src/async_gossip/cache.rs`
+  - Priority queue ordered by PayloadType (Critical > Normal > Low) then timestamp ASC
+  - `sync_batch()` for batched sync with configurable batch size
+  - Exponential backoff on sync failures, max retry tracking
+  - `compact()` to remove old synced entries and free capacity
+  - 30+ unit tests covering store/retrieve, priority ordering, sync simulation, stats
+
+- **CacheEntry / PayloadType** — `src/async_gossip/cache.rs`
+  - PayloadType enum: Critical(0), Normal(1), Low(2) for priority ordering
+  - SyncStatus: Synced, Pending, Backoff, Exhausted
+  - CacheStats with total_entries, synced_count, pending_count, sync_ratio
+
+### Added — CRDTs for Conflict-Free State Replication
+
+- **GCounter** — `src/async_gossip/crdt.rs`
+  - Grow-only counter per node (for cryptographic merit accumulation)
+  - merge() takes max per node — commutative, associative, idempotent
+  - bincode-compatible serialize/deserialize
+
+- **PNCounter** — `src/async_gossip/crdt.rs`
+  - Bounded reputation score [min_value, max_value]
+  - Two internal GCounters (positives + negatives)
+  - Clamped increment/decrement within bounds
+
+- **ORSet** — `src/async_gossip/crdt.rs`
+  - Observed-Remove Set for banned/slashed peer tracking
+  - Idempotent add/remove with per-element tag tracking
+  - Tombstone-based removal for correct merge semantics
+
+- **ReputationCrdt** — `src/async_gossip/crdt.rs`
+  - Max-registry for node reputations (takes highest value on merge)
+
+- **VersionVector** — `src/async_gossip/crdt.rs`
+  - Per-node logical clocks with compare() and merge() operations
+
+- **Convergence Tests** — 3 partitioned nodes, 2-round merge, verified equality
+  - GCounter: 10+20+30 = 60 across all nodes
+  - PNCounter: (50-10)+30+(20-5) = 85 across all nodes
+  - ORSet: peer-y present, peer-w removed, consistent across nodes
+  - ReputationCrdt: max(0.5, 0.8, 0.3) = 0.8 across all nodes
+
+### Changed
+
+- **Feature Gates** — `Cargo.toml`
+  - Added `v2.1-async-gossip`, `v2.1-offline-cache`, `v2.1-crdt-state`
+  - Composable: enable any subset independently
+
+- **Module Registration** — `src/lib.rs`
+  - Registered `async_gossip` module with conditional compilation per feature
+
+---
+
 ## [v2.1.0-sprint16.3] — 2026-05-20
 
 ### 🎉 Sprint Summary
