@@ -6,7 +6,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ethical-blue)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-2021-orange)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/Version-2.1.0-sprint16.2-yellowgreen)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-2.1.0-sprint16.3-yellowgreen)](CHANGELOG.md)
 [![Deploy](https://img.shields.io/badge/GitHub%20Pages-Active-brightgreen)](https://ed2kia.github.io/ed2kIA)
 [![Tests](https://img.shields.io/badge/Tests-3119_passing-success)](CHANGELOG.md)
 [![Qwen-Scope](https://img.shields.io/badge/Qwen--Scope--SAE-Integrated-brightgreen)](src/sae/qwen_scope_sae.rs)
@@ -152,7 +152,25 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 | QLoRA/GGUF | `v2.1-qlora-gguf` | `loader.rs`, `adapter.rs`, `payload.rs` | ✅ Implementado |
 | Proof of Comprehension | `v2.1-proof-of-comprehension` | `task.rs`, `verifier.rs` | 🏗️ Scaffold |
 | Stuartian Filter | `v2.1-stuartian-filter` | `divergence.rs`, `slashing.rs` | 🏗️ Scaffold |
+| SCT (Stuartian Context Tensor) | `v2.1-sct-core`, `v2.1-sct-reward`, `v2.1-sct-guard` | `sct_core.rs`, `sct_reward.rs`, `sct_guard.rs` | ✅ Implementado (37 tests) |
 | Async Gossip + CRDTs | `v2.1-async-gossip-crdt` | `mesh.rs`, `cache.rs`, `crdt.rs` | 🏗️ Scaffold |
+
+### 🎯 Stuartian Context Tensor (SCT) — Sprint16.3
+
+El SCT reemplaza la alineación 2D (RLHF) con un tensor tridimensional `(X, Y, Z)`:
+
+| Eje | Nombre | Rango | Activación | Significado |
+|-----|--------|-------|------------|-------------|
+| X | Beneficio | `[0, 1]` | Sigmoid | Utilidad percibida del output |
+| Y | Costo/Fricción | `[0, 1]` | Sigmoid | Esfuerzo requerido del usuario |
+| Z | Foco Estuardiano | `[-1, 1]` | Tanh | Alineación ética (Superior +1 ↔ Inferior -1) |
+
+**Regla de Oro:** `if Z < 0 → REJECTED` (rechazo determinista, sin excepciones)
+
+```bash
+# Ejecutar tests SCT
+cargo test --lib --features "v2.1-sct-core,v2.1-sct-reward,v2.1-sct-guard" -- sct
+```
 
 > **Nota:** Los módulos se encuentran en fase de scaffold (estructura pura, cero lógica de negocio). La implementación módulo por módulo se realizará en sprints subsiguientes (Sprint16.1 → Sprint16.4).
 

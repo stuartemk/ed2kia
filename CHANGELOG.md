@@ -6,6 +6,68 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.1.0-sprint16.3] — 2026-05-20
+
+### 🎉 Sprint Summary
+
+**v2.1.0-sprint16.3 "Alineación Ética 3D & Tensor Estuardiano (SCT)"** replaces 2D RLHF alignment with a tridimensional Stuartian Context Tensor (SCT) evaluating `(X, Y, Z)` where X (Beneficio) and Y (Costo) are sigmoid-bounded `[0,1]` and Z (Foco Estuardiano) uses Tanh for polarity `[-1,1]`. Hard rejection when `Z < 0` with no exceptions. 37/37 unit tests passing, zero clippy warnings.
+
+| Artifact | Path | Purpose |
+|----------|------|---------|
+| SCT Core | `src/alignment/sct_core.rs` | StuartianTensor struct, SCTEvaluator trait, SCTDecision enum, Golden Rule hard rejection |
+| SCT Reward | `src/alignment/sct_reward.rs` | SctRewardModel with candle_nn::Linear projection, sigmoid/sigmoid/tanh activations, SCTLoss |
+| SCT Guard | `src/alignment/sct_guard.rs` | SctGuard intercepting BFT payloads, violation tracking, automatic slashing |
+| Feature Gates | `Cargo.toml` | `v2.1-sct-core`, `v2.1-sct-reward`, `v2.1-sct-guard` |
+
+### Added — Stuartian Context Tensor (SCT) Core
+
+- **StuartianTensor** — `src/alignment/sct_core.rs`
+  - 3D geometry: `x: [0,1]` (Beneficio), `y: [0,1]` (Costo), `z: [-1,1]` (Foco Estuardiano)
+  - `evaluate_trajectory()` implementing Golden Rule: `if z < 0 → Rejected`
+  - `stewardship_score()` computing `(x + z) / 2 - y / 2`
+  - 15 unit tests covering Golden Rule strict rejection, boundary conditions, bounds validation
+
+- **SCTDecision** — `src/alignment/sct_core.rs`
+  - `Approved(f32)` / `Rejected(f32)` enum with `is_approved()` and `is_rejected()` helpers
+  - `z_value()` accessor for downstream consumers
+
+- **SCTEvaluator Trait** — `src/alignment/sct_core.rs`
+  - `to_stuartian_tensor()` for converting any graded payload to 3D tensor
+  - Default implementation for `Vec<f32>` gradients
+
+### Added — 3D Reward Model
+
+- **SctRewardModel** — `src/alignment/sct_reward.rs`
+  - `candle_nn::Linear` projection layer mapping hidden state → 3 logits
+  - Sigmoid activations for X and Y, Tanh for Z polarity
+  - `forward()` returning validated `StuartianTensor`
+  - `evaluate()` returning `SCTDecision` directly from hidden state
+  - 8 unit tests
+
+- **SCTLoss** — `src/alignment/sct_reward.rs`
+  - MSE loss + logarithmic barrier penalty when predicting `Z < 0` on positive-labeled data
+  - Scalar `f32` return for O(1) integration
+
+### Added — SCT Guard (BFT Integration)
+
+- **SctGuard** — `src/alignment/sct_guard.rs`
+  - `inspect_payload()` intercepting BFT aggregator payloads
+  - `inspect_gradient()` converting raw logits `[x_raw, y_raw, z_raw]` to SCT tensor
+  - Violation tracking per node with time-window expiration
+  - Automatic slashing when violations exceed `max_violations` threshold
+  - `GuardVerdict` with `should_slash` flag
+  - 13 unit tests including censorship simulation
+
+### Changed
+
+- **Feature Gates** — `Cargo.toml`
+  - Added `v2.1-sct-core`, `v2.1-sct-reward`, `v2.1-sct-guard`
+
+- **Alignment Module** — `src/lib.rs`
+  - Registered SCT modules with conditional compilation
+
+---
+
 ## [v2.1.0-sprint16.2] — 2026-05-20
 
 ### 🎉 Sprint Summary

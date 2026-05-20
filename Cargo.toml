@@ -417,6 +417,14 @@ stable = [
 "v2.1-staleness-aware" = []
 "v2.1-bft-aggregation" = []
 
+# v2.1 Stuartian Context Tensor (SCT) — 3D ethical alignment replacing RLHF 2D (Sprint16.3)
+# src/alignment/sct_core.rs: StuartianTensor {x, y, z}, SCTEvaluator trait, hard Z < 0 rejection
+# src/alignment/sct_reward.rs: Linear projection hidden→3D, sigmoid/sigmoid/tanh, SCTLoss
+# src/alignment/sct_guard.rs: Intercept BFT payloads, slash reputation on repeated Z < 0
+"v2.1-sct-core" = []
+"v2.1-sct-reward" = []
+"v2.1-sct-guard" = []
+
 # ─── Hardware Acceleration ───
 cpu = []
 cuda = ["candle-core/cuda", "candle-nn/cuda"]

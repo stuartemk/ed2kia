@@ -539,6 +539,14 @@ pub mod alignment {
     pub mod confidence_calculator;
     #[cfg(feature = "v1.2-sprint1")]
     pub mod ethical_constraint_engine;
+
+    // ─── Sprint16.3: Stuartian Context Tensor (SCT) ───
+    #[cfg(feature = "v2.1-sct-core")]
+    pub mod sct_core;
+    #[cfg(feature = "v2.1-sct-reward")]
+    pub mod sct_reward;
+    #[cfg(feature = "v2.1-sct-guard")]
+    pub mod sct_guard;
 }
 
 /// Cross-network federation bridge and trust scoring
