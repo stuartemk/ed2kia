@@ -6,7 +6,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ethical-blue)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-2021-orange)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/Version-2.1.0-sprint23-yellowgreen)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-2.1.0-sprint24-yellowgreen)](CHANGELOG.md)
 [![Audit](https://img.shields.io/badge/Audit-Ready-brightgreen)](docs/audit-prep.md)
 [![Governance](https://img.shields.io/badge/Governance-Active-blueviolet)](GOVERNANCE.md)
 [![Launch](https://img.shields.io/badge/Launch-Ready-red)](docs/public-launch-guide.md)
@@ -57,8 +57,9 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 | Feature Gate | Módulo | Status |
 |--------------|--------|--------|
 | `v2.1-mvp-core` | MVP Core Loop — Discovery → Distribution → Inference → Collection | ✅ Implementado (27 tests) |
-| `v2.1-wasm-browser` | Browser Node — WASM P2P para navegadores | ✅ Pipeline CI/CD |
+| `v2.1-wasm-browser` | Browser Node — WASM P2P para navegadores | ✅ Implementado (14 tests) |
 | `v2.1-wasm-workers` | Web Worker Offloading — Async inference dispatch sin bloquear UI | ✅ Implementado (2 tests) |
+| `v2.1-real-dataset-loader` | Public Dataset Loader — Streaming .jsonl/.parquet, SHA256 validation, fallback dummy | ✅ Implementado (21 tests) |
 | `v2.1-webrtc-relay` | WebRTC + Relay Transport — libp2p WASM con Circuit Relay v2 | ✅ Implementado (13 tests) |
 | `v2.1-wasm-telemetry` | WASM Telemetry Bridge — wasm-bindgen CustomEvent → DOM (4 eventos) | ✅ Implementado |
 | `v2.1-relay-server` | Relay Server ("El Faro") — WebRTC/Circuit Relay v2 signaling | ✅ Implementado (14 tests) |

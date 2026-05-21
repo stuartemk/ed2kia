@@ -1,6 +1,6 @@
 [package]
 name = "ed2kia"
-version = "2.1.0-sprint23"
+version = "2.1.0-sprint24"
 edition = "2021"
 description = "Descentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
 license = "Apache-2.0"
@@ -376,6 +376,12 @@ stable = [
 # Scenarios: WASM node failure, network partition, artificial latency, malicious votes,
 # task queue saturation. Only active with --chaos-mode, limited duration, auto rollback.
 "v2.1-chaos-engine" = []
+
+# v2.1 Real Dataset Loader — Streaming .jsonl/.parquet with SHA256 validation (Sprint24)
+# src/dataset/public_loader.rs: PublicDatasetLoader with chunking ≤50MB,
+# SHA256 per-chunk validation, fallback to dummy dataset on network failure.
+# Non-wasm32 only (reqwest + tokio::io dependency).
+"v2.1-real-dataset-loader" = []
 
 # v2.1 Operator CLI Wizard — Standalone TUI binary for guided node setup (Sprint15)
 # src/bin/ed2kia-cli.rs: clap + dialoguer, role selection, config generation,

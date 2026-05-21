@@ -6,6 +6,82 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.1.0-sprint24] — 2026-05-21
+
+### 🎉 Sprint Summary
+
+**v2.1.0-sprint24 "Integración Real & Nodo WASM en Navegador"** implementa compilación a `wasm32-unknown-unknown`, puente Web Worker, cargador de datasets públicos ligeros y guía de despliegue browser. Objetivo: habilitar la participación real de voluntarios desde cualquier dispositivo moderno, cumpliendo la Ley 4 (Simbiosis Existencial) y Ley 1 (Diversidad Comunitaria) sin centralización ni lógica financiera.
+
+| Artifact | Path | Purpose |
+|----------|------|---------|
+| WASM Browser Node | `src/wasm/browser_node.rs` | Browser-compiled WASM node with wasm-bindgen exports, 14 unit tests |
+| BrowserNodeManager JS | `web/browser-node.js` | Vanilla JS + Web Worker bridge, heartbeat monitoring, offline queue |
+| Public Dataset Loader | `src/dataset/public_loader.rs` | Streaming .jsonl/.parquet with SHA256 validation, fallback to dummy |
+| WASM Deployment Guide | `docs/wasm-deployment-guide.md` | Requirements, compilation, browser compatibility, security sandboxing |
+| Feature Gates | `Cargo.toml` | `v2.1-wasm-browser`, `v2.1-real-dataset-loader` |
+
+### Added — WASM Browser Node Compilation
+
+- **browser_node.rs** — `src/wasm/browser_node.rs`
+  - `BrowserNode` — WASM-compiled browser node with `#[wasm_bindgen]` exports
+  - Methods: `new(id, memoryLimitMb)`, `init()`, `processTask(payload)`, `getHealth()`
+  - Task types: `SaeInference`, `GradientValidation`, `HealthCheck`
+  - Memory limits clamped to [16, 512] MB range
+  - Queue management: max 64 tasks, FIFO with `VecDeque`
+  - CustomEvent dispatch for telemetry (`ed2k-node-initialized`, `ed2k-task-complete`)
+  - Stub implementation for non-wasm32 targets (unit testing)
+  - Feature gate: `v2.1-wasm-browser`
+  - 14 unit tests: creation, init, task processing, health status, memory bounds, queue management, JSON serialization
+
+### Added — Web Worker Bridge (JavaScript)
+
+- **browser-node.js** — `web/browser-node.js`
+  - `BrowserNodeManager` — Vanilla JS class for WASM node lifecycle management
+  - Web Worker bridge: `postMessage`/`onmessage` pattern, 10s timeout
+  - Heartbeat monitoring: 5s interval, connectivity checks, event emission
+  - Offline queue: flush on reconnection
+  - Event system: `on()`/`off()` listeners + `CustomEvent` dispatch
+  - Fallback to local processing if Worker init fails
+  - UMD export pattern (module.exports + window.BrowserNodeManager)
+
+### Added — Public Dataset Loader
+
+- **public_loader.rs** — `src/dataset/public_loader.rs`
+  - `PublicDatasetLoader` — Streaming dataset loader with chunking ≤50MB
+  - SHA256 validation per chunk with expected hash map
+  - Cache management: `.cache/datasets/` directory, chunk indexing
+  - Fallback to dummy dataset on network failure
+  - `DatasetManifest` — repo_id, format, total_chunks, chunk_manifest with SHA256
+  - Non-wasm32 only (reqwest + tokio dependency)
+  - Feature gate: `v2.1-real-dataset-loader`
+  - 21 unit tests: loader creation, SHA256 computation/validation, chunk boundaries, dummy dataset, cache operations, error handling
+
+### Added — WASM Deployment Guide
+
+- **wasm-deployment-guide.md** — `docs/wasm-deployment-guide.md`
+  - Requirements: Rust 1.75+, wasm-pack 0.12+, Node.js 18+
+  - Compilation: `wasm-pack build --release --target web --features v2.1-wasm-browser`
+  - Browser compatibility matrix: Chrome 87+, Firefox 79+, Safari 14.1+
+  - Security: CSP headers, COOP/COEP, memory/CPU limits
+  - Ethical clause: Zero external telemetry, zero trackers, zero financial logic
+  - Monitoring: Local metrics via `getHealth()`, DOM CustomEvents
+  - CI/CD pipeline example, troubleshooting guide
+
+### Changed
+
+- **Cargo.toml** — Version bumped to `2.1.0-sprint24`
+- **Cargo.toml** — New feature gate `v2.1-real-dataset-loader`
+- **src/lib.rs** — Wired `wasm_browser_node` and `dataset` modules
+
+### Technical Notes
+
+- WASM compilation requires `wasm-pack build --target web` (not `cargo check --target wasm32`)
+- Tokio/mio is incompatible with wasm32-unknown-unknown (documented in guide)
+- Dataset loader uses stub for wasm32 targets (returns `Unsupported` error)
+- BrowserNode uses `js_sys::Date::now()` for timestamps (no `std::time::SystemTime`)
+
+---
+
 ## [v2.1.0-sprint23] — 2026-05-21
 
 ### 🎉 Sprint Summary

@@ -49,6 +49,15 @@ pub mod mobile_bridge;
 #[cfg(feature = "v2.1-wasm-browser")]
 pub mod browser_node;
 
+/// WASM Browser Node — Compiled browser node with wasm-bindgen exports (Sprint24)
+#[cfg(feature = "v2.1-wasm-browser")]
+#[path = "wasm/browser_node.rs"]
+pub mod wasm_browser_node;
+
+/// Public Dataset Loader — Streaming .jsonl/.parquet with SHA256 validation (Sprint24)
+#[cfg(feature = "v2.1-real-dataset-loader")]
+pub mod dataset;
+
 /// MVP Core Loop — Isolated basic cycle (feature-gated)
 #[cfg(feature = "v2.1-mvp-core")]
 pub mod mvp_core;
