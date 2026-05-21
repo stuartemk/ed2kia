@@ -1,6 +1,6 @@
 [package]
 name = "ed2kia"
-version = "1.6.0-stable"
+version = "2.1.0-sprint17"
 edition = "2021"
 description = "Descentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
 license = "Apache-2.0"
@@ -437,6 +437,29 @@ stable = [
 # src/async_gossip/crdt.rs: Commutative/associative/idempotent merge, bincode serialization
 "v2.1-crdt-state" = []
 
+# ─── Sprint17: Kernel Integration & Mainnet Activation ───
+
+# v2.1 Kernel Integration — E2E cross-validation of all Stuartian Laws (Sprint17)
+# tests/integration/kernel_e2e_test.rs: GGUF→QLoRA→PoC→SCT→BFT→CRDT→Gossip→Cache pipeline
+# Validates Ley 1-5 as coherent organism before public deployment
+"v2.1-kernel-integration" = [
+    "v2.1-async-gossip",
+    "v2.1-offline-cache",
+    "v2.1-crdt-state",
+    "v2.1-bft-aggregation",
+    "v2.1-sct-guard",
+    "v2.1-sct-core",
+    "v2.1-qlora-gguf",
+    "v2.1-proof-of-comprehension",
+    "v2.1-stuartian-filter",
+    "v2.1-chaos-engine"
+]
+
+# v2.1 Mainnet Activation — Safe deployment protocol (Sprint17)
+# scripts/activate-mainnet.sh: Env validation, docker-compose, healthchecks, SCTGuard/BFT activation
+# docs/kernel-architecture.md: Unified kernel blueprint with Stuartian philosophy mapping
+"v2.1-mainnet-activation" = ["v2.1-kernel-integration"]
+
 # ─── Hardware Acceleration ───
 cpu = []
 cuda = ["candle-core/cuda", "candle-nn/cuda"]
@@ -511,6 +534,11 @@ prost-build = "0.12"
 [[bin]]
 name = "ed2kia"
 path = "src/main.rs"
+
+[[bin]]
+name = "ed2kia-cli"
+path = "src/bin/ed2kia-cli.rs"
+required-features = ["v2.1-operator-cli"]
 
 [lib]
 name = "ed2kia"
@@ -796,3 +824,9 @@ required-features = ["v2.1-reputation-system", "v2.1-task-manager"]
 name = "consensus_fuzz"
 path = "tests/fuzz/consensus_fuzz.rs"
 required-features = ["v2.1-fuzzing", "v2.1-consensus-engine", "v2.1-reputation-system", "v2.1-sybil-micropow", "v1.7-sprint1"]
+
+# v2.1.0-sprint17 Kernel E2E Cross-Validation — All 5 Stuartian Laws integrated
+[[test]]
+name = "kernel_e2e_test"
+path = "tests/integration/kernel_e2e_test.rs"
+required-features = ["v2.1-kernel-integration"]

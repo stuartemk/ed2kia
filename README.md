@@ -6,7 +6,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ethical-blue)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-2021-orange)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/Version-2.1.0-sprint16.4-yellowgreen)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-2.1.0-sprint17-yellowgreen)](CHANGELOG.md)
 [![Deploy](https://img.shields.io/badge/GitHub%20Pages-Active-brightgreen)](https://ed2kia.github.io/ed2kIA)
 [![Tests](https://img.shields.io/badge/Tests-3216_passing-success)](CHANGELOG.md)
 [![Qwen-Scope](https://img.shields.io/badge/Qwen--Scope--SAE-Integrated-brightgreen)](src/sae/qwen_scope_sae.rs)

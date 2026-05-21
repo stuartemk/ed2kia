@@ -162,10 +162,7 @@ impl VersionVector {
 
     /// Retorna los nodos con contadores activos.
     pub fn nodes(&self) -> Vec<&String> {
-        self.counters
-            .keys()
-            .filter(|node| self.counters.get(*node) == Some(&0))
-            .collect()
+        self.counters.keys().collect()
     }
 
     /// Retorna true si el vector está vacío.

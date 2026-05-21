@@ -6,6 +6,72 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.1.0-sprint17] — 2026-05-20
+
+### 🎉 Sprint Summary
+
+**v2.1.0-sprint17 "Kernel Integration & Mainnet Activation"** delivers E2E cross-validation of all 5 Stuartian Laws as a coherent organism, a 6-phase safe mainnet activation protocol, and unified kernel architecture documentation. 24/24 E2E tests passing.
+
+| Artifact | Path | Purpose |
+|----------|------|---------|
+| Kernel E2E Test | `tests/integration/kernel_e2e_test.rs` | 16-stage E2E pipeline: GGUF→QLoRA→PoC→SCT→BFT→CRDT→Gossip→Cache |
+| Activation Script | `scripts/activate-mainnet.sh` | 6-phase safe activation: env→pre-launch→docker→health→SCT+BFT→report |
+| Architecture Docs | `docs/kernel-architecture.md` | Unified blueprint: Stuartian Laws, E2E flow, security, runbook, CRDT guarantees |
+| Feature Gates | `Cargo.toml` | `v2.1-kernel-integration`, `v2.1-mainnet-activation` |
+
+### Added — Kernel E2E Cross-Validation
+
+- **kernel_e2e_test.rs** — `tests/integration/kernel_e2e_test.rs`
+  - 16 stages validating full kernel pipeline as coherent organism
+  - Stage 1-2: GGUF validation + QLoRA forward pass (Ley 3)
+  - Stage 3: QLoRA payload compression for GossipSub (Ley 1)
+  - Stage 4: PoC task lifecycle (Ley 2)
+  - Stage 5: SCT Guard approval/rejection (Ley 2)
+  - Stage 6: BFT aggregation + coordinate-wise median (Ley 2)
+  - Stage 7: CRDT convergence (GCounter, ORSet, Reputation) (Ley 5)
+  - Stage 8: Gossip mesh publish + health check (Ley 1)
+  - Stage 9: Cache store + exponential backoff (Ley 5)
+  - Stage 10: Version vector causal ordering (Ley 5)
+  - Stage 11: KL divergence detection (Ley 2)
+  - Stage 12: Alignment slashing penalty (Ley 2)
+  - Stage 13: Chaos engine lifecycle (Ley 5)
+  - Stage 14: PNCounter bounded reputation (Ley 5)
+  - Stage 15: Full kernel pipeline integration (All 5 Laws)
+  - Stage 16: Error handling graceful degradation
+
+### Added — Mainnet Activation Protocol
+
+- **activate-mainnet.sh** — `scripts/activate-mainnet.sh`
+  - Phase 1: Environment validation (Docker, Cargo, Git, required files)
+  - Phase 2: Pre-launch checks (cargo check, kernel_e2e_test, clippy)
+  - Phase 3: Docker Compose launch
+  - Phase 4: Healthchecks (/api/health, /api/metrics)
+  - Phase 5: SCTGuard + BFT activation
+  - Phase 6: Readiness report
+  - Supports `--dry-run`, `--replicas N`, `--log-level L`
+
+### Added — Unified Kernel Architecture
+
+- **kernel-architecture.md** — `docs/kernel-architecture.md`
+  - Stuartian Law 1-5 mapped to code modules
+  - E2E data flow: 8-step kernel pipeline
+  - Security matrix: Threat model + mitigations
+  - Health metrics & observability
+  - Operational runbook: Pre-launch, launch, incident response, rollback
+  - CRDT convergence guarantees: Mathematical proof
+
+### Fixed
+
+- **VersionVector::nodes()** — `src/async_gossip/crdt.rs`
+  - Fixed filter to return all nodes in counter map (was filtering count==0 only)
+
+### Changed
+
+- **Cargo.toml** — Added feature gates `v2.1-kernel-integration` (10 sub-features) and `v2.1-mainnet-activation`
+- **Cargo.toml** — Registered `kernel_e2e_test` as integration test with required-features
+
+---
+
 ## [v2.1.0-sprint16.4] — 2026-05-20
 
 ### 🎉 Sprint Summary
