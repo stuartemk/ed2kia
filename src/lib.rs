@@ -554,6 +554,17 @@ pub mod alignment {
     pub mod stuartian_geometry;
 }
 
+/// Mainnet Genesis — Deterministic genesis state & steward activation (Sprint22)
+#[cfg(any(
+    feature = "v2.1-mainnet-genesis",
+    feature = "v2.1-steward-portal"
+))]
+pub mod mainnet {
+    #[cfg(feature = "v2.1-mainnet-genesis")]
+    #[path = "../mainnet/genesis.rs"]
+    pub mod genesis;
+}
+
 /// Network — Cross-mesh routing & multi-region synchronization (Sprint21)
 #[cfg(any(
     feature = "v2.1-cross-mesh",

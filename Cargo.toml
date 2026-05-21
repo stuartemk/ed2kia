@@ -1,6 +1,6 @@
 [package]
 name = "ed2kia"
-version = "2.1.0-sprint21"
+version = "2.1.0-sprint22"
 edition = "2021"
 description = "Descentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
 license = "Apache-2.0"
@@ -555,6 +555,18 @@ test-mocks = []
 "v2.1-region-sync" = []
 
 "v2.1-federation-bootstrap" = ["v2.1-cross-mesh", "v2.1-region-sync"]
+
+# ─── Sprint22: Mainnet Genesis & Steward Activation ───
+
+# v2.1 Mainnet Genesis — Deterministic genesis state, Ed25519 signing, dual export (Sprint22)
+# src/mainnet/genesis.rs: GenesisState with SHA256 hash + Ed25519 signature
+# scripts/genesis-bootstrap.sh: 5-phase automated bootstrap
+"v2.1-mainnet-genesis" = []
+
+# v2.1 Steward Portal — Alpine.js operations dashboard, merit-verified access (Sprint22)
+# web/steward-portal.html: Genesis verification, network health, steward actions
+# web/assets/steward-portal.js: Alpine.js component with polling + debounce
+"v2.1-steward-portal" = ["v2.1-mainnet-genesis"]
 
 [dev-dependencies]
 tempfile = "3.10"

@@ -6,6 +6,78 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.1.0-sprint22] — 2026-05-21
+
+### 🎉 Sprint Summary
+
+**v2.1.0-sprint22 "Mainnet Genesis & Community Steward Activation"** implementa estado de génesis determinista con firma Ed25519, bootstrap criptográfico de 5 fases, portal de operaciones para stewards y runbook operativo de día uno. Estado: `MAINNET-LIVE`.
+
+| Artifact | Path | Purpose |
+|----------|------|---------|
+| Genesis State | `src/mainnet/genesis.rs` | Deterministic genesis with SHA256 hash + Ed25519 signature, dual export (bincode + JSON), strict SCT/BFT validation (22 tests) |
+| Bootstrap Script | `scripts/genesis-bootstrap.sh` | 5-phase automated bootstrap: env validation → genesis generation → Docker launch → healthchecks → report |
+| Steward Portal | `web/steward-portal.html` | Alpine.js dashboard: Genesis Verification, Network Health, Steward Actions panels |
+| Portal Component | `web/assets/steward-portal.js` | Alpine.js component with polling, debounce, Visibility API lazy loading |
+| Operational Runbook | `docs/mainnet-genesis-runbook.md` | Genesis checklist, activation flow, incident resolution, rollback procedures, ethical clause |
+| Feature Gates | `Cargo.toml` | `v2.1-mainnet-genesis`, `v2.1-steward-portal` |
+
+### Added — Deterministic Genesis State with Ed25519 Signing
+
+- **genesis.rs** — `src/mainnet/genesis.rs`
+  - `GenesisState` — version, initial_peers, sct_config, bft_threshold, bft_config, crdt_config, timestamp, state_hash, signature, metadata
+  - `PeerId` — id, address, port
+  - `SCTConfig` — z_threshold (0.0), x_range, y_range
+  - `BftConfig` — max_byzantine_fraction (0.33), min_valid_gradients, outlier_sigma
+  - `CrdtConfig` — max_batch_size, delta_encoding, max_latency_ms
+  - `GenesisReport` — Verification metrics with state_hash, signature, peer_count, thresholds, validation_passed
+  - `GenesisError` — 9 error variants (InvalidSctThreshold, InvalidBftThreshold, EmptyPeerList, SignatureVerificationFailed, HashMismatch, etc.)
+  - SHA256 deterministic hashing + Ed25519 signing
+  - Dual export: `genesis.bincode` (bincode) + `genesis.json` (serde_json)
+  - Strict validation: `sct_config.z_threshold == 0.0`, `bft_threshold == 0.33`
+  - Feature gate: `v2.1-mainnet-genesis`
+  - 22 unit tests: creation, validation, signature verification, JSON/bincode roundtrip, deterministic hashing, error handling, full pipeline
+
+### Added — 5-Phase Genesis Bootstrap Script
+
+- **genesis-bootstrap.sh** — `scripts/genesis-bootstrap.sh`
+  - Phase 1: Environment validation (Rust, Docker, Python, redb, Ed25519 keys)
+  - Phase 2: Genesis generation (`genesis.bincode` + `genesis.json`)
+  - Phase 3: Docker Compose launch (`--profile mainnet`)
+  - Phase 4: Healthchecks (CRDT sync, SCTGuard activation, BFTAggregator)
+  - Phase 5: Report generation (`docs/genesis-report-YYYYMMDD.md`)
+  - Options: `--dry-run`, `--peers N`, `--help`
+  - Output: `🟢 GENESIS ACTIVE` or `🔴 ROLBACK TRIGGERED: [causa]`
+  - Cleanup trap: `EXIT INT TERM`
+
+### Added — Steward Operations Portal
+
+- **steward-portal.html** — `web/steward-portal.html`
+  - 🔑 Genesis Verification panel: hash, signature, timestamp, peers, SCT/BFT thresholds
+  - 🛡️ Network Health panel: SCT Z-axis distribution, BFT outlier rate, CRDT sync, latency, active nodes
+  - 📜 Steward Actions panel: Claim Node, Verify Alignment, Trigger Manual Sync, Export Audit Logs
+  - 🌐 Initial Peers panel: Peer list with online/offline status
+  - APIs: `GET /api/genesis/state`, `GET /api/metrics`, `POST /api/steward/verify`
+
+- **steward-portal.js** — `web/assets/steward-portal.js`
+  - `stewardPortal()` — Alpine.js component with state management
+  - `loadGenesis()` / `loadMetrics()` — API consumers with fallback mock data
+  - `startPolling()` — 5s interval with `requestAnimationFrame`
+  - `debounceLoadMetrics()` — 1s debounce
+  - `setupVisibility()` — Visibility API for lazy loading
+  - Feature gate: `v2.1-steward-portal`
+
+### Added — Day-One Operational Runbook
+
+- **mainnet-genesis-runbook.md** — `docs/mainnet-genesis-runbook.md`
+  - Genesis checklist (pre-activation, activation, post-activation)
+  - Activation flow diagram with ASCII art
+  - Incident resolution: Network partition (CRDT convergence), SCT drift (z_threshold verification), BFT stall (slashing + sync)
+  - Rollback procedures: Partial (service restart) vs Complete (restore pre-genesis backup)
+  - Steward contacts and escalation matrix
+  - Ethical clause with Stuartian Laws mapping
+
+---
+
 ## [v2.1.0-sprint21] — 2026-05-21
 
 ### 🎉 Sprint Summary
