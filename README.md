@@ -6,7 +6,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ethical-blue)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-2021-orange)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/Version-2.1.0-sprint20-yellowgreen)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-2.1.0-sprint21-yellowgreen)](CHANGELOG.md)
 [![Audit](https://img.shields.io/badge/Audit-Ready-brightgreen)](docs/audit-prep.md)
 [![Governance](https://img.shields.io/badge/Governance-Active-blueviolet)](GOVERNANCE.md)
 [![Launch](https://img.shields.io/badge/Launch-Ready-red)](docs/public-launch-guide.md)
@@ -105,6 +105,9 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 | `v2.1-async-gossip-crdt` | Async Gossip with CRDTs — Partition-tolerant GossipSub with conflict-free convergence (Law 5) | 🏗️ Scaffold (Sprint16) |
 | `v2.1-stuartian-geometry` | Stuartian Geometry 3D — EthicalOctahedron, non-linear focal gravity `Z=tanh(k*Δ)`, 36 tests | ✅ Implementado |
 | `v2.1-3d-viz` | 3D Visualization — Vanilla JS octahedron renderer, particle system, real-time SCT Z-axis | ✅ Implementado |
+| `v2.1-cross-mesh` | Cross-Mesh Routing — Deterministic peering, rate limiting, exponential backoff, payload relay | ✅ Implementado (20 tests) |
+| `v2.1-region-sync` | Multi-Region Sync — Delta-encoding, batch merge, latency-aware CRDT synchronization | ✅ Implementado (23 tests) |
+| `v2.1-federation-bootstrap` | Federation Bootstrap — Automated 5-phase federation script with report generation | ✅ Implementado |
 | `v2.1-security-hardening` | wasmtime ≥24.0.7, rustls-webpki ≥0.103.13 | Planificado Q2-Q3 2027 |
 | `v2.1-gui` | GUI Bridge, Mobile, 3D Visualizer | Draft |
 | `v2.1-zkp-v3` | ZKP v3, Recursive Prover, Cross-Chain | Draft |

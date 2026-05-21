@@ -554,6 +554,14 @@ pub mod alignment {
     pub mod stuartian_geometry;
 }
 
+/// Network — Cross-mesh routing & multi-region synchronization (Sprint21)
+#[cfg(any(
+    feature = "v2.1-cross-mesh",
+    feature = "v2.1-region-sync",
+    feature = "v2.1-federation-bootstrap"
+))]
+pub mod network;
+
 /// Async Gossip with CRDTs — Partition-tolerant GossipSub mesh (Sprint16.4)
 #[cfg(any(
     feature = "v2.1-async-gossip",

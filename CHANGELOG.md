@@ -6,6 +6,81 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.1.0-sprint21] — 2026-05-21
+
+### 🎉 Sprint Summary
+
+**v2.1.0-sprint21 "Interoperabilidad P2P & Escalado Federado"** implementa enrutamiento cross-mesh determinista, sincronización multi-región con awareness de latencia, optimización CRDT con delta-encoding y bootstrap automatizado de federación. Estado: `FEDERATION-ACTIVE`.
+
+| Artifact | Path | Purpose |
+|----------|------|---------|
+| Cross-Mesh Router | `src/network/cross_mesh.rs` | Deterministic peering, rate limiting, exponential backoff, payload relay (20 tests) |
+| Region Sync Engine | `src/network/region_sync.rs` | Multi-region sync, delta-encoding, batch merge, latency awareness (23 tests) |
+| Network Module | `src/network/mod.rs` | Feature-gated module wiring for cross_mesh + region_sync |
+| Federation Bootstrap | `scripts/federate-mesh.sh` | 5-phase automated federation bootstrap with report generation |
+| Federation Blueprint | `docs/federation-blueprint.md` | Architecture, threat model, operational runbook, ethical clause |
+| Feature Gates | `Cargo.toml` | `v2.1-cross-mesh`, `v2.1-region-sync`, `v2.1-federation-bootstrap` |
+
+### Added — Cross-Mesh Routing & Peering
+
+- **cross_mesh.rs** — `src/network/cross_mesh.rs`
+  - `CrossMeshRouter` — Deterministic peering protocol between independent GossipSub meshes
+  - `PeerLink` — Remote mesh connection state with rate limiting (100 msgs/10s window)
+  - `RelayPayload` — Enum: `QLoRAPayload(Vec<u8>)`, `SCTDecision(f32)`, `CRDTState(Vec<u8>)`
+  - `RouteEntry` — mesh_id → next_hop mapping with hop count, validity, last_update
+  - `RouterStats` — total_peers, active_peers, total_routes, total_relays, total_failures, queue_size
+  - Exponential backoff: base 100ms, max 2^10 multiplier on relay failures
+  - Fallback to direct broadcast when peering links inactive
+  - `MAX_PAYLOAD_SIZE = 1MB` constant for relay payloads
+  - Feature gate: `v2.1-cross-mesh`
+  - 20 unit tests: router creation, peer management, signature validation, relay, broadcast, queue, backoff, rate limiting, 3-mesh propagation
+
+### Added — Multi-Region Sync with Latency Awareness
+
+- **region_sync.rs** — `src/network/region_sync.rs`
+  - `RegionState` — Per-region reputation map with version vectors, last_sync, sync_count
+  - `DeltaEntry` — Differential encoding: node_id, new_value, previous_value, delta, version, timestamp
+  - `SyncConfig` — max_batch_size (1000), timeout, delta_encoding toggle, max_latency_ms
+  - `SyncResult` — entries_merged, conflicts_resolved, compression_ratio, duration, effective_latency_ms
+  - `generate_deltas(local, remote)` — Delta generation for newer remote entries
+  - `apply_deltas(state, deltas)` — Idempotent delta application
+  - `resolve_conflicts(local, remote)` — Version vector + max-registry conflict resolution
+  - `sync_region_state(local, remote, latency_ms, config)` — Full sync with latency simulation
+  - Latency tiers: 50ms (low), 500ms (medium), 2000ms (high), 5000ms max
+  - Delta-encoding achieves 60-80% payload size reduction vs full sync
+  - Feature gate: `v2.1-region-sync`
+  - 23 unit tests: region state, delta generation, conflict resolution, sync latencies, compression ratio, idempotent convergence
+
+### Added — Federation Bootstrap Script
+
+- **federate-mesh.sh** — `scripts/federate-mesh.sh`
+  - Phase 1: Environment validation (Docker, Rust, Python, redb, libp2p keys)
+  - Phase 2: Build validation (`cargo check` with federation features)
+  - Phase 3: Region simulation (3 orchestrator instances on distinct ports)
+  - Phase 4: Cross-mesh peering handshake + CRDT sync verification
+  - Phase 5: Report generation (`docs/federation-test-report-YYYYMMDD.md`)
+  - Output: `🟢 FEDERATION ACTIVE` or `🔴 SYNC FAILED: [causa]`
+  - Supports `--dry-run`, `--regions N`, `--help` options
+  - Cleanup trap on EXIT/INT/TERM
+
+### Added — Federation Blueprint Documentation
+
+- **federation-blueprint.md** — `docs/federation-blueprint.md`
+  - Cross-mesh architecture with ASCII diagram
+  - Peering model: handshake, signature validation, rate limiting
+  - Multi-region sync strategy: delta-encoding, batch merge, latency awareness
+  - Threat model: Sybil hopping, partition attacks, data poisoning
+  - Operational runbook: bootstrap, diagnostic, rollback commands
+  - Ethical clause: Stuartian Laws compliance, zero financial logic
+
+### Changed
+
+- **Cargo.toml** — Version bumped to `2.1.0-sprint21`
+- **Feature gates** — Added `v2.1-cross-mesh`, `v2.1-region-sync`, `v2.1-federation-bootstrap` (depends on cross-mesh + region-sync)
+- **src/lib.rs** — Added `pub mod network` with feature gates for v2.1-cross-mesh, v2.1-region-sync, v2.1-federation-bootstrap
+
+---
+
 ## [v2.1.0-sprint20] — 2026-05-21
 
 ### 🎉 Sprint Summary

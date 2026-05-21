@@ -1,6 +1,6 @@
 [package]
 name = "ed2kia"
-version = "2.1.0-sprint20"
+version = "2.1.0-sprint21"
 edition = "2021"
 description = "Descentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
 license = "Apache-2.0"
@@ -548,6 +548,13 @@ test-mocks = []
 "v2.1-stuartian-geometry" = ["v2.1-sct-core"]
 
 "v2.1-3d-viz" = ["v2.1-stuartian-geometry"]
+
+# ─── Sprint21: Interoperabilidad P2P & Escalado Federado ───
+"v2.1-cross-mesh" = []
+
+"v2.1-region-sync" = []
+
+"v2.1-federation-bootstrap" = ["v2.1-cross-mesh", "v2.1-region-sync"]
 
 [dev-dependencies]
 tempfile = "3.10"
