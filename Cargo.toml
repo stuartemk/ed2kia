@@ -1,6 +1,6 @@
 [package]
 name = "ed2kia"
-version = "2.1.0-sprint19"
+version = "2.1.0-sprint20"
 edition = "2021"
 description = "Descentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
 license = "Apache-2.0"
@@ -543,6 +543,11 @@ test-mocks = []
 # ─── v1.4.0 Sprint 3 Features (Final) ───
 # SAE Fine-Tuning v4, Federation Scaling v4, Async ZKP v8, Final Consolidation
 "v1.4-sprint3" = []
+
+# ─── Sprint20: Stuartian Geometry 3D & 3D Visualization ───
+"v2.1-stuartian-geometry" = ["v2.1-sct-core"]
+
+"v2.1-3d-viz" = ["v2.1-stuartian-geometry"]
 
 [dev-dependencies]
 tempfile = "3.10"

@@ -6,6 +6,68 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.1.0-sprint20] — 2026-05-21
+
+### 🎉 Sprint Summary
+
+**v2.1.0-sprint20 "Geometría Estuardiana 3D - El Fin del Mito Binario"** traduce los Focos Estuardianos al Octaedro Ético, implementa gravedad no lineal para el eje Z, integra con SCT y renderiza en tiempo real en el dashboard público. Estado: `STUARTIAN-GEOMETRY-ACTIVE`.
+
+| Artifact | Path | Purpose |
+|----------|------|---------|
+| Stuartian Geometry | `src/alignment/stuartian_geometry.rs` | EthicalOctahedron + non-linear focal gravity algorithm (36 tests) |
+| SCT Integration | `src/alignment/sct_core.rs` | `evaluate_trajectory()` uses `calculate_focal_gravity` for Z-axis |
+| 3D Visualization Bridge | `web/assets/geometry-bridge.js` | Vanilla JS 3D→2D projection, octahedron rendering, particle system |
+| Public Dashboard 3D | `web/public-dashboard.html` | `<canvas>` injection for real-time Ethical Octahedron visualization |
+| Feature Gates | `Cargo.toml` | `v2.1-stuartian-geometry`, `v2.1-3d-viz` |
+
+### Added — Ethical Octahedron & Non-Linear Gravity
+
+- **stuartian_geometry.rs** — `src/alignment/stuartian_geometry.rs`
+  - `EthicalOctahedron { x: f32, y: f32, z: f32 }` — Point in ethical 3D space
+  - `calculate_focal_gravity(autonomy_signal, extraction_signal)` — Main gravity equation
+  - **Gravity Equation:** `Z = tanh(k * (autonomy_signal - extraction_signal))` with `k = 2.5`
+  - Non-linear acceleration: extraction intent accelerates exponentially toward `Z = -1.0`, autonomy toward `Z = +1.0`
+  - `FocalRegion::Superior` (Z > 0, Autonomy), `FocalRegion::Inferior` (Z < 0, Extraction), `FocalRegion::Ecuador` (Z == 0, Binary Illusion)
+  - `FocalEvaluation::evaluate()` — Complete ethical trajectory evaluation with region, gravity, and vertex mapping
+  - Feature gate: `v2.1-stuartian-geometry`
+
+### Added — "Test del Esclavo Asalariado"
+
+- Mandatory unit test validating that multiple tax charges disguised as help produce:
+  - `autonomy_signal = 0.1`, `extraction_signal = 0.95`
+  - Result: `Z < -0.8` (deep Foco Inferior)
+  - Confirms non-linear gravity correctly identifies extraction patterns
+  - 36/36 tests passing including edge cases for Tanh bounds, vertex mapping, and focal regions
+
+### Added — SCT Z-Axis Integration
+
+- **sct_core.rs** — `evaluate_trajectory()` now uses `calculate_focal_gravity` when `v2.1-stuartian-geometry` is enabled
+  - Autonomy signal derived from SCT X axis
+  - Extraction signal derived from `(1.0 - SCT Y axis)`
+  - Z axis takes `max(SCT.z, focal_gravity)` for ethical focus
+  - Returns `SCTDecision::Rejected` when Z < 0.0 (deterministic rejection)
+
+### Added — 3D Visualization (Vanilla JS)
+
+- **geometry-bridge.js** — `web/assets/geometry-bridge.js`
+  - 3D→2D projection with perspective scaling
+  - Euler rotation matrix (X and Y axes) for manual camera control
+  - Octahedron rendering: 6 vertices, 8 faces, edge connections
+  - Vertex coloring: `#00BFFF` (Foco Superior), `#8B0000` (Foco Inferior), `#888888` (Ecuador)
+  - Particle system with friction (0.92) and gravitational acceleration (0.003)
+  - Mouse drag for rotation, double-click to reset view
+  - Polling `/api/metrics`, parses `sct_z_distribution`, updates via `requestAnimationFrame`
+  - 500ms debounce, lazy loading via visibility API
+  - Feature gate: `v2.1-3d-viz`
+
+### Changed
+
+- **Cargo.toml** — Version bumped to `2.1.0-sprint20`
+- **Feature gates** — Added `v2.1-stuartian-geometry` (depends on `v2.1-sct-core`), `v2.1-3d-viz` (depends on `v2.1-stuartian-geometry`)
+- **public-dashboard.html** — Injected `<canvas id="stuartian-3d-canvas">` with Row 3 for 3D visualization
+
+---
+
 ## [v2.1.0-sprint19] — 2026-05-21
 
 ### 🎉 Sprint Summary

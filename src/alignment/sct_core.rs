@@ -90,11 +90,32 @@ impl StuartianTensor {
     ///
     /// `Z < 0` → Rechazo inmediato (perversidad sistémica / dependencia).
     /// `Z >= 0` → Aprobación (autonomía / diversidad).
+    ///
+    /// Con la feature `v2.1-stuartian-geometry`, utiliza `calculate_focal_gravity`
+    /// para recalcular el eje Z con gravedad no lineal antes de evaluar.
     pub fn evaluate_trajectory(&self) -> Result<SCTDecision, SctError> {
-        if self.z < 0.0 {
-            return Ok(SCTDecision::Rejected(self.z.abs()));
+        #[cfg(feature = "v2.1-stuartian-geometry")]
+        {
+            use crate::alignment::stuartian_geometry::calculate_focal_gravity;
+            // Recalcular Z con gravedad focal: X como autonomía, (1-Y) como extracción
+            // (menor costo = menor extracción)
+            let autonomy_signal = self.x;
+            let extraction_signal = 1.0 - self.y;
+            let z_gravity = calculate_focal_gravity(autonomy_signal, extraction_signal);
+            let z = self.z.max(z_gravity); // Toma el Z más conservador
+            if z < 0.0 {
+                return Ok(SCTDecision::Rejected(z.abs()));
+            }
+            return Ok(SCTDecision::Approved(z));
         }
-        Ok(SCTDecision::Approved(self.z))
+
+        #[cfg(not(feature = "v2.1-stuartian-geometry"))]
+        {
+            if self.z < 0.0 {
+                return Ok(SCTDecision::Rejected(self.z.abs()));
+            }
+            Ok(SCTDecision::Approved(self.z))
+        }
     }
 
     /// Calcula la métrica de calidad estuardiana: `beneficio - costo + foco`.

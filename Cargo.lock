@@ -1455,7 +1455,7 @@ dependencies = [
 
 [[package]]
 name = "ed2kia"
-version = "1.6.0-stable"
+version = "2.1.0-sprint20"
 dependencies = [
  "anyhow",
  "ark-bn254",

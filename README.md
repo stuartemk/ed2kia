@@ -6,7 +6,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ethical-blue)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-2021-orange)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/Version-2.1.0-sprint19-yellowgreen)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-2.1.0-sprint20-yellowgreen)](CHANGELOG.md)
 [![Audit](https://img.shields.io/badge/Audit-Ready-brightgreen)](docs/audit-prep.md)
 [![Governance](https://img.shields.io/badge/Governance-Active-blueviolet)](GOVERNANCE.md)
 [![Launch](https://img.shields.io/badge/Launch-Ready-red)](docs/public-launch-guide.md)
@@ -103,6 +103,8 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 | `v2.1-proof-of-comprehension` | Proof of Comprehension — Cryptographic proof of useful work via SAE activations (Law 2) | 🏗️ Scaffold (Sprint16) |
 | `v2.1-stuartian-filter` | Stuartian Filter — Deterministic alignment filter with KL divergence detection (Law 2) | 🏗️ Scaffold (Sprint16) |
 | `v2.1-async-gossip-crdt` | Async Gossip with CRDTs — Partition-tolerant GossipSub with conflict-free convergence (Law 5) | 🏗️ Scaffold (Sprint16) |
+| `v2.1-stuartian-geometry` | Stuartian Geometry 3D — EthicalOctahedron, non-linear focal gravity `Z=tanh(k*Δ)`, 36 tests | ✅ Implementado |
+| `v2.1-3d-viz` | 3D Visualization — Vanilla JS octahedron renderer, particle system, real-time SCT Z-axis | ✅ Implementado |
 | `v2.1-security-hardening` | wasmtime ≥24.0.7, rustls-webpki ≥0.103.13 | Planificado Q2-Q3 2027 |
 | `v2.1-gui` | GUI Bridge, Mobile, 3D Visualizer | Draft |
 | `v2.1-zkp-v3` | ZKP v3, Recursive Prover, Cross-Chain | Draft |
@@ -177,6 +179,72 @@ cargo test --lib --features "v2.1-sct-core,v2.1-sct-reward,v2.1-sct-guard" -- sc
 ```
 
 > **Nota:** Los módulos se encuentran en fase de scaffold (estructura pura, cero lógica de negocio). La implementación módulo por módulo se realizará en sprints subsiguientes (Sprint16.1 → Sprint16.4).
+
+### 🧬 Geometría Estuardiana 3D — Sprint20
+
+La **Geometría Estuardiana 3D** destruye la ilusión 2D del "Bien vs Mal" proyectando los Focos Estuardianos en un **Octaedro Ético** con gravedad no lineal. Cualquier humano puede auditar visualmente la trayectoria ética de la red.
+
+#### Octaedro Ético
+
+| Vértice | Eje | Color | Significado |
+|---------|-----|-------|-------------|
+| Foco Superior | Z = +1.0 | `#00BFFF` (Azul Celeste) | Autonomía, Diversidad, Conocimiento |
+| Foco Inferior | Z = -1.0 | `#8B0000` (Rojo Sangre) | Perversidad, Control, Extracción |
+| Ecuador (4 vértices) | Z = 0.0 | `#888888` (Gris) | Ilusión binaria (X/Y plane) |
+
+#### Ecuación de Gravedad No Lineal
+
+```
+Z = tanh(k * (autonomy_signal - extraction_signal))
+```
+
+Donde `k = 2.5` (Stuartian Gravity Constant):
+
+- **Extracción** (`extraction_signal > autonomy_signal`) → Aceleración exponencial hacia `Z = -1.0`
+- **Autonomía** (`autonomy_signal > extraction_signal`) → Aceleración exponencial hacia `Z = +1.0`
+- **Gravedad no lineal:** Una intención de control del 10% genera `Z ≈ -0.22`, pero el 50% de extracción colapsa a `Z ≈ -0.96`
+
+#### Integración con SCT
+
+El `evaluate_trajectory()` del SCT usa `calculate_focal_gravity` para el eje Z:
+
+```
+autonomy_signal    = SCT.x
+extraction_signal  = 1.0 - SCT.y
+z_gravity          = calculate_focal_gravity(autonomy, extraction)
+Z final            = max(SCT.z, z_gravity)
+```
+
+Si `Z < 0.0` → `SCTDecision::Rejected` (rechazo determinista, sin excepciones).
+
+#### Visualización 3D en Tiempo Real
+
+El dashboard público (`web/public-dashboard.html`) incluye un `<canvas>` con renderizado 3D en tiempo real:
+
+- **Proyección 3D→2D** con perspectiva y matriz de rotación Euler
+- **Octaedro** con 6 vértices y 8 caras coloreadas por región ética
+- **Sistema de partículas** con fricción (0.92) y aceleración gravitacional (0.003)
+- **Interacción:** Arrastrar para rotar, doble-clic para resetear vista
+- **Datos en vivo:** Polling `/api/metrics` → `sct_z_distribution` → `requestAnimationFrame`
+
+> **Acceder al dashboard:** `web/public-dashboard.html` (activar feature gate `v2.1-3d-viz`)
+
+#### Test del Esclavo Asalariado
+
+Test unitario obligatorio que valida que múltiples cobros de impuestos disfrazados de ayuda generan:
+
+```
+autonomy_signal  = 0.1
+extraction_signal = 0.95
+Z resultante     < -0.8  (Foco Inferior profundo)
+```
+
+Esto confirma que la gravedad no lineal identifica correctamente los patrones de extracción.
+
+```bash
+# Ejecutar tests de Geometría Estuardiana
+cargo test --lib --features "v2.1-stuartian-geometry" -- stuartian_geometry
+```
 
 ## ⚡ Hardening & Cross-Platform (Sprint13)
 

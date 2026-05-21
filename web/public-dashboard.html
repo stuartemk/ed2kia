@@ -459,10 +459,51 @@
 
                 <div style="margin-top: 16px; padding: 12px; background: var(--bg-secondary); border-radius: 8px;">
                     <div class="metric-label">Kernel Version</div>
-                    <div style="font-weight: 600; margin-top: 4px;">v2.1.0-sprint19</div>
+                    <div style="font-weight: 600; margin-top: 4px;">v2.1.0-sprint20</div>
                     <div class="metric-label" style="margin-top: 8px;">Feature Gates</div>
                     <div style="font-size: 0.85rem; color: var(--accent-cyan); margin-top: 2px;">
-                        v2.1-public-launch, v2.1-community-onboarding
+                        v2.1-stuartian-geometry, v2.1-3d-viz
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 3: Stuartian Geometry 3D Visualization -->
+        <div class="grid" style="grid-template-columns: 1fr;">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">🧬 Octaedro Ético — Geometría Estuardiana 3D</span>
+                    <span class="card-badge">v2.1-stuartian-geometry</span>
+                </div>
+                <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
+                    <canvas id="stuartian-3d-canvas" width="500" height="500"
+                            style="border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); cursor: grab; flex: 1; min-width: 300px; max-width: 500px;"></canvas>
+                    <div style="flex: 1; min-width: 250px;">
+                        <div class="metric-label" style="margin-bottom: 8px;">Leyenda del Octaedro</div>
+                        <div class="tier-list">
+                            <div class="tier-item">
+                                <span class="tier-name" style="color: #00BFFF;">● Foco Superior (Z=+1)</span>
+                                <span class="tier-weight">Autonomía</span>
+                            </div>
+                            <div class="tier-item">
+                                <span class="tier-name" style="color: #888888;">● Ecuador (Z=0)</span>
+                                <span class="tier-weight">Ilusión Binaria</span>
+                            </div>
+                            <div class="tier-item">
+                                <span class="tier-name" style="color: #8B0000;">● Foco Inferior (Z=-1)</span>
+                                <span class="tier-weight">Extracción</span>
+                            </div>
+                        </div>
+                        <div style="margin-top: 16px; padding: 12px; background: var(--bg-secondary); border-radius: 8px;">
+                            <div class="metric-label">Ecuación de Gravedad</div>
+                            <div style="font-family: monospace; font-size: 0.9rem; color: var(--accent-cyan); margin-top: 4px;">
+                                Z = tanh(k · (autonomía - extracción))
+                            </div>
+                            <div class="metric-label" style="margin-top: 8px;">k = 2.5 (aceleración exponencial)</div>
+                        </div>
+                        <div style="margin-top: 12px; font-size: 0.8rem; color: var(--text-secondary);">
+                            Arrastra para rotar · Doble-click para resetear
+                        </div>
                     </div>
                 </div>
             </div>
@@ -470,7 +511,7 @@
 
         <!-- Footer -->
         <footer>
-            <p>ed2kIA v2.1.0-sprint19 — Public Observability Dashboard</p>
+            <p>ed2kIA v2.1.0-sprint20 — Public Observability Dashboard</p>
             <p style="margin-top: 8px;">
                 <a href="docs/kernel-architecture.md" target="_blank">Kernel Architecture</a> ·
                 <a href="docs/audit-prep.md" target="_blank">Audit Prep</a> ·
@@ -486,5 +527,7 @@
     <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script defer src="/assets/public-dashboard.js"></script>
+    <!-- Sprint20: Stuartian Geometry 3D Bridge -->
+    <script defer src="/assets/geometry-bridge.js"></script>
 </body>
 </html>

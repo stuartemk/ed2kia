@@ -547,6 +547,11 @@ pub mod alignment {
     pub mod sct_reward;
     #[cfg(feature = "v2.1-sct-guard")]
     pub mod sct_guard;
+
+    // ─── Sprint20: Geometría Estuardiana 3D ───
+    #[cfg(feature = "v2.1-stuartian-geometry")]
+    #[path = "../alignment/stuartian_geometry.rs"]
+    pub mod stuartian_geometry;
 }
 
 /// Async Gossip with CRDTs — Partition-tolerant GossipSub mesh (Sprint16.4)
