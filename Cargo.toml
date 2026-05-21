@@ -1,6 +1,6 @@
 [package]
 name = "ed2kia"
-version = "2.1.0-sprint17"
+version = "2.1.0-sprint18"
 edition = "2021"
 description = "Descentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
 license = "Apache-2.0"
@@ -459,6 +459,18 @@ stable = [
 # scripts/activate-mainnet.sh: Env validation, docker-compose, healthchecks, SCTGuard/BFT activation
 # docs/kernel-architecture.md: Unified kernel blueprint with Stuartian philosophy mapping
 "v2.1-mainnet-activation" = ["v2.1-kernel-integration"]
+
+# ─── Sprint18: Audit Prep & Governance Activation ───
+
+# v2.1 Audit Preparation — External audit prep, CVE scanning, ethical compliance (Sprint18)
+# scripts/audit-scan.sh: Automated pre-audit scanning pipeline
+# docs/audit-prep.md: Guide for external auditors
+"v2.1-audit-prep" = ["v2.1-kernel-integration"]
+
+# v2.1 Governance Activation — Community node validator, automated RFC pipeline (Sprint18)
+# scripts/validate-node.sh: Lightweight validator for volunteer nodes
+# .github/workflows/governance-rfc.yml: Automated RFC processing pipeline
+"v2.1-governance-activation" = ["v2.1-audit-prep"]
 
 # ─── Hardware Acceleration ───
 cpu = []

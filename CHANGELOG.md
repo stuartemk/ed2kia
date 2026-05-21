@@ -6,6 +6,69 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.1.0-sprint18] — 2026-05-21
+
+### 🎉 Sprint Summary
+
+**v2.1.0-sprint18 "Auditoría Externa, Gobernanza Activa & Onboarding Comunitario"** prepara la red para auditoría formal, habilita validación ligera para nodos voluntarios y automatiza el pipeline de RFCs comunitarios. Estado: `AUDIT-READY & GOVERNANCE-ACTIVE`.
+
+| Artifact | Path | Purpose |
+|----------|------|---------|
+| Audit Scanner | `scripts/audit-scan.sh` | 5-phase pre-audit: check→clippy→CVE→ethical→coverage |
+| Audit Guide | `docs/audit-prep.md` | Threat model, architecture, test coverage, known limitations |
+| Node Validator | `scripts/validate-node.sh` | Lightweight health check for volunteer nodes |
+| RFC Pipeline | `.github/workflows/governance-rfc.yml` | Automated RFC triage, voting guide, validation checklist |
+| Feature Gates | `Cargo.toml` | `v2.1-audit-prep`, `v2.1-governance-activation` |
+
+### Added — Pre-Audit Scanner
+
+- **audit-scan.sh** — `scripts/audit-scan.sh`
+  - Phase 1: `cargo check --all-targets` + `cargo clippy -- -D warnings`
+  - Phase 2: `cargo audit` / `cargo deny check` → CVE report
+  - Phase 3: `verify-ethical-compliance.sh` → ethical clause + zero financial logic
+  - Phase 4: Coverage check (`cargo tarpaulin` or `cargo test --lib`)
+  - Phase 5: Generate `docs/audit-report-YYYYMMDD.md` with PASS/FAIL status
+  - Output: `🟢 AUDIT READY` or `🔴 BLOCKED: [findings]`
+  - Supports `--dry-run` mode
+
+### Added — External Audit Guide
+
+- **audit-prep.md** — `docs/audit-prep.md`
+  - Threat Model v2.0: Assets, threats, mitigations, trust assumptions
+  - Kernel Architecture: 5 Stuartian Laws → module mapping
+  - Test Coverage: Per-module test counts + E2E pipeline
+  - Known Limitations: Technical constraints transparently documented
+  - Bug Bounty Process: Severity classification + reporting channels
+  - Ethical Use Clause: Automated compliance verification
+  - Auditor Resources: Links to all relevant docs & scripts
+
+### Added — Community Node Validator
+
+- **validate-node.sh** — `scripts/validate-node.sh`
+  - Checks: Health endpoint, latency <500ms, SCTGuard status, CRDT sync, RAM <256MB
+  - Output: `🟢 NODE HEALTHY` + JSON metrics, or `🔴 DEGRADED` + recommendations
+  - Compatible with Docker Compose and native execution
+  - Supports `--endpoint URL`, `--output FILE` options
+  - No heavy external dependencies
+
+### Added — Automated RFC Pipeline
+
+- **governance-rfc.yml** — `.github/workflows/governance-rfc.yml`
+  - Trigger: `issues.opened` with label `rfc`
+  - Auto-label: `rfc`, `needs-review`, `v2.2.0`
+  - Auto-assign milestone v2.2.0
+  - Validate RFC structure (Motivation, Technical Spec, Ethical Impact, Feature Gate, Validation Checklist)
+  - Comment with voting guide (Novice→Steward weighted voting)
+  - Post validation checklist for tracking progress
+  - Feature gate verification against Cargo.toml
+
+### Changed
+
+- **Cargo.toml** — Added feature gates `v2.1-audit-prep` and `v2.1-governance-activation`
+- **Cargo.toml** — Version bumped to `2.1.0-sprint18`
+
+---
+
 ## [v2.1.0-sprint17] — 2026-05-20
 
 ### 🎉 Sprint Summary

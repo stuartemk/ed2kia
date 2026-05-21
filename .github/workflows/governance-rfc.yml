@@ -1,0 +1,285 @@
+name: Governance RFC Pipeline
+
+on:
+  issues:
+    types: [opened, labeled]
+  pull_request_target:
+    types: [opened]
+    branches: [main]
+
+permissions:
+  issues: write
+  pull-requests: write
+  contents: read
+
+jobs:
+  governance-rfc:
+    name: Process Governance RFC
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'issues' && (
+        contains(github.event.issue.labels.*.name, 'rfc') ||
+        contains(github.event.issue.labels.*.name, 'RFC') ||
+        contains(github.event.issue.labels.*.name, 'governance')
+      )) ||
+      (github.event_name == 'pull_request_target' && contains(github.event.pull_request.labels.*.name, 'rfc'))
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate RFC Structure
+        id: validate
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue || context.payload.pull_request;
+            const body = issue.body || '';
+            const requiredSections = [
+              'motivation',
+              'technical spec',
+              'ethical impact',
+              'feature gate',
+              'validation checklist'
+            ];
+
+            const missing = requiredSections.filter(section =>
+              !body.toLowerCase().includes(section)
+            );
+
+            core.info(`RFC validation: ${missing.length === 0 ? 'PASS' : 'FAIL'}`);
+            core.info(`Missing sections: ${missing.join(', ') || 'none'}`);
+
+            // Set output for conditional steps
+            core.setOutput('valid', missing.length === 0);
+            core.setOutput('missing', missing.join(', '));
+
+      - name: Auto-label RFC
+        if: github.event_name == 'issues'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labels = ['rfc', 'needs-review', 'v2.2.0'];
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: labels
+            });
+            core.info(`Added labels: ${labels.join(', ')}`);
+
+      - name: Assign Milestone v2.2.0
+        if: github.event_name == 'issues'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              const milestones = await github.rest.issues.listMilestones({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'open'
+              });
+
+              let milestone = milestones.data.find(m =>
+                m.title.includes('v2.2') || m.title.includes('v2.1')
+              );
+
+              if (milestone) {
+                await github.rest.issues.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  milestone: milestone.number
+                });
+                core.info(`Assigned milestone: ${milestone.title}`);
+              } else {
+                core.warning('No v2.1/v2.2 milestone found. Create one manually.');
+              }
+            } catch (err) {
+              core.warning(`Milestone assignment failed: ${err.message}`);
+            }
+
+      - name: Comment — RFC Structure Warning
+        if: steps.validate.outputs.valid == 'false' && github.event_name == 'issues'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const missing = `${{ steps.validate.outputs.missing }}`;
+            const comment = `## ⚠️ RFC Structure Incomplete
+
+            This RFC is missing the following required sections:
+
+            ${missing ? missing.split(', ').map(s => `- **${s.trim()}**`).join('\n') : '_None detected_'}
+
+            ### Required RFC Structure
+
+            Every RFC must include:
+
+            1. **Motivation** — Why is this change needed?
+            2. **Technical Spec** — How will it be implemented?
+            3. **Ethical Impact** — What is the ethical impact per Stuartian Laws?
+            4. **Feature Gate** — Which Cargo feature gate does this use?
+            5. **Validation Checklist** — How will this be tested?
+
+            ### Stuartian Laws Reference
+
+            | Law | Requirement |
+            |-----|-------------|
+            | Ley 1: Soberanía P2P | No central points of failure |
+            | Ley 2: Transparencia | All decisions auditable |
+            | Ley 3: Cero Waste | No redundant computation |
+            | Ley 4: Edge Distribution | Accessible on modest hardware |
+            | Ley 5: Múltiples Posibilidades | Tolerancia a particiones |
+
+            ### Resources
+
+            - [GOVERNANCE.md](../../blob/main/GOVERNANCE.md) — Governance rules
+            - [kernel-architecture.md](../../blob/main/docs/kernel-architecture.md) — Architecture
+            - [audit-prep.md](../../blob/main/docs/audit-prep.md) — Security & audit
+            - [Feature Gates](../../blob/main/Cargo.toml) — Current feature gates
+
+            ---
+            *Auto-generated by Governance RFC Pipeline*
+            `;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: comment
+            });
+
+      - name: Comment — RFC Voting Guide
+        if: github.event_name == 'issues'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const comment = `## 🛡️ RFC Registered — Governance Pipeline
+
+            Thank you for submitting this RFC! It has been registered in the governance pipeline.
+
+            ### Voting Process (Ponderado por Tier)
+
+            | Tier | Weight | Requirements |
+            |------|--------|-------------|
+            | Novice | 0.5x | New contributor |
+            | Contributor | 1.0x | 5+ merged PRs |
+            | Auditor | 1.5x | Passed audit training |
+            | Steward | 2.0x | Core team member |
+            | Guardian | 3.0x | 1yr tenure + election |
+
+            ### Timeline
+
+            1. **Discussion Period**: 14-30 days minimum
+            2. **Community Vote**: Weighted by tier
+            3. **Core Team Review**: Technical + ethical review
+            4. **Implementation**: After approval
+            5. **Retrospective**: Post-implementation review
+
+            ### Ethical Review Requirements
+
+            Per [GOVERNANCE.md](../../blob/main/GOVERNANCE.md):
+            - No lógica financiera permitida
+            - Transparencia total en decisiones
+            - Beneficio humano como prioridad
+            - Auditabilidad completa
+
+            ### Next Steps
+
+            - [ ] Complete all required sections (if flagged)
+            - [ ] Engage in community discussion
+            - [ ] Address feedback from reviewers
+            - [ ] Prepare implementation PR with feature gate
+
+            ---
+            *Auto-generated by Governance RFC Pipeline*
+            `;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: comment
+            });
+
+      - name: Verify Feature Gate Exists
+        if: steps.validate.outputs.valid == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue || context.payload.pull_request;
+            const body = issue.body || '';
+
+            // Extract feature gate from body
+            const featureMatch = body.match(/v2\.\d+-[a-z-]+/g);
+
+            if (featureMatch) {
+              core.info(`Found feature gates in RFC: ${featureMatch.join(', ')}`);
+
+              // Check if feature exists in Cargo.toml
+              const fs = require('fs');
+              const cargoToml = fs.readFileSync('Cargo.toml', 'utf8');
+
+              const missing = featureMatch.filter(fg =>
+                !cargoToml.includes(`"${fg}"`)
+              );
+
+              if (missing.length > 0) {
+                core.warning(`Feature gates not in Cargo.toml: ${missing.join(', ')}`);
+              } else {
+                core.info('All feature gates found in Cargo.toml');
+              }
+            } else {
+              core.warning('No feature gates found in RFC body');
+            }
+
+  rfc-checklist:
+    name: RFC Validation Checklist
+    runs-on: ubuntu-latest
+    needs: governance-rfc
+    if: always() && github.event_name == 'issues'
+    steps:
+      - name: Post Validation Checklist
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const checklist = `## ✅ RFC Validation Checklist
+
+            Use this checklist to track your RFC progress:
+
+            ### Pre-Submission
+            - [ ] RFC follows required structure
+            - [ ] Ethical Impact section completed
+            - [ ] Feature gate identified
+            - [ ] No financial logic introduced
+            - [ ] Compatible with Stuartian Laws
+
+            ### Discussion Phase
+            - [ ] 14+ days community discussion
+            - [ ] Feedback addressed
+            - [ ] Technical concerns resolved
+            - [ ] Ethical concerns resolved
+
+            ### Implementation Phase
+            - [ ] Feature gate added to Cargo.toml
+            - [ ] Tests written (≥80% coverage)
+            - [ ] Documentation updated
+            - [ ] CHANGELOG.md entry added
+            - [ ] \`cargo check\` passes
+            - [ ] \`cargo clippy\` clean
+            - [ ] \`cargo test\` passes
+
+            ### Post-Merge
+            - [ ] Retrospective completed
+            - [ ] Lessons documented
+            - [ ] Metrics collected
+
+            ---
+            *Auto-generated by Governance RFC Pipeline*
+            `;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: checklist
+            });
