@@ -6,6 +6,81 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.1.0-sprint23] — 2026-05-21
+
+### 🎉 Sprint Summary
+
+**v2.1.0-sprint23 "End-to-End Local MVP (La Chispa)"** implementa simulación local de 3 nodos con inferencia SAE dummy, validación SCT con Hard Reject, consenso BFT y binario de ejecución rápida. Objetivo: demostrar viabilidad técnica completa en hardware modesto, cerrando el ciclo de validación práctica del Kernel Estuardiano.
+
+| Artifact | Path | Purpose |
+|----------|------|---------|
+| SAE Simulator | `src/mvp/sae_simulator.rs` | Dummy SAE payload generator (Symbiotic/Perverse profiles), 12 unit tests |
+| Consensus Runner | `src/mvp/consensus_runner.rs` | SCT Guard + BFT Aggregator execution, 8 unit tests |
+| Local Testnet | `src/mvp/local_testnet.rs` | 5-phase simulation orchestrator, 5 unit tests |
+| CLI Binary | `src/bin/ed2k_mvp.rs` | Quick execution with --dry-run, --verbose, --output-json |
+| Telemetry Dashboard | `web/mvp-telemetry.html` | Alpine.js visualization with 4 panels |
+| Portal Component | `web/assets/mvp-telemetry.js` | Alpine.js component with mock data fallback |
+| Feature Gates | `Cargo.toml` | `v2.1-mvp-simulation` |
+
+### Added — End-to-End Local MVP Simulation
+
+- **sae_simulator.rs** — `src/mvp/sae_simulator.rs`
+  - `SaeSimulator` — rows, cols, device configuration
+  - `SaePayload` — node_id, gradient, dimensions, profile, expected_z
+  - `NodeProfile` — Symbiotic (Z≈+0.8), Perverse (Z≈-0.9)
+  - Deterministic gradient generation: positive-biased [0.3, 0.8] for symbiotic, negative-biased [-1.0, -0.25] for perverse
+  - Custom bincode-compatible serialization/deserialization
+  - Feature gate: `v2.1-mvp-simulation`
+  - 12 unit tests: creation, invalid dims, symbiotic/perverse generation, serialization roundtrip, tensor conversion, profile display
+
+- **consensus_runner.rs** — `src/mvp/consensus_runner.rs`
+  - `ConsensusRunner` — sct_guard, bft_aggregator, latency_limit_ms
+  - `SctEvaluation` — node_id, z_value, decision, approved, log_message
+  - `ConsensusMetrics` — total_payloads, approved/rejected counts, latencies, bft_result, evaluations
+  - SCT evaluation: gradient mean → Z value mapping, positive mean → APPROVED, negative mean → HARD REJECT
+  - BFT aggregation: coordinate-wise median on approved gradients
+  - Latency check: <500ms limit
+  - Feature gate: `v2.1-mvp-simulation`
+  - 8 unit tests: runner creation, symbiotic approval, perverse rejection, mixed payloads, all perverse, all symbiotic, JSON export
+
+- **local_testnet.rs** — `src/mvp/local_testnet.rs`
+  - `LocalTestnet` — nodes, simulator, consensus, dry_run, topic
+  - `MvpNode` — id, address, state (Initialized/Connected/Active/Slashed), profile, payloads
+  - `MvpResult` — dry_run, nodes, consensus_metrics, total_duration_ms, success, timestamp
+  - 5-phase simulation: Initialize → Connect → Generate Payloads → Activate → Consensus
+  - Dry-run mode: in-memory simulation without network binding
+  - Feature gate: `v2.1-mvp-simulation`
+  - 5 unit tests: testnet creation, default cluster, node lifecycle, full dry-run, state display
+
+- **ed2k_mvp.rs** — `src/bin/ed2k_mvp.rs`
+  - CLI binary with clap: `--dry-run` (default true), `--verbose`, `--output-json`
+  - Colored ANSI output with ASCII art header
+  - Telemetry export to `mvp-telemetry.json`
+  - Duration <3s in dry-run mode
+  - Required features: `v2.1-mvp-simulation`
+
+- **mvp-telemetry.html** — `web/mvp-telemetry.html`
+  - Alpine.js dashboard with 4 panels: Consensus Results, Z-Axis Distribution, Node Status, Simulation Info
+  - Dark theme with CSS variables, responsive grid
+  - Reads `mvp-telemetry.json` or `GET /api/mvp/status`
+
+- **mvp-telemetry.js** — `web/assets/mvp-telemetry.js`
+  - `mvpTelemetry()` Alpine component with data loading
+  - Mock data fallback for offline mode
+  - 5s polling interval for API mode
+  - Visibility API for lazy loading
+
+### Validation Results
+
+- `cargo check --bin ed2k_mvp --features "v2.1-mvp-simulation"` ✅ PASS
+- `cargo test --lib --features "v2.1-mvp-simulation" -- mvp --test-threads=1` ✅ 25/25 tests passed
+- `cargo run --bin ed2k_mvp --features "v2.1-mvp-simulation" -- --dry-run --verbose` ✅ 4.5ms execution
+  - SCT Hard Reject: `[SCT] Evaluando Nodo beta... Z=-0.9 -> HARD REJECT (Perversity Detected)`
+  - BFT Converged: `[BFT] Aggregation complete: 2 gradients, median mean=0.5473`
+  - Latency: 2.7ms (limit: 500ms) — PASS
+
+---
+
 ## [v2.1.0-sprint22] — 2026-05-21
 
 ### 🎉 Sprint Summary

@@ -1,6 +1,6 @@
 [package]
 name = "ed2kia"
-version = "2.1.0-sprint22"
+version = "2.1.0-sprint23"
 edition = "2021"
 description = "Descentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
 license = "Apache-2.0"
@@ -568,6 +568,15 @@ test-mocks = []
 # web/assets/steward-portal.js: Alpine.js component with polling + debounce
 "v2.1-steward-portal" = ["v2.1-mainnet-genesis"]
 
+# ─── Sprint23: End-to-End Local MVP (La Chispa) ───
+
+# v2.1 MVP Simulation — 3-node local testnet, SCT Hard Reject demo, BFT consensus (Sprint23)
+# src/mvp/sae_simulator.rs: Dummy SAE payload generator (Symbiotic/Perverse profiles)
+# src/mvp/consensus_runner.rs: SCT Guard + BFT Aggregator execution
+# src/mvp/local_testnet.rs: 5-phase simulation orchestrator
+# src/bin/ed2k_mvp.rs: CLI binary with --dry-run, --verbose, --output-json
+"v2.1-mvp-simulation" = ["v2.1-sct-core", "v2.1-sct-guard", "v2.1-bft-aggregation"]
+
 [dev-dependencies]
 tempfile = "3.10"
 criterion = { version = "0.5", features = ["html_reports"] }
@@ -592,6 +601,11 @@ required-features = ["v2.1-operator-cli"]
 name = "ed2kia-onboard"
 path = "src/bin/ed2kia-onboard.rs"
 required-features = ["v2.1-community-onboarding"]
+
+[[bin]]
+name = "ed2k_mvp"
+path = "src/bin/ed2k_mvp.rs"
+required-features = ["v2.1-mvp-simulation"]
 
 [lib]
 name = "ed2kia"

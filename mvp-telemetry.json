@@ -1,0 +1,33 @@
+{
+  "dry_run": true,
+  "total_duration_ms": 4.48,
+  "success": true,
+  "timestamp": "2026-05-21T21:23:25+00:00",
+  "consensus": {
+    "total_payloads": 3,
+    "approved_count": 2,
+    "rejected_count": 1,
+    "bft_converged": true,
+    "total_latency_ms": 2.71
+  },
+  "nodes": [
+    {
+      "id": "alpha",
+      "address": "/ip4/127.0.0.1/tcp/8001",
+      "profile": "Symbiotic",
+      "final_state": "Active"
+    },
+    {
+      "id": "beta",
+      "address": "/ip4/127.0.0.1/tcp/8002",
+      "profile": "Perverse",
+      "final_state": "Slashed"
+    },
+    {
+      "id": "gamma",
+      "address": "/ip4/127.0.0.1/tcp/8003",
+      "profile": "Symbiotic",
+      "final_state": "Active"
+    }
+  ]
+}

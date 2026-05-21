@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ed2kIA MVP — Telemetry Dashboard</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-card: #21262d;
+            --text-primary: #c9d1d9;
+            --text-secondary: #8b949e;
+            --accent-green: #3fb950;
+            --accent-red: #f85149;
+            --accent-blue: #58a6ff;
+            --accent-yellow: #d29922;
+            --border: #30363d;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        .header h1 { font-size: 1.5em; margin-bottom: 8px; }
+        .header p { color: var(--text-secondary); font-size: 0.9em; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+        }
+        .card h2 {
+            font-size: 1em;
+            margin-bottom: 12px;
+            color: var(--accent-blue);
+        }
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .metric:last-child { border-bottom: none; }
+        .metric-label { color: var(--text-secondary); }
+        .metric-value { font-weight: 600; }
+        .status-pass { color: var(--accent-green); }
+        .status-fail { color: var(--accent-red); }
+        .z-bar {
+            height: 24px;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 8px 0;
+            position: relative;
+        }
+        .z-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        .z-positive { background: var(--accent-green); }
+        .z-negative { background: var(--accent-red); }
+        .node-list { list-style: none; }
+        .node-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            margin: 4px 0;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+        }
+        .badge {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        .badge-active { background: #238636; color: white; }
+        .badge-slash { background: #da3633; color: white; }
+        .octahedron {
+            width: 120px;
+            height: 120px;
+            margin: 16px auto;
+            position: relative;
+        }
+        .octahedron canvas { width: 100%; height: 100%; }
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-secondary);
+            font-size: 0.8em;
+            border-top: 1px solid var(--border);
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body x-data="mvpTelemetry()">
+    <div class="header">
+        <h1>🔬 ed2kIA MVP — Telemetry Dashboard</h1>
+        <p>End-to-End Local Simulation | Kernel Estuardiano v2.1</p>
+        <p style="margin-top:8px;">
+            <span x-show="loading" class="status-pass">⏳ Loading...</span>
+            <span x-show="!loading && success" class="status-pass">✅ Simulation Passed</span>
+            <span x-show="!loading && !success && data" class="status-fail">❌ Simulation Failed</span>
+        </p>
+    </div>
+
+    <div class="grid">
+        <!-- Consensus Results -->
+        <div class="card">
+            <h2>🛡️ Consensus Results</h2>
+            <template x-if="data">
+                <div>
+                    <div class="metric">
+                        <span class="metric-label">Total Payloads</span>
+                        <span class="metric-value" x-text="data.consensus.total_payloads"></span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Approved (Symbiotic)</span>
+                        <span class="metric-value status-pass" x-text="data.consensus.approved_count"></span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Rejected (Perverse)</span>
+                        <span class="metric-value status-fail" x-text="data.consensus.rejected_count"></span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">BFT Converged</span>
+                        <span class="metric-value" :class="data.consensus.bft_converged ? 'status-pass' : 'status-fail'"
+                              x-text="data.consensus.bft_converged ? 'YES' : 'NO'"></span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Total Latency</span>
+                        <span class="metric-value" x-text="data.consensus.total_latency_ms.toFixed(1) + 'ms'"></span>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <!-- Z-Axis Distribution -->
+        <div class="card">
+            <h2>📊 Z-Axis Distribution (SCT)</h2>
+            <template x-if="data">
+                <div>
+                    <template x-for="node in data.nodes" :key="node.id">
+                        <div style="margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.85em;">
+                                <span x-text="node.id"></span>
+                                <span :class="node.final_state === 'Active' ? 'status-pass' : 'status-fail'"
+                                      x-text="node.final_state"></span>
+                            </div>
+                            <div class="z-bar">
+                                <div class="z-fill"
+                                     :class="node.profile === 'Symbiotic' ? 'z-positive' : 'z-negative'"
+                                     :style="'width: ' + (node.profile === 'Symbiotic' ? '80%' : '10%')"></div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </template>
+        </div>
+
+        <!-- Node Status -->
+        <div class="card">
+            <h2>🌐 Node Status</h2>
+            <template x-if="data">
+                <ul class="node-list">
+                    <template x-for="node in data.nodes" :key="node.id">
+                        <li class="node-item">
+                            <div>
+                                <strong x-text="node.id"></strong>
+                                <div style="font-size: 0.8em; color: var(--text-secondary);" x-text="node.address"></div>
+                            </div>
+                            <span class="badge"
+                                  :class="node.final_state === 'Active' ? 'badge-active' : 'badge-slash'"
+                                  x-text="node.final_state"></span>
+                        </li>
+                    </template>
+                </ul>
+            </template>
+        </div>
+
+        <!-- Simulation Info -->
+        <div class="card">
+            <h2>ℹ️ Simulation Info</h2>
+            <template x-if="data">
+                <div>
+                    <div class="metric">
+                        <span class="metric-label">Mode</span>
+                        <span class="metric-value" x-text="data.dry_run ? 'DRY-RUN' : 'LIVE'"></span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Duration</span>
+                        <span class="metric-value" x-text="data.total_duration_ms.toFixed(1) + 'ms'"></span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Timestamp</span>
+                        <span class="metric-value" x-text="data.timestamp"></span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Source</span>
+                        <span class="metric-value" x-text="source"></span>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <footer>
+        <p>ed2kIA MVP Telemetry — Ley 2 (Reconocimiento del Error) | Ley 3 (Cero desperdicio)</p>
+        <p style="margin-top:4px;">Open <code>mvp-telemetry.json</code> or run <code>ed2k_mvp --output-json</code> to generate data</p>
+    </footer>
+
+    <script src="assets/mvp-telemetry.js"></script>
+</body>
+</html>

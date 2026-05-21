@@ -565,6 +565,19 @@ pub mod mainnet {
     pub mod genesis;
 }
 
+/// MVP Local Simulation — End-to-end local testnet (Sprint23)
+#[cfg(feature = "v2.1-mvp-simulation")]
+pub mod mvp {
+    #[path = "../mvp/sae_simulator.rs"]
+    pub mod sae_simulator;
+
+    #[path = "../mvp/consensus_runner.rs"]
+    pub mod consensus_runner;
+
+    #[path = "../mvp/local_testnet.rs"]
+    pub mod local_testnet;
+}
+
 /// Network — Cross-mesh routing & multi-region synchronization (Sprint21)
 #[cfg(any(
     feature = "v2.1-cross-mesh",

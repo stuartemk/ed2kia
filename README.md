@@ -6,7 +6,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ethical-blue)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-2021-orange)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/Version-2.1.0-sprint22-yellowgreen)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-2.1.0-sprint23-yellowgreen)](CHANGELOG.md)
 [![Audit](https://img.shields.io/badge/Audit-Ready-brightgreen)](docs/audit-prep.md)
 [![Governance](https://img.shields.io/badge/Governance-Active-blueviolet)](GOVERNANCE.md)
 [![Launch](https://img.shields.io/badge/Launch-Ready-red)](docs/public-launch-guide.md)
@@ -112,8 +112,86 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 | `v2.1-gui` | GUI Bridge, Mobile, 3D Visualizer | Draft |
 | `v2.1-zkp-v3` | ZKP v3, Recursive Prover, Cross-Chain | Draft |
 | `v2.1-enterprise` | SSO, K8s Operator, Compliance | Draft |
+| `v2.1-mvp-simulation` | End-to-End Local MVP — 3-node simulation, SCT Hard Reject demo, BFT consensus, CLI binary | ✅ Implementado (25 tests) |
 
 > **Nota:** Los feature gates `v2.1-*` NO están incluidos en `default = ["stable"]`. Requieren activación explícita vía RFC comunitario.
+
+## 🚀 End-to-End Local MVP (La Chispa) — Sprint23
+
+El **MVP Local** demuestra el ciclo completo del Kernel Estuardiano en hardware modesto: 3 nodos → SAE payloads → SCT Guard → BFT Consensus → Resultados.
+
+### Flujo de Ejecución
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                  ed2kIA MVP — La Chispa                         │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Fase 1: Inicialización          Fase 2: Conexión               │
+│  Nodo Alpha (Symbiotic:8001)     GossipSub mesh simulado        │
+│  Nodo Beta  (Perverse:8002)      Topic: ed2kia/mvp-payloads     │
+│  Nodo Gamma (Symbiotic:8003)     3 nodos conectados             │
+│                                                                 │
+│  Fase 3: Generación            Fase 4: Activación               │
+│  Alpha → SAE payload (Z≈+0.8)  Todos los nodos activos          │
+│  Beta  → SAE payload (Z≈-0.9)  Payloads inyectados              │
+│  Gamma → SAE payload (Z≈+0.8)  Listo para consenso              │
+│                                                                 │
+│  Fase 5: Consensus (SCT + BFT)                                  │
+│  ┌──────────────────────────────────────────────┐               │
+│  │ SCT Guard: Alpha → APPROVED (Z=+0.8)        │               │
+│  │ SCT Guard: Beta  → HARD REJECT (Z=-0.9)     │               │
+│  │ SCT Guard: Gamma → APPROVED (Z=+0.8)        │               │
+│  │ BFT: Coordinate-wise median (2 gradients)   │               │
+│  │ Result: Converged, latency <500ms            │               │
+│  └──────────────────────────────────────────────┘               │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Comandos de Ejecución
+
+```bash
+# Ejecución rápida (dry-run, sin red)
+cargo run --bin ed2k_mvp --features "v2.1-mvp-simulation" -- --dry-run --verbose
+
+# Exportar telemetría a JSON
+cargo run --bin ed2k_mvp --features "v2.1-mvp-simulation" -- --output-json mvp-telemetry.json
+
+# Ejecutar tests del MVP
+cargo test --lib --features "v2.1-mvp-simulation" -- mvp --test-threads=1
+
+# Validar compilación
+cargo check --bin ed2k_mvp --features "v2.1-mvp-simulation"
+```
+
+### Resultados Esperados
+
+```
+ed2kIA MVP — End-to-End Local Simulation (La Chispa)
+Ley 2 (Reconocimiento del Error): SCT Hard Reject cuando Z < 0
+Ley 3 (Cero desperdicio): Simulación ligera, logs deterministas
+
+[Phase 1/5] Inicializando 3 nodos...
+  Nodo alpha (Symbiotic) → /ip4/127.0.0.1/tcp/8001
+  Nodo beta (Perverse) → /ip4/127.0.0.1/tcp/8002
+  Nodo gamma (Symbiotic) → /ip4/127.0.0.1/tcp/8003
+
+[Phase 5/5] Consensus (SCT + BFT)...
+  [SCT] Evaluando Nodo alpha... Z=+0.8 -> APPROVED (Symbiotic Detected)
+  [SCT] Evaluando Nodo beta... Z=-0.9 -> HARD REJECT (Perversity Detected)
+  [SCT] Evaluando Nodo gamma... Z=+0.8 -> APPROVED (Symbiotic Detected)
+  [BFT] Aggregation complete: 2 gradients, median mean=0.5473
+
+✅ MVP EXITOSO — SCT Hard Reject + BFT Converged
+   Duración: ~4.5ms | Latencia: ~2.7ms (límite: 500ms)
+```
+
+### Dashboard de Telemetría
+
+Abre `web/mvp-telemetry.html` en tu navegador para visualizar los resultados del MVP con paneles de Consensus Results, Z-Axis Distribution, Node Status y Simulation Info.
+
+> **Nota:** El MVP es una simulación en memoria (`--dry-run`) diseñada para demostrar la viabilidad técnica del Kernel Estuardiano sin requerir infraestructura externa. Es seguro para CI/CD.
 
 ## 🧬 Kernel Estuardiano & Arquitectura v2.1 (Sprint16)
 
