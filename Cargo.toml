@@ -1,6 +1,6 @@
 [package]
 name = "ed2kia"
-version = "2.1.0-sprint18"
+version = "2.1.0-sprint19"
 edition = "2021"
 description = "Descentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
 license = "Apache-2.0"
@@ -472,6 +472,18 @@ stable = [
 # .github/workflows/governance-rfc.yml: Automated RFC processing pipeline
 "v2.1-governance-activation" = ["v2.1-audit-prep"]
 
+# ─── Sprint19: Public Launch & Community Onboarding ───
+
+# v2.1 Public Launch — Launch automation, public observability dashboard (Sprint19)
+# scripts/launch-day.sh: Idempotent public launch automation with rollback
+# web/public-dashboard.html: Public observability dashboard (Alpine.js, readonly)
+"v2.1-public-launch" = ["v2.1-kernel-integration"]
+
+# v2.1 Community Onboarding — Zero-friction onboarding wizard, merit registration (Sprint19)
+# src/bin/ed2kia-onboard.rs: Community onboarding wizard (clap + dialoguer)
+# docs/public-launch-guide.md: Day-zero operational guide
+"v2.1-community-onboarding" = ["v2.1-public-launch"]
+
 # ─── Hardware Acceleration ───
 cpu = []
 cuda = ["candle-core/cuda", "candle-nn/cuda"]
@@ -551,6 +563,11 @@ path = "src/main.rs"
 name = "ed2kia-cli"
 path = "src/bin/ed2kia-cli.rs"
 required-features = ["v2.1-operator-cli"]
+
+[[bin]]
+name = "ed2kia-onboard"
+path = "src/bin/ed2kia-onboard.rs"
+required-features = ["v2.1-community-onboarding"]
 
 [lib]
 name = "ed2kia"

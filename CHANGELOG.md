@@ -6,6 +6,74 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.1.0-sprint19] — 2026-05-21
+
+### 🎉 Sprint Summary
+
+**v2.1.0-sprint19 "Lanzamiento Público & Onboarding Comunitario"** habilita adopción de fricción cero, transparencia absoluta y blindaje ético. Estado: `PUBLIC-LAUNCH-READY`.
+
+| Artifact | Path | Purpose |
+|----------|------|---------|
+| Launch Automation | `scripts/launch-day.sh` | Idempotent 6-phase launch with auto-rollback |
+| Onboarding Wizard | `src/bin/ed2kia-onboard.rs` | Zero-friction community onboarding (clap + dialoguer) |
+| Public Dashboard | `web/public-dashboard.html` | Readonly observability (Alpine.js, zero frameworks) |
+| Launch Guide | `docs/public-launch-guide.md` | Day-zero operational guide + incident resolution |
+| Feature Gates | `Cargo.toml` | `v2.1-public-launch`, `v2.1-community-onboarding` |
+
+### Added — Launch Automation
+
+- **launch-day.sh** — `scripts/launch-day.sh`
+  - Phase 1: Environment validation (Docker, Rust, Python, WASM, redb)
+  - Phase 2: Pre-launch checks (audit-scan.sh, pre-launch-check.sh, cargo check)
+  - Phase 3: Docker compose launch (`--profile mainnet`)
+  - Phase 4: Public mode activation (rate-limit, SCTGuard, BFTAggregator)
+  - Phase 5: Healthcheck verification (/api/health, /api/metrics, /api/atlas/stats)
+  - Phase 6: Launch report generation (`docs/launch-day-report-YYYYMMDD.md`)
+  - Output: `🟢 LAUNCH SUCCESS` or `🔴 ROLBACK TRIGGERED: [causa]`
+  - Supports `--dry-run`, `--profile`, `--replicas` options
+
+### Added — Community Onboarding Wizard
+
+- **ed2kia-onboard.rs** — `src/bin/ed2kia-onboard.rs`
+  - Step 0: Environment check (CPU ≥ 2, RAM ≥ 512MB, network, WASM)
+  - Step 1: Node identity (unique name assignment)
+  - Step 2: Role selection (Relay / Orchestrator / WASM Node / Auditor)
+  - Step 3: Port configuration (default 3000)
+  - Step 4: Config generation with real-time validation
+  - Step 5: Bootstrap peers + CRDT sync initialization
+  - Step 6: SCTGuard verification (Z-axis active)
+  - Step 7: Merit registration (Novice tier, 0.5x voting)
+  - Step 8: Diagnostic export (onboarding-diag.json)
+  - Feature gate: `v2.1-community-onboarding`
+
+### Added — Public Observability Dashboard
+
+- **public-dashboard.html** — `web/public-dashboard.html`
+  - Network Health: Active peers, consensus latency, slashing rate, WASM workers
+  - Alignment Metrics: SCT Z-axis distribution, RLHF accepted/rejected, BFT outlier rate
+  - Community Merit: Tier counts (Novice→Guardian), total human corrections
+  - Stuartian Laws Status: All 5 laws verified
+  - Optimized: requestAnimationFrame, 1s debounce, lazy loading, visibility API
+
+### Added — Public Launch Guide
+
+- **public-launch-guide.md** — `docs/public-launch-guide.md`
+  - Pre-launch checklist (T-24h)
+  - Launch day execution (T=0)
+  - Post-launch verification (T+1h)
+  - Onboarding flow for volunteer nodes
+  - Common incident resolution (connectivity, SCTGuard, CRDT, latency)
+  - Rollback procedures (automatic + manual + sprint rollback)
+  - Steward contact channels + escalation matrix
+  - Ethical use clause + zero financial logic
+
+### Changed
+
+- **Cargo.toml** — Version bumped to `2.1.0-sprint19`
+- **Feature gates** — Added `v2.1-public-launch`, `v2.1-community-onboarding`
+
+---
+
 ## [v2.1.0-sprint18] — 2026-05-21
 
 ### 🎉 Sprint Summary
