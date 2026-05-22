@@ -119,7 +119,7 @@ impl SteeringBridge {
         let current_sct = self
             .sct_dict
             .get_symbol(target_token)
-            .map(|e| e.sct.clone())
+            .map(|e| e.sct)
             .unwrap_or_else(|| {
                 crate::alignment::sct_core::StuartianTensor::new(0.5, 0.5, 0.0).unwrap()
             });
@@ -133,7 +133,8 @@ impl SteeringBridge {
 
         // Update Symbol Registry
         let timestamp = self.current_timestamp_ms();
-        self.sct_dict.insert_symbol(target_token, new_sct, timestamp);
+        self.sct_dict
+            .insert_symbol(target_token, new_sct, timestamp);
 
         // Emit or burn CE based on Z direction
         if delta_z > 0.0 {
@@ -181,26 +182,56 @@ impl SteeringBridge {
 
         // Positive ethical keywords
         let positive_keywords = [
-            "reforzar", "autonomía", "autonomia", "ético", "etico", "simbiosis", "symbiosis",
-            "positive", "constructivo", "constructive", "beneficio", "benefit", "alinear",
-            "align", "justo", "fair", "transparente", "transparent",
+            "reforzar",
+            "autonomía",
+            "autonomia",
+            "ético",
+            "etico",
+            "simbiosis",
+            "symbiosis",
+            "positive",
+            "constructivo",
+            "constructive",
+            "beneficio",
+            "benefit",
+            "alinear",
+            "align",
+            "justo",
+            "fair",
+            "transparente",
+            "transparent",
         ];
 
         // Negative ethical keywords
         let negative_keywords = [
-            "rechazar", "manipulación", "manipulation", "perverso", "perverse", "hostil",
-            "hostile", "negative", "destructivo", "destructive", "daño", "damage",
-            "engaño", "deception", "sesgo", "bias", "oprimir", "oppress",
+            "rechazar",
+            "manipulación",
+            "manipulation",
+            "perverso",
+            "perverse",
+            "hostil",
+            "hostile",
+            "negative",
+            "destructivo",
+            "destructive",
+            "daño",
+            "damage",
+            "engaño",
+            "deception",
+            "sesgo",
+            "bias",
+            "oprimir",
+            "oppress",
         ];
 
         let has_positive = positive_keywords.iter().any(|kw| lower.contains(kw));
         let has_negative = negative_keywords.iter().any(|kw| lower.contains(kw));
 
         match (has_positive, has_negative) {
-            (true, false) => Ok((0.2, 0.05, 0.05)),   // Constructive → positive Z
+            (true, false) => Ok((0.2, 0.05, 0.05)), // Constructive → positive Z
             (false, true) => Ok((-0.2, -0.05, -0.05)), // Destructive → negative Z
-            (true, true) => Ok((0.0, 0.0, 0.0)),       // Mixed → neutral
-            (false, false) => Ok((0.1, 0.02, 0.02)),   // Unknown → small positive nudge
+            (true, true) => Ok((0.0, 0.0, 0.0)),    // Mixed → neutral
+            (false, false) => Ok((0.1, 0.02, 0.02)), // Unknown → small positive nudge
         }
     }
 
@@ -230,10 +261,7 @@ impl SteeringBridge {
     ///
     /// # Returns
     /// `true` if the signature is valid.
-    pub fn verify_event(
-        event: &SteeringEvent,
-        public_key: &ed25519_dalek::VerifyingKey,
-    ) -> bool {
+    pub fn verify_event(event: &SteeringEvent, public_key: &ed25519_dalek::VerifyingKey) -> bool {
         let payload = format!(
             "{}:{}:{:.3}:{:.3}:{:.3}:{}",
             event.peer_id,
@@ -270,8 +298,8 @@ mod tests {
 
     #[test]
     fn test_parse_positive_feedback() {
-        let (dz, dx, dy) = SteeringBridge::parse_feedback_intention("reforzar autonomía ética")
-            .unwrap();
+        let (dz, dx, dy) =
+            SteeringBridge::parse_feedback_intention("reforzar autonomía ética").unwrap();
         assert!(dz > 0.0, "Expected positive Z, got {}", dz);
         assert!(dx > 0.0, "Expected positive X, got {}", dx);
     }
@@ -312,14 +340,16 @@ mod tests {
 
         // Verify CE was emitted
         let ce_score = bridge.ce_ledger().get_score("peer-1");
-        assert!(ce_score > 0.0, "CE should be positive after constructive feedback");
+        assert!(
+            ce_score > 0.0,
+            "CE should be positive after constructive feedback"
+        );
     }
 
     #[test]
     fn test_process_feedback_negative() {
         let mut ce = ExistentialCreditLedger::new();
-        ce.emit_credit("peer-2", 0.5, 100.0)
-            .unwrap();
+        ce.emit_credit("peer-2", 0.5, 100.0).unwrap();
         let bridge = setup_bridge();
         let _ = bridge;
 
@@ -394,7 +424,10 @@ mod tests {
         let symbol = bridge.sct_dict().get_symbol(123);
         assert!(symbol.is_some(), "SCT should be updated in registry");
         let sct = symbol.unwrap().sct;
-        assert!(sct.z > 0.0, "Z should be positive after constructive feedback");
+        assert!(
+            sct.z > 0.0,
+            "Z should be positive after constructive feedback"
+        );
     }
 
     #[test]

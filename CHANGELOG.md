@@ -6,6 +6,72 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.1.0-sprint31] — 2026-05-22
+
+### Sprint 31 "The Stuartian Showcase (Estabilización Core & Demo Interactiva)"
+
+Introduce el **Stuartian Showcase**, una demo interactiva de <30s que visualiza la filosofía ética de la red en 3D con cero instalación. Incluye estabilización del core Rust (fmt/clippy hygiene) con 8 correcciones de lint a través de 6 archivos.
+
+| Artifact | Path | Purpose |
+|----------|------|---------|
+| Stuartian Showcase HTML | `web/stuartian-showcase.html` | UI principal: octaedro 3D, métricas de nodos, log de eventos, panel de filosofía |
+| Geometry Bridge JS | `web/js/geometry-bridge.js` | Motor 3D: rotación Euler, proyección perspectiva, partículas con gravedad ética |
+| Demo Orchestrator JS | `web/js/stuartian-demo.js` | Script determinista 7-tick: benign → perversity → CE burn → Apoptosis |
+| Clippy Fixes | 6 archivos Rust | `for_kv_map`, `unnecessary_cast`, `clone_on_copy`, `unwrap_or_default` (6x), `unexpected_cfgs` (2x) |
+
+### Added — Interactive 3D Showcase
+
+- **stuartian-showcase.html** — `web/stuartian-showcase.html`
+  - Layout dark-mode con canvas de octaedro 3D + panel lateral
+  - Tarjetas de estado por nodo (Alpha/Beta/Gamma): CE, Z-score, estado inmune
+  - Log de eventos en tiempo real con iconos y colores por severidad
+  - Sección de filosofía estuardiana: ejes X (Autonomía), Y (Extracción), Z (Alineación Ética)
+  - Controles: Start / Stop / Reset
+
+- **geometry-bridge.js** — `web/js/geometry-bridge.js`
+  - Renderizado 3D del Octaedro Estuardiano: 6 vértices, 12 aristas, 8 caras
+  - Sistema de partículas con gravedad ética (atracción a Foco Superior Z>0 o Foco Inferior Z<0)
+  - Matemática 3D pura: rotación Euler (X/Y), proyección perspectiva, escala adaptativa
+  - Interacción mouse: arrastrar para rotar, doble-click para resetear vista
+  - Tooltips de ejes al hover, panel de estado del nodo
+
+- **stuartian-demo.js** — `web/js/stuartian-demo.js`
+  - Orquestador de simulación con script determinista de 7 ticks
+  - Mirror de backend Rust: nodos Alpha/Beta (benignos) vs Gamma (perverso)
+  - Simulación de emisión/burning de CE con deltas realistas
+  - Transiciones de estado inmune: Healthy → Pain → Apoptosis → Removed
+  - Event bus desacoplado para actualizaciones UI en tiempo real
+
+### Fixed — Rust Core Stabilization (Clippy Hygiene)
+
+- **crdt_symbols.rs** — `src/async_gossip/crdt_symbols.rs:215,225`
+  - `#[cfg(feature = "zstd-compression")]` → `#[cfg(feature = "v2.1-qlora-gguf")]` (feature gate correcto)
+
+- **quantum_feedback.rs** — `src/protocol/quantum_feedback.rs:235`
+  - `for (_token_id, entry) in &mut self.entries` → `for entry in self.entries.values_mut()` (`for_kv_map`)
+
+- **neuroplastic_engine.rs** — `src/federated/neuroplastic_engine.rs:130`
+  - `(weighted * (weight as f64))` → `(weighted * weight)` (`unnecessary_cast`)
+
+- **steering_bridge.rs** — `src/alignment/steering_bridge.rs:122`
+  - `.map(|e| e.sct.clone())` → `.map(|e| e.sct)` (`clone_on_copy`)
+
+- **crdt.rs** — `src/async_gossip/crdt.rs:525,549,604,624`
+  - `.or_insert_with(BTreeMap::new)` → `.or_default()` (4x `unwrap_or_default`)
+
+- **existential_credit.rs** — `src/economics/existential_credit.rs:159,200`
+  - `.or_insert_with(CeEntry::new)` → `.or_default()` (2x `unwrap_or_default`)
+
+### Validation Results
+
+- `cargo fmt --all` ✅ PASS
+- `cargo clippy --features "stable,v2.1-neuroplasticity,v2.1-steering-bridge,v2.1-quantum-feedback" -- -D warnings` ✅ PASS (0 errors)
+- `cargo test --features "stable,v2.1-neuroplasticity,v2.1-steering-bridge,v2.1-quantum-feedback"` ✅ 3006 passed (8 pre-existing failures unrelated)
+- `node -c web/js/stuartian-demo.js` ✅ PASS
+- `node -c web/js/geometry-bridge.js` ✅ PASS
+
+---
+
 ## [v2.1.0-sprint30] — 2026-05-22
 
 ### Sprint 30 "Neuroplasticidad Federada & Retroalimentación Estuardiana (Human-in-the-Loop)"

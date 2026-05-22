@@ -5,13 +5,13 @@
 
 #[cfg(not(target_arch = "wasm32"))]
 mod internal {
-    use std::path::{Path, PathBuf};
+    use std::collections::HashMap;
     use std::fs;
     use std::io::{self, Read, Write};
-    use std::collections::HashMap;
+    use std::path::{Path, PathBuf};
 
-    use sha2::{Sha256, Digest};
     use serde::{Deserialize, Serialize};
+    use sha2::{Digest, Sha256};
 
     // -----------------------------------------------------------------------
     // Error Type
@@ -21,7 +21,11 @@ mod internal {
     pub enum PublicLoaderError {
         Network(String),
         Io(io::Error),
-        CorruptChunk { chunk_index: usize, expected: String, got: String },
+        CorruptChunk {
+            chunk_index: usize,
+            expected: String,
+            got: String,
+        },
         InvalidUrl(String),
         CacheError(String),
         UnsupportedFormat(String),
@@ -33,8 +37,16 @@ mod internal {
             match self {
                 Self::Network(msg) => write!(f, "Network error: {}", msg),
                 Self::Io(err) => write!(f, "IO error: {}", err),
-                Self::CorruptChunk { chunk_index, expected, got } => {
-                    write!(f, "Corrupt chunk {}: expected {}, got {}", chunk_index, expected, got)
+                Self::CorruptChunk {
+                    chunk_index,
+                    expected,
+                    got,
+                } => {
+                    write!(
+                        f,
+                        "Corrupt chunk {}: expected {}, got {}",
+                        chunk_index, expected, got
+                    )
                 }
                 Self::InvalidUrl(url) => write!(f, "Invalid URL: {}", url),
                 Self::CacheError(msg) => write!(f, "Cache error: {}", msg),
@@ -173,7 +185,9 @@ mod internal {
                 data.extend_from_slice(&b"ED2K_DUMMY"[..]);
                 data.extend_from_slice(&(i as u32).to_le_bytes());
                 // Payload: deterministic activations based on chunk index
-                let activations = (0..100u32).map(|j| ((i * 100 + j) % 256) as u8).collect::<Vec<_>>();
+                let activations = (0..100u32)
+                    .map(|j| ((i * 100 + j) % 256) as u8)
+                    .collect::<Vec<_>>();
                 data.extend_from_slice(&activations);
                 chunks.push(data);
             }
@@ -205,10 +219,7 @@ mod internal {
         }
 
         /// Build a manifest from loaded chunks.
-        pub fn build_manifest(
-            &self,
-            chunks: &[Vec<u8>],
-        ) -> DatasetManifest {
+        pub fn build_manifest(&self, chunks: &[Vec<u8>]) -> DatasetManifest {
             let mut chunk_manifest = Vec::new();
             let mut total_size = 0u64;
 
@@ -483,7 +494,7 @@ pub mod stub {
 
     #[derive(Debug, Clone, Serialize, Deserialize)]
     pub enum PublicLoaderError {
-        Unsupported("Dataset loading not supported in WASM".to_string()),
+        Unsupported(String),
     }
 
     impl std::fmt::Display for PublicLoaderError {

@@ -6,7 +6,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ethical-blue)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-2021-orange)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/Version-2.1.0-sprint30-yellowgreen)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-2.1.0-sprint31-yellowgreen)](CHANGELOG.md)
 [![Audit](https://img.shields.io/badge/Audit-Ready-brightgreen)](docs/audit-prep.md)
 [![Governance](https://img.shields.io/badge/Governance-Active-blueviolet)](GOVERNANCE.md)
 [![Launch](https://img.shields.io/badge/Launch-Ready-red)](docs/public-launch-guide.md)
@@ -660,7 +660,37 @@ curl http://localhost:3030/api/feedback/export
 
 ---
 
-## 🚀 Launch & Demo — Prueba en <30s
+## 🎨 Demo Interactiva & Escaparate Estuardiano
+
+**ed2kIA v2.1.0-sprint31** introduce el **Stuartian Showcase**, una demo interactiva de <30s que visualiza la filosofía ética de la red en 3D, sin instalación:
+
+- **Octaedro 3D interactivo** — Motor de renderizado Canvas 2D con rotación manual, sistema de partículas con gravedad ética y proyección 3D con perspectiva
+- **Simulación determinista de 7 ticks** — Secuencia: tensores benignos → detección de perversidad → burn de CE → Apoptosis del nodo aberrante
+- **Bridge de geometría estuardiana** — Matemática 3D pura (matriz de rotación Euler + proyección perspectiva), cero dependencias externas
+- **UI en tiempo real** — Métricas de nodos (CE, Z-score, estado inmune), log de eventos y panel de filosofía estuardiana
+
+```
+👉 web/stuartian-showcase.html   (abrir directamente en el navegador)
+```
+
+**Archivos del Escaparate:**
+
+| Archivo | Propósito |
+|---------|-----------|
+| [`web/stuartian-showcase.html`](web/stuartian-showcase.html) | UI principal del showcase con layout dark-mode y panel de control |
+| [`web/js/geometry-bridge.js`](web/js/geometry-bridge.js) | Motor 3D: Octaedro, partículas, gravedad ética, interacción mouse |
+| [`web/js/stuartian-demo.js`](web/js/stuartian-demo.js) | Orquestador: script determinista 7-tick, CE emission/burning, estados inmunes |
+
+### Cómo usar
+
+1. Abre `web/stuartian-showcase.html` en cualquier navegador moderno
+2. Presiona **▶ Start** para iniciar la simulación de 7 ticks
+3. Observa cómo los nodos Alpha/Beta emiten CE (Z>0) y Gamma es detectado como perverso (Z<0)
+4. Interactúa con el octaedro: arrastra para rotar, doble-click para resetear
+
+---
+
+##  Launch & Demo — Prueba en <30s
 
 **ed2kIA v2.1.0-sprint10** incluye infraestructura de lanzamiento de cero fricción para que cualquier hacker pueda probar un browser node y ver el "Aha! Moment" en menos de 30 segundos:
 

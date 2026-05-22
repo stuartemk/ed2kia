@@ -252,7 +252,9 @@ impl GCounter {
     fn read_u32(data: &[u8], pos: usize) -> Result<u32, CrdtError> {
         let end = pos + 4;
         if end > data.len() {
-            return Err(CrdtError::SerializationError("Data too short for u32".into()));
+            return Err(CrdtError::SerializationError(
+                "Data too short for u32".into(),
+            ));
         }
         let mut buf = [0u8; 4];
         buf.copy_from_slice(&data[pos..end]);
@@ -263,7 +265,9 @@ impl GCounter {
     fn read_u64(data: &[u8], pos: usize) -> Result<u64, CrdtError> {
         let end = pos + 8;
         if end > data.len() {
-            return Err(CrdtError::SerializationError("Data too short for u64".into()));
+            return Err(CrdtError::SerializationError(
+                "Data too short for u64".into(),
+            ));
         }
         let mut buf = [0u8; 8];
         buf.copy_from_slice(&data[pos..end]);
@@ -274,7 +278,9 @@ impl GCounter {
     fn read_i64(data: &[u8], pos: usize) -> Result<i64, CrdtError> {
         let end = pos + 8;
         if end > data.len() {
-            return Err(CrdtError::SerializationError("Data too short for i64".into()));
+            return Err(CrdtError::SerializationError(
+                "Data too short for i64".into(),
+            ));
         }
         let mut buf = [0u8; 8];
         buf.copy_from_slice(&data[pos..end]);
@@ -311,10 +317,8 @@ impl GCounter {
                 ));
             }
 
-            let node =
-                String::from_utf8(data[pos..pos + node_len].to_vec()).map_err(|_| {
-                    CrdtError::SerializationError("Invalid node UTF-8".into())
-                })?;
+            let node = String::from_utf8(data[pos..pos + node_len].to_vec())
+                .map_err(|_| CrdtError::SerializationError("Invalid node UTF-8".into()))?;
             pos += node_len;
 
             let count = Self::read_u64(data, pos)?;
@@ -518,7 +522,7 @@ impl ORSet {
         // Añadir al set activo
         self.elements
             .entry(element.to_string())
-            .or_insert_with(BTreeMap::new)
+            .or_default()
             .insert(tag, node_id.to_string());
 
         // Limpiar tombstone para este tag (add-after-remove)
@@ -542,7 +546,7 @@ impl ORSet {
                 let tomb = self
                     .tombstone
                     .entry(element.to_string())
-                    .or_insert_with(BTreeMap::new);
+                    .or_default();
                 for (tag, _) in tag_map {
                     tomb.insert(tag, node_id.to_string());
                 }
@@ -597,7 +601,7 @@ impl ORSet {
             let self_tags = self
                 .elements
                 .entry(element.clone())
-                .or_insert_with(BTreeMap::new);
+                .or_default();
 
             for (tag, node_id) in tags {
                 // Solo añadir si no está en tombstone
@@ -617,7 +621,7 @@ impl ORSet {
             let self_tomb = self
                 .tombstone
                 .entry(element.clone())
-                .or_insert_with(BTreeMap::new);
+                .or_default();
 
             for (tag, node_id) in tomb_tags {
                 // Si el tag está en self.elements, moverlo a tombstone
@@ -759,9 +763,8 @@ impl ORSet {
                 "Data too short for string".into(),
             ));
         }
-        let s = String::from_utf8(data[*pos..*pos + len].to_vec()).map_err(|_| {
-            CrdtError::SerializationError("Invalid UTF-8".into())
-        })?;
+        let s = String::from_utf8(data[*pos..*pos + len].to_vec())
+            .map_err(|_| CrdtError::SerializationError("Invalid UTF-8".into()))?;
         *pos += len;
         Ok(s)
     }

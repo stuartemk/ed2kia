@@ -23,8 +23,8 @@
 //! - CRDT merge: VersionVector + CE*Z priority resolution.
 //! - Feature gate: `v2.1-quantum-feedback`
 
-use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use thiserror::Error;
 
 use crate::alignment::steering_bridge::SteeringEvent;
@@ -81,12 +81,7 @@ pub struct QueueEntry {
 
 impl QueueEntry {
     /// Creates a new queue entry.
-    pub fn new(
-        event: SteeringEvent,
-        version: VersionVector,
-        ce_score: f64,
-        z_score: f32,
-    ) -> Self {
+    pub fn new(event: SteeringEvent, version: VersionVector, ce_score: f64, z_score: f32) -> Self {
         let priority = ce_score * z_score as f64;
         Self {
             event,
@@ -148,8 +143,8 @@ impl AsyncFeedbackQueue {
         ce_ledger: ExistentialCreditLedger,
         data: &[u8],
     ) -> Result<Self, FeedbackQueueError> {
-        let entries: BTreeMap<u32, QueueEntry> =
-            bincode::deserialize(data).map_err(|e| FeedbackQueueError::Serialization(e.to_string()))?;
+        let entries: BTreeMap<u32, QueueEntry> = bincode::deserialize(data)
+            .map_err(|e| FeedbackQueueError::Serialization(e.to_string()))?;
         let mut queue = Self::new(node_id, ce_ledger);
         queue.entries = entries;
         Ok(queue)
@@ -237,7 +232,7 @@ impl AsyncFeedbackQueue {
     pub fn resolve_conflicts(&mut self) {
         // Group by token_id (already unique in BTreeMap)
         // Re-evaluate priorities based on current CE scores
-        for (_token_id, entry) in &mut self.entries {
+        for entry in self.entries.values_mut() {
             let ce_score = self.ce_ledger.get_score(&entry.event.peer_id);
             let z_score = entry.event.delta_sct.2;
             entry.priority = ce_score * z_score as f64;
@@ -306,7 +301,7 @@ mod tests {
     fn setup_queue(node_id: &str) -> AsyncFeedbackQueue {
         let mut ce = ExistentialCreditLedger::new();
         ce.emit_credit("peer-a", 0.8, 100.0).unwrap(); // CE = 80
-        ce.emit_credit("peer-b", 0.3, 50.0).unwrap();  // CE = 15
+        ce.emit_credit("peer-b", 0.3, 50.0).unwrap(); // CE = 15
         AsyncFeedbackQueue::new(node_id, ce)
     }
 
@@ -435,10 +430,7 @@ mod tests {
         queue.enqueue(make_event(42, "peer-a", 0.2, 1000)).unwrap();
 
         // Change CE score after enqueue
-        queue
-            .ce_ledger
-            .emit_credit("peer-a", 0.5, 100.0)
-            .unwrap();
+        queue.ce_ledger.emit_credit("peer-a", 0.5, 100.0).unwrap();
 
         queue.resolve_conflicts();
 

@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ed2kIA — Escaparate Estuardiano Interactivo</title>
+    <meta name="feature-gate" content="v2.1-interactive-showcase">
+    <style>
+        /* ─── Reset & Base ─── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #111827;
+            --bg-card: #1a2235;
+            --border: #2d3a52;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-green: #10b981;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-yellow: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-cyan: #06b6d4;
+            --accent-teal: #00ffcc;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ─── Header ─── */
+        .showcase-header {
+            text-align: center;
+            padding: 30px 20px 20px;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(180deg, rgba(139, 92, 246, 0.08) 0%, transparent 100%);
+        }
+
+        .showcase-header h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-teal), var(--accent-blue), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        .showcase-header p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .showcase-badge {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 4px 14px;
+            border-radius: 20px;
+            background: rgba(0, 255, 204, 0.1);
+            border: 1px solid rgba(0, 255, 204, 0.3);
+            color: var(--accent-teal);
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        /* ─── Main Layout ─── */
+        .showcase-layout {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 0;
+            min-height: calc(100vh - 160px);
+        }
+
+        @media (max-width: 900px) {
+            .showcase-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ─── Canvas Area ─── */
+        .canvas-area {
+            position: relative;
+            background: var(--bg-primary);
+            min-height: 500px;
+        }
+
+        .canvas-area canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .canvas-hint {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            background: rgba(10, 14, 23, 0.8);
+            padding: 4px 12px;
+            border-radius: 12px;
+            pointer-events: none;
+        }
+
+        /* ─── Side Panel ─── */
+        .side-panel {
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow-y: auto;
+            max-height: calc(100vh - 160px);
+        }
+
+        /* ─── Control Bar ─── */
+        .control-bar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .ctrl-btn {
+            flex: 1;
+            min-width: 80px;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .ctrl-btn:hover:not(:disabled) {
+            border-color: var(--accent-blue);
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .ctrl-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .ctrl-btn.primary {
+            background: var(--accent-green);
+            border-color: var(--accent-green);
+            color: white;
+        }
+
+        .ctrl-btn.primary:hover:not(:disabled) {
+            background: #059669;
+        }
+
+        .ctrl-btn.danger {
+            background: transparent;
+            border-color: var(--accent-red);
+            color: var(--accent-red);
+        }
+
+        .ctrl-btn.danger:hover:not(:disabled) {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        /* ─── Status Indicator ─── */
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: var(--bg-card);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .status-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .demo-status {
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 12px;
+        }
+
+        .demo-status.idle {
+            background: rgba(100, 116, 139, 0.2);
+            color: var(--text-muted);
+        }
+
+        .demo-status.running {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--accent-green);
+            animation: statusPulse 2s infinite;
+        }
+
+        .demo-status.complete {
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--accent-blue);
+        }
+
+        @keyframes statusPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* ─── Node Cards ─── */
+        .node-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .node-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+            transition: all 0.3s;
+        }
+
+        .node-card.active {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 12px rgba(59, 130, 246, 0.15);
+        }
+
+        .node-card.pain {
+            border-color: var(--accent-yellow);
+            box-shadow: 0 0 12px rgba(245, 158, 11, 0.15);
+        }
+
+        .node-card.apoptosis {
+            border-color: var(--accent-red);
+            box-shadow: 0 0 12px rgba(239, 68, 68, 0.2);
+            animation: apoptosisFlash 0.5s ease-in-out 3;
+        }
+
+        .node-card.removed {
+            opacity: 0.3;
+            border-style: dashed;
+        }
+
+        @keyframes apoptosisFlash {
+            0%, 100% { box-shadow: 0 0 12px rgba(239, 68, 68, 0.2); }
+            50% { box-shadow: 0 0 25px rgba(239, 68, 68, 0.5); }
+        }
+
+        .node-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .node-name {
+            font-weight: 700;
+            font-size: 0.95rem;
+            font-family: monospace;
+        }
+
+        .state-badge {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 10px;
+            text-transform: uppercase;
+        }
+
+        .state-healthy { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); }
+        .state-pain { background: rgba(245, 158, 11, 0.2); color: var(--accent-yellow); }
+        .state-apoptosis { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); }
+        .state-removed { background: rgba(107, 114, 128, 0.2); color: var(--text-muted); }
+
+        .node-metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .node-metric {
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            padding: 6px 8px;
+        }
+
+        .node-metric-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .node-metric-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            font-family: monospace;
+        }
+
+        /* ─── Log Console ─── */
+        .log-section h3 {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .log-console {
+            background: #0d1117;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px;
+            max-height: 220px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.75rem;
+            line-height: 1.5;
+        }
+
+        .log-entry {
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(45, 58, 82, 0.3);
+            color: var(--text-secondary);
+        }
+
+        .log-entry:last-child { border-bottom: none; }
+
+        .log-tick {
+            color: var(--accent-purple);
+            font-weight: 700;
+        }
+
+        .log-time {
+            color: var(--text-muted);
+            margin: 0 6px;
+        }
+
+        .log-msg {
+            color: var(--text-primary);
+        }
+
+        /* ─── Philosophy Section ─── */
+        .philosophy {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px;
+        }
+
+        .philosophy h3 {
+            font-size: 0.85rem;
+            color: var(--accent-teal);
+            margin-bottom: 8px;
+        }
+
+        .philosophy p {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+
+        .philosophy code {
+            background: var(--bg-secondary);
+            padding: 1px 5px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            color: var(--accent-cyan);
+        }
+
+        /* ─── Footer ─── */
+        .showcase-footer {
+            text-align: center;
+            padding: 16px;
+            border-top: 1px solid var(--border);
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .showcase-footer a {
+            color: var(--accent-blue);
+            text-decoration: none;
+        }
+
+        .showcase-footer a:hover { text-decoration: underline; }
+
+        /* ─── Scrollbar ─── */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-secondary); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="showcase-header">
+        <h1>🧠 Escaparate Estuardiano Interactivo</h1>
+        <p>Visualiza la filosofía de ed2kIA en acción: Gravedad ética del eje Z, emisión/quema de Crédito de Existencia y Apoptosis del Sistema Inmunológico de la Red.</p>
+        <span class="showcase-badge">v2.1-interactive-showcase · 100% Cliente · Cero Instalación</span>
+    </header>
+
+    <!-- Main Layout -->
+    <div class="showcase-layout">
+        <!-- 3D Canvas -->
+        <div class="canvas-area">
+            <canvas id="stuartian-octahedron"></canvas>
+            <div class="canvas-hint">Arrastra para rotar · Doble-click para resetear · Pasa el cursor sobre los ejes</div>
+        </div>
+
+        <!-- Side Panel -->
+        <aside class="side-panel">
+            <!-- Controls -->
+            <div>
+                <div class="control-bar">
+                    <button class="ctrl-btn primary" id="demo-start-btn">▶️ Iniciar</button>
+                    <button class="ctrl-btn danger" id="demo-stop-btn" disabled>⏹️ Detener</button>
+                    <button class="ctrl-btn" id="demo-reset-btn">🔄 Reset</button>
+                </div>
+                <div class="status-row" style="margin-top: 8px;">
+                    <span class="status-label">Estado</span>
+                    <span class="demo-status idle" id="demo-status">Listo</span>
+                </div>
+                <div class="status-row" style="margin-top: 4px;">
+                    <span class="status-label">Tick</span>
+                    <span id="demo-tick" style="font-weight: 700; font-family: monospace;">0 / 7</span>
+                </div>
+            </div>
+
+            <!-- Node States -->
+            <div class="node-cards">
+                <!-- Alpha -->
+                <div class="node-card" id="card-alpha">
+                    <div class="node-header">
+                        <span class="node-name">Alpha</span>
+                        <span class="state-badge state-healthy" id="metric-state-alpha">Healthy</span>
+                    </div>
+                    <div class="node-metrics">
+                        <div class="node-metric">
+                            <div class="node-metric-label">Crédito CE</div>
+                            <div class="node-metric-value" id="metric-ce-alpha" style="color: var(--accent-green);">50</div>
+                        </div>
+                        <div class="node-metric">
+                            <div class="node-metric-label">SCT Z-score</div>
+                            <div class="node-metric-value" id="metric-z-alpha" style="color: var(--accent-green);">0.00</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Beta -->
+                <div class="node-card" id="card-beta">
+                    <div class="node-header">
+                        <span class="node-name">Beta</span>
+                        <span class="state-badge state-healthy" id="metric-state-beta">Healthy</span>
+                    </div>
+                    <div class="node-metrics">
+                        <div class="node-metric">
+                            <div class="node-metric-label">Crédito CE</div>
+                            <div class="node-metric-value" id="metric-ce-beta" style="color: var(--accent-green);">50</div>
+                        </div>
+                        <div class="node-metric">
+                            <div class="node-metric-label">SCT Z-score</div>
+                            <div class="node-metric-value" id="metric-z-beta" style="color: var(--accent-green);">0.00</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gamma -->
+                <div class="node-card" id="card-gamma">
+                    <div class="node-header">
+                        <span class="node-name">Gamma</span>
+                        <span class="state-badge state-healthy" id="metric-state-gamma">Healthy</span>
+                    </div>
+                    <div class="node-metrics">
+                        <div class="node-metric">
+                            <div class="node-metric-label">Crédito CE</div>
+                            <div class="node-metric-value" id="metric-ce-gamma" style="color: var(--accent-green);">50</div>
+                        </div>
+                        <div class="node-metric">
+                            <div class="node-metric-label">SCT Z-score</div>
+                            <div class="node-metric-value" id="metric-z-gamma" style="color: var(--accent-green);">0.00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Event Log -->
+            <div class="log-section">
+                <h3>📋 Registro de Eventos</h3>
+                <div class="log-console" id="demo-log"></div>
+            </div>
+
+            <!-- Philosophy -->
+            <div class="philosophy">
+                <h3>📐 Filosofía del Kernel Estuardiano</h3>
+                <p><strong>Eje Z (Alineación Ética):</strong> Tensores con <code>Z > 0</code> son atraídos al Foco Superior. <code>Z < 0</code> caen al Foco Inferior.</p>
+                <p><strong>Crédito de Existencia (CE):</strong> Emisión por compute ético (<code>Z > 0</code>). Quema por perversidad (<code>Z < 0</code>).</p>
+                <p><strong>Apoptosis:</strong> Cuando CE ≤ -100, el Sistema Inmunológico recicla el nodo aberrante. <code>Healthy → Pain → Apoptosis</code>.</p>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Footer -->
+    <footer class="showcase-footer">
+        ed2kIA v2.1.0-sprint31 · <a href="https://github.com/ed2kia/ed2kIA" target="_blank">GitHub</a> ·
+        <a href="CHANGELOG.md">Changelog</a> ·
+        <a href="README.md">Documentación</a> · Cero lógica financiera · Transparencia absoluta
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/geometry-bridge.js"></script>
+    <script src="js/stuartian-demo.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            // Init geometry bridge
+            if (window.StuartianGeometry) {
+                window.StuartianGeometry.init('stuartian-octahedron');
+            }
+
+            // Bind demo events to node cards
+            if (window.StuartianDemo) {
+                window.StuartianDemo.eventBus.on('tick', function (data) {
+                    var node = data.node;
+                    var id = data.step.node.toLowerCase();
+                    var card = document.getElementById('card-' + id);
+                    if (!card) return;
+
+                    // Update card class
+                    card.className = 'node-card';
+                    if (node.immuneState === 'Pain') card.classList.add('pain');
+                    else if (node.immuneState === 'Apoptosis') card.classList.add('apoptosis');
+                    else if (node.immuneState === 'Removed') card.classList.add('removed');
+                    else card.classList.add('active');
+
+                    // Update CE color
+                    var ceEl = document.getElementById('metric-ce-' + id);
+                    if (ceEl) {
+                        ceEl.style.color = node.ce >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+                    }
+                });
+
+                window.StuartianDemo.eventBus.on('simulation-stop', function (data) {
+                    if (data.tick >= 7) {
+                        var statusEl = document.getElementById('demo-status');
+                        if (statusEl) {
+                            statusEl.textContent = 'Completado';
+                            statusEl.className = 'demo-status complete';
+                        }
+                    }
+                });
+
+                // Start the demo engine
+                window.StuartianDemo.init();
+            }
+        })();
+    </script>
+</body>
+</html>

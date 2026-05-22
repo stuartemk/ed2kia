@@ -156,7 +156,7 @@ impl ExistentialCreditLedger {
         let amount = (z_score * compute_weight) as f64;
         self.entries
             .entry(peer_id.to_string())
-            .or_insert_with(CeEntry::new)
+            .or_default()
             .add(amount, self.global_version);
 
         Ok(())
@@ -197,7 +197,7 @@ impl ExistentialCreditLedger {
         let amount = ((-z_score) * penalty_multiplier) as f64;
         self.entries
             .entry(peer_id.to_string())
-            .or_insert_with(CeEntry::new)
+            .or_default()
             .sub(amount, self.global_version);
 
         Ok(())
@@ -223,10 +223,7 @@ impl ExistentialCreditLedger {
     /// # Errors
     ///
     /// Returns `ExistentialCreditError::PeerNotFound` if the peer has no entry.
-    pub fn get_entry(
-        &self,
-        peer_id: &str,
-    ) -> Result<CeEntry, ExistentialCreditError> {
+    pub fn get_entry(&self, peer_id: &str) -> Result<CeEntry, ExistentialCreditError> {
         self.entries
             .get(peer_id)
             .cloned()
@@ -322,7 +319,11 @@ mod tests {
             .expect("emit should succeed");
 
         let score = ledger.get_score("peer1");
-        assert!((score - 3.0).abs() < f64::EPSILON, "Expected 3.0, got {}", score);
+        assert!(
+            (score - 3.0).abs() < f64::EPSILON,
+            "Expected 3.0, got {}",
+            score
+        );
         assert!(ledger.contains_peer("peer1"));
         assert_eq!(ledger.global_version(), 1);
     }

@@ -25,8 +25,8 @@
 use candle_core::Tensor;
 use thiserror::Error;
 
-use crate::economics::existential_credit::ExistentialCreditLedger;
 use crate::async_gossip::crdt_symbols::SymbolRegistry;
+use crate::economics::existential_credit::ExistentialCreditLedger;
 
 /// Error types for Neuroplastic Aggregation.
 #[derive(Debug, Error)]
@@ -127,7 +127,7 @@ impl NeuroplasticAggregator {
 
         // Apply weight to gradient tensor
         let weighted = local_grads.to_dtype(candle_core::DType::F32)?;
-        let scaled = (weighted * (weight as f64))?;
+        let scaled = (weighted * weight)?;
 
         Ok(scaled)
     }
@@ -215,7 +215,11 @@ mod tests {
         // CE = 0.8 * 100 = 80.0, ce_factor = 80/1000 = 0.08
         // Z = 0.4, z_factor = 1.0 + 0.4 = 1.4
         // weight = 0.08 * 1.4 = 0.112
-        assert!((weight - 0.112).abs() < 0.001, "Expected ~0.112, got {}", weight);
+        assert!(
+            (weight - 0.112).abs() < 0.001,
+            "Expected ~0.112, got {}",
+            weight
+        );
     }
 
     #[test]
@@ -225,7 +229,11 @@ mod tests {
         // CE = 0.1 * 50 = 5.0, ce_factor = 5/1000 = 0.005
         // Z = -0.3, z_factor = 1.0 + (-0.3) = 0.7
         // weight = 0.005 * 0.7 = 0.0035
-        assert!((weight - 0.0035).abs() < 0.001, "Expected ~0.0035, got {}", weight);
+        assert!(
+            (weight - 0.0035).abs() < 0.001,
+            "Expected ~0.0035, got {}",
+            weight
+        );
     }
 
     #[test]
@@ -273,12 +281,7 @@ mod tests {
 
         // Weight = 0, so all zeros
         for (i, &v) in result.iter().enumerate() {
-            assert!(
-                v.abs() < 0.001,
-                "Element {}: expected ~0, got {}",
-                i,
-                v
-            );
+            assert!(v.abs() < 0.001, "Element {}: expected ~0, got {}", i, v);
         }
     }
 

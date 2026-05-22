@@ -88,12 +88,7 @@ impl SymbolRegistry {
     /// If the token already exists, the new SCT wins if:
     /// 1. Its Z-axis is higher (more ethical), OR
     /// 2. Same Z but newer timestamp (LWW tiebreaker)
-    pub fn insert_symbol(
-        &mut self,
-        token_id: u32,
-        sct: StuartianTensor,
-        timestamp: u64,
-    ) {
+    pub fn insert_symbol(&mut self, token_id: u32, sct: StuartianTensor, timestamp: u64) {
         self.version.increment(&self.node_id);
         self.insert_counter.increment(&self.node_id, 1);
 
@@ -217,19 +212,21 @@ impl SymbolRegistry {
     /// Serializes with zstd compression for network broadcast.
     ///
     /// Returns compressed bytes suitable for `cross_sync` broadcast.
-    #[cfg(feature = "zstd-compression")]
+    #[cfg(feature = "v2.1-qlora-gguf")]
     pub fn serialize_compressed(&self, level: u32) -> Result<Vec<u8>, SymbolRegistryError> {
         let raw = self.serialize()?;
-        let compressed = zstd::encode_all(&*raw, level as i32)
-            .map_err(|e| SymbolRegistryError::Serialization(bincode::Error::Custom(e.to_string())))?;
+        let compressed = zstd::encode_all(&*raw, level as i32).map_err(|e| {
+            SymbolRegistryError::Serialization(bincode::Error::Custom(e.to_string()))
+        })?;
         Ok(compressed)
     }
 
     /// Deserializes from zstd-compressed bytes.
-    #[cfg(feature = "zstd-compression")]
+    #[cfg(feature = "v2.1-qlora-gguf")]
     pub fn deserialize_compressed(data: &[u8]) -> Result<Self, SymbolRegistryError> {
-        let raw = zstd::decode_all(data)
-            .map_err(|e| SymbolRegistryError::Serialization(bincode::Error::Custom(e.to_string())))?;
+        let raw = zstd::decode_all(data).map_err(|e| {
+            SymbolRegistryError::Serialization(bincode::Error::Custom(e.to_string()))
+        })?;
         Self::deserialize(&raw)
     }
 }
