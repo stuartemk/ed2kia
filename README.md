@@ -6,7 +6,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ethical-blue)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-2021-orange)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/Version-2.1.0-sprint29-yellowgreen)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-2.1.0-sprint30-yellowgreen)](CHANGELOG.md)
 [![Audit](https://img.shields.io/badge/Audit-Ready-brightgreen)](docs/audit-prep.md)
 [![Governance](https://img.shields.io/badge/Governance-Active-blueviolet)](GOVERNANCE.md)
 [![Launch](https://img.shields.io/badge/Launch-Ready-red)](docs/public-launch-guide.md)
@@ -124,6 +124,9 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 | `v2.1-production-hardening` | Production Security Hardening — CSP headers, WASM sandboxing, rate limiting + Ed25519, deployment runbook | ✅ Implementado (Sprint26) |
 | `v2.1-ci-cd-pipeline` | Public Truth CI/CD Pipeline — GitHub Actions (build/test/lint/wasm-check), concurrency control, cargo cache | ✅ Implementado (Sprint27) |
 | `v2.1-security-audit` | Automated Security Audit — cargo audit (CVE scan), cargo deny (licenses/duplicates), Ed25519 release signing | ✅ Implementado (Sprint27) |
+| `v2.1-neuroplasticity` | Neuroplastic Federated Aggregation — CE+Z weighted gradient aggregation, `weight = (ce/1000) * (1 + clamp(Z,-0.5,0.5))` | ✅ Implementado (Sprint30) |
+| `v2.1-steering-bridge` | Human Steering Bridge — Semantic feedback parsing → SCT deltas → Ed25519 signed events | ✅ Implementado (Sprint30) |
+| `v2.1-quantum-feedback` | Async Quantum Feedback CRDT — VersionVector sync, CE*Z priority conflict resolution, bincode persistence | ✅ Implementado (Sprint30) |
 
 > **Nota:** Los feature gates `v2.1-*` NO están incluidos en `default = ["stable"]`. Requieren activación explícita vía RFC comunitario.
 

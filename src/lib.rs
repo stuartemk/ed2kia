@@ -184,7 +184,17 @@ pub mod protocol {
     #[cfg(feature = "v2.1-audit-payloads")]
     #[path = "../protocol/audit_payloads.rs"]
     pub mod audit_payloads;
+
+    // ─── Sprint30: Async Quantum Feedback Queue ───
+    #[cfg(feature = "v2.1-quantum-feedback")]
+    #[path = "../protocol/quantum_feedback.rs"]
+    pub mod quantum_feedback;
 }
+
+// ─── Sprint30: Async Quantum Feedback Queue (standalone) ───
+#[cfg(feature = "v2.1-quantum-feedback")]
+#[path = "protocol/quantum_feedback.rs"]
+pub mod quantum_feedback;
 
 // ============================================================================
 // Fase 2: Interpretation, Feedback & Consensus
@@ -517,6 +527,11 @@ pub mod federation {
     pub mod cross_model_scaling_v7;
     #[cfg(feature = "v1.6-sprint3")]
     pub mod predictive_sharder_v3;
+
+    // ─── Sprint30: Neuroplasticidad Federada ───
+    #[cfg(feature = "v2.1-neuroplasticity")]
+    #[path = "../federated/neuroplastic_engine.rs"]
+    pub mod neuroplastic_engine;
 }
 
 /// Staking proof and registry
@@ -568,6 +583,11 @@ pub mod alignment {
     pub mod symbolic_engine;
     #[cfg(feature = "v2.1-ethical-attention")]
     pub mod ethical_attention;
+
+    // ─── Sprint30: Retroalimentación Estuardiana (Human-in-the-Loop) ───
+    #[cfg(feature = "v2.1-steering-bridge")]
+    #[path = "../alignment/steering_bridge.rs"]
+    pub mod steering_bridge;
 }
 
 /// Mainnet Genesis — Deterministic genesis state & steward activation (Sprint22)
@@ -1082,8 +1102,7 @@ pub mod stuartian_filter;
 
 /// Async Gossip with CRDTs — Partition-tolerant GossipSub (Sprint16)
 /// **Stuartian Law 5:** Async, tolerancia a particiones, CRDTs, eventual consistency.
-#[cfg(feature = "v2.1-async-gossip-crdt")]
-pub mod async_gossip;
+// async_gossip is already defined inline above (line ~626) with feature-gated submodules
 
 #[cfg(test)]
 mod tests {

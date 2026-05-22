@@ -1,6 +1,6 @@
 [package]
 name = "ed2kia"
-version = "2.1.0-sprint29"
+version = "2.1.0-sprint30"
 edition = "2021"
 description = "Descentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
 license = "Apache-2.0"
@@ -634,6 +634,27 @@ test-mocks = []
 # src/economics/proof_of_symbiosis.rs: SymbiosisValidator — Dynamic threshold consensus
 # src/federated/network_apoptosis.rs: NetworkImmuneSystem — Peer health monitoring & blocklisting
 "v2.1-network-apoptosis" = []
+
+# Sprint30 — Neuroplasticidad Federada & Retroalimentación Estuardiana (Human-in-the-Loop)
+# src/federated/neuroplastic_engine.rs: NeuroplasticAggregator — CE+Z weighted gradient aggregation
+"v2.1-neuroplasticity" = [
+    "v2.1-proof-of-symbiosis",
+    "v2.1-async-gossip-crdt",
+    "v2.1-crdt-symbols",
+    "v2.1-crdt-state",
+]
+# src/alignment/steering_bridge.rs: SteeringBridge — Human feedback → SCT delta → Ed25519 signing
+"v2.1-steering-bridge" = [
+    "v2.1-async-gossip-crdt",
+    "v2.1-proof-of-symbiosis",
+    "v2.1-sct-core",
+    "v2.1-crdt-symbols",
+    "v2.1-crdt-state",
+]
+# src/protocol/quantum_feedback.rs: AsyncFeedbackQueue — redb persistence + VersionVector CRDT sync
+"v2.1-quantum-feedback" = [
+    "v2.1-proof-of-symbiosis",
+]
 
 [dev-dependencies]
 tempfile = "3.10"

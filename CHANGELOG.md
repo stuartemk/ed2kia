@@ -6,6 +6,54 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.1.0-sprint30] — 2026-05-22
+
+### Sprint 30 "Neuroplasticidad Federada & Retroalimentación Estuardiana (Human-in-the-Loop)"
+
+Implementa `NeuroplasticAggregator` (agregación de gradientes ponderada por CE+SCT con fórmula `weight = (ce/1000) * (1 + clamp(Z, -0.5, 0.5))`), `SteeringBridge` (parsecos de feedback humano → deltas SCT → firmas Ed25519 con verificación criptográfica) y `AsyncFeedbackQueue` con CRDT VersionVector (resolución de conflictos por prioridad CE*Z + LWW por timestamp).
+
+| Artifact | Path | Purpose |
+|----------|------|---------|
+| NeuroplasticAggregator | `src/federated/neuroplastic_engine.rs` | Agregación CE+Z: `weight = (ce_score/1000) * (1 + z_weight)` |
+| Steering Bridge | `src/alignment/steering_bridge.rs` | Human feedback → SCT deltas → Ed25519 signing/verification |
+| Async Feedback Queue | `src/protocol/quantum_feedback.rs` | CRDT VersionVector + bincode serialization, CE*Z priority conflict resolution |
+| Integration Tests | `tests/federated_plasticity.rs` | 10 tests: CE+Z aggregation, steering bridge flow, signature tampering, CRDT convergence |
+| Feature Gates | `Cargo.toml` | `v2.1-neuroplasticity`, `v2.1-steering-bridge`, `v2.1-quantum-feedback` |
+
+### Added — Neuroplastic Federated Aggregation
+
+- **neuroplastic_engine.rs** — `src/federated/neuroplastic_engine.rs`
+  - `NeuroplasticAggregator`: Agregación de gradientes ponderada por CE score + SCT Z-weight
+  - `compute_weight(peer_id)`: Fórmula `weight = (ce_score.clamp(0,1000)/1000) * (1 + z_weight.clamp(-0.5,0.5))`
+  - `aggregate_gradients()`: Escalado de gradientes por peso ético del peer
+  - `batch_aggregate()`: Agregación acumulativa con manejo de pesos cero
+  - 11 unit tests: weight computation, gradient scaling, batch aggregation, deterministic token mapping
+
+### Added — Human Steering Bridge
+
+- **steering_bridge.rs** — `src/alignment/steering_bridge.rs`
+  - `SteeringBridge`: Parseo semántico de feedback humano → deltas SCT (x,y,z)
+  - `process_feedback()`: Clasificación positivo/negativo/mixto → generación de evento firmado Ed25519
+  - `verify_event()`: Verificación criptográfica de firma + detección de manipulación
+  - `parse_feedback_intention()`: Detección de patrones éticos en texto libre
+  - 10 unit tests: feedback parsing, signature verification, tampering detection, SCT dictionary updates
+
+### Added — Async Quantum Feedback with CRDT Sync
+
+- **quantum_feedback.rs** — `src/protocol/quantum_feedback.rs`
+  - `AsyncFeedbackQueue`: Cola asincrónica con VersionVector CRDT para convergencia eventual
+  - `enqueue()`: Inserción con resolución de conflicto por prioridad (CE*Z)
+  - `sync_with_peer()`: Sincronización bidireccional con merge de VersionVector
+  - `resolve_conflicts()`: Resolución determinística — mayor prioridad gana, LWW por timestamp en empates
+  - `serialize()`/`deserialize()`: Persistencia offline-first vía bincode
+  - 10 unit tests: enqueue priority, sync convergence, conflict resolution, drain/rebuild
+
+### Fixed
+
+- Replaced complex redb 1.5 persistence with simpler bincode serialization for `AsyncFeedbackQueue`
+- Fixed Ed25519 key generation in tests: `SigningKey::from(&[u8; 32])` (seed) instead of `from_keypair_bytes(&[u8; 64])`
+- Made `peer_id_to_token` public for test access in `NeuroplasticAggregator`
+
 ## [v2.1.0-sprint29] — 2026-05-22
 
 ### Sprint 29 "Proof of Symbiosis, Crédito de Existencia & Apoptosis de Red"
