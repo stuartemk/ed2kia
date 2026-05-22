@@ -2,7 +2,7 @@
 name = "ed2kIA-benchmarks"
 version = "0.1.0"
 edition = "2021"
-description = "ed2kIA v1.7.0 — Performance benchmarks for SAE loading, tensor serialization, and quantization"
+description = "ed2kIA v2.1.0 — Performance benchmarks for SAE, CRDT, P2P sync, and tensor serialization"
 license = "Apache-2.0"
 
 [[bench]]
@@ -11,6 +11,18 @@ harness = false
 
 [[bench]]
 name = "tensor_serialization"
+harness = false
+
+[[bench]]
+name = "p2p_sync"
+harness = false
+
+[[bench]]
+name = "sae_inference"
+harness = false
+
+[[bench]]
+name = "crdt_merge"
 harness = false
 
 [dependencies]

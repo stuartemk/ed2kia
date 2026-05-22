@@ -6,6 +6,47 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.1.0-stable] — 2026-05-22
+
+### Sprint 33 "Production Readiness, Benchmarking & Mainnet Launch Protocol"
+
+Sprint final antes del lanzamiento oficial `v2.1.0-stable`. Cero nuevas features. 100% hardening de producción: benchmarks de rendimiento con criterion, auditoría de seguridad, observabilidad Prometheus/Grafana, scripts de despliegue deterministas y checklist de lanzamiento mainnet.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| P2P Sync Benchmark | `benchmarks/benches/p2p_sync.rs` | GossipSub propagation, convergence, serialization |
+| SAE Inference Benchmark | `benchmarks/benches/sae_inference.rs` | Forward pass, Top-K, batch inference |
+| CRDT Merge Benchmark | `benchmarks/benches/crdt_merge.rs` | GCounter, PNCounter, ORSet merge at scale |
+| Production Threat Model | `docs/security/production-threat-model.md` | 15 threats assessed, 15 mitigated, 0 open |
+| Health Check Script | `scripts/health-check.sh` | POSIX-compliant, idempotent node health validation |
+| Launch Script | `scripts/launch-mainnet.sh` | POSIX-compliant, idempotent mainnet deployment |
+| Launch Checklist | `release/v2.1.0-stable/launch-checklist.md` | Pre-flight, deploy, validation, rollback |
+| Docker Hardening | `deploy/Dockerfile` | Multi-stage, non-root, healthchecks, prod features |
+
+### Added — Performance Benchmarks (Criterion)
+
+- **p2p_sync.rs** — GossipSub propagation (10-256 nodes), convergence rounds, message serialization (64B-4KB)
+- **sae_inference.rs** — Forward pass (1024-8192 latent), Top-K selection, batch inference (1-32 batch size)
+- **crdt_merge.rs** — GCounter/PNCounter/ORSet merge (10-10000 peers), multi-node convergence
+
+### Added — Security & Observability
+
+- **Production Threat Model** — 15 threats (2 Critical, 4 High, 6 Medium, 3 Low), all mitigated
+- **Health Check Script** — Process, port, HTTP, disk, memory, logs, permissions validation
+- **Launch Script** — Pre-flight, build, deploy, post-deploy validation, dry-run support
+- **Docker Hardening** — Production feature gates, cargo clean, build verification
+
+### Validation Results
+
+- `cargo fmt --all` ✅ PASS
+- `cargo clippy --all-targets --all-features -- -D warnings` ✅ PASS
+- `cargo test --all-targets --all-features` ✅ **3460 passed; 0 failed; 9 ignored**
+- `bash -n scripts/health-check.sh` ✅ PASS
+- `bash -n scripts/launch-mainnet.sh` ✅ PASS
+- Security audit: 15 threats assessed, 15 mitigated, 0 open
+
+---
+
 ## [v2.1.0-rc1] — 2026-05-22
 
 ### Sprint 32 "Test Hardening, Remediation & Release Candidate Preparation"
