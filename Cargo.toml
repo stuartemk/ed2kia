@@ -1,6 +1,6 @@
 [package]
 name = "ed2kia"
-version = "2.1.0-sprint25"
+version = "2.1.0-sprint26"
 edition = "2021"
 description = "Descentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
 license = "Apache-2.0"
@@ -596,6 +596,23 @@ test-mocks = []
 # geometry-bridge.js consumption of { x, y, z } vectors for particle animation
 "v2.1-ui-symbiosis" = ["v2.1-wasm-worker"]
 
+# ─── Sprint26: Validación Formal & Escalado de Producción ───
+
+# v2.1 Formal Validation — Property-based tests for Kernel invariants (Sprint26)
+# tests/property/kernel_invariants.rs: proptest for SCT, BFT, CRDT, QLoRA
+# CI config: proptest::config::FuzzyConfig::default().with_cases(500), --test-threads=2
+"v2.1-formal-validation" = ["proptest", "v2.1-sct-core", "v2.1-bft-aggregation", "v2.1-crdt-state"]
+
+# v2.1 Cross-Platform Sync — Offline-first sync engine (Sprint26)
+# src/platform/cross_sync.rs: Priority queue, VersionVector, batch merge, conflict resolution
+# Tauri/Capacitor/PWA ready, memory-bounded <64MB, zero data loss
+"v2.1-cross-platform-sync" = []
+
+# v2.1 Production Hardening — Security, CSP, runbook (Sprint26)
+# scripts/harden-production.sh: CSP headers, WASM sandbox, rate limiting, Ed25519 validation
+# docs/production-hardening.md: Deployment runbook, incident resolution, scaling
+"v2.1-production-hardening" = []
+
 [dev-dependencies]
 tempfile = "3.10"
 criterion = { version = "0.5", features = ["html_reports"] }
@@ -916,3 +933,9 @@ required-features = ["v2.1-fuzzing", "v2.1-consensus-engine", "v2.1-reputation-s
 name = "kernel_e2e_test"
 path = "tests/integration/kernel_e2e_test.rs"
 required-features = ["v2.1-kernel-integration"]
+
+# v2.1.0-sprint26 Formal Kernel Invariants — proptest for SCT, BFT, CRDT, QLoRA
+[[test]]
+name = "kernel_invariants"
+path = "tests/property/kernel_invariants.rs"
+required-features = ["v2.1-formal-validation"]

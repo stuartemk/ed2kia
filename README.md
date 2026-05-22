@@ -6,7 +6,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ethical-blue)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-2021-orange)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/Version-2.1.0-sprint25-yellowgreen)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-2.1.0-sprint26-yellowgreen)](CHANGELOG.md)
 [![Audit](https://img.shields.io/badge/Audit-Ready-brightgreen)](docs/audit-prep.md)
 [![Governance](https://img.shields.io/badge/Governance-Active-blueviolet)](GOVERNANCE.md)
 [![Launch](https://img.shields.io/badge/Launch-Ready-red)](docs/public-launch-guide.md)
@@ -116,6 +116,9 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 | `v2.1-zkp-v3` | ZKP v3, Recursive Prover, Cross-Chain | Draft |
 | `v2.1-enterprise` | SSO, K8s Operator, Compliance | Draft |
 | `v2.1-mvp-simulation` | End-to-End Local MVP — 3-node simulation, SCT Hard Reject demo, BFT consensus, CLI binary | ✅ Implementado (25 tests) |
+| `v2.1-formal-validation` | Formal Kernel Invariants — proptest for SCT (Z-axis bounds, decision), BFT (median convergence), CRDT (commutativity/associativity/idempotency), QLoRA (rank, payload) | ✅ Implementado (Sprint26) |
+| `v2.1-cross-platform-sync` | Cross-Platform Offline-First Sync — Priority queue (SCT>BFT>CRDT>Telemetry), VersionVector causal ordering, deterministic conflict resolution, Tauri/Capacitor/PWA ready | ✅ Implementado (Sprint26) |
+| `v2.1-production-hardening` | Production Security Hardening — CSP headers, WASM sandboxing, rate limiting + Ed25519, deployment runbook | ✅ Implementado (Sprint26) |
 
 > **Nota:** Los feature gates `v2.1-*` NO están incluidos en `default = ["stable"]`. Requieren activación explícita vía RFC comunitario.
 

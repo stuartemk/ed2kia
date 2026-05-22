@@ -624,6 +624,11 @@ pub mod federation_v2 {
     pub mod trust_scoring;
 }
 
+/// Cross-platform offline-first sync engine (Sprint26)
+#[cfg(feature = "v2.1-cross-platform-sync")]
+#[path = "platform/cross_sync.rs"]
+pub mod cross_sync;
+
 // ============================================================================
 // Fase 8: Marketplace, UI Backend, SLO Engine, Cross-Model Scaling
 // ============================================================================

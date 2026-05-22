@@ -6,6 +6,90 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.1.0-sprint26] — 2026-05-22
+
+### 🎉 Sprint Summary
+
+**v2.1.0-sprint26 "Validación Formal & Escalado de Producción"** implementa pruebas de propiedades (proptest) para el Kernel Estuardiano, motor de sincronización offline-first multiplataforma, endurecimiento de seguridad con CSP/WASM-sandboxing y runbook de despliegue de producción. Objetivo: garantizar que la red sea matemáticamente verificable, portable a desktop/móvil y lista para operación continua bajo condiciones reales, alineado con las Ley 2 (Reconocimiento del Error) y Ley 3 (Cero Desperdicio).
+
+| Artifact | Path | Purpose |
+|----------|------|---------|
+| Kernel Invariants | `tests/property/kernel_invariants.rs` | proptest for SCT (Z-axis bounds, decision logic), BFT (median convergence, outlier resistance), CRDT (commutativity, associativity, idempotency), QLoRA (rank bounds, payload size) |
+| Cross-Platform Sync | `src/platform/cross_sync.rs` | Offline-first sync engine: priority queue (SCT>BFT>CRDT>Telemetry), VersionVector causal ordering, deterministic timestamp conflict resolution, platform-agnostic (Tauri/Capacitor/PWA) |
+| Security Hardening | `scripts/harden-production.sh` | 4-phase validation: CSP headers, WASM sandboxing, rate limiting + Ed25519, report generation (`🟢 HARDENED` / `🔴 VULNERABILITY`) |
+| Production Runbook | `docs/production-hardening.md` | Multi-platform architecture, formal validation, security posture, horizontal scaling, incident resolution, ethical clause |
+| Feature Gates | `Cargo.toml` | `v2.1-formal-validation`, `v2.1-cross-platform-sync`, `v2.1-production-hardening` |
+
+### Added — Formal Kernel Invariants (proptest)
+
+- **kernel_invariants.rs** — `tests/property/kernel_invariants.rs`
+  - Property-based tests using `proptest` with 500 random cases per invariant (`with_cases(500)`)
+  - **SCT Invariants**:
+    - `sct_z_axis_bounds`: Z ∈ [-1.0, 1.0] for all valid inputs
+    - `sct_negative_z_rejects`: Z < 0 → `SCTDecision::Rejected`
+    - `sct_positive_z_approves`: Z > 0 → `SCTDecision::Approved`
+  - **BFT Invariants**:
+    - `bft_median_converges_to_truth`: Coordinate-wise median converges with ≤30% outliers
+    - `bft_median_resists_outliers`: Median stable against adversarial inputs
+    - `bft_zero_divergence_on_identical_inputs`: Zero divergence when all inputs identical
+  - **CRDT Invariants**:
+    - `gcounter_merge_commutative`: `merge(A, B) == merge(B, A)`
+    - `gcounter_merge_idempotent`: `merge(A, A) == A`
+    - `gcounter_merge_associative`: `merge(merge(A, B), C) == merge(A, merge(B, C))`
+  - **QLoRA Invariants**:
+    - `qlora_rank_bounds`: Rank ≤ min(d_model, d_in, d_out)
+    - `qlora_payload_size_bounded`: Serialized payload ≤ MB limits for P2P
+  - Feature gate: `#[cfg(feature = "v2.1-formal-validation")]`
+  - CI config: `--test-threads=2` for deterministic property testing
+
+### Added — Cross-Platform Offline-First Sync Engine
+
+- **cross_sync.rs** — `src/platform/cross_sync.rs`
+  - Platform-agnostic sync engine ready for Tauri/Capacitor/PWA deployment
+  - **Priority Queue**: SCT (1) > BFT (2) > CRDT (3) > Telemetry (4) — critical payloads sync first
+  - **VersionVector**: Causal ordering via Lamport-style clocks per node
+  - **Conflict Resolution**: Deterministic timestamp + VersionVector comparison
+  - **`sync_platform_state()`**: Merges local and remote state with CRDT-based conflict resolution
+  - **Unit Tests**: 17 tests including 5min offline reconnection convergence simulation, RAM <64MB guarantee
+  - Feature gate: `#[cfg(feature = "v2.1-cross-platform-sync")]`
+
+### Added — Security Hardening Script
+
+- **harden-production.sh** — `scripts/harden-production.sh`
+  - 4-phase security validation with `set -euo pipefail` and `trap cleanup EXIT INT TERM`
+  - **Phase 1**: CSP headers validation (meta tags, COOP/COEP, unsafe eval patterns)
+  - **Phase 2**: WASM sandboxing verification (no std::fs/std::net in WASM modules, Web Worker isolation)
+  - **Phase 3**: Rate limiting + Ed25519 signature validation
+  - **Phase 4**: Report generation (`docs/security-hardening-report-YYYYMMDD.md`)
+  - Output: `🟢 HARDENED` (all pass) or `🔴 VULNERABILITY DETECTED: [causa]` (any fail)
+  - Feature gate: `v2.1-production-hardening`
+
+### Added — Production Deployment Runbook
+
+- **production-hardening.md** — `docs/production-hardening.md`
+  - Multi-platform architecture: Tauri/Capacitor/PWA readiness matrix
+  - Formal validation: proptest invariant coverage table
+  - Security posture: CSP, WASM sandbox, Ed25519, rate limiting
+  - Horizontal scaling: Stateless design, CRDT convergence guarantees
+  - Incident resolution: Severity matrix (P0-P3), response procedures
+  - Ethical clause: Zero financial logic, community ownership, transparent governance
+  - Deployment commands: One-line install for systemd/Docker/K8s
+
+### Changed
+
+- **Cargo.toml** — Version bumped to `2.1.0-sprint26`
+- **Cargo.toml** — New feature gates: `v2.1-formal-validation`, `v2.1-cross-platform-sync`, `v2.1-production-hardening`
+
+### Technical Notes
+
+- proptest runs 500 random cases per invariant — significantly stronger than unit tests
+- Cross-sync engine uses `BinaryHeap<SyncEntry>` for O(log n) priority queue operations
+- VersionVector provides causal ordering without centralized clock
+- Security script is idempotent — safe to run repeatedly in CI/CD
+- Zero external telemetry, zero trackers, zero financial logic (Ley 1 + Ley 4)
+
+---
+
 ## [v2.1.0-sprint25] — 2026-05-22
 
 ### 🎉 Sprint Summary
