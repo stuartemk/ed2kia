@@ -6,6 +6,92 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.1.0-sprint25] — 2026-05-22
+
+### 🎉 Sprint Summary
+
+**v2.1.0-sprint25 "Simbiosis Visual & Web Worker Integration"** implementa migración del nodo WASM a Web Worker dedicado, puente de mensajes SCT (Stuartian Context Tensor), panel de control en tiempo real y sincronización con el Octaedro Ético 3D. Objetivo: habilitar participación no bloqueante en navegador, visualización directa de la gravedad ética y cumplimiento estricto de la Ley 4 (Simbiosis Existencial) y Ley 3 (Cero Desperdicio).
+
+| Artifact | Path | Purpose |
+|----------|------|---------|
+| WASM Web Worker | `web/wasm-worker.js` | Background engine: WASM in Web Worker, SCT simulation, telemetry loop 1s, offline queue 128 |
+| Browser Node Bridge | `web/browser-node.js` | Refactored Worker bridge: `startNode()`, `stopNode()`, `onTelemetry()`, `processTensor()` API |
+| Symbiosis Dashboard | `web/public-dashboard.html` | Control panel with `[Activar Nodo Simbiótico]`/`[Detener]`, real-time SCT counters, 3D Octahedron sync |
+| WASM process_tensor | `src/wasm/browser_node.rs` | `#[wasm_bindgen] pub fn process_tensor()` returning `{ x, y, z, decision }` SCT vectors |
+| Feature Gates | `Cargo.toml` | `v2.1-wasm-worker`, `v2.1-ui-symbiosis` |
+
+### Added — WASM Web Worker Engine
+
+- **wasm-worker.js** — `web/wasm-worker.js`
+  - Web Worker for non-blocking WASM execution (Main Thread never blocks)
+  - Message contract:
+    - IN: `{ type: 'start_node' }`, `{ type: 'process_tensor', payload }`, `{ type: 'stop_node' }`
+    - OUT: `{ type: 'node_ready' }`, `{ type: 'telemetry' }`, `{ type: 'tensor_result' }`, `{ type: 'node_stopped' }`, `{ type: 'error' }`
+  - SCT simulation: deterministic evaluation returning `{ x, y, z, decision }`
+    - x: Community Benefit [0, 1]
+    - y: External Cost [0, 1]
+    - z: Symbiosis Score [-1, 1]
+    - decision: 'approved' (z >= 0) or 'rejected' (z < 0)
+  - Telemetry loop: 1s interval emitting `tensors_processed`, `tensors_rejected`, `last_sct`, `queue_size`
+  - Offline queue: max 128 messages, flush on reconnection
+  - WASM loading: deferred async import with fallback to local simulation
+  - Error handling: `try/catch` with `postMessage({ type: 'error', message })`
+
+### Changed — Browser Node Worker Bridge
+
+- **browser-node.js** — `web/browser-node.js`
+  - Replaced `browser-node.worker.js` with `wasm-worker.js` as default Worker URL
+  - New API methods:
+    - `startNode()` — sends `{ type: 'start_node' }` to worker, returns Promise
+    - `stopNode()` — sends `{ type: 'stop_node' }` to worker, returns Promise
+    - `processTensor(payload)` — sends `{ type: 'process_tensor' }`, returns SCT result
+    - `onTelemetry(callback)` — shorthand for telemetry listener
+    - `onError(callback)` — shorthand for error listener
+  - Enhanced health: `tensorsProcessed`, `tensorsRejected`, `lastSct`, `nodeStarted`
+  - SCT message handling: `telemetry`, `tensor_result`, `node_ready`, `node_stopped`
+  - Local SCT fallback: `_simulateSCT()` for offline processing
+  - Pending promises management: `pendingPromises` map with timeout cleanup
+  - Backward compatible: `init()`, `processTask()`, `getHealth()`, `on()`, `off()`, `shutdown()` preserved
+
+### Added — Symbiosis UI Dashboard
+
+- **public-dashboard.html** — `web/public-dashboard.html`
+  - Symbiosis Control Panel card with WASM Web Worker status
+  - `[Activar Nodo Simbiótico]` / `[Detener]` buttons with loading states
+  - Real-time counters: `tensorsProcessed`, `tensorsRejected`, `queueSize`, `lastSct.decision`
+  - SCT Vector Display: X (Beneficio Comunitario), Y (Costo Externo), Z (Puntuación Simbiosis)
+  - 3D Octahedron sync: `geometryBridge.updateSCTVector(x, y, z)` with 500ms debounce
+  - Custom event dispatch: `ed2k-sct-vector` for external 3D listeners
+  - Alpine.js integration: `symbiosis` state object with `startSymbiosisNode()`/`stopSymbiosisNode()` actions
+  - Feature gate badge: `v2.1-wasm-worker`, `v2.1-ui-symbiosis`
+  - Version bumped to `v2.1.0-sprint25`
+
+### Added — WASM process_tensor API
+
+- **browser_node.rs** — `src/wasm/browser_node.rs`
+  - `#[wasm_bindgen] pub fn process_tensor(&mut self, payload: &str) -> JsValue`
+    - Returns JSON: `{ "x": f32, "y": f32, "z": f32, "decision": String, "latency_ms": u64 }`
+    - Deterministic SCT evaluation via `evaluate_sct()` helper
+    - CustomEvent dispatch: `ed2k-sct-evaluated` for JS listeners
+    - Memory-safe: no heap allocation beyond payload string
+  - `fn evaluate_sct(&self, payload: &str) -> (f32, f32, f32)` — deterministic hash-based SCT
+  - 5 new unit tests: `test_process_tensor_not_initialized`, `test_process_tensor_empty_payload`, `test_process_tensor_returns_sct_vectors`, `test_process_tensor_deterministic`, `test_sct_bounds`
+
+### Changed
+
+- **Cargo.toml** — Version bumped to `2.1.0-sprint25`
+- **Cargo.toml** — New feature gates: `v2.1-wasm-worker`, `v2.1-ui-symbiosis`
+
+### Technical Notes
+
+- WASM runs entirely in `web/wasm-worker.js` — Main Thread only renders and listens
+- SCT vectors `{ x, y, z }` are compatible with `src/alignment/sct_core.rs` `StuartianTensor`
+- 3D Octahedron sync uses `requestAnimationFrame` + 500ms debounce for performance
+- `IntersectionObserver` recommended for canvas elements to pause rendering when off-screen
+- Zero external telemetry, zero trackers, zero financial logic (Ley 1 + Ley 4)
+
+---
+
 ## [v2.1.0-sprint24] — 2026-05-21
 
 ### 🎉 Sprint Summary

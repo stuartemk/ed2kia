@@ -1,6 +1,6 @@
 [package]
 name = "ed2kia"
-version = "2.1.0-sprint24"
+version = "2.1.0-sprint25"
 edition = "2021"
 description = "Descentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
 license = "Apache-2.0"
@@ -582,6 +582,19 @@ test-mocks = []
 # src/mvp/local_testnet.rs: 5-phase simulation orchestrator
 # src/bin/ed2k_mvp.rs: CLI binary with --dry-run, --verbose, --output-json
 "v2.1-mvp-simulation" = ["v2.1-sct-core", "v2.1-sct-guard", "v2.1-bft-aggregation"]
+
+# ─── Sprint25: Simbiosis Visual & Web Worker Integration ───
+
+# v2.1 WASM Worker — Non-blocking Web Worker for WASM node execution (Sprint25)
+# web/wasm-worker.js: Background engine with message contract, SCT simulation, telemetry loop
+# web/browser-node.js: Refactored Worker bridge with startNode/stopNode/processTensor APIs
+# src/wasm/browser_node.rs: process_tensor() API exposing { x, y, z, decision } SCT vectors
+"v2.1-wasm-worker" = ["v2.1-sct-core"]
+
+# v2.1 UI Symbiosis — Symbiosis Control Panel, real-time counters, 3D Octahedron sync (Sprint25)
+# web/public-dashboard.html: Alpine.js integration with Symbiosis state, debounced 500ms 3D sync
+# geometry-bridge.js consumption of { x, y, z } vectors for particle animation
+"v2.1-ui-symbiosis" = ["v2.1-wasm-worker"]
 
 [dev-dependencies]
 tempfile = "3.10"

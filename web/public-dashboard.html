@@ -275,6 +275,88 @@
 
         footer a:hover { text-decoration: underline; }
 
+        /* ─── Symbiosis Control (Sprint25) ─── */
+        .symbiosis-control {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .symbiosis-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .symbiosis-btn.start {
+            background: var(--accent-green);
+            color: white;
+        }
+
+        .symbiosis-btn.start:hover { background: #059669; }
+        .symbiosis-btn.start:disabled { background: var(--text-secondary); cursor: not-allowed; }
+
+        .symbiosis-btn.stop {
+            background: var(--accent-red);
+            color: white;
+        }
+
+        .symbiosis-btn.stop:hover { background: #dc2626; }
+        .symbiosis-btn.stop:disabled { background: var(--text-secondary); cursor: not-allowed; }
+
+        .symbiosis-status {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .symbiosis-status .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .symbiosis-status .dot.active { background: var(--accent-green); animation: pulse 2s infinite; }
+        .symbiosis-status .dot.inactive { background: var(--accent-red); }
+
+        .sct-vector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .sct-axis {
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            padding: 8px;
+            text-align: center;
+        }
+
+        .sct-axis-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 2px;
+        }
+
+        .sct-axis-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            font-family: monospace;
+        }
+
+        .sct-axis-value.x { color: var(--accent-green); }
+        .sct-axis-value.y { color: var(--accent-yellow); }
+        .sct-axis-value.z { color: var(--accent-cyan); }
+
         /* ─── Responsive ─── */
         @media (max-width: 768px) {
             .grid {
@@ -297,6 +379,74 @@
                 <span class="last-update" x-text="lastUpdate"></span>
             </div>
         </header>
+
+        <!-- Sprint25: Symbiosis Control Panel -->
+        <div class="card" style="margin-bottom: 24px; border-color: var(--accent-purple);">
+            <div class="card-header">
+                <span class="card-title">🤖 Nodo Simbiótico — WASM Web Worker</span>
+                <span class="card-badge" style="background: rgba(139, 92, 246, 0.15); color: var(--accent-purple);">v2.1-wasm-worker</span>
+            </div>
+
+            <!-- Control Buttons -->
+            <div class="symbiosis-control">
+                <button class="symbiosis-btn start"
+                        x-show="!symbiosis.nodeStarted"
+                        @click="startSymbiosisNode"
+                        :disabled="symbiosis.starting"
+                        x-text="symbiosis.starting ? 'Iniciando...' : 'Activar Nodo Simbiótico'">
+                </button>
+                <button class="symbiosis-btn stop"
+                        x-show="symbiosis.nodeStarted"
+                        @click="stopSymbiosisNode"
+                        :disabled="symbiosis.stopping"
+                        x-text="symbiosis.stopping ? 'Deteniendo...' : 'Detener'">
+                </button>
+                <div class="symbiosis-status">
+                    <div class="dot" :class="symbiosis.nodeStarted ? 'active' : 'inactive'"></div>
+                    <span x-text="symbiosis.nodeStarted ? 'Worker Activo' : 'Inactivo'"></span>
+                    <span x-show="symbiosis.wasmLoaded" style="color: var(--accent-green);">· WASM Cargado</span>
+                    <span x-show="!symbiosis.wasmLoaded && symbiosis.nodeStarted" style="color: var(--accent-yellow);">· Simulación Local</span>
+                </div>
+            </div>
+
+            <!-- Real-time Counters -->
+            <div class="metrics">
+                <div class="metric">
+                    <div class="metric-label">Tensores Procesados</div>
+                    <div class="metric-value green" x-text="symbiosis.tensorsProcessed ?? 0"></div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Tensores Rechazados</div>
+                    <div class="metric-value red" x-text="symbiosis.tensorsRejected ?? 0"></div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Cola Pendiente</div>
+                    <div class="metric-value yellow" x-text="symbiosis.queueSize ?? 0"></div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Decisión SCT</div>
+                    <div class="metric-value"
+                         :style="'color: ' + (symbiosis.lastSct?.decision === 'approved' ? 'var(--accent-green)' : 'var(--accent-red)')"
+                         x-text="symbiosis.lastSct?.decision ?? '—'"></div>
+                </div>
+            </div>
+
+            <!-- SCT Vector Display for 3D Octahedron Sync -->
+            <div class="sct-vector" x-show="symbiosis.lastSct">
+                <div class="sct-axis">
+                    <div class="sct-axis-label">X (Beneficio Comunitario)</div>
+                    <div class="sct-axis-value x" x-text="symbiosis.lastSct?.x?.toFixed(4) ?? '—'"></div>
+                </div>
+                <div class="sct-axis">
+                    <div class="sct-axis-label">Y (Costo Externo)</div>
+                    <div class="sct-axis-value y" x-text="symbiosis.lastSct?.y?.toFixed(4) ?? '—'"></div>
+                </div>
+                <div class="sct-axis">
+                    <div class="sct-axis-label">Z (Puntuación Simbiosis)</div>
+                    <div class="sct-axis-value z" x-text="symbiosis.lastSct?.z?.toFixed(4) ?? '—'"></div>
+                </div>
+            </div>
+        </div>
 
         <!-- Row 1: Network Health + Alignment Metrics -->
         <div class="grid">
@@ -459,10 +609,10 @@
 
                 <div style="margin-top: 16px; padding: 12px; background: var(--bg-secondary); border-radius: 8px;">
                     <div class="metric-label">Kernel Version</div>
-                    <div style="font-weight: 600; margin-top: 4px;">v2.1.0-sprint20</div>
+                    <div style="font-weight: 600; margin-top: 4px;">v2.1.0-sprint25</div>
                     <div class="metric-label" style="margin-top: 8px;">Feature Gates</div>
                     <div style="font-size: 0.85rem; color: var(--accent-cyan); margin-top: 2px;">
-                        v2.1-stuartian-geometry, v2.1-3d-viz
+                        v2.1-stuartian-geometry, v2.1-3d-viz, v2.1-wasm-worker, v2.1-ui-symbiosis
                     </div>
                 </div>
             </div>
@@ -511,7 +661,7 @@
 
         <!-- Footer -->
         <footer>
-            <p>ed2kIA v2.1.0-sprint20 — Public Observability Dashboard</p>
+            <p>ed2kIA v2.1.0-sprint25 — Public Observability Dashboard</p>
             <p style="margin-top: 8px;">
                 <a href="docs/kernel-architecture.md" target="_blank">Kernel Architecture</a> ·
                 <a href="docs/audit-prep.md" target="_blank">Audit Prep</a> ·
@@ -529,5 +679,123 @@
     <script defer src="/assets/public-dashboard.js"></script>
     <!-- Sprint20: Stuartian Geometry 3D Bridge -->
     <script defer src="/assets/geometry-bridge.js"></script>
+    <!-- Sprint25: Browser Node Worker Bridge -->
+    <script defer src="browser-node.js"></script>
+    <script>
+        document.addEventListener('alpine:init', function () {
+            Alpine.data('publicDashboard', function () {
+                return {
+                    connected: false,
+                    lastUpdate: '—',
+                    network: {},
+                    alignment: {},
+                    merit: {},
+                    // Sprint25: Symbiosis Node State
+                    symbiosis: {
+                        nodeStarted: false,
+                        starting: false,
+                        stopping: false,
+                        wasmLoaded: false,
+                        tensorsProcessed: 0,
+                        tensorsRejected: 0,
+                        queueSize: 0,
+                        lastSct: null
+                    },
+                    _nodeManager: null,
+                    _geometryBridge: null,
+                    _sctDebounceTimer: null,
+                    init() {
+                        this._initSymbiosisNode();
+                        this._updateTimestamp();
+                        setInterval(() => this._updateTimestamp(), 5000);
+                    },
+                    _updateTimestamp() {
+                        var now = new Date();
+                        this.lastUpdate = 'Última: ' + now.toLocaleTimeString('es-MX');
+                    },
+                    // Sprint25: Symbiosis Node Initialization
+                    _initSymbiosisNode() {
+                        var self = this;
+                        if (typeof BrowserNodeManager === 'undefined') {
+                            console.warn('[Dashboard] BrowserNodeManager not loaded');
+                            return;
+                        }
+                        try {
+                            this._nodeManager = new BrowserNodeManager({
+                                id: 'dashboard-node',
+                                memoryLimitMb: 64
+                            });
+                            this._nodeManager.init().then(function () {
+                                self.connected = true;
+                                // Telemetry listener — updates UI + 3D Octahedron
+                                self._nodeManager.onTelemetry(function (data) {
+                                    self.symbiosis.tensorsProcessed = data.tensors_processed || 0;
+                                    self.symbiosis.tensorsRejected = data.tensors_rejected || 0;
+                                    self.symbiosis.queueSize = data.queue_size || 0;
+                                    if (data.last_sct) {
+                                        self.symbiosis.lastSct = data.last_sct;
+                                        self._syncOctahedron(data.last_sct);
+                                    }
+                                });
+                                self._nodeManager.onError(function (data) {
+                                    console.error('[Dashboard] Node error:', data.message);
+                                });
+                            }).catch(function (err) {
+                                console.error('[Dashboard] Node init failed:', err.message);
+                            });
+                        } catch (err) {
+                            console.error('[Dashboard] BrowserNodeManager creation failed:', err.message);
+                        }
+                    },
+                    startSymbiosisNode() {
+                        var self = this;
+                        if (!this._nodeManager || this.symbiosis.starting) return;
+                        this.symbiosis.starting = true;
+                        this._nodeManager.startNode().then(function (data) {
+                            self.symbiosis.nodeStarted = true;
+                            self.symbiosis.wasmLoaded = data.wasm_loaded || false;
+                            self.symbiosis.starting = false;
+                        }).catch(function (err) {
+                            console.error('[Dashboard] Start failed:', err.message);
+                            self.symbiosis.starting = false;
+                        });
+                    },
+                    stopSymbiosisNode() {
+                        var self = this;
+                        if (!this._nodeManager || this.symbiosis.stopping) return;
+                        this.symbiosis.stopping = true;
+                        this._nodeManager.stopNode().then(function () {
+                            self.symbiosis.nodeStarted = false;
+                            self.symbiosis.wasmLoaded = false;
+                            self.symbiosis.stopping = false;
+                        }).catch(function (err) {
+                            console.error('[Dashboard] Stop failed:', err.message);
+                            self.symbiosis.stopping = false;
+                        });
+                    },
+                    // Sprint25: Sync SCT vectors with 3D Octahedron (debounced 500ms)
+                    _syncOctahedron(sct) {
+                        var self = this;
+                        if (this._sctDebounceTimer) {
+                            clearTimeout(this._sctDebounceTimer);
+                        }
+                        this._sctDebounceTimer = setTimeout(function () {
+                            if (window.geometryBridge && typeof window.geometryBridge.updateSCTVector === 'function') {
+                                try {
+                                    window.geometryBridge.updateSCTVector(sct.x, sct.y, sct.z);
+                                } catch (e) {
+                                    console.warn('[Dashboard] geometryBridge.updateSCTVector failed:', e.message);
+                                }
+                            }
+                            // Dispatch custom event for external 3D listeners
+                            if (typeof window !== 'undefined' && window.CustomEvent) {
+                                window.dispatchEvent(new CustomEvent('ed2k-sct-vector', { detail: sct }));
+                            }
+                        }, 500);
+                    }
+                };
+            });
+        });
+    </script>
 </body>
 </html>
