@@ -50,7 +50,10 @@ mod internal {
                 Self::AlignmentDivergence(msg) => {
                     write!(f, "Alignment divergence detected: {}", msg)
                 }
-                Self::InsufficientModels { required, available } => {
+                Self::InsufficientModels {
+                    required,
+                    available,
+                } => {
                     write!(
                         f,
                         "Insufficient models: required {}, available {}",
@@ -202,10 +205,10 @@ mod internal {
                 (self.avg_alignment_score * (self.total_alignments - 1) as f64 + score)
                     / self.total_alignments as f64;
             self.total_refinements += refinements as u64;
-            self.avg_refinement_passes =
-                (self.avg_refinement_passes * (self.total_alignments - 1) as f64
-                    + refinements as f64)
-                    / self.total_alignments as f64;
+            self.avg_refinement_passes = (self.avg_refinement_passes
+                * (self.total_alignments - 1) as f64
+                + refinements as f64)
+                / self.total_alignments as f64;
         }
 
         pub fn record_divergence(&mut self) {
@@ -281,12 +284,12 @@ mod internal {
             model_id: &str,
             gradient_norm: f64,
         ) -> Result<(), CrossModelAlignerV5Error> {
-            let state = self
-                .models
-                .get_mut(model_id)
-                .ok_or(CrossModelAlignerV5Error::ModelNotFound(
-                    model_id.to_string(),
-                ))?;
+            let state =
+                self.models
+                    .get_mut(model_id)
+                    .ok_or(CrossModelAlignerV5Error::ModelNotFound(
+                        model_id.to_string(),
+                    ))?;
             state.update_gradient_norm(gradient_norm, self.config.ema_alpha);
             Ok(())
         }
@@ -303,12 +306,12 @@ mod internal {
                 });
             }
 
-            let target = self
-                .models
-                .get(target_model)
-                .ok_or(CrossModelAlignerV5Error::ModelNotFound(
-                    target_model.to_string(),
-                ))?;
+            let target =
+                self.models
+                    .get(target_model)
+                    .ok_or(CrossModelAlignerV5Error::ModelNotFound(
+                        target_model.to_string(),
+                    ))?;
 
             // Compute weighted alignment
             let mut weighted_sum = 0.0;
@@ -337,7 +340,8 @@ mod internal {
                         cross_shard = true;
                     }
 
-                    let weight = 1.0 / (1.0 + (state.ema_gradient_norm - target.ema_gradient_norm).abs());
+                    let weight =
+                        1.0 / (1.0 + (state.ema_gradient_norm - target.ema_gradient_norm).abs());
                     weighted_sum += state.ema_gradient_norm * weight;
                     weight_total += weight;
                 }
@@ -367,7 +371,8 @@ mod internal {
 
             // Compute alignment score
             let alignment_score = if target.ema_gradient_norm > 0.0 {
-                1.0 - ((final_norm - target.ema_gradient_norm).abs() / target.ema_gradient_norm).min(1.0)
+                1.0 - ((final_norm - target.ema_gradient_norm).abs() / target.ema_gradient_norm)
+                    .min(1.0)
             } else {
                 1.0
             };
@@ -388,7 +393,8 @@ mod internal {
             }
 
             // Record stats
-            self.stats.record_alignment(alignment_score, refinement_passes);
+            self.stats
+                .record_alignment(alignment_score, refinement_passes);
 
             Ok(AlignmentResultV5 {
                 model_id: target_model.to_string(),
@@ -401,9 +407,7 @@ mod internal {
         }
 
         pub fn get_alignment_score(&self, model_id: &str) -> Option<f64> {
-            self.models
-                .get(model_id)
-                .map(|s| s.last_alignment_score)
+            self.models.get(model_id).map(|s| s.last_alignment_score)
         }
 
         pub fn get_avg_alignment(&self, model_id: &str) -> Option<f64> {
@@ -478,7 +482,10 @@ mod internal {
             aligner
                 .register_model("m1".to_string(), "shard1".to_string(), 768)
                 .unwrap();
-            match aligner.register_model("m1".to_string(), "shard1".to_string(), 768).unwrap_err() {
+            match aligner
+                .register_model("m1".to_string(), "shard1".to_string(), 768)
+                .unwrap_err()
+            {
                 CrossModelAlignerV5Error::InvalidConfig(msg) => assert!(msg.contains("already")),
                 e => panic!("Wrong error: {:?}", e),
             }
@@ -487,7 +494,10 @@ mod internal {
         #[test]
         fn test_register_model_zero_dim() {
             let mut aligner = CrossModelAlignerV5::default();
-            match aligner.register_model("m1".to_string(), "shard1".to_string(), 0).unwrap_err() {
+            match aligner
+                .register_model("m1".to_string(), "shard1".to_string(), 0)
+                .unwrap_err()
+            {
                 CrossModelAlignerV5Error::InvalidConfig(msg) => assert!(msg.contains("dimension")),
                 e => panic!("Wrong error: {:?}", e),
             }
@@ -537,7 +547,10 @@ mod internal {
                 .register_model("m1".to_string(), "shard1".to_string(), 768)
                 .unwrap();
             match aligner.align("m1").unwrap_err() {
-                CrossModelAlignerV5Error::InsufficientModels { required, available } => {
+                CrossModelAlignerV5Error::InsufficientModels {
+                    required,
+                    available,
+                } => {
                     assert_eq!(required, 2);
                     assert_eq!(available, 1);
                 }
@@ -842,6 +855,6 @@ mod internal {
 // Re-export public types
 #[cfg(feature = "v1.6-sprint3")]
 pub use internal::{
-    AlignmentResultV5, AlignerV5Stats, CrossModelAlignerV5, CrossModelAlignerV5Config,
+    AlignerV5Stats, AlignmentResultV5, CrossModelAlignerV5, CrossModelAlignerV5Config,
     CrossModelAlignerV5Error, ModelGradientStateV5,
 };

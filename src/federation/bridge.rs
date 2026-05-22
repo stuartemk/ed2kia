@@ -326,7 +326,10 @@ impl FederationBridge {
         let remote_identity = self.trusted_networks.get(remote_network_id).unwrap();
 
         // Verificar compatibilidad de versión de protocolo
-        if !Self::versions_compatible(&self.local_identity.protocol_version, &remote_identity.protocol_version) {
+        if !Self::versions_compatible(
+            &self.local_identity.protocol_version,
+            &remote_identity.protocol_version,
+        ) {
             return Err(BridgeError::ProtocolVersionMismatch {
                 local: self.local_identity.protocol_version.clone(),
                 remote: remote_identity.protocol_version.clone(),
@@ -362,7 +365,10 @@ impl FederationBridge {
         let remote_id = &response.identity.network_id;
 
         // Verificar compatibilidad de versión
-        if !Self::versions_compatible(&self.local_identity.protocol_version, &response.identity.protocol_version) {
+        if !Self::versions_compatible(
+            &self.local_identity.protocol_version,
+            &response.identity.protocol_version,
+        ) {
             return Err(BridgeError::ProtocolVersionMismatch {
                 local: self.local_identity.protocol_version.clone(),
                 remote: response.identity.protocol_version.clone(),
@@ -473,10 +479,7 @@ impl FederationBridge {
         // Agrupar deltas por layer_id
         let mut layer_deltas: HashMap<u32, Vec<DeltaUpdate>> = HashMap::new();
         for delta in self.pending_deltas.drain(..) {
-            layer_deltas
-                .entry(delta.layer_id)
-                .or_default()
-                .push(delta);
+            layer_deltas.entry(delta.layer_id).or_default().push(delta);
         }
 
         let mut total_merged = 0;
@@ -651,9 +654,7 @@ impl FederationBridge {
                 // (Simplificado: en producción usaría adapter real)
                 Ok(weights.to_vec())
             }
-            ("qwen-scope", "llama-3") => {
-                Ok(weights.to_vec())
-            }
+            ("qwen-scope", "llama-3") => Ok(weights.to_vec()),
             _ => {
                 warn!(
                     source = %source_schema,

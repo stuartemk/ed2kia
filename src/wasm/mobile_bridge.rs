@@ -82,7 +82,12 @@ mod internal {
 
     impl BackgroundTask {
         /// Create a new background task.
-        pub fn new(task_id: String, priority: u32, estimated_memory: usize, created_at_ms: u64) -> Self {
+        pub fn new(
+            task_id: String,
+            priority: u32,
+            estimated_memory: usize,
+            created_at_ms: u64,
+        ) -> Self {
             Self {
                 task_id,
                 priority,
@@ -398,7 +403,10 @@ mod internal {
 
         /// Get the number of pending tasks.
         pub fn pending_task_count(&self) -> usize {
-            self.tasks.iter().filter(|t| t.status == TaskStatus::Pending).count()
+            self.tasks
+                .iter()
+                .filter(|t| t.status == TaskStatus::Pending)
+                .count()
         }
 
         /// Cancel all pending tasks and free their memory.
@@ -499,7 +507,9 @@ mod internal {
             assert!(bridge.submit_task("t1".to_string(), 1, 100, 1000).is_ok());
             assert!(bridge.submit_task("t2".to_string(), 1, 100, 1000).is_ok());
             assert_eq!(
-                bridge.submit_task("t3".to_string(), 1, 100, 1000).unwrap_err(),
+                bridge
+                    .submit_task("t3".to_string(), 1, 100, 1000)
+                    .unwrap_err(),
                 MobileBridgeError::QueueFull
             );
         }
@@ -507,9 +517,7 @@ mod internal {
         #[test]
         fn test_next_task_priority() {
             let mut bridge = MobileBridge::new();
-            bridge
-                .submit_task("low".to_string(), 1, 100, 1000)
-                .unwrap();
+            bridge.submit_task("low".to_string(), 1, 100, 1000).unwrap();
             bridge
                 .submit_task("high".to_string(), 10, 100, 1000)
                 .unwrap();
@@ -589,12 +597,8 @@ mod internal {
         #[test]
         fn test_cancel_all_tasks() {
             let mut bridge = MobileBridge::new();
-            bridge
-                .submit_task("t1".to_string(), 1, 100, 1000)
-                .unwrap();
-            bridge
-                .submit_task("t2".to_string(), 1, 100, 1000)
-                .unwrap();
+            bridge.submit_task("t1".to_string(), 1, 100, 1000).unwrap();
+            bridge.submit_task("t2".to_string(), 1, 100, 1000).unwrap();
 
             let cancelled = bridge.cancel_all_tasks();
             assert_eq!(cancelled, 2);

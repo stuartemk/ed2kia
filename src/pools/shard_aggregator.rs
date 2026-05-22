@@ -222,15 +222,14 @@ impl AggregationGroup {
             return;
         }
         self.total_credits = self.shards.iter().map(|s| s.available_credits).sum();
-        self.avg_load = self.shards.iter().map(|s| s.load_factor).sum::<f64>()
-            / self.shards.len() as f64;
+        self.avg_load =
+            self.shards.iter().map(|s| s.load_factor).sum::<f64>() / self.shards.len() as f64;
         self.healthy_count = self.shards.iter().filter(|s| s.healthy).count();
     }
 }
 
 /// Aggregation statistics.
-#[derive(Debug, Clone)]
-#[derive(Default)]
+#[derive(Debug, Clone, Default)]
 pub struct AggregatorStats {
     /// Total shards aggregated.
     pub total_shards: usize,
@@ -243,7 +242,6 @@ pub struct AggregatorStats {
     /// Total healthy shards.
     pub healthy_shards: usize,
 }
-
 
 /// Shard Aggregator engine — aggregates shards by type with load balancing.
 pub struct ShardAggregator {
@@ -284,9 +282,10 @@ impl ShardAggregator {
 
         // Get or create group for shard type
         let group_key = shard.shard_type.to_string();
-        let group = self.groups.entry(group_key.clone()).or_insert_with(|| {
-            AggregationGroup::new(group_key.clone(), shard.shard_type.clone())
-        });
+        let group = self
+            .groups
+            .entry(group_key.clone())
+            .or_insert_with(|| AggregationGroup::new(group_key.clone(), shard.shard_type.clone()));
 
         // Check max shards
         if group.shards.len() >= self.config.max_shards_per_group {
@@ -297,8 +296,7 @@ impl ShardAggregator {
 
         // Add shard to group
         group.add_shard(shard.clone());
-        self.shard_index
-            .insert(shard.shard_id.clone(), group_key);
+        self.shard_index.insert(shard.shard_id.clone(), group_key);
 
         // Update stats
         self.stats.total_shards += 1;
@@ -311,15 +309,19 @@ impl ShardAggregator {
 
     /// Remove a shard from its aggregation group.
     pub fn remove_shard(&mut self, shard_id: &str) -> Result<ShardRecord, ShardAggregatorError> {
-        let group_key = self.shard_index
+        let group_key = self
+            .shard_index
             .get(shard_id)
             .ok_or(ShardAggregatorError::ShardNotFound(shard_id.to_string()))?
             .clone();
 
-        let group = self.groups.get_mut(&group_key)
+        let group = self
+            .groups
+            .get_mut(&group_key)
             .ok_or(ShardAggregatorError::ShardNotFound(shard_id.to_string()))?;
 
-        let removed = group.remove_shard(shard_id)
+        let removed = group
+            .remove_shard(shard_id)
             .ok_or(ShardAggregatorError::ShardNotFound(shard_id.to_string()))?;
         self.shard_index.remove(shard_id);
         self.stats.total_shards = self.stats.total_shards.saturating_sub(1);
@@ -345,11 +347,19 @@ impl ShardAggregator {
     }
 
     /// Update shard load factor.
-    pub fn update_shard_load(&mut self, shard_id: &str, load: f64) -> Result<(), ShardAggregatorError> {
-        let group_key = self.shard_index.get(shard_id)
+    pub fn update_shard_load(
+        &mut self,
+        shard_id: &str,
+        load: f64,
+    ) -> Result<(), ShardAggregatorError> {
+        let group_key = self
+            .shard_index
+            .get(shard_id)
             .ok_or(ShardAggregatorError::ShardNotFound(shard_id.to_string()))?
             .clone();
-        let group = self.groups.get_mut(&group_key)
+        let group = self
+            .groups
+            .get_mut(&group_key)
             .ok_or(ShardAggregatorError::ShardNotFound(shard_id.to_string()))?;
         if let Some(shard) = group.shards.iter_mut().find(|s| s.shard_id == shard_id) {
             shard.update_load(load);
@@ -362,10 +372,14 @@ impl ShardAggregator {
 
     /// Update shard heartbeat.
     pub fn shard_heartbeat(&mut self, shard_id: &str) -> Result<(), ShardAggregatorError> {
-        let group_key = self.shard_index.get(shard_id)
+        let group_key = self
+            .shard_index
+            .get(shard_id)
             .ok_or(ShardAggregatorError::ShardNotFound(shard_id.to_string()))?
             .clone();
-        let group = self.groups.get_mut(&group_key)
+        let group = self
+            .groups
+            .get_mut(&group_key)
             .ok_or(ShardAggregatorError::ShardNotFound(shard_id.to_string()))?;
         if let Some(shard) = group.shards.iter_mut().find(|s| s.shard_id == shard_id) {
             shard.heartbeat();
@@ -400,7 +414,9 @@ impl ShardAggregator {
 
     /// Update healthy shard count in stats.
     fn update_healthy_count(&mut self) {
-        self.stats.healthy_shards = self.groups.values()
+        self.stats.healthy_shards = self
+            .groups
+            .values()
             .flat_map(|g| &g.shards)
             .filter(|s| s.healthy)
             .count();
@@ -436,12 +452,7 @@ mod tests {
     use super::*;
 
     fn make_shard(id: &str, shard_type: ShardType, node_id: &str, credits: f64) -> ShardRecord {
-        ShardRecord::new(
-            id.to_string(),
-            shard_type,
-            node_id.to_string(),
-            credits,
-        )
+        ShardRecord::new(id.to_string(), shard_type, node_id.to_string(), credits)
     }
 
     #[test]
@@ -606,7 +617,10 @@ mod tests {
         assert_eq!(ShardType::SaeCompute.to_string(), "SaeCompute");
         assert_eq!(ShardType::SaeStorage.to_string(), "SaeStorage");
         assert_eq!(ShardType::SaeInference.to_string(), "SaeInference");
-        assert_eq!(ShardType::Custom("test".to_string()).to_string(), "Custom(test)");
+        assert_eq!(
+            ShardType::Custom("test".to_string()).to_string(),
+            "Custom(test)"
+        );
     }
 
     #[test]

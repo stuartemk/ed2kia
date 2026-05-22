@@ -27,3 +27,10 @@ pub use cache::{GossipCache, GossipCacheError, CacheEntry, PayloadType, SyncStat
 
 #[cfg(feature = "v2.1-crdt-state")]
 pub use crdt::{GCounter, PNCounter, ORSet, ReputationCrdt, VersionVector, CrdtError};
+
+// ─── Sprint28: Symbol Registry CRDT ───
+#[cfg(feature = "v2.1-crdt-symbols")]
+pub mod crdt_symbols;
+
+#[cfg(feature = "v2.1-crdt-symbols")]
+pub use crdt_symbols::{SymbolRegistry, SymbolRegistryError, SymbolEntry};

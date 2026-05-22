@@ -309,8 +309,7 @@ mod internal {
                 .get_mut(session_id)
                 .ok_or(HybridGovernanceError::SessionNotFound)?;
 
-            if state.status != SessionStatus::Created && state.status != SessionStatus::Validating
-            {
+            if state.status != SessionStatus::Created && state.status != SessionStatus::Validating {
                 return Err(HybridGovernanceError::InvalidStateTransition);
             }
 
@@ -349,10 +348,7 @@ mod internal {
         }
 
         /// Bypass time-lock using emergency authority.
-        pub fn bypass_timelock(
-            &mut self,
-            session_id: &str,
-        ) -> Result<(), HybridGovernanceError> {
+        pub fn bypass_timelock(&mut self, session_id: &str) -> Result<(), HybridGovernanceError> {
             if !self.config.emergency_bypass {
                 return Err(HybridGovernanceError::TimeLockActive);
             }
@@ -475,12 +471,7 @@ mod internal {
         pub fn active_session_count(&self) -> usize {
             self.sessions
                 .values()
-                .filter(|s| {
-                    !matches!(
-                        s.status,
-                        SessionStatus::Executed | SessionStatus::Failed(_)
-                    )
-                })
+                .filter(|s| !matches!(s.status, SessionStatus::Executed | SessionStatus::Failed(_)))
                 .count()
         }
     }
@@ -587,7 +578,8 @@ mod internal {
         fn test_validate_off_chain() {
             let mut engine = HybridGovernance::default();
             let time = current_time_ms();
-            engine.create_session("s1".to_string(), "p1".to_string(), false, time)
+            engine
+                .create_session("s1".to_string(), "p1".to_string(), false, time)
                 .unwrap();
             assert!(engine.validate_off_chain("s1", time + 100).is_ok());
             let state = engine.get_session("s1").unwrap();
@@ -603,17 +595,22 @@ mod internal {
             };
             let mut engine = HybridGovernance::new(config);
             let time = current_time_ms();
-            engine.create_session("s1".to_string(), "p1".to_string(), false, time)
+            engine
+                .create_session("s1".to_string(), "p1".to_string(), false, time)
                 .unwrap();
             let result = engine.validate_off_chain("s1", time + 100);
-            assert!(matches!(result, Err(HybridGovernanceError::ValidationFailed(_))));
+            assert!(matches!(
+                result,
+                Err(HybridGovernanceError::ValidationFailed(_))
+            ));
         }
 
         #[test]
         fn test_timelock_check() {
             let mut engine = HybridGovernance::default();
             let time = current_time_ms();
-            engine.create_session("s1".to_string(), "p1".to_string(), false, time)
+            engine
+                .create_session("s1".to_string(), "p1".to_string(), false, time)
                 .unwrap();
             // Time-lock should be active
             assert!(!engine.check_timelock("s1", time + 1000).unwrap());
@@ -644,7 +641,8 @@ mod internal {
             };
             let mut engine = HybridGovernance::new(config);
             let time = current_time_ms();
-            engine.create_session("s1".to_string(), "p1".to_string(), false, time)
+            engine
+                .create_session("s1".to_string(), "p1".to_string(), false, time)
                 .unwrap();
             assert!(engine.bypass_timelock("s1").is_ok());
             assert!(engine.check_timelock("s1", time + 1000).unwrap());
@@ -654,7 +652,8 @@ mod internal {
         fn test_bypass_timelock_disabled() {
             let mut engine = HybridGovernance::default();
             let time = current_time_ms();
-            engine.create_session("s1".to_string(), "p1".to_string(), false, time)
+            engine
+                .create_session("s1".to_string(), "p1".to_string(), false, time)
                 .unwrap();
             assert_eq!(
                 engine.bypass_timelock("s1"),
@@ -666,7 +665,8 @@ mod internal {
         fn test_register_on_chain() {
             let mut engine = HybridGovernance::default();
             let time = current_time_ms();
-            engine.create_session("s1".to_string(), "p1".to_string(), false, time)
+            engine
+                .create_session("s1".to_string(), "p1".to_string(), false, time)
                 .unwrap();
             engine.validate_off_chain("s1", time + 100).unwrap();
             // Wait for time-lock to expire
@@ -680,7 +680,8 @@ mod internal {
         fn test_register_on_chain_timelock_active() {
             let mut engine = HybridGovernance::default();
             let time = current_time_ms();
-            engine.create_session("s1".to_string(), "p1".to_string(), false, time)
+            engine
+                .create_session("s1".to_string(), "p1".to_string(), false, time)
                 .unwrap();
             engine.validate_off_chain("s1", time + 100).unwrap();
             assert_eq!(
@@ -693,7 +694,8 @@ mod internal {
         fn test_register_on_chain_not_validated() {
             let mut engine = HybridGovernance::default();
             let time = current_time_ms();
-            engine.create_session("s1".to_string(), "p1".to_string(), false, time)
+            engine
+                .create_session("s1".to_string(), "p1".to_string(), false, time)
                 .unwrap();
             let after_timelock = time + 25 * 3600 * 1000;
             assert_eq!(
@@ -706,7 +708,8 @@ mod internal {
         fn test_execute() {
             let mut engine = HybridGovernance::default();
             let time = current_time_ms();
-            engine.create_session("s1".to_string(), "p1".to_string(), false, time)
+            engine
+                .create_session("s1".to_string(), "p1".to_string(), false, time)
                 .unwrap();
             engine.validate_off_chain("s1", time + 100).unwrap();
             let after_timelock = time + 25 * 3600 * 1000;
@@ -720,7 +723,8 @@ mod internal {
         fn test_execute_without_validation() {
             let mut engine = HybridGovernance::default();
             let time = current_time_ms();
-            engine.create_session("s1".to_string(), "p1".to_string(), false, time)
+            engine
+                .create_session("s1".to_string(), "p1".to_string(), false, time)
                 .unwrap();
             assert_eq!(
                 engine.execute("s1", time + 1000),
@@ -732,7 +736,8 @@ mod internal {
         fn test_fail_session() {
             let mut engine = HybridGovernance::default();
             let time = current_time_ms();
-            engine.create_session("s1".to_string(), "p1".to_string(), false, time)
+            engine
+                .create_session("s1".to_string(), "p1".to_string(), false, time)
                 .unwrap();
             assert!(engine
                 .fail_session("s1", "Test failure".to_string())
@@ -746,7 +751,8 @@ mod internal {
             let mut engine = HybridGovernance::default();
             let time = current_time_ms();
             // Create session
-            engine.create_session("s1".to_string(), "p1".to_string(), false, time)
+            engine
+                .create_session("s1".to_string(), "p1".to_string(), false, time)
                 .unwrap();
             // Validate
             engine.validate_off_chain("s1", time + 100).unwrap();
@@ -764,7 +770,8 @@ mod internal {
         fn test_remove_session() {
             let mut engine = HybridGovernance::default();
             let time = current_time_ms();
-            engine.create_session("s1".to_string(), "p1".to_string(), false, time)
+            engine
+                .create_session("s1".to_string(), "p1".to_string(), false, time)
                 .unwrap();
             assert!(engine.remove_session("s1").is_ok());
             assert_eq!(engine.sessions.len(), 0);
@@ -783,7 +790,8 @@ mod internal {
         fn test_metrics_tracking() {
             let mut engine = HybridGovernance::default();
             let time = current_time_ms();
-            engine.create_session("s1".to_string(), "p1".to_string(), false, time)
+            engine
+                .create_session("s1".to_string(), "p1".to_string(), false, time)
                 .unwrap();
             engine.validate_off_chain("s1", time + 100).unwrap();
             let after_timelock = time + 25 * 3600 * 1000;
@@ -797,7 +805,8 @@ mod internal {
         fn test_reset_metrics() {
             let mut engine = HybridGovernance::default();
             let time = current_time_ms();
-            engine.create_session("s1".to_string(), "p1".to_string(), false, time)
+            engine
+                .create_session("s1".to_string(), "p1".to_string(), false, time)
                 .unwrap();
             engine.reset_metrics();
             assert_eq!(engine.metrics().total_sessions, 0);
@@ -837,7 +846,8 @@ mod internal {
         fn test_execution_hash_generated() {
             let mut engine = HybridGovernance::default();
             let time = current_time_ms();
-            engine.create_session("s1".to_string(), "p1".to_string(), false, time)
+            engine
+                .create_session("s1".to_string(), "p1".to_string(), false, time)
                 .unwrap();
             let state = engine.get_session("s1").unwrap();
             assert!(!state.execution_hash.is_empty());
@@ -853,7 +863,8 @@ mod internal {
             };
             let mut engine = HybridGovernance::new(config);
             let time = current_time_ms();
-            engine.create_session("s1".to_string(), "p1".to_string(), false, time)
+            engine
+                .create_session("s1".to_string(), "p1".to_string(), false, time)
                 .unwrap();
             engine.validate_off_chain("s1", time + 100).unwrap();
             // Should be able to register immediately
@@ -877,9 +888,11 @@ mod internal {
             };
             let mut engine = HybridGovernance::new(config);
             let time = current_time_ms();
-            engine.create_session("s1".to_string(), "p1".to_string(), false, time)
+            engine
+                .create_session("s1".to_string(), "p1".to_string(), false, time)
                 .unwrap();
-            engine.create_session("s2".to_string(), "p2".to_string(), false, time)
+            engine
+                .create_session("s2".to_string(), "p2".to_string(), false, time)
                 .unwrap();
             engine.bypass_timelock("s1").unwrap();
             engine.bypass_timelock("s2").unwrap();

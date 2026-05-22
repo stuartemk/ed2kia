@@ -249,10 +249,12 @@ impl PredictiveContract {
         let sum_x: f64 = (0..n).map(|i| i as f64).sum();
         let sum_y: f64 = history.iter().sum();
         let sum_xy: f64 = (0..n).map(|i| i as f64 * history[i]).sum();
-        let sum_x2: f64 = (0..n).map(|i| {
-            let x = i as f64;
-            x * x
-        }).sum();
+        let sum_x2: f64 = (0..n)
+            .map(|i| {
+                let x = i as f64;
+                x * x
+            })
+            .sum();
 
         let denom = n as f64 * sum_x2 - sum_x * sum_x;
         if denom.abs() < 1e-10 {
@@ -323,7 +325,12 @@ impl PredictiveContract {
             );
             self.penalties.push(record);
             self.status = ContractStatus::Breached;
-            (ContractStatus::Breached, severity, penalty, "penalty_applied")
+            (
+                ContractStatus::Breached,
+                severity,
+                penalty,
+                "penalty_applied",
+            )
         } else {
             self.consecutive_breaches += 1;
             let severity = self.consecutive_breaches;
@@ -339,7 +346,12 @@ impl PredictiveContract {
             );
             self.penalties.push(record);
             self.status = ContractStatus::Breached;
-            (ContractStatus::Breached, severity, penalty, "critical_penalty")
+            (
+                ContractStatus::Breached,
+                severity,
+                penalty,
+                "critical_penalty",
+            )
         };
 
         Ok(ContractEvaluation {

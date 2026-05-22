@@ -216,7 +216,8 @@ mod inner {
         pub fn add_update(&mut self, update: WeightUpdate) -> Result<(), AggregationError> {
             // Validate hash
             if !update.verify_hash() {
-                let expected = WeightUpdate::compute_hash_public(&update.weight_deltas, &update.node_id);
+                let expected =
+                    WeightUpdate::compute_hash_public(&update.weight_deltas, &update.node_id);
                 warn!(
                     "Invalid update hash from node {}: expected {}, got {}",
                     update.node_id, expected, update.update_hash
@@ -262,10 +263,9 @@ mod inner {
         pub fn aggregate(&self, layer_id: u32) -> Result<AggregationResultV2, AggregationError> {
             let start = std::time::Instant::now();
 
-            let updates = self
-                .pending_updates
-                .get(&layer_id)
-                .ok_or_else(|| AggregationError::InvalidUpdate(format!("No updates for layer {}", layer_id)))?;
+            let updates = self.pending_updates.get(&layer_id).ok_or_else(|| {
+                AggregationError::InvalidUpdate(format!("No updates for layer {}", layer_id))
+            })?;
 
             if updates.len() < self.config.min_participants {
                 return Err(AggregationError::InsufficientParticipants {
@@ -283,20 +283,19 @@ mod inner {
             };
 
             // Step 2: Compute compression metrics
-            let (compression_ratio, bytes_saved) = if self.config.compression_enabled
-                && self.config.top_k_sparsity > 0
-            {
-                let dim = updates.first().map(|u| u.dimension()).unwrap_or(0);
-                let k = self.config.top_k_sparsity.min(dim);
-                let ratio = k as f32 / dim.max(1) as f32;
-                // Original: dim * 4 bytes (f32), compressed: k * 1 byte (i8) + k * 8 bytes (indices)
-                let original_bytes = dim * 4;
-                let compressed_bytes = k + k * std::mem::size_of::<usize>();
-                let saved = original_bytes.saturating_sub(compressed_bytes);
-                (ratio, saved)
-            } else {
-                (1.0, 0)
-            };
+            let (compression_ratio, bytes_saved) =
+                if self.config.compression_enabled && self.config.top_k_sparsity > 0 {
+                    let dim = updates.first().map(|u| u.dimension()).unwrap_or(0);
+                    let k = self.config.top_k_sparsity.min(dim);
+                    let ratio = k as f32 / dim.max(1) as f32;
+                    // Original: dim * 4 bytes (f32), compressed: k * 1 byte (i8) + k * 8 bytes (indices)
+                    let original_bytes = dim * 4;
+                    let compressed_bytes = k + k * std::mem::size_of::<usize>();
+                    let saved = original_bytes.saturating_sub(compressed_bytes);
+                    (ratio, saved)
+                } else {
+                    (1.0, 0)
+                };
 
             // Step 3: Weighted FedAvg
             let final_weights = Self::weighted_avg(updates, &included_indices)?;
@@ -361,10 +360,10 @@ mod inner {
             }
 
             let parallelism = self.config.parallel_layers.max(1);
-            let mut results: Vec<Result<AggregationResultV2, AggregationError>> =
-                (0..layer_ids.len())
-                    .map(|_| Ok(AggregationResultV2::default_empty()))
-                    .collect();
+            let mut results: Vec<Result<AggregationResultV2, AggregationError>> = (0..layer_ids
+                .len())
+                .map(|_| Ok(AggregationResultV2::default_empty()))
+                .collect();
 
             // Process layers in batches
             let mut chunk_start = 0;
@@ -375,17 +374,15 @@ mod inner {
                 let mut handles = Vec::new();
                 for (local_idx, &layer_id) in chunk.iter().enumerate() {
                     // Clone the data needed for each thread
-                    let updates_opt = self
-                        .pending_updates
-                        .get(&layer_id)
-                        .cloned();
+                    let updates_opt = self.pending_updates.get(&layer_id).cloned();
                     let config = self.config.clone();
 
                     let handle = std::thread::spawn(move || {
                         match updates_opt {
-                            None => Err(AggregationError::InvalidUpdate(
-                                format!("No updates for layer {}", layer_id),
-                            )),
+                            None => Err(AggregationError::InvalidUpdate(format!(
+                                "No updates for layer {}",
+                                layer_id
+                            ))),
                             Some(updates) if updates.len() < config.min_participants => {
                                 Err(AggregationError::InsufficientParticipants {
                                     current: updates.len(),
@@ -396,30 +393,31 @@ mod inner {
                                 let start = std::time::Instant::now();
 
                                 // Krum v2
-                                let (included_indices, excluded_nodes) =
-                                    if config.krum_f > 0 {
-                                        Self::apply_krum_v2_internal(&updates, config.krum_f)?
-                                    } else {
-                                        let indices: Vec<usize> = (0..updates.len()).collect();
-                                        (indices, Vec::new())
-                                    };
+                                let (included_indices, excluded_nodes) = if config.krum_f > 0 {
+                                    Self::apply_krum_v2_internal(&updates, config.krum_f)?
+                                } else {
+                                    let indices: Vec<usize> = (0..updates.len()).collect();
+                                    (indices, Vec::new())
+                                };
 
                                 // Compression metrics
-                                let (compression_ratio, bytes_saved) =
-                                    if config.compression_enabled && config.top_k_sparsity > 0 {
-                                        let dim = updates.first().map(|u| u.dimension()).unwrap_or(0);
-                                        let k = config.top_k_sparsity.min(dim);
-                                        let ratio = k as f32 / dim.max(1) as f32;
-                                        let original_bytes = dim * 4;
-                                        let compressed_bytes = k + k * std::mem::size_of::<usize>();
-                                        let saved = original_bytes.saturating_sub(compressed_bytes);
-                                        (ratio, saved)
-                                    } else {
-                                        (1.0, 0)
-                                    };
+                                let (compression_ratio, bytes_saved) = if config.compression_enabled
+                                    && config.top_k_sparsity > 0
+                                {
+                                    let dim = updates.first().map(|u| u.dimension()).unwrap_or(0);
+                                    let k = config.top_k_sparsity.min(dim);
+                                    let ratio = k as f32 / dim.max(1) as f32;
+                                    let original_bytes = dim * 4;
+                                    let compressed_bytes = k + k * std::mem::size_of::<usize>();
+                                    let saved = original_bytes.saturating_sub(compressed_bytes);
+                                    (ratio, saved)
+                                } else {
+                                    (1.0, 0)
+                                };
 
                                 // Weighted avg
-                                let final_weights = Self::weighted_avg(&updates, &included_indices)?;
+                                let final_weights =
+                                    Self::weighted_avg(&updates, &included_indices)?;
                                 let confidence =
                                     Self::compute_confidence(updates.len(), included_indices.len());
 
@@ -432,7 +430,8 @@ mod inner {
                                 let timestamp = std::time::SystemTime::now()
                                     .duration_since(std::time::UNIX_EPOCH)
                                     .unwrap_or_default()
-                                    .as_millis() as u64;
+                                    .as_millis()
+                                    as u64;
 
                                 Ok(AggregationResultV2 {
                                     layer_id,
@@ -524,8 +523,7 @@ mod inner {
             scores.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
 
             let included: Vec<usize> = scores[..select_count].iter().map(|&(i, _)| i).collect();
-            let excluded_set: std::collections::HashSet<usize> =
-                included.iter().copied().collect();
+            let excluded_set: std::collections::HashSet<usize> = included.iter().copied().collect();
             let excluded_nodes: Vec<String> = updates
                 .iter()
                 .enumerate()
@@ -588,7 +586,10 @@ mod inner {
         // ------------------------------------------------------------------
 
         /// Weighted FedAvg using sample counts.
-        fn weighted_avg(updates: &[WeightUpdate], indices: &[usize]) -> Result<Vec<f32>, AggregationError> {
+        fn weighted_avg(
+            updates: &[WeightUpdate],
+            indices: &[usize],
+        ) -> Result<Vec<f32>, AggregationError> {
             if indices.is_empty() {
                 return Err(AggregationError::InvalidUpdate(
                     "No updates to aggregate".to_string(),
@@ -596,10 +597,7 @@ mod inner {
             }
 
             let dim = updates[indices[0]].dimension();
-            let total_samples: usize = indices
-                .iter()
-                .map(|&i| updates[i].num_samples)
-                .sum();
+            let total_samples: usize = indices.iter().map(|&i| updates[i].num_samples).sum();
 
             if total_samples == 0 {
                 return Err(AggregationError::InvalidUpdate(

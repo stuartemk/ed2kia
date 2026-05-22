@@ -43,8 +43,15 @@ mod internal {
                 Self::ShardCoordinationFailed { shard_id, reason } => {
                     write!(f, "Shard coordination failed for {}: {}", shard_id, reason)
                 }
-                Self::DivergenceDetected { shard_id, divergence } => {
-                    write!(f, "Divergence {:.3} detected in shard {}", divergence, shard_id)
+                Self::DivergenceDetected {
+                    shard_id,
+                    divergence,
+                } => {
+                    write!(
+                        f,
+                        "Divergence {:.3} detected in shard {}",
+                        divergence, shard_id
+                    )
                 }
                 Self::RebalanceFailed(msg) => write!(f, "Rebalance failed: {}", msg),
             }
@@ -153,7 +160,13 @@ mod internal {
             if self.load_history.is_empty() {
                 return self.ema_load;
             }
-            let recent: Vec<f64> = self.load_history.iter().rev().take(horizon).cloned().collect();
+            let recent: Vec<f64> = self
+                .load_history
+                .iter()
+                .rev()
+                .take(horizon)
+                .cloned()
+                .collect();
             if recent.is_empty() {
                 return self.ema_load;
             }
@@ -222,11 +235,28 @@ mod internal {
 
     #[derive(Debug, Clone, PartialEq)]
     pub enum ScalingActionV7 {
-        AddNode { shard_id: String, node_id: String },
-        RemoveNode { shard_id: String, node_id: String },
-        SplitShard { shard_id: String, new_shard_id: String },
-        MergeShards { shard_a: String, shard_b: String, target: String },
-        Rebalance { shard_id: String, from_node: String, to_node: String },
+        AddNode {
+            shard_id: String,
+            node_id: String,
+        },
+        RemoveNode {
+            shard_id: String,
+            node_id: String,
+        },
+        SplitShard {
+            shard_id: String,
+            new_shard_id: String,
+        },
+        MergeShards {
+            shard_a: String,
+            shard_b: String,
+            target: String,
+        },
+        Rebalance {
+            shard_id: String,
+            from_node: String,
+            to_node: String,
+        },
     }
 
     impl fmt::Display for ScalingActionV7 {
@@ -238,14 +268,33 @@ mod internal {
                 Self::RemoveNode { shard_id, node_id } => {
                     write!(f, "Remove node {} from shard {}", node_id, shard_id)
                 }
-                Self::SplitShard { shard_id, new_shard_id } => {
+                Self::SplitShard {
+                    shard_id,
+                    new_shard_id,
+                } => {
                     write!(f, "Split shard {} into {}", shard_id, new_shard_id)
                 }
-                Self::MergeShards { shard_a, shard_b, target } => {
-                    write!(f, "Merge shards {} and {} into {}", shard_a, shard_b, target)
+                Self::MergeShards {
+                    shard_a,
+                    shard_b,
+                    target,
+                } => {
+                    write!(
+                        f,
+                        "Merge shards {} and {} into {}",
+                        shard_a, shard_b, target
+                    )
                 }
-                Self::Rebalance { shard_id, from_node, to_node } => {
-                    write!(f, "Rebalance shard {}: {} -> {}", shard_id, from_node, to_node)
+                Self::Rebalance {
+                    shard_id,
+                    from_node,
+                    to_node,
+                } => {
+                    write!(
+                        f,
+                        "Rebalance shard {}: {} -> {}",
+                        shard_id, from_node, to_node
+                    )
                 }
             }
         }
@@ -462,11 +511,15 @@ mod internal {
                         if (max_util - min_util) > self.config.rebalance_threshold {
                             let from = node_utils
                                 .iter()
-                                .max_by(|a, b| a.utilization().partial_cmp(&b.utilization()).unwrap())
+                                .max_by(|a, b| {
+                                    a.utilization().partial_cmp(&b.utilization()).unwrap()
+                                })
                                 .map(|n| n.node_id.clone());
                             let to = node_utils
                                 .iter()
-                                .min_by(|a, b| a.utilization().partial_cmp(&b.utilization()).unwrap())
+                                .min_by(|a, b| {
+                                    a.utilization().partial_cmp(&b.utilization()).unwrap()
+                                })
                                 .map(|n| n.node_id.clone());
                             if let (Some(from_node), Some(to_node)) = (from, to) {
                                 actions.push(ScalingActionV7::Rebalance {
@@ -515,8 +568,14 @@ mod internal {
             if node_utils.len() < 2 {
                 return None;
             }
-            let max = *node_utils.iter().max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
-            let min = *node_utils.iter().min_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
+            let max = *node_utils
+                .iter()
+                .max_by(|a, b| a.partial_cmp(b).unwrap())
+                .unwrap();
+            let min = *node_utils
+                .iter()
+                .min_by(|a, b| a.partial_cmp(b).unwrap())
+                .unwrap();
             Some(max - min)
         }
 
@@ -601,7 +660,10 @@ mod internal {
             engine
                 .register_node("n1".to_string(), "m1".to_string(), 100.0)
                 .unwrap();
-            match engine.register_node("n1".to_string(), "m1".to_string(), 100.0).unwrap_err() {
+            match engine
+                .register_node("n1".to_string(), "m1".to_string(), 100.0)
+                .unwrap_err()
+            {
                 CrossModelScalingV7Error::NodeNotFound(msg) => assert!(msg.contains("Duplicate")),
                 e => panic!("Expected NodeNotFound, got {}", e),
             }
@@ -610,7 +672,10 @@ mod internal {
         #[test]
         fn test_register_node_invalid_capacity() {
             let mut engine = CrossModelScalingV7::default();
-            match engine.register_node("n1".to_string(), "m1".to_string(), 0.0).unwrap_err() {
+            match engine
+                .register_node("n1".to_string(), "m1".to_string(), 0.0)
+                .unwrap_err()
+            {
                 CrossModelScalingV7Error::InvalidConfig(msg) => {
                     assert!(msg.contains("positive"))
                 }
@@ -621,15 +686,22 @@ mod internal {
         #[test]
         fn test_register_shard() {
             let mut engine = CrossModelScalingV7::default();
-            engine.register_shard("s1".to_string(), "m1".to_string()).unwrap();
+            engine
+                .register_shard("s1".to_string(), "m1".to_string())
+                .unwrap();
             assert_eq!(engine.shards.len(), 1);
         }
 
         #[test]
         fn test_register_shard_duplicate() {
             let mut engine = CrossModelScalingV7::default();
-            engine.register_shard("s1".to_string(), "m1".to_string()).unwrap();
-            match engine.register_shard("s1".to_string(), "m1".to_string()).unwrap_err() {
+            engine
+                .register_shard("s1".to_string(), "m1".to_string())
+                .unwrap();
+            match engine
+                .register_shard("s1".to_string(), "m1".to_string())
+                .unwrap_err()
+            {
                 CrossModelScalingV7Error::ShardNotFound(msg) => assert!(msg.contains("Duplicate")),
                 e => panic!("Expected ShardNotFound, got {}", e),
             }
@@ -641,7 +713,9 @@ mod internal {
             engine
                 .register_node("n1".to_string(), "m1".to_string(), 100.0)
                 .unwrap();
-            engine.register_shard("s1".to_string(), "m1".to_string()).unwrap();
+            engine
+                .register_shard("s1".to_string(), "m1".to_string())
+                .unwrap();
             engine.assign_node_to_shard("n1", "s1").unwrap();
             assert_eq!(engine.shards.get("s1").unwrap().node_count(), 1);
         }
@@ -652,7 +726,9 @@ mod internal {
             engine
                 .register_node("n1".to_string(), "m1".to_string(), 100.0)
                 .unwrap();
-            engine.register_shard("s1".to_string(), "m2".to_string()).unwrap();
+            engine
+                .register_shard("s1".to_string(), "m2".to_string())
+                .unwrap();
             match engine.assign_node_to_shard("n1", "s1").unwrap_err() {
                 CrossModelScalingV7Error::CrossModelConflict { model_a, model_b } => {
                     assert_eq!(model_a, "m1");
@@ -700,7 +776,9 @@ mod internal {
             engine
                 .register_node("n2".to_string(), "m1".to_string(), 200.0)
                 .unwrap();
-            engine.register_shard("s1".to_string(), "m1".to_string()).unwrap();
+            engine
+                .register_shard("s1".to_string(), "m1".to_string())
+                .unwrap();
             engine.assign_node_to_shard("n1", "s1").unwrap();
             engine.assign_node_to_shard("n2", "s1").unwrap();
             let best = engine.select_best_node("s1").unwrap();
@@ -716,7 +794,9 @@ mod internal {
             engine
                 .register_node("n2".to_string(), "m1".to_string(), 100.0)
                 .unwrap();
-            engine.register_shard("s1".to_string(), "m1".to_string()).unwrap();
+            engine
+                .register_shard("s1".to_string(), "m1".to_string())
+                .unwrap();
             engine.assign_node_to_shard("n1", "s1").unwrap();
             engine.assign_node_to_shard("n2", "s1").unwrap();
             engine.update_node_load("n1", 90.0).unwrap();
@@ -731,7 +811,9 @@ mod internal {
             engine
                 .register_node("n1".to_string(), "m1".to_string(), 100.0)
                 .unwrap();
-            engine.register_shard("s1".to_string(), "m1".to_string()).unwrap();
+            engine
+                .register_shard("s1".to_string(), "m1".to_string())
+                .unwrap();
             engine.assign_node_to_shard("n1", "s1").unwrap();
             engine.update_node_load("n1", 50.0).unwrap();
             let predicted = engine.predict_shard_load("s1").unwrap();
@@ -841,7 +923,9 @@ mod internal {
             engine
                 .register_node("n2".to_string(), "m1".to_string(), 100.0)
                 .unwrap();
-            engine.register_shard("s1".to_string(), "m1".to_string()).unwrap();
+            engine
+                .register_shard("s1".to_string(), "m1".to_string())
+                .unwrap();
             engine.assign_node_to_shard("n1", "s1").unwrap();
             engine.assign_node_to_shard("n2", "s1").unwrap();
             engine.update_node_load("n1", 50.0).unwrap();
@@ -857,9 +941,16 @@ mod internal {
                 ..make_config()
             };
             let mut engine = CrossModelScalingV7::new(config);
-            engine.register_shard("s1".to_string(), "m1".to_string()).unwrap();
-            engine.register_shard("s2".to_string(), "m1".to_string()).unwrap();
-            match engine.register_shard("s3".to_string(), "m1".to_string()).unwrap_err() {
+            engine
+                .register_shard("s1".to_string(), "m1".to_string())
+                .unwrap();
+            engine
+                .register_shard("s2".to_string(), "m1".to_string())
+                .unwrap();
+            match engine
+                .register_shard("s3".to_string(), "m1".to_string())
+                .unwrap_err()
+            {
                 CrossModelScalingV7Error::CapacityExceeded(msg) => {
                     assert!(msg.contains("Maximum"))
                 }
@@ -880,7 +971,9 @@ mod internal {
             engine
                 .register_node("n2".to_string(), "m1".to_string(), 100.0)
                 .unwrap();
-            engine.register_shard("s1".to_string(), "m1".to_string()).unwrap();
+            engine
+                .register_shard("s1".to_string(), "m1".to_string())
+                .unwrap();
             engine.assign_node_to_shard("n1", "s1").unwrap();
             match engine.assign_node_to_shard("n2", "s1").unwrap_err() {
                 CrossModelScalingV7Error::CapacityExceeded(msg) => {
@@ -896,7 +989,9 @@ mod internal {
             engine
                 .register_node("n1".to_string(), "m1".to_string(), 100.0)
                 .unwrap();
-            engine.register_shard("s1".to_string(), "m1".to_string()).unwrap();
+            engine
+                .register_shard("s1".to_string(), "m1".to_string())
+                .unwrap();
             engine.assign_node_to_shard("n1", "s1").unwrap();
             engine.nodes.get_mut("n1").unwrap().active = false;
             assert!(engine.select_best_node("s1").is_none());
@@ -908,7 +1003,9 @@ mod internal {
             engine
                 .register_node("n1".to_string(), "m1".to_string(), 100.0)
                 .unwrap();
-            engine.register_shard("s1".to_string(), "m1".to_string()).unwrap();
+            engine
+                .register_shard("s1".to_string(), "m1".to_string())
+                .unwrap();
             engine.assign_node_to_shard("n1", "s1").unwrap();
             assert!(engine.check_divergence("s1").is_none());
         }
@@ -962,7 +1059,9 @@ mod internal {
         #[test]
         fn test_assign_node_not_found() {
             let mut engine = CrossModelScalingV7::default();
-            engine.register_shard("s1".to_string(), "m1".to_string()).unwrap();
+            engine
+                .register_shard("s1".to_string(), "m1".to_string())
+                .unwrap();
             match engine.assign_node_to_shard("unknown", "s1").unwrap_err() {
                 CrossModelScalingV7Error::NodeNotFound(msg) => {
                     assert!(msg.contains("unknown"))
@@ -989,11 +1088,6 @@ mod internal {
 
 #[cfg(feature = "v1.6-sprint3")]
 pub use internal::{
-    CrossModelScalingV7,
-    CrossModelScalingV7Config,
-    CrossModelScalingV7Error,
-    NodeEntryV7,
-    ShardEntryV7,
-    ScalingActionV7,
-    ScalingV7Stats,
+    CrossModelScalingV7, CrossModelScalingV7Config, CrossModelScalingV7Error, NodeEntryV7,
+    ScalingActionV7, ScalingV7Stats, ShardEntryV7,
 };

@@ -29,9 +29,9 @@ mod benchmarks {
     use ed2kia::bridge::cross_chain_bridge_v3::{CrossChainBridgeV3, CrossChainBridgeV3Config};
     use ed2kia::interop::interop_layer_v2::{InteropLayerV2, InteropMessage};
     use ed2kia::interop::protocol_adapter::{ProtocolAdapter, ProtocolMessage, ProtocolType};
-    use ed2kia::state::state_sync_v2::{StateSyncV2, StateEntry};
     use ed2kia::state::merkle_aggregator::MerkleAggregator;
-    use ed2kia::state::snapshot_manager::{SnapshotManager, SnapshotConfig};
+    use ed2kia::state::snapshot_manager::{SnapshotConfig, SnapshotManager};
+    use ed2kia::state::state_sync_v2::{StateEntry, StateSyncV2};
 
     // === Bridge v3 Benchmarks ===
 
@@ -44,8 +44,12 @@ mod benchmarks {
             enable_merkle_proof: true,
             ..CrossChainBridgeV3Config::default()
         });
-        bridge.register_chain("src".to_string(), 0.95, 500.0).unwrap();
-        bridge.register_chain("dst".to_string(), 0.90, 400.0).unwrap();
+        bridge
+            .register_chain("src".to_string(), 0.95, 500.0)
+            .unwrap();
+        bridge
+            .register_chain("dst".to_string(), 0.90, 400.0)
+            .unwrap();
 
         let start = Instant::now();
         for i in 0..100 {
@@ -66,8 +70,12 @@ mod benchmarks {
     #[test]
     fn bench_bridge_v3_verify_100() {
         let mut bridge = CrossChainBridgeV3::default();
-        bridge.register_chain("src".to_string(), 0.95, 500.0).unwrap();
-        bridge.register_chain("dst".to_string(), 0.90, 400.0).unwrap();
+        bridge
+            .register_chain("src".to_string(), 0.95, 500.0)
+            .unwrap();
+        bridge
+            .register_chain("dst".to_string(), 0.90, 400.0)
+            .unwrap();
 
         let msg_ids: Vec<String> = (0..100)
             .map(|i| {
@@ -94,8 +102,12 @@ mod benchmarks {
     #[test]
     fn bench_bridge_v3_relay_100() {
         let mut bridge = CrossChainBridgeV3::default();
-        bridge.register_chain("src".to_string(), 0.95, 500.0).unwrap();
-        bridge.register_chain("dst".to_string(), 0.90, 400.0).unwrap();
+        bridge
+            .register_chain("src".to_string(), 0.95, 500.0)
+            .unwrap();
+        bridge
+            .register_chain("dst".to_string(), 0.90, 400.0)
+            .unwrap();
 
         let msg_ids: Vec<String> = (0..100)
             .map(|i| {
@@ -240,7 +252,9 @@ mod benchmarks {
 
         eprintln!(
             "bench_state_sync_v2_sync_500: {:?} ({} keys, {} divergences)",
-            elapsed, result.synced_keys, result.divergences.len()
+            elapsed,
+            result.synced_keys,
+            result.divergences.len()
         );
         assert!(elapsed.as_millis() < 100);
     }

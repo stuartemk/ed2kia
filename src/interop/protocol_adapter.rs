@@ -35,10 +35,18 @@ mod internal {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             match self {
                 AdapterError::UnknownProtocol(p) => write!(f, "Unknown protocol: {}", p),
-                AdapterError::SerializationFailed(msg) => write!(f, "Serialization failed: {}", msg),
-                AdapterError::DeserializationFailed(msg) => write!(f, "Deserialization failed: {}", msg),
+                AdapterError::SerializationFailed(msg) => {
+                    write!(f, "Serialization failed: {}", msg)
+                }
+                AdapterError::DeserializationFailed(msg) => {
+                    write!(f, "Deserialization failed: {}", msg)
+                }
                 AdapterError::SchemaVersionMismatch { expected, actual } => {
-                    write!(f, "Schema version mismatch: expected={}, actual={}", expected, actual)
+                    write!(
+                        f,
+                        "Schema version mismatch: expected={}, actual={}",
+                        expected, actual
+                    )
                 }
                 AdapterError::PayloadTooLarge { size, max } => {
                     write!(f, "Payload size {} exceeds max {}", size, max)
@@ -147,7 +155,9 @@ mod internal {
 
         /// Serialize a message using the specified protocol.
         pub fn serialize(&self, message: &ProtocolMessage) -> Result<Vec<u8>, AdapterError> {
-            if message.fields.values().map(|v| v.len()).sum::<usize>() > self.config.max_payload_size {
+            if message.fields.values().map(|v| v.len()).sum::<usize>()
+                > self.config.max_payload_size
+            {
                 return Err(AdapterError::PayloadTooLarge {
                     size: message.fields.values().map(|v| v.len()).sum(),
                     max: self.config.max_payload_size,
@@ -163,7 +173,11 @@ mod internal {
         }
 
         /// Deserialize bytes into a protocol message.
-        pub fn deserialize(&self, data: &[u8], protocol: ProtocolType) -> Result<ProtocolMessage, AdapterError> {
+        pub fn deserialize(
+            &self,
+            data: &[u8],
+            protocol: ProtocolType,
+        ) -> Result<ProtocolMessage, AdapterError> {
             if data.len() > self.config.max_payload_size {
                 return Err(AdapterError::PayloadTooLarge {
                     size: data.len(),
@@ -200,7 +214,9 @@ mod internal {
 
         fn deserialize_protobuf(&self, data: &[u8]) -> Result<ProtocolMessage, AdapterError> {
             if data.len() < 8 {
-                return Err(AdapterError::DeserializationFailed("Insufficient data".to_string()));
+                return Err(AdapterError::DeserializationFailed(
+                    "Insufficient data".to_string(),
+                ));
             }
             let schema_version = u32::from_le_bytes(data[..4].try_into().unwrap());
             let count = u32::from_le_bytes(data[4..8].try_into().unwrap()) as usize;
@@ -210,14 +226,18 @@ mod internal {
 
             for _ in 0..count {
                 if offset + 6 > data.len() {
-                    return Err(AdapterError::DeserializationFailed("Truncated field header".to_string()));
+                    return Err(AdapterError::DeserializationFailed(
+                        "Truncated field header".to_string(),
+                    ));
                 }
-                let name_len = u16::from_le_bytes(data[offset..offset + 2].try_into().unwrap()) as usize;
+                let name_len =
+                    u16::from_le_bytes(data[offset..offset + 2].try_into().unwrap()) as usize;
                 offset += 2;
                 let name = String::from_utf8_lossy(&data[offset..offset + name_len]).to_string();
                 offset += name_len;
 
-                let value_len = u32::from_le_bytes(data[offset..offset + 4].try_into().unwrap()) as usize;
+                let value_len =
+                    u32::from_le_bytes(data[offset..offset + 4].try_into().unwrap()) as usize;
                 offset += 4;
                 let value = data[offset..offset + value_len].to_vec();
                 offset += value_len;
@@ -229,7 +249,10 @@ mod internal {
         }
 
         // FlatBuffers simulation (simple length-prefixed)
-        fn serialize_flatbuffers(&self, message: &ProtocolMessage) -> Result<Vec<u8>, AdapterError> {
+        fn serialize_flatbuffers(
+            &self,
+            message: &ProtocolMessage,
+        ) -> Result<Vec<u8>, AdapterError> {
             let mut buffer = Vec::new();
             buffer.extend_from_slice(&message.schema_version.to_le_bytes());
             for (name, value) in &message.fields {
@@ -243,19 +266,23 @@ mod internal {
 
         fn deserialize_flatbuffers(&self, data: &[u8]) -> Result<ProtocolMessage, AdapterError> {
             if data.len() < 4 {
-                return Err(AdapterError::DeserializationFailed("Insufficient data".to_string()));
+                return Err(AdapterError::DeserializationFailed(
+                    "Insufficient data".to_string(),
+                ));
             }
             let schema_version = u32::from_le_bytes(data[..4].try_into().unwrap());
             let mut message = ProtocolMessage::new(ProtocolType::FlatBuffers, schema_version);
 
             let mut offset = 4;
             while offset + 8 <= data.len() {
-                let name_len = u32::from_le_bytes(data[offset..offset + 4].try_into().unwrap()) as usize;
+                let name_len =
+                    u32::from_le_bytes(data[offset..offset + 4].try_into().unwrap()) as usize;
                 offset += 4;
                 let name = String::from_utf8_lossy(&data[offset..offset + name_len]).to_string();
                 offset += name_len;
 
-                let value_len = u32::from_le_bytes(data[offset..offset + 4].try_into().unwrap()) as usize;
+                let value_len =
+                    u32::from_le_bytes(data[offset..offset + 4].try_into().unwrap()) as usize;
                 offset += 4;
                 let value = data[offset..offset + value_len].to_vec();
                 offset += value_len;
@@ -307,7 +334,9 @@ mod internal {
 
         // JSON fallback
         fn serialize_json(&self, message: &ProtocolMessage) -> Result<Vec<u8>, AdapterError> {
-            let fields_map: serde_json::Map<String, serde_json::Value> = message.fields.iter()
+            let fields_map: serde_json::Map<String, serde_json::Value> = message
+                .fields
+                .iter()
                 .map(|(k, v)| (k.clone(), serde_json::Value::String(hex::encode(v))))
                 .collect();
             let json = serde_json::json!({
@@ -319,10 +348,11 @@ mod internal {
         }
 
         fn deserialize_json(&self, data: &[u8]) -> Result<ProtocolMessage, AdapterError> {
-            let value: serde_json::Value =
-                serde_json::from_slice(data).map_err(|e| AdapterError::DeserializationFailed(e.to_string()))?;
+            let value: serde_json::Value = serde_json::from_slice(data)
+                .map_err(|e| AdapterError::DeserializationFailed(e.to_string()))?;
 
-            let schema_version = value.get("schema_version")
+            let schema_version = value
+                .get("schema_version")
                 .and_then(|v| v.as_u64())
                 .unwrap_or(1) as u32;
 
@@ -390,7 +420,9 @@ mod internal {
             message.add_field("data".to_string(), vec![10, 20, 30]);
 
             let data = adapter.serialize(&message).unwrap();
-            let decoded = adapter.deserialize(&data, ProtocolType::FlatBuffers).unwrap();
+            let decoded = adapter
+                .deserialize(&data, ProtocolType::FlatBuffers)
+                .unwrap();
 
             assert_eq!(decoded.schema_version, 2);
             assert_eq!(decoded.fields.get("data"), Some(&vec![10, 20, 30]));

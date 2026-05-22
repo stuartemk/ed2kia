@@ -61,9 +61,16 @@ mod internal {
                 Self::BridgeFull => write!(f, "Bridge capacity exceeded"),
                 Self::RoutingFailed(msg) => write!(f, "Routing failed: {}", msg),
                 Self::MerkleMismatch { expected, actual } => {
-                    write!(f, "Merkle mismatch: expected={}, actual={}", expected, actual)
+                    write!(
+                        f,
+                        "Merkle mismatch: expected={}, actual={}",
+                        expected, actual
+                    )
                 }
-                Self::ProofTimeout { elapsed_ms, limit_ms } => {
+                Self::ProofTimeout {
+                    elapsed_ms,
+                    limit_ms,
+                } => {
                     write!(f, "Proof timeout: {}ms > {}ms", elapsed_ms, limit_ms)
                 }
                 Self::CredibilityTooLow { value, min } => {
@@ -218,11 +225,8 @@ mod internal {
             if self.latency_history.len() > 50 {
                 self.latency_history.pop_front();
             }
-            self.avg_latency_ms = self
-                .latency_history
-                .iter()
-                .sum::<f64>()
-                / self.latency_history.len() as f64;
+            self.avg_latency_ms =
+                self.latency_history.iter().sum::<f64>() / self.latency_history.len() as f64;
             self.ema_latency_ms = (1.0 - alpha) * self.ema_latency_ms + alpha * latency_ms;
         }
 
@@ -262,7 +266,13 @@ mod internal {
             if self.latency_history.is_empty() {
                 return self.ema_latency_ms;
             }
-            let recent: Vec<f64> = self.latency_history.iter().rev().take(horizon).cloned().collect();
+            let recent: Vec<f64> = self
+                .latency_history
+                .iter()
+                .rev()
+                .take(horizon)
+                .cloned()
+                .collect();
             if recent.is_empty() {
                 return self.ema_latency_ms;
             }
@@ -355,8 +365,7 @@ mod internal {
         pub fn mark_verified(&mut self, current_ms: u64) {
             self.verified = true;
             self.verified_at_ms = Some(current_ms);
-            self.verification_time_ms =
-                Some(current_ms.saturating_sub(self.submitted_at_ms));
+            self.verification_time_ms = Some(current_ms.saturating_sub(self.submitted_at_ms));
             self.status = ProofStatusV7::Verified;
             self.quality_score = 0.95;
             self.confidence_interval = 0.99;
@@ -429,15 +438,11 @@ mod internal {
         pub fn record_verification(&mut self, success: bool, time_ms: u64, fallback: bool) {
             if success {
                 self.proofs_verified += 1;
-                self.recent_verification_times
-                    .push_back(time_ms as f64);
+                self.recent_verification_times.push_back(time_ms as f64);
                 if self.recent_verification_times.len() > 100 {
                     self.recent_verification_times.pop_front();
                 }
-                self.avg_verification_time_ms = self
-                    .recent_verification_times
-                    .iter()
-                    .sum::<f64>()
+                self.avg_verification_time_ms = self.recent_verification_times.iter().sum::<f64>()
                     / self.recent_verification_times.len() as f64;
             } else {
                 self.proofs_failed += 1;
@@ -453,10 +458,7 @@ mod internal {
             if self.recent_routing_times.len() > 100 {
                 self.recent_routing_times.pop_front();
             }
-            self.avg_routing_time_ms = self
-                .recent_routing_times
-                .iter()
-                .sum::<f64>()
+            self.avg_routing_time_ms = self.recent_routing_times.iter().sum::<f64>()
                 / self.recent_routing_times.len() as f64;
         }
 
@@ -478,8 +480,7 @@ mod internal {
             if self.recent_verification_times.is_empty() {
                 return 0.0;
             }
-            let mut sorted: Vec<f64> =
-                self.recent_verification_times.iter().cloned().collect();
+            let mut sorted: Vec<f64> = self.recent_verification_times.iter().cloned().collect();
             sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
             let idx = ((sorted.len() as f64 * 0.95) as usize).min(sorted.len() - 1);
             sorted[idx]
@@ -626,7 +627,10 @@ mod internal {
 
             // Simulate verification
             let (ema_latency, enable_fallback) = match self.federations.get(&target_federation) {
-                Some(target) => (target.ema_latency_ms, self.config.enable_merkle_vrf_fallback),
+                Some(target) => (
+                    target.ema_latency_ms,
+                    self.config.enable_merkle_vrf_fallback,
+                ),
                 None => {
                     return Err(FederationZKPBridgeV7Error::FederationNotFound(
                         target_federation.clone(),
@@ -634,14 +638,13 @@ mod internal {
                 }
             };
 
-            let verification_time = if ema_latency > self.config.fallback_timeout_ms as f64
-                && enable_fallback
-            {
-                self.stats.fallback_count += 1;
-                500
-            } else {
-                200
-            };
+            let verification_time =
+                if ema_latency > self.config.fallback_timeout_ms as f64 && enable_fallback {
+                    self.stats.fallback_count += 1;
+                    500
+                } else {
+                    200
+                };
 
             // Batch all mutable operations
             {
@@ -649,11 +652,8 @@ mod internal {
                 if let Some(proof) = self.proofs.get_mut(proof_id) {
                     proof.mark_verified(current_ms);
                     proof.increment_hop();
-                    if verification_time > self.config.fallback_timeout_ms
-                        && enable_fallback
-                    {
-                        let merkle_root =
-                            compute_hash(format!("merkle-{}", proof_id).as_bytes());
+                    if verification_time > self.config.fallback_timeout_ms && enable_fallback {
+                        let merkle_root = compute_hash(format!("merkle-{}", proof_id).as_bytes());
                         proof.enable_fallback(merkle_root, current_ms);
                     }
                 }
@@ -673,15 +673,13 @@ mod internal {
             }
 
             // Update stats
-            self.stats.record_verification(true, verification_time, false);
+            self.stats
+                .record_verification(true, verification_time, false);
 
             Ok(true)
         }
 
-        pub fn select_best_federation(
-            &self,
-            exclude: Option<&str>,
-        ) -> Option<String> {
+        pub fn select_best_federation(&self, exclude: Option<&str>) -> Option<String> {
             let mut best_id: Option<String> = None;
             let mut best_score = f64::NEG_INFINITY;
 
@@ -704,12 +702,12 @@ mod internal {
             proof_id: &str,
             _current_ms: u64,
         ) -> Result<String, FederationZKPBridgeV7Error> {
-            let proof = self
-                .proofs
-                .get(proof_id)
-                .ok_or(FederationZKPBridgeV7Error::ProofNotFound(
-                    proof_id.to_string(),
-                ))?;
+            let proof =
+                self.proofs
+                    .get(proof_id)
+                    .ok_or(FederationZKPBridgeV7Error::ProofNotFound(
+                        proof_id.to_string(),
+                    ))?;
 
             // Select best federation for routing
             let best = self
@@ -781,12 +779,9 @@ mod internal {
             if !self.config.predictive_fallback {
                 return Ok(false);
             }
-            let node = self
-                .federations
-                .get(federation_id)
-                .ok_or(FederationZKPBridgeV7Error::FederationNotFound(
-                    federation_id.to_string(),
-                ))?;
+            let node = self.federations.get(federation_id).ok_or(
+                FederationZKPBridgeV7Error::FederationNotFound(federation_id.to_string()),
+            )?;
 
             let predicted_latency = node.predicted_latency(5);
             Ok(predicted_latency > self.config.fallback_timeout_ms as f64)
@@ -1137,9 +1132,7 @@ mod internal {
         fn test_stats_recording() {
             let mut bridge = FederationZKPBridgeV7::default();
             bridge.stats.record_routing(30);
-            bridge
-                .stats
-                .record_verification(true, 200, false);
+            bridge.stats.record_verification(true, 200, false);
             assert_eq!(bridge.stats.proofs_routed, 1);
             assert_eq!(bridge.stats.proofs_verified, 1);
         }
@@ -1351,8 +1344,7 @@ mod internal {
 
         #[test]
         fn test_cross_shard_failed_error() {
-            let err =
-                FederationZKPBridgeV7Error::CrossShardFailed("coordination".to_string());
+            let err = FederationZKPBridgeV7Error::CrossShardFailed("coordination".to_string());
             let msg = format!("{}", err);
             assert!(msg.contains("coordination"));
         }

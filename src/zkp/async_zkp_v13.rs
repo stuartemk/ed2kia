@@ -9,8 +9,8 @@
 
 #[cfg(feature = "v1.6-sprint2")]
 mod internal {
-    use std::collections::{HashMap, VecDeque, BinaryHeap};
     use std::cmp::Ordering;
+    use std::collections::{BinaryHeap, HashMap, VecDeque};
     use std::fmt;
 
     // -----------------------------------------------------------------------
@@ -177,7 +177,9 @@ mod internal {
 
     impl Ord for ProofEntryV13 {
         fn cmp(&self, other: &Self) -> Ordering {
-            self.priority.weight().cmp(&other.priority.weight())
+            self.priority
+                .weight()
+                .cmp(&other.priority.weight())
                 .then_with(|| other.created_at_ms.cmp(&self.created_at_ms))
         }
     }
@@ -415,13 +417,12 @@ mod internal {
             batch_id
         }
 
-        pub fn assign_proof_to_batch(
-            &mut self,
-            batch_id: &str,
-        ) -> Option<ProofEntryV13> {
+        pub fn assign_proof_to_batch(&mut self, batch_id: &str) -> Option<ProofEntryV13> {
             let proof = self.proofs.pop()?;
             if let Some(batch) = self.batches.get_mut(batch_id) {
-                batch.add_proof(proof.proof_id.clone(), self.config.max_batch_size).ok()?;
+                batch
+                    .add_proof(proof.proof_id.clone(), self.config.max_batch_size)
+                    .ok()?;
             }
             Some(proof)
         }
@@ -432,16 +433,27 @@ mod internal {
             _current_ms: u64,
         ) -> Result<(), ZKPV13Error> {
             // Collect batch data first to avoid borrow conflicts
-            let proofs = self.batches.get(batch_id)
+            let proofs = self
+                .batches
+                .get(batch_id)
                 .ok_or_else(|| ZKPV13Error::VerificationFailed(batch_id.to_string()))?
-                .proofs.clone();
+                .proofs
+                .clone();
             let batch_size = proofs.len();
 
             // Now compute merkle and vrf without mutable borrow
-            let merkle = Self::hash_leaves(&proofs.iter().map(|p| format!("proof_{}", p)).collect::<Vec<_>>());
+            let merkle = Self::hash_leaves(
+                &proofs
+                    .iter()
+                    .map(|p| format!("proof_{}", p))
+                    .collect::<Vec<_>>(),
+            );
             let mut aggregated: u64 = 0;
             for p in &proofs {
-                let hash: u64 = p.as_bytes().iter().fold(0u64, |a: u64, b: &u8| a.wrapping_add(*b as u64));
+                let hash: u64 = p
+                    .as_bytes()
+                    .iter()
+                    .fold(0u64, |a: u64, b: &u8| a.wrapping_add(*b as u64));
                 aggregated = aggregated.wrapping_add(hash);
             }
 
@@ -502,7 +514,11 @@ mod internal {
                 if batch.proofs.is_empty() {
                     return "empty".to_string();
                 }
-                let leaves: Vec<String> = batch.proofs.iter().map(|p| format!("proof_{}", p)).collect();
+                let leaves: Vec<String> = batch
+                    .proofs
+                    .iter()
+                    .map(|p| format!("proof_{}", p))
+                    .collect();
                 Self::hash_leaves(&leaves)
             } else {
                 "unknown".to_string()
@@ -513,7 +529,10 @@ mod internal {
             if let Some(batch) = self.batches.get(batch_id) {
                 let mut aggregated: u64 = 0;
                 for proof in &batch.proofs {
-                    let hash: u64 = proof.as_bytes().iter().fold(0u64, |a: u64, b: &u8| a.wrapping_add(*b as u64));
+                    let hash: u64 = proof
+                        .as_bytes()
+                        .iter()
+                        .fold(0u64, |a: u64, b: &u8| a.wrapping_add(*b as u64));
                     aggregated = aggregated.wrapping_add(hash);
                 }
                 Ok(aggregated)
@@ -527,7 +546,10 @@ mod internal {
             for leaf in leaves {
                 combined.push_str(leaf);
             }
-            format!("{:x}", combined.bytes().fold(0u64, |a, b| a.wrapping_add(b as u64)))
+            format!(
+                "{:x}",
+                combined.bytes().fold(0u64, |a, b| a.wrapping_add(b as u64))
+            )
         }
     }
 
@@ -582,7 +604,10 @@ mod internal {
         fn test_register_federation_duplicate() {
             let mut engine = AsyncZKPV13::default();
             engine.register_federation("fed1".to_string(), 0.9).unwrap();
-            match engine.register_federation("fed1".to_string(), 0.9).unwrap_err() {
+            match engine
+                .register_federation("fed1".to_string(), 0.9)
+                .unwrap_err()
+            {
                 ZKPV13Error::InvalidConfig(_) => {}
                 e => panic!("Expected InvalidConfig, got {:?}", e),
             }
@@ -592,14 +617,29 @@ mod internal {
         fn test_submit_proof() {
             let mut engine = AsyncZKPV13::default();
             engine.register_federation("fed1".to_string(), 0.9).unwrap();
-            engine.submit_proof("p1".to_string(), ProofPriority::Normal, 1000, "fed1".to_string()).unwrap();
+            engine
+                .submit_proof(
+                    "p1".to_string(),
+                    ProofPriority::Normal,
+                    1000,
+                    "fed1".to_string(),
+                )
+                .unwrap();
             assert_eq!(engine.proofs.len(), 1);
         }
 
         #[test]
         fn test_submit_proof_federation_not_found() {
             let mut engine = AsyncZKPV13::default();
-            match engine.submit_proof("p1".to_string(), ProofPriority::Normal, 1000, "unknown".to_string()).unwrap_err() {
+            match engine
+                .submit_proof(
+                    "p1".to_string(),
+                    ProofPriority::Normal,
+                    1000,
+                    "unknown".to_string(),
+                )
+                .unwrap_err()
+            {
                 ZKPV13Error::InvalidConfig(_) => {}
                 e => panic!("Expected InvalidConfig, got {:?}", e),
             }
@@ -611,9 +651,31 @@ mod internal {
             config.max_pending_proofs = 2;
             let mut engine = AsyncZKPV13::new(config);
             engine.register_federation("fed1".to_string(), 0.9).unwrap();
-            engine.submit_proof("p1".to_string(), ProofPriority::Normal, 1000, "fed1".to_string()).unwrap();
-            engine.submit_proof("p2".to_string(), ProofPriority::Normal, 1000, "fed1".to_string()).unwrap();
-            match engine.submit_proof("p3".to_string(), ProofPriority::Normal, 1000, "fed1".to_string()).unwrap_err() {
+            engine
+                .submit_proof(
+                    "p1".to_string(),
+                    ProofPriority::Normal,
+                    1000,
+                    "fed1".to_string(),
+                )
+                .unwrap();
+            engine
+                .submit_proof(
+                    "p2".to_string(),
+                    ProofPriority::Normal,
+                    1000,
+                    "fed1".to_string(),
+                )
+                .unwrap();
+            match engine
+                .submit_proof(
+                    "p3".to_string(),
+                    ProofPriority::Normal,
+                    1000,
+                    "fed1".to_string(),
+                )
+                .unwrap_err()
+            {
                 ZKPV13Error::Backpressure(2) => {}
                 e => panic!("Expected Backpressure, got {:?}", e),
             }
@@ -631,7 +693,14 @@ mod internal {
         fn test_assign_proof_to_batch() {
             let mut engine = AsyncZKPV13::default();
             engine.register_federation("fed1".to_string(), 0.9).unwrap();
-            engine.submit_proof("p1".to_string(), ProofPriority::Normal, 1000, "fed1".to_string()).unwrap();
+            engine
+                .submit_proof(
+                    "p1".to_string(),
+                    ProofPriority::Normal,
+                    1000,
+                    "fed1".to_string(),
+                )
+                .unwrap();
             let batch_id = engine.create_batch(1000);
             let proof = engine.assign_proof_to_batch(&batch_id);
             assert!(proof.is_some());
@@ -650,7 +719,12 @@ mod internal {
         fn test_verify_proof() {
             let mut engine = AsyncZKPV13::default();
             let batch_id = engine.create_batch(1000);
-            engine.batches.get_mut(&batch_id).unwrap().proofs.push("p1".to_string());
+            engine
+                .batches
+                .get_mut(&batch_id)
+                .unwrap()
+                .proofs
+                .push("p1".to_string());
             let result = engine.verify_proof("p1", 1000).unwrap();
             assert!(result);
         }
@@ -666,7 +740,14 @@ mod internal {
         fn test_cleanup_expired() {
             let mut engine = AsyncZKPV13::default();
             engine.register_federation("fed1".to_string(), 0.9).unwrap();
-            engine.submit_proof("p1".to_string(), ProofPriority::Normal, 1000, "fed1".to_string()).unwrap();
+            engine
+                .submit_proof(
+                    "p1".to_string(),
+                    ProofPriority::Normal,
+                    1000,
+                    "fed1".to_string(),
+                )
+                .unwrap();
             let cleaned = engine.cleanup_expired(10000);
             assert_eq!(cleaned, 1);
         }
@@ -701,8 +782,22 @@ mod internal {
         fn test_proof_priority_ordering() {
             let mut engine = AsyncZKPV13::default();
             engine.register_federation("fed1".to_string(), 0.9).unwrap();
-            engine.submit_proof("low".to_string(), ProofPriority::Low, 1000, "fed1".to_string()).unwrap();
-            engine.submit_proof("critical".to_string(), ProofPriority::Critical, 1000, "fed1".to_string()).unwrap();
+            engine
+                .submit_proof(
+                    "low".to_string(),
+                    ProofPriority::Low,
+                    1000,
+                    "fed1".to_string(),
+                )
+                .unwrap();
+            engine
+                .submit_proof(
+                    "critical".to_string(),
+                    ProofPriority::Critical,
+                    1000,
+                    "fed1".to_string(),
+                )
+                .unwrap();
             let proof = engine.proofs.pop().unwrap();
             assert_eq!(proof.proof_id, "critical");
         }
@@ -738,8 +833,19 @@ mod internal {
             let mut engine = AsyncZKPV13::default();
             let batch_id = engine.create_batch(1000);
             engine.config.max_batch_size = 1;
-            engine.batches.get_mut(&batch_id).unwrap().proofs.push("p1".to_string());
-            match engine.batches.get_mut(&batch_id).unwrap().add_proof("p2".to_string(), 1).unwrap_err() {
+            engine
+                .batches
+                .get_mut(&batch_id)
+                .unwrap()
+                .proofs
+                .push("p1".to_string());
+            match engine
+                .batches
+                .get_mut(&batch_id)
+                .unwrap()
+                .add_proof("p2".to_string(), 1)
+                .unwrap_err()
+            {
                 ZKPV13Error::BatchFull(1) => {}
                 e => panic!("Expected BatchFull, got {:?}", e),
             }
@@ -758,7 +864,14 @@ mod internal {
         fn test_full_lifecycle() {
             let mut engine = AsyncZKPV13::default();
             engine.register_federation("fed1".to_string(), 0.9).unwrap();
-            engine.submit_proof("p1".to_string(), ProofPriority::High, 1000, "fed1".to_string()).unwrap();
+            engine
+                .submit_proof(
+                    "p1".to_string(),
+                    ProofPriority::High,
+                    1000,
+                    "fed1".to_string(),
+                )
+                .unwrap();
             let batch_id = engine.create_batch(1000);
             engine.assign_proof_to_batch(&batch_id);
             engine.complete_batch(&batch_id, 1010).unwrap();

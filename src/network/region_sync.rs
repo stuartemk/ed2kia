@@ -126,9 +126,7 @@ impl DeltaEntry {
 
     /// Estimate serialized size in bytes.
     pub fn size_bytes(&self) -> usize {
-        self.node_id.len()
-            + std::mem::size_of::<f64>() * 3
-            + std::mem::size_of::<u64>() * 2
+        self.node_id.len() + std::mem::size_of::<f64>() * 3 + std::mem::size_of::<u64>() * 2
     }
 }
 
@@ -178,8 +176,15 @@ impl RegionState {
 
     /// Calculate state size in bytes.
     pub fn size_bytes(&self) -> usize {
-        self.reputations.values().map(|_v| std::mem::size_of::<f64>()).sum::<usize>()
-            + self.versions.values().map(|_v| std::mem::size_of::<u64>()).sum::<usize>()
+        self.reputations
+            .values()
+            .map(|_v| std::mem::size_of::<f64>())
+            .sum::<usize>()
+            + self
+                .versions
+                .values()
+                .map(|_v| std::mem::size_of::<u64>())
+                .sum::<usize>()
             + self.reputations.keys().map(|k| k.len()).sum::<usize>()
     }
 }
@@ -227,10 +232,7 @@ impl Default for SyncConfig {
 }
 
 /// Generate delta entries between two region states.
-pub fn generate_deltas(
-    local: &RegionState,
-    remote: &RegionState,
-) -> Vec<DeltaEntry> {
+pub fn generate_deltas(local: &RegionState, remote: &RegionState) -> Vec<DeltaEntry> {
     let mut deltas = Vec::new();
 
     // Find entries in remote that are newer than local.
@@ -255,7 +257,9 @@ pub fn generate_deltas(
 pub fn apply_deltas(state: &mut RegionState, deltas: &[DeltaEntry]) -> usize {
     let mut applied = 0;
     for delta in deltas {
-        state.reputations.insert(delta.node_id.clone(), delta.new_value);
+        state
+            .reputations
+            .insert(delta.node_id.clone(), delta.new_value);
         state.versions.insert(delta.node_id.clone(), delta.version);
         applied += 1;
     }
@@ -263,10 +267,7 @@ pub fn apply_deltas(state: &mut RegionState, deltas: &[DeltaEntry]) -> usize {
 }
 
 /// Resolve conflicts using version vector + deterministic timestamp.
-pub fn resolve_conflicts(
-    local: &mut RegionState,
-    remote: &RegionState,
-) -> usize {
+pub fn resolve_conflicts(local: &mut RegionState, remote: &RegionState) -> usize {
     let mut resolved = 0;
     for (node_id, remote_value) in &remote.reputations {
         let remote_version = remote.get_version(node_id);
@@ -430,7 +431,7 @@ mod tests {
         let mut remote = RegionState::new("remote".to_string());
         local.update("node-1", 0.5); // version 1
         remote.update("node-1", 0.9); // version 1
-        // Manually set remote version higher.
+                                      // Manually set remote version higher.
         remote.versions.insert("node-1".to_string(), 2);
         let resolved = resolve_conflicts(&mut local, &remote);
         assert_eq!(resolved, 1);

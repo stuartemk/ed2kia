@@ -40,11 +40,25 @@ mod internal {
             match self {
                 Self::PoolNotFound(id) => write!(f, "Pool not found: {}", id),
                 Self::ChainNotFound(id) => write!(f, "Chain not found: {}", id),
-                Self::InsufficientCapacity { available, required } => {
-                    write!(f, "Insufficient capacity: available={}, required={}", available, required)
+                Self::InsufficientCapacity {
+                    available,
+                    required,
+                } => {
+                    write!(
+                        f,
+                        "Insufficient capacity: available={}, required={}",
+                        available, required
+                    )
                 }
-                Self::LowConfidence { confidence, threshold } => {
-                    write!(f, "Confidence too low: {:.4} < {:.4}", confidence, threshold)
+                Self::LowConfidence {
+                    confidence,
+                    threshold,
+                } => {
+                    write!(
+                        f,
+                        "Confidence too low: {:.4} < {:.4}",
+                        confidence, threshold
+                    )
                 }
                 Self::PoolFull(id) => write!(f, "Pool full: {}", id),
                 Self::InvalidReputation(score) => write!(f, "Invalid reputation: {}", score),
@@ -214,8 +228,16 @@ mod internal {
             self.slots.insert(chain_id, slot);
         }
 
-        pub fn update_slot_load(&mut self, chain_id: &str, load: f64, alpha: f64, max_samples: usize) -> Result<(), PoolV4Error> {
-            let slot = self.slots.get_mut(chain_id)
+        pub fn update_slot_load(
+            &mut self,
+            chain_id: &str,
+            load: f64,
+            alpha: f64,
+            max_samples: usize,
+        ) -> Result<(), PoolV4Error> {
+            let slot = self
+                .slots
+                .get_mut(chain_id)
                 .ok_or(PoolV4Error::ChainNotFound(chain_id.to_string()))?;
             let old_available = slot.available_credits;
             slot.update_load(load, alpha, max_samples);
@@ -225,13 +247,16 @@ mod internal {
             Ok(())
         }
 
-        pub fn best_slot(&self, reputation_weight: f64, confidence_weight: f64) -> Option<&ChainResourceSlot> {
-            self.slots.values()
-                .min_by(|a, b| {
-                    a.routing_score(reputation_weight, confidence_weight)
-                        .partial_cmp(&b.routing_score(reputation_weight, confidence_weight))
-                        .unwrap_or(std::cmp::Ordering::Equal)
-                })
+        pub fn best_slot(
+            &self,
+            reputation_weight: f64,
+            confidence_weight: f64,
+        ) -> Option<&ChainResourceSlot> {
+            self.slots.values().min_by(|a, b| {
+                a.routing_score(reputation_weight, confidence_weight)
+                    .partial_cmp(&b.routing_score(reputation_weight, confidence_weight))
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
         }
 
         pub fn can_allocate(&self, required: f64) -> bool {
@@ -283,9 +308,9 @@ mod internal {
     impl PoolV4Stats {
         pub fn record_allocation(&mut self, confidence: f64) {
             self.total_allocations += 1;
-            self.avg_confidence =
-                (self.avg_confidence * (self.total_allocations - 1) as f64 + confidence)
-                    / self.total_allocations as f64;
+            self.avg_confidence = (self.avg_confidence * (self.total_allocations - 1) as f64
+                + confidence)
+                / self.total_allocations as f64;
         }
 
         pub fn record_failure(&mut self) {
@@ -329,9 +354,13 @@ mod internal {
                 return Err(PoolV4Error::PoolFull(pool_id.clone()));
             }
             if self.pools.contains_key(&pool_id) {
-                return Err(PoolV4Error::AggregationError(format!("Pool {} already exists", pool_id)));
+                return Err(PoolV4Error::AggregationError(format!(
+                    "Pool {} already exists",
+                    pool_id
+                )));
             }
-            self.pools.insert(pool_id.clone(), PoolEntryV4::new(pool_id));
+            self.pools
+                .insert(pool_id.clone(), PoolEntryV4::new(pool_id));
             Ok(())
         }
 
@@ -346,7 +375,9 @@ mod internal {
             if !(0.0..=1.0).contains(&reputation) {
                 return Err(PoolV4Error::InvalidReputation(reputation));
             }
-            let pool = self.pools.get_mut(pool_id)
+            let pool = self
+                .pools
+                .get_mut(pool_id)
                 .ok_or(PoolV4Error::PoolNotFound(pool_id.to_string()))?;
             pool.add_slot(chain_id, capacity, reputation);
             Ok(())
@@ -361,19 +392,19 @@ mod internal {
         ) -> Result<(), PoolV4Error> {
             let alpha = 1.0 - self.config.decay_factor;
             let horizon = self.config.prediction_horizon;
-            let pool = self.pools.get_mut(pool_id)
+            let pool = self
+                .pools
+                .get_mut(pool_id)
                 .ok_or(PoolV4Error::PoolNotFound(pool_id.to_string()))?;
             pool.update_slot_load(chain_id, load, alpha, horizon)
         }
 
         /// Allocate credits from the best available slot.
-        pub fn allocate(
-            &mut self,
-            pool_id: &str,
-            amount: f64,
-        ) -> Result<String, PoolV4Error> {
+        pub fn allocate(&mut self, pool_id: &str, amount: f64) -> Result<String, PoolV4Error> {
             // Check confidence first with immutable access
-            let pool_ref = self.pools.get(pool_id)
+            let pool_ref = self
+                .pools
+                .get(pool_id)
                 .ok_or(PoolV4Error::PoolNotFound(pool_id.to_string()))?;
 
             if let Some(best) = pool_ref.best_slot(0.4, 0.3) {
@@ -386,14 +417,16 @@ mod internal {
                 }
             }
 
-            let best_chain = pool_ref.best_slot(0.4, 0.3)
+            let best_chain = pool_ref
+                .best_slot(0.4, 0.3)
                 .map(|s| s.chain_id.clone())
                 .ok_or(PoolV4Error::PoolNotFound(pool_id.to_string()))?;
 
             // Now get mutable reference for allocation
             let pool = self.pools.get_mut(pool_id).unwrap();
             pool.allocate(amount)?;
-            let confidence = pool.best_slot(0.4, 0.3)
+            let confidence = pool
+                .best_slot(0.4, 0.3)
                 .map(|s| s.confidence)
                 .unwrap_or(0.0);
             self.stats.record_allocation(confidence);
@@ -402,7 +435,9 @@ mod internal {
 
         /// Release credits back to a pool.
         pub fn release(&mut self, pool_id: &str, amount: f64) -> Result<(), PoolV4Error> {
-            let pool = self.pools.get_mut(pool_id)
+            let pool = self
+                .pools
+                .get_mut(pool_id)
                 .ok_or(PoolV4Error::PoolNotFound(pool_id.to_string()))?;
             pool.release(amount);
             self.stats.total_releases += 1;
@@ -411,11 +446,16 @@ mod internal {
 
         /// Predict demand for a pool.
         pub fn predict_demand(&mut self, pool_id: &str) -> Result<f64, PoolV4Error> {
-            let pool = self.pools.get(pool_id)
+            let pool = self
+                .pools
+                .get(pool_id)
                 .ok_or(PoolV4Error::PoolNotFound(pool_id.to_string()))?;
             let mut total_predicted = 0.0;
             for slot in pool.slots.values() {
-                let predicted = slot.predict_load(self.config.prediction_horizon, 1.0 - self.config.decay_factor);
+                let predicted = slot.predict_load(
+                    self.config.prediction_horizon,
+                    1.0 - self.config.decay_factor,
+                );
                 total_predicted += predicted * slot.total_capacity;
             }
             self.stats.record_prediction();
@@ -493,7 +533,10 @@ mod internal {
 
         #[test]
         fn test_create_pool_max_reached() {
-            let config = PoolV4Config { max_pools: 2, ..Default::default() };
+            let config = PoolV4Config {
+                max_pools: 2,
+                ..Default::default()
+            };
             let mut engine = CrossChainPoolsV4::new(config);
             engine.create_pool("p1".to_string()).unwrap();
             engine.create_pool("p2".to_string()).unwrap();
@@ -504,7 +547,9 @@ mod internal {
         fn test_add_chain_slot() {
             let mut engine = CrossChainPoolsV4::default();
             engine.create_pool("p1".to_string()).unwrap();
-            engine.add_chain_slot("p1", "eth".to_string(), 100.0, 0.9).unwrap();
+            engine
+                .add_chain_slot("p1", "eth".to_string(), 100.0, 0.9)
+                .unwrap();
             let pool = engine.get_pool("p1").unwrap();
             assert_eq!(pool.slots.len(), 1);
             assert_eq!(pool.total_capacity, 100.0);
@@ -522,7 +567,9 @@ mod internal {
         fn test_update_load() {
             let mut engine = CrossChainPoolsV4::default();
             engine.create_pool("p1".to_string()).unwrap();
-            engine.add_chain_slot("p1", "eth".to_string(), 100.0, 0.9).unwrap();
+            engine
+                .add_chain_slot("p1", "eth".to_string(), 100.0, 0.9)
+                .unwrap();
             engine.update_load("p1", "eth", 0.3).unwrap();
             let pool = engine.get_pool("p1").unwrap();
             let slot = pool.slots.get("eth").unwrap();
@@ -533,10 +580,14 @@ mod internal {
         fn test_allocate() {
             let mut engine = CrossChainPoolsV4::default();
             engine.create_pool("p1".to_string()).unwrap();
-            engine.add_chain_slot("p1", "eth".to_string(), 100.0, 0.9).unwrap();
+            engine
+                .add_chain_slot("p1", "eth".to_string(), 100.0, 0.9)
+                .unwrap();
             // Warm up confidence
             for i in 0..10 {
-                engine.update_load("p1", "eth", 0.1 + i as f64 * 0.05).unwrap();
+                engine
+                    .update_load("p1", "eth", 0.1 + i as f64 * 0.05)
+                    .unwrap();
             }
             let chain = engine.allocate("p1", 20.0).unwrap();
             assert_eq!(chain, "eth");
@@ -546,19 +597,26 @@ mod internal {
         fn test_allocate_insufficient() {
             let mut engine = CrossChainPoolsV4::default();
             engine.create_pool("p1".to_string()).unwrap();
-            engine.add_chain_slot("p1", "eth".to_string(), 10.0, 0.9).unwrap();
+            engine
+                .add_chain_slot("p1", "eth".to_string(), 10.0, 0.9)
+                .unwrap();
             for _ in 0..10 {
                 engine.update_load("p1", "eth", 0.1).unwrap();
             }
             let result = engine.allocate("p1", 100.0);
-            assert!(matches!(result, Err(PoolV4Error::InsufficientCapacity { .. })));
+            assert!(matches!(
+                result,
+                Err(PoolV4Error::InsufficientCapacity { .. })
+            ));
         }
 
         #[test]
         fn test_release() {
             let mut engine = CrossChainPoolsV4::default();
             engine.create_pool("p1".to_string()).unwrap();
-            engine.add_chain_slot("p1", "eth".to_string(), 100.0, 0.9).unwrap();
+            engine
+                .add_chain_slot("p1", "eth".to_string(), 100.0, 0.9)
+                .unwrap();
             for _ in 0..10 {
                 engine.update_load("p1", "eth", 0.1).unwrap();
             }
@@ -571,9 +629,13 @@ mod internal {
         fn test_predict_demand() {
             let mut engine = CrossChainPoolsV4::default();
             engine.create_pool("p1".to_string()).unwrap();
-            engine.add_chain_slot("p1", "eth".to_string(), 100.0, 0.9).unwrap();
+            engine
+                .add_chain_slot("p1", "eth".to_string(), 100.0, 0.9)
+                .unwrap();
             for i in 0..10 {
-                engine.update_load("p1", "eth", 0.2 + i as f64 * 0.05).unwrap();
+                engine
+                    .update_load("p1", "eth", 0.2 + i as f64 * 0.05)
+                    .unwrap();
             }
             let demand = engine.predict_demand("p1").unwrap();
             assert!(demand > 0.0);
@@ -587,7 +649,9 @@ mod internal {
             };
             let mut engine = CrossChainPoolsV4::new(config);
             engine.create_pool("p1".to_string()).unwrap();
-            engine.add_chain_slot("p1", "eth".to_string(), 100.0, 0.9).unwrap();
+            engine
+                .add_chain_slot("p1", "eth".to_string(), 100.0, 0.9)
+                .unwrap();
             // Don't warm up — confidence stays low
             let result = engine.allocate("p1", 10.0);
             assert!(matches!(result, Err(PoolV4Error::LowConfidence { .. })));
@@ -632,7 +696,9 @@ mod internal {
         fn test_stats_tracking() {
             let mut engine = CrossChainPoolsV4::default();
             engine.create_pool("p1".to_string()).unwrap();
-            engine.add_chain_slot("p1", "eth".to_string(), 100.0, 0.9).unwrap();
+            engine
+                .add_chain_slot("p1", "eth".to_string(), 100.0, 0.9)
+                .unwrap();
             for _ in 0..10 {
                 engine.update_load("p1", "eth", 0.1).unwrap();
             }
@@ -644,7 +710,9 @@ mod internal {
         fn test_reset_stats() {
             let mut engine = CrossChainPoolsV4::default();
             engine.create_pool("p1".to_string()).unwrap();
-            engine.add_chain_slot("p1", "eth".to_string(), 100.0, 0.9).unwrap();
+            engine
+                .add_chain_slot("p1", "eth".to_string(), 100.0, 0.9)
+                .unwrap();
             for _ in 0..10 {
                 engine.update_load("p1", "eth", 0.1).unwrap();
             }
@@ -697,8 +765,12 @@ mod internal {
         fn test_multi_chain_pool() {
             let mut engine = CrossChainPoolsV4::default();
             engine.create_pool("p1".to_string()).unwrap();
-            engine.add_chain_slot("p1", "eth".to_string(), 100.0, 0.9).unwrap();
-            engine.add_chain_slot("p1", "sol".to_string(), 80.0, 0.8).unwrap();
+            engine
+                .add_chain_slot("p1", "eth".to_string(), 100.0, 0.9)
+                .unwrap();
+            engine
+                .add_chain_slot("p1", "sol".to_string(), 80.0, 0.8)
+                .unwrap();
             let pool = engine.get_pool("p1").unwrap();
             assert_eq!(pool.slots.len(), 2);
             assert_eq!(pool.total_capacity, 180.0);
@@ -708,8 +780,12 @@ mod internal {
         fn test_best_slot_selection() {
             let mut engine = CrossChainPoolsV4::default();
             engine.create_pool("p1".to_string()).unwrap();
-            engine.add_chain_slot("p1", "eth".to_string(), 100.0, 0.9).unwrap();
-            engine.add_chain_slot("p1", "sol".to_string(), 100.0, 0.5).unwrap();
+            engine
+                .add_chain_slot("p1", "eth".to_string(), 100.0, 0.9)
+                .unwrap();
+            engine
+                .add_chain_slot("p1", "sol".to_string(), 100.0, 0.5)
+                .unwrap();
             for _ in 0..10 {
                 engine.update_load("p1", "eth", 0.8).unwrap();
                 engine.update_load("p1", "sol", 0.2).unwrap();

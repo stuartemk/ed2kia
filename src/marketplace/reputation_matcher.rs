@@ -100,7 +100,8 @@ impl ReputationProfile {
         self.reputation_score = (self.reputation_score + adjustment).clamp(0.0, 1.0);
 
         // Update hash
-        self.reputation_hash = compute_reputation_hash(&self.node_id, self.reputation_score, self.last_activity_ms);
+        self.reputation_hash =
+            compute_reputation_hash(&self.node_id, self.reputation_score, self.last_activity_ms);
     }
 
     /// Records a failed trade.
@@ -113,14 +114,16 @@ impl ReputationProfile {
         self.reputation_score = (self.reputation_score - 0.05).clamp(0.0, 1.0);
 
         // Update hash
-        self.reputation_hash = compute_reputation_hash(&self.node_id, self.reputation_score, self.last_activity_ms);
+        self.reputation_hash =
+            compute_reputation_hash(&self.node_id, self.reputation_score, self.last_activity_ms);
     }
 
     /// Adds chain diversity.
     pub fn add_chain(&mut self) {
         self.chain_diversity += 1;
         self.last_activity_ms = current_timestamp_ms();
-        self.reputation_hash = compute_reputation_hash(&self.node_id, self.reputation_score, self.last_activity_ms);
+        self.reputation_hash =
+            compute_reputation_hash(&self.node_id, self.reputation_score, self.last_activity_ms);
     }
 
     /// Computes the weighted matching score.
@@ -149,7 +152,8 @@ impl ReputationProfile {
 
     /// Verifies the reputation hash integrity.
     pub fn verify_hash(&self) -> bool {
-        let expected = compute_reputation_hash(&self.node_id, self.reputation_score, self.last_activity_ms);
+        let expected =
+            compute_reputation_hash(&self.node_id, self.reputation_score, self.last_activity_ms);
         self.reputation_hash == expected
     }
 
@@ -306,15 +310,19 @@ impl ReputationMatcher {
     /// Registers a node profile.
     pub fn register_profile(&mut self, profile: ReputationProfile) -> Result<(), ReputationError> {
         if profile.reputation_score < 0.0 || profile.reputation_score > 1.0 {
-            return Err(ReputationError::InvalidScore(
-                format!("Score {} out of range [0.0, 1.0]", profile.reputation_score),
-            ));
+            return Err(ReputationError::InvalidScore(format!(
+                "Score {} out of range [0.0, 1.0]",
+                profile.reputation_score
+            )));
         }
 
         self.profiles.insert(profile.node_id.clone(), profile);
         self.stats.total_profiles = self.profiles.len();
         self.update_avg_reputation();
-        info!("ReputationMatcher: registered {}", self.stats.total_profiles);
+        info!(
+            "ReputationMatcher: registered {}",
+            self.stats.total_profiles
+        );
         Ok(())
     }
 
@@ -328,28 +336,33 @@ impl ReputationMatcher {
         if let Some(existing) = self.ip_registry.get(&ip_hash) {
             if existing.len() >= self.config.max_profiles_per_ip {
                 self.stats.sybil_detections += 1;
-                return Err(ReputationError::SybilDetected(
-                    format!("IP {} has {} profiles (max {})", ip_hash, existing.len(), self.config.max_profiles_per_ip),
-                ));
+                return Err(ReputationError::SybilDetected(format!(
+                    "IP {} has {} profiles (max {})",
+                    ip_hash,
+                    existing.len(),
+                    self.config.max_profiles_per_ip
+                )));
             }
         }
 
-        self.ip_registry.entry(ip_hash).or_default().push(profile.node_id.clone());
+        self.ip_registry
+            .entry(ip_hash)
+            .or_default()
+            .push(profile.node_id.clone());
         self.register_profile(profile)
     }
 
     /// Updates a profile's reputation score.
-    pub fn update_reputation(
-        &mut self,
-        node_id: &str,
-        score: f64,
-    ) -> Result<(), ReputationError> {
-        let profile = self.profiles.get_mut(node_id)
+    pub fn update_reputation(&mut self, node_id: &str, score: f64) -> Result<(), ReputationError> {
+        let profile = self
+            .profiles
+            .get_mut(node_id)
             .ok_or(ReputationError::NodeNotFound(node_id.to_string()))?;
 
         profile.reputation_score = score.clamp(0.0, 1.0);
         profile.last_activity_ms = current_timestamp_ms();
-        profile.reputation_hash = compute_reputation_hash(node_id, profile.reputation_score, profile.last_activity_ms);
+        profile.reputation_hash =
+            compute_reputation_hash(node_id, profile.reputation_score, profile.last_activity_ms);
         self.update_avg_reputation();
         Ok(())
     }
@@ -361,7 +374,9 @@ impl ReputationMatcher {
         slo_met: bool,
         latency_ms: f64,
     ) -> Result<(), ReputationError> {
-        let profile = self.profiles.get_mut(node_id)
+        let profile = self
+            .profiles
+            .get_mut(node_id)
             .ok_or(ReputationError::NodeNotFound(node_id.to_string()))?;
         profile.record_success(slo_met, latency_ms);
         self.update_avg_reputation();
@@ -370,7 +385,9 @@ impl ReputationMatcher {
 
     /// Records a failed trade for a node.
     pub fn record_trade_failure(&mut self, node_id: &str) -> Result<(), ReputationError> {
-        let profile = self.profiles.get_mut(node_id)
+        let profile = self
+            .profiles
+            .get_mut(node_id)
             .ok_or(ReputationError::NodeNotFound(node_id.to_string()))?;
         profile.record_failure();
         self.update_avg_reputation();
@@ -379,12 +396,17 @@ impl ReputationMatcher {
 
     /// Performs reputation-based matching.
     /// Returns the best candidates sorted by score.
-    pub fn match_nodes(&mut self, min_reputation: Option<f64>) -> Result<MatchingResult, ReputationError> {
+    pub fn match_nodes(
+        &mut self,
+        min_reputation: Option<f64>,
+    ) -> Result<MatchingResult, ReputationError> {
         let start = std::time::Instant::now();
         let threshold = min_reputation.unwrap_or(self.config.min_reputation);
 
         // Filter eligible candidates
-        let mut eligible: Vec<&ReputationProfile> = self.profiles.values()
+        let mut eligible: Vec<&ReputationProfile> = self
+            .profiles
+            .values()
             .filter(|p| p.reputation_score >= threshold)
             .filter(|p| !p.is_stale(self.config.max_stale_ms))
             .filter(|p| p.verify_hash())
@@ -398,7 +420,9 @@ impl ReputationMatcher {
         eligible.sort_by(|a, b| {
             let score_a = a.matching_score(&self.config.weights);
             let score_b = b.matching_score(&self.config.weights);
-            score_b.partial_cmp(&score_a).unwrap_or(std::cmp::Ordering::Equal)
+            score_b
+                .partial_cmp(&score_a)
+                .unwrap_or(std::cmp::Ordering::Equal)
         });
 
         // Build candidates
@@ -435,7 +459,10 @@ impl ReputationMatcher {
         self.match_history.push(result.clone());
 
         if let Some(best) = &result.best_candidate {
-            info!("ReputationMatcher: best match {} (score={:.4})", best.node_id, best.score);
+            info!(
+                "ReputationMatcher: best match {} (score={:.4})",
+                best.node_id, best.score
+            );
         }
 
         Ok(result)
@@ -459,7 +486,8 @@ impl ReputationMatcher {
     /// Removes stale profiles.
     pub fn remove_stale(&mut self) -> usize {
         let before = self.profiles.len();
-        self.profiles.retain(|_, p| !p.is_stale(self.config.max_stale_ms));
+        self.profiles
+            .retain(|_, p| !p.is_stale(self.config.max_stale_ms));
         let removed = before - self.profiles.len();
         self.stats.total_profiles = self.profiles.len();
         if removed > 0 {
@@ -477,7 +505,8 @@ impl ReputationMatcher {
 
     fn update_match_time(&mut self, elapsed_ms: f64) {
         let alpha = 0.1;
-        self.stats.avg_match_time_ms = alpha * elapsed_ms + (1.0 - alpha) * self.stats.avg_match_time_ms;
+        self.stats.avg_match_time_ms =
+            alpha * elapsed_ms + (1.0 - alpha) * self.stats.avg_match_time_ms;
     }
 }
 
@@ -547,7 +576,9 @@ mod tests {
     #[test]
     fn test_update_reputation() {
         let mut matcher = ReputationMatcher::new();
-        matcher.register_profile(make_profile("node-1", 0.5)).unwrap();
+        matcher
+            .register_profile(make_profile("node-1", 0.5))
+            .unwrap();
         matcher.update_reputation("node-1", 0.9).unwrap();
         assert_eq!(matcher.get_profile("node-1").unwrap().reputation_score, 0.9);
     }
@@ -555,7 +586,9 @@ mod tests {
     #[test]
     fn test_record_trade_success() {
         let mut matcher = ReputationMatcher::new();
-        matcher.register_profile(make_profile("node-1", 0.5)).unwrap();
+        matcher
+            .register_profile(make_profile("node-1", 0.5))
+            .unwrap();
         matcher.record_trade_success("node-1", true, 50.0).unwrap();
 
         let profile = matcher.get_profile("node-1").unwrap();
@@ -567,7 +600,9 @@ mod tests {
     #[test]
     fn test_record_trade_failure() {
         let mut matcher = ReputationMatcher::new();
-        matcher.register_profile(make_profile("node-1", 0.5)).unwrap();
+        matcher
+            .register_profile(make_profile("node-1", 0.5))
+            .unwrap();
         matcher.record_trade_failure("node-1").unwrap();
 
         let profile = matcher.get_profile("node-1").unwrap();
@@ -579,7 +614,9 @@ mod tests {
     #[test]
     fn test_match_nodes() {
         let mut matcher = ReputationMatcher::new();
-        matcher.register_profile(make_profile("high", 0.95)).unwrap();
+        matcher
+            .register_profile(make_profile("high", 0.95))
+            .unwrap();
         matcher.register_profile(make_profile("mid", 0.7)).unwrap();
         matcher.register_profile(make_profile("low", 0.3)).unwrap();
 
@@ -591,7 +628,9 @@ mod tests {
     #[test]
     fn test_match_with_min_reputation() {
         let mut matcher = ReputationMatcher::new();
-        matcher.register_profile(make_profile("high", 0.95)).unwrap();
+        matcher
+            .register_profile(make_profile("high", 0.95))
+            .unwrap();
         matcher.register_profile(make_profile("low", 0.3)).unwrap();
 
         let result = matcher.match_nodes(Some(0.5)).unwrap();
@@ -614,8 +653,12 @@ mod tests {
         };
         let mut matcher = ReputationMatcher::with_config(config);
 
-        matcher.register_with_ip(make_profile("n1", 0.8), "ip-hash".to_string()).unwrap();
-        matcher.register_with_ip(make_profile("n2", 0.8), "ip-hash".to_string()).unwrap();
+        matcher
+            .register_with_ip(make_profile("n1", 0.8), "ip-hash".to_string())
+            .unwrap();
+        matcher
+            .register_with_ip(make_profile("n2", 0.8), "ip-hash".to_string())
+            .unwrap();
 
         let result = matcher.register_with_ip(make_profile("n3", 0.8), "ip-hash".to_string());
         assert!(result.is_err());
@@ -671,7 +714,9 @@ mod tests {
     #[test]
     fn test_remove_stale() {
         let mut matcher = ReputationMatcher::new();
-        matcher.register_profile(make_profile("fresh", 0.8)).unwrap();
+        matcher
+            .register_profile(make_profile("fresh", 0.8))
+            .unwrap();
 
         let mut stale = make_profile("stale", 0.5);
         stale.last_activity_ms = 0;
@@ -711,7 +756,11 @@ mod tests {
     #[test]
     fn test_weights_default() {
         let weights = MatchingWeights::default();
-        let total = weights.reputation + weights.trade_success + weights.slo_compliance + weights.latency + weights.diversity;
+        let total = weights.reputation
+            + weights.trade_success
+            + weights.slo_compliance
+            + weights.latency
+            + weights.diversity;
         assert!((total - 1.0).abs() < 0.01);
     }
 

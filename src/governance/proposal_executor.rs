@@ -181,8 +181,7 @@ impl ExecutableProposal {
 // Implementación para BinaryHeap (cola de prioridad)
 impl PartialEq for PriorityItem {
     fn eq(&self, other: &Self) -> bool {
-        self.priority.order() == other.priority.order()
-            && self.timestamp == other.timestamp
+        self.priority.order() == other.priority.order() && self.timestamp == other.timestamp
     }
 }
 
@@ -228,7 +227,7 @@ impl Default for ExecutorConfig {
     fn default() -> Self {
         ExecutorConfig {
             critical_timelock: Duration::from_secs(72 * 3600), // 72h
-            normal_timelock: Duration::from_secs(24 * 3600), // 24h
+            normal_timelock: Duration::from_secs(24 * 3600),   // 24h
             max_queue_size: 100,
             auto_rollback: true,
         }
@@ -273,14 +272,9 @@ impl ProposalExecutor {
     }
 
     /// Encola una propuesta para ejecución
-    pub fn enqueue(
-        &mut self,
-        proposal: ExecutableProposal,
-    ) -> Result<(), ExecutorError> {
+    pub fn enqueue(&mut self, proposal: ExecutableProposal) -> Result<(), ExecutorError> {
         if self.proposals.len() >= self.config.max_queue_size {
-            return Err(ExecutorError::ExecutionFailed(
-                "Queue full".to_string(),
-            ));
+            return Err(ExecutorError::ExecutionFailed("Queue full".to_string()));
         }
 
         let id = proposal.id.clone();
@@ -379,12 +373,12 @@ impl ProposalExecutor {
         &mut self,
         proposal_id: &str,
     ) -> Result<ExecutionOutcome, ExecutorError> {
-        let proposal = self.proposals.get(proposal_id).ok_or(
-            ExecutorError::ProposalNotFound(proposal_id.to_string()),
-        )?;
+        let proposal = self
+            .proposals
+            .get(proposal_id)
+            .ok_or(ExecutorError::ProposalNotFound(proposal_id.to_string()))?;
 
-        if proposal.state == ExecutionState::Completed
-            || proposal.state == ExecutionState::Reverted
+        if proposal.state == ExecutionState::Completed || proposal.state == ExecutionState::Reverted
         {
             return Err(ExecutorError::AlreadyExecuted(proposal_id.to_string()));
         }
@@ -395,9 +389,7 @@ impl ProposalExecutor {
             }
         }
 
-        if proposal.state != ExecutionState::Ready
-            && proposal.state != ExecutionState::Queued
-        {
+        if proposal.state != ExecutionState::Ready && proposal.state != ExecutionState::Queued {
             return Err(ExecutorError::NotReady(proposal_id.to_string()));
         }
 
@@ -445,13 +437,12 @@ impl ProposalExecutor {
             ));
         }
 
-        let proposal = self.proposals.get(proposal_id).ok_or(
-            ExecutorError::ProposalNotFound(proposal_id.to_string()),
-        )?;
+        let proposal = self
+            .proposals
+            .get(proposal_id)
+            .ok_or(ExecutorError::ProposalNotFound(proposal_id.to_string()))?;
 
-        if proposal.state != ExecutionState::Executing
-            && proposal.state != ExecutionState::Failed
-        {
+        if proposal.state != ExecutionState::Executing && proposal.state != ExecutionState::Failed {
             return Err(ExecutorError::InvalidTransition {
                 from: format!("{:?}", proposal.state),
                 to: "Reverted".to_string(),
@@ -480,13 +471,12 @@ impl ProposalExecutor {
 
     /// Cancela una propuesta en cola
     pub fn cancel(&mut self, proposal_id: &str) -> Result<(), ExecutorError> {
-        let proposal = self.proposals.get(proposal_id).ok_or(
-            ExecutorError::ProposalNotFound(proposal_id.to_string()),
-        )?;
+        let proposal = self
+            .proposals
+            .get(proposal_id)
+            .ok_or(ExecutorError::ProposalNotFound(proposal_id.to_string()))?;
 
-        if proposal.state != ExecutionState::Queued
-            && proposal.state != ExecutionState::Ready
-        {
+        if proposal.state != ExecutionState::Queued && proposal.state != ExecutionState::Ready {
             return Err(ExecutorError::InvalidTransition {
                 from: format!("{:?}", proposal.state),
                 to: "Cancelled".to_string(),
@@ -526,9 +516,7 @@ impl ProposalExecutor {
     pub fn queue_size(&self) -> usize {
         self.proposals
             .values()
-            .filter(|p| {
-                p.state == ExecutionState::Queued || p.state == ExecutionState::Ready
-            })
+            .filter(|p| p.state == ExecutionState::Queued || p.state == ExecutionState::Ready)
             .count()
     }
 
@@ -592,10 +580,15 @@ mod tests {
     #[test]
     fn test_execute_next_priority() {
         let mut executor = ProposalExecutor::new();
-        executor.enqueue(make_proposal("low", ProposalPriority::Low)).unwrap();
-        executor.enqueue(make_proposal("critical", ProposalPriority::Critical))
+        executor
+            .enqueue(make_proposal("low", ProposalPriority::Low))
             .unwrap();
-        executor.enqueue(make_proposal("high", ProposalPriority::High)).unwrap();
+        executor
+            .enqueue(make_proposal("critical", ProposalPriority::Critical))
+            .unwrap();
+        executor
+            .enqueue(make_proposal("high", ProposalPriority::High))
+            .unwrap();
         let outcome = executor.execute_next().unwrap();
         assert_eq!(outcome.proposal_id, "critical");
     }
@@ -682,10 +675,7 @@ mod tests {
 
     #[test]
     fn test_priority_display() {
-        assert_eq!(
-            format!("{}", ProposalPriority::Critical),
-            "Critical"
-        );
+        assert_eq!(format!("{}", ProposalPriority::Critical), "Critical");
         assert_eq!(format!("{}", ProposalPriority::Low), "Low");
     }
 
@@ -705,8 +695,12 @@ mod tests {
     #[test]
     fn test_ready_count() {
         let mut executor = ProposalExecutor::new();
-        executor.enqueue(make_proposal("p1", ProposalPriority::Normal)).unwrap();
-        executor.enqueue(make_proposal("p2", ProposalPriority::High)).unwrap();
+        executor
+            .enqueue(make_proposal("p1", ProposalPriority::Normal))
+            .unwrap();
+        executor
+            .enqueue(make_proposal("p2", ProposalPriority::High))
+            .unwrap();
         executor.update_timelocks();
         assert_eq!(executor.ready_count(), 2);
     }
@@ -717,8 +711,12 @@ mod tests {
             max_queue_size: 2,
             ..ExecutorConfig::default()
         });
-        executor.enqueue(make_proposal("p1", ProposalPriority::Normal)).unwrap();
-        executor.enqueue(make_proposal("p2", ProposalPriority::Normal)).unwrap();
+        executor
+            .enqueue(make_proposal("p1", ProposalPriority::Normal))
+            .unwrap();
+        executor
+            .enqueue(make_proposal("p2", ProposalPriority::Normal))
+            .unwrap();
         assert!(executor
             .enqueue(make_proposal("p3", ProposalPriority::Normal))
             .is_err());

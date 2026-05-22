@@ -45,7 +45,11 @@ mod internal {
                 Self::RestoreFailed(msg) => write!(f, "Restore failed: {}", msg),
                 Self::ModelNotFound(id) => write!(f, "Model not found: {}", id),
                 Self::CheckpointNotFound { round, model_id } => {
-                    write!(f, "Checkpoint not found: round {}, model {}", round, model_id)
+                    write!(
+                        f,
+                        "Checkpoint not found: round {}, model {}",
+                        round, model_id
+                    )
                 }
             }
         }
@@ -178,17 +182,18 @@ mod internal {
         }
 
         pub fn get_checkpoint(&self, round: u64) -> Option<&CheckpointEntryV4> {
-            self.checkpoints
-                .iter()
-                .rev()
-                .find(|e| e.round == round)
+            self.checkpoints.iter().rev().find(|e| e.round == round)
         }
 
         pub fn get_latest(&self) -> Option<&CheckpointEntryV4> {
             self.checkpoints.back()
         }
 
-        pub fn get_fallback(&self, current_round: u64, lookback: usize) -> Option<&CheckpointEntryV4> {
+        pub fn get_fallback(
+            &self,
+            current_round: u64,
+            lookback: usize,
+        ) -> Option<&CheckpointEntryV4> {
             self.checkpoints
                 .iter()
                 .rev()
@@ -217,9 +222,10 @@ mod internal {
             if incremental {
                 self.incremental_checkpoints += 1;
             }
-            self.avg_checkpoint_time_ms =
-                (self.avg_checkpoint_time_ms * (self.total_checkpoints - 1) as f64 + time_ms as f64)
-                    / self.total_checkpoints as f64;
+            self.avg_checkpoint_time_ms = (self.avg_checkpoint_time_ms
+                * (self.total_checkpoints - 1) as f64
+                + time_ms as f64)
+                / self.total_checkpoints as f64;
         }
 
         pub fn record_integrity_validation(&mut self, valid: bool) {
@@ -296,11 +302,15 @@ mod internal {
         ) -> Result<CheckpointEntryV4, AdaptiveCheckpointV4Error> {
             let start = std::time::Instant::now();
 
-            let state = self.models.get_mut(model_id).ok_or(
-                AdaptiveCheckpointV4Error::ModelNotFound(model_id.to_string()),
-            )?;
+            let state =
+                self.models
+                    .get_mut(model_id)
+                    .ok_or(AdaptiveCheckpointV4Error::ModelNotFound(
+                        model_id.to_string(),
+                    ))?;
 
-            let mut entry = CheckpointEntryV4::new(round, model_id.to_string(), data_hash.clone(), size_bytes);
+            let mut entry =
+                CheckpointEntryV4::new(round, model_id.to_string(), data_hash.clone(), size_bytes);
 
             // Incremental checkpointing
             if self.config.incremental {
@@ -320,23 +330,24 @@ mod internal {
 
             // Integrity validation
             if self.config.integrity_validation {
-                let expected_hash = compute_sha256(&format!("{}-{}-{}", model_id, round, data_hash));
+                let expected_hash =
+                    compute_sha256(&format!("{}-{}-{}", model_id, round, data_hash));
                 // Validate without borrowing self mutably
-                let is_valid = entry.hash == expected_hash
-                    || (!entry.hash.is_empty() && entry.size_bytes > 0);
+                let is_valid =
+                    entry.hash == expected_hash || (!entry.hash.is_empty() && entry.size_bytes > 0);
                 entry.integrity_valid = is_valid;
 
-                self.stats.record_integrity_validation(entry.integrity_valid);
+                self.stats
+                    .record_integrity_validation(entry.integrity_valid);
 
                 if !entry.integrity_valid {
                     state.total_integrity_failures += 1;
 
                     // Auto fallback
                     if self.config.auto_fallback {
-                        if let Some(_fallback) = state.get_fallback(
-                            round,
-                            self.config.fallback_lookback,
-                        ) {
+                        if let Some(_fallback) =
+                            state.get_fallback(round, self.config.fallback_lookback)
+                        {
                             state.total_fallbacks += 1;
                             self.stats.record_fallback();
                         }
@@ -364,9 +375,12 @@ mod internal {
             model_id: &str,
             round: u64,
         ) -> Result<Option<&CheckpointEntryV4>, AdaptiveCheckpointV4Error> {
-            let state = self.models.get(model_id).ok_or(
-                AdaptiveCheckpointV4Error::ModelNotFound(model_id.to_string()),
-            )?;
+            let state =
+                self.models
+                    .get(model_id)
+                    .ok_or(AdaptiveCheckpointV4Error::ModelNotFound(
+                        model_id.to_string(),
+                    ))?;
             Ok(state.get_checkpoint(round))
         }
 
@@ -374,17 +388,28 @@ mod internal {
             &self,
             model_id: &str,
         ) -> Result<Option<&CheckpointEntryV4>, AdaptiveCheckpointV4Error> {
-            let state = self.models.get(model_id).ok_or(
-                AdaptiveCheckpointV4Error::ModelNotFound(model_id.to_string()),
-            )?;
+            let state =
+                self.models
+                    .get(model_id)
+                    .ok_or(AdaptiveCheckpointV4Error::ModelNotFound(
+                        model_id.to_string(),
+                    ))?;
             Ok(state.get_latest())
         }
 
-        pub fn should_checkpoint(&self, model_id: &str, round: u64) -> Result<bool, AdaptiveCheckpointV4Error> {
-            let state = self.models.get(model_id).ok_or(
-                AdaptiveCheckpointV4Error::ModelNotFound(model_id.to_string()),
-            )?;
-            Ok(round.saturating_sub(state.last_checkpoint_round) >= self.config.checkpoint_interval as u64)
+        pub fn should_checkpoint(
+            &self,
+            model_id: &str,
+            round: u64,
+        ) -> Result<bool, AdaptiveCheckpointV4Error> {
+            let state =
+                self.models
+                    .get(model_id)
+                    .ok_or(AdaptiveCheckpointV4Error::ModelNotFound(
+                        model_id.to_string(),
+                    ))?;
+            Ok(round.saturating_sub(state.last_checkpoint_round)
+                >= self.config.checkpoint_interval as u64)
         }
 
         pub fn model_count(&self) -> usize {
@@ -458,12 +483,9 @@ mod internal {
         fn test_create_checkpoint() {
             let mut engine = AdaptiveCheckpointV4::default();
             engine.register_model("model-1".to_string());
-            let entry = engine.create_checkpoint(
-                "model-1",
-                1,
-                "hash123".to_string(),
-                1024,
-            ).unwrap();
+            let entry = engine
+                .create_checkpoint("model-1", 1, "hash123".to_string(), 1024)
+                .unwrap();
             assert_eq!(entry.round, 1);
             assert_eq!(entry.model_id, "model-1");
         }
@@ -479,8 +501,12 @@ mod internal {
         fn test_incremental_checkpoint() {
             let mut engine = AdaptiveCheckpointV4::default();
             engine.register_model("model-1".to_string());
-            engine.create_checkpoint("model-1", 1, "h1".to_string(), 1024).unwrap();
-            let entry = engine.create_checkpoint("model-1", 2, "h2".to_string(), 1024).unwrap();
+            engine
+                .create_checkpoint("model-1", 1, "h1".to_string(), 1024)
+                .unwrap();
+            let entry = engine
+                .create_checkpoint("model-1", 2, "h2".to_string(), 1024)
+                .unwrap();
             assert!(entry.incremental);
             assert_eq!(entry.parent_round, Some(1));
         }
@@ -492,7 +518,9 @@ mod internal {
             config.lz4_level = 9;
             let mut engine = AdaptiveCheckpointV4::new(config);
             engine.register_model("model-1".to_string());
-            let entry = engine.create_checkpoint("model-1", 1, "h".to_string(), 1000).unwrap();
+            let entry = engine
+                .create_checkpoint("model-1", 1, "h".to_string(), 1000)
+                .unwrap();
             assert!(entry.compressed_size_bytes < entry.size_bytes);
             assert!(engine.stats.total_space_saved_bytes > 0);
         }
@@ -503,7 +531,9 @@ mod internal {
             config.integrity_validation = true;
             let mut engine = AdaptiveCheckpointV4::new(config);
             engine.register_model("model-1".to_string());
-            engine.create_checkpoint("model-1", 1, "h".to_string(), 1024).unwrap();
+            engine
+                .create_checkpoint("model-1", 1, "h".to_string(), 1024)
+                .unwrap();
             assert!(engine.stats.integrity_validations > 0);
         }
 
@@ -511,7 +541,9 @@ mod internal {
         fn test_get_checkpoint() {
             let mut engine = AdaptiveCheckpointV4::default();
             engine.register_model("model-1".to_string());
-            engine.create_checkpoint("model-1", 1, "h".to_string(), 1024).unwrap();
+            engine
+                .create_checkpoint("model-1", 1, "h".to_string(), 1024)
+                .unwrap();
             let cp = engine.get_checkpoint("model-1", 1).unwrap();
             assert!(cp.is_some());
         }
@@ -520,8 +552,12 @@ mod internal {
         fn test_get_latest_checkpoint() {
             let mut engine = AdaptiveCheckpointV4::default();
             engine.register_model("model-1".to_string());
-            engine.create_checkpoint("model-1", 1, "h1".to_string(), 1024).unwrap();
-            engine.create_checkpoint("model-1", 2, "h2".to_string(), 1024).unwrap();
+            engine
+                .create_checkpoint("model-1", 1, "h1".to_string(), 1024)
+                .unwrap();
+            engine
+                .create_checkpoint("model-1", 2, "h2".to_string(), 1024)
+                .unwrap();
             let latest = engine.get_latest_checkpoint("model-1").unwrap();
             assert!(latest.is_some());
             assert_eq!(latest.unwrap().round, 2);
@@ -544,7 +580,9 @@ mod internal {
             let mut engine = AdaptiveCheckpointV4::new(config);
             engine.register_model("model-1".to_string());
             for i in 1..=5 {
-                engine.create_checkpoint("model-1", i, format!("h{}", i), 1024).unwrap();
+                engine
+                    .create_checkpoint("model-1", i, format!("h{}", i), 1024)
+                    .unwrap();
             }
             let state = engine.models.get("model-1").unwrap();
             assert_eq!(state.checkpoints.len(), 3);
@@ -554,7 +592,9 @@ mod internal {
         fn test_stats_tracking() {
             let mut engine = AdaptiveCheckpointV4::default();
             engine.register_model("model-1".to_string());
-            engine.create_checkpoint("model-1", 1, "h".to_string(), 1024).unwrap();
+            engine
+                .create_checkpoint("model-1", 1, "h".to_string(), 1024)
+                .unwrap();
             assert_eq!(engine.stats.total_checkpoints, 1);
         }
 
@@ -629,7 +669,9 @@ mod internal {
             let mut engine = AdaptiveCheckpointV4::default();
             engine.register_model("model-1".to_string());
             for i in 1..=3 {
-                engine.create_checkpoint("model-1", i, format!("h{}", i), 1024).unwrap();
+                engine
+                    .create_checkpoint("model-1", i, format!("h{}", i), 1024)
+                    .unwrap();
             }
             assert_eq!(engine.stats.total_checkpoints, 3);
         }

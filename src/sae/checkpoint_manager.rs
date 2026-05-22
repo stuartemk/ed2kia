@@ -139,14 +139,8 @@ impl CheckpointData {
 
     pub fn estimate_size(&self) -> usize {
         self.gradients.len() * std::mem::size_of::<f32>()
-            + self
-                .optimizer_state
-                .len()
-                * (32 + std::mem::size_of::<f32>())
-            + self
-                .training_metrics
-                .len()
-                * (32 + std::mem::size_of::<f32>())
+            + self.optimizer_state.len() * (32 + std::mem::size_of::<f32>())
+            + self.training_metrics.len() * (32 + std::mem::size_of::<f32>())
     }
 }
 
@@ -167,7 +161,7 @@ impl RetentionPolicy {
     pub fn new(max_checkpoints: usize) -> Self {
         Self {
             max_checkpoints,
-            max_age: Duration::from_secs(3600), // 1 hour
+            max_age: Duration::from_secs(3600),  // 1 hour
             max_total_bytes: 1024 * 1024 * 1024, // 1 GB
             keep_latest: 5,
             keep_per_epoch: 1,
@@ -326,10 +320,7 @@ impl CheckpointManager {
     // Checkpoint Retrieval
     // ------------------------------------------------------------------
 
-    pub fn get_checkpoint(
-        &self,
-        checkpoint_id: &str,
-    ) -> Result<&CheckpointData, CheckpointError> {
+    pub fn get_checkpoint(&self, checkpoint_id: &str) -> Result<&CheckpointData, CheckpointError> {
         self.checkpoints
             .get(checkpoint_id)
             .ok_or(CheckpointError::NotFound(checkpoint_id.to_string()))
@@ -378,10 +369,7 @@ impl CheckpointManager {
     // Checkpoint Restoration
     // ------------------------------------------------------------------
 
-    pub fn restore_gradients(
-        &self,
-        checkpoint_id: &str,
-    ) -> Result<Vec<f32>, CheckpointError> {
+    pub fn restore_gradients(&self, checkpoint_id: &str) -> Result<Vec<f32>, CheckpointError> {
         let data = self.get_checkpoint(checkpoint_id)?;
 
         // For incremental checkpoints, reconstruct full gradients
@@ -458,12 +446,7 @@ impl CheckpointManager {
 
     pub fn prune_epoch(&mut self, epoch: usize, keep: usize) -> Result<usize, CheckpointError> {
         if let Some(ids) = self.epoch_index.get(&epoch) {
-            let to_remove: Vec<String> = ids
-                .iter()
-                .rev()
-                .skip(keep)
-                .cloned()
-                .collect();
+            let to_remove: Vec<String> = ids.iter().rev().skip(keep).cloned().collect();
 
             let mut removed = 0;
             for id in to_remove {
@@ -500,10 +483,7 @@ impl CheckpointManager {
         if epochs.is_empty() {
             None
         } else {
-            Some((
-                *epochs.iter().min().unwrap(),
-                *epochs.iter().max().unwrap(),
-            ))
+            Some((*epochs.iter().min().unwrap(), *epochs.iter().max().unwrap()))
         }
     }
 
@@ -782,10 +762,7 @@ mod tests {
 
         let removed = manager.prune_epoch(1, 2).unwrap();
         assert_eq!(removed, 3);
-        assert_eq!(
-            manager.get_checkpoints_by_epoch(1).len(),
-            2
-        );
+        assert_eq!(manager.get_checkpoints_by_epoch(1).len(), 2);
     }
 
     #[test]
@@ -855,10 +832,7 @@ mod tests {
     #[test]
     fn test_checkpoint_type_display() {
         assert_eq!(format!("{}", CheckpointType::Full), "Full");
-        assert_eq!(
-            format!("{}", CheckpointType::Incremental),
-            "Incremental"
-        );
+        assert_eq!(format!("{}", CheckpointType::Incremental), "Incremental");
     }
 
     #[test]
@@ -907,13 +881,7 @@ mod tests {
         let expected_size = gradients.len() * std::mem::size_of::<f32>();
 
         manager
-            .create_checkpoint(
-                "cp-1".to_string(),
-                CheckpointType::Full,
-                1,
-                gradients,
-                0.5,
-            )
+            .create_checkpoint("cp-1".to_string(), CheckpointType::Full, 1, gradients, 0.5)
             .unwrap();
 
         assert!(manager.total_storage_bytes() >= expected_size);

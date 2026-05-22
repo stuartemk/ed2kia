@@ -312,7 +312,9 @@ impl DynamicSharder {
         reputation: Option<f64>,
         current_load: Option<f64>,
     ) -> Result<(), DynamicSharderError> {
-        let node = self.nodes.get_mut(node_id)
+        let node = self
+            .nodes
+            .get_mut(node_id)
             .ok_or(DynamicSharderError::NodeNotFound(node_id.to_string()))?;
 
         if let Some(cap) = capacity {
@@ -333,7 +335,8 @@ impl DynamicSharder {
 
     /// Remove node from federation.
     pub fn remove_node(&mut self, node_id: &str) -> Result<(), DynamicSharderError> {
-        self.nodes.get(node_id)
+        self.nodes
+            .get(node_id)
             .ok_or(DynamicSharderError::NodeNotFound(node_id.to_string()))?;
 
         // Remove from all shards
@@ -352,7 +355,8 @@ impl DynamicSharder {
     /// Get healthy nodes.
     pub fn healthy_nodes(&self) -> Vec<&ShardNodeMetrics> {
         let timeout = self.config.decision_timeout_ms * 10; // 10x decision timeout
-        self.nodes.values()
+        self.nodes
+            .values()
             .filter(|n| n.is_healthy(timeout))
             .collect()
     }
@@ -360,7 +364,10 @@ impl DynamicSharder {
     // ── Shard Management ──
 
     /// Create new shard with optimal node assignment.
-    pub fn create_shard(&mut self, shard_id: String) -> Result<ShardAssignment, DynamicSharderError> {
+    pub fn create_shard(
+        &mut self,
+        shard_id: String,
+    ) -> Result<ShardAssignment, DynamicSharderError> {
         if self.shards.len() >= self.config.max_shards {
             return Err(DynamicSharderError::InvalidShardCount(
                 "Maximum shards reached".to_string(),
@@ -372,7 +379,9 @@ impl DynamicSharder {
         scored_nodes.sort_by(|a, b| {
             let score_a = (*a).composite_score(&self.config);
             let score_b = (*b).composite_score(&self.config);
-            score_b.partial_cmp(&score_a).unwrap_or(std::cmp::Ordering::Equal)
+            score_b
+                .partial_cmp(&score_a)
+                .unwrap_or(std::cmp::Ordering::Equal)
         });
 
         // Pick nodes with lowest current shard count
@@ -409,7 +418,9 @@ impl DynamicSharder {
 
     /// Remove shard.
     pub fn remove_shard(&mut self, shard_id: &str) -> Result<ShardAssignment, DynamicSharderError> {
-        let shard = self.shards.remove(shard_id)
+        let shard = self
+            .shards
+            .remove(shard_id)
             .ok_or(DynamicSharderError::ShardNotFound(shard_id.to_string()))?;
 
         // Update node shard counts
@@ -429,7 +440,8 @@ impl DynamicSharder {
 
     /// Get shards for a node.
     pub fn get_node_shards(&self, node_id: &str) -> Vec<&ShardAssignment> {
-        self.shards.values()
+        self.shards
+            .values()
             .filter(|s| s.contains_node(node_id))
             .collect()
     }
@@ -442,13 +454,10 @@ impl DynamicSharder {
             return 0.0;
         }
 
-        let loads: Vec<f64> = self.shards.values()
-            .map(|s| s.load_factor)
-            .collect();
+        let loads: Vec<f64> = self.shards.values().map(|s| s.load_factor).collect();
         let avg: f64 = loads.iter().sum::<f64>() / loads.len() as f64;
-        let variance: f64 = loads.iter()
-            .map(|l| (l - avg).powi(2))
-            .sum::<f64>() / loads.len() as f64;
+        let variance: f64 =
+            loads.iter().map(|l| (l - avg).powi(2)).sum::<f64>() / loads.len() as f64;
         variance.sqrt()
     }
 
@@ -469,15 +478,19 @@ impl DynamicSharder {
         }
 
         // Find overloaded and underloaded shards
-        let loads: Vec<_> = self.shards.values()
+        let loads: Vec<_> = self
+            .shards
+            .values()
             .map(|s| (&s.shard_id, s.load_factor))
             .collect();
         let avg_load: f64 = loads.iter().map(|(_, l)| l).sum::<f64>() / loads.len() as f64;
 
-        let mut overloaded: Vec<_> = loads.iter()
+        let mut overloaded: Vec<_> = loads
+            .iter()
             .filter(|(_, l)| *l > avg_load * (1.0 + self.config.rebalance_threshold))
             .collect();
-        let mut underloaded: Vec<_> = loads.iter()
+        let mut underloaded: Vec<_> = loads
+            .iter()
             .filter(|(_, l)| *l < avg_load * (1.0 - self.config.rebalance_threshold))
             .collect();
 
@@ -496,8 +509,14 @@ impl DynamicSharder {
             }
 
             // Find node to migrate (lowest score in overloaded shard)
-            let mut node_scores: Vec<_> = shard.nodes.iter()
-                .filter_map(|n| self.nodes.get(n).map(|m| (n, m.composite_score(&self.config))))
+            let mut node_scores: Vec<_> = shard
+                .nodes
+                .iter()
+                .filter_map(|n| {
+                    self.nodes
+                        .get(n)
+                        .map(|m| (n, m.composite_score(&self.config)))
+                })
                 .collect();
             node_scores.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
 
@@ -522,7 +541,10 @@ impl DynamicSharder {
     }
 
     /// Execute rebalance plan.
-    pub fn execute_rebalance(&mut self, plan: &RebalancePlan) -> Result<usize, DynamicSharderError> {
+    pub fn execute_rebalance(
+        &mut self,
+        plan: &RebalancePlan,
+    ) -> Result<usize, DynamicSharderError> {
         let mut executed = 0;
 
         for action in &plan.actions {
@@ -576,8 +598,8 @@ impl DynamicSharder {
         if self.decision_history.len() > 50 {
             self.decision_history.pop_front();
         }
-        self.stats.avg_decision_time_ms = self.decision_history.iter()
-            .sum::<f64>() / self.decision_history.len() as f64;
+        self.stats.avg_decision_time_ms =
+            self.decision_history.iter().sum::<f64>() / self.decision_history.len() as f64;
 
         Ok(executed)
     }
@@ -593,10 +615,13 @@ impl DynamicSharder {
         let mut best_avg = f64::MAX;
 
         for shard in self.shards.values() {
-            let avg: f64 = shard.nodes.iter()
+            let avg: f64 = shard
+                .nodes
+                .iter()
                 .filter_map(|n| self.nodes.get(n))
                 .map(|m| m.composite_score(&self.config))
-                .sum::<f64>() / shard.nodes.len().max(1) as f64;
+                .sum::<f64>()
+                / shard.nodes.len().max(1) as f64;
 
             if avg < best_avg {
                 best_avg = avg;
@@ -608,17 +633,16 @@ impl DynamicSharder {
     }
 
     /// Assign node to optimal shard.
-    pub fn assign_node_to_shard(
-        &mut self,
-        node_id: &str,
-    ) -> Result<String, DynamicSharderError> {
-        self.nodes.get(node_id)
+    pub fn assign_node_to_shard(&mut self, node_id: &str) -> Result<String, DynamicSharderError> {
+        self.nodes
+            .get(node_id)
             .ok_or(DynamicSharderError::NodeNotFound(node_id.to_string()))?;
 
-        let shard_id = self.find_best_shard_for_node(node_id)
-            .ok_or(DynamicSharderError::RebalanceFailed(
-                "No shards available".to_string(),
-            ))?;
+        let shard_id =
+            self.find_best_shard_for_node(node_id)
+                .ok_or(DynamicSharderError::RebalanceFailed(
+                    "No shards available".to_string(),
+                ))?;
 
         if let Some(shard) = self.shards.get_mut(&shard_id) {
             shard.add_node(node_id.to_string());
@@ -698,8 +722,11 @@ mod tests {
     #[test]
     fn test_update_node_metrics() {
         let mut sharder = DynamicSharder::new();
-        sharder.register_node("node-1".to_string(), 0.8, 50.0, 0.9).unwrap();
-        let result = sharder.update_node_metrics("node-1", Some(0.9), Some(40.0), Some(0.95), Some(0.5));
+        sharder
+            .register_node("node-1".to_string(), 0.8, 50.0, 0.9)
+            .unwrap();
+        let result =
+            sharder.update_node_metrics("node-1", Some(0.9), Some(40.0), Some(0.95), Some(0.5));
         assert!(result.is_ok());
         let node = sharder.get_node("node-1").unwrap();
         assert_eq!(node.capacity, 0.9);
@@ -727,8 +754,12 @@ mod tests {
     #[test]
     fn test_create_shard() {
         let mut sharder = DynamicSharder::new();
-        sharder.register_node("n1".to_string(), 0.8, 50.0, 0.9).unwrap();
-        sharder.register_node("n2".to_string(), 0.7, 60.0, 0.85).unwrap();
+        sharder
+            .register_node("n1".to_string(), 0.8, 50.0, 0.9)
+            .unwrap();
+        sharder
+            .register_node("n2".to_string(), 0.7, 60.0, 0.85)
+            .unwrap();
 
         let result = sharder.create_shard("shard-1".to_string());
         assert!(result.is_ok());
@@ -748,8 +779,12 @@ mod tests {
     fn test_max_shards() {
         let mut sharder = DynamicSharder::new();
         sharder.config.max_shards = 2;
-        sharder.register_node("n1".to_string(), 0.8, 50.0, 0.9).unwrap();
-        sharder.register_node("n2".to_string(), 0.7, 60.0, 0.85).unwrap();
+        sharder
+            .register_node("n1".to_string(), 0.8, 50.0, 0.9)
+            .unwrap();
+        sharder
+            .register_node("n2".to_string(), 0.7, 60.0, 0.85)
+            .unwrap();
 
         sharder.create_shard("s1".to_string()).unwrap();
         sharder.create_shard("s2".to_string()).unwrap();
@@ -760,8 +795,12 @@ mod tests {
     #[test]
     fn test_remove_shard() {
         let mut sharder = DynamicSharder::new();
-        sharder.register_node("n1".to_string(), 0.8, 50.0, 0.9).unwrap();
-        sharder.register_node("n2".to_string(), 0.7, 60.0, 0.85).unwrap();
+        sharder
+            .register_node("n1".to_string(), 0.8, 50.0, 0.9)
+            .unwrap();
+        sharder
+            .register_node("n2".to_string(), 0.7, 60.0, 0.85)
+            .unwrap();
         sharder.create_shard("shard-1".to_string()).unwrap();
 
         let result = sharder.remove_shard("shard-1");
@@ -772,8 +811,12 @@ mod tests {
     #[test]
     fn test_compute_imbalance() {
         let mut sharder = DynamicSharder::new();
-        sharder.register_node("n1".to_string(), 0.8, 50.0, 0.9).unwrap();
-        sharder.register_node("n2".to_string(), 0.7, 60.0, 0.85).unwrap();
+        sharder
+            .register_node("n1".to_string(), 0.8, 50.0, 0.9)
+            .unwrap();
+        sharder
+            .register_node("n2".to_string(), 0.7, 60.0, 0.85)
+            .unwrap();
         sharder.create_shard("s1".to_string()).unwrap();
 
         // Single shard should have 0 imbalance
@@ -805,8 +848,12 @@ mod tests {
     #[test]
     fn test_assign_node_to_shard() {
         let mut sharder = DynamicSharder::new();
-        sharder.register_node("n1".to_string(), 0.8, 50.0, 0.9).unwrap();
-        sharder.register_node("n2".to_string(), 0.7, 60.0, 0.85).unwrap();
+        sharder
+            .register_node("n1".to_string(), 0.8, 50.0, 0.9)
+            .unwrap();
+        sharder
+            .register_node("n2".to_string(), 0.7, 60.0, 0.85)
+            .unwrap();
         sharder.create_shard("shard-1".to_string()).unwrap();
 
         let result = sharder.assign_node_to_shard("n1");
@@ -816,7 +863,9 @@ mod tests {
     #[test]
     fn test_get_node_shards() {
         let mut sharder = DynamicSharder::new();
-        sharder.register_node("n1".to_string(), 0.8, 50.0, 0.9).unwrap();
+        sharder
+            .register_node("n1".to_string(), 0.8, 50.0, 0.9)
+            .unwrap();
         sharder.create_shard("shard-1".to_string()).unwrap();
 
         let shards = sharder.get_node_shards("n1");
@@ -848,7 +897,8 @@ mod tests {
 
     #[test]
     fn test_shard_remove_node() {
-        let mut shard = ShardAssignment::new("s1".to_string(), vec!["n1".to_string(), "n2".to_string()]);
+        let mut shard =
+            ShardAssignment::new("s1".to_string(), vec!["n1".to_string(), "n2".to_string()]);
         assert!(shard.remove_node("n1"));
         assert_eq!(shard.nodes.len(), 1);
         assert!(!shard.remove_node("n3"));
@@ -902,9 +952,15 @@ mod tests {
         let mut sharder = DynamicSharder::new();
 
         // Register nodes
-        sharder.register_node("n1".to_string(), 0.9, 30.0, 0.95).unwrap();
-        sharder.register_node("n2".to_string(), 0.8, 40.0, 0.9).unwrap();
-        sharder.register_node("n3".to_string(), 0.7, 50.0, 0.85).unwrap();
+        sharder
+            .register_node("n1".to_string(), 0.9, 30.0, 0.95)
+            .unwrap();
+        sharder
+            .register_node("n2".to_string(), 0.8, 40.0, 0.9)
+            .unwrap();
+        sharder
+            .register_node("n3".to_string(), 0.7, 50.0, 0.85)
+            .unwrap();
 
         // Create shards
         sharder.create_shard("s1".to_string()).unwrap();

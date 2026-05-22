@@ -156,11 +156,7 @@ impl NetworkImmuneSystem {
     /// # Returns
     ///
     /// Current immune state of the peer.
-    pub fn evaluate_peer(
-        &self,
-        peer_id: &str,
-        ledger: &ExistentialCreditLedger,
-    ) -> ImmuneState {
+    pub fn evaluate_peer(&self, peer_id: &str, ledger: &ExistentialCreditLedger) -> ImmuneState {
         // Blocklisted peers are always in Apoptosis state.
         if self.blocklist.contains(peer_id) {
             return ImmuneState::Apoptosis;
@@ -316,7 +312,10 @@ impl std::fmt::Debug for NetworkImmuneSystem {
         f.debug_struct("NetworkImmuneSystem")
             .field("config", &self.config)
             .field("blocklist_size", &self.blocklist.len())
-            .field("has_disconnect_callback", &self.disconnect_callback.is_some())
+            .field(
+                "has_disconnect_callback",
+                &self.disconnect_callback.is_some(),
+            )
             .field("apoptosis_log_len", &self.apoptosis_log.len())
             .finish()
     }
@@ -475,10 +474,7 @@ mod tests {
 
         // Peer starts healthy.
         ledger.emit_credit("peer1", 50.0, 1.0).ok();
-        assert_eq!(
-            immune.evaluate_peer("peer1", &ledger),
-            ImmuneState::Healthy
-        );
+        assert_eq!(immune.evaluate_peer("peer1", &ledger), ImmuneState::Healthy);
 
         // Manually blocklist.
         immune

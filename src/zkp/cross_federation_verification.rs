@@ -27,7 +27,11 @@ mod internal {
         /// Session not found.
         SessionNotFound(String),
         /// Consensus threshold not met.
-        ConsensusFailed { yes: usize, no: usize, threshold: usize },
+        ConsensusFailed {
+            yes: usize,
+            no: usize,
+            threshold: usize,
+        },
         /// Quorum not reached.
         QuorumNotReached { votes: usize, required: usize },
         /// Vote already cast.
@@ -44,10 +48,18 @@ mod internal {
                 CrossFedError::FederationNotFound(id) => write!(f, "Federation {} not found", id),
                 CrossFedError::SessionNotFound(id) => write!(f, "Session {} not found", id),
                 CrossFedError::ConsensusFailed { yes, no, threshold } => {
-                    write!(f, "Consensus failed: {} yes, {} no (threshold: {})", yes, no, threshold)
+                    write!(
+                        f,
+                        "Consensus failed: {} yes, {} no (threshold: {})",
+                        yes, no, threshold
+                    )
                 }
                 CrossFedError::QuorumNotReached { votes, required } => {
-                    write!(f, "Quorum not reached: {} votes (required: {})", votes, required)
+                    write!(
+                        f,
+                        "Quorum not reached: {} votes (required: {})",
+                        votes, required
+                    )
                 }
                 CrossFedError::VoteAlreadyCast(id) => write!(f, "Federation {} already voted", id),
                 CrossFedError::ProofChainInvalid(msg) => write!(f, "Proof chain invalid: {}", msg),
@@ -184,12 +196,20 @@ mod internal {
         }
 
         /// Add proof chain entry.
-        pub fn add_chain_entry(&mut self, federation_id: String, max_length: usize) -> Result<(), CrossFedError> {
+        pub fn add_chain_entry(
+            &mut self,
+            federation_id: String,
+            max_length: usize,
+        ) -> Result<(), CrossFedError> {
             if self.proof_chain.len() >= max_length {
-                return Err(CrossFedError::ProofChainInvalid("Max chain length reached".to_string()));
+                return Err(CrossFedError::ProofChainInvalid(
+                    "Max chain length reached".to_string(),
+                ));
             }
             if self.proof_chain.contains(&federation_id) {
-                return Err(CrossFedError::ProofChainInvalid("Cycle detected in proof chain".to_string()));
+                return Err(CrossFedError::ProofChainInvalid(
+                    "Cycle detected in proof chain".to_string(),
+                ));
             }
             self.proof_chain.push(federation_id);
             Ok(())
@@ -197,9 +217,16 @@ mod internal {
 
         /// Count yes/no votes.
         pub fn vote_counts(&self) -> (usize, usize) {
-            let (yes, no) = self.votes.values().fold((0usize, 0usize), |(y, n), &(valid, _)| {
-                if valid { (y + 1, n) } else { (y, n + 1) }
-            });
+            let (yes, no) = self
+                .votes
+                .values()
+                .fold((0usize, 0usize), |(y, n), &(valid, _)| {
+                    if valid {
+                        (y + 1, n)
+                    } else {
+                        (y, n + 1)
+                    }
+                });
             (yes, no)
         }
     }
@@ -209,8 +236,7 @@ mod internal {
     // ---------------------------------------------------------------------------
 
     /// Statistics for cross-federation verification.
-    #[derive(Debug, Clone)]
-    #[derive(Default)]
+    #[derive(Debug, Clone, Default)]
     pub struct CrossFedStats {
         pub total_sessions: usize,
         pub total_consensus_reached: usize,
@@ -265,7 +291,11 @@ mod internal {
         }
 
         /// Register a federation voter.
-        pub fn register_federation(&mut self, federation_id: String, reputation: f64) -> Result<(), CrossFedError> {
+        pub fn register_federation(
+            &mut self,
+            federation_id: String,
+            reputation: f64,
+        ) -> Result<(), CrossFedError> {
             if self.voters.contains_key(&federation_id) {
                 return Ok(());
             }
@@ -275,7 +305,11 @@ mod internal {
         }
 
         /// Create a verification session.
-        pub fn create_session(&mut self, session_id: String, proof_id: String) -> Result<(), CrossFedError> {
+        pub fn create_session(
+            &mut self,
+            session_id: String,
+            proof_id: String,
+        ) -> Result<(), CrossFedError> {
             if self.sessions.contains_key(&session_id) {
                 return Ok(());
             }
@@ -285,8 +319,15 @@ mod internal {
         }
 
         /// Submit a vote for a session.
-        pub fn submit_vote(&mut self, session_id: &str, federation_id: &str, valid: bool) -> Result<(bool, f64), CrossFedError> {
-            let session = self.sessions.get_mut(session_id)
+        pub fn submit_vote(
+            &mut self,
+            session_id: &str,
+            federation_id: &str,
+            valid: bool,
+        ) -> Result<(bool, f64), CrossFedError> {
+            let session = self
+                .sessions
+                .get_mut(session_id)
                 .ok_or(CrossFedError::SessionNotFound(session_id.to_string()))?;
             if session.is_expired(self.config.session_ttl_ms) {
                 return Err(CrossFedError::SessionExpired(session_id.to_string()));
@@ -294,10 +335,14 @@ mod internal {
             if session.votes.contains_key(federation_id) {
                 return Err(CrossFedError::VoteAlreadyCast(federation_id.to_string()));
             }
-            let voter = self.voters.get(federation_id)
+            let voter = self
+                .voters
+                .get(federation_id)
                 .ok_or(CrossFedError::FederationNotFound(federation_id.to_string()))?;
             let weight = voter.vote_weight(self.config.reputation_weight);
-            session.votes.insert(federation_id.to_string(), (valid, weight));
+            session
+                .votes
+                .insert(federation_id.to_string(), (valid, weight));
             session.total_weight += weight;
             self.stats.total_votes += 1;
             Ok((valid, weight))
@@ -305,7 +350,9 @@ mod internal {
 
         /// Check consensus for a session.
         pub fn check_consensus(&mut self, session_id: &str) -> Result<bool, CrossFedError> {
-            let session = self.sessions.get(session_id)
+            let session = self
+                .sessions
+                .get(session_id)
                 .ok_or(CrossFedError::SessionNotFound(session_id.to_string()))?;
             let total_voters = self.voters.len();
             let required_quorum = (total_voters as f64 * self.config.min_quorum).ceil() as usize;
@@ -323,16 +370,20 @@ mod internal {
                 let session = self.sessions.get_mut(session_id).unwrap();
                 session.consensus_reached = true;
                 session.consensus_result = yes >= no;
-                self.stats.record_session(true, current_timestamp_ms() - session.created_ms);
+                self.stats
+                    .record_session(true, current_timestamp_ms() - session.created_ms);
             } else {
-                self.stats.record_session(false, current_timestamp_ms() - session.created_ms);
+                self.stats
+                    .record_session(false, current_timestamp_ms() - session.created_ms);
             }
             Ok(reached)
         }
 
         /// Complete a session and update voter reputations.
         pub fn complete_session(&mut self, session_id: &str) -> Result<(), CrossFedError> {
-            let session = self.sessions.get(session_id)
+            let session = self
+                .sessions
+                .get(session_id)
                 .ok_or(CrossFedError::SessionNotFound(session_id.to_string()))?;
             if !session.consensus_reached {
                 return Err(CrossFedError::ConsensusFailed {
@@ -352,15 +403,23 @@ mod internal {
         }
 
         /// Add proof chain entry to session.
-        pub fn add_chain_entry(&mut self, session_id: &str, federation_id: String) -> Result<(), CrossFedError> {
-            let session = self.sessions.get_mut(session_id)
+        pub fn add_chain_entry(
+            &mut self,
+            session_id: &str,
+            federation_id: String,
+        ) -> Result<(), CrossFedError> {
+            let session = self
+                .sessions
+                .get_mut(session_id)
                 .ok_or(CrossFedError::SessionNotFound(session_id.to_string()))?;
             session.add_chain_entry(federation_id, self.config.max_chain_length)
         }
 
         /// Clean up expired sessions.
         pub fn cleanup_expired(&mut self) -> usize {
-            let expired: Vec<String> = self.sessions.values()
+            let expired: Vec<String> = self
+                .sessions
+                .values()
                 .filter(|s| s.is_expired(self.config.session_ttl_ms))
                 .map(|s| s.id.clone())
                 .collect();
@@ -378,7 +437,8 @@ mod internal {
 
         /// Get active session count.
         pub fn active_sessions(&self) -> usize {
-            self.sessions.values()
+            self.sessions
+                .values()
                 .filter(|s| !s.is_expired(self.config.session_ttl_ms))
                 .count()
         }
@@ -449,15 +509,21 @@ mod internal {
         #[test]
         fn test_create_session() {
             let mut engine = CrossFederationVerifier::with_defaults();
-            engine.create_session("s1".to_string(), "p1".to_string()).unwrap();
+            engine
+                .create_session("s1".to_string(), "p1".to_string())
+                .unwrap();
             assert_eq!(engine.active_sessions(), 1);
         }
 
         #[test]
         fn test_create_session_duplicate() {
             let mut engine = CrossFederationVerifier::with_defaults();
-            engine.create_session("s1".to_string(), "p1".to_string()).unwrap();
-            engine.create_session("s1".to_string(), "p2".to_string()).unwrap();
+            engine
+                .create_session("s1".to_string(), "p1".to_string())
+                .unwrap();
+            engine
+                .create_session("s1".to_string(), "p2".to_string())
+                .unwrap();
             assert_eq!(engine.active_sessions(), 1);
         }
 
@@ -465,7 +531,9 @@ mod internal {
         fn test_submit_vote() {
             let mut engine = CrossFederationVerifier::with_defaults();
             engine.register_federation("fed1".to_string(), 0.9).unwrap();
-            engine.create_session("s1".to_string(), "p1".to_string()).unwrap();
+            engine
+                .create_session("s1".to_string(), "p1".to_string())
+                .unwrap();
             let (valid, weight) = engine.submit_vote("s1", "fed1", true).unwrap();
             assert!(valid);
             assert!(weight > 0.0);
@@ -481,7 +549,9 @@ mod internal {
         #[test]
         fn test_submit_vote_federation_not_found() {
             let mut engine = CrossFederationVerifier::with_defaults();
-            engine.create_session("s1".to_string(), "p1".to_string()).unwrap();
+            engine
+                .create_session("s1".to_string(), "p1".to_string())
+                .unwrap();
             let result = engine.submit_vote("s1", "missing", true);
             assert!(matches!(result, Err(CrossFedError::FederationNotFound(_))));
         }
@@ -490,7 +560,9 @@ mod internal {
         fn test_vote_already_cast() {
             let mut engine = CrossFederationVerifier::with_defaults();
             engine.register_federation("fed1".to_string(), 0.9).unwrap();
-            engine.create_session("s1".to_string(), "p1".to_string()).unwrap();
+            engine
+                .create_session("s1".to_string(), "p1".to_string())
+                .unwrap();
             engine.submit_vote("s1", "fed1", true).unwrap();
             let result = engine.submit_vote("s1", "fed1", false);
             assert!(matches!(result, Err(CrossFedError::VoteAlreadyCast(_))));
@@ -502,7 +574,9 @@ mod internal {
             engine.register_federation("fed1".to_string(), 0.9).unwrap();
             engine.register_federation("fed2".to_string(), 0.8).unwrap();
             engine.register_federation("fed3".to_string(), 0.7).unwrap();
-            engine.create_session("s1".to_string(), "p1".to_string()).unwrap();
+            engine
+                .create_session("s1".to_string(), "p1".to_string())
+                .unwrap();
             engine.submit_vote("s1", "fed1", true).unwrap();
             engine.submit_vote("s1", "fed2", true).unwrap();
             engine.submit_vote("s1", "fed3", true).unwrap();
@@ -516,7 +590,9 @@ mod internal {
             engine.register_federation("fed1".to_string(), 0.9).unwrap();
             engine.register_federation("fed2".to_string(), 0.8).unwrap();
             engine.register_federation("fed3".to_string(), 0.7).unwrap();
-            engine.create_session("s1".to_string(), "p1".to_string()).unwrap();
+            engine
+                .create_session("s1".to_string(), "p1".to_string())
+                .unwrap();
             engine.submit_vote("s1", "fed1", true).unwrap();
             engine.submit_vote("s1", "fed2", false).unwrap();
             engine.submit_vote("s1", "fed3", false).unwrap();
@@ -532,10 +608,15 @@ mod internal {
             engine.register_federation("fed3".to_string(), 0.7).unwrap();
             engine.register_federation("fed4".to_string(), 0.6).unwrap();
             engine.register_federation("fed5".to_string(), 0.5).unwrap();
-            engine.create_session("s1".to_string(), "p1".to_string()).unwrap();
+            engine
+                .create_session("s1".to_string(), "p1".to_string())
+                .unwrap();
             engine.submit_vote("s1", "fed1", true).unwrap();
             let result = engine.check_consensus("s1");
-            assert!(matches!(result, Err(CrossFedError::QuorumNotReached { .. })));
+            assert!(matches!(
+                result,
+                Err(CrossFedError::QuorumNotReached { .. })
+            ));
         }
 
         #[test]
@@ -544,7 +625,9 @@ mod internal {
             engine.register_federation("fed1".to_string(), 0.9).unwrap();
             engine.register_federation("fed2".to_string(), 0.8).unwrap();
             engine.register_federation("fed3".to_string(), 0.7).unwrap();
-            engine.create_session("s1".to_string(), "p1".to_string()).unwrap();
+            engine
+                .create_session("s1".to_string(), "p1".to_string())
+                .unwrap();
             engine.submit_vote("s1", "fed1", true).unwrap();
             engine.submit_vote("s1", "fed2", true).unwrap();
             engine.submit_vote("s1", "fed3", true).unwrap();
@@ -555,7 +638,9 @@ mod internal {
         #[test]
         fn test_add_chain_entry() {
             let mut engine = CrossFederationVerifier::with_defaults();
-            engine.create_session("s1".to_string(), "p1".to_string()).unwrap();
+            engine
+                .create_session("s1".to_string(), "p1".to_string())
+                .unwrap();
             engine.add_chain_entry("s1", "fed1".to_string()).unwrap();
             let session = engine.sessions.get("s1").unwrap();
             assert_eq!(session.proof_chain.len(), 1);
@@ -564,7 +649,9 @@ mod internal {
         #[test]
         fn test_chain_cycle_detected() {
             let mut engine = CrossFederationVerifier::with_defaults();
-            engine.create_session("s1".to_string(), "p1".to_string()).unwrap();
+            engine
+                .create_session("s1".to_string(), "p1".to_string())
+                .unwrap();
             engine.add_chain_entry("s1", "fed1".to_string()).unwrap();
             let result = engine.add_chain_entry("s1", "fed1".to_string());
             assert!(matches!(result, Err(CrossFedError::ProofChainInvalid(_))));
@@ -573,7 +660,9 @@ mod internal {
         #[test]
         fn test_cleanup_expired() {
             let mut engine = CrossFederationVerifier::with_defaults();
-            engine.create_session("s1".to_string(), "p1".to_string()).unwrap();
+            engine
+                .create_session("s1".to_string(), "p1".to_string())
+                .unwrap();
             let session = engine.sessions.get_mut("s1").unwrap();
             session.created_ms = 0;
             let cleaned = engine.cleanup_expired();
@@ -617,7 +706,9 @@ mod internal {
         fn test_reset_stats() {
             let mut engine = CrossFederationVerifier::with_defaults();
             engine.register_federation("fed1".to_string(), 0.9).unwrap();
-            engine.create_session("s1".to_string(), "p1".to_string()).unwrap();
+            engine
+                .create_session("s1".to_string(), "p1".to_string())
+                .unwrap();
             engine.submit_vote("s1", "fed1", true).unwrap();
             engine.reset_stats();
             assert_eq!(engine.get_stats().total_votes, 0);

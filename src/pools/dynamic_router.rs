@@ -35,8 +35,15 @@ mod internal {
             match self {
                 Self::RouteNotFound(id) => write!(f, "Route not found: {}", id),
                 Self::NoRoutesAvailable => write!(f, "No viable routes available"),
-                Self::LowConfidence { confidence, threshold } => {
-                    write!(f, "Confidence too low: {:.4} < {:.4}", confidence, threshold)
+                Self::LowConfidence {
+                    confidence,
+                    threshold,
+                } => {
+                    write!(
+                        f,
+                        "Confidence too low: {:.4} < {:.4}",
+                        confidence, threshold
+                    )
                 }
                 Self::InvalidLatency(ms) => write!(f, "Invalid latency: {}ms", ms),
                 Self::TableFull => write!(f, "Routing table full"),
@@ -183,7 +190,12 @@ mod internal {
         }
 
         /// Compute routing score (lower is better).
-        pub fn routing_score(&self, latency_weight: f64, load_weight: f64, reputation_weight: f64) -> f64 {
+        pub fn routing_score(
+            &self,
+            latency_weight: f64,
+            load_weight: f64,
+            reputation_weight: f64,
+        ) -> f64 {
             // Normalize latency to 0-1 range (assume max 1000ms)
             let norm_latency = (self.ema_latency / 1000.0).min(1.0);
             norm_latency * latency_weight
@@ -244,9 +256,9 @@ mod internal {
             self.avg_decision_time_ms =
                 (self.avg_decision_time_ms * (self.total_decisions - 1) as f64 + time_ms)
                     / self.total_decisions as f64;
-            self.avg_confidence =
-                (self.avg_confidence * (self.total_decisions - 1) as f64 + confidence)
-                    / self.total_decisions as f64;
+            self.avg_confidence = (self.avg_confidence * (self.total_decisions - 1) as f64
+                + confidence)
+                / self.total_decisions as f64;
         }
 
         pub fn record_fallback(&mut self) {
@@ -281,34 +293,53 @@ mod internal {
         }
 
         /// Register a new route target.
-        pub fn register_route(&mut self, target_id: String, reputation: f64) -> Result<(), RouterError> {
+        pub fn register_route(
+            &mut self,
+            target_id: String,
+            reputation: f64,
+        ) -> Result<(), RouterError> {
             if self.routes.len() >= self.config.max_routes {
                 return Err(RouterError::TableFull);
             }
             if self.routes.contains_key(&target_id) {
                 return Err(RouterError::RouteNotFound(target_id)); // already exists
             }
-            let entry = DynamicRouteEntry::new(target_id.clone(), reputation, self.config.latency_window);
+            let entry =
+                DynamicRouteEntry::new(target_id.clone(), reputation, self.config.latency_window);
             self.routes.insert(target_id, entry);
             Ok(())
         }
 
         /// Record latency observation for a target.
-        pub fn record_latency(&mut self, target_id: &str, latency_ms: f64) -> Result<(), RouterError> {
-            let entry = self.routes.get_mut(target_id)
+        pub fn record_latency(
+            &mut self,
+            target_id: &str,
+            latency_ms: f64,
+        ) -> Result<(), RouterError> {
+            let entry = self
+                .routes
+                .get_mut(target_id)
                 .ok_or(RouterError::RouteNotFound(target_id.to_string()))?;
             if latency_ms < 0.0 {
                 return Err(RouterError::InvalidLatency(latency_ms));
             }
-            entry.record_latency(latency_ms, self.config.latency_alpha, self.config.latency_window);
+            entry.record_latency(
+                latency_ms,
+                self.config.latency_alpha,
+                self.config.latency_window,
+            );
             Ok(())
         }
 
         /// Update load for a target.
         pub fn update_load(&mut self, target_id: &str, load: f64) -> Result<(), RouterError> {
-            let entry = self.routes.get_mut(target_id)
+            let entry = self
+                .routes
+                .get_mut(target_id)
                 .ok_or(RouterError::RouteNotFound(target_id.to_string()))?;
-            entry.load.update(load, self.config.latency_alpha, self.config.latency_window);
+            entry
+                .load
+                .update(load, self.config.latency_alpha, self.config.latency_window);
             Ok(())
         }
 
@@ -317,42 +348,44 @@ mod internal {
             let start = std::time::Instant::now();
 
             // Find viable routes
-            let viable: Vec<_> = self.routes.values()
-                .filter(|r| r.active)
-                .collect();
+            let viable: Vec<_> = self.routes.values().filter(|r| r.active).collect();
 
             if viable.is_empty() {
                 return Err(RouterError::NoRoutesAvailable);
             }
 
             // Check confidence
-            let confident_routes: Vec<_> = viable.iter()
+            let confident_routes: Vec<_> = viable
+                .iter()
                 .filter(|r| r.meets_confidence(self.config.min_confidence))
                 .collect();
 
             let selected = if !confident_routes.is_empty() {
                 // Pick best route by score
-                confident_routes.iter()
+                confident_routes
+                    .iter()
                     .min_by(|a, b| {
                         a.routing_score(
                             self.config.latency_weight,
                             self.config.load_weight,
                             self.config.reputation_weight,
-                        ).partial_cmp(
-                            &b.routing_score(
-                                self.config.latency_weight,
-                                self.config.load_weight,
-                                self.config.reputation_weight,
-                            )
-                        ).unwrap_or(std::cmp::Ordering::Equal)
+                        )
+                        .partial_cmp(&b.routing_score(
+                            self.config.latency_weight,
+                            self.config.load_weight,
+                            self.config.reputation_weight,
+                        ))
+                        .unwrap_or(std::cmp::Ordering::Equal)
                     })
                     .ok_or(RouterError::NoRoutesAvailable)?
             } else if self.config.fallback_to_static {
                 // Fallback: pick by reputation
                 self.stats.record_fallback();
-                viable.iter()
+                viable
+                    .iter()
                     .max_by(|a, b| {
-                        a.reputation.partial_cmp(&b.reputation)
+                        a.reputation
+                            .partial_cmp(&b.reputation)
                             .unwrap_or(std::cmp::Ordering::Equal)
                     })
                     .ok_or(RouterError::NoRoutesAvailable)?
@@ -393,7 +426,9 @@ mod internal {
 
         /// Deactivate a route.
         pub fn deactivate_route(&mut self, target_id: &str) -> Result<(), RouterError> {
-            let entry = self.routes.get_mut(target_id)
+            let entry = self
+                .routes
+                .get_mut(target_id)
                 .ok_or(RouterError::RouteNotFound(target_id.to_string()))?;
             entry.active = false;
             Ok(())
@@ -401,7 +436,9 @@ mod internal {
 
         /// Activate a route.
         pub fn activate_route(&mut self, target_id: &str) -> Result<(), RouterError> {
-            let entry = self.routes.get_mut(target_id)
+            let entry = self
+                .routes
+                .get_mut(target_id)
                 .ok_or(RouterError::RouteNotFound(target_id.to_string()))?;
             entry.active = true;
             Ok(())
@@ -473,7 +510,10 @@ mod internal {
 
         #[test]
         fn test_register_route_table_full() {
-            let config = RouterConfig { max_routes: 2, ..Default::default() };
+            let config = RouterConfig {
+                max_routes: 2,
+                ..Default::default()
+            };
             let mut router = DynamicRouter::new(config);
             router.register_route("n1".to_string(), 0.9).unwrap();
             router.register_route("n2".to_string(), 0.8).unwrap();
@@ -695,7 +735,9 @@ mod internal {
             }
             for i in 0..10 {
                 for _ in 0..20 {
-                    router.record_latency(&format!("n{}", i), 50.0 + i as f64).unwrap();
+                    router
+                        .record_latency(&format!("n{}", i), 50.0 + i as f64)
+                        .unwrap();
                 }
             }
             let decision = router.decide().unwrap();

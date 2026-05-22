@@ -177,7 +177,8 @@ impl RelayNode {
     /// Clean up expired circuits.
     pub fn cleanup_expired(&mut self, current_ms: u64) -> usize {
         let before = self.circuits.len();
-        self.circuits.retain(|_, circuit| current_ms < circuit.expires_at_ms);
+        self.circuits
+            .retain(|_, circuit| current_ms < circuit.expires_at_ms);
         before - self.circuits.len()
     }
 
@@ -266,12 +267,14 @@ mod tests {
     #[test]
     fn test_create_circuit() {
         let mut node = RelayNode::new();
-        let circuit = node.create_circuit(
-            "peer-abc123".to_string(),
-            "peer-xyz789".to_string(),
-            RelayTransport::WebRTC,
-            1000000,
-        ).unwrap();
+        let circuit = node
+            .create_circuit(
+                "peer-abc123".to_string(),
+                "peer-xyz789".to_string(),
+                RelayTransport::WebRTC,
+                1000000,
+            )
+            .unwrap();
         assert_eq!(node.active_circuit_count(), 1);
         assert_eq!(circuit.source_peer_id, "peer-abc123");
         assert_eq!(circuit.transport, RelayTransport::WebRTC);
@@ -280,12 +283,14 @@ mod tests {
     #[test]
     fn test_circuit_validity() {
         let mut node = RelayNode::new();
-        let circuit = node.create_circuit(
-            "peer-a".to_string(),
-            "peer-b".to_string(),
-            RelayTransport::CircuitRelayV2,
-            1000000,
-        ).unwrap();
+        let circuit = node
+            .create_circuit(
+                "peer-a".to_string(),
+                "peer-b".to_string(),
+                RelayTransport::CircuitRelayV2,
+                1000000,
+            )
+            .unwrap();
         assert!(node.is_circuit_valid(&circuit.circuit_id, 1000000 + 1000));
         assert!(!node.is_circuit_valid(&circuit.circuit_id, 1000000 + (301 * 1000)));
     }
@@ -293,8 +298,20 @@ mod tests {
     #[test]
     fn test_cleanup_expired() {
         let mut node = RelayNode::new();
-        node.create_circuit("peer-a".to_string(), "peer-b".to_string(), RelayTransport::WebRTC, 1000000).unwrap();
-        node.create_circuit("peer-c".to_string(), "peer-d".to_string(), RelayTransport::WebRTC, 2000000).unwrap();
+        node.create_circuit(
+            "peer-a".to_string(),
+            "peer-b".to_string(),
+            RelayTransport::WebRTC,
+            1000000,
+        )
+        .unwrap();
+        node.create_circuit(
+            "peer-c".to_string(),
+            "peer-d".to_string(),
+            RelayTransport::WebRTC,
+            2000000,
+        )
+        .unwrap();
         assert_eq!(node.active_circuit_count(), 2);
         let cleaned = node.cleanup_expired(1000000 + (301 * 1000));
         assert_eq!(cleaned, 1);
@@ -308,14 +325,33 @@ mod tests {
             ..RelayConfig::default()
         };
         let mut node = RelayNode::with_config(config).unwrap();
-        node.create_circuit("peer-a".to_string(), "peer-b".to_string(), RelayTransport::WebRTC, 1000000).unwrap();
-        assert!(node.create_circuit("peer-c".to_string(), "peer-d".to_string(), RelayTransport::WebRTC, 1000001).is_err());
+        node.create_circuit(
+            "peer-a".to_string(),
+            "peer-b".to_string(),
+            RelayTransport::WebRTC,
+            1000000,
+        )
+        .unwrap();
+        assert!(node
+            .create_circuit(
+                "peer-c".to_string(),
+                "peer-d".to_string(),
+                RelayTransport::WebRTC,
+                1000001
+            )
+            .is_err());
     }
 
     #[test]
     fn test_relay_stop() {
         let mut node = RelayNode::new();
-        node.create_circuit("peer-a".to_string(), "peer-b".to_string(), RelayTransport::WebRTC, 1000000).unwrap();
+        node.create_circuit(
+            "peer-a".to_string(),
+            "peer-b".to_string(),
+            RelayTransport::WebRTC,
+            1000000,
+        )
+        .unwrap();
         node.stop();
         assert!(!node.is_running());
         assert_eq!(node.active_circuit_count(), 0);
@@ -324,7 +360,10 @@ mod tests {
     #[test]
     fn test_transport_display() {
         assert_eq!(format!("{}", RelayTransport::WebRTC), "WebRTC");
-        assert_eq!(format!("{}", RelayTransport::CircuitRelayV2), "CircuitRelayV2");
+        assert_eq!(
+            format!("{}", RelayTransport::CircuitRelayV2),
+            "CircuitRelayV2"
+        );
     }
 
     #[test]

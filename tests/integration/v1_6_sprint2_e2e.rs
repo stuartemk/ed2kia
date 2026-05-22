@@ -8,18 +8,18 @@ mod e2e {
     use std::time::Instant;
 
     // LP-145: Federation Scaling v7
-    use ed2kia::federation::scaling_v7::{ScalingV7, ScalingV7Config};
     use ed2kia::federation::gradient_sync_v7::GradientSyncV7;
+    use ed2kia::federation::scaling_v7::{ScalingV7, ScalingV7Config};
 
     // LP-146: Async ZKP v13 + Federation ZKP Bridge v6
-    use ed2kia::zkp::async_zkp_v13::{AsyncZKPV13, ZKPV13Config, ProofPriority};
     use ed2kia::bridge::federation_zkp_bridge_v6::{
         FederationZKPBridgeV6, FederationZKPBridgeV6Config,
     };
+    use ed2kia::zkp::async_zkp_v13::{AsyncZKPV13, ProofPriority, ZKPV13Config};
 
     // LP-147: Dashboard v7 + WS Stream v2
     use ed2kia::ui::dashboard_v7::{DashboardV7, MetricV7, MetricValueV7};
-    use ed2kia::web::ws_federation_stream_v2::{WsFederationStreamV2, StreamCategory};
+    use ed2kia::web::ws_federation_stream_v2::{StreamCategory, WsFederationStreamV2};
 
     fn current_ms() -> u64 {
         std::time::SystemTime::now()
@@ -65,7 +65,12 @@ mod e2e {
             )
             .unwrap();
         engine
-            .submit_proof("p3".to_string(), ProofPriority::Low, ts, "fed_beta".to_string())
+            .submit_proof(
+                "p3".to_string(),
+                ProofPriority::Low,
+                ts,
+                "fed_beta".to_string(),
+            )
             .unwrap();
 
         // Create and populate batch — assign_proof_to_batch pops highest-priority proof
@@ -174,20 +179,23 @@ mod e2e {
         .unwrap();
 
         // Setup Bridge
-        bridge.register_federation("zkp_fed".to_string(), 0.95, 100.0)
+        bridge
+            .register_federation("zkp_fed".to_string(), 0.95, 100.0)
             .unwrap();
-        bridge.register_federation("target_fed".to_string(), 0.9, 80.0)
+        bridge
+            .register_federation("target_fed".to_string(), 0.9, 80.0)
             .unwrap();
 
         // Route proof through bridge
-        bridge.submit_proof(
-            "routed_proof".to_string(),
-            "zkp_fed".to_string(),
-            "target_fed".to_string(),
-            "payload_hash".to_string(),
-            ts,
-        )
-        .unwrap();
+        bridge
+            .submit_proof(
+                "routed_proof".to_string(),
+                "zkp_fed".to_string(),
+                "target_fed".to_string(),
+                "payload_hash".to_string(),
+                ts,
+            )
+            .unwrap();
 
         // Verify through bridge
         let verified = bridge.verify_proof("routed_proof", ts + 50).unwrap();
@@ -325,8 +333,7 @@ mod e2e {
             .unwrap();
 
         // Register federations in ZKP
-        zkp.register_federation("fed_a".to_string(), 0.95)
-            .unwrap();
+        zkp.register_federation("fed_a".to_string(), 0.95).unwrap();
 
         // Submit proof
         zkp.submit_proof(
@@ -394,18 +401,21 @@ mod e2e {
         .unwrap();
 
         // Setup Bridge v6
-        bridge.register_federation("fed_scaling".to_string(), 0.95, 100.0)
+        bridge
+            .register_federation("fed_scaling".to_string(), 0.95, 100.0)
             .unwrap();
-        bridge.register_federation("fed_external".to_string(), 0.9, 80.0)
+        bridge
+            .register_federation("fed_external".to_string(), 0.9, 80.0)
             .unwrap();
-        bridge.submit_proof(
-            "bridge_proof".to_string(),
-            "fed_scaling".to_string(),
-            "fed_external".to_string(),
-            "hash_123".to_string(),
-            ts,
-        )
-        .unwrap();
+        bridge
+            .submit_proof(
+                "bridge_proof".to_string(),
+                "fed_scaling".to_string(),
+                "fed_external".to_string(),
+                "hash_123".to_string(),
+                ts,
+            )
+            .unwrap();
 
         // Update Dashboard v7
         let mut scaling_summary = ed2kia::ui::dashboard_v7::ScalingV7Summary::default();
@@ -570,11 +580,7 @@ mod e2e {
         let start = Instant::now();
         for i in 0..50 {
             let conn_id = stream
-                .authenticate(
-                    format!("client_{}", i),
-                    format!("sig_{}", i),
-                    ts,
-                )
+                .authenticate(format!("client_{}", i), format!("sig_{}", i), ts)
                 .unwrap();
             stream
                 .subscribe(&conn_id, vec![StreamCategory::All])

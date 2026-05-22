@@ -36,9 +36,9 @@ pub mod network;
 /// Optional Rosetta API integration — spawns HTTP server alongside orchestrator.
 #[cfg(feature = "v2.1-rosetta-api")]
 pub mod rosetta_integration {
-    use std::sync::Arc;
-    use crate::atlas::graph::SemanticGraph;
     use crate::atlas::api::run_server;
+    use crate::atlas::graph::SemanticGraph;
+    use std::sync::Arc;
 
     /// Spawn the Rosetta API server on a background task.
     ///

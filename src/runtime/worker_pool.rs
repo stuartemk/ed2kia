@@ -248,7 +248,10 @@ impl WorkerPool {
             return Err(WorkerPoolError::PoolFull(self.config.max_workers));
         }
         if self.workers.contains_key(&id) {
-            return Err(WorkerPoolError::AssignmentFailed(format!("Worker {} already exists", id)));
+            return Err(WorkerPoolError::AssignmentFailed(format!(
+                "Worker {} already exists",
+                id
+            )));
         }
         self.workers.insert(id.clone(), Worker::new(id));
         self.update_stats();
@@ -288,12 +291,18 @@ impl WorkerPool {
                 Err(WorkerPoolError::WorkerNotFound(worker_id))
             }
         } else {
-            Err(WorkerPoolError::AssignmentFailed("No available workers".to_string()))
+            Err(WorkerPoolError::AssignmentFailed(
+                "No available workers".to_string(),
+            ))
         }
     }
 
     /// Complete a task on a specific worker.
-    pub fn complete_task(&mut self, worker_id: &str, latency_ms: f64) -> Result<(), WorkerPoolError> {
+    pub fn complete_task(
+        &mut self,
+        worker_id: &str,
+        latency_ms: f64,
+    ) -> Result<(), WorkerPoolError> {
         if let Some(worker) = self.workers.get_mut(worker_id) {
             worker.complete(latency_ms);
             self.stats.total_tasks_completed += 1;
@@ -379,7 +388,9 @@ impl WorkerPool {
             .values()
             .filter(|w| w.can_accept())
             .max_by(|a, b| {
-                (a.capacity * 1000.0).partial_cmp(&(b.capacity * 1000.0)).unwrap_or(std::cmp::Ordering::Equal)
+                (a.capacity * 1000.0)
+                    .partial_cmp(&(b.capacity * 1000.0))
+                    .unwrap_or(std::cmp::Ordering::Equal)
             })
     }
 
@@ -600,9 +611,18 @@ mod tests {
 
     #[test]
     fn test_strategy_display() {
-        assert_eq!(format!("{}", LoadBalanceStrategy::RoundRobin), "round_robin");
-        assert_eq!(format!("{}", LoadBalanceStrategy::LeastLoaded), "least_loaded");
-        assert_eq!(format!("{}", LoadBalanceStrategy::CapacityBased), "capacity_based");
+        assert_eq!(
+            format!("{}", LoadBalanceStrategy::RoundRobin),
+            "round_robin"
+        );
+        assert_eq!(
+            format!("{}", LoadBalanceStrategy::LeastLoaded),
+            "least_loaded"
+        );
+        assert_eq!(
+            format!("{}", LoadBalanceStrategy::CapacityBased),
+            "capacity_based"
+        );
         assert_eq!(format!("{}", LoadBalanceStrategy::Random), "random");
     }
 

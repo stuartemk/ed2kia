@@ -155,11 +155,7 @@ impl GradientBatch {
     }
 
     pub fn norm(&self) -> f32 {
-        self.gradients
-            .iter()
-            .map(|g| g * g)
-            .sum::<f32>()
-            .sqrt()
+        self.gradients.iter().map(|g| g * g).sum::<f32>().sqrt()
     }
 }
 
@@ -395,9 +391,7 @@ impl DistributedFineTuning {
         }
         self.state = DistributedState::Syncing;
 
-        let started_at = self
-            .started_at
-            .unwrap_or_else(Instant::now);
+        let started_at = self.started_at.unwrap_or_else(Instant::now);
 
         let mut summary = EpochSummary::new(self.current_epoch, started_at);
 
@@ -510,9 +504,7 @@ impl DistributedFineTuning {
         let b = &self.pending_gradients[idx_b].gradients;
         let len = a.len().min(b.len());
 
-        (0..len)
-            .map(|i| (a[i] - b[i]).abs())
-            .sum::<f32>()
+        (0..len).map(|i| (a[i] - b[i]).abs()).sum::<f32>()
     }
 
     // ------------------------------------------------------------------
@@ -565,13 +557,7 @@ mod tests {
     }
 
     fn make_batch(node_id: &str, epoch: usize, dim: usize, loss: f32) -> GradientBatch {
-        GradientBatch::new(
-            node_id.to_string(),
-            epoch,
-            0,
-            make_gradient(dim, 0.1),
-            loss,
-        )
+        GradientBatch::new(node_id.to_string(), epoch, 0, make_gradient(dim, 0.1), loss)
     }
 
     #[test]
@@ -585,16 +571,16 @@ mod tests {
     #[test]
     fn test_register_node() {
         let mut engine = DistributedFineTuning::default();
-        assert!(engine
-            .register_node("node-1".to_string(), 1.0, 128)
-            .is_ok());
+        assert!(engine.register_node("node-1".to_string(), 1.0, 128).is_ok());
         assert!(engine.get_participant("node-1").is_some());
     }
 
     #[test]
     fn test_register_duplicate_node() {
         let mut engine = DistributedFineTuning::default();
-        engine.register_node("node-1".to_string(), 1.0, 128).unwrap();
+        engine
+            .register_node("node-1".to_string(), 1.0, 128)
+            .unwrap();
         match engine.register_node("node-1".to_string(), 1.0, 128) {
             Err(DistributedError::NodeAlreadyRegistered(id)) => {
                 assert_eq!(id, "node-1");
@@ -606,7 +592,9 @@ mod tests {
     #[test]
     fn test_unregister_node() {
         let mut engine = DistributedFineTuning::default();
-        engine.register_node("node-1".to_string(), 1.0, 128).unwrap();
+        engine
+            .register_node("node-1".to_string(), 1.0, 128)
+            .unwrap();
         assert!(engine.unregister_node("node-1").is_ok());
         assert!(engine.get_participant("node-1").is_none());
     }
@@ -646,8 +634,12 @@ mod tests {
         engine.start_training().unwrap();
         engine.start_epoch().unwrap();
 
-        engine.submit_gradient(make_batch("node-1", 1, 64, 0.5)).unwrap();
-        engine.submit_gradient(make_batch("node-2", 1, 64, 0.3)).unwrap();
+        engine
+            .submit_gradient(make_batch("node-1", 1, 64, 0.5))
+            .unwrap();
+        engine
+            .submit_gradient(make_batch("node-2", 1, 64, 0.3))
+            .unwrap();
 
         let summary = engine.sync_gradients().unwrap();
         assert_eq!(summary.epoch, 1);
@@ -677,7 +669,9 @@ mod tests {
     #[test]
     fn test_heartbeat() {
         let mut engine = DistributedFineTuning::default();
-        engine.register_node("node-1".to_string(), 1.0, 128).unwrap();
+        engine
+            .register_node("node-1".to_string(), 1.0, 128)
+            .unwrap();
         assert!(engine.heartbeat_node("node-1").is_ok());
     }
 
@@ -752,10 +746,7 @@ mod tests {
 
     #[test]
     fn test_aggregation_method_display() {
-        assert_eq!(
-            format!("{}", AggregationMethod::FedAvg),
-            "FedAvg"
-        );
+        assert_eq!(format!("{}", AggregationMethod::FedAvg), "FedAvg");
         assert_eq!(
             format!("{}", AggregationMethod::MultiKrum { k: 3 }),
             "MultiKrum(k=3)"
@@ -779,7 +770,8 @@ mod tests {
 
         for _epoch in 1..=3 {
             engine.start_epoch().unwrap();
-            engine.submit_gradient(make_batch("node-1", _epoch, 32, 0.5))
+            engine
+                .submit_gradient(make_batch("node-1", _epoch, 32, 0.5))
                 .unwrap();
             engine.sync_gradients().unwrap();
         }
@@ -799,18 +791,33 @@ mod tests {
         engine.start_epoch().unwrap();
 
         // n1 and n2 agree, n3 is outlier
-        engine.submit_gradient(GradientBatch::new(
-            "n1".into(), 1, 0, vec![1.0, 1.0, 1.0, 1.0], 0.5,
-        ))
-        .unwrap();
-        engine.submit_gradient(GradientBatch::new(
-            "n2".into(), 1, 0, vec![1.1, 1.1, 1.1, 1.1], 0.5,
-        ))
-        .unwrap();
-        engine.submit_gradient(GradientBatch::new(
-            "n3".into(), 1, 0, vec![10.0, 10.0, 10.0, 10.0], 0.9,
-        ))
-        .unwrap();
+        engine
+            .submit_gradient(GradientBatch::new(
+                "n1".into(),
+                1,
+                0,
+                vec![1.0, 1.0, 1.0, 1.0],
+                0.5,
+            ))
+            .unwrap();
+        engine
+            .submit_gradient(GradientBatch::new(
+                "n2".into(),
+                1,
+                0,
+                vec![1.1, 1.1, 1.1, 1.1],
+                0.5,
+            ))
+            .unwrap();
+        engine
+            .submit_gradient(GradientBatch::new(
+                "n3".into(),
+                1,
+                0,
+                vec![10.0, 10.0, 10.0, 10.0],
+                0.9,
+            ))
+            .unwrap();
 
         let summary = engine.sync_gradients().unwrap();
         // Krum should pick n1 or n2 (closest to others)
@@ -833,7 +840,10 @@ mod tests {
     #[test]
     fn test_total_duration() {
         let mut engine = DistributedFineTuning::default();
+        // Register 3 nodes to meet min_participants requirement (default=3)
         engine.register_node("n1".to_string(), 1.0, 32).unwrap();
+        engine.register_node("n2".to_string(), 1.0, 32).unwrap();
+        engine.register_node("n3".to_string(), 1.0, 32).unwrap();
         engine.start_training().unwrap();
         let duration = engine.get_total_duration();
         assert!(duration.as_millis() >= 0);

@@ -522,11 +522,7 @@ impl SseMetricsStream {
     }
 
     /// Obtener eventos de catch-up.
-    pub fn get_catchup_events(
-        &self,
-        session_id: &str,
-        since_sequence: u64,
-    ) -> Vec<SseMetricEvent> {
+    pub fn get_catchup_events(&self, session_id: &str, since_sequence: u64) -> Vec<SseMetricEvent> {
         let session = match self.sessions.get(session_id) {
             Some(s) => s,
             None => return Vec::new(),
@@ -610,8 +606,7 @@ impl SseMetricsStream {
             let mut sorted: Vec<f64> = self.latency_samples.iter().cloned().collect();
             sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
             let p99_idx = ((sorted.len() as f64) * 0.99) as usize;
-            self.stats.p99_latency_ms =
-                *sorted.get(p99_idx.min(sorted.len() - 1)).unwrap_or(&0.0);
+            self.stats.p99_latency_ms = *sorted.get(p99_idx.min(sorted.len() - 1)).unwrap_or(&0.0);
         }
 
         let total_buffer: usize = self.sessions.values().map(|s| s.pending_events.len()).sum();
@@ -691,7 +686,9 @@ mod tests {
     fn test_create_duplicate_session() {
         let mut stream = SseMetricsStream::new();
         let categories = vec![MetricCategory::Alignment];
-        stream.create_session("s1".to_string(), categories.clone()).unwrap();
+        stream
+            .create_session("s1".to_string(), categories.clone())
+            .unwrap();
         let result = stream.create_session("s1".to_string(), categories);
         assert!(result.is_err());
     }
@@ -705,7 +702,9 @@ mod tests {
         let mut stream = SseMetricsStream::with_config(config);
         let categories = vec![MetricCategory::Alignment];
 
-        stream.create_session("s1".to_string(), categories.clone()).unwrap();
+        stream
+            .create_session("s1".to_string(), categories.clone())
+            .unwrap();
         let result = stream.create_session("s2".to_string(), categories);
         assert!(result.is_err());
     }
@@ -879,12 +878,7 @@ mod tests {
     #[test]
     fn test_session_buffer_event() {
         let mut session = SseMetricsSession::new("s1".to_string(), vec![], 100);
-        let event = SseMetricEvent::new(
-            MetricCategory::Alignment,
-            vec![],
-            1,
-            None,
-        );
+        let event = SseMetricEvent::new(MetricCategory::Alignment, vec![], 1, None);
         assert!(session.buffer_event(event));
         assert_eq!(session.pending_events.len(), 1);
     }
@@ -932,16 +926,10 @@ mod tests {
     fn test_multiple_sessions_different_subscriptions() {
         let mut stream = SseMetricsStream::new();
         stream
-            .create_session(
-                "s1".to_string(),
-                vec![MetricCategory::Alignment],
-            )
+            .create_session("s1".to_string(), vec![MetricCategory::Alignment])
             .unwrap();
         stream
-            .create_session(
-                "s2".to_string(),
-                vec![MetricCategory::Federation],
-            )
+            .create_session("s2".to_string(), vec![MetricCategory::Federation])
             .unwrap();
 
         let metrics = vec![MetricPoint {
@@ -959,12 +947,13 @@ mod tests {
         let mut stream = SseMetricsStream::new();
         let categories = vec![MetricCategory::Alignment];
 
-        let session = stream.reconnect_with_last_event(
-            "s1".to_string(),
-            "metric-alignment-1234567890-10".to_string(),
-            categories,
-        )
-        .unwrap();
+        let session = stream
+            .reconnect_with_last_event(
+                "s1".to_string(),
+                "metric-alignment-1234567890-10".to_string(),
+                categories,
+            )
+            .unwrap();
 
         assert_eq!(session.last_sequence_seen, 10);
         assert!(session.last_event_id.is_some());

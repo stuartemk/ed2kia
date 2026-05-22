@@ -13,20 +13,20 @@
 
 #[cfg(test)]
 mod kernel_e2e {
-    use ed2kia::async_gossip::mesh::{GossipMesh, MeshMessage};
     use ed2kia::async_gossip::cache::{GossipCache, PayloadType, SyncStatus};
-    use ed2kia::async_gossip::crdt::{GCounter, PNCounter, ORSet, ReputationCrdt, VersionVector};
+    use ed2kia::async_gossip::crdt::{GCounter, ORSet, PNCounter, ReputationCrdt, VersionVector};
+    use ed2kia::async_gossip::mesh::{GossipMesh, MeshMessage};
 
     // BFT Aggregator
     use ed2kia::federated::bft_aggregator::BftAggregator;
 
     // SCT Guard
-    use ed2kia::alignment::sct_guard::SctGuard;
     use ed2kia::alignment::sct_core::{SCTDecision, StuartianTensor};
+    use ed2kia::alignment::sct_guard::SctGuard;
 
     // QLoRA/GGUF
-    use ed2kia::qlora_gguf::loader::{GgufLoader, GgufLoaderError};
     use ed2kia::qlora_gguf::adapter::QloraAdapter;
+    use ed2kia::qlora_gguf::loader::{GgufLoader, GgufLoaderError};
     use ed2kia::qlora_gguf::payload::QloraPayload;
 
     // Proof of Comprehension
@@ -37,7 +37,7 @@ mod kernel_e2e {
     use ed2kia::stuartian_filter::slashing::{AlignmentSlasher, SlashingError};
 
     // Chaos Engine
-    use ed2kia::chaos::engine::{ChaosEngine, ChaosConfig};
+    use ed2kia::chaos::engine::{ChaosConfig, ChaosEngine};
 
     /// ──────────────────────────────────────────────
     /// STAGE 1: GGUF Loader Validation
@@ -63,7 +63,7 @@ mod kernel_e2e {
     /// ──────────────────────────────────────────────
     #[test]
     fn stage2_qlora_adapter_forward_pass() {
-        use candle_core::{Device, Tensor, DType};
+        use candle_core::{DType, Device, Tensor};
         use ed2kia::qlora_gguf::adapter::{AdapterInfo, QuantizationType};
 
         let device = Device::Cpu;
@@ -81,10 +81,7 @@ mod kernel_e2e {
         let adapter = QloraAdapter::new(info, matrix_a, matrix_b, 0.5).unwrap();
 
         // Validate adapter configuration
-        assert!(
-            adapter.validate().is_ok(),
-            "Mock adapter should be valid"
-        );
+        assert!(adapter.validate().is_ok(), "Mock adapter should be valid");
 
         // Forward pass with valid input
         let x = candle_core::Tensor::rand(0.0f32, 1.0f32, (32, 128), &device).unwrap();
@@ -137,7 +134,10 @@ mod kernel_e2e {
         // Serialization for GossipSub
         let gossip_bytes = compressed.to_gossipsub_bytes();
         let recovered = QloraPayload::from_gossipsub_bytes(&gossip_bytes);
-        assert!(recovered.is_ok(), "GossipSub serialization round-trip should work");
+        assert!(
+            recovered.is_ok(),
+            "GossipSub serialization round-trip should work"
+        );
     }
 
     /// ──────────────────────────────────────────────
@@ -150,11 +150,17 @@ mod kernel_e2e {
         let task = ComprehensionTask::new("task-001".into(), 128, 32, 60);
         assert!(task.is_ok(), "Task creation should succeed");
         let task = task.unwrap();
-        assert_eq!(task.state, ed2kia::proof_of_comprehension::task::TaskState::Pending);
+        assert_eq!(
+            task.state,
+            ed2kia::proof_of_comprehension::task::TaskState::Pending
+        );
 
         // Different task IDs produce different tasks
         let task2 = ComprehensionTask::new("task-002".into(), 128, 32, 60).unwrap();
-        assert_ne!(task.task_id, task2.task_id, "Different task IDs should differ");
+        assert_ne!(
+            task.task_id, task2.task_id,
+            "Different task IDs should differ"
+        );
 
         // Empty batch should fail
         let bad_task = ComprehensionTask::new("bad".into(), 128, 0, 60);
@@ -232,9 +238,7 @@ mod kernel_e2e {
         // Result should be close to honest median, not Byzantine
         for (i, val) in aggregated.iter().enumerate() {
             assert!(
-                (*val - 1.0).abs() < 50.0
-                    || (*val - 2.0).abs() < 50.0
-                    || (*val - 3.0).abs() < 50.0,
+                (*val - 1.0).abs() < 50.0 || (*val - 2.0).abs() < 50.0 || (*val - 3.0).abs() < 50.0,
                 "Aggregated value[{}] = {} should be close to honest range, not Byzantine",
                 i,
                 val
@@ -316,7 +320,11 @@ mod kernel_e2e {
 
         // Merge A → B: takes max per node → node-1=5, node-2=3 → total=8
         gc_b.merge(&gc_a);
-        assert_eq!(gc_b.value(), 8, "Merged value should be 8 (5+3 from different nodes)");
+        assert_eq!(
+            gc_b.value(),
+            8,
+            "Merged value should be 8 (5+3 from different nodes)"
+        );
 
         // Merge again (idempotent)
         gc_b.merge(&gc_a);
@@ -342,10 +350,7 @@ mod kernel_e2e {
             set_b.contains("feature-x"),
             "feature-x should exist (added by node-b)"
         );
-        assert!(
-            set_b.contains("feature-y"),
-            "feature-y should exist"
-        );
+        assert!(set_b.contains("feature-y"), "feature-y should exist");
     }
 
     /// ──────────────────────────────────────────────
@@ -361,11 +366,7 @@ mod kernel_e2e {
         mesh.add_peer("peer-2".into());
         mesh.add_peer("peer-3".into());
 
-        assert_eq!(
-            mesh.peer_count(),
-            3,
-            "Mesh should have 3 peers"
-        );
+        assert_eq!(mesh.peer_count(), 3, "Mesh should have 3 peers");
 
         // Publish message
         let payload = vec![1, 2, 3, 4, 5];
@@ -373,10 +374,7 @@ mod kernel_e2e {
         assert!(msg.is_ok(), "Publish should succeed");
 
         let published = msg.unwrap();
-        assert_eq!(
-            published.payload, payload,
-            "Published payload should match"
-        );
+        assert_eq!(published.payload, payload, "Published payload should match");
 
         // Inject message from peer
         let peer_msg = MeshMessage::new("peer-1".into(), vec![10, 20, 30], 1);
@@ -402,10 +400,7 @@ mod kernel_e2e {
         }
 
         let meshed = mesh.meshed_peers();
-        assert!(
-            meshed.len() > 0,
-            "Should have meshed peers after adding 6"
-        );
+        assert!(meshed.len() > 0, "Should have meshed peers after adding 6");
     }
 
     /// ──────────────────────────────────────────────
@@ -474,7 +469,10 @@ mod kernel_e2e {
         // After marking failed, backoff increases
         // (backoff logic is in CacheEntry::backoff_ms())
         let backoff = entry.backoff_ms();
-        assert_eq!(backoff, 1000, "Initial backoff should be 1000ms (2^0 * 1000)");
+        assert_eq!(
+            backoff, 1000,
+            "Initial backoff should be 1000ms (2^0 * 1000)"
+        );
     }
 
     /// ──────────────────────────────────────────────
@@ -544,14 +542,20 @@ mod kernel_e2e {
         let dist_c = vec![1.0, 0.0, 0.0];
         let dist_d = vec![0.0, 0.5, 0.5];
         let result2 = checker.check(&dist_c, &dist_d);
-        assert!(result2.is_ok(), "Checker should handle extreme distributions");
+        assert!(
+            result2.is_ok(),
+            "Checker should handle extreme distributions"
+        );
     }
 
     #[test]
     fn stage11_divergence_dimension_mismatch() {
         let result = DivergenceChecker::validate_dimensions(&[1.0], &[1.0, 2.0]);
         // Empty check uses validate_dimensions
-        assert!(result.is_ok() || result.is_err(), "Should handle dimension check");
+        assert!(
+            result.is_ok() || result.is_err(),
+            "Should handle dimension check"
+        );
     }
 
     /// ──────────────────────────────────────────────
@@ -565,7 +569,10 @@ mod kernel_e2e {
         // Create a slashing record (currently returns None — TODO stub)
         let record = slasher.evaluate("node-bad", -0.8);
         // Currently returns None (TODO stub) — verify it doesn't panic
-        assert!(record.is_none() || record.is_some(), "Evaluate should not panic");
+        assert!(
+            record.is_none() || record.is_some(),
+            "Evaluate should not panic"
+        );
 
         // Apply penalty (currently returns Err — TODO stub)
         let _penalty_result = slasher.apply_penalty("node-bad");
@@ -606,10 +613,7 @@ mod kernel_e2e {
 
         // Initial status — no active scenario
         let status = engine.status().await;
-        assert!(
-            status.is_none(),
-            "No active scenario initially"
-        );
+        assert!(status.is_none(), "No active scenario initially");
 
         // Rollback without active scenario — should handle gracefully
         let rollback = engine.rollback().await;
@@ -658,7 +662,7 @@ mod kernel_e2e {
     /// ──────────────────────────────────────────────
     #[test]
     fn stage15_full_kernel_pipeline() {
-        use candle_core::{Device, Tensor, DType};
+        use candle_core::{DType, Device, Tensor};
         use ed2kia::qlora_gguf::adapter::{AdapterInfo, QuantizationType};
 
         // ── Phase 1: GGUF + QLoRA (Ley 3) ──
@@ -701,11 +705,7 @@ mod kernel_e2e {
 
         // ── Phase 4: BFT Aggregation (Ley 2) ──
         let bft = BftAggregator::with_defaults();
-        let gradients = vec![
-            vec![1.0, 2.0],
-            vec![1.1, 2.1],
-            vec![0.9, 1.9],
-        ];
+        let gradients = vec![vec![1.0, 2.0], vec![1.1, 2.1], vec![0.9, 1.9]];
         let aggregated = bft.aggregate(&gradients);
         assert!(aggregated.is_ok(), "BFT aggregation succeeds");
 
@@ -745,12 +745,13 @@ mod kernel_e2e {
         let mut vv = VersionVector::new();
         vv.increment("pipeline-node");
         let nodes = vv.nodes();
-        assert!(nodes.contains(&&"pipeline-node".to_string()), "VV tracks node");
+        assert!(
+            nodes.contains(&&"pipeline-node".to_string()),
+            "VV tracks node"
+        );
 
         // Pipeline complete — all phases passed
-        println!(
-            "[KERNEL E2E] Full pipeline validated: GGUF→QLoRA→SCT→BFT→CRDT→Gossip→Cache→VV"
-        );
+        println!("[KERNEL E2E] Full pipeline validated: GGUF→QLoRA→SCT→BFT→CRDT→Gossip→Cache→VV");
     }
 
     /// ──────────────────────────────────────────────
@@ -761,14 +762,14 @@ mod kernel_e2e {
     fn stage16_error_handling_graceful() {
         // GGUF loader error — nonexistent file returns FileNotFound
         let loader_err = GgufLoader::new().validate("/bad/path.gguf");
-        assert!(matches!(
-            loader_err,
-            Err(GgufLoaderError::FileNotFound(_))
-        ));
+        assert!(matches!(loader_err, Err(GgufLoaderError::FileNotFound(_))));
 
         // SCT Guard error — threshold must be > 0
         let guard_err = SctGuard::new(0);
-        assert!(matches!(guard_err, Err(ed2kia::alignment::sct_guard::SctGuardError::InvalidThreshold { .. })));
+        assert!(matches!(
+            guard_err,
+            Err(ed2kia::alignment::sct_guard::SctGuardError::InvalidThreshold { .. })
+        ));
 
         // Divergence error — threshold must be >= 0
         let div_err = DivergenceChecker::new(-1.0);

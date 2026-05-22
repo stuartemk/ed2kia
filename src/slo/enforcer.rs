@@ -309,7 +309,10 @@ impl SLAEnforcer {
     pub fn register_slo(&mut self, metric_key: String, slo_name: String, target_value: f64) {
         let record = SloStatusRecord::new(metric_key.clone(), slo_name, target_value);
         self.slo_records.insert(metric_key.clone(), record);
-        self.audit(&format!("SLO registered: {} (target={})", metric_key, target_value));
+        self.audit(&format!(
+            "SLO registered: {} (target={})",
+            metric_key, target_value
+        ));
     }
 
     /// Evalúa todos los SLOs registrados y aplica degradación si es necesario
@@ -327,11 +330,7 @@ impl SLAEnforcer {
     }
 
     /// Evalúa un SLO individual y reporta su valor actual
-    pub fn report_slo_value(
-        &mut self,
-        metric_key: &str,
-        value: f64,
-    ) -> Result<(), EnforcerError> {
+    pub fn report_slo_value(&mut self, metric_key: &str, value: f64) -> Result<(), EnforcerError> {
         // Extraer datos necesarios antes del borrow mutable
         let maybe_record = self.slo_records.get(metric_key).cloned().ok_or_else(|| {
             EnforcerError::SloNotRegistered {
@@ -409,9 +408,7 @@ impl SLAEnforcer {
 
         self.audit(&format!(
             "Degradation triggered: {} -> {} (breach_windows={})",
-            metric_key,
-            level,
-            record.breach_windows
+            metric_key, level, record.breach_windows
         ));
 
         Ok(result)
@@ -471,7 +468,11 @@ impl SLAEnforcer {
             format!("SLA Degradation: {}", level),
             format!(
                 "SLO: {} ({}), Value: {:.4}, Target: {:.4}, Action: {}",
-                record.slo_name, record.metric_key, record.current_value, record.target_value, action
+                record.slo_name,
+                record.metric_key,
+                record.current_value,
+                record.target_value,
+                action
             ),
             severity.into(),
         );
@@ -569,8 +570,8 @@ impl SLAEnforcer {
     fn is_breach(&self, record: &SloStatusRecord) -> bool {
         // Para métricas donde mayor es mejor (uptime, accuracy)
         // Para métricas donde menor es mejor (latency, error_rate)
-        let is_lower_better = record.metric_key.contains("latency")
-            || record.metric_key.contains("error");
+        let is_lower_better =
+            record.metric_key.contains("latency") || record.metric_key.contains("error");
 
         if is_lower_better {
             record.current_value > record.target_value
@@ -678,11 +679,26 @@ mod tests {
             ..EnforcerConfig::default()
         });
 
-        assert_eq!(enforcer.determine_degradation_level(0), DegradationLevel::Normal);
-        assert_eq!(enforcer.determine_degradation_level(1), DegradationLevel::Level1Warning);
-        assert_eq!(enforcer.determine_degradation_level(3), DegradationLevel::Level2ReducePeers);
-        assert_eq!(enforcer.determine_degradation_level(5), DegradationLevel::Level3CoreOnly);
-        assert_eq!(enforcer.determine_degradation_level(10), DegradationLevel::Level4Rollback);
+        assert_eq!(
+            enforcer.determine_degradation_level(0),
+            DegradationLevel::Normal
+        );
+        assert_eq!(
+            enforcer.determine_degradation_level(1),
+            DegradationLevel::Level1Warning
+        );
+        assert_eq!(
+            enforcer.determine_degradation_level(3),
+            DegradationLevel::Level2ReducePeers
+        );
+        assert_eq!(
+            enforcer.determine_degradation_level(5),
+            DegradationLevel::Level3CoreOnly
+        );
+        assert_eq!(
+            enforcer.determine_degradation_level(10),
+            DegradationLevel::Level4Rollback
+        );
     }
 
     #[test]
@@ -782,8 +798,14 @@ mod tests {
     #[test]
     fn test_degradation_level_from_u8() {
         assert_eq!(DegradationLevel::from_u8(0), DegradationLevel::Normal);
-        assert_eq!(DegradationLevel::from_u8(3), DegradationLevel::Level3CoreOnly);
-        assert_eq!(DegradationLevel::from_u8(9), DegradationLevel::Level4Rollback);
+        assert_eq!(
+            DegradationLevel::from_u8(3),
+            DegradationLevel::Level3CoreOnly
+        );
+        assert_eq!(
+            DegradationLevel::from_u8(9),
+            DegradationLevel::Level4Rollback
+        );
     }
 
     #[test]

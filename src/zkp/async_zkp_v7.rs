@@ -18,10 +18,10 @@
 //!
 //! Apache License 2.0 + Ethical Use Clause
 
-use std::collections::{HashMap, BinaryHeap, VecDeque};
 use std::cmp::Ordering;
-use std::hash::{Hash, Hasher};
 use std::collections::hash_map::DefaultHasher;
+use std::collections::{BinaryHeap, HashMap, VecDeque};
+use std::hash::{Hash, Hasher};
 
 // ─── Errors ────────────────────────────────────────────────────────────────────
 
@@ -45,7 +45,11 @@ pub enum ZKPV7Error {
     /// Cross-shard delegation failed.
     DelegationFailed(String),
     /// Resource quota exceeded.
-    QuotaExceeded { resource: String, limit: f64, used: f64 },
+    QuotaExceeded {
+        resource: String,
+        limit: f64,
+        used: f64,
+    },
 }
 
 impl std::fmt::Display for ZKPV7Error {
@@ -54,7 +58,10 @@ impl std::fmt::Display for ZKPV7Error {
             Self::ProofGenerationFailed(msg) => write!(f, "Proof generation failed: {}", msg),
             Self::VerificationFailed(msg) => write!(f, "Verification failed: {}", msg),
             Self::BatchFull => write!(f, "Batch capacity reached"),
-            Self::TimeoutExceeded { limit_ms, actual_ms } => {
+            Self::TimeoutExceeded {
+                limit_ms,
+                actual_ms,
+            } => {
                 write!(f, "Timeout: {}ms > {}ms limit", actual_ms, limit_ms)
             }
             Self::BackendUnavailable(name) => write!(f, "Backend unavailable: {}", name),
@@ -62,11 +69,23 @@ impl std::fmt::Display for ZKPV7Error {
                 write!(f, "Aggregation depth {} exceeds max {}", depth, max)
             }
             Self::InvalidLifecycleState { current, expected } => {
-                write!(f, "Invalid lifecycle state: {} (expected {})", current, expected)
+                write!(
+                    f,
+                    "Invalid lifecycle state: {} (expected {})",
+                    current, expected
+                )
             }
             Self::DelegationFailed(msg) => write!(f, "Delegation failed: {}", msg),
-            Self::QuotaExceeded { resource, limit, used } => {
-                write!(f, "Quota exceeded: {} used={:.2} limit={:.2}", resource, used, limit)
+            Self::QuotaExceeded {
+                resource,
+                limit,
+                used,
+            } => {
+                write!(
+                    f,
+                    "Quota exceeded: {} used={:.2} limit={:.2}",
+                    resource, used, limit
+                )
             }
         }
     }
@@ -259,7 +278,12 @@ pub struct ZKPProof {
 }
 
 impl ZKPProof {
-    pub fn new(id: String, statement_id: String, backend: BackendType, proof_data: Vec<u8>) -> Self {
+    pub fn new(
+        id: String,
+        statement_id: String,
+        backend: BackendType,
+        proof_data: Vec<u8>,
+    ) -> Self {
         let mut hasher = DefaultHasher::new();
         id.hash(&mut hasher);
         proof_data.hash(&mut hasher);
@@ -285,7 +309,10 @@ impl ZKPProof {
     pub fn transition_to(&mut self, new_state: ProofState) -> Result<(), ZKPV7Error> {
         let valid = match (&self.state, &new_state) {
             (ProofState::Pending, ProofState::Generating | ProofState::Expired) => true,
-            (ProofState::Generating, ProofState::Aggregated | ProofState::Verified | ProofState::Expired) => true,
+            (
+                ProofState::Generating,
+                ProofState::Aggregated | ProofState::Verified | ProofState::Expired,
+            ) => true,
             (ProofState::Aggregated, ProofState::Verified | ProofState::Expired) => true,
             (ProofState::Verified, ProofState::Expired) => true,
             (_, _) => false,
@@ -422,7 +449,8 @@ impl Eq for PriorityItem {}
 
 impl Ord for PriorityItem {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.priority.cmp(&other.priority)
+        self.priority
+            .cmp(&other.priority)
             .then_with(|| other.timestamp_ms.cmp(&self.timestamp_ms))
     }
 }
@@ -470,7 +498,12 @@ impl ThroughputProfiler {
         self.current_throughput
     }
 
-    pub fn get_recommended_batch_size(&self, min_size: usize, max_size: usize, target: f64) -> usize {
+    pub fn get_recommended_batch_size(
+        &self,
+        min_size: usize,
+        max_size: usize,
+        target: f64,
+    ) -> usize {
         if self.current_throughput < target * 0.5 {
             // Throughput is low, reduce batch size
             (self.recommended_batch_size as f64 * 0.8).max(min_size as f64) as usize
@@ -606,8 +639,14 @@ impl AsyncZKPV7 {
     }
 
     /// Update shard reputation.
-    pub fn update_shard_reputation(&mut self, shard_id: &str, reputation: f64) -> Result<(), ZKPV7Error> {
-        let shard = self.shards.get_mut(shard_id)
+    pub fn update_shard_reputation(
+        &mut self,
+        shard_id: &str,
+        reputation: f64,
+    ) -> Result<(), ZKPV7Error> {
+        let shard = self
+            .shards
+            .get_mut(shard_id)
             .ok_or_else(|| ZKPV7Error::BackendUnavailable(shard_id.to_string()))?;
         shard.reputation = reputation.clamp(0.0, 1.0);
         Ok(())
@@ -615,7 +654,9 @@ impl AsyncZKPV7 {
 
     /// Update shard resource availability.
     pub fn update_shard_credits(&mut self, shard_id: &str, credits: f64) -> Result<(), ZKPV7Error> {
-        let shard = self.shards.get_mut(shard_id)
+        let shard = self
+            .shards
+            .get_mut(shard_id)
             .ok_or_else(|| ZKPV7Error::BackendUnavailable(shard_id.to_string()))?;
         shard.available_credits = credits;
         Ok(())
@@ -642,22 +683,29 @@ impl AsyncZKPV7 {
     /// Start a new proof batch.
     pub fn start_batch(&mut self, batch_id: String) -> Result<(), ZKPV7Error> {
         if self.batches.contains_key(&batch_id) {
-            return Err(ZKPV7Error::ProofGenerationFailed("Batch already exists".to_string()));
+            return Err(ZKPV7Error::ProofGenerationFailed(
+                "Batch already exists".to_string(),
+            ));
         }
-        self.batches.insert(batch_id.clone(), ProofBatch::new(batch_id));
+        self.batches
+            .insert(batch_id.clone(), ProofBatch::new(batch_id));
         Ok(())
     }
 
     /// Fill a batch from the priority queue.
     pub fn fill_batch(&mut self, batch_id: &str, max_count: usize) -> Result<usize, ZKPV7Error> {
-        let batch = self.batches.get_mut(batch_id)
+        let batch = self
+            .batches
+            .get_mut(batch_id)
             .ok_or_else(|| ZKPV7Error::ProofGenerationFailed("Batch not found".to_string()))?;
         let batch_size = if self.config.adaptive_batching {
-            self.profiler.get_recommended_batch_size(
-                self.config.min_batch_size,
-                self.config.max_batch_size,
-                self.config.target_throughput,
-            ).min(max_count)
+            self.profiler
+                .get_recommended_batch_size(
+                    self.config.min_batch_size,
+                    self.config.max_batch_size,
+                    self.config.target_throughput,
+                )
+                .min(max_count)
         } else {
             max_count.min(self.config.max_batch_size)
         };
@@ -674,7 +722,9 @@ impl AsyncZKPV7 {
     /// Generate proofs for a batch.
     pub fn generate_batch_proofs(&mut self, batch_id: &str) -> Result<Vec<ZKPProof>, ZKPV7Error> {
         let statements = {
-            let batch = self.batches.get(batch_id)
+            let batch = self
+                .batches
+                .get(batch_id)
                 .ok_or_else(|| ZKPV7Error::ProofGenerationFailed("Batch not found".to_string()))?;
             if batch.is_empty() {
                 return Ok(Vec::new());
@@ -711,7 +761,9 @@ impl AsyncZKPV7 {
         aggregation_id: String,
     ) -> Result<ZKPProof, ZKPV7Error> {
         if proof_ids.is_empty() {
-            return Err(ZKPV7Error::ProofGenerationFailed("No proofs to aggregate".to_string()));
+            return Err(ZKPV7Error::ProofGenerationFailed(
+                "No proofs to aggregate".to_string(),
+            ));
         }
         // Determine max depth
         let mut max_depth = 0;
@@ -753,9 +805,14 @@ impl AsyncZKPV7 {
     /// Verify a proof.
     pub fn verify_proof(&mut self, proof_id: &str) -> Result<VerificationResult, ZKPV7Error> {
         let (valid, backend) = {
-            let proof = self.proofs.get(proof_id)
+            let proof = self
+                .proofs
+                .get(proof_id)
                 .ok_or_else(|| ZKPV7Error::VerificationFailed("Proof not found".to_string()))?;
-            (!proof.proof_data.is_empty() && proof.proof_hash.len() == 16, proof.backend)
+            (
+                !proof.proof_data.is_empty() && proof.proof_hash.len() == 16,
+                proof.backend,
+            )
         };
         let start = current_timestamp_ms();
         let time_ms = current_timestamp_ms().saturating_sub(start);
@@ -769,15 +826,22 @@ impl AsyncZKPV7 {
             valid,
             verification_time_ms: time_ms,
             backend,
-            error: if valid { None } else { Some("Invalid proof data".to_string()) },
+            error: if valid {
+                None
+            } else {
+                Some("Invalid proof data".to_string())
+            },
         })
     }
 
     /// Select best shard for delegation.
     pub fn select_best_shard(&self) -> Option<&ShardContext> {
-        self.shards.values()
+        self.shards
+            .values()
             .filter(|s| s.healthy && s.reputation >= self.config.delegation_reputation_threshold)
-            .max_by_key(|s| (s.delegation_score(self.config.delegation_reputation_threshold) * 1000.0) as u64)
+            .max_by_key(|s| {
+                (s.delegation_score(self.config.delegation_reputation_threshold) * 1000.0) as u64
+            })
     }
 
     /// Get current throughput estimate.
@@ -796,7 +860,9 @@ impl AsyncZKPV7 {
 
     /// Clean up expired proofs.
     pub fn cleanup_expired(&mut self) -> usize {
-        let expired: Vec<String> = self.proofs.iter()
+        let expired: Vec<String> = self
+            .proofs
+            .iter()
             .filter(|(_, p)| p.is_expired(self.config.proof_ttl_ms))
             .map(|(id, _)| id.clone())
             .collect();
@@ -832,7 +898,11 @@ impl AsyncZKPV7 {
         }
     }
 
-    fn generate_proof(&mut self, statement: &ZKPStatement, backend: BackendType) -> Result<ZKPProof, ZKPV7Error> {
+    fn generate_proof(
+        &mut self,
+        statement: &ZKPStatement,
+        backend: BackendType,
+    ) -> Result<ZKPProof, ZKPV7Error> {
         let start = current_timestamp_ms();
         // Compute proof data based on backend
         let proof_data = match backend {
@@ -927,14 +997,19 @@ mod tests {
     #[test]
     fn test_register_shard() {
         let mut engine = AsyncZKPV7::default();
-        assert_eq!(engine.register_shard(make_shard("s1", BackendType::Halo2)), Ok(()));
+        assert_eq!(
+            engine.register_shard(make_shard("s1", BackendType::Halo2)),
+            Ok(())
+        );
         assert!(engine.shards.contains_key("s1"));
     }
 
     #[test]
     fn test_update_shard_reputation() {
         let mut engine = AsyncZKPV7::default();
-        engine.register_shard(make_shard("s1", BackendType::Hash)).unwrap();
+        engine
+            .register_shard(make_shard("s1", BackendType::Hash))
+            .unwrap();
         engine.update_shard_reputation("s1", 0.95).unwrap();
         assert_eq!(engine.shards.get("s1").unwrap().reputation, 0.95);
     }
@@ -942,7 +1017,9 @@ mod tests {
     #[test]
     fn test_update_shard_credits() {
         let mut engine = AsyncZKPV7::default();
-        engine.register_shard(make_shard("s1", BackendType::Hash)).unwrap();
+        engine
+            .register_shard(make_shard("s1", BackendType::Hash))
+            .unwrap();
         engine.update_shard_credits("s1", 500.0).unwrap();
         assert_eq!(engine.shards.get("s1").unwrap().available_credits, 500.0);
     }
@@ -950,7 +1027,10 @@ mod tests {
     #[test]
     fn test_submit_statement() {
         let mut engine = AsyncZKPV7::default();
-        assert_eq!(engine.submit_statement(make_statement("st1", "p1", 10)), Ok(()));
+        assert_eq!(
+            engine.submit_statement(make_statement("st1", "p1", 10)),
+            Ok(())
+        );
         assert_eq!(engine.queue.len(), 1);
     }
 
@@ -973,7 +1053,9 @@ mod tests {
         let mut engine = AsyncZKPV7::default();
         engine.start_batch("b1".to_string()).unwrap();
         for i in 0..10 {
-            engine.submit_statement(make_statement(&format!("st{}", i), "p1", 5)).unwrap();
+            engine
+                .submit_statement(make_statement(&format!("st{}", i), "p1", 5))
+                .unwrap();
         }
         let count = engine.fill_batch("b1", 5).unwrap();
         assert_eq!(count, 5);
@@ -982,10 +1064,14 @@ mod tests {
     #[test]
     fn test_generate_batch_proofs() {
         let mut engine = AsyncZKPV7::default();
-        engine.register_shard(make_shard("s1", BackendType::Hash)).unwrap();
+        engine
+            .register_shard(make_shard("s1", BackendType::Hash))
+            .unwrap();
         engine.start_batch("b1".to_string()).unwrap();
         for i in 0..5 {
-            engine.submit_statement(make_statement(&format!("st{}", i), "p1", 5)).unwrap();
+            engine
+                .submit_statement(make_statement(&format!("st{}", i), "p1", 5))
+                .unwrap();
         }
         engine.fill_batch("b1", 5).unwrap();
         let proofs = engine.generate_batch_proofs("b1").unwrap();
@@ -995,7 +1081,9 @@ mod tests {
     #[test]
     fn test_verify_proof() {
         let mut engine = AsyncZKPV7::default();
-        engine.register_shard(make_shard("s1", BackendType::Hash)).unwrap();
+        engine
+            .register_shard(make_shard("s1", BackendType::Hash))
+            .unwrap();
         let stmt = make_statement("st1", "p1", 10);
         let proof = engine.generate_proof(&stmt, BackendType::Hash).unwrap();
         let result = engine.verify_proof(&proof.id).unwrap();
@@ -1005,10 +1093,18 @@ mod tests {
     #[test]
     fn test_aggregate_proofs() {
         let mut engine = AsyncZKPV7::default();
-        engine.register_shard(make_shard("s1", BackendType::Hash)).unwrap();
-        let p1 = engine.generate_proof(&make_statement("s1", "p1", 10), BackendType::Hash).unwrap();
-        let p2 = engine.generate_proof(&make_statement("s2", "p1", 10), BackendType::Hash).unwrap();
-        let agg = engine.aggregate_proofs(&[p1.id, p2.id], "agg1".to_string()).unwrap();
+        engine
+            .register_shard(make_shard("s1", BackendType::Hash))
+            .unwrap();
+        let p1 = engine
+            .generate_proof(&make_statement("s1", "p1", 10), BackendType::Hash)
+            .unwrap();
+        let p2 = engine
+            .generate_proof(&make_statement("s2", "p1", 10), BackendType::Hash)
+            .unwrap();
+        let agg = engine
+            .aggregate_proofs(&[p1.id, p2.id], "agg1".to_string())
+            .unwrap();
         assert_eq!(agg.aggregation_depth, 1);
         assert_eq!(agg.component_ids.len(), 2);
     }
@@ -1016,12 +1112,24 @@ mod tests {
     #[test]
     fn test_recursive_aggregation() {
         let mut engine = AsyncZKPV7::default();
-        engine.register_shard(make_shard("s1", BackendType::Hash)).unwrap();
-        let p1 = engine.generate_proof(&make_statement("s1", "p1", 10), BackendType::Hash).unwrap();
-        let p2 = engine.generate_proof(&make_statement("s2", "p1", 10), BackendType::Hash).unwrap();
-        let a1 = engine.aggregate_proofs(&[p1.id, p2.id], "a1".to_string()).unwrap();
-        let p3 = engine.generate_proof(&make_statement("s3", "p1", 10), BackendType::Hash).unwrap();
-        let a2 = engine.aggregate_proofs(&[a1.id, p3.id], "a2".to_string()).unwrap();
+        engine
+            .register_shard(make_shard("s1", BackendType::Hash))
+            .unwrap();
+        let p1 = engine
+            .generate_proof(&make_statement("s1", "p1", 10), BackendType::Hash)
+            .unwrap();
+        let p2 = engine
+            .generate_proof(&make_statement("s2", "p1", 10), BackendType::Hash)
+            .unwrap();
+        let a1 = engine
+            .aggregate_proofs(&[p1.id, p2.id], "a1".to_string())
+            .unwrap();
+        let p3 = engine
+            .generate_proof(&make_statement("s3", "p1", 10), BackendType::Hash)
+            .unwrap();
+        let a2 = engine
+            .aggregate_proofs(&[a1.id, p3.id], "a2".to_string())
+            .unwrap();
         assert_eq!(a2.aggregation_depth, 2);
     }
 
@@ -1029,18 +1137,36 @@ mod tests {
     fn test_aggregation_depth_exceeded() {
         let mut engine = AsyncZKPV7::default();
         engine.config.max_aggregation_depth = 1;
-        engine.register_shard(make_shard("s1", BackendType::Hash)).unwrap();
-        let p1 = engine.generate_proof(&make_statement("s1", "p1", 10), BackendType::Hash).unwrap();
-        let p2 = engine.generate_proof(&make_statement("s2", "p1", 10), BackendType::Hash).unwrap();
-        let a1 = engine.aggregate_proofs(&[p1.id, p2.id], "a1".to_string()).unwrap();
-        let p3 = engine.generate_proof(&make_statement("s3", "p1", 10), BackendType::Hash).unwrap();
+        engine
+            .register_shard(make_shard("s1", BackendType::Hash))
+            .unwrap();
+        let p1 = engine
+            .generate_proof(&make_statement("s1", "p1", 10), BackendType::Hash)
+            .unwrap();
+        let p2 = engine
+            .generate_proof(&make_statement("s2", "p1", 10), BackendType::Hash)
+            .unwrap();
+        let a1 = engine
+            .aggregate_proofs(&[p1.id, p2.id], "a1".to_string())
+            .unwrap();
+        let p3 = engine
+            .generate_proof(&make_statement("s3", "p1", 10), BackendType::Hash)
+            .unwrap();
         let result = engine.aggregate_proofs(&[a1.id, p3.id], "a2".to_string());
-        assert!(matches!(result, Err(ZKPV7Error::AggregationDepthExceeded { .. })));
+        assert!(matches!(
+            result,
+            Err(ZKPV7Error::AggregationDepthExceeded { .. })
+        ));
     }
 
     #[test]
     fn test_proof_lifecycle() {
-        let mut proof = ZKPProof::new("p1".to_string(), "s1".to_string(), BackendType::Hash, vec![1, 2]);
+        let mut proof = ZKPProof::new(
+            "p1".to_string(),
+            "s1".to_string(),
+            BackendType::Hash,
+            vec![1, 2],
+        );
         assert_eq!(proof.state, ProofState::Pending);
         proof.transition_to(ProofState::Generating).unwrap();
         assert_eq!(proof.state, ProofState::Generating);
@@ -1050,7 +1176,12 @@ mod tests {
 
     #[test]
     fn test_proof_lifecycle_invalid() {
-        let mut proof = ZKPProof::new("p1".to_string(), "s1".to_string(), BackendType::Hash, vec![1]);
+        let mut proof = ZKPProof::new(
+            "p1".to_string(),
+            "s1".to_string(),
+            BackendType::Hash,
+            vec![1],
+        );
         assert!(matches!(
             proof.transition_to(ProofState::Aggregated),
             Err(ZKPV7Error::InvalidLifecycleState { .. })
@@ -1060,7 +1191,9 @@ mod tests {
     #[test]
     fn test_select_best_shard() {
         let mut engine = AsyncZKPV7::default();
-        engine.register_shard(make_shard("s1", BackendType::Halo2)).unwrap();
+        engine
+            .register_shard(make_shard("s1", BackendType::Halo2))
+            .unwrap();
         let shard = ShardContext::new("s2".to_string(), 500.0, 0.5, BackendType::Hash);
         engine.register_shard(shard).unwrap();
         let best = engine.select_best_shard();
@@ -1072,8 +1205,12 @@ mod tests {
     fn test_cleanup_expired() {
         let mut engine = AsyncZKPV7::default();
         engine.config.proof_ttl_ms = 1;
-        engine.register_shard(make_shard("s1", BackendType::Hash)).unwrap();
-        let proof = engine.generate_proof(&make_statement("s1", "p1", 10), BackendType::Hash).unwrap();
+        engine
+            .register_shard(make_shard("s1", BackendType::Hash))
+            .unwrap();
+        let proof = engine
+            .generate_proof(&make_statement("s1", "p1", 10), BackendType::Hash)
+            .unwrap();
         std::thread::sleep(std::time::Duration::from_millis(10));
         let count = engine.cleanup_expired();
         assert!(count >= 1);
@@ -1102,9 +1239,13 @@ mod tests {
     fn test_quota_exceeded() {
         let mut engine = AsyncZKPV7::default();
         engine.config.resource_quota = 1.0;
-        engine.register_shard(make_shard("s1", BackendType::Hash)).unwrap();
+        engine
+            .register_shard(make_shard("s1", BackendType::Hash))
+            .unwrap();
         engine.start_batch("b1".to_string()).unwrap();
-        engine.submit_statement(make_statement("st1", "p1", 5)).unwrap();
+        engine
+            .submit_statement(make_statement("st1", "p1", 5))
+            .unwrap();
         engine.fill_batch("b1", 1).unwrap();
         assert!(matches!(
             engine.generate_batch_proofs("b1"),
@@ -1115,8 +1256,12 @@ mod tests {
     #[test]
     fn test_reset_stats() {
         let mut engine = AsyncZKPV7::default();
-        engine.register_shard(make_shard("s1", BackendType::Hash)).unwrap();
-        engine.generate_proof(&make_statement("s1", "p1", 10), BackendType::Hash).unwrap();
+        engine
+            .register_shard(make_shard("s1", BackendType::Hash))
+            .unwrap();
+        engine
+            .generate_proof(&make_statement("s1", "p1", 10), BackendType::Hash)
+            .unwrap();
         assert!(engine.stats.proofs_generated > 0);
         engine.reset_stats();
         assert_eq!(engine.stats.proofs_generated, 0);
@@ -1151,7 +1296,12 @@ mod tests {
 
     #[test]
     fn test_proof_is_expired() {
-        let proof = ZKPProof::new("p1".to_string(), "s1".to_string(), BackendType::Hash, vec![1]);
+        let proof = ZKPProof::new(
+            "p1".to_string(),
+            "s1".to_string(),
+            BackendType::Hash,
+            vec![1],
+        );
         assert!(!proof.is_expired(999_999_999));
     }
 
@@ -1171,7 +1321,10 @@ mod tests {
     #[test]
     fn test_circuit_type_display() {
         assert_eq!(format!("{}", CircuitType::Arithmetic), "Arithmetic");
-        assert_eq!(format!("{}", CircuitType::Custom("test".to_string())), "Custom(test)");
+        assert_eq!(
+            format!("{}", CircuitType::Custom("test".to_string())),
+            "Custom(test)"
+        );
     }
 
     #[test]
@@ -1233,9 +1386,15 @@ mod tests {
     #[test]
     fn test_queue_priority_ordering() {
         let mut engine = AsyncZKPV7::default();
-        engine.submit_statement(make_statement("low", "p1", 1)).unwrap();
-        engine.submit_statement(make_statement("high", "p1", 100)).unwrap();
-        engine.submit_statement(make_statement("mid", "p1", 50)).unwrap();
+        engine
+            .submit_statement(make_statement("low", "p1", 1))
+            .unwrap();
+        engine
+            .submit_statement(make_statement("high", "p1", 100))
+            .unwrap();
+        engine
+            .submit_statement(make_statement("mid", "p1", 50))
+            .unwrap();
         let first = engine.queue.pop().unwrap();
         assert_eq!(first.statement.id, "high");
     }
@@ -1254,22 +1413,47 @@ mod tests {
     fn test_multiple_aggregation_levels() {
         let mut engine = AsyncZKPV7::default();
         engine.config.max_aggregation_depth = 4;
-        engine.register_shard(make_shard("s1", BackendType::Hash)).unwrap();
+        engine
+            .register_shard(make_shard("s1", BackendType::Hash))
+            .unwrap();
         let proofs: Vec<_> = (0..4)
-            .map(|i| engine.generate_proof(&make_statement(&format!("s{}", i), "p1", 10), BackendType::Hash).unwrap())
+            .map(|i| {
+                engine
+                    .generate_proof(
+                        &make_statement(&format!("s{}", i), "p1", 10),
+                        BackendType::Hash,
+                    )
+                    .unwrap()
+            })
             .collect();
-        let a1 = engine.aggregate_proofs(&[proofs[0].id.clone(), proofs[1].id.clone()], "a1".to_string()).unwrap();
-        let a2 = engine.aggregate_proofs(&[proofs[2].id.clone(), proofs[3].id.clone()], "a2".to_string()).unwrap();
-        let a3 = engine.aggregate_proofs(&[a1.id, a2.id], "a3".to_string()).unwrap();
+        let a1 = engine
+            .aggregate_proofs(
+                &[proofs[0].id.clone(), proofs[1].id.clone()],
+                "a1".to_string(),
+            )
+            .unwrap();
+        let a2 = engine
+            .aggregate_proofs(
+                &[proofs[2].id.clone(), proofs[3].id.clone()],
+                "a2".to_string(),
+            )
+            .unwrap();
+        let a3 = engine
+            .aggregate_proofs(&[a1.id, a2.id], "a3".to_string())
+            .unwrap();
         assert_eq!(a3.aggregation_depth, 2);
     }
 
     #[test]
     fn test_resource_usage_tracking() {
         let mut engine = AsyncZKPV7::default();
-        engine.register_shard(make_shard("s1", BackendType::Hash)).unwrap();
+        engine
+            .register_shard(make_shard("s1", BackendType::Hash))
+            .unwrap();
         engine.start_batch("b1".to_string()).unwrap();
-        engine.submit_statement(make_statement("s1", "p1", 5)).unwrap();
+        engine
+            .submit_statement(make_statement("s1", "p1", 5))
+            .unwrap();
         engine.fill_batch("b1", 1).unwrap();
         engine.generate_batch_proofs("b1").unwrap();
         assert!(engine.resource_used > 0.0);

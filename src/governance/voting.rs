@@ -179,11 +179,7 @@ impl VotingManager {
     }
 
     /// Registrar un voto
-    pub fn cast_vote(
-        &mut self,
-        proposal: &Proposal,
-        vote: Vote,
-    ) -> Result<(), VotingError> {
+    pub fn cast_vote(&mut self, proposal: &Proposal, vote: Vote) -> Result<(), VotingError> {
         // Verificar que la propuesta está en votación
         if proposal.state != ProposalState::Voting {
             return Err(VotingError::VotingNotActive(proposal.id));
@@ -223,10 +219,7 @@ impl VotingManager {
     }
 
     /// Resolver votación y determinar resultado
-    pub fn resolve_vote(
-        &mut self,
-        proposal: &Proposal,
-    ) -> Result<VoteResult, VotingError> {
+    pub fn resolve_vote(&mut self, proposal: &Proposal) -> Result<VoteResult, VotingError> {
         let proposal_votes = self
             .votes
             .get(&proposal.id)
@@ -326,9 +319,7 @@ impl VotingManager {
     }
 
     /// Verificar y procesar propuestas expiradas
-    pub fn check_expired_proposals(
-        &self,
-    ) -> Vec<Uuid> {
+    pub fn check_expired_proposals(&self) -> Vec<Uuid> {
         self.votes
             .keys()
             .filter(|_| false) // TODO: check actual proposal expiry from ProposalManager

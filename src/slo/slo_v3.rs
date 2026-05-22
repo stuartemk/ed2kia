@@ -246,11 +246,7 @@ impl SLOv3Engine {
     /// Evalúa todos los SLO registrados.
     pub fn evaluate_all(&mut self) -> HashMap<String, SLOv3Result> {
         let mut results = HashMap::new();
-        let names: Vec<String> = self
-            .slo_entries
-            .keys()
-            .cloned()
-            .collect();
+        let names: Vec<String> = self.slo_entries.keys().cloned().collect();
         for name in names {
             if let Ok(result) = self.evaluate(&name) {
                 results.insert(name, result);
@@ -336,10 +332,7 @@ impl SLOv3Engine {
     }
 
     /// Genera predicción basada en datos crudos (para evitar borrow conflicts).
-    fn predict_from_data(
-        values: &[f64],
-        config: &SLOv3Config,
-    ) -> Option<PredictionResult> {
+    fn predict_from_data(values: &[f64], config: &SLOv3Config) -> Option<PredictionResult> {
         let n = values.len();
         if n < config.min_prediction_points {
             return None;
@@ -380,10 +373,12 @@ fn do_linear_regression(
     let sum_x: f64 = (0..n).map(|i| i as f64).sum();
     let sum_y: f64 = values.iter().sum();
     let sum_xy: f64 = (0..n).map(|i| i as f64 * values[i]).sum();
-    let sum_x2: f64 = (0..n).map(|i| {
-        let x = i as f64;
-        x * x
-    }).sum();
+    let sum_x2: f64 = (0..n)
+        .map(|i| {
+            let x = i as f64;
+            x * x
+        })
+        .sum();
 
     let denominator = (n as f64) * sum_x2 - sum_x * sum_x;
     if denominator.abs() < 1e-10 {
@@ -569,7 +564,9 @@ mod tests {
         engine.register_slo(config);
         // Strong descending trend
         for i in 0..15 {
-            engine.record_metric("test", (100.0 - i as f64 * 3.0)).unwrap();
+            engine
+                .record_metric("test", (100.0 - i as f64 * 3.0))
+                .unwrap();
         }
         let result = engine.evaluate("test").unwrap();
         assert_eq!(result.status, SLOv3Status::PredictiveBreach);

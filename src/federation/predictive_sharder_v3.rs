@@ -166,7 +166,13 @@ mod internal {
             if self.load_history.is_empty() {
                 return self.ema_load;
             }
-            let recent: Vec<f64> = self.load_history.iter().rev().take(horizon).cloned().collect();
+            let recent: Vec<f64> = self
+                .load_history
+                .iter()
+                .rev()
+                .take(horizon)
+                .cloned()
+                .collect();
             if recent.is_empty() {
                 return self.ema_load;
             }
@@ -191,10 +197,22 @@ mod internal {
     #[derive(Debug, Clone, PartialEq)]
     pub enum ShardDecision {
         NoAction,
-        CreateShard { shard_id: String, model_id: String },
-        SplitShard { shard_id: String, new_shard_id: String },
-        MergeShards { shard_a: String, shard_b: String, target: String },
-        RetireShard { shard_id: String },
+        CreateShard {
+            shard_id: String,
+            model_id: String,
+        },
+        SplitShard {
+            shard_id: String,
+            new_shard_id: String,
+        },
+        MergeShards {
+            shard_a: String,
+            shard_b: String,
+            target: String,
+        },
+        RetireShard {
+            shard_id: String,
+        },
     }
 
     impl fmt::Display for ShardDecision {
@@ -204,10 +222,17 @@ mod internal {
                 Self::CreateShard { shard_id, model_id } => {
                     write!(f, "Create shard {} for model {}", shard_id, model_id)
                 }
-                Self::SplitShard { shard_id, new_shard_id } => {
+                Self::SplitShard {
+                    shard_id,
+                    new_shard_id,
+                } => {
                     write!(f, "Split shard {} into {}", shard_id, new_shard_id)
                 }
-                Self::MergeShards { shard_a, shard_b, target } => {
+                Self::MergeShards {
+                    shard_a,
+                    shard_b,
+                    target,
+                } => {
                     write!(f, "Merge {} and {} into {}", shard_a, shard_b, target)
                 }
                 Self::RetireShard { shard_id } => {
@@ -314,7 +339,10 @@ mod internal {
             Ok(())
         }
 
-        pub fn auto_create_shard(&mut self, model_id: String) -> Result<String, PredictiveSharderV3Error> {
+        pub fn auto_create_shard(
+            &mut self,
+            model_id: String,
+        ) -> Result<String, PredictiveSharderV3Error> {
             if !self.config.auto_create {
                 return Err(PredictiveSharderV3Error::InvalidConfig(
                     "Auto-create disabled".to_string(),
@@ -332,9 +360,10 @@ mod internal {
             shard_id: String,
             capacity: f64,
         ) -> Result<(), PredictiveSharderV3Error> {
-            let shard = self.shards.get_mut(&shard_id).ok_or_else(|| {
-                PredictiveSharderV3Error::ShardNotFound(shard_id.clone())
-            })?;
+            let shard = self
+                .shards
+                .get_mut(&shard_id)
+                .ok_or_else(|| PredictiveSharderV3Error::ShardNotFound(shard_id.clone()))?;
             if shard.node_count() >= self.config.max_nodes_per_shard {
                 return Err(PredictiveSharderV3Error::CapacityExceeded(format!(
                     "Shard {} at max capacity",
@@ -351,12 +380,14 @@ mod internal {
             node_id: &str,
             capacity: f64,
         ) -> Result<(), PredictiveSharderV3Error> {
-            let shard_id = self.nodes.get(node_id).ok_or_else(|| {
-                PredictiveSharderV3Error::NodeNotFound(node_id.to_string())
-            })?;
-            let shard = self.shards.get_mut(shard_id).ok_or_else(|| {
-                PredictiveSharderV3Error::ShardNotFound(shard_id.clone())
-            })?;
+            let shard_id = self
+                .nodes
+                .get(node_id)
+                .ok_or_else(|| PredictiveSharderV3Error::NodeNotFound(node_id.to_string()))?;
+            let shard = self
+                .shards
+                .get_mut(shard_id)
+                .ok_or_else(|| PredictiveSharderV3Error::ShardNotFound(shard_id.clone()))?;
             shard.remove_node(node_id, capacity);
             self.nodes.remove(node_id);
             Ok(())
@@ -367,9 +398,10 @@ mod internal {
             shard_id: &str,
             new_load: f64,
         ) -> Result<(), PredictiveSharderV3Error> {
-            let shard = self.shards.get_mut(shard_id).ok_or_else(|| {
-                PredictiveSharderV3Error::ShardNotFound(shard_id.to_string())
-            })?;
+            let shard = self
+                .shards
+                .get_mut(shard_id)
+                .ok_or_else(|| PredictiveSharderV3Error::ShardNotFound(shard_id.to_string()))?;
             shard.update_load(
                 new_load,
                 self.config.load_alpha,
@@ -432,13 +464,11 @@ mod internal {
             decisions
         }
 
-        pub fn predict_shard_load(
-            &self,
-            shard_id: &str,
-        ) -> Result<f64, PredictiveSharderV3Error> {
-            let shard = self.shards.get(shard_id).ok_or_else(|| {
-                PredictiveSharderV3Error::ShardNotFound(shard_id.to_string())
-            })?;
+        pub fn predict_shard_load(&self, shard_id: &str) -> Result<f64, PredictiveSharderV3Error> {
+            let shard = self
+                .shards
+                .get(shard_id)
+                .ok_or_else(|| PredictiveSharderV3Error::ShardNotFound(shard_id.to_string()))?;
             Ok(shard.predict_load(self.config.prediction_horizon))
         }
 
@@ -446,9 +476,10 @@ mod internal {
             &self,
             shard_id: &str,
         ) -> Result<f64, PredictiveSharderV3Error> {
-            let shard = self.shards.get(shard_id).ok_or_else(|| {
-                PredictiveSharderV3Error::ShardNotFound(shard_id.to_string())
-            })?;
+            let shard = self
+                .shards
+                .get(shard_id)
+                .ok_or_else(|| PredictiveSharderV3Error::ShardNotFound(shard_id.to_string()))?;
             Ok(shard.predicted_utilization(self.config.prediction_horizon))
         }
 
@@ -504,15 +535,22 @@ mod internal {
         #[test]
         fn test_create_shard() {
             let mut engine = PredictiveSharderV3::default();
-            engine.create_shard("s1".to_string(), "m1".to_string()).unwrap();
+            engine
+                .create_shard("s1".to_string(), "m1".to_string())
+                .unwrap();
             assert_eq!(engine.shards.len(), 1);
         }
 
         #[test]
         fn test_create_shard_duplicate() {
             let mut engine = PredictiveSharderV3::default();
-            engine.create_shard("s1".to_string(), "m1".to_string()).unwrap();
-            match engine.create_shard("s1".to_string(), "m1".to_string()).unwrap_err() {
+            engine
+                .create_shard("s1".to_string(), "m1".to_string())
+                .unwrap();
+            match engine
+                .create_shard("s1".to_string(), "m1".to_string())
+                .unwrap_err()
+            {
                 PredictiveSharderV3Error::ShardExists(id) => assert_eq!(id, "s1"),
                 e => panic!("Expected ShardExists, got {}", e),
             }
@@ -544,8 +582,12 @@ mod internal {
         #[test]
         fn test_assign_node_to_shard() {
             let mut engine = PredictiveSharderV3::default();
-            engine.create_shard("s1".to_string(), "m1".to_string()).unwrap();
-            engine.assign_node_to_shard("n1".to_string(), "s1".to_string(), 100.0).unwrap();
+            engine
+                .create_shard("s1".to_string(), "m1".to_string())
+                .unwrap();
+            engine
+                .assign_node_to_shard("n1".to_string(), "s1".to_string(), 100.0)
+                .unwrap();
             assert_eq!(engine.nodes.len(), 1);
         }
 
@@ -564,8 +606,12 @@ mod internal {
         #[test]
         fn test_remove_node_from_shard() {
             let mut engine = PredictiveSharderV3::default();
-            engine.create_shard("s1".to_string(), "m1".to_string()).unwrap();
-            engine.assign_node_to_shard("n1".to_string(), "s1".to_string(), 100.0).unwrap();
+            engine
+                .create_shard("s1".to_string(), "m1".to_string())
+                .unwrap();
+            engine
+                .assign_node_to_shard("n1".to_string(), "s1".to_string(), 100.0)
+                .unwrap();
             engine.remove_node_from_shard("n1", 100.0).unwrap();
             assert_eq!(engine.nodes.len(), 0);
         }
@@ -582,7 +628,9 @@ mod internal {
         #[test]
         fn test_update_shard_load() {
             let mut engine = PredictiveSharderV3::default();
-            engine.create_shard("s1".to_string(), "m1".to_string()).unwrap();
+            engine
+                .create_shard("s1".to_string(), "m1".to_string())
+                .unwrap();
             engine.update_shard_load("s1", 50.0).unwrap();
             let shard = engine.shards.get("s1").unwrap();
             assert!(shard.current_load > 0.0);
@@ -598,7 +646,9 @@ mod internal {
         #[test]
         fn test_predict_shard_load() {
             let mut engine = PredictiveSharderV3::default();
-            engine.create_shard("s1".to_string(), "m1".to_string()).unwrap();
+            engine
+                .create_shard("s1".to_string(), "m1".to_string())
+                .unwrap();
             engine.update_shard_load("s1", 50.0).unwrap();
             let predicted = engine.predict_shard_load("s1").unwrap();
             assert!(predicted > 0.0);
@@ -607,7 +657,9 @@ mod internal {
         #[test]
         fn test_predict_shard_utilization() {
             let mut engine = PredictiveSharderV3::default();
-            engine.create_shard("s1".to_string(), "m1".to_string()).unwrap();
+            engine
+                .create_shard("s1".to_string(), "m1".to_string())
+                .unwrap();
             engine
                 .assign_node_to_shard("n1".to_string(), "s1".to_string(), 100.0)
                 .unwrap();
@@ -707,7 +759,9 @@ mod internal {
         #[test]
         fn test_full_lifecycle() {
             let mut engine = PredictiveSharderV3::default();
-            engine.create_shard("s1".to_string(), "m1".to_string()).unwrap();
+            engine
+                .create_shard("s1".to_string(), "m1".to_string())
+                .unwrap();
             engine
                 .assign_node_to_shard("n1".to_string(), "s1".to_string(), 100.0)
                 .unwrap();
@@ -725,8 +779,13 @@ mod internal {
                 ..make_config()
             };
             let mut engine = PredictiveSharderV3::new(config);
-            engine.create_shard("s1".to_string(), "m1".to_string()).unwrap();
-            match engine.create_shard("s2".to_string(), "m1".to_string()).unwrap_err() {
+            engine
+                .create_shard("s1".to_string(), "m1".to_string())
+                .unwrap();
+            match engine
+                .create_shard("s2".to_string(), "m1".to_string())
+                .unwrap_err()
+            {
                 PredictiveSharderV3Error::CapacityExceeded(msg) => {
                     assert!(msg.contains("Maximum"))
                 }
@@ -741,7 +800,9 @@ mod internal {
                 ..make_config()
             };
             let mut engine = PredictiveSharderV3::new(config);
-            engine.create_shard("s1".to_string(), "m1".to_string()).unwrap();
+            engine
+                .create_shard("s1".to_string(), "m1".to_string())
+                .unwrap();
             engine
                 .assign_node_to_shard("n1".to_string(), "s1".to_string(), 100.0)
                 .unwrap();
@@ -759,7 +820,9 @@ mod internal {
         #[test]
         fn test_retire_empty_shard() {
             let mut engine = PredictiveSharderV3::default();
-            engine.create_shard("s1".to_string(), "m1".to_string()).unwrap();
+            engine
+                .create_shard("s1".to_string(), "m1".to_string())
+                .unwrap();
             let decisions = engine.generate_decisions();
             assert!(matches!(decisions[0], ShardDecision::RetireShard { .. }));
         }
@@ -767,7 +830,9 @@ mod internal {
         #[test]
         fn test_get_shard() {
             let mut engine = PredictiveSharderV3::default();
-            engine.create_shard("s1".to_string(), "m1".to_string()).unwrap();
+            engine
+                .create_shard("s1".to_string(), "m1".to_string())
+                .unwrap();
             assert!(engine.get_shard("s1").is_some());
             assert!(engine.get_shard("unknown").is_none());
         }
@@ -775,7 +840,9 @@ mod internal {
         #[test]
         fn test_get_node_shard() {
             let mut engine = PredictiveSharderV3::default();
-            engine.create_shard("s1".to_string(), "m1".to_string()).unwrap();
+            engine
+                .create_shard("s1".to_string(), "m1".to_string())
+                .unwrap();
             engine
                 .assign_node_to_shard("n1".to_string(), "s1".to_string(), 100.0)
                 .unwrap();
@@ -835,11 +902,6 @@ mod internal {
 
 #[cfg(feature = "v1.6-sprint3")]
 pub use internal::{
-    PredictiveSharderV3,
-    PredictiveSharderV3Config,
-    PredictiveSharderV3Error,
-    ShardDecision,
-    ShardState,
-    ShardStateV3,
-    SharderV3Stats,
+    PredictiveSharderV3, PredictiveSharderV3Config, PredictiveSharderV3Error, ShardDecision,
+    ShardState, ShardStateV3, SharderV3Stats,
 };

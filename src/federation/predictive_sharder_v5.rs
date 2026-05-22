@@ -204,8 +204,7 @@ mod internal {
     // ---------------------------------------------------------------------------
 
     /// Statistics for predictive sharding v5.
-    #[derive(Debug, Clone)]
-    #[derive(Default)]
+    #[derive(Debug, Clone, Default)]
     pub struct SharderV5Stats {
         /// Total predictions made.
         pub predictions_made: usize,
@@ -218,7 +217,6 @@ mod internal {
         /// Prediction accuracy samples.
         pub accuracy_samples: usize,
     }
-
 
     // ---------------------------------------------------------------------------
     // Predictive Sharder V5 Engine
@@ -243,21 +241,16 @@ mod internal {
 
         /// Register a shard for tracking.
         pub fn register_shard(&mut self, shard_id: String) {
-            self.histories.insert(
-                shard_id.clone(),
-                ShardHistory::new(shard_id),
-            );
+            self.histories
+                .insert(shard_id.clone(), ShardHistory::new(shard_id));
         }
 
         /// Record load for a shard.
-        pub fn record_load(
-            &mut self,
-            shard_id: &str,
-            load: f64,
-        ) -> Result<(), SharderV5Error> {
-            let history = self.histories.get_mut(shard_id).ok_or_else(|| {
-                SharderV5Error::ShardNotFound(shard_id.to_string())
-            })?;
+        pub fn record_load(&mut self, shard_id: &str, load: f64) -> Result<(), SharderV5Error> {
+            let history = self
+                .histories
+                .get_mut(shard_id)
+                .ok_or_else(|| SharderV5Error::ShardNotFound(shard_id.to_string()))?;
             history.record_load(load, self.config.ema_alpha, self.config.max_history_samples);
             Ok(())
         }
@@ -268,9 +261,10 @@ mod internal {
             shard_id: &str,
             load: f64,
         ) -> Result<(), SharderV5Error> {
-            let history = self.histories.get_mut(shard_id).ok_or_else(|| {
-                SharderV5Error::ShardNotFound(shard_id.to_string())
-            })?;
+            let history = self
+                .histories
+                .get_mut(shard_id)
+                .ok_or_else(|| SharderV5Error::ShardNotFound(shard_id.to_string()))?;
             history.record_cross_model_load(
                 load,
                 self.config.ema_alpha,
@@ -280,13 +274,11 @@ mod internal {
         }
 
         /// Generate prediction for a shard.
-        pub fn predict(
-            &mut self,
-            shard_id: &str,
-        ) -> Result<ShardPrediction, SharderV5Error> {
-            let history = self.histories.get(shard_id).ok_or_else(|| {
-                SharderV5Error::ShardNotFound(shard_id.to_string())
-            })?;
+        pub fn predict(&mut self, shard_id: &str) -> Result<ShardPrediction, SharderV5Error> {
+            let history = self
+                .histories
+                .get(shard_id)
+                .ok_or_else(|| SharderV5Error::ShardNotFound(shard_id.to_string()))?;
 
             if !history.has_enough_samples(self.config.min_samples) {
                 return Err(SharderV5Error::InsufficientData);
@@ -307,8 +299,8 @@ mod internal {
                 ShardAction::NoOp
             };
 
-            let confidence = (history.load_samples.len() as f64 / self.config.min_samples as f64)
-                .min(1.0);
+            let confidence =
+                (history.load_samples.len() as f64 / self.config.min_samples as f64).min(1.0);
 
             self.stats.predictions_made += 1;
 
@@ -417,7 +409,9 @@ mod internal {
             let mut engine = PredictiveSharderV5::default();
             engine.register_shard("shard-1".to_string());
             for i in 0..20 {
-                engine.record_load("shard-1", 0.3 + (i as f64) * 0.02).unwrap();
+                engine
+                    .record_load("shard-1", 0.3 + (i as f64) * 0.02)
+                    .unwrap();
             }
             let prediction = engine.predict("shard-1").unwrap();
             assert_eq!(prediction.shard_id, "shard-1");

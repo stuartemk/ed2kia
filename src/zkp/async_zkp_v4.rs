@@ -7,10 +7,10 @@
 //! - Proof priority queue based on pool urgency
 //! - VRF-based proof sampling for large batches
 
-use std::collections::{HashMap, BinaryHeap, VecDeque};
 use std::cmp::Ordering;
-use std::hash::{Hash, Hasher};
 use std::collections::hash_map::DefaultHasher;
+use std::collections::{BinaryHeap, HashMap, VecDeque};
+use std::hash::{Hash, Hasher};
 
 // ─── Errors ───
 
@@ -39,13 +39,23 @@ impl std::fmt::Display for ZKPV4Error {
             Self::ProofGenerationFailed(msg) => write!(f, "Proof generation failed: {}", msg),
             Self::VerificationFailed(msg) => write!(f, "Verification failed: {}", msg),
             Self::BatchFull => write!(f, "Batch capacity reached"),
-            Self::TimeoutExceeded { limit_ms, actual_ms } => {
+            Self::TimeoutExceeded {
+                limit_ms,
+                actual_ms,
+            } => {
                 write!(f, "Timeout: {}ms > {}ms limit", actual_ms, limit_ms)
             }
             Self::CircuitError(msg) => write!(f, "Circuit error: {}", msg),
             Self::PoolNotRegistered(id) => write!(f, "Pool not registered: {}", id),
-            Self::InsufficientPoolResources { available, required } => {
-                write!(f, "Insufficient pool resources: available={}, required={}", available, required)
+            Self::InsufficientPoolResources {
+                available,
+                required,
+            } => {
+                write!(
+                    f,
+                    "Insufficient pool resources: available={}, required={}",
+                    available, required
+                )
             }
         }
     }
@@ -300,7 +310,9 @@ impl PartialEq for PriorityItem {
 
 impl Ord for PriorityItem {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.statement.priority.cmp(&other.statement.priority)
+        self.statement
+            .priority
+            .cmp(&other.statement.priority)
             .then_with(|| other.timestamp_ms.cmp(&self.timestamp_ms))
     }
 }
@@ -402,7 +414,9 @@ impl AsyncZKPV4 {
 
     /// Update pool credits.
     pub fn update_pool_credits(&mut self, pool_id: &str, credits: f64) -> Result<(), ZKPV4Error> {
-        let pool = self.pools.get_mut(pool_id)
+        let pool = self
+            .pools
+            .get_mut(pool_id)
             .ok_or(ZKPV4Error::PoolNotRegistered(pool_id.to_string()))?;
         pool.available_credits = credits.max(0.0);
         Ok(())
@@ -447,8 +461,7 @@ impl AsyncZKPV4 {
 
     /// Add pending statements to the active batch.
     pub fn add_to_batch(&mut self, max_count: usize) -> Result<usize, ZKPV4Error> {
-        let batch = self.active_batch.as_mut()
-            .ok_or(ZKPV4Error::BatchFull)?;
+        let batch = self.active_batch.as_mut().ok_or(ZKPV4Error::BatchFull)?;
 
         let mut count = 0;
         while count < max_count && !self.pending_queue.is_empty() {
@@ -462,8 +475,7 @@ impl AsyncZKPV4 {
 
     /// Generate proofs for the active batch.
     pub fn generate_batch_proofs(&mut self) -> Result<ProofBatch, ZKPV4Error> {
-        let mut batch = self.active_batch.take()
-            .ok_or(ZKPV4Error::BatchFull)?;
+        let mut batch = self.active_batch.take().ok_or(ZKPV4Error::BatchFull)?;
 
         batch.status = BatchStatus::Processing;
 
@@ -503,12 +515,13 @@ impl AsyncZKPV4 {
 
         // Update average generation time
         let avg_time = elapsed as f64 / (batch.proofs.len().max(1) as f64);
-        self.stats.avg_generation_time_ms = 
+        self.stats.avg_generation_time_ms =
             self.stats.avg_generation_time_ms * 0.9 + avg_time * 0.1;
 
         // Cache proofs
         for proof in &batch.proofs {
-            self.proof_cache.insert(proof.statement_id.clone(), proof.clone());
+            self.proof_cache
+                .insert(proof.statement_id.clone(), proof.clone());
         }
 
         self.completed_batches.push_back(batch.clone());
@@ -534,7 +547,7 @@ impl AsyncZKPV4 {
 
         let elapsed = current_timestamp_ms().saturating_sub(start_ms);
         self.stats.total_proofs_verified += 1;
-        self.stats.avg_verification_time_ms = 
+        self.stats.avg_verification_time_ms =
             self.stats.avg_verification_time_ms * 0.9 + elapsed as f64 * 0.1;
 
         // Update pool stats
@@ -565,8 +578,11 @@ impl AsyncZKPV4 {
 
     /// Get the best pool for verification based on score.
     pub fn select_best_pool(&self) -> Option<&PoolContext> {
-        self.pools.values()
-            .max_by(|a, b| a.verification_score().partial_cmp(&b.verification_score()).unwrap_or(Ordering::Equal))
+        self.pools.values().max_by(|a, b| {
+            a.verification_score()
+                .partial_cmp(&b.verification_score())
+                .unwrap_or(Ordering::Equal)
+        })
     }
 
     /// Get cached proof.
@@ -734,7 +750,9 @@ mod tests {
     fn test_submit_statement() {
         let mut engine = AsyncZKPV4::with_defaults();
         engine.register_pool(make_pool("pool1", 100.0)).unwrap();
-        engine.submit_statement(make_statement("s1", "pool1")).unwrap();
+        engine
+            .submit_statement(make_statement("s1", "pool1"))
+            .unwrap();
         assert_eq!(engine.pending_count(), 1);
     }
 
@@ -749,12 +767,16 @@ mod tests {
     fn test_submit_statement_cached() {
         let mut engine = AsyncZKPV4::with_defaults();
         engine.register_pool(make_pool("pool1", 100.0)).unwrap();
-        engine.submit_statement(make_statement("s1", "pool1")).unwrap();
+        engine
+            .submit_statement(make_statement("s1", "pool1"))
+            .unwrap();
         engine.start_batch("batch1".to_string()).unwrap();
         engine.add_to_batch(10).unwrap();
         engine.generate_batch_proofs().unwrap();
         // Second submit of same ID is cached after proof generation
-        engine.submit_statement(make_statement("s1", "pool1")).unwrap();
+        engine
+            .submit_statement(make_statement("s1", "pool1"))
+            .unwrap();
         assert_eq!(engine.pending_count(), 0);
     }
 
@@ -770,8 +792,12 @@ mod tests {
     fn test_add_to_batch() {
         let mut engine = AsyncZKPV4::with_defaults();
         engine.register_pool(make_pool("pool1", 100.0)).unwrap();
-        engine.submit_statement(make_statement("s1", "pool1")).unwrap();
-        engine.submit_statement(make_statement("s2", "pool1")).unwrap();
+        engine
+            .submit_statement(make_statement("s1", "pool1"))
+            .unwrap();
+        engine
+            .submit_statement(make_statement("s2", "pool1"))
+            .unwrap();
         engine.start_batch("batch1".to_string()).unwrap();
         let count = engine.add_to_batch(10).unwrap();
         assert_eq!(count, 2);
@@ -781,7 +807,9 @@ mod tests {
     fn test_generate_batch_proofs() {
         let mut engine = AsyncZKPV4::with_defaults();
         engine.register_pool(make_pool("pool1", 100.0)).unwrap();
-        engine.submit_statement(make_statement("s1", "pool1")).unwrap();
+        engine
+            .submit_statement(make_statement("s1", "pool1"))
+            .unwrap();
         engine.start_batch("batch1".to_string()).unwrap();
         engine.add_to_batch(10).unwrap();
         let batch = engine.generate_batch_proofs().unwrap();
@@ -803,8 +831,12 @@ mod tests {
     fn test_verify_batch() {
         let mut engine = AsyncZKPV4::with_defaults();
         engine.register_pool(make_pool("pool1", 100.0)).unwrap();
-        engine.submit_statement(make_statement("s1", "pool1")).unwrap();
-        engine.submit_statement(make_statement("s2", "pool1")).unwrap();
+        engine
+            .submit_statement(make_statement("s1", "pool1"))
+            .unwrap();
+        engine
+            .submit_statement(make_statement("s2", "pool1"))
+            .unwrap();
         engine.start_batch("batch1".to_string()).unwrap();
         engine.add_to_batch(10).unwrap();
         let batch = engine.generate_batch_proofs().unwrap();
@@ -816,7 +848,9 @@ mod tests {
     fn test_proof_caching() {
         let mut engine = AsyncZKPV4::with_defaults();
         engine.register_pool(make_pool("pool1", 100.0)).unwrap();
-        engine.submit_statement(make_statement("s1", "pool1")).unwrap();
+        engine
+            .submit_statement(make_statement("s1", "pool1"))
+            .unwrap();
         engine.start_batch("batch1".to_string()).unwrap();
         engine.add_to_batch(10).unwrap();
         engine.generate_batch_proofs().unwrap();
@@ -827,20 +861,24 @@ mod tests {
     #[test]
     fn test_select_best_pool() {
         let mut engine = AsyncZKPV4::with_defaults();
-        engine.register_pool(PoolContext {
-            pool_id: "p1".to_string(),
-            available_credits: 100.0,
-            reputation: 0.5,
-            avg_latency_ms: 100.0,
-            proofs_verified: 0,
-        }).unwrap();
-        engine.register_pool(PoolContext {
-            pool_id: "p2".to_string(),
-            available_credits: 200.0,
-            reputation: 0.9,
-            avg_latency_ms: 10.0,
-            proofs_verified: 0,
-        }).unwrap();
+        engine
+            .register_pool(PoolContext {
+                pool_id: "p1".to_string(),
+                available_credits: 100.0,
+                reputation: 0.5,
+                avg_latency_ms: 100.0,
+                proofs_verified: 0,
+            })
+            .unwrap();
+        engine
+            .register_pool(PoolContext {
+                pool_id: "p2".to_string(),
+                available_credits: 200.0,
+                reputation: 0.9,
+                avg_latency_ms: 10.0,
+                proofs_verified: 0,
+            })
+            .unwrap();
         let best = engine.select_best_pool().unwrap();
         assert_eq!(best.pool_id, "p2");
     }
@@ -849,7 +887,9 @@ mod tests {
     fn test_stats_tracking() {
         let mut engine = AsyncZKPV4::with_defaults();
         engine.register_pool(make_pool("pool1", 100.0)).unwrap();
-        engine.submit_statement(make_statement("s1", "pool1")).unwrap();
+        engine
+            .submit_statement(make_statement("s1", "pool1"))
+            .unwrap();
         engine.start_batch("batch1".to_string()).unwrap();
         engine.add_to_batch(10).unwrap();
         engine.generate_batch_proofs().unwrap();
@@ -862,7 +902,9 @@ mod tests {
     fn test_reset_stats() {
         let mut engine = AsyncZKPV4::with_defaults();
         engine.register_pool(make_pool("pool1", 100.0)).unwrap();
-        engine.submit_statement(make_statement("s1", "pool1")).unwrap();
+        engine
+            .submit_statement(make_statement("s1", "pool1"))
+            .unwrap();
         engine.start_batch("batch1".to_string()).unwrap();
         engine.add_to_batch(10).unwrap();
         engine.generate_batch_proofs().unwrap();
@@ -874,7 +916,10 @@ mod tests {
     #[test]
     fn test_circuit_type_display() {
         assert_eq!(CircuitType::Membership.to_string(), "membership");
-        assert_eq!(CircuitType::CrossPoolAggregation.to_string(), "cross_pool_aggregation");
+        assert_eq!(
+            CircuitType::CrossPoolAggregation.to_string(),
+            "cross_pool_aggregation"
+        );
     }
 
     #[test]

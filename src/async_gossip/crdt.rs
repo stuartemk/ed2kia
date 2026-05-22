@@ -543,10 +543,7 @@ impl ORSet {
         match tags {
             Some(tag_map) => {
                 let count = tag_map.len();
-                let tomb = self
-                    .tombstone
-                    .entry(element.to_string())
-                    .or_default();
+                let tomb = self.tombstone.entry(element.to_string()).or_default();
                 for (tag, _) in tag_map {
                     tomb.insert(tag, node_id.to_string());
                 }
@@ -598,10 +595,7 @@ impl ORSet {
     pub fn merge(&mut self, other: &ORSet) {
         // 1. Añadir elementos de other
         for (element, tags) in &other.elements {
-            let self_tags = self
-                .elements
-                .entry(element.clone())
-                .or_default();
+            let self_tags = self.elements.entry(element.clone()).or_default();
 
             for (tag, node_id) in tags {
                 // Solo añadir si no está en tombstone
@@ -618,10 +612,7 @@ impl ORSet {
 
         // 2. Aplicar tombstones de other
         for (element, tomb_tags) in &other.tombstone {
-            let self_tomb = self
-                .tombstone
-                .entry(element.clone())
-                .or_default();
+            let self_tomb = self.tombstone.entry(element.clone()).or_default();
 
             for (tag, node_id) in tomb_tags {
                 // Si el tag está en self.elements, moverlo a tombstone

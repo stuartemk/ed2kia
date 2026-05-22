@@ -61,10 +61,7 @@ pub struct AlignmentSlasher {
 
 impl AlignmentSlasher {
     /// Crea un nuevo executor de slashing.
-    pub fn new(
-        slashing_threshold: f64,
-        reputation_penalty: f64,
-    ) -> Result<Self, SlashingError> {
+    pub fn new(slashing_threshold: f64, reputation_penalty: f64) -> Result<Self, SlashingError> {
         if slashing_threshold < 0.0 {
             return Err(SlashingError::InvalidThreshold(slashing_threshold));
         }
@@ -81,21 +78,14 @@ impl AlignmentSlasher {
     ///
     /// **Stuartian Law 2:** Decisión determinista. Si divergence > threshold,
     /// se aplica penalización automáticamente.
-    pub fn evaluate(
-        &self,
-        _node_id: &str,
-        _divergence: f64,
-    ) -> Option<SlashingRecord> {
+    pub fn evaluate(&self, _node_id: &str, _divergence: f64) -> Option<SlashingRecord> {
         // TODO(Sprint16.3): Implement deterministic slashing decision.
         // If divergence > slashing_threshold, return SlashingRecord.
         None
     }
 
     /// Aplica penalización de reputación a un nodo.
-    pub fn apply_penalty(
-        &self,
-        _node_id: &str,
-    ) -> Result<SlashingRecord, SlashingError> {
+    pub fn apply_penalty(&self, _node_id: &str) -> Result<SlashingRecord, SlashingError> {
         // TODO(Sprint16.3): Implement reputation penalty application.
         Err(SlashingError::NodeNotFound(_node_id.to_string()))
     }

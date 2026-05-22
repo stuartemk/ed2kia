@@ -47,7 +47,10 @@ mod internal {
                 Self::AlignmentDivergence(msg) => {
                     write!(f, "Alignment divergence detected: {}", msg)
                 }
-                Self::InsufficientModels { required, available } => {
+                Self::InsufficientModels {
+                    required,
+                    available,
+                } => {
                     write!(
                         f,
                         "Insufficient models: required {}, available {}",
@@ -255,9 +258,12 @@ mod internal {
             model_id: &str,
             norm: f64,
         ) -> Result<(), CrossModelAlignerV4Error> {
-            let state = self.models.get_mut(model_id).ok_or(
-                CrossModelAlignerV4Error::ModelNotFound(model_id.to_string()),
-            )?;
+            let state =
+                self.models
+                    .get_mut(model_id)
+                    .ok_or(CrossModelAlignerV4Error::ModelNotFound(
+                        model_id.to_string(),
+                    ))?;
             state.update_ema(norm, self.config.ema_alpha);
             Ok(())
         }
@@ -294,13 +300,13 @@ mod internal {
                     + cross_avg * self.config.alignment_weight;
 
                 // Adaptive normalization
-                let normalized = if self.config.adaptive_normalization && state.ema_gradient_norm > 0.0
-                {
-                    let alpha = self.config.ema_alpha;
-                    base_norm / (alpha * state.ema_gradient_norm + (1.0 - alpha) * base_norm)
-                } else {
-                    base_norm
-                };
+                let normalized =
+                    if self.config.adaptive_normalization && state.ema_gradient_norm > 0.0 {
+                        let alpha = self.config.ema_alpha;
+                        base_norm / (alpha * state.ema_gradient_norm + (1.0 - alpha) * base_norm)
+                    } else {
+                        base_norm
+                    };
 
                 // Multi-pass refinement
                 let (refined, passes) = if self.config.multi_pass_refinement {
@@ -419,18 +425,14 @@ mod internal {
         #[test]
         fn test_register_model() {
             let mut engine = CrossModelAlignerV4::default();
-            engine
-                .register_model("model-1".to_string(), 1024)
-                .unwrap();
+            engine.register_model("model-1".to_string(), 1024).unwrap();
             assert_eq!(engine.model_count(), 1);
         }
 
         #[test]
         fn test_register_model_duplicate() {
             let mut engine = CrossModelAlignerV4::default();
-            engine
-                .register_model("model-1".to_string(), 1024)
-                .unwrap();
+            engine.register_model("model-1".to_string(), 1024).unwrap();
             let result = engine.register_model("model-1".to_string(), 1024);
             assert!(result.is_err());
         }
@@ -438,9 +440,7 @@ mod internal {
         #[test]
         fn test_remove_model() {
             let mut engine = CrossModelAlignerV4::default();
-            engine
-                .register_model("model-1".to_string(), 1024)
-                .unwrap();
+            engine.register_model("model-1".to_string(), 1024).unwrap();
             engine.remove_model("model-1").unwrap();
             assert_eq!(engine.model_count(), 0);
         }
@@ -455,9 +455,7 @@ mod internal {
         #[test]
         fn test_update_gradient_norm() {
             let mut engine = CrossModelAlignerV4::default();
-            engine
-                .register_model("model-1".to_string(), 1024)
-                .unwrap();
+            engine.register_model("model-1".to_string(), 1024).unwrap();
             engine.update_gradient_norm("model-1", 1.5).unwrap();
             let state = engine.get_model_state("model-1").unwrap();
             assert!(state.ema_gradient_norm > 0.0);
@@ -466,9 +464,7 @@ mod internal {
         #[test]
         fn test_align_gradients_insufficient_models() {
             let mut engine = CrossModelAlignerV4::default();
-            engine
-                .register_model("model-1".to_string(), 1024)
-                .unwrap();
+            engine.register_model("model-1".to_string(), 1024).unwrap();
             let grads = HashMap::from([("model-1".to_string(), vec![1.0; 1024])]);
             let result = engine.align_gradients(grads);
             assert!(result.is_err());
@@ -477,12 +473,8 @@ mod internal {
         #[test]
         fn test_align_gradients_basic() {
             let mut engine = CrossModelAlignerV4::default();
-            engine
-                .register_model("model-1".to_string(), 1024)
-                .unwrap();
-            engine
-                .register_model("model-2".to_string(), 1024)
-                .unwrap();
+            engine.register_model("model-1".to_string(), 1024).unwrap();
+            engine.register_model("model-2".to_string(), 1024).unwrap();
             let grads = HashMap::from([
                 ("model-1".to_string(), vec![1.0; 1024]),
                 ("model-2".to_string(), vec![2.0; 1024]),
@@ -497,12 +489,8 @@ mod internal {
             let mut config = make_config();
             config.adaptive_normalization = true;
             let mut engine = CrossModelAlignerV4::new(config);
-            engine
-                .register_model("model-1".to_string(), 1024)
-                .unwrap();
-            engine
-                .register_model("model-2".to_string(), 1024)
-                .unwrap();
+            engine.register_model("model-1".to_string(), 1024).unwrap();
+            engine.register_model("model-2".to_string(), 1024).unwrap();
             engine.update_gradient_norm("model-1", 1.0).unwrap();
             engine.update_gradient_norm("model-2", 2.0).unwrap();
             let grads = HashMap::from([
@@ -521,12 +509,8 @@ mod internal {
             config.multi_pass_refinement = true;
             config.max_refinement_passes = 3;
             let mut engine = CrossModelAlignerV4::new(config);
-            engine
-                .register_model("model-1".to_string(), 1024)
-                .unwrap();
-            engine
-                .register_model("model-2".to_string(), 1024)
-                .unwrap();
+            engine.register_model("model-1".to_string(), 1024).unwrap();
+            engine.register_model("model-2".to_string(), 1024).unwrap();
             let grads = HashMap::from([
                 ("model-1".to_string(), vec![1.0; 1024]),
                 ("model-2".to_string(), vec![2.0; 1024]),
@@ -543,12 +527,8 @@ mod internal {
             let mut config = make_config();
             config.divergence_threshold = 0.001;
             let mut engine = CrossModelAlignerV4::new(config);
-            engine
-                .register_model("model-1".to_string(), 1024)
-                .unwrap();
-            engine
-                .register_model("model-2".to_string(), 1024)
-                .unwrap();
+            engine.register_model("model-1".to_string(), 1024).unwrap();
+            engine.register_model("model-2".to_string(), 1024).unwrap();
             let grads = HashMap::from([
                 ("model-1".to_string(), vec![1.0; 1024]),
                 ("model-2".to_string(), vec![100.0; 1024]),
@@ -560,12 +540,8 @@ mod internal {
         #[test]
         fn test_stats_tracking() {
             let mut engine = CrossModelAlignerV4::default();
-            engine
-                .register_model("model-1".to_string(), 1024)
-                .unwrap();
-            engine
-                .register_model("model-2".to_string(), 1024)
-                .unwrap();
+            engine.register_model("model-1".to_string(), 1024).unwrap();
+            engine.register_model("model-2".to_string(), 1024).unwrap();
             let grads = HashMap::from([
                 ("model-1".to_string(), vec![1.0; 1024]),
                 ("model-2".to_string(), vec![2.0; 1024]),
@@ -671,12 +647,8 @@ mod internal {
         #[test]
         fn test_multi_round_alignment() {
             let mut engine = CrossModelAlignerV4::default();
-            engine
-                .register_model("model-1".to_string(), 1024)
-                .unwrap();
-            engine
-                .register_model("model-2".to_string(), 1024)
-                .unwrap();
+            engine.register_model("model-1".to_string(), 1024).unwrap();
+            engine.register_model("model-2".to_string(), 1024).unwrap();
             for _ in 0..3 {
                 let grads = HashMap::from([
                     ("model-1".to_string(), vec![1.0; 1024]),

@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, VecDeque};
 use std::time::{SystemTime, UNIX_EPOCH};
 use thiserror::Error;
-use tracing::{info, warn, debug};
+use tracing::{debug, info, warn};
 
 // ============================================================================
 // Errors
@@ -246,18 +246,18 @@ impl CrossModelScaler {
     }
 
     /// Rutea un request al nodo óptimo basado en carga, latencia y reputación
-    pub fn route_request(
-        &mut self,
-        request: &RoutingRequest,
-    ) -> Result<ScaleResult, ScalingError> {
+    pub fn route_request(&mut self, request: &RoutingRequest) -> Result<ScaleResult, ScalingError> {
         // Verificar compatibilidad de esquema
         self.validate_compatibility(&request.required_schema)?;
 
         // Filtrar nodos elegibles
-        let eligible: Vec<&NodeCapacity> = self.nodes.values().filter(|node| {
-            node.can_accept(self.load_threshold)
-                && node.reputation >= self.min_reputation
-        }).collect();
+        let eligible: Vec<&NodeCapacity> = self
+            .nodes
+            .values()
+            .filter(|node| {
+                node.can_accept(self.load_threshold) && node.reputation >= self.min_reputation
+            })
+            .collect();
 
         if eligible.is_empty() {
             // Intentar fallback
@@ -304,9 +304,8 @@ impl CrossModelScaler {
             .collect();
 
         for (_node_id, current_load, max_capacity) in overloaded {
-            let excess = current_load.saturating_sub(
-                (max_capacity as f32 * self.load_threshold) as usize
-            );
+            let excess =
+                current_load.saturating_sub((max_capacity as f32 * self.load_threshold) as usize);
             // Redistribuir exceso a nodos con menor carga
             for _ in 0..excess {
                 if self.redistribute_one(&_node_id) {
@@ -366,7 +365,12 @@ impl CrossModelScaler {
 
         // Verificar compatibilidad semver básica (mayor versión igual)
         let compatible = self.compatible_schemas.iter().any(|s| {
-            let s_major = s.split('.').next().unwrap_or("0").parse::<u32>().unwrap_or(0);
+            let s_major = s
+                .split('.')
+                .next()
+                .unwrap_or("0")
+                .parse::<u32>()
+                .unwrap_or(0);
             let req_major = schema_version
                 .split('.')
                 .next()

@@ -17,8 +17,8 @@
 //!
 //! Apache License 2.0 + Ethical Use Clause
 
-use std::collections::{HashMap, BinaryHeap};
 use std::cmp::Ordering;
+use std::collections::{BinaryHeap, HashMap};
 
 // ─── Error ───────────────────────────────────────────────────────────────────
 
@@ -47,7 +47,9 @@ impl std::fmt::Display for AggregatorError {
             AggregatorError::GroupFull(id) => write!(f, "Aggregation group full: {}", id),
             AggregatorError::InvalidConfig(msg) => write!(f, "Invalid config: {}", msg),
             AggregatorError::CapacityExceeded => write!(f, "Aggregation capacity exceeded"),
-            AggregatorError::ShardAlreadyAssigned(id) => write!(f, "Shard already assigned: {}", id),
+            AggregatorError::ShardAlreadyAssigned(id) => {
+                write!(f, "Shard already assigned: {}", id)
+            }
         }
     }
 }
@@ -316,7 +318,9 @@ impl DynamicAggregator {
         }
 
         if shard.group_id.is_some() {
-            return Err(AggregatorError::ShardAlreadyAssigned(shard.shard_id.clone()));
+            return Err(AggregatorError::ShardAlreadyAssigned(
+                shard.shard_id.clone(),
+            ));
         }
 
         let shard_id = shard.shard_id.clone();
@@ -417,17 +421,19 @@ impl DynamicAggregator {
         group_id: &str,
         shard_id: &str,
     ) -> Result<(), AggregatorError> {
-        let group = self.groups.get(group_id).ok_or_else(|| {
-            AggregatorError::PoolNotFound(group_id.to_string())
-        })?;
+        let group = self
+            .groups
+            .get(group_id)
+            .ok_or_else(|| AggregatorError::PoolNotFound(group_id.to_string()))?;
 
         if !group.can_add_shard(self.config.max_shards_per_group) {
             return Err(AggregatorError::GroupFull(group_id.to_string()));
         }
 
-        let shard = self.shards.get(shard_id).ok_or_else(|| {
-            AggregatorError::ShardNotFound(shard_id.to_string())
-        })?;
+        let shard = self
+            .shards
+            .get(shard_id)
+            .ok_or_else(|| AggregatorError::ShardNotFound(shard_id.to_string()))?;
 
         if shard.group_id.is_some() {
             return Err(AggregatorError::ShardAlreadyAssigned(shard_id.to_string()));
@@ -468,7 +474,8 @@ impl DynamicAggregator {
 
     /// Automatically aggregate unassigned shards into groups.
     pub fn auto_aggregate(&mut self) -> Result<usize, AggregatorError> {
-        let unassigned: Vec<&String> = self.shards
+        let unassigned: Vec<&String> = self
+            .shards
             .values()
             .filter(|s| s.group_id.is_none())
             .map(|s| &s.shard_id)
@@ -499,7 +506,10 @@ impl DynamicAggregator {
                 current_group = self.auto_create_group()?;
             }
 
-            if self.add_shard_to_group(&current_group, &item.shard_id).is_ok() {
+            if self
+                .add_shard_to_group(&current_group, &item.shard_id)
+                .is_ok()
+            {
                 aggregated += 1;
             }
         }
@@ -511,7 +521,9 @@ impl DynamicAggregator {
 
     /// Check if rebalancing is needed.
     pub fn needs_rebalance(&self) -> bool {
-        self.groups.values().any(|g| g.needs_rebalance(self.config.rebalance_threshold))
+        self.groups
+            .values()
+            .any(|g| g.needs_rebalance(self.config.rebalance_threshold))
     }
 
     /// Perform rebalancing across all groups.
@@ -520,7 +532,8 @@ impl DynamicAggregator {
             return Ok(0);
         }
 
-        let overloaded: Vec<String> = self.groups
+        let overloaded: Vec<String> = self
+            .groups
             .values()
             .filter(|g| g.needs_rebalance(self.config.rebalance_threshold))
             .map(|g| g.group_id.clone())
@@ -555,7 +568,11 @@ impl DynamicAggregator {
     /// Get all groups sorted by utilization.
     pub fn groups_by_utilization(&self) -> Vec<&AggregationGroup> {
         let mut groups: Vec<&AggregationGroup> = self.groups.values().collect();
-        groups.sort_by(|a, b| b.utilization.partial_cmp(&a.utilization).unwrap_or(Ordering::Equal));
+        groups.sort_by(|a, b| {
+            b.utilization
+                .partial_cmp(&a.utilization)
+                .unwrap_or(Ordering::Equal)
+        });
         groups
     }
 
@@ -569,7 +586,10 @@ impl DynamicAggregator {
 
     /// Get unassigned shards count.
     pub fn unassigned_count(&self) -> usize {
-        self.shards.values().filter(|s| s.group_id.is_none()).count()
+        self.shards
+            .values()
+            .filter(|s| s.group_id.is_none())
+            .count()
     }
 
     // ─── Updates ───────────────────────────────────────────────────────────
@@ -582,9 +602,10 @@ impl DynamicAggregator {
         available: f64,
     ) -> Result<(), AggregatorError> {
         let group_id = {
-            let shard = self.shards.get(shard_id).ok_or_else(|| {
-                AggregatorError::ShardNotFound(shard_id.to_string())
-            })?;
+            let shard = self
+                .shards
+                .get(shard_id)
+                .ok_or_else(|| AggregatorError::ShardNotFound(shard_id.to_string()))?;
             shard.group_id.clone()
         };
 
@@ -607,9 +628,10 @@ impl DynamicAggregator {
         latency_ms: f64,
     ) -> Result<(), AggregatorError> {
         let group_id = {
-            let shard = self.shards.get(shard_id).ok_or_else(|| {
-                AggregatorError::ShardNotFound(shard_id.to_string())
-            })?;
+            let shard = self
+                .shards
+                .get(shard_id)
+                .ok_or_else(|| AggregatorError::ShardNotFound(shard_id.to_string()))?;
             shard.group_id.clone()
         };
 
@@ -631,9 +653,10 @@ impl DynamicAggregator {
         reputation: f64,
     ) -> Result<(), AggregatorError> {
         let group_id = {
-            let shard = self.shards.get(shard_id).ok_or_else(|| {
-                AggregatorError::ShardNotFound(shard_id.to_string())
-            })?;
+            let shard = self
+                .shards
+                .get(shard_id)
+                .ok_or_else(|| AggregatorError::ShardNotFound(shard_id.to_string()))?;
             shard.group_id.clone()
         };
 
@@ -675,9 +698,10 @@ impl DynamicAggregator {
     // ─── Internal ──────────────────────────────────────────────────────────
 
     fn recalculate_group_stats(&mut self, group_id: &str) -> Result<(), AggregatorError> {
-        let group = self.groups.get(group_id).ok_or_else(|| {
-            AggregatorError::PoolNotFound(group_id.to_string())
-        })?;
+        let group = self
+            .groups
+            .get(group_id)
+            .ok_or_else(|| AggregatorError::PoolNotFound(group_id.to_string()))?;
 
         let mut total_cap = 0.0;
         let mut total_avail = 0.0;

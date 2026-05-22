@@ -225,8 +225,8 @@ mod tests {
         let mut weights = Vec::new();
         weights.extend(vec![1.0f32; d_sae * d_model]); // w_enc
         weights.extend(vec![1.0f32; d_model * d_sae]); // w_dec
-        weights.extend(vec![0.0f32; d_sae]);           // b_enc
-        weights.extend(vec![0.0f32; d_model]);         // b_dec
+        weights.extend(vec![0.0f32; d_sae]); // b_enc
+        weights.extend(vec![0.0f32; d_model]); // b_dec
 
         // Create input activation
         let input = vec![0.5f32; batch_size * d_model];

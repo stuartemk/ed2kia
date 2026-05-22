@@ -39,20 +39,49 @@ mod internal {
                 Self::NodeUnavailable(id) => write!(f, "Node unavailable: {}", id),
                 Self::ShardNotFound(id) => write!(f, "Shard not found: {}", id),
                 Self::CapacityExceeded(msg) => write!(f, "Capacity exceeded: {}", msg),
-                Self::PartitionDetected { shard_id, tolerance } => {
-                    write!(f, "Partition detected in shard {}: tolerance {:.1}%", shard_id, tolerance * 100.0)
+                Self::PartitionDetected {
+                    shard_id,
+                    tolerance,
+                } => {
+                    write!(
+                        f,
+                        "Partition detected in shard {}: tolerance {:.1}%",
+                        shard_id,
+                        tolerance * 100.0
+                    )
                 }
-                Self::ReputationBelowThreshold { node_id, reputation } => {
-                    write!(f, "Node {} reputation {:.3} below threshold", node_id, reputation)
+                Self::ReputationBelowThreshold {
+                    node_id,
+                    reputation,
+                } => {
+                    write!(
+                        f,
+                        "Node {} reputation {:.3} below threshold",
+                        node_id, reputation
+                    )
                 }
-                Self::LatencyExceeded { node_id, latency_ms } => {
-                    write!(f, "Node {} latency {:.0}ms exceeds limit", node_id, latency_ms)
+                Self::LatencyExceeded {
+                    node_id,
+                    latency_ms,
+                } => {
+                    write!(
+                        f,
+                        "Node {} latency {:.0}ms exceeds limit",
+                        node_id, latency_ms
+                    )
                 }
                 Self::CrossModelMismatch { model_a, model_b } => {
                     write!(f, "Cross-model mismatch: {} vs {}", model_a, model_b)
                 }
-                Self::DivergenceDetected { shard_id, divergence } => {
-                    write!(f, "Divergence {:.3} detected in shard {}", divergence, shard_id)
+                Self::DivergenceDetected {
+                    shard_id,
+                    divergence,
+                } => {
+                    write!(
+                        f,
+                        "Divergence {:.3} detected in shard {}",
+                        divergence, shard_id
+                    )
                 }
             }
         }
@@ -190,7 +219,11 @@ mod internal {
             let n = history.len() as f64;
             let sum_x: f64 = (0..history.len()).map(|x| x as f64).sum();
             let sum_y = history.iter().sum::<f64>();
-            let sum_xy = history.iter().enumerate().map(|(i, &y)| (i as f64) * y).sum::<f64>();
+            let sum_xy = history
+                .iter()
+                .enumerate()
+                .map(|(i, &y)| (i as f64) * y)
+                .sum::<f64>();
             let sum_x2: f64 = (0..history.len()).map(|x| (x as f64).powi(2)).sum();
             let denom = n * sum_x2 - sum_x * sum_x;
             if denom.abs() < 1e-10 {
@@ -259,11 +292,27 @@ mod internal {
 
     #[derive(Debug, Clone, PartialEq)]
     pub enum ScalingActionV7 {
-        AddNode { shard_id: String, node_id: String },
-        RemoveNode { shard_id: String, node_id: String },
-        SplitShard { source: String, target: String },
-        MergeShards { source: String, target: String },
-        Rebalance { from_shard: String, to_shard: String, load_delta: f64 },
+        AddNode {
+            shard_id: String,
+            node_id: String,
+        },
+        RemoveNode {
+            shard_id: String,
+            node_id: String,
+        },
+        SplitShard {
+            source: String,
+            target: String,
+        },
+        MergeShards {
+            source: String,
+            target: String,
+        },
+        Rebalance {
+            from_shard: String,
+            to_shard: String,
+            load_delta: f64,
+        },
         NoAction,
     }
 
@@ -282,8 +331,16 @@ mod internal {
                 Self::MergeShards { source, target } => {
                     write!(f, "Merge shard {} into {}", source, target)
                 }
-                Self::Rebalance { from_shard, to_shard, load_delta } => {
-                    write!(f, "Rebalance {:.2} from {} to {}", load_delta, from_shard, to_shard)
+                Self::Rebalance {
+                    from_shard,
+                    to_shard,
+                    load_delta,
+                } => {
+                    write!(
+                        f,
+                        "Rebalance {:.2} from {} to {}",
+                        load_delta, from_shard, to_shard
+                    )
                 }
                 Self::NoAction => write!(f, "No action needed"),
             }
@@ -703,9 +760,7 @@ mod internal {
             engine
                 .register_node("node1".to_string(), "model_a".to_string(), 200.0)
                 .unwrap();
-            engine
-                .update_node_metrics("node1", 50.0, 20.0)
-                .unwrap();
+            engine.update_node_metrics("node1", 50.0, 20.0).unwrap();
             let node = &engine.nodes["node1"];
             let score = node.routing_score(&engine.config);
             assert!(score > 0.0);
@@ -717,9 +772,7 @@ mod internal {
             engine
                 .register_node("node1".to_string(), "model_a".to_string(), 100.0)
                 .unwrap();
-            engine
-                .update_node_metrics("node1", 50.0, 10.0)
-                .unwrap();
+            engine.update_node_metrics("node1", 50.0, 10.0).unwrap();
             let node = &engine.nodes["node1"];
             assert!((node.utilization() - 0.5).abs() < 0.01);
         }
@@ -765,9 +818,7 @@ mod internal {
             engine
                 .register_node("n1".to_string(), "m".to_string(), 100.0)
                 .unwrap();
-            engine
-                .update_node_metrics("n1", 50.0, 30.0)
-                .unwrap();
+            engine.update_node_metrics("n1", 50.0, 30.0).unwrap();
             let avg = engine.avg_latency_ms();
             assert!(avg > 0.0);
         }

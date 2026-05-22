@@ -172,9 +172,10 @@ mod internal {
         pub fn record_creation(&mut self, time_ms: u64, space_saved: usize) {
             self.total_snapshots += 1;
             self.total_space_saved += space_saved;
-            self.avg_creation_time_ms =
-                self.avg_creation_time_ms * (self.total_snapshots - 1) as f64 / self.total_snapshots as f64
-                    + time_ms as f64 / self.total_snapshots as f64;
+            self.avg_creation_time_ms = self.avg_creation_time_ms
+                * (self.total_snapshots - 1) as f64
+                / self.total_snapshots as f64
+                + time_ms as f64 / self.total_snapshots as f64;
         }
 
         /// Record a restore operation.
@@ -463,7 +464,10 @@ mod internal {
                 current = next;
             }
 
-            current.into_iter().next().unwrap_or_else(|| compute_sha256("empty"))
+            current
+                .into_iter()
+                .next()
+                .unwrap_or_else(|| compute_sha256("empty"))
         }
 
         /// Compress state values using simple run-length encoding.
@@ -611,9 +615,14 @@ mod internal {
             let mut state = HashMap::new();
             state.insert("key1".to_string(), vec![1, 2, 3]);
 
-            manager.create_snapshot("snap1".to_string(), state.clone(), None).unwrap();
+            manager
+                .create_snapshot("snap1".to_string(), state.clone(), None)
+                .unwrap();
 
-            match manager.create_snapshot("snap1".to_string(), state, None).unwrap_err() {
+            match manager
+                .create_snapshot("snap1".to_string(), state, None)
+                .unwrap_err()
+            {
                 SnapshotError::SnapshotExists(id) => assert_eq!(id, "snap1"),
                 e => panic!("Expected SnapshotExists, got {:?}", e),
             }
@@ -624,7 +633,9 @@ mod internal {
             let mut manager = SnapshotManager::new(make_config());
             let mut state = HashMap::new();
             state.insert("key1".to_string(), vec![1, 2, 3]);
-            manager.create_snapshot("snap1".to_string(), state, None).unwrap();
+            manager
+                .create_snapshot("snap1".to_string(), state, None)
+                .unwrap();
 
             let snapshot = manager.get_snapshot("snap1").unwrap();
             assert_eq!(snapshot.id, "snap1");
@@ -644,7 +655,9 @@ mod internal {
             let mut manager = SnapshotManager::new(make_config());
             let mut state = HashMap::new();
             state.insert("key1".to_string(), vec![1, 2, 3]);
-            manager.create_snapshot("snap1".to_string(), state, None).unwrap();
+            manager
+                .create_snapshot("snap1".to_string(), state, None)
+                .unwrap();
 
             let valid = manager.verify_integrity("snap1").unwrap();
             assert!(valid);
@@ -656,7 +669,9 @@ mod internal {
             let mut state = HashMap::new();
             state.insert("key1".to_string(), vec![1, 2, 3]);
             state.insert("key2".to_string(), vec![4, 5, 6]);
-            manager.create_snapshot("snap1".to_string(), state, None).unwrap();
+            manager
+                .create_snapshot("snap1".to_string(), state, None)
+                .unwrap();
 
             let restored = manager.restore("snap1").unwrap();
             assert_eq!(restored.get("key1"), Some(&vec![1, 2, 3]));
@@ -668,12 +683,16 @@ mod internal {
             let mut manager = SnapshotManager::new(make_config());
             let mut state1 = HashMap::new();
             state1.insert("key1".to_string(), vec![1, 2, 3]);
-            manager.create_snapshot("snap1".to_string(), state1, None).unwrap();
+            manager
+                .create_snapshot("snap1".to_string(), state1, None)
+                .unwrap();
 
             let mut state2 = HashMap::new();
             state2.insert("key1".to_string(), vec![1, 2, 3]);
             state2.insert("key2".to_string(), vec![4, 5, 6]);
-            manager.create_snapshot("snap2".to_string(), state2, Some("snap1".to_string())).unwrap();
+            manager
+                .create_snapshot("snap2".to_string(), state2, Some("snap1".to_string()))
+                .unwrap();
 
             let diffs = manager.compute_diff("snap1", "snap2").unwrap();
             assert_eq!(diffs.len(), 1);
@@ -693,11 +712,15 @@ mod internal {
             let mut manager = SnapshotManager::new(config);
             let mut state1 = HashMap::new();
             state1.insert("key1".to_string(), vec![1, 2, 3]);
-            manager.create_snapshot("snap1".to_string(), state1, None).unwrap();
+            manager
+                .create_snapshot("snap1".to_string(), state1, None)
+                .unwrap();
 
             let mut state2 = HashMap::new();
             state2.insert("key1".to_string(), vec![7, 8, 9]);
-            manager.create_snapshot("snap2".to_string(), state2, Some("snap1".to_string())).unwrap();
+            manager
+                .create_snapshot("snap2".to_string(), state2, Some("snap1".to_string()))
+                .unwrap();
 
             let diffs = manager.compute_diff("snap1", "snap2").unwrap();
             assert_eq!(diffs.len(), 1);
@@ -712,11 +735,15 @@ mod internal {
             let mut state1 = HashMap::new();
             state1.insert("key1".to_string(), vec![1, 2, 3]);
             state1.insert("key2".to_string(), vec![4, 5, 6]);
-            manager.create_snapshot("snap1".to_string(), state1, None).unwrap();
+            manager
+                .create_snapshot("snap1".to_string(), state1, None)
+                .unwrap();
 
             let mut state2 = HashMap::new();
             state2.insert("key1".to_string(), vec![1, 2, 3]);
-            manager.create_snapshot("snap2".to_string(), state2, Some("snap1".to_string())).unwrap();
+            manager
+                .create_snapshot("snap2".to_string(), state2, Some("snap1".to_string()))
+                .unwrap();
 
             let diffs = manager.compute_diff("snap1", "snap2").unwrap();
             assert_eq!(diffs.len(), 1);
@@ -758,7 +785,9 @@ mod internal {
 
             let mut state = HashMap::new();
             state.insert("key1".to_string(), vec![1, 2, 3]);
-            manager.create_snapshot("snap1".to_string(), state, None).unwrap();
+            manager
+                .create_snapshot("snap1".to_string(), state, None)
+                .unwrap();
 
             let current_ms = current_timestamp_ms() + 2000;
             let cleaned = manager.cleanup_expired(current_ms);
@@ -787,7 +816,9 @@ mod internal {
             let mut manager = SnapshotManager::new(make_config());
             let mut state = HashMap::new();
             state.insert("key1".to_string(), vec![1, 2, 3]);
-            manager.create_snapshot("snap1".to_string(), state, None).unwrap();
+            manager
+                .create_snapshot("snap1".to_string(), state, None)
+                .unwrap();
 
             let stats = manager.get_stats();
             assert_eq!(stats.total_snapshots, 1);
@@ -798,7 +829,9 @@ mod internal {
             let mut manager = SnapshotManager::new(make_config());
             let mut state = HashMap::new();
             state.insert("key1".to_string(), vec![1, 2, 3]);
-            manager.create_snapshot("snap1".to_string(), state, None).unwrap();
+            manager
+                .create_snapshot("snap1".to_string(), state, None)
+                .unwrap();
 
             manager.reset_stats();
             let stats = manager.get_stats();

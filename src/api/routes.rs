@@ -163,17 +163,25 @@ pub struct ApiV2State {
     /// Callback para info de red
     pub network_fn: std::sync::Arc<dyn Fn() -> serde_json::Value + Send + Sync>,
     /// Callback para análisis SAE
-    pub sae_analyze_fn: std::sync::Arc<dyn Fn(SaeAnalyzeRequest) -> Result<SaeAnalyzeResponse, String> + Send + Sync>,
+    pub sae_analyze_fn: std::sync::Arc<
+        dyn Fn(SaeAnalyzeRequest) -> Result<SaeAnalyzeResponse, String> + Send + Sync,
+    >,
     /// Callback para info de federación
     pub federation_info_fn: std::sync::Arc<dyn Fn() -> serde_json::Value + Send + Sync>,
     /// Callback para iniciar ronda de federación
-    pub federation_start_fn: std::sync::Arc<dyn Fn(FederationRoundRequest) -> Result<FederationRoundResponse, String> + Send + Sync>,
+    pub federation_start_fn: std::sync::Arc<
+        dyn Fn(FederationRoundRequest) -> Result<FederationRoundResponse, String> + Send + Sync,
+    >,
     /// Callback para registro de staking
     pub staking_registry_fn: std::sync::Arc<dyn Fn() -> serde_json::Value + Send + Sync>,
     /// Callback para propuestas de gobernanza
     pub governance_proposals_fn: std::sync::Arc<dyn Fn() -> serde_json::Value + Send + Sync>,
     /// Callback para crear propuesta
-    pub governance_create_fn: std::sync::Arc<dyn Fn(GovernanceProposalRequest) -> Result<GovernanceProposalResponse, String> + Send + Sync>,
+    pub governance_create_fn: std::sync::Arc<
+        dyn Fn(GovernanceProposalRequest) -> Result<GovernanceProposalResponse, String>
+            + Send
+            + Sync,
+    >,
     /// Callback para generar OpenAPI spec
     pub openapi_spec_fn: std::sync::Arc<dyn Fn() -> OpenApiSpec + Send + Sync>,
 }
@@ -276,7 +284,9 @@ pub async fn post_sae_analyze(
     if request.activations.is_empty() {
         return (
             StatusCode::BAD_REQUEST,
-            Json(ApiResponse::error("Activations array cannot be empty".to_string())),
+            Json(ApiResponse::error(
+                "Activations array cannot be empty".to_string(),
+            )),
         );
     }
 
@@ -284,7 +294,10 @@ pub async fn post_sae_analyze(
         Ok(response) => (StatusCode::OK, Json(ApiResponse::ok(response))),
         Err(e) => {
             error!("SAE analysis failed: {}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiResponse::error(e)))
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiResponse::error(e)),
+            )
         }
     }
 }
@@ -307,7 +320,9 @@ pub async fn post_federation_round(
     if request.min_participants == 0 {
         return (
             StatusCode::BAD_REQUEST,
-            Json(ApiResponse::error("min_participants must be > 0".to_string())),
+            Json(ApiResponse::error(
+                "min_participants must be > 0".to_string(),
+            )),
         );
     }
 
@@ -315,7 +330,10 @@ pub async fn post_federation_round(
         Ok(response) => (StatusCode::OK, Json(ApiResponse::ok(response))),
         Err(e) => {
             error!("Federation round start failed: {}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiResponse::error(e)))
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiResponse::error(e)),
+            )
         }
     }
 }
@@ -354,7 +372,9 @@ pub async fn post_governance_proposal(
     if request.description.is_empty() {
         return (
             StatusCode::BAD_REQUEST,
-            Json(ApiResponse::error("Description cannot be empty".to_string())),
+            Json(ApiResponse::error(
+                "Description cannot be empty".to_string(),
+            )),
         );
     }
 
@@ -362,16 +382,17 @@ pub async fn post_governance_proposal(
         Ok(response) => (StatusCode::CREATED, Json(ApiResponse::ok(response))),
         Err(e) => {
             error!("Governance proposal creation failed: {}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiResponse::error(e)))
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiResponse::error(e)),
+            )
         }
     }
 }
 
 /// GET /api/v2/openapi.json
 /// Generar especificación OpenAPI 3.0.3
-pub async fn get_openapi_spec(
-    State(state): State<ApiV2State>,
-) -> (StatusCode, Json<OpenApiSpec>) {
+pub async fn get_openapi_spec(State(state): State<ApiV2State>) -> (StatusCode, Json<OpenApiSpec>) {
     let spec = (state.openapi_spec_fn)();
     (StatusCode::OK, Json(spec))
 }

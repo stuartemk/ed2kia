@@ -95,7 +95,13 @@ impl SteeringApplicationResult {
         }
     }
 
-    pub fn failed(signal_id: String, layer_id: String, confidence: f32, application_time_ms: f64, error: String) -> Self {
+    pub fn failed(
+        signal_id: String,
+        layer_id: String,
+        confidence: f32,
+        application_time_ms: f64,
+        error: String,
+    ) -> Self {
         Self {
             signal_id,
             layer_id,
@@ -327,7 +333,8 @@ impl SteeringEngine {
         }
 
         // Agregar a cola
-        self.pending_signals.insert(signal.signal_id.clone(), signal.clone());
+        self.pending_signals
+            .insert(signal.signal_id.clone(), signal.clone());
         self.pending_queue.push(PrioritizedSignal {
             confidence: signal.weighted_confidence,
             generated_at_ms: signal.generated_at_ms,
@@ -367,7 +374,10 @@ impl SteeringEngine {
                 signal.layer_id.clone(),
                 signal.weighted_confidence,
                 0.0,
-                format!("Signal expired: {}ms > {}ms", age, self.config.max_signal_age_ms),
+                format!(
+                    "Signal expired: {}ms > {}ms",
+                    age, self.config.max_signal_age_ms
+                ),
             ));
         }
 
@@ -397,14 +407,19 @@ impl SteeringEngine {
 
         // Actualizar stats
         self.stats.signals_applied += 1;
-        self.stats.avg_confidence =
-            (self.stats.avg_confidence * (self.stats.signals_applied - 1) as f32 + signal.weighted_confidence)
-                / self.stats.signals_applied as f32;
+        self.stats.avg_confidence = (self.stats.avg_confidence
+            * (self.stats.signals_applied - 1) as f32
+            + signal.weighted_confidence)
+            / self.stats.signals_applied as f32;
         self.stats.avg_application_ms =
             (self.stats.avg_application_ms * (self.stats.signals_applied - 1) as f64 + elapsed_ms)
                 / self.stats.signals_applied as f64;
         self.stats.last_application_ms = current_timestamp_ms();
-        *self.stats.signals_by_layer.entry(signal.layer_id.clone()).or_insert(0) += 1;
+        *self
+            .stats
+            .signals_by_layer
+            .entry(signal.layer_id.clone())
+            .or_insert(0) += 1;
 
         self.application_history.push_back(Instant::now());
 
@@ -449,18 +464,22 @@ impl SteeringEngine {
             signal.drift_before,
             signal.generated_at_ms,
         );
-        self.verifying_key.verify(message.as_bytes(), &signature).is_ok()
+        self.verifying_key
+            .verify(message.as_bytes(), &signature)
+            .is_ok()
     }
 
     fn apply_smoothing(&self, delta: &[f32]) -> Vec<f32> {
-        delta.iter()
+        delta
+            .iter()
             .map(|&v| v * self.config.smoothing_factor)
             .collect()
     }
 
     fn cleanup_history(&mut self) {
         let window = Duration::from_millis(self.config.rate_limit_window_ms);
-        self.application_history.retain(|instant| instant.elapsed() < window);
+        self.application_history
+            .retain(|instant| instant.elapsed() < window);
     }
 
     /// Obtiene estadísticas del motor

@@ -7,13 +7,17 @@
 mod stress {
     use std::time::Instant;
 
-    use ed2kia::federation::scaling_v5::{ScalingV5, ScalingV5Config};
-    use ed2kia::federation::predictive_sharder_v5::{PredictiveSharderV5, SharderV5Config};
+    use ed2kia::bridge::federation_zkp_bridge_v4::{
+        FederationZKPBridgeV4, FederationZKPBridgeV4Config,
+    };
+    use ed2kia::dashboard_v6::{BridgeV4Summary, DashboardV6, ScalingV5Summary, ZkpV10Summary};
     use ed2kia::federation::gradient_sync_v5::{GradientSyncV5, GradientSyncV5Config};
+    use ed2kia::federation::predictive_sharder_v5::{PredictiveSharderV5, SharderV5Config};
+    use ed2kia::federation::scaling_v5::{ScalingV5, ScalingV5Config};
+    use ed2kia::ws_federation_stream::{
+        FedCategory, FedPayload, WsFederationConfig, WsFederationStream,
+    };
     use ed2kia::zkp::async_zkp_v10::{AsyncZKPV10, ZKPV10Config};
-    use ed2kia::bridge::federation_zkp_bridge_v4::{FederationZKPBridgeV4, FederationZKPBridgeV4Config};
-    use ed2kia::dashboard_v6::{DashboardV6, ScalingV5Summary, ZkpV10Summary, BridgeV4Summary};
-    use ed2kia::ws_federation_stream::{WsFederationStream, WsFederationConfig, FedCategory, FedPayload};
 
     // ─── Federation Scaling v5 Stress ───
 
@@ -23,7 +27,9 @@ mod stress {
         let start = Instant::now();
 
         for i in 0..1000 {
-            engine.register_node(format!("node-{}", i), 100.0, 0.8).unwrap();
+            engine
+                .register_node(format!("node-{}", i), 100.0, 0.8)
+                .unwrap();
         }
 
         let register_time = start.elapsed();
@@ -36,13 +42,17 @@ mod stress {
         let mut engine = ScalingV5::new(ScalingV5Config::default());
 
         for i in 0..100 {
-            engine.register_node(format!("node-{}", i), 100.0, 0.85).unwrap();
+            engine
+                .register_node(format!("node-{}", i), 100.0, 0.85)
+                .unwrap();
         }
 
         let start = Instant::now();
         for i in 0..50 {
             engine.create_shard(format!("shard-{}", i)).unwrap();
-            engine.assign_node_to_shard(&format!("shard-{}", i)).unwrap();
+            engine
+                .assign_node_to_shard(&format!("shard-{}", i))
+                .unwrap();
         }
         let duration = start.elapsed();
 
@@ -87,19 +97,24 @@ mod stress {
             .as_millis() as u64;
 
         for i in 0..100 {
-            engine.submit_gradients(
-                format!("node-{}", i % 10),
-                "model-1".to_string(),
-                grads.clone(),
-                now,
-            ).unwrap();
+            engine
+                .submit_gradients(
+                    format!("node-{}", i % 10),
+                    "model-1".to_string(),
+                    grads.clone(),
+                    now,
+                )
+                .unwrap();
         }
 
         let submit_time = start.elapsed();
         let sync_result = engine.execute_sync().unwrap();
         let total_time = submit_time;
 
-        println!("Gradient v5: 100 submissions (8192 dims) in {:?}", total_time);
+        println!(
+            "Gradient v5: 100 submissions (8192 dims) in {:?}",
+            total_time
+        );
         assert!(sync_result.contains_key("model-1"));
     }
 
@@ -108,17 +123,25 @@ mod stress {
     #[test]
     pub fn stress_zkp_v10_massive_proofs() {
         let mut engine = AsyncZKPV10::new(ZKPV10Config::default());
-        engine.register_federation("fed-1".to_string(), 0.8).unwrap();
+        engine
+            .register_federation("fed-1".to_string(), 0.8)
+            .unwrap();
 
         let start = Instant::now();
         for i in 0..2000 {
-            engine.submit_proof(format!("proof-{}", i), "fed-1".to_string(), 2, 10.0).unwrap();
+            engine
+                .submit_proof(format!("proof-{}", i), "fed-1".to_string(), 2, 10.0)
+                .unwrap();
         }
         let submit_time = start.elapsed();
 
         let verified = engine.process_all();
 
-        println!("ZKP v10: 2000 proofs submitted in {:?}, verified {} in batch", submit_time, verified.len());
+        println!(
+            "ZKP v10: 2000 proofs submitted in {:?}, verified {} in batch",
+            submit_time,
+            verified.len()
+        );
         assert!(verified.len() > 0);
     }
 
@@ -127,17 +150,24 @@ mod stress {
         let mut engine = AsyncZKPV10::new(ZKPV10Config::default());
 
         for i in 0..20 {
-            engine.register_federation(format!("fed-{}", i), 0.7 + (i as f64 * 0.02)).unwrap();
+            engine
+                .register_federation(format!("fed-{}", i), 0.7 + (i as f64 * 0.02))
+                .unwrap();
         }
 
         let start = Instant::now();
         for i in 0..500 {
             let fed = format!("fed-{}", i % 20);
-            engine.submit_proof(format!("proof-{}", i), fed, 2, 10.0).unwrap();
+            engine
+                .submit_proof(format!("proof-{}", i), fed, 2, 10.0)
+                .unwrap();
         }
         let duration = start.elapsed();
 
-        println!("ZKP v10: 500 proofs across 20 federations in {:?}", duration);
+        println!(
+            "ZKP v10: 500 proofs across 20 federations in {:?}",
+            duration
+        );
         assert_eq!(engine.proof_count(), 500);
     }
 
@@ -148,18 +178,22 @@ mod stress {
         let mut engine = FederationZKPBridgeV4::new(FederationZKPBridgeV4Config::default());
 
         for i in 0..30 {
-            engine.register_federation(format!("fed-{}", i), 0.8, 100.0).unwrap();
+            engine
+                .register_federation(format!("fed-{}", i), 0.8, 100.0)
+                .unwrap();
         }
 
         let start = Instant::now();
         for i in 0..100 {
             let targets: Vec<String> = (0..3).map(|j| format!("fed-{}", (i + j) % 30)).collect();
-            engine.create_session(
-                format!("session-{}", i),
-                format!("fed-{}", i % 30),
-                targets,
-                format!("merkle-{}", i),
-            ).unwrap();
+            engine
+                .create_session(
+                    format!("session-{}", i),
+                    format!("fed-{}", i % 30),
+                    targets,
+                    format!("merkle-{}", i),
+                )
+                .unwrap();
         }
         let duration = start.elapsed();
 
@@ -195,11 +229,14 @@ mod stress {
 
         let start = Instant::now();
         for i in 0..5000 {
-            stream.emit_event(FedCategory::Scaling, FedPayload::NodeRegistered {
-                node_id: format!("node-{}", i),
-                capacity: 100.0,
-                reputation: 0.9,
-            });
+            stream.emit_event(
+                FedCategory::Scaling,
+                FedPayload::NodeRegistered {
+                    node_id: format!("node-{}", i),
+                    capacity: 100.0,
+                    reputation: 0.9,
+                },
+            );
         }
         let duration = start.elapsed();
 
@@ -216,11 +253,15 @@ mod stress {
         // Scaling
         let mut scaling = ScalingV5::new(ScalingV5Config::default());
         for i in 0..100 {
-            scaling.register_node(format!("node-{}", i), 100.0, 0.85).unwrap();
+            scaling
+                .register_node(format!("node-{}", i), 100.0, 0.85)
+                .unwrap();
         }
         for i in 0..20 {
             scaling.create_shard(format!("shard-{}", i)).unwrap();
-            scaling.assign_node_to_shard(&format!("shard-{}", i)).unwrap();
+            scaling
+                .assign_node_to_shard(&format!("shard-{}", i))
+                .unwrap();
         }
 
         // Sharder
@@ -241,7 +282,14 @@ mod stress {
             .unwrap()
             .as_millis() as u64;
         for i in 0..50 {
-            gradient.submit_gradients(format!("node-{}", i), "model-1".to_string(), grads.clone(), now).unwrap();
+            gradient
+                .submit_gradients(
+                    format!("node-{}", i),
+                    "model-1".to_string(),
+                    grads.clone(),
+                    now,
+                )
+                .unwrap();
         }
         let _sync = gradient.execute_sync().unwrap();
 
@@ -249,23 +297,28 @@ mod stress {
         let mut zkp = AsyncZKPV10::new(ZKPV10Config::default());
         zkp.register_federation("fed-1".to_string(), 0.8).unwrap();
         for i in 0..200 {
-            zkp.submit_proof(format!("proof-{}", i), "fed-1".to_string(), 2, 10.0).unwrap();
+            zkp.submit_proof(format!("proof-{}", i), "fed-1".to_string(), 2, 10.0)
+                .unwrap();
         }
         let _verified = zkp.process_all();
 
         // Bridge
         let mut bridge = FederationZKPBridgeV4::new(FederationZKPBridgeV4Config::default());
         for i in 0..10 {
-            bridge.register_federation(format!("fed-{}", i), 0.8, 100.0).unwrap();
+            bridge
+                .register_federation(format!("fed-{}", i), 0.8, 100.0)
+                .unwrap();
         }
         for i in 0..20 {
             let targets: Vec<String> = (0..2).map(|j| format!("fed-{}", (i + j) % 10)).collect();
-            bridge.create_session(
-                format!("session-{}", i),
-                format!("fed-{}", i % 10),
-                targets,
-                format!("merkle-{}", i),
-            ).unwrap();
+            bridge
+                .create_session(
+                    format!("session-{}", i),
+                    format!("fed-{}", i % 10),
+                    targets,
+                    format!("merkle-{}", i),
+                )
+                .unwrap();
         }
 
         // Dashboard

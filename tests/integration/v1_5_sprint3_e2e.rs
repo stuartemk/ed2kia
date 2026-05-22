@@ -7,9 +7,9 @@ mod e2e {
     use std::time::Instant;
 
     // LP-129: Federation Scaling v6
-    use ed2kia::federation::scaling_v6::{ScalingV6, ScalingV6Config};
     use ed2kia::federation::dynamic_sharder_v2::{DynamicSharderV2, DynamicSharderV2Config};
     use ed2kia::federation::gradient_sync_v6::{GradientSyncV6, GradientSyncV6Config};
+    use ed2kia::federation::scaling_v6::{ScalingV6, ScalingV6Config};
 
     // LP-130: Async ZKP v11 & Cross-Federation Verification
     use ed2kia::zkp::async_zkp_v11::{AsyncZKPV11, ProofPriority};
@@ -62,8 +62,12 @@ mod e2e {
         sharder.register_shard("s2".to_string());
 
         for i in 0..10 {
-            sharder.update_shard_load("s1", 0.5 + i as f64 * 0.05).unwrap();
-            sharder.update_shard_load("s2", 0.3 + i as f64 * 0.02).unwrap();
+            sharder
+                .update_shard_load("s1", 0.5 + i as f64 * 0.05)
+                .unwrap();
+            sharder
+                .update_shard_load("s2", 0.3 + i as f64 * 0.02)
+                .unwrap();
         }
 
         let pred1 = sharder.predict_load("s1").unwrap();
@@ -112,8 +116,12 @@ mod e2e {
 
         let grads1: Vec<f32> = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0];
         let grads2: Vec<f32> = vec![0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5];
-        engine.submit_gradients("m1".to_string(), grads1, current_ms()).unwrap();
-        engine.submit_gradients("m2".to_string(), grads2, current_ms()).unwrap();
+        engine
+            .submit_gradients("m1".to_string(), grads1, current_ms())
+            .unwrap();
+        engine
+            .submit_gradients("m2".to_string(), grads2, current_ms())
+            .unwrap();
 
         let result = engine.execute_sync().unwrap();
         assert_eq!(result.len(), 2);
@@ -127,16 +135,20 @@ mod e2e {
     fn test_e2e_zkp_v11_proof_lifecycle() {
         let mut engine = AsyncZKPV11::default();
         engine.register_federation("fed1".to_string(), 0.9).unwrap();
-        engine.register_federation("fed2".to_string(), 0.85).unwrap();
+        engine
+            .register_federation("fed2".to_string(), 0.85)
+            .unwrap();
 
         let current = current_ms();
-        let proof = engine.submit_proof(
-            "proof1".to_string(),
-            "fed1".to_string(),
-            ProofPriority::High,
-            10.0,
-            current,
-        ).unwrap();
+        let proof = engine
+            .submit_proof(
+                "proof1".to_string(),
+                "fed1".to_string(),
+                ProofPriority::High,
+                10.0,
+                current,
+            )
+            .unwrap();
 
         assert_eq!(proof.id(), "proof1");
         assert_eq!(proof.priority(), ProofPriority::High);
@@ -154,9 +166,33 @@ mod e2e {
         engine.register_federation("fed1".to_string(), 0.9).unwrap();
 
         let current = current_ms();
-        engine.submit_proof("p1".to_string(), "fed1".to_string(), ProofPriority::Normal, 1.0, current).unwrap();
-        engine.submit_proof("p2".to_string(), "fed1".to_string(), ProofPriority::Normal, 1.0, current).unwrap();
-        engine.submit_proof("p3".to_string(), "fed1".to_string(), ProofPriority::Normal, 1.0, current).unwrap();
+        engine
+            .submit_proof(
+                "p1".to_string(),
+                "fed1".to_string(),
+                ProofPriority::Normal,
+                1.0,
+                current,
+            )
+            .unwrap();
+        engine
+            .submit_proof(
+                "p2".to_string(),
+                "fed1".to_string(),
+                ProofPriority::Normal,
+                1.0,
+                current,
+            )
+            .unwrap();
+        engine
+            .submit_proof(
+                "p3".to_string(),
+                "fed1".to_string(),
+                ProofPriority::Normal,
+                1.0,
+                current,
+            )
+            .unwrap();
 
         let batch_id = engine.create_batch(current);
         engine.add_to_batch(&batch_id, "p1".to_string()).unwrap();
@@ -170,11 +206,21 @@ mod e2e {
     fn test_e2e_zkp_v11_quorum_verification() {
         let mut engine = AsyncZKPV11::default();
         engine.register_federation("fed1".to_string(), 0.9).unwrap();
-        engine.register_federation("fed2".to_string(), 0.85).unwrap();
+        engine
+            .register_federation("fed2".to_string(), 0.85)
+            .unwrap();
         engine.register_federation("fed3".to_string(), 0.8).unwrap();
 
         let current = current_ms();
-        engine.submit_proof("proof1".to_string(), "fed1".to_string(), ProofPriority::Critical, 5.0, current).unwrap();
+        engine
+            .submit_proof(
+                "proof1".to_string(),
+                "fed1".to_string(),
+                ProofPriority::Critical,
+                5.0,
+                current,
+            )
+            .unwrap();
 
         engine.record_vote("proof1", "fed1").unwrap();
         engine.record_vote("proof1", "fed2").unwrap();
@@ -191,9 +237,15 @@ mod e2e {
         engine.register_federation("fed3".to_string(), 0.8).unwrap();
 
         engine.create_session("proof1".to_string()).unwrap();
-        engine.submit_vote("proof1", "fed1", Vote::Approve, 1000).unwrap();
-        engine.submit_vote("proof1", "fed2", Vote::Approve, 1000).unwrap();
-        engine.submit_vote("proof1", "fed3", Vote::Approve, 1000).unwrap();
+        engine
+            .submit_vote("proof1", "fed1", Vote::Approve, 1000)
+            .unwrap();
+        engine
+            .submit_vote("proof1", "fed2", Vote::Approve, 1000)
+            .unwrap();
+        engine
+            .submit_vote("proof1", "fed3", Vote::Approve, 1000)
+            .unwrap();
 
         let reached = engine.check_quorum("proof1").unwrap();
         assert!(reached);
@@ -209,10 +261,18 @@ mod e2e {
         engine.create_session("p2".to_string()).unwrap();
 
         // Submit votes to reach quorum and verify sessions
-        engine.submit_vote("p1", "fed1", Vote::Approve, current_ms()).unwrap();
-        engine.submit_vote("p1", "fed2", Vote::Approve, current_ms()).unwrap();
-        engine.submit_vote("p2", "fed1", Vote::Approve, current_ms()).unwrap();
-        engine.submit_vote("p2", "fed2", Vote::Approve, current_ms()).unwrap();
+        engine
+            .submit_vote("p1", "fed1", Vote::Approve, current_ms())
+            .unwrap();
+        engine
+            .submit_vote("p1", "fed2", Vote::Approve, current_ms())
+            .unwrap();
+        engine
+            .submit_vote("p2", "fed1", Vote::Approve, current_ms())
+            .unwrap();
+        engine
+            .submit_vote("p2", "fed2", Vote::Approve, current_ms())
+            .unwrap();
 
         // Check quorum to mark sessions as verified
         engine.check_quorum("p1").unwrap();
@@ -233,7 +293,9 @@ mod e2e {
         // Federation Scaling v6
         let mut scaling = ScalingV6::default();
         scaling.register_node("n1".to_string(), 100.0, 0.9).unwrap();
-        scaling.register_node("n2".to_string(), 150.0, 0.85).unwrap();
+        scaling
+            .register_node("n2".to_string(), 150.0, 0.85)
+            .unwrap();
         scaling.create_shard("shard1".to_string()).unwrap();
         scaling.assign_node_to_shard("shard1").unwrap();
 
@@ -245,7 +307,9 @@ mod e2e {
         let mut grad_sync = GradientSyncV6::default();
         grad_sync.register_model("m1".to_string(), 10).unwrap();
         let grads: Vec<f32> = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0];
-        grad_sync.submit_gradients("m1".to_string(), grads, current_ms()).unwrap();
+        grad_sync
+            .submit_gradients("m1".to_string(), grads, current_ms())
+            .unwrap();
         let sync_result = grad_sync.execute_sync().unwrap();
         assert!(!sync_result.is_empty());
 
@@ -253,15 +317,30 @@ mod e2e {
         let mut zkp = AsyncZKPV11::default();
         zkp.register_federation("fed1".to_string(), 0.9).unwrap();
         let current = current_ms();
-        zkp.submit_proof("proof1".to_string(), "fed1".to_string(), ProofPriority::High, 10.0, current).unwrap();
+        zkp.submit_proof(
+            "proof1".to_string(),
+            "fed1".to_string(),
+            ProofPriority::High,
+            10.0,
+            current,
+        )
+        .unwrap();
 
         // Cross-Federation Verifier v2
         let mut verifier = CrossFederationVerifierV2::default();
-        verifier.register_federation("fed1".to_string(), 1.0).unwrap();
-        verifier.register_federation("fed2".to_string(), 0.9).unwrap();
+        verifier
+            .register_federation("fed1".to_string(), 1.0)
+            .unwrap();
+        verifier
+            .register_federation("fed2".to_string(), 0.9)
+            .unwrap();
         verifier.create_session("proof1".to_string()).unwrap();
-        verifier.submit_vote("proof1", "fed1", Vote::Approve, current).unwrap();
-        verifier.submit_vote("proof1", "fed2", Vote::Approve, current).unwrap();
+        verifier
+            .submit_vote("proof1", "fed1", Vote::Approve, current)
+            .unwrap();
+        verifier
+            .submit_vote("proof1", "fed2", Vote::Approve, current)
+            .unwrap();
 
         // Verify full pipeline
         assert_eq!(scaling.node_count(), 2);
@@ -270,7 +349,11 @@ mod e2e {
         assert_eq!(zkp.proof_count(), 1);
 
         let elapsed = start.elapsed();
-        assert!(elapsed.as_millis() < 5000, "Pipeline took too long: {}ms", elapsed.as_millis());
+        assert!(
+            elapsed.as_millis() < 5000,
+            "Pipeline took too long: {}ms",
+            elapsed.as_millis()
+        );
     }
 
     #[test]
@@ -281,7 +364,14 @@ mod e2e {
         let mut zkp = AsyncZKPV11::default();
         zkp.register_federation("fed1".to_string(), 0.9).unwrap();
         let current = current_ms();
-        zkp.submit_proof("p1".to_string(), "fed1".to_string(), ProofPriority::Normal, 1.0, current).unwrap();
+        zkp.submit_proof(
+            "p1".to_string(),
+            "fed1".to_string(),
+            ProofPriority::Normal,
+            1.0,
+            current,
+        )
+        .unwrap();
 
         assert_eq!(scaling.node_count(), 1);
         assert_eq!(zkp.proof_count(), 1);
@@ -295,7 +385,8 @@ mod e2e {
         let current = current_ms();
         for i in 0..100 {
             let id = format!("proof_{}", i);
-            let _ = engine.submit_proof(id, "fed1".to_string(), ProofPriority::Normal, 1.0, current);
+            let _ =
+                engine.submit_proof(id, "fed1".to_string(), ProofPriority::Normal, 1.0, current);
         }
 
         assert_eq!(engine.proof_count(), 100);

@@ -160,12 +160,7 @@ mod tests {
         // tau = 1, alpha = 0.5 → w = 1/(1+1)^0.5 = 1/sqrt(2) ≈ 0.7071068
         let w = apply_staleness_decay(4, 5, 0.5).unwrap();
         let expected = 1.0 / 2.0f32.sqrt();
-        assert!(
-            approx_eq(w, expected),
-            "Expected w={}, got {}",
-            expected,
-            w
-        );
+        assert!(approx_eq(w, expected), "Expected w={}, got {}", expected, w);
     }
 
     #[test]
@@ -173,12 +168,7 @@ mod tests {
         // tau = 5, alpha = 1.0 → w = 1/(1+5)^1 = 1/6 ≈ 0.1666667
         let w = apply_staleness_decay(10, 15, 1.0).unwrap();
         let expected = 1.0 / 6.0;
-        assert!(
-            approx_eq(w, expected),
-            "Expected w={}, got {}",
-            expected,
-            w
-        );
+        assert!(approx_eq(w, expected), "Expected w={}, got {}", expected, w);
     }
 
     #[test]
@@ -186,12 +176,7 @@ mod tests {
         // tau = 10, alpha = 2.0 → w = 1/(1+10)^2 = 1/121 ≈ 0.0082645
         let w = apply_staleness_decay(20, 30, 2.0).unwrap();
         let expected = 1.0 / 121.0;
-        assert!(
-            approx_eq(w, expected),
-            "Expected w={}, got {}",
-            expected,
-            w
-        );
+        assert!(approx_eq(w, expected), "Expected w={}, got {}", expected, w);
     }
 
     #[test]
@@ -304,7 +289,10 @@ mod tests {
 
     #[test]
     fn test_error_display() {
-        let err = StalenessError::FutureVersion { local: 10, global: 5 };
+        let err = StalenessError::FutureVersion {
+            local: 10,
+            global: 5,
+        };
         let msg = format!("{}", err);
         assert!(msg.contains("futura"));
     }

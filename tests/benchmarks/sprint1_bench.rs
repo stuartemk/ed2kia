@@ -37,9 +37,7 @@ mod imports {
         FedAvgAggregatorV2, FedAvgConfigV2,
     };
     pub use ed2kia::federation_v2_sprint1::gradient_compressor::GradientCompressor;
-    pub use ed2kia::interoperability::capability_registry::{
-        CapabilityRegistry, ModelCapability,
-    };
+    pub use ed2kia::interoperability::capability_registry::{CapabilityRegistry, ModelCapability};
     pub use ed2kia::interoperability::cross_model_router::{
         CrossModelRouter, RoutingPriority, RoutingRequest,
     };
@@ -62,7 +60,13 @@ mod benchmarks {
         WeightUpdate::new(node_id.to_string(), layer_id, deltas, 100, 0.5)
     }
 
-    fn make_capability(id: &str, name: &str, tasks: &[&str], latency: f64, memory: usize) -> ModelCapability {
+    fn make_capability(
+        id: &str,
+        name: &str,
+        tasks: &[&str],
+        latency: f64,
+        memory: usize,
+    ) -> ModelCapability {
         ModelCapability::new(
             id.to_string(),
             name.to_string(),
@@ -79,12 +83,9 @@ mod benchmarks {
 
     fn wasm_with_run_function() -> Vec<u8> {
         [
-            0x00, 0x61, 0x73, 0x6D,
-            0x01, 0x00, 0x00, 0x00,
-            0x01, 0x04, 0x01, 0x60, 0x00, 0x00,
-            0x03, 0x02, 0x01, 0x00,
-            0x07, 0x07, 0x01, 0x03, b'r', b'u', b'n', 0x00, 0x00,
-            0x0A, 0x04, 0x01, 0x02, 0x00, 0x0B,
+            0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00, 0x01, 0x04, 0x01, 0x60, 0x00, 0x00,
+            0x03, 0x02, 0x01, 0x00, 0x07, 0x07, 0x01, 0x03, b'r', b'u', b'n', 0x00, 0x00, 0x0A,
+            0x04, 0x01, 0x02, 0x00, 0x0B,
         ]
         .to_vec()
     }
@@ -245,17 +246,15 @@ mod benchmarks {
         let compressor = GradientCompressor;
 
         let configs: Vec<(usize, usize)> = vec![
-            (1_000, 100),      // 10% sparsity
-            (10_000, 1_000),   // 10% sparsity
-            (100_000, 10_000), // 10% sparsity
+            (1_000, 100),         // 10% sparsity
+            (10_000, 1_000),      // 10% sparsity
+            (100_000, 10_000),    // 10% sparsity
             (1_000_000, 100_000), // 10% sparsity
         ];
         let iterations = 50;
 
         for &(dim, k) in &configs {
-            let deltas: Vec<f32> = (0..dim)
-                .map(|i| ((i % 100) as f32 / 50.0 - 1.0))
-                .collect();
+            let deltas: Vec<f32> = (0..dim).map(|i| ((i % 100) as f32 / 50.0 - 1.0)).collect();
 
             let start = Instant::now();
             for _ in 0..iterations {
@@ -264,7 +263,8 @@ mod benchmarks {
             let elapsed = start.elapsed().as_secs_f64() * 1000.0;
 
             let memory_bytes = dim * std::mem::size_of::<f32>();
-            let compressed_bytes = k * std::mem::size_of::<f32>() + k * std::mem::size_of::<usize>();
+            let compressed_bytes =
+                k * std::mem::size_of::<f32>() + k * std::mem::size_of::<usize>();
             let ratio = compressed_bytes as f32 / memory_bytes as f32;
 
             println!(
@@ -291,9 +291,7 @@ mod benchmarks {
         let iterations = 50;
 
         for dim in dims {
-            let deltas: Vec<f32> = (0..dim)
-                .map(|i| ((i % 100) as f32 / 50.0 - 1.0))
-                .collect();
+            let deltas: Vec<f32> = (0..dim).map(|i| ((i % 100) as f32 / 50.0 - 1.0)).collect();
 
             // Quantize
             let start = Instant::now();

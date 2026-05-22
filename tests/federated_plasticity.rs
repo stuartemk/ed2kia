@@ -23,20 +23,12 @@ mod neuroplastic_aggregation_tests {
         // High CE + positive Z peer
         ce.emit_credit("ethical-peer", 0.9, 200.0).unwrap(); // CE = 180
         let token_a = NeuroplasticAggregator::peer_id_to_token("ethical-peer");
-        sct.insert_symbol(
-            token_a,
-            StuartianTensor::new(0.6, 0.4, 0.5).unwrap(),
-            1000,
-        );
+        sct.insert_symbol(token_a, StuartianTensor::new(0.6, 0.4, 0.5).unwrap(), 1000);
 
         // Low CE + negative Z peer
         ce.emit_credit("weak-peer", 0.1, 50.0).unwrap(); // CE = 5
         let token_b = NeuroplasticAggregator::peer_id_to_token("weak-peer");
-        sct.insert_symbol(
-            token_b,
-            StuartianTensor::new(0.3, 0.2, -0.4).unwrap(),
-            1000,
-        );
+        sct.insert_symbol(token_b, StuartianTensor::new(0.3, 0.2, -0.4).unwrap(), 1000);
 
         let agg = NeuroplasticAggregator::new(ce, sct);
 
@@ -75,8 +67,7 @@ mod neuroplastic_aggregation_tests {
         let agg = NeuroplasticAggregator::new(ce, sct);
 
         let device = candle_core::Device::Cpu;
-        let grads =
-            Tensor::from_vec(vec![2.0_f32, 4.0, 6.0, 8.0], 4, &device).unwrap();
+        let grads = Tensor::from_vec(vec![2.0_f32, 4.0, 6.0, 8.0], 4, &device).unwrap();
 
         let weighted = agg.aggregate_gradients(&grads, "peer-1").unwrap();
         let result: Vec<f32> = weighted.to_vec1().unwrap();
@@ -105,10 +96,10 @@ mod neuroplastic_aggregation_tests {
     feature = "v2.1-quantum-feedback"
 ))]
 mod steering_bridge_tests {
+    use ed25519_dalek::SigningKey;
     use ed2kia::alignment::steering_bridge::SteeringBridge;
     use ed2kia::async_gossip::crdt_symbols::SymbolRegistry;
     use ed2kia::economics::existential_credit::ExistentialCreditLedger;
-    use ed25519_dalek::SigningKey;
 
     fn setup_bridge() -> SteeringBridge {
         let sct = SymbolRegistry::new("test-node");
@@ -137,7 +128,10 @@ mod steering_bridge_tests {
         // Verify event structure
         assert_eq!(event.token_id, 42);
         assert_eq!(event.peer_id, "human-1");
-        assert!(event.delta_sct.2 > 0.0, "ΔZ should be positive for constructive feedback");
+        assert!(
+            event.delta_sct.2 > 0.0,
+            "ΔZ should be positive for constructive feedback"
+        );
         assert!(!event.signature.is_empty(), "Signature should not be empty");
         assert!(event.timestamp > 0, "Timestamp should be > 0");
 
@@ -149,7 +143,10 @@ mod steering_bridge_tests {
 
         // Verify CE was emitted
         let ce_score = bridge.ce_ledger().get_score("human-1");
-        assert!(ce_score > 0.0, "CE should be positive after constructive feedback");
+        assert!(
+            ce_score > 0.0,
+            "CE should be positive after constructive feedback"
+        );
 
         // Verify SCT was updated
         let symbol = bridge.sct_dict().get_symbol(42);
@@ -234,7 +231,7 @@ mod async_feedback_tests {
     fn test_async_feedback_conflict_resolution() {
         let mut ce = ExistentialCreditLedger::new();
         ce.emit_credit("peer-high", 0.9, 200.0).unwrap(); // CE = 180
-        ce.emit_credit("peer-low", 0.1, 50.0).unwrap();  // CE = 5
+        ce.emit_credit("peer-low", 0.1, 50.0).unwrap(); // CE = 5
 
         let mut queue = AsyncFeedbackQueue::new("node-1", ce);
 
@@ -291,10 +288,14 @@ mod async_feedback_tests {
         let mut queue_b = AsyncFeedbackQueue::new("node-b", ce_b);
 
         // Queue A has token 42
-        queue_a.enqueue(make_event(42, "shared-peer", 0.2, 1000)).unwrap();
+        queue_a
+            .enqueue(make_event(42, "shared-peer", 0.2, 1000))
+            .unwrap();
 
         // Queue B has token 99
-        queue_b.enqueue(make_event(99, "shared-peer", 0.3, 1000)).unwrap();
+        queue_b
+            .enqueue(make_event(99, "shared-peer", 0.3, 1000))
+            .unwrap();
 
         // Sync both directions
         queue_a.sync_with_peer(&queue_b);
@@ -315,7 +316,7 @@ mod async_feedback_tests {
         let mut ce_b = ExistentialCreditLedger::new();
 
         ce_a.emit_credit("peer-high", 0.9, 200.0).unwrap(); // CE = 180
-        ce_a.emit_credit("peer-low", 0.1, 50.0).unwrap();  // CE = 5
+        ce_a.emit_credit("peer-low", 0.1, 50.0).unwrap(); // CE = 5
         ce_b.emit_credit("peer-high", 0.9, 200.0).unwrap();
         ce_b.emit_credit("peer-low", 0.1, 50.0).unwrap();
 
@@ -323,10 +324,14 @@ mod async_feedback_tests {
         let mut queue_b = AsyncFeedbackQueue::new("node-b", ce_b);
 
         // Queue A: low priority
-        queue_a.enqueue(make_event(42, "peer-low", 0.1, 1000)).unwrap();
+        queue_a
+            .enqueue(make_event(42, "peer-low", 0.1, 1000))
+            .unwrap();
 
         // Queue B: high priority
-        queue_b.enqueue(make_event(42, "peer-high", 0.3, 1000)).unwrap();
+        queue_b
+            .enqueue(make_event(42, "peer-high", 0.3, 1000))
+            .unwrap();
 
         // Sync B into A — B's entry should win
         queue_a.sync_with_peer(&queue_b);

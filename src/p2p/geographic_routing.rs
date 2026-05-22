@@ -77,7 +77,10 @@ mod internal {
             let lat_rad_other = other.latitude.to_radians();
 
             let a = (lat_diff / 2.0).sin() * (lat_diff / 2.0).sin()
-                + lat_rad_self.cos() * lat_rad_other.cos() * (lon_diff / 2.0).sin() * (lon_diff / 2.0).sin();
+                + lat_rad_self.cos()
+                    * lat_rad_other.cos()
+                    * (lon_diff / 2.0).sin()
+                    * (lon_diff / 2.0).sin();
             let c = 2.0 * a.sqrt().atan2((1.0 - a).sqrt());
 
             earth_radius_km * c
@@ -175,9 +178,7 @@ mod internal {
             let rtt_penalty = self.rtt.avg_rtt_ms;
 
             let distance_penalty = match (&self.coordinates, origin) {
-                (Some(coords), Some(origin_coords)) => {
-                    coords.distance_to(origin_coords) * 0.1
-                }
+                (Some(coords), Some(origin_coords)) => coords.distance_to(origin_coords) * 0.1,
                 _ => 0.0, // No geographic penalty if data unavailable
             };
 
@@ -274,7 +275,12 @@ mod internal {
                 return Err(GeoRoutingError::NoPeersAvailable);
             }
 
-            let entry = GeoPeerEntry::with_coordinates(peer_id.clone(), coordinates, initial_rtt_ms, timestamp_ms);
+            let entry = GeoPeerEntry::with_coordinates(
+                peer_id.clone(),
+                coordinates,
+                initial_rtt_ms,
+                timestamp_ms,
+            );
             self.peers.insert(peer_id, entry);
             Ok(())
         }
@@ -288,7 +294,9 @@ mod internal {
         ) -> Result<(), GeoRoutingError> {
             match self.peers.get_mut(peer_id) {
                 Some(entry) => {
-                    entry.rtt.update(new_rtt_ms, self.config.rtt_alpha, timestamp_ms);
+                    entry
+                        .rtt
+                        .update(new_rtt_ms, self.config.rtt_alpha, timestamp_ms);
                     Ok(())
                 }
                 None => Err(GeoRoutingError::PeerNotFound),
@@ -301,7 +309,10 @@ mod internal {
 
             for entry in self.peers.values() {
                 // Skip stale entries
-                if entry.rtt.is_stale(current_ms, self.config.stale_threshold_ms) {
+                if entry
+                    .rtt
+                    .is_stale(current_ms, self.config.stale_threshold_ms)
+                {
                     continue;
                 }
                 // Skip peers with insufficient samples
@@ -332,7 +343,9 @@ mod internal {
                 .peers
                 .values()
                 .filter(|entry| {
-                    !entry.rtt.is_stale(current_ms, self.config.stale_threshold_ms)
+                    !entry
+                        .rtt
+                        .is_stale(current_ms, self.config.stale_threshold_ms)
                         && entry.rtt.sample_count >= self.config.min_samples
                 })
                 .map(|entry| (entry.peer_id.clone(), entry.routing_score(&self.origin)))
@@ -357,7 +370,11 @@ mod internal {
             let stale_ids: Vec<String> = self
                 .peers
                 .values()
-                .filter(|entry| entry.rtt.is_stale(current_ms, self.config.stale_threshold_ms))
+                .filter(|entry| {
+                    entry
+                        .rtt
+                        .is_stale(current_ms, self.config.stale_threshold_ms)
+                })
                 .map(|entry| entry.peer_id.clone())
                 .collect();
 
@@ -372,7 +389,11 @@ mod internal {
         pub fn active_peer_count(&self, current_ms: u64) -> usize {
             self.peers
                 .values()
-                .filter(|entry| !entry.rtt.is_stale(current_ms, self.config.stale_threshold_ms))
+                .filter(|entry| {
+                    !entry
+                        .rtt
+                        .is_stale(current_ms, self.config.stale_threshold_ms)
+                })
                 .count()
         }
 
@@ -383,7 +404,9 @@ mod internal {
                 .peers
                 .values()
                 .filter(|entry| {
-                    !entry.rtt.is_stale(current_ms, self.config.stale_threshold_ms)
+                    !entry
+                        .rtt
+                        .is_stale(current_ms, self.config.stale_threshold_ms)
                         && entry.rtt.sample_count >= self.config.min_samples
                 })
                 .count();
@@ -447,7 +470,11 @@ mod internal {
             let london = test_eu_peer();
             let distance = ny.distance_to(&london);
             // NYC to London is approximately 5,570 km
-            assert!(distance > 5000.0 && distance < 6000.0, "Expected ~5570km, got {}", distance);
+            assert!(
+                distance > 5000.0 && distance < 6000.0,
+                "Expected ~5570km, got {}",
+                distance
+            );
         }
 
         #[test]
@@ -581,7 +608,12 @@ mod internal {
             let eu_score = table.get_peer("eu").unwrap().routing_score(&table.origin);
             let jp_score = table.get_peer("jp").unwrap().routing_score(&table.origin);
             // EU should score higher (closer to NYC)
-            assert!(eu_score > jp_score, "EU score {} > JP score {}", eu_score, jp_score);
+            assert!(
+                eu_score > jp_score,
+                "EU score {} > JP score {}",
+                eu_score,
+                jp_score
+            );
         }
 
         #[test]

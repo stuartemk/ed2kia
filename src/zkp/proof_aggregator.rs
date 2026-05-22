@@ -125,13 +125,17 @@ impl ProofAggregator {
     /// Aggregate pending proofs into a composite proof.
     pub fn aggregate(&mut self, aggregate_id: String) -> Result<AggregatedProof, AggregatorError> {
         if !self.config.aggregation_enabled {
-            return Err(AggregatorError::IncompatibleProofs("Aggregation disabled".to_string()));
+            return Err(AggregatorError::IncompatibleProofs(
+                "Aggregation disabled".to_string(),
+            ));
         }
 
         if self.pending_proofs.len() < self.config.min_proofs_to_aggregate {
-            return Err(AggregatorError::IncompatibleProofs(
-                format!("Need {} proofs, have {}", self.config.min_proofs_to_aggregate, self.pending_proofs.len())
-            ));
+            return Err(AggregatorError::IncompatibleProofs(format!(
+                "Need {} proofs, have {}",
+                self.config.min_proofs_to_aggregate,
+                self.pending_proofs.len()
+            )));
         }
 
         let proof_ids: Vec<String> = self.pending_proofs.keys().cloned().collect();
@@ -139,12 +143,7 @@ impl ProofAggregator {
         let aggregated_data = self.compute_aggregated_data();
         let timestamp = current_timestamp_ms();
 
-        let agg_proof = AggregatedProof::new(
-            aggregate_id,
-            proof_ids,
-            aggregated_data,
-            timestamp,
-        );
+        let agg_proof = AggregatedProof::new(aggregate_id, proof_ids, aggregated_data, timestamp);
 
         self.stats.total_aggregated += 1;
         self.stats.total_proofs_in_aggregates += proof_count as u64;

@@ -102,7 +102,8 @@ impl TaskRouter {
         for i in 0..peer_count {
             let task_id = format!("task-{:03}", i);
             let peer_id = format!("peer-{:03}", i);
-            self.tasks.push(TensorTask::new(task_id.clone(), peer_id, payload_size));
+            self.tasks
+                .push(TensorTask::new(task_id.clone(), peer_id, payload_size));
             task_ids.push(task_id);
         }
 
@@ -115,7 +116,10 @@ impl TaskRouter {
     /// 1. Wait for task completion signals
     /// 2. Aggregate partial results
     /// 3. Return collected inference results
-    pub async fn collect_results(&mut self, task_ids: &[String]) -> Result<Vec<String>, RoutingError> {
+    pub async fn collect_results(
+        &mut self,
+        task_ids: &[String],
+    ) -> Result<Vec<String>, RoutingError> {
         if task_ids.is_empty() {
             return Err(RoutingError::Collection("No task IDs provided".to_string()));
         }

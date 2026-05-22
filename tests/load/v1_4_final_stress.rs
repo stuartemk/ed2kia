@@ -7,17 +7,17 @@ mod stress {
     use std::time::Instant;
 
     // LP-108
-    use ed2kia::sae::fine_tuning_v4::{FineTuningV4, FineTuningV4Config};
-    use ed2kia::sae::cross_model_aligner_v2::{CrossModelAlignerV2, AlignerV2Config};
     use ed2kia::sae::adaptive_checkpoint_v2::{AdaptiveCheckpointV2, AdaptiveCheckpointV2Config};
+    use ed2kia::sae::cross_model_aligner_v2::{AlignerV2Config, CrossModelAlignerV2};
+    use ed2kia::sae::fine_tuning_v4::{FineTuningV4, FineTuningV4Config};
 
     // LP-109
+    use ed2kia::federation::predictive_sharder_v4::{PredictiveSharderConfig, PredictiveSharderV4};
     use ed2kia::federation::scaling_v4::{FederationScalingV4, ScalingV4Config};
-    use ed2kia::federation::predictive_sharder_v4::{PredictiveSharderV4, PredictiveSharderConfig};
 
     // LP-110
     use ed2kia::zkp::async_zkp_v8::{AsyncZKPV8, ZKPV8Config};
-    use ed2kia::zkp::cross_federation_verification::{CrossFederationVerifier, CrossFedConfig};
+    use ed2kia::zkp::cross_federation_verification::{CrossFedConfig, CrossFederationVerifier};
 
     // ─── SAE v4 Stress ───
 
@@ -39,7 +39,9 @@ mod stress {
         };
         let mut engine = FineTuningV4::new(config);
         engine.register_node("n1".to_string(), 0.9, 0.9).unwrap();
-        engine.register_model("m1".to_string(), "n1".to_string(), 64).unwrap();
+        engine
+            .register_model("m1".to_string(), "n1".to_string(), 64)
+            .unwrap();
 
         let mut grads = std::collections::HashMap::new();
         grads.insert("m1".to_string(), vec![0.1f32; 64]);
@@ -129,7 +131,9 @@ mod stress {
         }
         scaling.create_shard("shard-0".to_string()).unwrap();
         for i in 0..20 {
-            scaling.assign_node_to_shard(&format!("node-{}", i), "shard-0").unwrap();
+            scaling
+                .assign_node_to_shard(&format!("node-{}", i), "shard-0")
+                .unwrap();
         }
 
         let start = Instant::now();
@@ -162,10 +166,7 @@ mod stress {
 
         let start = Instant::now();
         for i in 0..500 {
-            let nodes = vec![
-                format!("node-{}", i % 10),
-                format!("node-{}", (i + 1) % 10),
-            ];
+            let nodes = vec![format!("node-{}", i % 10), format!("node-{}", (i + 1) % 10)];
             let _ = sharder.create_shard(format!("shard-{}", i), nodes);
         }
         let elapsed = start.elapsed();
@@ -192,12 +193,8 @@ mod stress {
 
         let start = Instant::now();
         for i in 0..1000 {
-            zkp.submit_proof(
-                format!("p-{}", i),
-                "fed-stress".to_string(),
-                1,
-                1.0,
-            ).unwrap();
+            zkp.submit_proof(format!("p-{}", i), "fed-stress".to_string(), 1, 1.0)
+                .unwrap();
         }
         for _ in 0..1000 {
             zkp.process_next();
@@ -220,14 +217,22 @@ mod stress {
         let mut verifier = CrossFederationVerifier::new(config);
 
         verifier.register_federation("f1".to_string(), 0.9).unwrap();
-        verifier.register_federation("f2".to_string(), 0.85).unwrap();
+        verifier
+            .register_federation("f2".to_string(), 0.85)
+            .unwrap();
         verifier.register_federation("f3".to_string(), 0.8).unwrap();
 
         let start = Instant::now();
         for i in 0..200 {
-            verifier.create_session(format!("s-{}", i), format!("proof-{}", i)).unwrap();
-            verifier.submit_vote(&format!("s-{}", i), "f1", true).unwrap();
-            verifier.submit_vote(&format!("s-{}", i), "f2", true).unwrap();
+            verifier
+                .create_session(format!("s-{}", i), format!("proof-{}", i))
+                .unwrap();
+            verifier
+                .submit_vote(&format!("s-{}", i), "f1", true)
+                .unwrap();
+            verifier
+                .submit_vote(&format!("s-{}", i), "f2", true)
+                .unwrap();
             verifier.check_consensus(&format!("s-{}", i)).unwrap();
         }
         let elapsed = start.elapsed();

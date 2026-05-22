@@ -49,14 +49,21 @@ mod internal {
                 Self::CheckpointFailed(msg) => write!(f, "Checkpoint failed: {}", msg),
                 Self::GradientMismatch(msg) => write!(f, "Gradient mismatch: {}", msg),
                 Self::UptimeBelowThreshold { node_id, uptime } => {
-                    write!(f, "Node {} uptime {:.1}% below threshold", node_id, uptime * 100.0)
+                    write!(
+                        f,
+                        "Node {} uptime {:.1}% below threshold",
+                        node_id,
+                        uptime * 100.0
+                    )
                 }
                 Self::AlignmentFailed(msg) => write!(f, "Cross-model alignment failed: {}", msg),
                 Self::ModelNotFound(id) => write!(f, "Model not found: {}", id),
                 Self::SyncTimeout(id) => write!(f, "Sync timeout for: {}", id),
                 Self::CompressionFailed(msg) => write!(f, "Compression failed: {}", msg),
                 Self::ConvergenceDivergence(msg) => write!(f, "Convergence divergence: {}", msg),
-                Self::LearningRateExhausted => write!(f, "Learning rate exhausted minimum threshold"),
+                Self::LearningRateExhausted => {
+                    write!(f, "Learning rate exhausted minimum threshold")
+                }
                 Self::IntegrityValidationFailed(msg) => {
                     write!(f, "Checkpoint integrity validation failed: {}", msg)
                 }
@@ -256,7 +263,11 @@ mod internal {
             }
             let capacity_factor = self.declared_capacity / (self.declared_capacity + 1.0);
             let latency_factor = 1.0 / (1.0 + self.historical_latency_ms / 100.0);
-            self.reputation * self.uptime * (1.0 - self.predicted_load) * capacity_factor * latency_factor
+            self.reputation
+                * self.uptime
+                * (1.0 - self.predicted_load)
+                * capacity_factor
+                * latency_factor
         }
 
         pub fn meets_uptime(&self, min_uptime: f64) -> bool {
@@ -358,13 +369,14 @@ mod internal {
     impl FineTuningV6Stats {
         pub fn record_sync(&mut self, time_ms: u64, alignment: f64, normalized: f64) {
             self.total_syncs += 1;
-            self.avg_sync_time_ms =
-                (self.avg_sync_time_ms * (self.total_syncs - 1) as f64 + time_ms as f64) / self.total_syncs as f64;
-            self.avg_alignment =
-                (self.avg_alignment * (self.total_syncs - 1) as f64 + alignment) / self.total_syncs as f64;
-            self.avg_normalized_alignment = (self.avg_normalized_alignment * (self.total_syncs - 1) as f64
-                + normalized)
+            self.avg_sync_time_ms = (self.avg_sync_time_ms * (self.total_syncs - 1) as f64
+                + time_ms as f64)
                 / self.total_syncs as f64;
+            self.avg_alignment = (self.avg_alignment * (self.total_syncs - 1) as f64 + alignment)
+                / self.total_syncs as f64;
+            self.avg_normalized_alignment =
+                (self.avg_normalized_alignment * (self.total_syncs - 1) as f64 + normalized)
+                    / self.total_syncs as f64;
         }
 
         pub fn record_checkpoint(&mut self, incremental: bool) {
@@ -623,11 +635,8 @@ mod internal {
                 };
 
                 let elapsed_ms = start.elapsed().as_millis() as u64;
-                self.stats.record_sync(
-                    elapsed_ms,
-                    alignment,
-                    normalized_alignment,
-                );
+                self.stats
+                    .record_sync(elapsed_ms, alignment, normalized_alignment);
 
                 self.sync_history.push_back(GradientSyncRecordV6 {
                     round: self.current_round,
@@ -663,9 +672,10 @@ mod internal {
 
             // Convergence detection
             let converged = if self.config.convergence_detection {
-                let all_converged: bool = self.models.values().all(|p| {
-                    p.has_converged(self.config.convergence_threshold)
-                });
+                let all_converged: bool = self
+                    .models
+                    .values()
+                    .all(|p| p.has_converged(self.config.convergence_threshold));
                 if all_converged && self.models.len() > 0 {
                     self.no_improvement_count += 1;
                     self.stats.record_convergence();
@@ -680,9 +690,10 @@ mod internal {
 
             // Adaptive learning rate
             if self.config.adaptive_lr && !converged {
-                let any_diverging: bool = self.models.values().any(|p| {
-                    p.recent_loss_change() > self.config.convergence_threshold * 10.0
-                });
+                let any_diverging: bool = self
+                    .models
+                    .values()
+                    .any(|p| p.recent_loss_change() > self.config.convergence_threshold * 10.0);
                 if any_diverging {
                     self.current_lr *= self.config.lr_decay;
                     if self.current_lr < self.config.min_learning_rate {
@@ -731,7 +742,12 @@ mod internal {
                 let mut pairs = Vec::new();
                 for (i, m1) in model_vals.iter().enumerate() {
                     for m2 in model_vals.iter().skip(i + 1) {
-                        pairs.push((m1.model_id.clone(), m2.model_id.clone(), m1.alignment_score, m2.alignment_score));
+                        pairs.push((
+                            m1.model_id.clone(),
+                            m2.model_id.clone(),
+                            m1.alignment_score,
+                            m2.alignment_score,
+                        ));
                     }
                 }
                 pairs
@@ -763,7 +779,12 @@ mod internal {
                 ));
 
                 let size_bytes = profile.gradient_dim * 4;
-                let mut entry = CheckpointEntryV6::new(self.current_round, profile.model_id.clone(), hash, size_bytes);
+                let mut entry = CheckpointEntryV6::new(
+                    self.current_round,
+                    profile.model_id.clone(),
+                    hash,
+                    size_bytes,
+                );
 
                 // LZ4 compression for checkpoint
                 if self.config.lz4_compression {
@@ -784,7 +805,8 @@ mod internal {
                 }
 
                 self.stats.record_checkpoint(entry.incremental);
-                self.stats.record_integrity_validation(entry.integrity_valid);
+                self.stats
+                    .record_integrity_validation(entry.integrity_valid);
 
                 self.checkpoint_history.push_back(entry);
             }
@@ -931,8 +953,7 @@ mod internal {
         #[test]
         fn test_register_model_node_not_found() {
             let mut engine = FineTuningV6::default();
-            let result =
-                engine.register_model("model-1".to_string(), "missing".to_string(), 1024);
+            let result = engine.register_model("model-1".to_string(), "missing".to_string(), 1024);
             assert!(result.is_err());
         }
 
@@ -942,8 +963,7 @@ mod internal {
             engine
                 .register_node("node-1".to_string(), 0.95, 0.8, 100.0)
                 .unwrap();
-            let result =
-                engine.register_model("model-1".to_string(), "node-1".to_string(), 100000);
+            let result = engine.register_model("model-1".to_string(), "node-1".to_string(), 100000);
             assert!(result.is_err());
         }
 

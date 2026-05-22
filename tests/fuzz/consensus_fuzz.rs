@@ -22,8 +22,8 @@
     feature = "v1.7-sprint1"
 ))]
 mod consensus_properties {
-    use ed2kia::protocol::audit_payloads::AuditResultPayload;
     use ed2kia::orchestrator::consensus::validate_consensus;
+    use ed2kia::protocol::audit_payloads::AuditResultPayload;
     use proptest::prelude::*;
     use uuid::Uuid;
 
@@ -128,10 +128,7 @@ mod consensus_properties {
     }
 }
 
-#[cfg(all(
-    feature = "v2.1-fuzzing",
-    feature = "v2.1-reputation-system"
-))]
+#[cfg(all(feature = "v2.1-fuzzing", feature = "v2.1-reputation-system"))]
 mod reputation_properties {
     use ed2kia::orchestrator::reputation::ReputationEngine;
     use proptest::prelude::*;
@@ -216,12 +213,9 @@ mod reputation_properties {
     }
 }
 
-#[cfg(all(
-    feature = "v2.1-fuzzing",
-    feature = "v2.1-sybil-micropow"
-))]
+#[cfg(all(feature = "v2.1-fuzzing", feature = "v2.1-sybil-micropow"))]
 mod sybil_properties {
-    use ed2kia::orchestrator::sybil::{SybilEngine, Solution, solve_challenge};
+    use ed2kia::orchestrator::sybil::{solve_challenge, Solution, SybilEngine};
     use proptest::prelude::*;
 
     proptest! {

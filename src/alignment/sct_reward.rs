@@ -8,12 +8,12 @@
 //! Optimización WASM: O(1) overhead, sin backprop pesado, compatible con
 //! `candle-core` device agnostic.
 
-use candle_core::{Device, Tensor};
 use candle_core::Module;
+use candle_core::{Device, Tensor};
 use candle_nn::Linear;
 use thiserror::Error;
 
-use crate::alignment::sct_core::{SctError, SCTDecision, StuartianTensor};
+use crate::alignment::sct_core::{SCTDecision, SctError, StuartianTensor};
 
 /// Error específico del modelo de recompensa SCT.
 #[derive(Debug, Error)]
@@ -73,7 +73,9 @@ impl SctRewardModel {
     /// Evalúa directamente la decisión SCT desde un hidden state.
     pub fn evaluate(&self, hidden: &Tensor) -> Result<SCTDecision, SctRewardError> {
         let tensor = self.forward(hidden)?;
-        tensor.evaluate_trajectory().map_err(SctRewardError::SctCore)
+        tensor
+            .evaluate_trajectory()
+            .map_err(SctRewardError::SctCore)
     }
 
     /// Calcula la pérdida SCT (SCTLoss).
@@ -81,11 +83,7 @@ impl SctRewardModel {
     /// Penalización logarítmica masiva si predice `Z < 0` cuando el label
     /// indica "Foco Superior" (expected_z > 0).
     /// Recompensa si detecta perversidad oculta (expected_z < 0 y predice Z < 0).
-    pub fn sct_loss(
-        &self,
-        hidden: &Tensor,
-        expected_z: f32,
-    ) -> Result<f32, SctRewardError> {
+    pub fn sct_loss(&self, hidden: &Tensor, expected_z: f32) -> Result<f32, SctRewardError> {
         let tensor = self.forward(hidden)?;
         let z_pred = tensor.z;
 

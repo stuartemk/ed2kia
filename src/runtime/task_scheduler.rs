@@ -3,8 +3,8 @@
 //! Manages task queues with priority levels, deadlines, and fair scheduling
 //! across worker pools. Feature-gated behind `cfg(feature = "v1.4-sprint1")`.
 
-use std::collections::{BinaryHeap, HashMap};
 use std::cmp::Ordering;
+use std::collections::{BinaryHeap, HashMap};
 use std::time::{Duration, Instant};
 
 /// Error types for task scheduling.
@@ -426,7 +426,11 @@ mod tests {
     fn test_next_task_priority() {
         let mut scheduler = TaskScheduler::default();
         let low = ScheduledTask::new("low".to_string(), TaskPriority::Low, "low".to_string());
-        let critical = ScheduledTask::new("crit".to_string(), TaskPriority::Critical, "crit".to_string());
+        let critical = ScheduledTask::new(
+            "crit".to_string(),
+            TaskPriority::Critical,
+            "crit".to_string(),
+        );
         scheduler.schedule(low).unwrap();
         scheduler.schedule(critical).unwrap();
         let next = scheduler.next_task().unwrap();
@@ -503,9 +507,25 @@ mod tests {
             ..Default::default()
         };
         let mut scheduler = TaskScheduler::new(config);
-        scheduler.schedule(ScheduledTask::new("t1".to_string(), TaskPriority::Normal, "a".to_string())).unwrap();
-        scheduler.schedule(ScheduledTask::new("t2".to_string(), TaskPriority::Normal, "b".to_string())).unwrap();
-        let result = scheduler.schedule(ScheduledTask::new("t3".to_string(), TaskPriority::Normal, "c".to_string()));
+        scheduler
+            .schedule(ScheduledTask::new(
+                "t1".to_string(),
+                TaskPriority::Normal,
+                "a".to_string(),
+            ))
+            .unwrap();
+        scheduler
+            .schedule(ScheduledTask::new(
+                "t2".to_string(),
+                TaskPriority::Normal,
+                "b".to_string(),
+            ))
+            .unwrap();
+        let result = scheduler.schedule(ScheduledTask::new(
+            "t3".to_string(),
+            TaskPriority::Normal,
+            "c".to_string(),
+        ));
         assert!(result.is_err());
     }
 
@@ -559,8 +579,16 @@ mod tests {
     #[test]
     fn test_fifo_within_priority() {
         let mut scheduler = TaskScheduler::default();
-        let t1 = ScheduledTask::new("first".to_string(), TaskPriority::Normal, "first".to_string());
-        let t2 = ScheduledTask::new("second".to_string(), TaskPriority::Normal, "second".to_string());
+        let t1 = ScheduledTask::new(
+            "first".to_string(),
+            TaskPriority::Normal,
+            "first".to_string(),
+        );
+        let t2 = ScheduledTask::new(
+            "second".to_string(),
+            TaskPriority::Normal,
+            "second".to_string(),
+        );
         scheduler.schedule(t1).unwrap();
         scheduler.schedule(t2).unwrap();
         let next = scheduler.next_task().unwrap();

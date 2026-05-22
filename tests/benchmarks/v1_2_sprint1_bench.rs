@@ -8,11 +8,15 @@
 
 #![cfg(feature = "v1.2-sprint1")]
 
-use ed2kia::federation::multi_chain_registry::{ChainConfig, ChainProtocol, ChainState, MultiChainRegistry};
+use ed2kia::alignment::ethical_constraint_engine::{
+    ConstraintEngine, ConstraintSeverity, ConstraintType, EthicalConstraint,
+};
 use ed2kia::federation::cross_chain_identity::CrossChainIdentity;
-use ed2kia::sae::fine_tuning_engine::{FineTuningConfig, FineTuningEngine, LearningRateSchedule};
 use ed2kia::federation::gradient_aggregator_v3::{AggregatorConfig, GradientAggregatorV3};
-use ed2kia::alignment::ethical_constraint_engine::{ConstraintEngine, ConstraintSeverity, ConstraintType, EthicalConstraint};
+use ed2kia::federation::multi_chain_registry::{
+    ChainConfig, ChainProtocol, ChainState, MultiChainRegistry,
+};
+use ed2kia::sae::fine_tuning_engine::{FineTuningConfig, FineTuningEngine, LearningRateSchedule};
 use std::time::Instant;
 
 // ============================================================================
@@ -194,7 +198,10 @@ fn bench_gradient_aggregation_100_participants() {
         }
         let _ = aggregator.aggregate();
     });
-    assert!(elapsed < 100.0, "Gradient aggregation 100 participants exceeded 100ms");
+    assert!(
+        elapsed < 100.0,
+        "Gradient aggregation 100 participants exceeded 100ms"
+    );
 }
 
 fn bench_gradient_aggregation_outlier_detection() {
@@ -207,9 +214,7 @@ fn bench_gradient_aggregation_outlier_detection() {
         };
         let aggregator = GradientAggregatorV3::new(config);
         let gradients: Vec<Vec<f32>> = (0..1000)
-            .map(|i| {
-                (0..64).map(|j| (i + j) as f32 * 0.01).collect()
-            })
+            .map(|i| (0..64).map(|j| (i + j) as f32 * 0.01).collect())
             .collect();
         let slices: Vec<&[f32]> = gradients.iter().map(|v| v.as_slice()).collect();
         let _ = aggregator.detect_outliers(&slices);
@@ -243,49 +248,55 @@ fn bench_gradient_aggregation_multi_round() {
 // ============================================================================
 
 fn bench_constraint_validation_1000_gradients() {
-    let elapsed = bench("Constraints: validate 1000 gradients (5 constraints)", || {
-        let mut engine = ConstraintEngine::new();
-        // Add 5 constraints
-        for i in 0..5 {
-            let constraint = EthicalConstraint::new(
-                format!("bound-{}", i),
-                ConstraintType::ValueBound {
-                    min: -2.0,
-                    max: 2.0,
-                    feature_index: i,
-                },
-                ConstraintSeverity::Warning,
-            );
-            engine.add_constraint(constraint);
-        }
-        for _ in 0..1000 {
-            let gradient = vec![0.5f32; 10];
-            let _ = engine.validate_gradient(&gradient);
-        }
-    });
+    let elapsed = bench(
+        "Constraints: validate 1000 gradients (5 constraints)",
+        || {
+            let mut engine = ConstraintEngine::new();
+            // Add 5 constraints
+            for i in 0..5 {
+                let constraint = EthicalConstraint::new(
+                    format!("bound-{}", i),
+                    ConstraintType::ValueBound {
+                        min: -2.0,
+                        max: 2.0,
+                        feature_index: i,
+                    },
+                    ConstraintSeverity::Warning,
+                );
+                engine.add_constraint(constraint);
+            }
+            for _ in 0..1000 {
+                let gradient = vec![0.5f32; 10];
+                let _ = engine.validate_gradient(&gradient);
+            }
+        },
+    );
     assert!(elapsed < 100.0, "Constraint validation exceeded 100ms");
 }
 
 fn bench_constraint_correction_1000_gradients() {
-    let elapsed = bench("Constraints: correct 1000 gradients (5 constraints)", || {
-        let mut engine = ConstraintEngine::new();
-        for i in 0..5 {
-            let constraint = EthicalConstraint::new(
-                format!("bound-{}", i),
-                ConstraintType::ValueBound {
-                    min: -1.0,
-                    max: 1.0,
-                    feature_index: i,
-                },
-                ConstraintSeverity::Correction,
-            );
-            engine.add_constraint(constraint);
-        }
-        for _ in 0..1000 {
-            let mut gradient = vec![5.0f32; 10];
-            let _ = engine.correct_gradient(&mut gradient);
-        }
-    });
+    let elapsed = bench(
+        "Constraints: correct 1000 gradients (5 constraints)",
+        || {
+            let mut engine = ConstraintEngine::new();
+            for i in 0..5 {
+                let constraint = EthicalConstraint::new(
+                    format!("bound-{}", i),
+                    ConstraintType::ValueBound {
+                        min: -1.0,
+                        max: 1.0,
+                        feature_index: i,
+                    },
+                    ConstraintSeverity::Correction,
+                );
+                engine.add_constraint(constraint);
+            }
+            for _ in 0..1000 {
+                let mut gradient = vec![5.0f32; 10];
+                let _ = engine.correct_gradient(&mut gradient);
+            }
+        },
+    );
     assert!(elapsed < 100.0, "Constraint correction exceeded 100ms");
 }
 
@@ -385,67 +396,73 @@ fn bench_full_pipeline_training_aggregation() {
         }
         let _ = aggregator.aggregate();
     });
-    assert!(elapsed < 100.0, "Training+aggregation pipeline exceeded 100ms");
+    assert!(
+        elapsed < 100.0,
+        "Training+aggregation pipeline exceeded 100ms"
+    );
 }
 
 fn bench_full_pipeline_complete() {
-    let elapsed = bench("Pipeline: complete (registry→identity→train→agg→constraints)", || {
-        // Registry
-        let mut registry = MultiChainRegistry::new();
-        for i in 0..20 {
-            let config = ChainConfig::new(
-                format!("chain-{}", i),
-                format!("https://chain-{}.example.com", i),
-                ChainProtocol::Ethereum,
-            );
-            let _ = registry.register_chain(config);
-        }
+    let elapsed = bench(
+        "Pipeline: complete (registry→identity→train→agg→constraints)",
+        || {
+            // Registry
+            let mut registry = MultiChainRegistry::new();
+            for i in 0..20 {
+                let config = ChainConfig::new(
+                    format!("chain-{}", i),
+                    format!("https://chain-{}.example.com", i),
+                    ChainProtocol::Ethereum,
+                );
+                let _ = registry.register_chain(config);
+            }
 
-        // Identity
-        let seed = [0x42u8; 32];
-        let signing_key = ed25519_dalek::SigningKey::from_bytes(&seed);
-        let identity = CrossChainIdentity::new("full-node".to_string(), signing_key);
-        let _ = identity.derive_chain_key("chain-0");
+            // Identity
+            let seed = [0x42u8; 32];
+            let signing_key = ed25519_dalek::SigningKey::from_bytes(&seed);
+            let identity = CrossChainIdentity::new("full-node".to_string(), signing_key);
+            let _ = identity.derive_chain_key("chain-0");
 
-        // Training
-        let config = FineTuningConfig {
-            learning_rate: 0.01,
-            schedule: LearningRateSchedule::Constant,
-            batch_size: 32,
-            max_epochs: 10,
-            convergence_threshold: 0.01,
-        };
-        let mut engine = FineTuningEngine::new(config);
-        for _ in 0..5 {
-            let _ = engine.start_epoch();
-            let _ = engine.record_batch(0.3, 1.0);
-        }
+            // Training
+            let config = FineTuningConfig {
+                learning_rate: 0.01,
+                schedule: LearningRateSchedule::Constant,
+                batch_size: 32,
+                max_epochs: 10,
+                convergence_threshold: 0.01,
+            };
+            let mut engine = FineTuningEngine::new(config);
+            for _ in 0..5 {
+                let _ = engine.start_epoch();
+                let _ = engine.record_batch(0.3, 1.0);
+            }
 
-        // Aggregation
-        let agg_config = AggregatorConfig {
-            compression_ratio: 1.0,
-            outlier_threshold: 2.0,
-            min_participants: 1,
-            use_reputation_weights: false,
-        };
-        let mut aggregator = GradientAggregatorV3::new(agg_config);
-        let gradient = vec![0.01; 64];
-        let _ = aggregator.submit_gradient("full-node".to_string(), gradient);
-        let _ = aggregator.aggregate();
+            // Aggregation
+            let agg_config = AggregatorConfig {
+                compression_ratio: 1.0,
+                outlier_threshold: 2.0,
+                min_participants: 1,
+                use_reputation_weights: false,
+            };
+            let mut aggregator = GradientAggregatorV3::new(agg_config);
+            let gradient = vec![0.01; 64];
+            let _ = aggregator.submit_gradient("full-node".to_string(), gradient);
+            let _ = aggregator.aggregate();
 
-        // Constraints
-        let mut constraint_engine = ConstraintEngine::new();
-        constraint_engine.add_constraint(EthicalConstraint::new(
-            "final-bound".to_string(),
-            ConstraintType::ValueBound {
-                min: -1.0,
-                max: 1.0,
-                feature_index: 0,
-            },
-            ConstraintSeverity::Warning,
-        ));
-        let _ = constraint_engine.validate_gradient(&[0.5]);
-    });
+            // Constraints
+            let mut constraint_engine = ConstraintEngine::new();
+            constraint_engine.add_constraint(EthicalConstraint::new(
+                "final-bound".to_string(),
+                ConstraintType::ValueBound {
+                    min: -1.0,
+                    max: 1.0,
+                    feature_index: 0,
+                },
+                ConstraintSeverity::Warning,
+            ));
+            let _ = constraint_engine.validate_gradient(&[0.5]);
+        },
+    );
     assert!(elapsed < 100.0, "Complete pipeline exceeded 100ms");
 }
 

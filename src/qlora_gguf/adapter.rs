@@ -221,10 +221,7 @@ impl QloraAdapter {
     /// # Arguments
     /// * `data` - Bytes serializados con bincode.
     /// * `device` - Dispositivo donde cargar los tensores.
-    pub fn from_bytes(
-        data: &[u8],
-        _device: &Device,
-    ) -> Result<Self, QloraAdapterError> {
+    pub fn from_bytes(data: &[u8], _device: &Device) -> Result<Self, QloraAdapterError> {
         // TODO(Sprint16.2): Implement full bincode deserialization.
         // For now, validate basic structure.
         if data.len() < 64 {
@@ -286,9 +283,7 @@ impl QloraAdapter {
     /// - Alpha en rango válido [0.0, 1.0]
     pub fn validate(&self) -> Result<(), QloraAdapterError> {
         if self.info.rank == 0 {
-            return Err(QloraAdapterError::InvalidRank(
-                "Rank must be > 0".into(),
-            ));
+            return Err(QloraAdapterError::InvalidRank("Rank must be > 0".into()));
         }
 
         if self.info.rank >= self.info.d_model {
@@ -357,9 +352,10 @@ impl QloraAdapter {
 
         // A @ B: (d_model x r) @ (r x d_model) = (d_model x d_model)
         // This is the delta that gets added to W: W' = W + delta
-        let delta = self.matrix_a.matmul(&self.matrix_b).map_err(|e| {
-            candle_core::Error::Msg(format!("Failed to compute A @ B: {}", e))
-        })?;
+        let delta = self
+            .matrix_a
+            .matmul(&self.matrix_b)
+            .map_err(|e| candle_core::Error::Msg(format!("Failed to compute A @ B: {}", e)))?;
 
         // Scale by alpha/rank
         let scale_tensor = Tensor::new(scale as f32, &self.device)?;
@@ -369,7 +365,6 @@ impl QloraAdapter {
     /// Crea un adapter de prueba con tensores aleatorios.
     #[cfg(test)]
     pub fn mock(d_model: usize, rank: usize, alpha: f64) -> Self {
-
         let device = Device::Cpu;
         let info = AdapterInfo {
             adapter_id: format!("mock-{}-{}", d_model, rank),
@@ -544,11 +539,7 @@ mod tests {
         let delta_vec: Vec<Vec<f32>> = delta.to_vec2::<f32>().expect("to_vec2");
         for row in delta_vec {
             for val in row {
-                assert!(
-                    (val - 1.0).abs() < 1e-5,
-                    "Expected ~1.0, got {}",
-                    val
-                );
+                assert!((val - 1.0).abs() < 1e-5, "Expected ~1.0, got {}", val);
             }
         }
     }

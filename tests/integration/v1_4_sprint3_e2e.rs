@@ -12,17 +12,17 @@
 
 mod e2e {
     // LP-108: SAE Fine-Tuning v4
-    use ed2kia::sae::fine_tuning_v4::{FineTuningV4, FineTuningV4Config};
-    use ed2kia::sae::cross_model_aligner_v2::{CrossModelAlignerV2, AlignerV2Config};
     use ed2kia::sae::adaptive_checkpoint_v2::{AdaptiveCheckpointV2, AdaptiveCheckpointV2Config};
+    use ed2kia::sae::cross_model_aligner_v2::{AlignerV2Config, CrossModelAlignerV2};
+    use ed2kia::sae::fine_tuning_v4::{FineTuningV4, FineTuningV4Config};
 
     // LP-109: Federation Scaling v4
+    use ed2kia::federation::predictive_sharder_v4::{PredictiveSharderConfig, PredictiveSharderV4};
     use ed2kia::federation::scaling_v4::{FederationScalingV4, ScalingV4Config};
-    use ed2kia::federation::predictive_sharder_v4::{PredictiveSharderV4, PredictiveSharderConfig};
 
     // LP-110: Async ZKP v8
     use ed2kia::zkp::async_zkp_v8::{AsyncZKPV8, ZKPV8Config};
-    use ed2kia::zkp::cross_federation_verification::{CrossFederationVerifier, CrossFedConfig};
+    use ed2kia::zkp::cross_federation_verification::{CrossFedConfig, CrossFederationVerifier};
 
     // ─── LP-108: SAE Fine-Tuning v4 E2E ───
 
@@ -45,13 +45,23 @@ mod e2e {
         let mut engine = FineTuningV4::new(config);
 
         // Register nodes
-        engine.register_node("node-1".to_string(), 0.95, 0.9).unwrap();
-        engine.register_node("node-2".to_string(), 0.85, 0.8).unwrap();
-        engine.register_node("node-reserve".to_string(), 0.99, 0.95).unwrap();
+        engine
+            .register_node("node-1".to_string(), 0.95, 0.9)
+            .unwrap();
+        engine
+            .register_node("node-2".to_string(), 0.85, 0.8)
+            .unwrap();
+        engine
+            .register_node("node-reserve".to_string(), 0.99, 0.95)
+            .unwrap();
 
         // Register models
-        engine.register_model("model-a".to_string(), "node-1".to_string(), 128).unwrap();
-        engine.register_model("model-b".to_string(), "node-2".to_string(), 128).unwrap();
+        engine
+            .register_model("model-a".to_string(), "node-1".to_string(), 128)
+            .unwrap();
+        engine
+            .register_model("model-b".to_string(), "node-2".to_string(), 128)
+            .unwrap();
 
         // Execute training rounds
         let mut gradients = std::collections::HashMap::new();
@@ -207,10 +217,12 @@ mod e2e {
         }
 
         // Create shard
-        let placement = sharder.create_shard(
-            "shard-x".to_string(),
-            vec!["node-1".to_string(), "node-2".to_string()],
-        ).unwrap();
+        let placement = sharder
+            .create_shard(
+                "shard-x".to_string(),
+                vec!["node-1".to_string(), "node-2".to_string()],
+            )
+            .unwrap();
         assert_eq!(placement.shard_id, "shard-x");
 
         // Evaluate placements
@@ -251,7 +263,8 @@ mod e2e {
                 "fed-a".to_string(),
                 (i + 1) as u32,
                 5.0,
-            ).unwrap();
+            )
+            .unwrap();
         }
 
         // Process proofs
@@ -282,13 +295,23 @@ mod e2e {
         let mut verifier = CrossFederationVerifier::new(config);
 
         // Register federations
-        verifier.register_federation("fed-a".to_string(), 0.9).unwrap();
-        verifier.register_federation("fed-b".to_string(), 0.85).unwrap();
-        verifier.register_federation("fed-c".to_string(), 0.8).unwrap();
-        verifier.register_federation("fed-d".to_string(), 0.75).unwrap();
+        verifier
+            .register_federation("fed-a".to_string(), 0.9)
+            .unwrap();
+        verifier
+            .register_federation("fed-b".to_string(), 0.85)
+            .unwrap();
+        verifier
+            .register_federation("fed-c".to_string(), 0.8)
+            .unwrap();
+        verifier
+            .register_federation("fed-d".to_string(), 0.75)
+            .unwrap();
 
         // Create verification session
-        verifier.create_session("session-1".to_string(), "proof-x".to_string()).unwrap();
+        verifier
+            .create_session("session-1".to_string(), "proof-x".to_string())
+            .unwrap();
 
         // Submit votes
         verifier.submit_vote("session-1", "fed-a", true).unwrap();
@@ -323,8 +346,10 @@ mod e2e {
             sync_timeout_ms: 150,
             max_gradient_history: 500,
         });
-        sae.register_node("sae-node".to_string(), 0.95, 0.9).unwrap();
-        sae.register_model("model-1".to_string(), "sae-node".to_string(), 64).unwrap();
+        sae.register_node("sae-node".to_string(), 0.95, 0.9)
+            .unwrap();
+        sae.register_model("model-1".to_string(), "sae-node".to_string(), 64)
+            .unwrap();
 
         let mut grads = std::collections::HashMap::new();
         grads.insert("model-1".to_string(), vec![0.1f32; 64]);
@@ -343,7 +368,9 @@ mod e2e {
             rebalance_cooldown_ms: 30_000,
             proactive_threshold: 0.7,
         });
-        scaling.register_node("fed-node".to_string(), 100.0).unwrap();
+        scaling
+            .register_node("fed-node".to_string(), 100.0)
+            .unwrap();
         scaling.create_shard("sae-shard".to_string()).unwrap();
         scaling.update_node_load("fed-node", 0.6).unwrap();
 
@@ -358,7 +385,8 @@ mod e2e {
             queue_limit: 20,
         });
         zkp.register_federation("sae-fed".to_string());
-        zkp.submit_proof("sae-proof".to_string(), "sae-fed".to_string(), 1, 5.0).unwrap();
+        zkp.submit_proof("sae-proof".to_string(), "sae-fed".to_string(), 1, 5.0)
+            .unwrap();
         zkp.process_next().unwrap();
         assert_eq!(zkp.get_stats().total_proofs_generated, 1);
 
@@ -370,11 +398,21 @@ mod e2e {
             reputation_weight: 0.7,
             max_chain_length: 5,
         });
-        cross_fed.register_federation("sae-fed".to_string(), 0.9).unwrap();
-        cross_fed.register_federation("audit-fed".to_string(), 0.85).unwrap();
-        cross_fed.create_session("verify-sae".to_string(), "sae-proof".to_string()).unwrap();
-        cross_fed.submit_vote("verify-sae", "sae-fed", true).unwrap();
-        cross_fed.submit_vote("verify-sae", "audit-fed", true).unwrap();
+        cross_fed
+            .register_federation("sae-fed".to_string(), 0.9)
+            .unwrap();
+        cross_fed
+            .register_federation("audit-fed".to_string(), 0.85)
+            .unwrap();
+        cross_fed
+            .create_session("verify-sae".to_string(), "sae-proof".to_string())
+            .unwrap();
+        cross_fed
+            .submit_vote("verify-sae", "sae-fed", true)
+            .unwrap();
+        cross_fed
+            .submit_vote("verify-sae", "audit-fed", true)
+            .unwrap();
         assert!(cross_fed.get_stats().total_votes >= 2);
     }
 
@@ -400,7 +438,8 @@ mod e2e {
                 "fed-stress".to_string(),
                 (50 - i) as u32,
                 2.0,
-            ).unwrap();
+            )
+            .unwrap();
         }
 
         // Process all
@@ -435,7 +474,8 @@ mod e2e {
         }
 
         // Trusted federation can submit
-        zkp.submit_proof("p1".to_string(), "trusted".to_string(), 1, 5.0).unwrap();
+        zkp.submit_proof("p1".to_string(), "trusted".to_string(), 1, 5.0)
+            .unwrap();
 
         // Untrusted federation rejected
         let result = zkp.submit_proof("p2".to_string(), "untrusted".to_string(), 1, 5.0);
@@ -457,7 +497,9 @@ mod e2e {
         };
         let mut scaling = FederationScalingV4::new(config);
 
-        scaling.register_node("deep-node".to_string(), 100.0).unwrap();
+        scaling
+            .register_node("deep-node".to_string(), 100.0)
+            .unwrap();
         scaling.update_delegation_depth("deep-node", 1).unwrap();
         scaling.update_delegation_depth("deep-node", 2).unwrap();
 

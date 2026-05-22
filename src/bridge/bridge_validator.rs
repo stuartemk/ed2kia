@@ -37,11 +37,7 @@ mod internal {
                 ValidatorError::InvalidHash(h) => write!(f, "Invalid hash: {}", h),
                 ValidatorError::MerkleProofFailed => write!(f, "Merkle proof verification failed"),
                 ValidatorError::ThresholdNotMet { current, required } => {
-                    write!(
-                        f,
-                        "Threshold not met: {:.4} < {:.4}",
-                        current, required
-                    )
+                    write!(f, "Threshold not met: {:.4} < {:.4}", current, required)
                 }
                 ValidatorError::VRFVerificationFailed => write!(f, "VRF verification failed"),
                 ValidatorError::PayloadTooLarge { size, max } => {

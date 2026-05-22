@@ -35,7 +35,9 @@ mod internal {
                 PredictiveSharderError::InsufficientNodes(min) => {
                     write!(f, "Insufficient nodes: need at least {}", min)
                 }
-                PredictiveSharderError::PredictionNotWarm => write!(f, "Prediction window not warm"),
+                PredictiveSharderError::PredictionNotWarm => {
+                    write!(f, "Prediction window not warm")
+                }
                 PredictiveSharderError::ShardExists(id) => write!(f, "Shard {} already exists", id),
             }
         }
@@ -211,8 +213,9 @@ mod internal {
     impl SharderStats {
         pub fn record_accuracy(&mut self, accuracy: f64) {
             let n = self.total_predictions + 1;
-            self.avg_prediction_accuracy =
-                self.avg_prediction_accuracy * (self.total_predictions as f64 / n as f64) + accuracy / n as f64;
+            self.avg_prediction_accuracy = self.avg_prediction_accuracy
+                * (self.total_predictions as f64 / n as f64)
+                + accuracy / n as f64;
             self.total_predictions = n;
         }
 
@@ -254,23 +257,42 @@ mod internal {
         }
 
         /// Record load sample for a node.
-        pub fn record_load(&mut self, node_id: &str, load: f64) -> Result<(), PredictiveSharderError> {
-            let history = self.load_histories.get_mut(node_id)
+        pub fn record_load(
+            &mut self,
+            node_id: &str,
+            load: f64,
+        ) -> Result<(), PredictiveSharderError> {
+            let history = self
+                .load_histories
+                .get_mut(node_id)
                 .ok_or(PredictiveSharderError::NodeNotFound(node_id.to_string()))?;
-            history.record(load, self.config.ema_alpha, self.config.min_warm_samples * 2);
+            history.record(
+                load,
+                self.config.ema_alpha,
+                self.config.min_warm_samples * 2,
+            );
             Ok(())
         }
 
         /// Create a shard placement.
-        pub fn create_shard(&mut self, shard_id: String, nodes: Vec<String>) -> Result<ShardPlacement, PredictiveSharderError> {
+        pub fn create_shard(
+            &mut self,
+            shard_id: String,
+            nodes: Vec<String>,
+        ) -> Result<ShardPlacement, PredictiveSharderError> {
             if self.placements.contains_key(&shard_id) {
                 return Err(PredictiveSharderError::ShardExists(shard_id.clone()));
             }
             if nodes.len() < self.config.min_nodes_per_shard {
-                return Err(PredictiveSharderError::InsufficientNodes(self.config.min_nodes_per_shard));
+                return Err(PredictiveSharderError::InsufficientNodes(
+                    self.config.min_nodes_per_shard,
+                ));
             }
             if self.placements.len() >= self.config.max_shards {
-                return Err(PredictiveSharderError::ShardNotFound(format!("Max shards ({}) reached", self.config.max_shards)));
+                return Err(PredictiveSharderError::ShardNotFound(format!(
+                    "Max shards ({}) reached",
+                    self.config.max_shards
+                )));
             }
             for node in &nodes {
                 if !self.load_histories.contains_key(node.as_str()) {
@@ -288,7 +310,9 @@ mod internal {
 
         /// Predict load for a node.
         pub fn predict_node_load(&self, node_id: &str) -> Result<f64, PredictiveSharderError> {
-            let history = self.load_histories.get(node_id)
+            let history = self
+                .load_histories
+                .get(node_id)
                 .ok_or(PredictiveSharderError::NodeNotFound(node_id.to_string()))?;
             if !history.is_warm(self.config.min_warm_samples) {
                 return Err(PredictiveSharderError::PredictionNotWarm);
@@ -298,7 +322,9 @@ mod internal {
 
         /// Predict load for a shard (average of node predictions).
         pub fn predict_shard_load(&self, shard_id: &str) -> Result<f64, PredictiveSharderError> {
-            let placement = self.placements.get(shard_id)
+            let placement = self
+                .placements
+                .get(shard_id)
                 .ok_or(PredictiveSharderError::ShardNotFound(shard_id.to_string()))?;
             if placement.nodes.is_empty() {
                 return Ok(0.0);
@@ -308,7 +334,8 @@ mod internal {
             for node_id in &placement.nodes {
                 if let Some(history) = self.load_histories.get(node_id) {
                     if history.is_warm(self.config.min_warm_samples) {
-                        total += history.predict(self.config.prediction_horizon, self.config.ema_alpha);
+                        total +=
+                            history.predict(self.config.prediction_horizon, self.config.ema_alpha);
                         count += 1;
                     }
                 }
@@ -345,8 +372,8 @@ mod internal {
                     }
                 }
                 placement.predicted_load = if count > 0 { total / count as f64 } else { 0.0 };
-                placement.proactive_rebalance = placement.predicted_load > threshold
-                    && placement.load_factor <= threshold;
+                placement.proactive_rebalance =
+                    placement.predicted_load > threshold && placement.load_factor <= threshold;
                 placement.placement_score = (1.0 - placement.predicted_load).max(0.0);
                 let needs_rebalance = placement.proactive_rebalance;
                 if needs_rebalance {
@@ -359,7 +386,8 @@ mod internal {
 
         /// Get warm node count.
         pub fn warm_node_count(&self) -> usize {
-            self.load_histories.values()
+            self.load_histories
+                .values()
                 .filter(|h| h.is_warm(self.config.min_warm_samples))
                 .count()
         }
@@ -371,7 +399,8 @@ mod internal {
 
         /// Remove a shard.
         pub fn remove_shard(&mut self, shard_id: &str) -> Result<(), PredictiveSharderError> {
-            self.placements.remove(shard_id)
+            self.placements
+                .remove(shard_id)
                 .ok_or(PredictiveSharderError::ShardNotFound(shard_id.to_string()))?;
             self.stats.active_shards = self.placements.len();
             Ok(())
@@ -407,13 +436,15 @@ mod internal {
             for node_id in &placement.nodes {
                 if let Some(history) = self.load_histories.get(node_id) {
                     if history.is_warm(self.config.min_warm_samples) {
-                        total += history.predict(self.config.prediction_horizon, self.config.ema_alpha);
+                        total +=
+                            history.predict(self.config.prediction_horizon, self.config.ema_alpha);
                         count += 1;
                     }
                 }
             }
             placement.predicted_load = if count > 0 { total / count as f64 } else { 0.0 };
-            placement.proactive_rebalance = placement.predicted_load > self.config.proactive_threshold
+            placement.proactive_rebalance = placement.predicted_load
+                > self.config.proactive_threshold
                 && placement.load_factor <= self.config.proactive_threshold;
             placement.placement_score = (1.0 - placement.predicted_load).max(0.0);
         }
@@ -458,7 +489,10 @@ mod tests {
     fn test_record_load_node_not_found() {
         let mut sharder = PredictiveSharderV4::with_defaults();
         let result = sharder.record_load("missing", 0.5);
-        assert!(matches!(result, Err(PredictiveSharderError::NodeNotFound(_))));
+        assert!(matches!(
+            result,
+            Err(PredictiveSharderError::NodeNotFound(_))
+        ));
     }
 
     #[test]
@@ -466,7 +500,10 @@ mod tests {
         let mut sharder = PredictiveSharderV4::with_defaults();
         sharder.register_node("node1".to_string());
         sharder.record_load("node1", 0.5).unwrap();
-        assert_eq!(sharder.predict_node_load("node1"), Err(PredictiveSharderError::PredictionNotWarm));
+        assert_eq!(
+            sharder.predict_node_load("node1"),
+            Err(PredictiveSharderError::PredictionNotWarm)
+        );
     }
 
     #[test]
@@ -485,7 +522,12 @@ mod tests {
         let mut sharder = PredictiveSharderV4::with_defaults();
         sharder.register_node("node1".to_string());
         sharder.register_node("node2".to_string());
-        let placement = sharder.create_shard("shard1".to_string(), vec!["node1".to_string(), "node2".to_string()]).unwrap();
+        let placement = sharder
+            .create_shard(
+                "shard1".to_string(),
+                vec!["node1".to_string(), "node2".to_string()],
+            )
+            .unwrap();
         assert_eq!(placement.shard_id, "shard1");
         assert_eq!(placement.nodes.len(), 2);
         assert_eq!(sharder.shard_count(), 1);
@@ -496,9 +538,20 @@ mod tests {
         let mut sharder = PredictiveSharderV4::with_defaults();
         sharder.register_node("node1".to_string());
         sharder.register_node("node2".to_string());
-        sharder.create_shard("shard1".to_string(), vec!["node1".to_string(), "node2".to_string()]).unwrap();
-        let result = sharder.create_shard("shard1".to_string(), vec!["node1".to_string(), "node2".to_string()]);
-        assert!(matches!(result, Err(PredictiveSharderError::ShardExists(_))));
+        sharder
+            .create_shard(
+                "shard1".to_string(),
+                vec!["node1".to_string(), "node2".to_string()],
+            )
+            .unwrap();
+        let result = sharder.create_shard(
+            "shard1".to_string(),
+            vec!["node1".to_string(), "node2".to_string()],
+        );
+        assert!(matches!(
+            result,
+            Err(PredictiveSharderError::ShardExists(_))
+        ));
     }
 
     #[test]
@@ -506,7 +559,10 @@ mod tests {
         let mut sharder = PredictiveSharderV4::with_defaults();
         sharder.register_node("node1".to_string());
         let result = sharder.create_shard("shard1".to_string(), vec!["node1".to_string()]);
-        assert!(matches!(result, Err(PredictiveSharderError::InsufficientNodes(_))));
+        assert!(matches!(
+            result,
+            Err(PredictiveSharderError::InsufficientNodes(_))
+        ));
     }
 
     #[test]
@@ -514,8 +570,14 @@ mod tests {
         let mut sharder = PredictiveSharderV4::with_defaults();
         sharder.register_node("node1".to_string());
         sharder.register_node("node2".to_string());
-        let result = sharder.create_shard("shard1".to_string(), vec!["node1".to_string(), "unknown".to_string()]);
-        assert!(matches!(result, Err(PredictiveSharderError::NodeNotFound(_))));
+        let result = sharder.create_shard(
+            "shard1".to_string(),
+            vec!["node1".to_string(), "unknown".to_string()],
+        );
+        assert!(matches!(
+            result,
+            Err(PredictiveSharderError::NodeNotFound(_))
+        ));
     }
 
     #[test]
@@ -527,7 +589,12 @@ mod tests {
             sharder.record_load("node1", 0.4).unwrap();
             sharder.record_load("node2", 0.6).unwrap();
         }
-        sharder.create_shard("shard1".to_string(), vec!["node1".to_string(), "node2".to_string()]).unwrap();
+        sharder
+            .create_shard(
+                "shard1".to_string(),
+                vec!["node1".to_string(), "node2".to_string()],
+            )
+            .unwrap();
         let predicted = sharder.predict_shard_load("shard1").unwrap();
         assert!(predicted >= 0.0 && predicted <= 1.0);
     }
@@ -536,7 +603,10 @@ mod tests {
     fn test_predict_shard_load_not_found() {
         let sharder = PredictiveSharderV4::with_defaults();
         let result = sharder.predict_shard_load("missing");
-        assert!(matches!(result, Err(PredictiveSharderError::ShardNotFound(_))));
+        assert!(matches!(
+            result,
+            Err(PredictiveSharderError::ShardNotFound(_))
+        ));
     }
 
     #[test]
@@ -548,7 +618,12 @@ mod tests {
             sharder.record_load("node1", 0.3).unwrap();
             sharder.record_load("node2", 0.3).unwrap();
         }
-        sharder.create_shard("shard1".to_string(), vec!["node1".to_string(), "node2".to_string()]).unwrap();
+        sharder
+            .create_shard(
+                "shard1".to_string(),
+                vec!["node1".to_string(), "node2".to_string()],
+            )
+            .unwrap();
         let results = sharder.evaluate_placements();
         assert_eq!(results.len(), 1);
     }
@@ -558,7 +633,12 @@ mod tests {
         let mut sharder = PredictiveSharderV4::with_defaults();
         sharder.register_node("node1".to_string());
         sharder.register_node("node2".to_string());
-        sharder.create_shard("shard1".to_string(), vec!["node1".to_string(), "node2".to_string()]).unwrap();
+        sharder
+            .create_shard(
+                "shard1".to_string(),
+                vec!["node1".to_string(), "node2".to_string()],
+            )
+            .unwrap();
         assert!(sharder.get_placement("shard1").is_some());
         assert!(sharder.get_placement("missing").is_none());
     }
@@ -568,7 +648,12 @@ mod tests {
         let mut sharder = PredictiveSharderV4::with_defaults();
         sharder.register_node("node1".to_string());
         sharder.register_node("node2".to_string());
-        sharder.create_shard("shard1".to_string(), vec!["node1".to_string(), "node2".to_string()]).unwrap();
+        sharder
+            .create_shard(
+                "shard1".to_string(),
+                vec!["node1".to_string(), "node2".to_string()],
+            )
+            .unwrap();
         sharder.remove_shard("shard1").unwrap();
         assert_eq!(sharder.shard_count(), 0);
     }
@@ -577,7 +662,10 @@ mod tests {
     fn test_remove_shard_not_found() {
         let mut sharder = PredictiveSharderV4::with_defaults();
         let result = sharder.remove_shard("missing");
-        assert!(matches!(result, Err(PredictiveSharderError::ShardNotFound(_))));
+        assert!(matches!(
+            result,
+            Err(PredictiveSharderError::ShardNotFound(_))
+        ));
     }
 
     #[test]
@@ -597,7 +685,12 @@ mod tests {
         let mut sharder = PredictiveSharderV4::with_defaults();
         sharder.register_node("node1".to_string());
         sharder.register_node("node2".to_string());
-        sharder.create_shard("shard1".to_string(), vec!["node1".to_string(), "node2".to_string()]).unwrap();
+        sharder
+            .create_shard(
+                "shard1".to_string(),
+                vec!["node1".to_string(), "node2".to_string()],
+            )
+            .unwrap();
         sharder.reset_stats();
         assert_eq!(sharder.stats().total_placements, 0);
     }
@@ -716,7 +809,11 @@ mod tests {
         sharder.register_node("n2".to_string());
         sharder.register_node("n3".to_string());
         sharder.register_node("n4".to_string());
-        sharder.create_shard("s1".to_string(), vec!["n1".to_string(), "n2".to_string()]).unwrap();
-        assert!(sharder.create_shard("s2".to_string(), vec!["n3".to_string(), "n4".to_string()]).is_err());
+        sharder
+            .create_shard("s1".to_string(), vec!["n1".to_string(), "n2".to_string()])
+            .unwrap();
+        assert!(sharder
+            .create_shard("s2".to_string(), vec!["n3".to_string(), "n4".to_string()])
+            .is_err());
     }
 }

@@ -31,14 +31,24 @@ pub fn emit_inference_complete(
     use wasm_bindgen::JsCast;
 
     let window = web_sys::window().ok_or_else(|| JsValue::from_str("No window"))?;
-    let document = window.document().ok_or_else(|| JsValue::from_str("No document"))?;
+    let document = window
+        .document()
+        .ok_or_else(|| JsValue::from_str("No document"))?;
 
     // Build detail object.
     let mut detail_obj = js_sys::Object::new();
     js_sys::Reflect::set_str(&detail_obj, "task_id", task_id)?;
-    js_sys::Reflect::set(&detail_obj, "activations".into(), &JsValue::from(activations))?;
+    js_sys::Reflect::set(
+        &detail_obj,
+        "activations".into(),
+        &JsValue::from(activations),
+    )?;
     js_sys::Reflect::set(&detail_obj, "confidence".into(), &JsValue::from(confidence))?;
-    js_sys::Reflect::set(&detail_obj, "processing_time_ms".into(), &JsValue::from(processing_time_ms))?;
+    js_sys::Reflect::set(
+        &detail_obj,
+        "processing_time_ms".into(),
+        &JsValue::from(processing_time_ms),
+    )?;
 
     // Create CustomEvent with detail.
     let event_init = web_sys::CustomEventInit::new();
@@ -60,11 +70,17 @@ pub fn emit_task_received(task_id: &str, timestamp_ms: u64) -> Result<(), JsValu
     use wasm_bindgen::JsCast;
 
     let window = web_sys::window().ok_or_else(|| JsValue::from_str("No window"))?;
-    let document = window.document().ok_or_else(|| JsValue::from_str("No document"))?;
+    let document = window
+        .document()
+        .ok_or_else(|| JsValue::from_str("No document"))?;
 
     let mut detail_obj = js_sys::Object::new();
     js_sys::Reflect::set_str(&detail_obj, "task_id", task_id)?;
-    js_sys::Reflect::set(&detail_obj, "timestamp_ms".into(), &JsValue::from(timestamp_ms))?;
+    js_sys::Reflect::set(
+        &detail_obj,
+        "timestamp_ms".into(),
+        &JsValue::from(timestamp_ms),
+    )?;
 
     let event_init = web_sys::CustomEventInit::new();
     event_init.detail(&detail_obj);
@@ -84,11 +100,17 @@ pub fn emit_peer_connected(peer_id: &str, timestamp_ms: u64) -> Result<(), JsVal
     use wasm_bindgen::JsCast;
 
     let window = web_sys::window().ok_or_else(|| JsValue::from_str("No window"))?;
-    let document = window.document().ok_or_else(|| JsValue::from_str("No document"))?;
+    let document = window
+        .document()
+        .ok_or_else(|| JsValue::from_str("No document"))?;
 
     let mut detail_obj = js_sys::Object::new();
     js_sys::Reflect::set_str(&detail_obj, "peer_id", peer_id)?;
-    js_sys::Reflect::set(&detail_obj, "timestamp_ms".into(), &JsValue::from(timestamp_ms))?;
+    js_sys::Reflect::set(
+        &detail_obj,
+        "timestamp_ms".into(),
+        &JsValue::from(timestamp_ms),
+    )?;
 
     let event_init = web_sys::CustomEventInit::new();
     event_init.detail(&detail_obj);
@@ -108,12 +130,18 @@ pub fn emit_error(message: &str, source: &str, timestamp_ms: u64) -> Result<(), 
     use wasm_bindgen::JsCast;
 
     let window = web_sys::window().ok_or_else(|| JsValue::from_str("No window"))?;
-    let document = window.document().ok_or_else(|| JsValue::from_str("No document"))?;
+    let document = window
+        .document()
+        .ok_or_else(|| JsValue::from_str("No document"))?;
 
     let mut detail_obj = js_sys::Object::new();
     js_sys::Reflect::set_str(&detail_obj, "message", message)?;
     js_sys::Reflect::set_str(&detail_obj, "source", source)?;
-    js_sys::Reflect::set(&detail_obj, "timestamp_ms".into(), &JsValue::from(timestamp_ms))?;
+    js_sys::Reflect::set(
+        &detail_obj,
+        "timestamp_ms".into(),
+        &JsValue::from(timestamp_ms),
+    )?;
 
     let event_init = web_sys::CustomEventInit::new();
     event_init.detail(&detail_obj);
@@ -154,7 +182,12 @@ pub struct InferenceResult {
 
 impl InferenceResult {
     /// Create a new inference result.
-    pub fn new(task_id: String, activations: Vec<f32>, confidence: f64, processing_time_ms: u64) -> Self {
+    pub fn new(
+        task_id: String,
+        activations: Vec<f32>,
+        confidence: f64,
+        processing_time_ms: u64,
+    ) -> Self {
         Self {
             task_id,
             activations,
@@ -192,7 +225,10 @@ impl InferenceBridge {
     /// 1. Load SAE model weights
     /// 2. Execute forward pass on tensor partitions
     /// 3. Return inference results with activations
-    pub async fn run_sae_forward(&mut self, task_ids: &[String]) -> Result<Vec<InferenceResult>, InferenceError> {
+    pub async fn run_sae_forward(
+        &mut self,
+        task_ids: &[String],
+    ) -> Result<Vec<InferenceResult>, InferenceError> {
         if task_ids.is_empty() {
             return Err(InferenceError::NoTasks);
         }
@@ -204,8 +240,8 @@ impl InferenceBridge {
             let result = InferenceResult::new(
                 task_id.clone(),
                 vec![0.85, 0.92, 0.78, 0.95], // Mock activations
-                0.93,                          // Mock confidence
-                42,                            // Mock processing time
+                0.93,                         // Mock confidence
+                42,                           // Mock processing time
             );
             batch_results.push(result);
         }
@@ -251,7 +287,9 @@ impl InferenceBridge {
         payload_bytes: &[u8],
         node_id: String,
     ) -> Result<Vec<u8>, InferenceError> {
-        use crate::protocol::audit_payloads::{AuditPayloadError, AuditResultPayload, AuditTaskPayload};
+        use crate::protocol::audit_payloads::{
+            AuditPayloadError, AuditResultPayload, AuditTaskPayload,
+        };
         use crate::sae::qwen_scope_sae::QwenScopeSAE;
         use candle_core::Device;
         use std::time::Instant;
@@ -262,9 +300,8 @@ impl InferenceBridge {
         })?;
 
         // Validate payload
-        task.validate().map_err(|e| {
-            InferenceError::SaeForward(format!("Payload validation failed: {}", e))
-        })?;
+        task.validate()
+            .map_err(|e| InferenceError::SaeForward(format!("Payload validation failed: {}", e)))?;
 
         let start = Instant::now();
 
@@ -281,16 +318,19 @@ impl InferenceBridge {
 
         let w_enc_data = &task.shard_weights[0..w_enc_size];
         let w_dec_data = &task.shard_weights[w_enc_size..w_enc_size + w_dec_size];
-        let b_enc_data = &task.shard_weights[w_enc_size + w_dec_size..w_enc_size + w_dec_size + b_enc_size];
+        let b_enc_data =
+            &task.shard_weights[w_enc_size + w_dec_size..w_enc_size + w_dec_size + b_enc_size];
         let b_dec_data = &task.shard_weights[w_enc_size + w_dec_size + b_enc_size..];
 
         // Create tensors from weight data
-        let w_enc = Tensor::from_vec(w_enc_data.to_vec(), (d_sae, d_model), &device).map_err(|e| {
-            InferenceError::SaeForward(format!("w_enc tensor creation failed: {}", e))
-        })?;
-        let w_dec = Tensor::from_vec(w_dec_data.to_vec(), (d_model, d_sae), &device).map_err(|e| {
-            InferenceError::SaeForward(format!("w_dec tensor creation failed: {}", e))
-        })?;
+        let w_enc =
+            Tensor::from_vec(w_enc_data.to_vec(), (d_sae, d_model), &device).map_err(|e| {
+                InferenceError::SaeForward(format!("w_enc tensor creation failed: {}", e))
+            })?;
+        let w_dec =
+            Tensor::from_vec(w_dec_data.to_vec(), (d_model, d_sae), &device).map_err(|e| {
+                InferenceError::SaeForward(format!("w_dec tensor creation failed: {}", e))
+            })?;
         let b_enc = Tensor::from_vec(b_enc_data.to_vec(), d_sae, &device).map_err(|e| {
             InferenceError::SaeForward(format!("b_enc tensor creation failed: {}", e))
         })?;
@@ -299,28 +339,30 @@ impl InferenceBridge {
         })?;
 
         // Create SAE model
-        let sae = QwenScopeSAE::new(w_enc, w_dec, b_enc, b_dec, k).map_err(|e| {
-            InferenceError::SaeForward(format!("SAE construction failed: {}", e))
-        })?;
+        let sae = QwenScopeSAE::new(w_enc, w_dec, b_enc, b_dec, k)
+            .map_err(|e| InferenceError::SaeForward(format!("SAE construction failed: {}", e)))?;
 
         // Step 3: Execute forward pass
-        let input_tensor = Tensor::from_vec(task.input_activation.clone(), (task.batch_size, d_model), &device).map_err(|e| {
-            InferenceError::SaeForward(format!("Input tensor creation failed: {}", e))
-        })?;
+        let input_tensor = Tensor::from_vec(
+            task.input_activation.clone(),
+            (task.batch_size, d_model),
+            &device,
+        )
+        .map_err(|e| InferenceError::SaeForward(format!("Input tensor creation failed: {}", e)))?;
 
-        let (sparse_values, sparse_indices) = sae.forward(&input_tensor).map_err(|e| {
-            InferenceError::SaeForward(format!("SAE forward failed: {}", e))
-        })?;
+        let (sparse_values, sparse_indices) = sae
+            .forward(&input_tensor)
+            .map_err(|e| InferenceError::SaeForward(format!("SAE forward failed: {}", e)))?;
 
         let compute_time_ms = start.elapsed().as_millis() as u64;
 
         // Extract results to vectors
-        let values_vec: Vec<f32> = sparse_values.to_vec1().map_err(|e| {
-            InferenceError::SaeForward(format!("Values extraction failed: {}", e))
-        })?;
-        let indices_vec: Vec<usize> = sparse_indices.to_vec1().map_err(|e| {
-            InferenceError::SaeForward(format!("Indices extraction failed: {}", e))
-        })?;
+        let values_vec: Vec<f32> = sparse_values
+            .to_vec1()
+            .map_err(|e| InferenceError::SaeForward(format!("Values extraction failed: {}", e)))?;
+        let indices_vec: Vec<usize> = sparse_indices
+            .to_vec1()
+            .map_err(|e| InferenceError::SaeForward(format!("Indices extraction failed: {}", e)))?;
 
         // Step 4: Create and serialize AuditResultPayload
         let result = AuditResultPayload::new(
@@ -353,7 +395,9 @@ impl InferenceBridge {
         }
         #[cfg(not(feature = "v2.1-audit-payloads"))]
         {
-            Err(InferenceError::SaeForward("audit-payloads feature not enabled".to_string()))
+            Err(InferenceError::SaeForward(
+                "audit-payloads feature not enabled".to_string(),
+            ))
         }
     }
 }
@@ -378,7 +422,11 @@ mod tests {
     #[tokio::test]
     async fn test_run_sae_forward() {
         let mut bridge = InferenceBridge::new();
-        let task_ids = vec!["task-001".to_string(), "task-002".to_string(), "task-003".to_string()];
+        let task_ids = vec![
+            "task-001".to_string(),
+            "task-002".to_string(),
+            "task-003".to_string(),
+        ];
         let results = bridge.run_sae_forward(&task_ids).await.unwrap();
         assert_eq!(results.len(), 3);
         assert_eq!(bridge.result_count(), 3);
@@ -394,12 +442,7 @@ mod tests {
     #[tokio::test]
     async fn test_return_result() {
         let mut bridge = InferenceBridge::new();
-        let result = InferenceResult::new(
-            "task-999".to_string(),
-            vec![0.5, 0.6, 0.7],
-            0.88,
-            30,
-        );
+        let result = InferenceResult::new("task-999".to_string(), vec![0.5, 0.6, 0.7], 0.88, 30);
         bridge.return_result(result).await.unwrap();
         assert_eq!(bridge.result_count(), 1);
     }

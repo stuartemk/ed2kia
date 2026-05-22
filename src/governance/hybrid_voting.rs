@@ -201,9 +201,7 @@ impl HybridVotingEngine {
         let recent_votes: usize = self
             .votes
             .iter()
-            .filter(|v| {
-                v.timestamp.abs_diff(new_vote.timestamp) <= window
-            })
+            .filter(|v| v.timestamp.abs_diff(new_vote.timestamp) <= window)
             .count();
 
         if recent_votes >= max_votes {
@@ -355,11 +353,7 @@ mod tests {
     fn test_cast_onchain_vote() {
         let mut engine = HybridVotingEngine::new();
         engine.register_voter("v1".to_string(), 10000);
-        let vote = engine.cast_vote(
-            "v1".to_string(),
-            VotingChannel::OnChain,
-            true,
-        );
+        let vote = engine.cast_vote("v1".to_string(), VotingChannel::OnChain, true);
         assert!(vote.is_ok());
         assert_eq!(engine.vote_count(), 1);
     }
@@ -368,11 +362,7 @@ mod tests {
     fn test_cast_offchain_vote() {
         let mut engine = HybridVotingEngine::new();
         engine.register_voter("v1".to_string(), 0);
-        let vote = engine.cast_vote(
-            "v1".to_string(),
-            VotingChannel::OffChain,
-            true,
-        );
+        let vote = engine.cast_vote("v1".to_string(), VotingChannel::OffChain, true);
         assert!(vote.is_ok());
     }
 
@@ -380,7 +370,8 @@ mod tests {
     fn test_duplicate_vote() {
         let mut engine = HybridVotingEngine::new();
         engine.register_voter("v1".to_string(), 10000);
-        engine.cast_vote("v1".to_string(), VotingChannel::OnChain, true)
+        engine
+            .cast_vote("v1".to_string(), VotingChannel::OnChain, true)
             .unwrap();
         assert!(engine
             .cast_vote("v1".to_string(), VotingChannel::OnChain, false)
@@ -412,11 +403,13 @@ mod tests {
             engine.register_voter(format!("v{}", i), 10000);
         }
         for i in 1..=3 {
-            engine.cast_vote(format!("v{}", i), VotingChannel::OnChain, true)
+            engine
+                .cast_vote(format!("v{}", i), VotingChannel::OnChain, true)
                 .unwrap();
         }
         for i in 4..=5 {
-            engine.cast_vote(format!("v{}", i), VotingChannel::OffChain, true)
+            engine
+                .cast_vote(format!("v{}", i), VotingChannel::OffChain, true)
                 .unwrap();
         }
         let result = engine.calculate_result();
@@ -431,7 +424,8 @@ mod tests {
             engine.register_voter(format!("v{}", i), 0);
         }
         for i in 1..=5 {
-            engine.cast_vote(format!("v{}", i), VotingChannel::OffChain, true)
+            engine
+                .cast_vote(format!("v{}", i), VotingChannel::OffChain, true)
                 .unwrap();
         }
         let result = engine.calculate_result();
@@ -443,7 +437,8 @@ mod tests {
     fn test_result_insufficient_participants() {
         let mut engine = HybridVotingEngine::new();
         engine.register_voter("v1".to_string(), 10000);
-        engine.cast_vote("v1".to_string(), VotingChannel::OnChain, true)
+        engine
+            .cast_vote("v1".to_string(), VotingChannel::OnChain, true)
             .unwrap();
         let result = engine.calculate_result();
         assert!(!result.valid);
@@ -454,9 +449,11 @@ mod tests {
         let mut engine = HybridVotingEngine::new();
         engine.register_voter("v1".to_string(), 10000);
         engine.register_voter("v2".to_string(), 0);
-        engine.cast_vote("v1".to_string(), VotingChannel::OnChain, true)
+        engine
+            .cast_vote("v1".to_string(), VotingChannel::OnChain, true)
             .unwrap();
-        engine.cast_vote("v2".to_string(), VotingChannel::OffChain, false)
+        engine
+            .cast_vote("v2".to_string(), VotingChannel::OffChain, false)
             .unwrap();
         let result = engine.calculate_result();
         assert!(result.for_weight > 0.0);
@@ -486,7 +483,8 @@ mod tests {
     fn test_get_votes() {
         let mut engine = HybridVotingEngine::new();
         engine.register_voter("v1".to_string(), 10000);
-        engine.cast_vote("v1".to_string(), VotingChannel::OnChain, true)
+        engine
+            .cast_vote("v1".to_string(), VotingChannel::OnChain, true)
             .unwrap();
         assert_eq!(engine.get_votes().len(), 1);
     }

@@ -117,10 +117,7 @@ impl ConceptUpdater {
     }
 
     /// Procesa feedback y genera cambios de concepto
-    pub fn process_feedback(
-        &mut self,
-        feedback: &[HumanFeedback],
-    ) -> Vec<UpdateResult> {
+    pub fn process_feedback(&mut self, feedback: &[HumanFeedback]) -> Vec<UpdateResult> {
         let mut results = Vec::new();
 
         for fb in feedback {
@@ -200,7 +197,12 @@ impl ConceptUpdater {
     }
 
     /// Vota por un cambio pendiente
-    pub fn vote_on_change(&mut self, change_id: &str, voter_id: &str, approve: bool) -> Option<UpdateResult> {
+    pub fn vote_on_change(
+        &mut self,
+        change_id: &str,
+        voter_id: &str,
+        approve: bool,
+    ) -> Option<UpdateResult> {
         let pending_idx = self
             .pending_changes
             .iter()
@@ -264,8 +266,7 @@ impl ConceptUpdater {
 
         // Actualiza snapshot
         if let Some(ref mut snapshot) = self.current_snapshot {
-            snapshot.concepts
-                .insert(feature_index, new_concept);
+            snapshot.concepts.insert(feature_index, new_concept);
             snapshot.version += 1;
             // MIGRATION: Compute hash inline to avoid borrow conflict with self
             let version = snapshot.version;
@@ -308,7 +309,11 @@ impl ConceptUpdater {
         }
 
         // Verifica que no sea un concepto reservado
-        if self.reserved_concepts.iter().any(|r| r == &update.new_concept) {
+        if self
+            .reserved_concepts
+            .iter()
+            .any(|r| r == &update.new_concept)
+        {
             return Err(format!(
                 "Cannot use reserved concept: '{}'",
                 update.new_concept
@@ -353,10 +358,7 @@ impl ConceptUpdater {
         hasher.update(update.annotator_id.as_bytes());
         let hash = hasher.finalize();
 
-        format!(
-            "chg-{}",
-            hex::encode(&hash[..8])
-        )
+        format!("chg-{}", hex::encode(&hash[..8]))
     }
 
     /// Crea snapshot actual del semantic map
@@ -412,16 +414,13 @@ impl ConceptUpdater {
 
     /// Rollback a una versión anterior
     pub fn rollback_to_version(&mut self, target_version: u64) -> Result<(), String> {
-        let applied_idx = self
-            .applied_history
-            .iter()
-            .rposition(|_a| {
-                if let Some(ref snapshot) = self.current_snapshot {
-                    snapshot.version > target_version
-                } else {
-                    false
-                }
-            });
+        let applied_idx = self.applied_history.iter().rposition(|_a| {
+            if let Some(ref snapshot) = self.current_snapshot {
+                snapshot.version > target_version
+            } else {
+                false
+            }
+        });
 
         match applied_idx {
             Some(_idx) => {
@@ -433,15 +432,17 @@ impl ConceptUpdater {
                         }
 
                         // Revierte el cambio
-                        self.current_snapshot.as_mut().unwrap().concepts.insert(
-                            applied.feature_index,
-                            applied.old_concept.clone(),
-                        );
+                        self.current_snapshot
+                            .as_mut()
+                            .unwrap()
+                            .concepts
+                            .insert(applied.feature_index, applied.old_concept.clone());
                         self.current_snapshot.as_mut().unwrap().version -= 1;
 
                         // Recalcula hash
                         if let Some(ref snap) = self.current_snapshot {
-                            self.current_snapshot.as_mut().unwrap().hash = self.compute_snapshot_hash(snap);
+                            self.current_snapshot.as_mut().unwrap().hash =
+                                self.compute_snapshot_hash(snap);
                         }
                     } else {
                         break;
@@ -457,7 +458,9 @@ impl ConceptUpdater {
 
     /// Persiste cambios a disco
     fn persist_changes(&self, path: &PathBuf) -> anyhow::Result<()> {
-        let parent = path.parent().ok_or_else(|| anyhow::anyhow!("Invalid persistence path"))?;
+        let parent = path
+            .parent()
+            .ok_or_else(|| anyhow::anyhow!("Invalid persistence path"))?;
         std::fs::create_dir_all(parent)?;
 
         let data = serde_json::to_string_pretty(&self.applied_history)
@@ -466,7 +469,11 @@ impl ConceptUpdater {
         std::fs::write(path, data)
             .map_err(|e| anyhow::anyhow!("Failed to write changes file: {}", e))?;
 
-        debug!("Persisted {} changes to {}", self.applied_history.len(), path.display());
+        debug!(
+            "Persisted {} changes to {}",
+            self.applied_history.len(),
+            path.display()
+        );
         Ok(())
     }
 
@@ -479,7 +486,11 @@ impl ConceptUpdater {
             .map_err(|e| anyhow::anyhow!("Failed to deserialize changes: {}", e))?;
 
         self.applied_history = loaded;
-        info!("Loaded {} changes from {}", self.applied_history.len(), path.display());
+        info!(
+            "Loaded {} changes from {}",
+            self.applied_history.len(),
+            path.display()
+        );
         Ok(())
     }
 

@@ -12,11 +12,17 @@
 
 #[cfg(feature = "v1.2-sprint1")]
 mod e2e {
-    use ed2kia::federation::multi_chain_registry::{ChainConfig, ChainProtocol, ChainState, MultiChainRegistry};
+    use ed2kia::alignment::ethical_constraint_engine::{
+        ConstraintEngine, ConstraintSeverity, EthicalConstraint,
+    };
     use ed2kia::federation::cross_chain_identity::CrossChainIdentity;
-    use ed2kia::sae::fine_tuning_engine::{FineTuningConfig, FineTuningEngine, LearningRateSchedule};
     use ed2kia::federation::gradient_aggregator_v3::{AggregatorConfig, GradientAggregatorV3};
-    use ed2kia::alignment::ethical_constraint_engine::{ConstraintEngine, ConstraintSeverity, EthicalConstraint};
+    use ed2kia::federation::multi_chain_registry::{
+        ChainConfig, ChainProtocol, ChainState, MultiChainRegistry,
+    };
+    use ed2kia::sae::fine_tuning_engine::{
+        FineTuningConfig, FineTuningEngine, LearningRateSchedule,
+    };
 
     // ─── LP-46: Multi-Chain Registry E2E Tests ───
 
@@ -199,7 +205,7 @@ mod e2e {
             engine.start_epoch();
             let lr = engine.get_learning_rate();
             assert_eq!(lr, 0.01); // Constant schedule
-            // Record batches with decreasing loss
+                                  // Record batches with decreasing loss
             for batch in 0..4 {
                 let loss = 0.5 * 2f32.powi(-(epoch * 4 + batch + 1) as i32);
                 engine.record_batch(loss, 1.0);
@@ -245,7 +251,10 @@ mod e2e {
     fn test_e2e_sae_fine_tuning_checkpoint_restore() {
         let config = FineTuningConfig {
             learning_rate: 0.005,
-            schedule: LearningRateSchedule::StepDecay { step_size: 10, decay_factor: 0.5 },
+            schedule: LearningRateSchedule::StepDecay {
+                step_size: 10,
+                decay_factor: 0.5,
+            },
             batch_size: 16,
             max_epochs: 50,
             convergence_threshold: 0.0001,
@@ -359,7 +368,11 @@ mod e2e {
 
         let result = aggregator.aggregate().unwrap();
         // Compression should zero out small gradients
-        let zero_count = result.aggregated_gradient.iter().filter(|v| **v == 0.0).count();
+        let zero_count = result
+            .aggregated_gradient
+            .iter()
+            .filter(|v| **v == 0.0)
+            .count();
         assert!(zero_count > 0, "Compression should produce zeros");
     }
 
@@ -375,10 +388,7 @@ mod e2e {
 
         for round in 0..5u64 {
             aggregator
-                .submit_gradient(
-                    format!("node-{}", round),
-                    vec![round as f32; 4],
-                )
+                .submit_gradient(format!("node-{}", round), vec![round as f32; 4])
                 .unwrap();
             let result = aggregator.aggregate().unwrap();
             assert_eq!(result.round, round); // Round starts at 0, aggregate uses current
@@ -399,11 +409,12 @@ mod e2e {
         // Add value bound constraint
         let constraint = EthicalConstraint {
             id: "bounds-1".to_string(),
-            constraint_type: ed2kia::alignment::ethical_constraint_engine::ConstraintType::ValueBound {
-                min: -2.0,
-                max: 2.0,
-                feature_index: 0,
-            },
+            constraint_type:
+                ed2kia::alignment::ethical_constraint_engine::ConstraintType::ValueBound {
+                    min: -2.0,
+                    max: 2.0,
+                    feature_index: 0,
+                },
             parameters: Default::default(),
             severity: ConstraintSeverity::Correction,
         };
@@ -429,9 +440,10 @@ mod e2e {
 
         let constraint = EthicalConstraint {
             id: "mask-1".to_string(),
-            constraint_type: ed2kia::alignment::ethical_constraint_engine::ConstraintType::FeatureMask {
-                masked_features: vec![1, 3],
-            },
+            constraint_type:
+                ed2kia::alignment::ethical_constraint_engine::ConstraintType::FeatureMask {
+                    masked_features: vec![1, 3],
+                },
             parameters: Default::default(),
             severity: ConstraintSeverity::Correction,
         };
@@ -458,11 +470,12 @@ mod e2e {
 
         let constraint = EthicalConstraint {
             id: "halt-1".to_string(),
-            constraint_type: ed2kia::alignment::ethical_constraint_engine::ConstraintType::ValueBound {
-                min: -1.0,
-                max: 1.0,
-                feature_index: 0,
-            },
+            constraint_type:
+                ed2kia::alignment::ethical_constraint_engine::ConstraintType::ValueBound {
+                    min: -1.0,
+                    max: 1.0,
+                    feature_index: 0,
+                },
             parameters: Default::default(),
             severity: ConstraintSeverity::Halt,
         };
@@ -485,9 +498,10 @@ mod e2e {
 
         let constraint = EthicalConstraint {
             id: "div-1".to_string(),
-            constraint_type: ed2kia::alignment::ethical_constraint_engine::ConstraintType::DivergenceLimit {
-                max_divergence: 0.5,
-            },
+            constraint_type:
+                ed2kia::alignment::ethical_constraint_engine::ConstraintType::DivergenceLimit {
+                    max_divergence: 0.5,
+                },
             parameters: Default::default(),
             severity: ConstraintSeverity::Warning,
         };
@@ -568,11 +582,12 @@ mod e2e {
         let mut constraint_engine = ConstraintEngine::new();
         constraint_engine.add_constraint(EthicalConstraint {
             id: "safe-gradient".to_string(),
-            constraint_type: ed2kia::alignment::ethical_constraint_engine::ConstraintType::ValueBound {
-                min: -1.0,
-                max: 1.0,
-                feature_index: 0,
-            },
+            constraint_type:
+                ed2kia::alignment::ethical_constraint_engine::ConstraintType::ValueBound {
+                    min: -1.0,
+                    max: 1.0,
+                    feature_index: 0,
+                },
             parameters: Default::default(),
             severity: ConstraintSeverity::Correction,
         });
@@ -595,7 +610,9 @@ mod e2e {
 
         // 4. Correct unsafe gradient
         let mut unsafe_gradient = vec![2.0, 0.3, -0.2];
-        constraint_engine.correct_gradient(&mut unsafe_gradient).ok();
+        constraint_engine
+            .correct_gradient(&mut unsafe_gradient)
+            .ok();
         assert!(unsafe_gradient[0] <= 1.0);
     }
 
@@ -605,12 +622,14 @@ mod e2e {
 
         // 1. Multi-chain registry
         let mut registry = MultiChainRegistry::new();
-        registry.register_chain(ChainConfig {
-            chain_id: "fed-chain".to_string(),
-            endpoint: "https://fed.gateway".to_string(),
-            protocol: ChainProtocol::Ethereum,
-            parameters: Default::default(),
-        }).unwrap();
+        registry
+            .register_chain(ChainConfig {
+                chain_id: "fed-chain".to_string(),
+                endpoint: "https://fed.gateway".to_string(),
+                protocol: ChainProtocol::Ethereum,
+                parameters: Default::default(),
+            })
+            .unwrap();
         registry.update_state("fed-chain", ChainState::Connected);
         assert_eq!(registry.chain_count(), 1);
 
@@ -638,11 +657,12 @@ mod e2e {
         let mut constraint_engine = ConstraintEngine::new();
         constraint_engine.add_constraint(EthicalConstraint {
             id: "pipeline-bounds".to_string(),
-            constraint_type: ed2kia::alignment::ethical_constraint_engine::ConstraintType::ValueBound {
-                min: -0.5,
-                max: 0.5,
-                feature_index: 0,
-            },
+            constraint_type:
+                ed2kia::alignment::ethical_constraint_engine::ConstraintType::ValueBound {
+                    min: -0.5,
+                    max: 0.5,
+                    feature_index: 0,
+                },
             parameters: Default::default(),
             severity: ConstraintSeverity::Correction,
         });
@@ -659,7 +679,9 @@ mod e2e {
         // Validate before submitting
         let gradient = vec![0.1; 4];
         assert!(constraint_engine.validate_gradient(&gradient).is_ok());
-        aggregator.submit_gradient("fed-trainer".to_string(), gradient).unwrap();
+        aggregator
+            .submit_gradient("fed-trainer".to_string(), gradient)
+            .unwrap();
 
         let result = aggregator.aggregate().unwrap();
         assert!(!result.aggregated_gradient.is_empty());

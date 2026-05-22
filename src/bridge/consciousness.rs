@@ -155,7 +155,10 @@ impl FeedbackQueue {
 
     /// Extraer resultados para procesamiento por batch
     pub fn drain_batch(&mut self, batch_size: usize) -> Vec<AnalysisResult> {
-        let batch: Vec<AnalysisResult> = self.queue.drain(..batch_size.min(self.queue.len())).collect();
+        let batch: Vec<AnalysisResult> = self
+            .queue
+            .drain(..batch_size.min(self.queue.len()))
+            .collect();
         self.processed_count += batch.len() as u64;
         batch
     }
@@ -257,11 +260,8 @@ impl FeatureAggregation {
         let sum: f64 = activations.iter().sum();
         let mean = sum / activations.len() as f64;
 
-        let variance: f64 = activations
-            .iter()
-            .map(|a| (a - mean).powi(2))
-            .sum::<f64>()
-            / activations.len() as f64;
+        let variance: f64 =
+            activations.iter().map(|a| (a - mean).powi(2)).sum::<f64>() / activations.len() as f64;
 
         self.average_activation = mean as f32;
         self.std_deviation = variance.sqrt() as f32;
@@ -291,11 +291,7 @@ impl ConsciousnessBridge {
     }
 
     /// Configurar umbrales
-    pub fn with_thresholds(
-        mut self,
-        steering_confidence: f32,
-        anomaly: f32,
-    ) -> Self {
+    pub fn with_thresholds(mut self, steering_confidence: f32, anomaly: f32) -> Self {
         self.steering_confidence_threshold = steering_confidence;
         self.anomaly_threshold = anomaly;
         self
@@ -324,9 +320,7 @@ impl ConsciousnessBridge {
 
         for feature in features {
             let key = (layer_id, feature.neuron_index);
-            let agg = aggregated
-                .entry(key)
-                .or_default(); // CLEANUP: or_insert_with -> or_default (FeatureAggregation implements Default)
+            let agg = aggregated.entry(key).or_default(); // CLEANUP: or_insert_with -> or_default (FeatureAggregation implements Default)
 
             agg.add_report(
                 peer_id.clone(),
@@ -344,12 +338,7 @@ impl ConsciousnessBridge {
     }
 
     /// Detectar conflicto entre reportes
-    fn detect_conflict(
-        &self,
-        layer_id: u32,
-        feature_index: u32,
-        aggregation: &FeatureAggregation,
-    ) {
+    fn detect_conflict(&self, layer_id: u32, feature_index: u32, aggregation: &FeatureAggregation) {
         let conflict = FeatureConflict {
             feature_index,
             layer_id,
@@ -442,8 +431,11 @@ impl ConsciousnessBridge {
     /// Construir payload de steering
     fn build_steering_payload(&self, result: &AnalysisResult) -> String {
         let flagged = &result.flagged_features;
-        let patterns: Vec<String> =
-            result.detected_patterns.iter().map(|p| p.to_string()).collect();
+        let patterns: Vec<String> = result
+            .detected_patterns
+            .iter()
+            .map(|p| p.to_string())
+            .collect();
 
         serde_json::json!({
             "flagged_features": flagged,
@@ -509,11 +501,7 @@ impl ConsciousnessBridge {
     }
 
     /// Construir mensaje de contexto
-    fn build_context_message(
-        &self,
-        active_features: &[(u32, f32)],
-        layer_id: u32,
-    ) -> String {
+    fn build_context_message(&self, active_features: &[(u32, f32)], layer_id: u32) -> String {
         let semantic = self.semantic_map.read();
         let descriptions: Vec<String> = active_features
             .iter()
@@ -561,11 +549,7 @@ impl ConsciousnessBridge {
     }
 
     /// Analizar features con el FeatureAnalyzer
-    pub fn analyze_features(
-        &self,
-        features: &[SparseFeature],
-        layer_id: u32,
-    ) -> AnalysisResult {
+    pub fn analyze_features(&self, features: &[SparseFeature], layer_id: u32) -> AnalysisResult {
         let mut analyzer = self.analyzer.write();
         analyzer.analyze(features, layer_id)
     }

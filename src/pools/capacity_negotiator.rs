@@ -17,8 +17,8 @@
 //!
 //! Apache License 2.0 + Ethical Use Clause
 
-use std::collections::{HashMap, BinaryHeap, VecDeque};
 use std::cmp::Ordering;
+use std::collections::{BinaryHeap, HashMap, VecDeque};
 
 // ─── Error ───────────────────────────────────────────────────────────────────
 
@@ -47,7 +47,9 @@ impl std::fmt::Display for NegotiatorError {
             NegotiatorError::PoolNotFound(id) => write!(f, "Pool not found: {}", id),
             NegotiatorError::NegotiationNotFound(id) => write!(f, "Negotiation not found: {}", id),
             NegotiatorError::InsufficientCapacity => write!(f, "Insufficient capacity"),
-            NegotiatorError::AlreadyCompleted(id) => write!(f, "Negotiation already completed: {}", id),
+            NegotiatorError::AlreadyCompleted(id) => {
+                write!(f, "Negotiation already completed: {}", id)
+            }
             NegotiatorError::InvalidConfig(msg) => write!(f, "Invalid config: {}", msg),
             NegotiatorError::QueueFull => write!(f, "Negotiation queue full"),
             NegotiatorError::OfferExpired => write!(f, "Offer expired"),
@@ -412,9 +414,10 @@ impl CapacityNegotiator {
         total: f64,
         allocated: f64,
     ) -> Result<(), NegotiatorError> {
-        let pool = self.pools.get_mut(pool_id).ok_or_else(|| {
-            NegotiatorError::PoolNotFound(pool_id.to_string())
-        })?;
+        let pool = self
+            .pools
+            .get_mut(pool_id)
+            .ok_or_else(|| NegotiatorError::PoolNotFound(pool_id.to_string()))?;
 
         pool.total_capacity = total;
         pool.allocated_capacity = allocated;
@@ -428,9 +431,10 @@ impl CapacityNegotiator {
         pool_id: &str,
         reputation: f64,
     ) -> Result<(), NegotiatorError> {
-        let pool = self.pools.get_mut(pool_id).ok_or_else(|| {
-            NegotiatorError::PoolNotFound(pool_id.to_string())
-        })?;
+        let pool = self
+            .pools
+            .get_mut(pool_id)
+            .ok_or_else(|| NegotiatorError::PoolNotFound(pool_id.to_string()))?;
 
         pool.reputation = reputation.clamp(0.0, 1.0);
         pool.last_update_ms = self.current_time_ms;
@@ -474,7 +478,9 @@ impl CapacityNegotiator {
         }
 
         // Check queue limit
-        let pending = self.negotiations.values()
+        let pending = self
+            .negotiations
+            .values()
             .filter(|n| n.status == NegotiationStatus::Pending)
             .count();
         if pending >= self.config.max_pending_negotiations {
@@ -499,7 +505,8 @@ impl CapacityNegotiator {
         let mut negotiation = negotiation;
         negotiation.priority = priority;
 
-        self.negotiations.insert(negotiation_id.clone(), negotiation);
+        self.negotiations
+            .insert(negotiation_id.clone(), negotiation);
         self.priority_queue.push(NegotiationPriorityItem {
             negotiation_id: negotiation_id.clone(),
             priority,
@@ -521,9 +528,10 @@ impl CapacityNegotiator {
         offered_credits: f64,
     ) -> Result<String, NegotiatorError> {
         // Validate negotiation exists and is pending
-        let negotiation = self.negotiations.get(&negotiation_id).ok_or_else(|| {
-            NegotiatorError::NegotiationNotFound(negotiation_id.clone())
-        })?;
+        let negotiation = self
+            .negotiations
+            .get(&negotiation_id)
+            .ok_or_else(|| NegotiatorError::NegotiationNotFound(negotiation_id.clone()))?;
 
         if negotiation.status != NegotiationStatus::Pending {
             return Err(NegotiatorError::AlreadyCompleted(negotiation_id.clone()));
@@ -534,9 +542,10 @@ impl CapacityNegotiator {
         }
 
         // Validate pool can offer
-        let pool = self.pools.get(&offering_pool).ok_or_else(|| {
-            NegotiatorError::PoolNotFound(offering_pool.clone())
-        })?;
+        let pool = self
+            .pools
+            .get(&offering_pool)
+            .ok_or_else(|| NegotiatorError::PoolNotFound(offering_pool.clone()))?;
 
         if !pool.can_offer(offered_credits) {
             return Err(NegotiatorError::InsufficientCapacity);
@@ -576,12 +585,15 @@ impl CapacityNegotiator {
         negotiation_id: &str,
         offered_credits: f64,
     ) -> Result<(), NegotiatorError> {
-        let negotiation = self.negotiations.get(negotiation_id).ok_or_else(|| {
-            NegotiatorError::NegotiationNotFound(negotiation_id.to_string())
-        })?;
+        let negotiation = self
+            .negotiations
+            .get(negotiation_id)
+            .ok_or_else(|| NegotiatorError::NegotiationNotFound(negotiation_id.to_string()))?;
 
         if negotiation.status != NegotiationStatus::Pending {
-            return Err(NegotiatorError::AlreadyCompleted(negotiation_id.to_string()));
+            return Err(NegotiatorError::AlreadyCompleted(
+                negotiation_id.to_string(),
+            ));
         }
 
         let negotiation = self.negotiations.get_mut(negotiation_id).unwrap();
@@ -596,12 +608,15 @@ impl CapacityNegotiator {
 
     /// Complete a negotiation (finalize capacity transfer).
     pub fn complete_negotiation(&mut self, negotiation_id: &str) -> Result<(), NegotiatorError> {
-        let negotiation = self.negotiations.get(negotiation_id).ok_or_else(|| {
-            NegotiatorError::NegotiationNotFound(negotiation_id.to_string())
-        })?;
+        let negotiation = self
+            .negotiations
+            .get(negotiation_id)
+            .ok_or_else(|| NegotiatorError::NegotiationNotFound(negotiation_id.to_string()))?;
 
         if negotiation.status != NegotiationStatus::Accepted {
-            return Err(NegotiatorError::AlreadyCompleted(negotiation_id.to_string()));
+            return Err(NegotiatorError::AlreadyCompleted(
+                negotiation_id.to_string(),
+            ));
         }
 
         let negotiation = self.negotiations.get_mut(negotiation_id).unwrap();
@@ -630,12 +645,15 @@ impl CapacityNegotiator {
 
     /// Reject a negotiation.
     pub fn reject_negotiation(&mut self, negotiation_id: &str) -> Result<(), NegotiatorError> {
-        let negotiation = self.negotiations.get(negotiation_id).ok_or_else(|| {
-            NegotiatorError::NegotiationNotFound(negotiation_id.to_string())
-        })?;
+        let negotiation = self
+            .negotiations
+            .get(negotiation_id)
+            .ok_or_else(|| NegotiatorError::NegotiationNotFound(negotiation_id.to_string()))?;
 
         if negotiation.status != NegotiationStatus::Pending {
-            return Err(NegotiatorError::AlreadyCompleted(negotiation_id.to_string()));
+            return Err(NegotiatorError::AlreadyCompleted(
+                negotiation_id.to_string(),
+            ));
         }
 
         let negotiation = self.negotiations.get_mut(negotiation_id).unwrap();
@@ -656,11 +674,16 @@ impl CapacityNegotiator {
 
     /// Get pending negotiations sorted by priority.
     pub fn pending_negotiations(&self) -> Vec<&NegotiationRequest> {
-        let mut pending: Vec<&NegotiationRequest> = self.negotiations
+        let mut pending: Vec<&NegotiationRequest> = self
+            .negotiations
             .values()
             .filter(|n| n.status == NegotiationStatus::Pending)
             .collect();
-        pending.sort_by(|a, b| b.priority.partial_cmp(&a.priority).unwrap_or(Ordering::Equal));
+        pending.sort_by(|a, b| {
+            b.priority
+                .partial_cmp(&a.priority)
+                .unwrap_or(Ordering::Equal)
+        });
         pending
     }
 
@@ -735,7 +758,8 @@ impl CapacityNegotiator {
             total_rejected: self.stats.total_rejected,
             total_expired: self.stats.total_expired,
             total_capacity_negotiated: self.stats.total_capacity_negotiated,
-            pending_negotiations: self.negotiations
+            pending_negotiations: self
+                .negotiations
                 .values()
                 .filter(|n| n.status == NegotiationStatus::Pending)
                 .count(),
@@ -753,7 +777,8 @@ impl CapacityNegotiator {
 
     fn calculate_priority(&self, negotiation: &NegotiationRequest) -> f64 {
         // Get requester reputation
-        let requester_rep = self.pools
+        let requester_rep = self
+            .pools
             .get(&negotiation.requester_pool)
             .map(|p| p.reputation)
             .unwrap_or(0.0);
@@ -873,7 +898,9 @@ mod tests {
         let mut neg = CapacityNegotiator::default_config();
         neg.register_pool(make_pool("pool-1", 1000.0, 0.8)).unwrap();
         neg.register_pool(make_pool("pool-2", 2000.0, 0.9)).unwrap();
-        let neg_id = neg.create_negotiation("pool-1".to_string(), "pool-2".to_string(), 100.0).unwrap();
+        let neg_id = neg
+            .create_negotiation("pool-1".to_string(), "pool-2".to_string(), 100.0)
+            .unwrap();
         let offer_id = neg.submit_offer(neg_id.clone(), "pool-2".to_string(), 100.0);
         assert!(offer_id.is_ok());
     }
@@ -885,7 +912,9 @@ mod tests {
         let mut pool2 = make_pool("pool-2", 50.0, 0.9);
         pool2.allocated_capacity = 40.0;
         neg.register_pool(pool2).unwrap();
-        let neg_id = neg.create_negotiation("pool-1".to_string(), "pool-2".to_string(), 100.0).unwrap();
+        let neg_id = neg
+            .create_negotiation("pool-1".to_string(), "pool-2".to_string(), 100.0)
+            .unwrap();
         let result = neg.submit_offer(neg_id, "pool-2".to_string(), 100.0);
         assert!(result.is_err());
     }
@@ -895,7 +924,9 @@ mod tests {
         let mut neg = CapacityNegotiator::default_config();
         neg.register_pool(make_pool("pool-1", 1000.0, 0.8)).unwrap();
         neg.register_pool(make_pool("pool-2", 2000.0, 0.9)).unwrap();
-        let neg_id = neg.create_negotiation("pool-1".to_string(), "pool-2".to_string(), 100.0).unwrap();
+        let neg_id = neg
+            .create_negotiation("pool-1".to_string(), "pool-2".to_string(), 100.0)
+            .unwrap();
         assert!(neg.accept_offer(&neg_id, 100.0).is_ok());
         assert_eq!(
             neg.get_negotiation(&neg_id).unwrap().status,
@@ -908,7 +939,9 @@ mod tests {
         let mut neg = CapacityNegotiator::default_config();
         neg.register_pool(make_pool("pool-1", 1000.0, 0.8)).unwrap();
         neg.register_pool(make_pool("pool-2", 2000.0, 0.9)).unwrap();
-        let neg_id = neg.create_negotiation("pool-1".to_string(), "pool-2".to_string(), 100.0).unwrap();
+        let neg_id = neg
+            .create_negotiation("pool-1".to_string(), "pool-2".to_string(), 100.0)
+            .unwrap();
         neg.accept_offer(&neg_id, 100.0).unwrap();
         assert!(neg.complete_negotiation(&neg_id).is_ok());
         assert_eq!(neg.stats().total_completed, 1);
@@ -919,7 +952,9 @@ mod tests {
         let mut neg = CapacityNegotiator::default_config();
         neg.register_pool(make_pool("pool-1", 1000.0, 0.8)).unwrap();
         neg.register_pool(make_pool("pool-2", 2000.0, 0.9)).unwrap();
-        let neg_id = neg.create_negotiation("pool-1".to_string(), "pool-2".to_string(), 100.0).unwrap();
+        let neg_id = neg
+            .create_negotiation("pool-1".to_string(), "pool-2".to_string(), 100.0)
+            .unwrap();
         assert!(neg.reject_negotiation(&neg_id).is_ok());
         assert_eq!(neg.stats().total_rejected, 1);
     }
@@ -929,7 +964,9 @@ mod tests {
         let mut neg = CapacityNegotiator::default_config();
         neg.register_pool(make_pool("pool-1", 1000.0, 0.8)).unwrap();
         neg.register_pool(make_pool("pool-2", 2000.0, 0.9)).unwrap();
-        let neg_id = neg.create_negotiation("pool-1".to_string(), "pool-2".to_string(), 100.0).unwrap();
+        let neg_id = neg
+            .create_negotiation("pool-1".to_string(), "pool-2".to_string(), 100.0)
+            .unwrap();
         neg.advance_time(60000);
         let cleaned = neg.cleanup_expired();
         assert_eq!(cleaned, 1);
@@ -951,8 +988,10 @@ mod tests {
         let mut neg = CapacityNegotiator::default_config();
         neg.register_pool(make_pool("pool-1", 1000.0, 0.8)).unwrap();
         neg.register_pool(make_pool("pool-2", 2000.0, 0.9)).unwrap();
-        neg.create_negotiation("pool-1".to_string(), "pool-2".to_string(), 100.0).unwrap();
-        neg.create_negotiation("pool-1".to_string(), "pool-2".to_string(), 200.0).unwrap();
+        neg.create_negotiation("pool-1".to_string(), "pool-2".to_string(), 100.0)
+            .unwrap();
+        neg.create_negotiation("pool-1".to_string(), "pool-2".to_string(), 200.0)
+            .unwrap();
         let pending = neg.pending_negotiations();
         assert_eq!(pending.len(), 2);
     }
@@ -962,7 +1001,8 @@ mod tests {
         let mut neg = CapacityNegotiator::default_config();
         neg.register_pool(make_pool("pool-1", 1000.0, 0.8)).unwrap();
         neg.register_pool(make_pool("pool-2", 2000.0, 0.9)).unwrap();
-        neg.create_negotiation("pool-1".to_string(), "pool-2".to_string(), 100.0).unwrap();
+        neg.create_negotiation("pool-1".to_string(), "pool-2".to_string(), 100.0)
+            .unwrap();
         assert!(neg.next_negotiation().is_some());
     }
 
@@ -971,7 +1011,9 @@ mod tests {
         let mut neg = CapacityNegotiator::default_config();
         neg.register_pool(make_pool("pool-1", 1000.0, 0.8)).unwrap();
         neg.register_pool(make_pool("pool-2", 2000.0, 0.9)).unwrap();
-        let neg_id = neg.create_negotiation("pool-1".to_string(), "pool-2".to_string(), 100.0).unwrap();
+        let neg_id = neg
+            .create_negotiation("pool-1".to_string(), "pool-2".to_string(), 100.0)
+            .unwrap();
         neg.accept_offer(&neg_id, 100.0).unwrap();
         neg.complete_negotiation(&neg_id).unwrap();
         assert_eq!(neg.completed_history().len(), 1);
@@ -991,8 +1033,11 @@ mod tests {
         let mut neg = CapacityNegotiator::new(config);
         neg.register_pool(make_pool("pool-1", 1000.0, 0.8)).unwrap();
         neg.register_pool(make_pool("pool-2", 2000.0, 0.9)).unwrap();
-        neg.create_negotiation("pool-1".to_string(), "pool-2".to_string(), 100.0).unwrap();
-        assert!(neg.create_negotiation("pool-1".to_string(), "pool-2".to_string(), 200.0).is_err());
+        neg.create_negotiation("pool-1".to_string(), "pool-2".to_string(), 100.0)
+            .unwrap();
+        assert!(neg
+            .create_negotiation("pool-1".to_string(), "pool-2".to_string(), 200.0)
+            .is_err());
     }
 
     #[test]
@@ -1081,7 +1126,8 @@ mod tests {
         let mut neg = CapacityNegotiator::new(config);
         neg.register_pool(make_pool("pool-1", 1000.0, 0.8)).unwrap();
         neg.register_pool(make_pool("pool-2", 2000.0, 0.9)).unwrap();
-        neg.create_negotiation("pool-1".to_string(), "pool-2".to_string(), 100.0).unwrap();
+        neg.create_negotiation("pool-1".to_string(), "pool-2".to_string(), 100.0)
+            .unwrap();
         neg.advance_time(60000);
         let cleaned = neg.auto_cleanup();
         assert_eq!(cleaned, 0);
@@ -1092,7 +1138,9 @@ mod tests {
         let mut neg = CapacityNegotiator::default_config();
         neg.register_pool(make_pool("pool-1", 1000.0, 0.8)).unwrap();
         neg.register_pool(make_pool("pool-2", 2000.0, 0.9)).unwrap();
-        let neg_id = neg.create_negotiation("pool-1".to_string(), "pool-2".to_string(), 100.0).unwrap();
+        let neg_id = neg
+            .create_negotiation("pool-1".to_string(), "pool-2".to_string(), 100.0)
+            .unwrap();
         neg.accept_offer(&neg_id, 150.0).unwrap();
         neg.complete_negotiation(&neg_id).unwrap();
         assert_eq!(neg.stats().total_capacity_negotiated, 150.0);

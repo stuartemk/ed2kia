@@ -305,13 +305,19 @@ mod tests {
         let mut engine = SybilEngine::new();
         let challenge = engine.generate_challenge();
         let solution = solve_challenge(&challenge.nonce, challenge.difficulty);
-        assert!(engine.verify("node-1".to_string(), &challenge, &solution).is_ok());
+        assert!(engine
+            .verify("node-1".to_string(), &challenge, &solution)
+            .is_ok());
     }
 
     #[test]
     fn test_solve_leading_zeros() {
         let solution = solve_challenge("test-nonce", 1);
-        let leading = solution.solution_hash.chars().take_while(|&c| c == '0').count();
+        let leading = solution
+            .solution_hash
+            .chars()
+            .take_while(|&c| c == '0')
+            .count();
         assert!(leading >= 2); // 1 byte = 2 hex zeros
     }
 
@@ -320,7 +326,9 @@ mod tests {
         let mut engine = SybilEngine::new();
         let challenge = engine.generate_challenge();
         let solution = solve_challenge("wrong-nonce", challenge.difficulty);
-        assert!(engine.verify("node-1".to_string(), &challenge, &solution).is_err());
+        assert!(engine
+            .verify("node-1".to_string(), &challenge, &solution)
+            .is_err());
     }
 
     #[test]
@@ -347,7 +355,9 @@ mod tests {
                 solution_hash: "not_a_real_hash".to_string(),
                 attempts: 1,
             };
-            engine.verify(format!("node-{}", i), &challenge, &bad_solution).ok();
+            engine
+                .verify(format!("node-{}", i), &challenge, &bad_solution)
+                .ok();
         }
         // Should now have tracked nodes with failures
         assert!(engine.tracked_count() > 0);

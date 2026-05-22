@@ -36,7 +36,11 @@ pub enum TrustScoringError {
     SybilDetected { cluster_id: String, count: usize },
 
     #[error("Node banned: {node_id} (trust {score:.4} < threshold {threshold:.4})")]
-    NodeBanned { node_id: String, score: f32, threshold: f32 },
+    NodeBanned {
+        node_id: String,
+        score: f32,
+        threshold: f32,
+    },
 
     #[error("Propagation failed: no path to {target_network}")]
     PropagationFailed { target_network: String },
@@ -104,10 +108,8 @@ impl NodeTrustRecord {
     // FIX: E0308 - powf expects f32 argument when called on f32, cast days_since_activity to f32
     pub fn update_score(&mut self, days_since_activity: f64, decay_factor: f32) {
         let decay_component = 1.0 - (decay_factor.powf(days_since_activity as f32)); // CLEANUP: Removed redundant as f32 cast
-        let new_score = self.base_score
-            * (1.0 - decay_component)
-            * self.consensus_weight
-            * self.zkp_multiplier;
+        let new_score =
+            self.base_score * (1.0 - decay_component) * self.consensus_weight * self.zkp_multiplier;
 
         self.trust_score = new_score.clamp(0.0, 1.0);
         self.update_status();
@@ -294,9 +296,16 @@ impl DynamicTrustScorer {
     /// # Returns
     ///
     /// `Ok(TrustResult)` con el score actualizado
-    pub fn update_score(&mut self, node_id: &str, days_since_activity: f64) -> Result<TrustResult, TrustScoringError> {
+    pub fn update_score(
+        &mut self,
+        node_id: &str,
+        days_since_activity: f64,
+    ) -> Result<TrustResult, TrustScoringError> {
         let record = self.records.entry(node_id.to_string()).or_insert_with(|| {
-            NodeTrustRecord::new(node_id.to_string(), Self::generate_default_signature(node_id))
+            NodeTrustRecord::new(
+                node_id.to_string(),
+                Self::generate_default_signature(node_id),
+            )
         });
 
         record.update_score(days_since_activity, self.config.decay_factor);
@@ -316,7 +325,10 @@ impl DynamicTrustScorer {
     /// Registra sincronización exitosa para un nodo
     pub fn record_success(&mut self, node_id: &str) -> Result<TrustResult, TrustScoringError> {
         let record = self.records.entry(node_id.to_string()).or_insert_with(|| {
-            NodeTrustRecord::new(node_id.to_string(), Self::generate_default_signature(node_id))
+            NodeTrustRecord::new(
+                node_id.to_string(),
+                Self::generate_default_signature(node_id),
+            )
         });
 
         record.record_success();
@@ -333,7 +345,10 @@ impl DynamicTrustScorer {
     /// Registra sincronización fallida para un nodo
     pub fn record_failure(&mut self, node_id: &str) -> Result<TrustResult, TrustScoringError> {
         let record = self.records.entry(node_id.to_string()).or_insert_with(|| {
-            NodeTrustRecord::new(node_id.to_string(), Self::generate_default_signature(node_id))
+            NodeTrustRecord::new(
+                node_id.to_string(),
+                Self::generate_default_signature(node_id),
+            )
         });
 
         record.record_failure();
@@ -371,8 +386,12 @@ impl DynamicTrustScorer {
         source_network: &str,
         radius: usize,
     ) -> Result<usize, TrustScoringError> {
-        let record = self.records.get(node_id)
-            .ok_or_else(|| TrustScoringError::NodeNotFound { node_id: node_id.to_string() })?;
+        let record = self
+            .records
+            .get(node_id)
+            .ok_or_else(|| TrustScoringError::NodeNotFound {
+                node_id: node_id.to_string(),
+            })?;
 
         if record.status == NodeStatus::Banned {
             return Ok(0); // No propagar nodos baneados
@@ -412,7 +431,10 @@ impl DynamicTrustScorer {
         let mut asn_groups: HashMap<String, Vec<String>> = HashMap::new();
         for record in self.records.values() {
             if let Some(ref asn) = record.asn {
-                asn_groups.entry(asn.clone()).or_default().push(record.node_id.clone());
+                asn_groups
+                    .entry(asn.clone())
+                    .or_default()
+                    .push(record.node_id.clone());
             }
         }
 
@@ -420,7 +442,8 @@ impl DynamicTrustScorer {
         for (asn, nodes) in asn_groups {
             if nodes.len() > self.config.sybil_threshold {
                 let cluster_id = Self::generate_cluster_id(&asn, "asn");
-                let suspicion_score = (nodes.len() as f32 / self.config.sybil_threshold as f32).min(1.0);
+                let suspicion_score =
+                    (nodes.len() as f32 / self.config.sybil_threshold as f32).min(1.0);
 
                 clusters.push(SybilCluster {
                     cluster_id,
@@ -446,7 +469,10 @@ impl DynamicTrustScorer {
         let mut ip_groups: HashMap<String, Vec<String>> = HashMap::new();
         for record in self.records.values() {
             if let Some(ref ip_hash) = record.ip_hash {
-                ip_groups.entry(ip_hash.clone()).or_default().push(record.node_id.clone());
+                ip_groups
+                    .entry(ip_hash.clone())
+                    .or_default()
+                    .push(record.node_id.clone());
             }
         }
 
@@ -454,7 +480,8 @@ impl DynamicTrustScorer {
         for (ip_hash, nodes) in ip_groups {
             if nodes.len() > self.config.sybil_threshold {
                 let cluster_id = Self::generate_cluster_id(&ip_hash, "ip");
-                let suspicion_score = (nodes.len() as f32 / self.config.sybil_threshold as f32).min(1.0);
+                let suspicion_score =
+                    (nodes.len() as f32 / self.config.sybil_threshold as f32).min(1.0);
 
                 clusters.push(SybilCluster {
                     cluster_id,
@@ -484,12 +511,19 @@ impl DynamicTrustScorer {
         for record in self.records.values_mut() {
             record.update_score(days_elapsed, self.config.decay_factor);
         }
-        debug!(count, days = days_elapsed, "Trust decay applied to all nodes");
+        debug!(
+            count,
+            days = days_elapsed,
+            "Trust decay applied to all nodes"
+        );
     }
 
     /// Registra un nodo en una red específica
     pub fn register_node_in_network(&mut self, node_id: &str, network: &str) {
-        self.network_map.entry(network.to_string()).or_default().push(node_id.to_string());
+        self.network_map
+            .entry(network.to_string())
+            .or_default()
+            .push(node_id.to_string());
 
         if let Some(record) = self.records.get_mut(node_id) {
             if !record.validating_networks.contains(&network.to_string()) {
@@ -505,7 +539,10 @@ impl DynamicTrustScorer {
 
     /// Obtiene todos los nodos con un estado específico
     pub fn get_nodes_by_status(&self, status: &NodeStatus) -> Vec<&NodeTrustRecord> {
-        self.records.values().filter(|r| &r.status == status).collect()
+        self.records
+            .values()
+            .filter(|r| &r.status == status)
+            .collect()
     }
 
     /// Obtiene los clusters Sybil detectados
@@ -717,7 +754,9 @@ mod tests {
         scorer.register_node_in_network("node_1", "network_a");
         scorer.register_node_in_network("node_1", "network_b");
 
-        let propagated = scorer.propagate_cross_net("node_1", "network_a", 2).unwrap();
+        let propagated = scorer
+            .propagate_cross_net("node_1", "network_a", 2)
+            .unwrap();
         assert_eq!(propagated, 1); // Propagates to network_b only
     }
 
@@ -733,7 +772,9 @@ mod tests {
         record.status = NodeStatus::Banned;
         scorer.records.insert("node_1".to_string(), record);
 
-        let propagated = scorer.propagate_cross_net("node_1", "network_a", 2).unwrap();
+        let propagated = scorer
+            .propagate_cross_net("node_1", "network_a", 2)
+            .unwrap();
         assert_eq!(propagated, 0);
     }
 

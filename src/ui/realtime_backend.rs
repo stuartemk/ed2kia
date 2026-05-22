@@ -34,7 +34,11 @@ pub enum RealtimeBackendError {
     SessionNotFound(String),
 
     #[error("Rate limit excedido: {current}/{max} msg/s para sesión {session}")]
-    RateLimitExceeded { current: usize, max: usize, session: String },
+    RateLimitExceeded {
+        current: usize,
+        max: usize,
+        session: String,
+    },
 
     #[error("Tipo de evento inválido: {0}")]
     InvalidEventType(String),
@@ -382,7 +386,11 @@ impl RealtimeBackend {
         );
 
         self.sessions.insert(session_id.clone(), session);
-        info!("Sesión creada: {} con {} suscripciones", session_id, self.sessions.len());
+        info!(
+            "Sesión creada: {} con {} suscripciones",
+            session_id,
+            self.sessions.len()
+        );
 
         Ok(self.sessions.get(&session_id).unwrap().clone())
     }
@@ -394,7 +402,9 @@ impl RealtimeBackend {
                 info!("Sesión cerrada: {}", session_id);
                 Ok(())
             }
-            None => Err(RealtimeBackendError::SessionNotFound(session_id.to_string())),
+            None => Err(RealtimeBackendError::SessionNotFound(
+                session_id.to_string(),
+            )),
         }
     }
 
@@ -486,7 +496,8 @@ impl RealtimeBackend {
     /// Limpiar sesiones expiradas.
     pub fn cleanup_expired_sessions(&mut self) -> usize {
         let before = self.sessions.len();
-        self.sessions.retain(|_, s| !s.is_expired(self.config.max_session_age_secs));
+        self.sessions
+            .retain(|_, s| !s.is_expired(self.config.max_session_age_secs));
         let removed = before - self.sessions.len();
         if removed > 0 {
             info!("{} sesiones expiradas limpiadas", removed);
@@ -591,7 +602,9 @@ mod tests {
     fn test_create_duplicate_session() {
         let mut backend = RealtimeBackend::new();
         let types = vec![BackendEventType::AlignmentFeedback];
-        backend.create_session("s1".to_string(), types.clone()).unwrap();
+        backend
+            .create_session("s1".to_string(), types.clone())
+            .unwrap();
         let result = backend.create_session("s1".to_string(), types);
         assert!(result.is_err());
     }
@@ -605,8 +618,12 @@ mod tests {
         let mut backend = RealtimeBackend::with_config(config);
         let types = vec![BackendEventType::AlignmentFeedback];
 
-        backend.create_session("s1".to_string(), types.clone()).unwrap();
-        backend.create_session("s2".to_string(), types.clone()).unwrap();
+        backend
+            .create_session("s1".to_string(), types.clone())
+            .unwrap();
+        backend
+            .create_session("s2".to_string(), types.clone())
+            .unwrap();
         let result = backend.create_session("s3".to_string(), types);
         assert!(result.is_err());
     }
@@ -828,10 +845,7 @@ mod tests {
     fn test_multiple_sessions_different_subscriptions() {
         let mut backend = RealtimeBackend::new();
         backend
-            .create_session(
-                "s1".to_string(),
-                vec![BackendEventType::AlignmentFeedback],
-            )
+            .create_session("s1".to_string(), vec![BackendEventType::AlignmentFeedback])
             .unwrap();
         backend
             .create_session(

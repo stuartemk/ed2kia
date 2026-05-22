@@ -176,11 +176,7 @@ mod impl_ {
                 .filter(|m| m.supports_task(task))
                 .collect();
             results.sort_by(|a, b| a.latency_p50_ms.partial_cmp(&b.latency_p50_ms).unwrap());
-            debug!(
-                "Found {} models supporting task '{}'",
-                results.len(),
-                task
-            );
+            debug!("Found {} models supporting task '{}'", results.len(), task);
             results
         }
 
@@ -254,21 +250,20 @@ mod impl_ {
 
             let mut version_count: HashMap<String, usize> = HashMap::new();
             for m in models {
-                *version_count
-                    .entry(m.schema_version.clone())
-                    .or_insert(0) += 1;
+                *version_count.entry(m.schema_version.clone()).or_insert(0) += 1;
             }
 
-            let best = version_count
-                .into_iter()
-                .max_by(|a, b| a.1.cmp(&b.1))
-                .map(|(version, count)| {
-                    info!(
-                        "Negotiated schema version '{}' (used by {} models)",
-                        version, count
-                    );
-                    version
-                });
+            let best =
+                version_count
+                    .into_iter()
+                    .max_by(|a, b| a.1.cmp(&b.1))
+                    .map(|(version, count)| {
+                        info!(
+                            "Negotiated schema version '{}' (used by {} models)",
+                            version, count
+                        );
+                        version
+                    });
 
             best
         }
@@ -327,7 +322,13 @@ mod impl_ {
     mod tests {
         use super::*;
 
-        fn sample_capability(id: &str, name: &str, tasks: &[&str], latency: f64, memory: usize) -> ModelCapability {
+        fn sample_capability(
+            id: &str,
+            name: &str,
+            tasks: &[&str],
+            latency: f64,
+            memory: usize,
+        ) -> ModelCapability {
             ModelCapability::new(
                 id.to_string(),
                 name.to_string(),
@@ -346,7 +347,13 @@ mod impl_ {
         fn test_register_and_lookup() {
             let mut registry = CapabilityRegistry::new();
 
-            let cap = sample_capability("m1", "qwen-scope-7b", &["sae_forward", "embedding"], 12.0, 512);
+            let cap = sample_capability(
+                "m1",
+                "qwen-scope-7b",
+                &["sae_forward", "embedding"],
+                12.0,
+                512,
+            );
             assert!(registry.register(cap).is_ok());
 
             let cap2 = sample_capability("m2", "llama-3-8b", &["feature_extraction"], 15.0, 768);
@@ -362,7 +369,9 @@ mod impl_ {
             assert!(registry.register(cap.clone()).is_ok());
             assert_eq!(
                 registry.register(cap),
-                Err(RegistryError::DuplicateModel { model_id: "m1".to_string() })
+                Err(RegistryError::DuplicateModel {
+                    model_id: "m1".to_string()
+                })
             );
         }
 
@@ -380,9 +389,33 @@ mod impl_ {
         #[test]
         fn test_find_by_task() {
             let mut registry = CapabilityRegistry::new();
-            registry.register(sample_capability("m1", "model_a", &["sae_forward", "embedding"], 10.0, 256)).unwrap();
-            registry.register(sample_capability("m2", "model_b", &["feature_extraction"], 15.0, 512)).unwrap();
-            registry.register(sample_capability("m3", "model_c", &["sae_forward", "embedding"], 8.0, 128)).unwrap();
+            registry
+                .register(sample_capability(
+                    "m1",
+                    "model_a",
+                    &["sae_forward", "embedding"],
+                    10.0,
+                    256,
+                ))
+                .unwrap();
+            registry
+                .register(sample_capability(
+                    "m2",
+                    "model_b",
+                    &["feature_extraction"],
+                    15.0,
+                    512,
+                ))
+                .unwrap();
+            registry
+                .register(sample_capability(
+                    "m3",
+                    "model_c",
+                    &["sae_forward", "embedding"],
+                    8.0,
+                    128,
+                ))
+                .unwrap();
 
             let sae_models = registry.find_by_task("sae_forward");
             assert_eq!(sae_models.len(), 2);
@@ -398,7 +431,9 @@ mod impl_ {
         #[test]
         fn test_find_by_schema() {
             let mut registry = CapabilityRegistry::new();
-            registry.register(sample_capability("m1", "model_a", &["task_a"], 10.0, 256)).unwrap();
+            registry
+                .register(sample_capability("m1", "model_a", &["task_a"], 10.0, 256))
+                .unwrap();
 
             let mut cap_v2 = sample_capability("m2", "model_b", &["task_a"], 12.0, 384);
             cap_v2.schema_version = "2.0.0".to_string();
@@ -416,9 +451,33 @@ mod impl_ {
         #[test]
         fn test_find_optimal() {
             let mut registry = CapabilityRegistry::new();
-            registry.register(sample_capability("m1", "fast_model", &["sae_forward"], 8.0, 128)).unwrap();
-            registry.register(sample_capability("m2", "slow_model", &["sae_forward"], 20.0, 1024)).unwrap();
-            registry.register(sample_capability("m3", "heavy_model", &["sae_forward"], 5.0, 2048)).unwrap();
+            registry
+                .register(sample_capability(
+                    "m1",
+                    "fast_model",
+                    &["sae_forward"],
+                    8.0,
+                    128,
+                ))
+                .unwrap();
+            registry
+                .register(sample_capability(
+                    "m2",
+                    "slow_model",
+                    &["sae_forward"],
+                    20.0,
+                    1024,
+                ))
+                .unwrap();
+            registry
+                .register(sample_capability(
+                    "m3",
+                    "heavy_model",
+                    &["sae_forward"],
+                    5.0,
+                    2048,
+                ))
+                .unwrap();
 
             // Within budget: latency <= 10ms, memory <= 256mb -> m1
             let optimal = registry.find_optimal("sae_forward", 10.0, 256);
@@ -433,8 +492,12 @@ mod impl_ {
         #[test]
         fn test_negotiate_schema() {
             let mut registry = CapabilityRegistry::new();
-            registry.register(sample_capability("m1", "model_a", &["task_a"], 10.0, 256)).unwrap();
-            registry.register(sample_capability("m2", "model_b", &["task_a"], 12.0, 384)).unwrap();
+            registry
+                .register(sample_capability("m1", "model_a", &["task_a"], 10.0, 256))
+                .unwrap();
+            registry
+                .register(sample_capability("m2", "model_b", &["task_a"], 12.0, 384))
+                .unwrap();
 
             let mut cap_v2 = sample_capability("m3", "model_c", &["task_a"], 15.0, 512);
             cap_v2.schema_version = "2.0.0".to_string();
@@ -457,8 +520,24 @@ mod impl_ {
         #[test]
         fn test_stats() {
             let mut registry = CapabilityRegistry::new();
-            registry.register(sample_capability("m1", "model_a", &["sae_forward", "embedding"], 10.0, 256)).unwrap();
-            registry.register(sample_capability("m2", "model_b", &["feature_extraction", "embedding"], 20.0, 512)).unwrap();
+            registry
+                .register(sample_capability(
+                    "m1",
+                    "model_a",
+                    &["sae_forward", "embedding"],
+                    10.0,
+                    256,
+                ))
+                .unwrap();
+            registry
+                .register(sample_capability(
+                    "m2",
+                    "model_b",
+                    &["feature_extraction", "embedding"],
+                    20.0,
+                    512,
+                ))
+                .unwrap();
 
             let stats = registry.stats();
             assert_eq!(stats.total_models, 2);

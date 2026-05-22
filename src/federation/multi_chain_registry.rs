@@ -331,7 +331,10 @@ impl MultiChainRegistry {
 
         for (chain_id, entry) in self.chains.iter_mut() {
             let state = if entry.is_heartbeat_expired(timeout) {
-                let error_msg = format!("Heartbeat expired after {}ms", self.config.heartbeat_timeout_ms);
+                let error_msg = format!(
+                    "Heartbeat expired after {}ms",
+                    self.config.heartbeat_timeout_ms
+                );
                 entry.state = ChainState::Error(error_msg.clone());
                 ChainState::Error(error_msg)
             } else {
@@ -447,7 +450,9 @@ mod tests {
     #[test]
     fn test_unregister_chain() {
         let mut registry = MultiChainRegistry::new();
-        registry.register_chain(make_eth_config("eth-mainnet")).unwrap();
+        registry
+            .register_chain(make_eth_config("eth-mainnet"))
+            .unwrap();
         assert!(registry.unregister_chain("eth-mainnet").is_ok());
         assert_eq!(registry.chain_count(), 0);
     }
@@ -466,7 +471,9 @@ mod tests {
     #[test]
     fn test_update_state() {
         let mut registry = MultiChainRegistry::new();
-        registry.register_chain(make_eth_config("eth-mainnet")).unwrap();
+        registry
+            .register_chain(make_eth_config("eth-mainnet"))
+            .unwrap();
         registry.update_state("eth-mainnet", ChainState::Connected);
         let entry = registry.get_chain("eth-mainnet").unwrap();
         assert_eq!(entry.state, ChainState::Connected);
@@ -475,7 +482,9 @@ mod tests {
     #[test]
     fn test_get_chain() {
         let mut registry = MultiChainRegistry::new();
-        registry.register_chain(make_eth_config("eth-mainnet")).unwrap();
+        registry
+            .register_chain(make_eth_config("eth-mainnet"))
+            .unwrap();
         let entry = registry.get_chain("eth-mainnet").unwrap();
         assert_eq!(entry.config.chain_id, "eth-mainnet");
     }
@@ -489,8 +498,12 @@ mod tests {
     #[test]
     fn test_get_active_chains() {
         let mut registry = MultiChainRegistry::new();
-        registry.register_chain(make_eth_config("eth-mainnet")).unwrap();
-        registry.register_chain(make_solana_config("solana-mainnet")).unwrap();
+        registry
+            .register_chain(make_eth_config("eth-mainnet"))
+            .unwrap();
+        registry
+            .register_chain(make_solana_config("solana-mainnet"))
+            .unwrap();
         registry.update_state("eth-mainnet", ChainState::Connected);
         registry.update_state("solana-mainnet", ChainState::Disconnected);
         let active = registry.get_active_chains();
@@ -501,7 +514,9 @@ mod tests {
     #[test]
     fn test_health_check() {
         let mut registry = MultiChainRegistry::new();
-        registry.register_chain(make_eth_config("eth-mainnet")).unwrap();
+        registry
+            .register_chain(make_eth_config("eth-mainnet"))
+            .unwrap();
         registry.update_state("eth-mainnet", ChainState::Connected);
         let states = registry.health_check();
         assert!(states.contains_key("eth-mainnet"));
@@ -510,7 +525,9 @@ mod tests {
     #[test]
     fn test_is_registered() {
         let mut registry = MultiChainRegistry::new();
-        registry.register_chain(make_eth_config("eth-mainnet")).unwrap();
+        registry
+            .register_chain(make_eth_config("eth-mainnet"))
+            .unwrap();
         assert!(registry.is_registered("eth-mainnet"));
         assert!(!registry.is_registered("nonexistent"));
     }
@@ -518,9 +535,15 @@ mod tests {
     #[test]
     fn test_get_chains_by_protocol() {
         let mut registry = MultiChainRegistry::new();
-        registry.register_chain(make_eth_config("eth-mainnet")).unwrap();
-        registry.register_chain(make_eth_config("eth-goerli")).unwrap();
-        registry.register_chain(make_solana_config("solana-mainnet")).unwrap();
+        registry
+            .register_chain(make_eth_config("eth-mainnet"))
+            .unwrap();
+        registry
+            .register_chain(make_eth_config("eth-goerli"))
+            .unwrap();
+        registry
+            .register_chain(make_solana_config("solana-mainnet"))
+            .unwrap();
         let eth_chains = registry.get_chains_by_protocol(&ChainProtocol::Ethereum);
         assert_eq!(eth_chains.len(), 2);
         let sol_chains = registry.get_chains_by_protocol(&ChainProtocol::Solana);
@@ -530,8 +553,12 @@ mod tests {
     #[test]
     fn test_get_error_chains() {
         let mut registry = MultiChainRegistry::new();
-        registry.register_chain(make_eth_config("eth-mainnet")).unwrap();
-        registry.register_chain(make_solana_config("solana-mainnet")).unwrap();
+        registry
+            .register_chain(make_eth_config("eth-mainnet"))
+            .unwrap();
+        registry
+            .register_chain(make_solana_config("solana-mainnet"))
+            .unwrap();
         registry.update_state("eth-mainnet", ChainState::Error("timeout".to_string()));
         registry.update_state("solana-mainnet", ChainState::Connected);
         let errors = registry.get_error_chains();
@@ -542,8 +569,12 @@ mod tests {
     #[test]
     fn test_clear_registry() {
         let mut registry = MultiChainRegistry::new();
-        registry.register_chain(make_eth_config("eth-mainnet")).unwrap();
-        registry.register_chain(make_solana_config("solana-mainnet")).unwrap();
+        registry
+            .register_chain(make_eth_config("eth-mainnet"))
+            .unwrap();
+        registry
+            .register_chain(make_solana_config("solana-mainnet"))
+            .unwrap();
         registry.clear();
         assert_eq!(registry.chain_count(), 0);
     }
@@ -690,15 +721,21 @@ mod tests {
     #[test]
     fn test_get_all_chains() {
         let mut registry = MultiChainRegistry::new();
-        registry.register_chain(make_eth_config("eth-mainnet")).unwrap();
-        registry.register_chain(make_solana_config("solana-mainnet")).unwrap();
+        registry
+            .register_chain(make_eth_config("eth-mainnet"))
+            .unwrap();
+        registry
+            .register_chain(make_solana_config("solana-mainnet"))
+            .unwrap();
         assert_eq!(registry.get_all_chains().len(), 2);
     }
 
     #[test]
     fn test_get_chain_mut() {
         let mut registry = MultiChainRegistry::new();
-        registry.register_chain(make_eth_config("eth-mainnet")).unwrap();
+        registry
+            .register_chain(make_eth_config("eth-mainnet"))
+            .unwrap();
         if let Some(entry) = registry.get_chain_mut("eth-mainnet") {
             entry.node_joined();
             assert_eq!(entry.node_count, 1);

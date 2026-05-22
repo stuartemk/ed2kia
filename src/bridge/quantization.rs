@@ -36,7 +36,9 @@ mod internal {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             match self {
                 QuantizationError::EmptyInput => write!(f, "quantization: empty input data"),
-                QuantizationError::ScaleOverflow => write!(f, "quantization: scale factor overflow"),
+                QuantizationError::ScaleOverflow => {
+                    write!(f, "quantization: scale factor overflow")
+                }
                 QuantizationError::ScalesMismatch => {
                     write!(f, "quantization: scales count does not match data length")
                 }
@@ -119,12 +121,16 @@ mod internal {
     ///
     /// # Errors
     /// * `QuantizationError::ScalesMismatch` if scales count doesn't match data length
-    pub fn dequantize_fp8_to_f32(data: &[u8], scales: &[f32]) -> Result<Vec<f32>, QuantizationError> {
+    pub fn dequantize_fp8_to_f32(
+        data: &[u8],
+        scales: &[f32],
+    ) -> Result<Vec<f32>, QuantizationError> {
         if data.len() != scales.len() {
             return Err(QuantizationError::ScalesMismatch);
         }
 
-        Ok(data.iter()
+        Ok(data
+            .iter()
             .zip(scales.iter())
             .map(|(&byte, &scale)| {
                 if byte == 128 {
@@ -223,10 +229,13 @@ mod internal {
     ///
     /// # Errors
     /// * `QuantizationError::ScalesMismatch` if scales count doesn't match expected elements
-    pub fn dequantize_int4_to_f32(data: &[u8], scales: &[f32]) -> Result<Vec<f32>, QuantizationError> {
+    pub fn dequantize_int4_to_f32(
+        data: &[u8],
+        scales: &[f32],
+    ) -> Result<Vec<f32>, QuantizationError> {
         let expected_len = scales.len();
         let packed_len = data.len() * 2; // Each byte = 2 nibbles
-        // Account for padding: if original was odd, last low nibble is padding
+                                         // Account for padding: if original was odd, last low nibble is padding
         let actual_elements = if packed_len > expected_len {
             expected_len
         } else {
@@ -465,8 +474,8 @@ mod internal {
 
         fn test_data() -> Vec<f32> {
             vec![
-                1.0, 2.5, -3.7, 0.0, 0.5, -0.25, 10.0, -10.0,
-                0.123, 0.456, -0.789, 5.5, -5.5, 100.0, -100.0, 0.001,
+                1.0, 2.5, -3.7, 0.0, 0.5, -0.25, 10.0, -10.0, 0.123, 0.456, -0.789, 5.5, -5.5,
+                100.0, -100.0, 0.001,
             ]
         }
 
@@ -507,11 +516,7 @@ mod internal {
 
             let mape = compute_mape(&data, &reconstructed);
             // INT4 has lower precision (7 levels), target < 10%
-            assert!(
-                mape < 10.0,
-                "INT4 MAPE {:.3}% exceeds 10% target",
-                mape
-            );
+            assert!(mape < 10.0, "INT4 MAPE {:.3}% exceeds 10% target", mape);
         }
 
         #[test]
@@ -566,24 +571,22 @@ mod internal {
         #[test]
         fn test_error_display() {
             assert!(QuantizationError::EmptyInput.to_string().contains("empty"));
-            assert!(QuantizationError::ScaleOverflow.to_string().contains("scale"));
-            assert!(QuantizationError::ScalesMismatch.to_string().contains("scales"));
+            assert!(QuantizationError::ScaleOverflow
+                .to_string()
+                .contains("scale"));
+            assert!(QuantizationError::ScalesMismatch
+                .to_string()
+                .contains("scales"));
         }
 
         #[test]
         fn test_large_tensor_fp8() {
-            let data: Vec<f32> = (0..1000)
-                .map(|i| (i as f32 % 100.0) - 50.0)
-                .collect();
+            let data: Vec<f32> = (0..1000).map(|i| (i as f32 % 100.0) - 50.0).collect();
             let (quantized, scales) = quantize_f32_to_fp8(&data).unwrap();
             let reconstructed = dequantize_fp8_to_f32(&quantized, &scales).unwrap();
 
             let mape = compute_mape(&data, &reconstructed);
-            assert!(
-                mape < 2.0,
-                "Large tensor FP8 MAPE {:.3}% exceeds 2%",
-                mape
-            );
+            assert!(mape < 2.0, "Large tensor FP8 MAPE {:.3}% exceeds 2%", mape);
         }
 
         #[test]

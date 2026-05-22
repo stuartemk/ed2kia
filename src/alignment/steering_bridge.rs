@@ -288,11 +288,8 @@ mod tests {
     fn setup_bridge() -> SteeringBridge {
         let sct = SymbolRegistry::new("test-node");
         let ce = ExistentialCreditLedger::new();
-        let seed = [42u8; 64];
-        let signer = SigningKey::from_keypair_bytes(&seed).unwrap_or_else(|_| {
-            // Fallback: deterministic key from different seed
-            SigningKey::from_keypair_bytes(&[0u8; 64]).unwrap()
-        });
+        let seed = [42u8; 32];
+        let signer = SigningKey::from(&seed);
         SteeringBridge::new(sct, ce, signer)
     }
 
@@ -355,8 +352,8 @@ mod tests {
 
         // Create a new bridge with pre-loaded CE
         let sct = SymbolRegistry::new("test-node");
-        let seed = [42u8; 64];
-        let signer = SigningKey::from_keypair_bytes(&seed).unwrap();
+        let seed = [42u8; 32];
+        let signer = SigningKey::from(&seed);
         let mut bridge2 = SteeringBridge::new(sct, ce, signer);
 
         let event = bridge2
@@ -377,8 +374,8 @@ mod tests {
     fn test_signature_verification() {
         let sct = SymbolRegistry::new("test-node");
         let ce = ExistentialCreditLedger::new();
-        let seed = [42u8; 64];
-        let signer = SigningKey::from_keypair_bytes(&seed).unwrap();
+        let seed = [42u8; 32];
+        let signer = SigningKey::from(&seed);
         let public_key = signer.verifying_key();
 
         let mut bridge = SteeringBridge::new(sct, ce, signer);
@@ -396,8 +393,8 @@ mod tests {
     fn test_signature_tampering() {
         let sct = SymbolRegistry::new("test-node");
         let ce = ExistentialCreditLedger::new();
-        let seed = [42u8; 64];
-        let signer = SigningKey::from_keypair_bytes(&seed).unwrap();
+        let seed = [42u8; 32];
+        let signer = SigningKey::from(&seed);
         let public_key = signer.verifying_key();
 
         let mut bridge = SteeringBridge::new(sct, ce, signer);

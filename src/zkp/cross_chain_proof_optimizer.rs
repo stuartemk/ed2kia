@@ -181,10 +181,7 @@ impl CrossChainProofOptimizer {
     }
 
     /// Registra una prueba cross-chain
-    pub fn register_proof(
-        &mut self,
-        proof: CrossChainProof,
-    ) -> Result<(), ProofOptimizerError> {
+    pub fn register_proof(&mut self, proof: CrossChainProof) -> Result<(), ProofOptimizerError> {
         // Validar chains
         if !self.is_chain_supported(&proof.source_chain) {
             return Err(ProofOptimizerError::ChainNotSupported(
@@ -255,10 +252,7 @@ impl CrossChainProofOptimizer {
             ));
         }
 
-        info!(
-            "Prueba verificada: {} en {:.2}ms",
-            proof_id, elapsed_ms
-        );
+        info!("Prueba verificada: {} en {:.2}ms", proof_id, elapsed_ms);
         Ok(true)
     }
 
@@ -276,10 +270,7 @@ impl CrossChainProofOptimizer {
     }
 
     /// Agrega una prueba al buffer de acumulación
-    pub fn accumulate_proof(
-        &mut self,
-        proof: CrossChainProof,
-    ) -> Result<(), ProofOptimizerError> {
+    pub fn accumulate_proof(&mut self, proof: CrossChainProof) -> Result<(), ProofOptimizerError> {
         if self.accumulation_buffer.len() >= self.config.max_accumulation_batch {
             self.flush_accumulation()?;
         }
@@ -294,10 +285,7 @@ impl CrossChainProofOptimizer {
         }
 
         let count = self.accumulation_buffer.len();
-        info!(
-            "Procesando acumulación de {} pruebas",
-            count
-        );
+        info!("Procesando acumulación de {} pruebas", count);
 
         for proof in self.accumulation_buffer.drain(..) {
             self.proofs.push(proof);
@@ -317,7 +305,8 @@ impl CrossChainProofOptimizer {
     pub fn cleanup_old_proofs(&mut self, max_age_ms: u64) -> usize {
         let now = current_timestamp_ms();
         let before = self.proofs.len();
-        self.proofs.retain(|p| now.saturating_sub(p.timestamp_ms) <= max_age_ms);
+        self.proofs
+            .retain(|p| now.saturating_sub(p.timestamp_ms) <= max_age_ms);
         before - self.proofs.len()
     }
 
@@ -332,10 +321,7 @@ impl CrossChainProofOptimizer {
     }
 
     fn is_chain_supported(&self, chain: &str) -> bool {
-        self.config
-            .supported_chains
-            .iter()
-            .any(|c| c == chain)
+        self.config.supported_chains.iter().any(|c| c == chain)
     }
 
     fn check_cache(&mut self, proof_hash: &str) -> Option<CacheEntry> {
@@ -363,7 +349,8 @@ impl CrossChainProofOptimizer {
 
     fn evict_old_cache_entries(&mut self) {
         let now = current_timestamp_ms();
-        self.cache.retain(|e| now.saturating_sub(e.timestamp_ms) <= self.config.max_cache_age_ms);
+        self.cache
+            .retain(|e| now.saturating_sub(e.timestamp_ms) <= self.config.max_cache_age_ms);
         if self.cache.len() >= self.config.max_cache_size {
             let excess = self.cache.len() - self.config.max_cache_size / 2;
             self.cache.drain(..excess);
@@ -431,7 +418,9 @@ mod tests {
     #[test]
     fn test_verify_proof() {
         let mut optimizer = CrossChainProofOptimizer::new();
-        optimizer.register_proof(make_proof("p1", "ethereum", "polygon")).unwrap();
+        optimizer
+            .register_proof(make_proof("p1", "ethereum", "polygon"))
+            .unwrap();
         assert!(optimizer.verify_proof("p1").unwrap());
     }
 
@@ -444,9 +433,15 @@ mod tests {
     #[test]
     fn test_verify_batch() {
         let mut optimizer = CrossChainProofOptimizer::new();
-        optimizer.register_proof(make_proof("p1", "ethereum", "polygon")).unwrap();
-        optimizer.register_proof(make_proof("p2", "arbitrum", "ed2k")).unwrap();
-        let results = optimizer.verify_batch(&["p1".to_string(), "p2".to_string()]).unwrap();
+        optimizer
+            .register_proof(make_proof("p1", "ethereum", "polygon"))
+            .unwrap();
+        optimizer
+            .register_proof(make_proof("p2", "arbitrum", "ed2k"))
+            .unwrap();
+        let results = optimizer
+            .verify_batch(&["p1".to_string(), "p2".to_string()])
+            .unwrap();
         assert_eq!(results.len(), 2);
         assert!(results.iter().all(|(_, v)| *v));
     }
@@ -454,7 +449,9 @@ mod tests {
     #[test]
     fn test_accumulate_proof() {
         let mut optimizer = CrossChainProofOptimizer::new();
-        optimizer.accumulate_proof(make_proof("p1", "ethereum", "polygon")).unwrap();
+        optimizer
+            .accumulate_proof(make_proof("p1", "ethereum", "polygon"))
+            .unwrap();
         let flushed = optimizer.flush_accumulation().unwrap();
         assert_eq!(flushed, 1);
         assert_eq!(optimizer.get_stats().accumulated_proofs, 1);
@@ -470,7 +467,9 @@ mod tests {
     #[test]
     fn test_get_unverified_proofs() {
         let mut optimizer = CrossChainProofOptimizer::new();
-        optimizer.register_proof(make_proof("p1", "ethereum", "polygon")).unwrap();
+        optimizer
+            .register_proof(make_proof("p1", "ethereum", "polygon"))
+            .unwrap();
         let unverified = optimizer.get_unverified_proofs();
         assert_eq!(unverified.len(), 1);
     }
@@ -478,7 +477,9 @@ mod tests {
     #[test]
     fn test_cleanup_old_proofs() {
         let mut optimizer = CrossChainProofOptimizer::new();
-        optimizer.register_proof(make_proof("p1", "ethereum", "polygon")).unwrap();
+        optimizer
+            .register_proof(make_proof("p1", "ethereum", "polygon"))
+            .unwrap();
         std::thread::sleep(std::time::Duration::from_millis(1));
         let removed = optimizer.cleanup_old_proofs(0);
         assert_eq!(removed, 1);
@@ -511,7 +512,9 @@ mod tests {
     #[test]
     fn test_stats_tracking() {
         let mut optimizer = CrossChainProofOptimizer::new();
-        optimizer.register_proof(make_proof("p1", "ethereum", "polygon")).unwrap();
+        optimizer
+            .register_proof(make_proof("p1", "ethereum", "polygon"))
+            .unwrap();
         optimizer.verify_proof("p1").unwrap();
         let stats = optimizer.get_stats();
         assert_eq!(stats.total_proofs, 1);

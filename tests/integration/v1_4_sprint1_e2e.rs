@@ -6,25 +6,34 @@
 #[cfg(feature = "v1.4-sprint1")]
 mod e2e {
     // LP-98: Halo2 ZKP Engine
-    use ed2kia::zkp::halo2_engine::{Halo2Engine, Halo2EngineConfig, HashBackend};
+    use ed2kia::zkp::async_zkp_v5::{CircuitType, ZKPProof, ZKPStatement};
     use ed2kia::zkp::circuit_optimizer::{CircuitOptimizer, CircuitOptimizerConfig};
-    use ed2kia::zkp::proof_aggregator::{ProofAggregator, AggregatorConfig};
-    use ed2kia::zkp::async_zkp_v5::{ZKPStatement, ZKPProof, CircuitType};
+    use ed2kia::zkp::halo2_engine::{Halo2Engine, Halo2EngineConfig, HashBackend};
+    use ed2kia::zkp::proof_aggregator::{AggregatorConfig, ProofAggregator};
 
     // LP-99: Tokio Async Optimization
-    use ed2kia::runtime::tokio_optimizer::{TokioOptimizer, TokioOptimizerConfig, RuntimeProfile};
-    use ed2kia::runtime::task_scheduler::{TaskScheduler, SchedulerConfig, TaskPriority, ScheduledTask};
-    use ed2kia::runtime::worker_pool::{WorkerPool, WorkerPoolConfig, LoadBalanceStrategy};
+    use ed2kia::runtime::task_scheduler::{
+        ScheduledTask, SchedulerConfig, TaskPriority, TaskScheduler,
+    };
+    use ed2kia::runtime::tokio_optimizer::{RuntimeProfile, TokioOptimizer, TokioOptimizerConfig};
+    use ed2kia::runtime::worker_pool::{LoadBalanceStrategy, WorkerPool, WorkerPoolConfig};
 
     // LP-100: LZ4 Compression & Storage
+    use ed2kia::storage::checkpoint_cache::{
+        CheckpointCache, CheckpointCacheConfig, EvictionPolicy,
+    };
+    use ed2kia::storage::gradient_archive::{ArchiveConfig, GradientArchive};
     use ed2kia::storage::lz4_compressor::{LZ4Compressor, LZ4Config};
-    use ed2kia::storage::checkpoint_cache::{CheckpointCache, CheckpointCacheConfig, EvictionPolicy};
-    use ed2kia::storage::gradient_archive::{GradientArchive, ArchiveConfig};
 
     // LP-101: Advanced Metrics & Observability
     use ed2kia::monitoring_v2::advanced_metrics::{AdvancedMetrics, AdvancedMetricsConfig};
-    use ed2kia::monitoring_v2::health_checker::{HealthChecker, HealthCheckerConfig, HealthStatus, CheckConfig};
-    use ed2kia::monitoring_v2::alert_engine::{AlertEngine, AlertEngineConfig, AlertRule, AlertOperator, AlertSeverity, NotificationChannel};
+    use ed2kia::monitoring_v2::alert_engine::{
+        AlertEngine, AlertEngineConfig, AlertOperator, AlertRule, AlertSeverity,
+        NotificationChannel,
+    };
+    use ed2kia::monitoring_v2::health_checker::{
+        CheckConfig, HealthChecker, HealthCheckerConfig, HealthStatus,
+    };
 
     use std::time::Duration;
 
@@ -76,7 +85,9 @@ mod e2e {
         assert_eq!(proof.statement_id, "e2e-1");
 
         // Verify proof
-        let valid = engine.verify_proof(&proof, &statement).expect("verify proof");
+        let valid = engine
+            .verify_proof(&proof, &statement)
+            .expect("verify proof");
         assert!(valid);
 
         // Check stats
@@ -118,12 +129,16 @@ mod e2e {
         }
 
         // Aggregate
-        let agg = aggregator.aggregate("agg-1".to_string()).expect("aggregate");
+        let agg = aggregator
+            .aggregate("agg-1".to_string())
+            .expect("aggregate");
         assert_eq!(agg.proof_ids.len(), 5);
         assert!(agg.aggregated_data.len() > 0);
 
         // Verify aggregated
-        let valid = aggregator.verify_aggregated(&agg).expect("verify aggregated");
+        let valid = aggregator
+            .verify_aggregated(&agg)
+            .expect("verify aggregated");
         assert!(valid);
     }
 
@@ -158,9 +173,21 @@ mod e2e {
         let mut scheduler = TaskScheduler::new(SchedulerConfig::default());
 
         // Add tasks with different priorities
-        let low_task = ScheduledTask::new("low-1".to_string(), TaskPriority::Low, "low task".to_string());
-        let high_task = ScheduledTask::new("high-1".to_string(), TaskPriority::High, "high task".to_string());
-        let med_task = ScheduledTask::new("med-1".to_string(), TaskPriority::Normal, "medium task".to_string());
+        let low_task = ScheduledTask::new(
+            "low-1".to_string(),
+            TaskPriority::Low,
+            "low task".to_string(),
+        );
+        let high_task = ScheduledTask::new(
+            "high-1".to_string(),
+            TaskPriority::High,
+            "high task".to_string(),
+        );
+        let med_task = ScheduledTask::new(
+            "med-1".to_string(),
+            TaskPriority::Normal,
+            "medium task".to_string(),
+        );
 
         scheduler.schedule(low_task).expect("schedule low");
         scheduler.schedule(high_task).expect("schedule high");
@@ -215,7 +242,8 @@ mod e2e {
     fn test_e2e_lz4_round_trip() {
         let mut compressor = LZ4Compressor::new(LZ4Config::default());
 
-        let original = b"Hello, ed2kIA v1.4.0 Sprint 1! This is test data for LZ4 compression E2E validation.";
+        let original =
+            b"Hello, ed2kIA v1.4.0 Sprint 1! This is test data for LZ4 compression E2E validation.";
         let block = compressor.compress(original, "block-1").expect("compress");
         assert_eq!(block.original_size, original.len());
 
@@ -237,15 +265,28 @@ mod e2e {
         cache.set_time(1000);
 
         // Add entries
-        cache.store("cp1".to_string(), 1, "model-1".to_string(), vec![1, 2, 3]).expect("store cp1");
-        cache.store("cp2".to_string(), 2, "model-1".to_string(), vec![4, 5, 6]).expect("store cp2");
-        cache.store("cp3".to_string(), 3, "model-1".to_string(), vec![7, 8, 9]).expect("store cp3");
+        cache
+            .store("cp1".to_string(), 1, "model-1".to_string(), vec![1, 2, 3])
+            .expect("store cp1");
+        cache
+            .store("cp2".to_string(), 2, "model-1".to_string(), vec![4, 5, 6])
+            .expect("store cp2");
+        cache
+            .store("cp3".to_string(), 3, "model-1".to_string(), vec![7, 8, 9])
+            .expect("store cp3");
 
         // Access cp1 to make it recently used
         cache.get("cp1").expect("access cp1");
 
         // Add cp4, should evict cp2 (least recently used)
-        cache.store("cp4".to_string(), 4, "model-1".to_string(), vec![10, 11, 12]).expect("store cp4");
+        cache
+            .store(
+                "cp4".to_string(),
+                4,
+                "model-1".to_string(),
+                vec![10, 11, 12],
+            )
+            .expect("store cp4");
 
         assert!(cache.get("cp1").is_ok());
         assert!(cache.get("cp2").is_err()); // Evicted
@@ -267,12 +308,14 @@ mod e2e {
         // Store multiple versions for model-1
         for i in 0..5 {
             let gradients = vec![1.0 * (i + 1) as f32; 10];
-            archive.store(
-                format!("v-{}", i),
-                "model-1".to_string(),
-                i as u64,
-                gradients,
-            ).expect("store gradient");
+            archive
+                .store(
+                    format!("v-{}", i),
+                    "model-1".to_string(),
+                    i as u64,
+                    gradients,
+                )
+                .expect("store gradient");
         }
 
         // Should have pruned to max_versions_per_model
@@ -294,8 +337,13 @@ mod e2e {
         metrics.counter_add("requests_total", 5).expect("add");
 
         // Register gauge
-        metrics.register_gauge("active_connections".to_string(), "Active connections".to_string());
-        metrics.gauge_set("active_connections", 42.0).expect("set gauge");
+        metrics.register_gauge(
+            "active_connections".to_string(),
+            "Active connections".to_string(),
+        );
+        metrics
+            .gauge_set("active_connections", 42.0)
+            .expect("set gauge");
 
         // Register histogram
         metrics.register_histogram(
@@ -304,7 +352,9 @@ mod e2e {
             Some(vec![5.0, 10.0, 25.0, 50.0, 100.0]),
         );
         for i in 1..=20 {
-            metrics.histogram_observe("request_latency_ms", i as f64 * 5.0).expect("observe");
+            metrics
+                .histogram_observe("request_latency_ms", i as f64 * 5.0)
+                .expect("observe");
         }
 
         let snapshot = metrics.snapshot();
@@ -336,10 +386,18 @@ mod e2e {
         checker.register_check(db_config).expect("register db");
 
         // Record healthy checks (recovery_threshold=2, so need 2 healthy records each)
-        checker.record_check("api_server", HealthStatus::Healthy, "ok".to_string(), 5.0).expect("record api");
-        checker.record_check("api_server", HealthStatus::Healthy, "ok".to_string(), 4.0).expect("record api 2");
-        checker.record_check("database", HealthStatus::Healthy, "ok".to_string(), 3.0).expect("record db");
-        checker.record_check("database", HealthStatus::Healthy, "ok".to_string(), 2.0).expect("record db 2");
+        checker
+            .record_check("api_server", HealthStatus::Healthy, "ok".to_string(), 5.0)
+            .expect("record api");
+        checker
+            .record_check("api_server", HealthStatus::Healthy, "ok".to_string(), 4.0)
+            .expect("record api 2");
+        checker
+            .record_check("database", HealthStatus::Healthy, "ok".to_string(), 3.0)
+            .expect("record db");
+        checker
+            .record_check("database", HealthStatus::Healthy, "ok".to_string(), 2.0)
+            .expect("record db 2");
 
         // Generate report
         let report = checker.generate_report();
@@ -401,16 +459,20 @@ mod e2e {
 
         // Compress proof data
         let mut compressor = LZ4Compressor::new(LZ4Config::default());
-        let block = compressor.compress(&proof.proof_data, "proof-block-1").expect("compress");
+        let block = compressor
+            .compress(&proof.proof_data, "proof-block-1")
+            .expect("compress");
 
         // Store in checkpoint cache
         let mut cache = CheckpointCache::new(CheckpointCacheConfig::default());
-        cache.store(
-            "proof-cache-1".to_string(),
-            1,
-            "zkp".to_string(),
-            block.compressed_data,
-        ).expect("store");
+        cache
+            .store(
+                "proof-cache-1".to_string(),
+                1,
+                "zkp".to_string(),
+                block.compressed_data,
+            )
+            .expect("store");
 
         // Retrieve and verify
         let entry = cache.get("proof-cache-1").expect("retrieve");
@@ -448,12 +510,17 @@ mod e2e {
         // Simulate operations
         for _ in 0..10 {
             metrics.counter_inc("proofs_generated").expect("inc");
-            checker.record_check("zkp_engine", HealthStatus::Healthy, "ok".to_string(), 5.0).expect("healthy");
+            checker
+                .record_check("zkp_engine", HealthStatus::Healthy, "ok".to_string(), 5.0)
+                .expect("healthy");
         }
 
         // Validate state
         let snapshot = metrics.snapshot();
-        assert!(snapshot.counters.iter().any(|(k, _)| k == "proofs_generated"));
+        assert!(snapshot
+            .counters
+            .iter()
+            .any(|(k, _)| k == "proofs_generated"));
         let report = checker.generate_report();
         assert_eq!(report.overall_status, HealthStatus::Healthy);
         assert_eq!(alerts.get_active_alerts().len(), 0);
@@ -494,14 +561,18 @@ mod e2e {
 
         // LP-100: Compress and cache proof data
         let mut compressor = LZ4Compressor::new(LZ4Config::default());
-        let block = compressor.compress(&proof.proof_data, "proof-block").expect("compress");
+        let block = compressor
+            .compress(&proof.proof_data, "proof-block")
+            .expect("compress");
         let mut cache = CheckpointCache::new(CheckpointCacheConfig::default());
-        cache.store(
-            "proof-1".to_string(),
-            1,
-            "zkp".to_string(),
-            block.compressed_data,
-        ).expect("store");
+        cache
+            .store(
+                "proof-1".to_string(),
+                1,
+                "zkp".to_string(),
+                block.compressed_data,
+            )
+            .expect("store");
 
         // LP-101: Monitor everything
         let mut metrics = AdvancedMetrics::new(AdvancedMetricsConfig::default());
@@ -515,8 +586,12 @@ mod e2e {
         let mut checker = HealthChecker::new(HealthCheckerConfig::default());
         checker.register_check(hc_config).expect("reg");
         // recovery_threshold=2, so need 2 healthy records
-        checker.record_check("pipeline", HealthStatus::Healthy, "ok".to_string(), 5.0).expect("ok");
-        checker.record_check("pipeline", HealthStatus::Healthy, "ok".to_string(), 4.0).expect("ok 2");
+        checker
+            .record_check("pipeline", HealthStatus::Healthy, "ok".to_string(), 5.0)
+            .expect("ok");
+        checker
+            .record_check("pipeline", HealthStatus::Healthy, "ok".to_string(), 4.0)
+            .expect("ok 2");
 
         let mut alerts = AlertEngine::new(AlertEngineConfig::default());
         alerts.add_rule(AlertRule::new(
@@ -534,7 +609,10 @@ mod e2e {
         // Validate all modules
         assert!(engine.verify_proof(&proof, &statement).unwrap());
         assert!(cache.get("proof-1").is_ok());
-        assert_eq!(checker.generate_report().overall_status, HealthStatus::Healthy);
+        assert_eq!(
+            checker.generate_report().overall_status,
+            HealthStatus::Healthy
+        );
         // Pool with 1 task assigned to 2 workers is valid state
         assert_eq!(pool.stats().total_tasks_assigned, 1);
         assert_eq!(alerts.get_active_alerts().len(), 0);

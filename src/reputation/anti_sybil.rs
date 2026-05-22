@@ -102,7 +102,8 @@ impl NodeFingerprint {
         if mean <= 0.0 {
             return 0.0;
         }
-        let variance: f64 = intervals.iter().map(|i| (i - mean).powi(2)).sum::<f64>() / intervals.len() as f64;
+        let variance: f64 =
+            intervals.iter().map(|i| (i - mean).powi(2)).sum::<f64>() / intervals.len() as f64;
         (variance.sqrt() / mean).min(1.0)
     }
 
@@ -169,10 +170,8 @@ impl AntiSybilEngine {
     }
 
     pub fn register_node(&mut self, node_id: String, vrf_proof: String) {
-        self.fingerprints.insert(
-            node_id.clone(),
-            NodeFingerprint::new(node_id, vrf_proof),
-        );
+        self.fingerprints
+            .insert(node_id.clone(), NodeFingerprint::new(node_id, vrf_proof));
     }
 
     pub fn record_event(&mut self, node_id: &str, timestamp_ms: u64, event_type: u8) {
@@ -216,9 +215,15 @@ impl AntiSybilEngine {
 
             // Pattern analysis
             let pattern = fp.pattern_hash();
-            let duplicates = self.fingerprints.values().filter(|other| {
-                other.node_id != *node_id && other.event_types.len() >= self.config.min_events_for_analysis && other.pattern_hash() == pattern
-            }).count();
+            let duplicates = self
+                .fingerprints
+                .values()
+                .filter(|other| {
+                    other.node_id != *node_id
+                        && other.event_types.len() >= self.config.min_events_for_analysis
+                        && other.pattern_hash() == pattern
+                })
+                .count();
             if duplicates > 0 {
                 reasons.push(format!("Pattern matches {} other nodes", duplicates));
                 confidence += 0.3 * (duplicates as f64).min(1.0);
@@ -273,9 +278,10 @@ impl AntiSybilEngine {
                     continue;
                 }
                 // Check if patterns match
-                if let (Some(fp1), Some(fp2)) =
-                    (self.fingerprints.get(&s1.node_id), self.fingerprints.get(&s2.node_id))
-                {
+                if let (Some(fp1), Some(fp2)) = (
+                    self.fingerprints.get(&s1.node_id),
+                    self.fingerprints.get(&s2.node_id),
+                ) {
                     if fp1.pattern_hash() == fp2.pattern_hash() {
                         cluster_nodes.push(s2.node_id.clone());
                         used.insert(s2.node_id.clone());

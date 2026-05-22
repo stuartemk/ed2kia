@@ -121,7 +121,11 @@ impl FeedbackManager {
     }
 
     /// Inicia modo interactivo (TTY)
-    pub fn run_interactive(&mut self, requests: Vec<LabelingRequest>, annotator_id: &str) -> Result<()> {
+    pub fn run_interactive(
+        &mut self,
+        requests: Vec<LabelingRequest>,
+        annotator_id: &str,
+    ) -> Result<()> {
         if requests.is_empty() {
             info!("No labeling requests available");
             return Ok(());
@@ -309,11 +313,12 @@ impl FeedbackManager {
         }
 
         if feedback.decision == FeedbackDecision::Corrected
-            && feedback.corrected_concept.as_ref().is_none_or(|s| s.is_empty())
+            && feedback
+                .corrected_concept
+                .as_ref()
+                .is_none_or(|s| s.is_empty())
         {
-            return Err(anyhow!(
-                "Corrected decision requires a corrected concept"
-            ));
+            return Err(anyhow!("Corrected decision requires a corrected concept"));
         }
 
         Ok(())
@@ -399,14 +404,15 @@ impl FeedbackManager {
 
     /// Exporta feedback a JSON
     pub fn export_to_json(&self, path: &PathBuf) -> Result<()> {
-        let parent = path.parent().ok_or_else(|| anyhow!("Invalid export path"))?;
+        let parent = path
+            .parent()
+            .ok_or_else(|| anyhow!("Invalid export path"))?;
         std::fs::create_dir_all(parent)?;
 
         let json = serde_json::to_string_pretty(&self.feedback_history)
             .map_err(|e| anyhow!("Failed to serialize feedback: {}", e))?;
 
-        std::fs::write(path, json)
-            .map_err(|e| anyhow!("Failed to write feedback file: {}", e))?;
+        std::fs::write(path, json).map_err(|e| anyhow!("Failed to write feedback file: {}", e))?;
 
         info!(
             "Exported {} feedback entries to {}",
@@ -442,7 +448,12 @@ impl FeedbackManager {
     /// Obtiene historial de feedback
     pub fn get_history(&self, limit: Option<usize>) -> Vec<HumanFeedback> {
         let limit = limit.unwrap_or(100);
-        self.feedback_history.iter().rev().take(limit).cloned().collect()
+        self.feedback_history
+            .iter()
+            .rev()
+            .take(limit)
+            .cloned()
+            .collect()
     }
 
     /// Obtiene feedback por annotador

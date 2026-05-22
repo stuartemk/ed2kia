@@ -4,10 +4,14 @@
 
 #[cfg(feature = "v1.6-sprint3")]
 mod stress {
+    use ed2kia::bridge::federation_zkp_bridge_v7::{
+        FederationZKPBridgeV7, FederationZKPBridgeV7Config,
+    };
+    use ed2kia::federation::cross_model_scaling_v7::{
+        CrossModelScalingV7, CrossModelScalingV7Config,
+    };
     use ed2kia::sae::fine_tuning_v7::{FineTuningV7, FineTuningV7Config};
-    use ed2kia::federation::cross_model_scaling_v7::{CrossModelScalingV7, CrossModelScalingV7Config};
-    use ed2kia::zkp::async_zkp_v14::{AsyncZKPV14, ZKPV14Config, ProofPriority};
-    use ed2kia::bridge::federation_zkp_bridge_v7::{FederationZKPBridgeV7, FederationZKPBridgeV7Config};
+    use ed2kia::zkp::async_zkp_v14::{AsyncZKPV14, ProofPriority, ZKPV14Config};
 
     fn current_ms() -> u64 {
         std::time::SystemTime::now()
@@ -49,8 +53,12 @@ mod stress {
             ..FineTuningV7Config::default()
         });
 
-        engine.register_node("n1".to_string(), 0.99, 0.95, 500.0).unwrap();
-        engine.register_model("m1".to_string(), "n1".to_string(), 768).unwrap();
+        engine
+            .register_node("n1".to_string(), 0.99, 0.95, 500.0)
+            .unwrap();
+        engine
+            .register_model("m1".to_string(), "n1".to_string(), 768)
+            .unwrap();
 
         let mut success_count = 0u64;
         for round in 0..200 {
@@ -72,8 +80,12 @@ mod stress {
             ..FineTuningV7Config::default()
         });
 
-        engine.register_node("n1".to_string(), 0.99, 0.95, 500.0).unwrap();
-        engine.register_model("m1".to_string(), "n1".to_string(), 768).unwrap();
+        engine
+            .register_node("n1".to_string(), 0.99, 0.95, 500.0)
+            .unwrap();
+        engine
+            .register_model("m1".to_string(), "n1".to_string(), 768)
+            .unwrap();
 
         for _round in 0..100 {
             let _ = engine.execute_round("m1".to_string(), 0.5, 1.0, 50);
@@ -114,10 +126,14 @@ mod stress {
     pub fn stress_scaling_v7_rapid_metrics_update() {
         let mut engine = CrossModelScalingV7::default();
 
-        engine.register_node("node_1".to_string(), "model_a".to_string(), 200.0).unwrap();
+        engine
+            .register_node("node_1".to_string(), "model_a".to_string(), 200.0)
+            .unwrap();
 
         for i in 0..1000 {
-            engine.update_node_load("node_1", 0.1 + (i % 100) as f64 * 0.01).unwrap();
+            engine
+                .update_node_load("node_1", 0.1 + (i % 100) as f64 * 0.01)
+                .unwrap();
         }
 
         let node = engine.nodes.get("node_1").unwrap();
@@ -161,7 +177,9 @@ mod stress {
         });
 
         let now = current_ms();
-        engine.register_federation("fed_stress".to_string(), 0.95).unwrap();
+        engine
+            .register_federation("fed_stress".to_string(), 0.95)
+            .unwrap();
 
         for i in 0..5000 {
             let _ = engine.submit_proof(
@@ -185,7 +203,9 @@ mod stress {
         });
 
         let now = current_ms();
-        engine.register_federation("fed1".to_string(), 0.95).unwrap();
+        engine
+            .register_federation("fed1".to_string(), 0.95)
+            .unwrap();
 
         for i in 0..2000 {
             let _ = engine.submit_proof(
@@ -261,8 +281,12 @@ mod stress {
         });
 
         let now = current_ms();
-        bridge.register_federation("src".to_string(), 0.95, 200.0).unwrap();
-        bridge.register_federation("dst".to_string(), 0.90, 150.0).unwrap();
+        bridge
+            .register_federation("src".to_string(), 0.95, 200.0)
+            .unwrap();
+        bridge
+            .register_federation("dst".to_string(), 0.90, 150.0)
+            .unwrap();
 
         for i in 0..3000 {
             let _ = bridge.submit_proof(
@@ -286,7 +310,9 @@ mod stress {
         });
 
         let now = current_ms();
-        bridge.register_federation("fed1".to_string(), 0.95, 200.0).unwrap();
+        bridge
+            .register_federation("fed1".to_string(), 0.95, 200.0)
+            .unwrap();
 
         for i in 0..2000 {
             let proof_id = format!("p_{}", i);
@@ -319,8 +345,12 @@ mod stress {
             gradient_sync_timeout_ms: 200,
             ..FineTuningV7Config::default()
         });
-        tuner.register_node("n1".to_string(), 0.99, 0.95, 500.0).unwrap();
-        tuner.register_model("m1".to_string(), "n1".to_string(), 768).unwrap();
+        tuner
+            .register_node("n1".to_string(), 0.99, 0.95, 500.0)
+            .unwrap();
+        tuner
+            .register_model("m1".to_string(), "n1".to_string(), 768)
+            .unwrap();
 
         for round in 0..100 {
             let _ = tuner.execute_round("m1".to_string(), 0.5 * (0.99_f64).powi(round), 1.0, 50);
@@ -336,7 +366,12 @@ mod stress {
         zkp.register_federation("fed".to_string(), 0.95).unwrap();
 
         for i in 0..2000 {
-            let _ = zkp.submit_proof(format!("p_{}", i), ProofPriority::Normal, now, "fed".to_string());
+            let _ = zkp.submit_proof(
+                format!("p_{}", i),
+                ProofPriority::Normal,
+                now,
+                "fed".to_string(),
+            );
         }
 
         for i in 0..20 {
@@ -350,7 +385,9 @@ mod stress {
             max_proofs_in_flight: 3000,
             ..FederationZKPBridgeV7Config::default()
         });
-        bridge.register_federation("fed".to_string(), 0.95, 200.0).unwrap();
+        bridge
+            .register_federation("fed".to_string(), 0.95, 200.0)
+            .unwrap();
 
         for i in 0..1500 {
             let _ = bridge.submit_proof(

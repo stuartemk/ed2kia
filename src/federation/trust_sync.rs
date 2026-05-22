@@ -111,8 +111,7 @@ impl TrustNodeRecord {
 
         // Actualizar cumplimiento SLO
         if slo_success {
-            self.slo_compliance_rate =
-                (self.slo_compliance_rate * 0.9) + 0.1; // Smooth hacia 1.0
+            self.slo_compliance_rate = (self.slo_compliance_rate * 0.9) + 0.1; // Smooth hacia 1.0
         } else {
             self.slo_compliance_rate *= 0.9; // Smooth hacia 0.0
         }
@@ -378,7 +377,11 @@ impl TrustSyncEngine {
         self.update_stats();
 
         info!("Nodo registrado: {}", node_id);
-        Ok(TrustSyncResult::new(node_id.clone(), self.records.get(&node_id).unwrap(), 0))
+        Ok(TrustSyncResult::new(
+            node_id.clone(),
+            self.records.get(&node_id).unwrap(),
+            0,
+        ))
     }
 
     /// Actualizar confianza de nodo con resultado SLO.
@@ -401,10 +404,7 @@ impl TrustSyncEngine {
     }
 
     /// Aplicar boost de confianza por verificación ZKP exitosa.
-    pub fn apply_zkp_boost(
-        &mut self,
-        node_id: &str,
-    ) -> Result<TrustSyncResult, TrustSyncError> {
+    pub fn apply_zkp_boost(&mut self, node_id: &str) -> Result<TrustSyncResult, TrustSyncError> {
         if !self.config.enable_zkp_boost {
             return Err(TrustSyncError::GovernanceBlocked(
                 "ZKP boost deshabilitado".to_string(),
@@ -431,10 +431,7 @@ impl TrustSyncEngine {
     }
 
     /// Registrar fallo de verificación ZKP.
-    pub fn record_zkp_failure(
-        &mut self,
-        node_id: &str,
-    ) -> Result<TrustSyncResult, TrustSyncError> {
+    pub fn record_zkp_failure(&mut self, node_id: &str) -> Result<TrustSyncResult, TrustSyncError> {
         if let Some(record) = self.records.get_mut(node_id) {
             record.record_zkp_failure();
         } else {
@@ -453,8 +450,7 @@ impl TrustSyncEngine {
 
         // Aplicar decaimiento a todos los nodos
         for record in self.records.values_mut() {
-            let days_inactive =
-                (now.saturating_sub(record.last_activity_ms)) as f64 / 86_400_000.0;
+            let days_inactive = (now.saturating_sub(record.last_activity_ms)) as f64 / 86_400_000.0;
             if days_inactive > 0.0 {
                 record.apply_decay(days_inactive, self.config.decay_rate);
             }
@@ -473,11 +469,7 @@ impl TrustSyncEngine {
 
         // Generar resultados
         for (node_id, record) in &self.records {
-            results.push(TrustSyncResult::new(
-                node_id.clone(),
-                record,
-                propagated,
-            ));
+            results.push(TrustSyncResult::new(node_id.clone(), record, propagated));
         }
 
         info!(
@@ -515,8 +507,7 @@ impl TrustSyncEngine {
     /// Limpiar clústers Sybil antiguos.
     pub fn clear_old_sybil_clusters(&mut self) {
         let cutoff = current_timestamp_ms().saturating_sub(self.config.sybil_detection_window_ms);
-        self.sybil_clusters
-            .retain(|c| c.detected_at_ms > cutoff);
+        self.sybil_clusters.retain(|c| c.detected_at_ms > cutoff);
     }
 
     /// Verificar si una firma ya existe en los registros.
@@ -582,7 +573,8 @@ impl TrustSyncEngine {
                 if records.is_empty() {
                     return None;
                 }
-                let avg: f32 = records.iter().map(|r| r.trust_score).sum::<f32>() / records.len() as f32;
+                let avg: f32 =
+                    records.iter().map(|r| r.trust_score).sum::<f32>() / records.len() as f32;
                 Some((network.clone(), avg))
             })
             .collect();
@@ -613,11 +605,22 @@ impl TrustSyncEngine {
         }
 
         self.stats.total_nodes = total;
-        self.stats.trusted_nodes = records.iter().filter(|r| r.status == NodeStatus::Trusted).count();
-        self.stats.active_nodes = records.iter().filter(|r| r.status == NodeStatus::Active).count();
-        self.stats.suspicious_nodes =
-            records.iter().filter(|r| r.status == NodeStatus::Suspicious).count();
-        self.stats.banned_nodes = records.iter().filter(|r| r.status == NodeStatus::Banned).count();
+        self.stats.trusted_nodes = records
+            .iter()
+            .filter(|r| r.status == NodeStatus::Trusted)
+            .count();
+        self.stats.active_nodes = records
+            .iter()
+            .filter(|r| r.status == NodeStatus::Active)
+            .count();
+        self.stats.suspicious_nodes = records
+            .iter()
+            .filter(|r| r.status == NodeStatus::Suspicious)
+            .count();
+        self.stats.banned_nodes = records
+            .iter()
+            .filter(|r| r.status == NodeStatus::Banned)
+            .count();
 
         let sum_trust: f32 = records.iter().map(|r| r.trust_score).sum();
         let sum_crypto: f32 = records.iter().map(|r| r.crypto_reputation).sum();

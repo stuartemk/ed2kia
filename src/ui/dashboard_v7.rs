@@ -451,8 +451,7 @@ mod internal {
 
         /// Record a metric value.
         pub fn record_metric(&mut self, metric: MetricValueV7) {
-            self.metrics
-                .insert(metric.metric.to_string(), metric.value);
+            self.metrics.insert(metric.metric.to_string(), metric.value);
         }
     }
 
@@ -514,8 +513,7 @@ mod internal {
 
         /// Record a metric value.
         pub fn record_metric(&mut self, metric: MetricValueV7) {
-            self.metrics
-                .insert(metric.metric.to_string(), metric.value);
+            self.metrics.insert(metric.metric.to_string(), metric.value);
             self.metric_history.push_back(metric);
             if self.metric_history.len() > 1000 {
                 self.metric_history.pop_front();
@@ -640,7 +638,10 @@ mod internal {
             let mut dashboard = DashboardV7::new();
             dashboard.scaling_v7.gradient_alignment = 0.7;
             let snapshot = dashboard.generate_snapshot();
-            assert!(snapshot.alerts.iter().any(|a| a.id == "gradient_divergence"));
+            assert!(snapshot
+                .alerts
+                .iter()
+                .any(|a| a.id == "gradient_divergence"));
         }
 
         #[test]

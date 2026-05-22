@@ -29,8 +29,15 @@ impl fmt::Display for PoolError {
         match self {
             PoolError::ResourceNotFound(id) => write!(f, "Resource not found: {}", id),
             PoolError::PoolFull => write!(f, "Pool capacity exceeded"),
-            PoolError::InsufficientCredits { available, required } => {
-                write!(f, "Insufficient credits: available={}, required={}", available, required)
+            PoolError::InsufficientCredits {
+                available,
+                required,
+            } => {
+                write!(
+                    f,
+                    "Insufficient credits: available={}, required={}",
+                    available, required
+                )
             }
             PoolError::InvalidResourceType(t) => write!(f, "Invalid resource type: {}", t),
         }
@@ -106,7 +113,12 @@ pub struct ShardEntry {
 }
 
 impl ShardEntry {
-    pub fn new(shard_id: String, resource_type: ResourceType, credits: f64, reputation: f64) -> Self {
+    pub fn new(
+        shard_id: String,
+        resource_type: ResourceType,
+        credits: f64,
+        reputation: f64,
+    ) -> Self {
         Self {
             shard_id,
             resource_type,
@@ -241,7 +253,8 @@ impl CrossChainResourcePool {
 
     /// Remove a shard from the pool.
     pub fn remove_shard(&mut self, shard_id: &str) -> Result<ShardEntry, PoolError> {
-        let shard = self.shards
+        let shard = self
+            .shards
             .remove(shard_id)
             .ok_or(PoolError::ResourceNotFound(shard_id.to_string()))?;
         self.stats.total_shards = self.shards.len();
@@ -277,9 +290,7 @@ impl CrossChainResourcePool {
         let mut candidates: Vec<&mut ShardEntry> = self
             .shards
             .values_mut()
-            .filter(|s| {
-                s.resource_type == request.resource_type && s.available() > 0.0
-            })
+            .filter(|s| s.resource_type == request.resource_type && s.available() > 0.0)
             .collect();
 
         // Sort by priority score (reputation * available / latency)
@@ -324,10 +335,10 @@ impl CrossChainResourcePool {
         self.stats.total_requests += 1;
         self.stats.successful_allocations += 1;
         self.stats.total_allocated += total_allocated;
-        self.stats.avg_allocation_ms =
-            (self.stats.avg_allocation_ms * (self.stats.total_requests - 1) as f64
-                + elapsed as f64)
-                / self.stats.total_requests as f64;
+        self.stats.avg_allocation_ms = (self.stats.avg_allocation_ms
+            * (self.stats.total_requests - 1) as f64
+            + elapsed as f64)
+            / self.stats.total_requests as f64;
 
         // Record history
         self.request_history.push_back(result.clone());
@@ -535,10 +546,7 @@ mod tests {
             0.8,
         ))
         .unwrap();
-        assert_eq!(
-            pool.available_credits(&ResourceType::ComputeCredit),
-            200.0
-        );
+        assert_eq!(pool.available_credits(&ResourceType::ComputeCredit), 200.0);
     }
 
     #[test]
@@ -590,10 +598,7 @@ mod tests {
     #[test]
     fn test_resource_type_display() {
         assert_eq!(format!("{}", ResourceType::SaeShard), "SAE_Shard");
-        assert_eq!(
-            format!("{}", ResourceType::ComputeCredit),
-            "Compute_Credit"
-        );
+        assert_eq!(format!("{}", ResourceType::ComputeCredit), "Compute_Credit");
         assert_eq!(format!("{}", ResourceType::Storage), "Storage");
     }
 

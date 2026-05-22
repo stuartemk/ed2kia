@@ -110,9 +110,13 @@ mod wasm_internal {
         pub fn to_json(&self) -> String {
             format!(
                 r#"{{"id":"{}","initialized":{},"queue_size":{},"tasks_processed":{},"tasks_failed":{},"memory_limit_mb":{},"uptime_ms":{}}}"#,
-                self.id, self.initialized, self.queue_size,
-                self.tasks_processed, self.tasks_failed,
-                self.memory_limit_mb, self.uptime_ms
+                self.id,
+                self.initialized,
+                self.queue_size,
+                self.tasks_processed,
+                self.tasks_failed,
+                self.memory_limit_mb,
+                self.uptime_ms
             )
         }
     }
@@ -217,7 +221,9 @@ mod wasm_internal {
             }
 
             if payload.is_empty() {
-                return format!(r#"{{"error":"InvalidPayload","message":"Payload cannot be empty"}}"#);
+                return format!(
+                    r#"{{"error":"InvalidPayload","message":"Payload cannot be empty"}}"#
+                );
             }
 
             let start_ms = current_timestamp_ms();
@@ -235,9 +241,7 @@ mod wasm_internal {
 
             // Process based on type
             let (success, output) = match task_type {
-                TaskType::HealthCheck => {
-                    (true, format!("pong-{}", self.id))
-                }
+                TaskType::HealthCheck => (true, format!("pong-{}", self.id)),
                 TaskType::SaeInference => {
                     // Dummy SAE inference — simulates activation extraction
                     let activations = self.simulate_sae_activations(payload.len());
@@ -246,7 +250,14 @@ mod wasm_internal {
                 TaskType::GradientValidation => {
                     // Dummy gradient validation — checks payload integrity
                     let valid = payload.len() > 10;
-                    (valid, if valid { "gradient_valid".to_string() } else { "gradient_too_short".to_string() })
+                    (
+                        valid,
+                        if valid {
+                            "gradient_valid".to_string()
+                        } else {
+                            "gradient_too_short".to_string()
+                        },
+                    )
                 }
             };
 
@@ -277,7 +288,11 @@ mod wasm_internal {
             }
 
             let result = TaskResult {
-                task_id: format!("{}-{}", self.id, self.tasks_processed + self.tasks_failed - 1),
+                task_id: format!(
+                    "{}-{}",
+                    self.id,
+                    self.tasks_processed + self.tasks_failed - 1
+                ),
                 success,
                 output,
                 latency_ms,
@@ -343,7 +358,8 @@ mod wasm_internal {
             }
 
             if payload.is_empty() {
-                let err = format!(r#"{{"error":"InvalidPayload","message":"Payload cannot be empty"}}"#);
+                let err =
+                    format!(r#"{{"error":"InvalidPayload","message":"Payload cannot be empty"}}"#);
                 return JsValue::from_str(&err);
             }
 
@@ -416,10 +432,7 @@ mod wasm_internal {
             // Simulates top-k sparse activation extraction
             let k = (payload_size % 16) + 8; // 8-23 active features
             let mean_val = (payload_size % 100) as f32 / 100.0;
-            format!(
-                "activations(k={},mean={:.3},node={})",
-                k, mean_val, self.id
-            )
+            format!("activations(k={},mean={:.3},node={})", k, mean_val, self.id)
         }
 
         /// Evaluate SCT (Stuartian Context Tensor) from payload.
@@ -518,7 +531,8 @@ mod wasm_internal {
         fn test_sae_inference_task() {
             let mut node = BrowserNode::new("sae-test", 64);
             node.init();
-            let result = node.process_task(r#"{"type":"SaeInference","data":"test-payload-12345"}"#);
+            let result =
+                node.process_task(r#"{"type":"SaeInference","data":"test-payload-12345"}"#);
             assert!(result.contains("activations"));
             assert!(result.contains("sae-test"));
         }
@@ -528,7 +542,9 @@ mod wasm_internal {
             let mut node = BrowserNode::new("grad-test", 64);
             node.init();
             // Valid gradient (long enough)
-            let result = node.process_task(r#"{"type":"GradientValidation","data":"this-is-a-valid-gradient-payload"}"#);
+            let result = node.process_task(
+                r#"{"type":"GradientValidation","data":"this-is-a-valid-gradient-payload"}"#,
+            );
             assert!(result.contains("gradient_valid"));
 
             // Invalid gradient (too short)
@@ -658,7 +674,10 @@ mod wasm_internal {
             let s1 = result1.as_string().unwrap_or_default();
             let s2 = result2.as_string().unwrap_or_default();
             // Same payload → same SCT vectors (latency may differ)
-            assert!(s1.contains(&s2[0..s2.len().min(s1.len())]) || s2.contains(&s1[0..s1.len().min(s2.len())]));
+            assert!(
+                s1.contains(&s2[0..s2.len().min(s1.len())])
+                    || s2.contains(&s1[0..s1.len().min(s2.len())])
+            );
         }
 
         #[test]
@@ -674,9 +693,24 @@ mod wasm_internal {
             ];
             for payload in payloads {
                 let (x, y, z) = node.evaluate_sct(payload);
-                assert!(x >= 0.0 && x <= 1.0, "x out of bounds for '{}': {}", payload, x);
-                assert!(y >= 0.0 && y <= 1.0, "y out of bounds for '{}': {}", payload, y);
-                assert!(z >= -1.0 && z <= 1.0, "z out of bounds for '{}': {}", payload, z);
+                assert!(
+                    x >= 0.0 && x <= 1.0,
+                    "x out of bounds for '{}': {}",
+                    payload,
+                    x
+                );
+                assert!(
+                    y >= 0.0 && y <= 1.0,
+                    "y out of bounds for '{}': {}",
+                    payload,
+                    y
+                );
+                assert!(
+                    z >= -1.0 && z <= 1.0,
+                    "z out of bounds for '{}': {}",
+                    payload,
+                    z
+                );
             }
         }
     }

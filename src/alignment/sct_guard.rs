@@ -98,9 +98,8 @@ impl SctGuard {
     /// Limpia registros de violaciones expirados fuera de la ventana.
     fn cleanup_expired_records(&mut self) {
         let cutoff = self.current_tick.saturating_sub(self.window_size);
-        self.violations.retain(|_, record| {
-            record.last_violation_at > cutoff
-        });
+        self.violations
+            .retain(|_, record| record.last_violation_at > cutoff);
     }
 
     /// Evalúa un payload SCT propuesto por un nodo.
@@ -121,11 +120,14 @@ impl SctGuard {
         if decision.is_rejected() {
             self.total_rejected += 1;
 
-            let record = self.violations.entry(node_id.clone()).or_insert(ViolationRecord {
-                count: 0,
-                first_violation_at: self.current_tick,
-                last_violation_at: self.current_tick,
-            });
+            let record = self
+                .violations
+                .entry(node_id.clone())
+                .or_insert(ViolationRecord {
+                    count: 0,
+                    first_violation_at: self.current_tick,
+                    last_violation_at: self.current_tick,
+                });
 
             record.count += 1;
             record.last_violation_at = self.current_tick;
@@ -171,10 +173,7 @@ impl SctGuard {
 
     /// Retorna el número de violaciones acumuladas para un nodo.
     pub fn get_violation_count(&self, node_id: &str) -> usize {
-        self.violations
-            .get(node_id)
-            .map(|r| r.count)
-            .unwrap_or(0)
+        self.violations.get(node_id).map(|r| r.count).unwrap_or(0)
     }
 
     /// Retorna si un nodo está actualmente bajo slashing.
@@ -281,13 +280,16 @@ mod tests {
 
         // First 2 violations — no slash yet
         for _ in 0..2 {
-            let verdict =
-                guard.inspect_payload("attacker".into(), bad_tensor).unwrap();
+            let verdict = guard
+                .inspect_payload("attacker".into(), bad_tensor)
+                .unwrap();
             assert!(!verdict.should_slash);
         }
 
         // Same node, 3rd violation — should slash
-        let verdict = guard.inspect_payload("attacker".into(), bad_tensor).unwrap();
+        let verdict = guard
+            .inspect_payload("attacker".into(), bad_tensor)
+            .unwrap();
         assert!(verdict.should_slash);
         assert!(guard.is_slashing("attacker"));
     }

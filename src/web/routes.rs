@@ -51,7 +51,9 @@ impl<T: Serialize> ApiResponse<T> {
 
 /// GET /api/status
 /// Retorna estado del nodo, capas cargadas, uptime, recursos.
-pub async fn get_status(State(state): State<WebServerState>) -> (StatusCode, Json<ApiResponse<serde_json::Value>>) {
+pub async fn get_status(
+    State(state): State<WebServerState>,
+) -> (StatusCode, Json<ApiResponse<serde_json::Value>>) {
     let node_status = (state.node_status_fn)();
     let uptime = state.uptime_seconds();
 
@@ -66,7 +68,9 @@ pub async fn get_status(State(state): State<WebServerState>) -> (StatusCode, Jso
 
 /// GET /api/network
 /// Retorna pares activos, reputación, métricas gossipsub.
-pub async fn get_network(State(state): State<WebServerState>) -> (StatusCode, Json<ApiResponse<serde_json::Value>>) {
+pub async fn get_network(
+    State(state): State<WebServerState>,
+) -> (StatusCode, Json<ApiResponse<serde_json::Value>>) {
     let network_info = (state.network_info_fn)();
 
     (StatusCode::OK, Json(ApiResponse::ok(network_info)))
@@ -74,7 +78,9 @@ pub async fn get_network(State(state): State<WebServerState>) -> (StatusCode, Js
 
 /// GET /api/feedback
 /// Retorna estadísticas y entradas recientes de feedback.
-pub async fn get_feedback(State(state): State<WebServerState>) -> (StatusCode, Json<ApiResponse<serde_json::Value>>) {
+pub async fn get_feedback(
+    State(state): State<WebServerState>,
+) -> (StatusCode, Json<ApiResponse<serde_json::Value>>) {
     let feedback_data = (state.feedback_fn)();
 
     (StatusCode::OK, Json(ApiResponse::ok(feedback_data)))
@@ -93,7 +99,9 @@ pub async fn handle_feedback(
     {
         return (
             StatusCode::BAD_REQUEST,
-            Json(ApiResponse::error("Invalid decision. Must be: approved, rejected, corrected, uncertain".to_string())),
+            Json(ApiResponse::error(
+                "Invalid decision. Must be: approved, rejected, corrected, uncertain".to_string(),
+            )),
         );
     }
 
@@ -114,7 +122,10 @@ pub async fn handle_feedback(
             error!(error = %e, "Failed to process feedback");
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(ApiResponse::error(format!("Failed to store feedback: {}", e))),
+                Json(ApiResponse::error(format!(
+                    "Failed to store feedback: {}",
+                    e
+                ))),
             )
         }
     }
@@ -129,7 +140,9 @@ pub async fn get_metrics(State(state): State<WebServerState>) -> (StatusCode, St
 
 /// GET /api/health
 /// Health check para orquestadores (K8s, systemd, etc.)
-pub async fn get_health(State(state): State<WebServerState>) -> (StatusCode, Json<ApiResponse<serde_json::Value>>) {
+pub async fn get_health(
+    State(state): State<WebServerState>,
+) -> (StatusCode, Json<ApiResponse<serde_json::Value>>) {
     let (healthy, message) = (state.health_fn)();
 
     let status_code = if healthy {
@@ -151,7 +164,7 @@ pub async fn get_health(State(state): State<WebServerState>) -> (StatusCode, Jso
 mod tests {
     use super::*;
     use axum::body::Body;
-    use axum::http::{Request, Method};
+    use axum::http::{Method, Request};
     use axum::routing::get;
     use axum::Router;
     use tower::util::ServiceExt;
@@ -159,7 +172,9 @@ mod tests {
     #[tokio::test]
     async fn test_get_status() {
         let state = WebServerState::default_state();
-        let app = Router::new().route("/status", get(get_status)).with_state(state);
+        let app = Router::new()
+            .route("/status", get(get_status))
+            .with_state(state);
 
         let response = app
             .oneshot(
@@ -178,7 +193,9 @@ mod tests {
     #[tokio::test]
     async fn test_get_health() {
         let state = WebServerState::default_state();
-        let app = Router::new().route("/health", get(get_health)).with_state(state);
+        let app = Router::new()
+            .route("/health", get(get_health))
+            .with_state(state);
 
         let response = app
             .oneshot(

@@ -33,7 +33,11 @@ mod internal {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             match self {
                 Self::DimensionMismatch { expected, got } => {
-                    write!(f, "Gradient dimension mismatch: expected {}, got {}", expected, got)
+                    write!(
+                        f,
+                        "Gradient dimension mismatch: expected {}, got {}",
+                        expected, got
+                    )
                 }
                 Self::NoModelsRegistered => write!(f, "No models registered for alignment"),
                 Self::ModelNotFound(id) => write!(f, "Model not found: {}", id),
@@ -43,7 +47,11 @@ mod internal {
                 Self::ProjectionFailed(msg) => write!(f, "Dimension projection failed: {}", msg),
                 Self::CompressionError(msg) => write!(f, "Compression error: {}", msg),
                 Self::ConvergenceDivergence(score) => {
-                    write!(f, "Alignment diverging: score {:.4} worsening over passes", score)
+                    write!(
+                        f,
+                        "Alignment diverging: score {:.4} worsening over passes",
+                        score
+                    )
                 }
                 Self::MaxPassesExceeded(n) => write!(f, "Max alignment passes ({}) exceeded", n),
             }
@@ -212,7 +220,14 @@ mod internal {
     }
 
     impl AlignerV3Stats {
-        pub fn record(&mut self, similarity: f64, projected: bool, compressed: usize, passes: usize, converged: bool) {
+        pub fn record(
+            &mut self,
+            similarity: f64,
+            projected: bool,
+            compressed: usize,
+            passes: usize,
+            converged: bool,
+        ) {
             self.total_alignments += 1;
             let n = self.total_alignments as f64;
             self.avg_similarity = self.avg_similarity * (n - 1.0) / n + similarity / n;
@@ -268,7 +283,11 @@ mod internal {
         }
 
         /// Register a model gradient profile.
-        pub fn register_model(&mut self, model_id: String, dimension: usize) -> Result<(), AlignerV3Error> {
+        pub fn register_model(
+            &mut self,
+            model_id: String,
+            dimension: usize,
+        ) -> Result<(), AlignerV3Error> {
             if self.profiles.len() >= self.config.max_models {
                 return Err(AlignerV3Error::NoModelsRegistered);
             }
@@ -285,7 +304,9 @@ mod internal {
             model_id: &str,
             gradients: &[f32],
         ) -> Result<(), AlignerV3Error> {
-            let profile = self.profiles.get_mut(model_id)
+            let profile = self
+                .profiles
+                .get_mut(model_id)
                 .ok_or(AlignerV3Error::ModelNotFound(model_id.to_string()))?;
 
             if gradients.len() != profile.dimension {
@@ -317,7 +338,9 @@ mod internal {
             let target_dim = profiles.iter().map(|p| p.dimension).min().unwrap_or(0);
 
             if target_dim == 0 {
-                return Err(AlignerV3Error::ProjectionFailed("No valid dimensions".to_string()));
+                return Err(AlignerV3Error::ProjectionFailed(
+                    "No valid dimensions".to_string(),
+                ));
             }
 
             // Project gradients to common dimension if needed
@@ -338,7 +361,8 @@ mod internal {
             };
             for pass in 0..max_passes {
                 // Compute similarity for current pass
-                let similarity = Self::compute_avg_similarity(&current_grads, &profiles, target_dim);
+                let similarity =
+                    Self::compute_avg_similarity(&current_grads, &profiles, target_dim);
                 pass_history.push(similarity);
                 passes = pass + 1;
 
@@ -365,8 +389,10 @@ mod internal {
                 prev_similarity = similarity;
 
                 // Refine gradients using weighted average
-                if self.config.multi_pass_refinement && pass < self.config.max_refinement_passes - 1 {
-                    current_grads = Self::refine_gradients(&current_grads, &profiles, target_dim, similarity);
+                if self.config.multi_pass_refinement && pass < self.config.max_refinement_passes - 1
+                {
+                    current_grads =
+                        Self::refine_gradients(&current_grads, &profiles, target_dim, similarity);
                 }
             }
 
@@ -392,14 +418,22 @@ mod internal {
 
             // Adaptive normalization
             let normalization_factor = if self.config.adaptive_normalization {
-                let avg_std: f64 = profiles.iter().map(|p| p.std_dev()).sum::<f64>() / profiles.len() as f64;
-                if avg_std > 0.0 { 1.0 / avg_std } else { 1.0 }
+                let avg_std: f64 =
+                    profiles.iter().map(|p| p.std_dev()).sum::<f64>() / profiles.len() as f64;
+                if avg_std > 0.0 {
+                    1.0 / avg_std
+                } else {
+                    1.0
+                }
             } else {
                 1.0
             };
 
             // Build aligned gradients
-            let aligned: Vec<f32> = current_grads.iter().map(|g| (*g * normalization_factor) as f32).collect();
+            let aligned: Vec<f32> = current_grads
+                .iter()
+                .map(|g| (*g * normalization_factor) as f32)
+                .collect();
 
             // Compressed bytes
             let compressed_bytes: usize = profiles.iter().map(|p| p.compressed_size).sum();
@@ -413,7 +447,8 @@ mod internal {
             // Apply decay to profile scores and update tracking
             let models_count = profiles.len();
             for (_, profile) in self.profiles.iter_mut() {
-                profile.alignment_score = profile.alignment_score * self.config.score_decay + final_similarity * (1.0 - self.config.score_decay);
+                profile.alignment_score = profile.alignment_score * self.config.score_decay
+                    + final_similarity * (1.0 - self.config.score_decay);
                 profile.update_alignment_tracking(profile.alignment_score);
                 profile.projection_quality = projection_quality;
 
@@ -424,7 +459,13 @@ mod internal {
             }
 
             // Record stats
-            self.stats.record(final_similarity, dimension_projected, compressed_bytes, passes, converged);
+            self.stats.record(
+                final_similarity,
+                dimension_projected,
+                compressed_bytes,
+                passes,
+                converged,
+            );
 
             // Check threshold
             if final_similarity < self.config.min_similarity {
@@ -471,7 +512,11 @@ mod internal {
         }
 
         /// Compute average similarity score.
-        fn compute_avg_similarity(mean_grad: &[f64], profiles: &[&GradientProfileV3], target_dim: usize) -> f64 {
+        fn compute_avg_similarity(
+            mean_grad: &[f64],
+            profiles: &[&GradientProfileV3],
+            target_dim: usize,
+        ) -> f64 {
             let mut total_similarity = 0.0;
             for profile in profiles {
                 let sim = compute_cosine_similarity(mean_grad, profile, target_dim);
@@ -481,7 +526,12 @@ mod internal {
         }
 
         /// Refine gradients using similarity-weighted averaging.
-        fn refine_gradients(current: &[f64], profiles: &[&GradientProfileV3], target_dim: usize, similarity: f64) -> Vec<f64> {
+        fn refine_gradients(
+            current: &[f64],
+            profiles: &[&GradientProfileV3],
+            target_dim: usize,
+            similarity: f64,
+        ) -> Vec<f64> {
             let mut refined = current.to_vec();
             let weight = 1.0 - similarity; // Lower similarity = more refinement needed
 
@@ -526,7 +576,9 @@ mod internal {
 
         /// Check if any profile is diverging.
         pub fn has_diverging_profiles(&self) -> bool {
-            self.profiles.values().any(|p| p.is_diverging(self.config.convergence_patience))
+            self.profiles
+                .values()
+                .any(|p| p.is_diverging(self.config.convergence_patience))
         }
     }
 
@@ -548,7 +600,10 @@ mod internal {
         if b_len == 0 {
             return 0.0;
         }
-        let dot: f64 = a[..b_len].iter().map(|v| v * profile.gradient_norm * 0.1).sum();
+        let dot: f64 = a[..b_len]
+            .iter()
+            .map(|v| v * profile.gradient_norm * 0.1)
+            .sum();
         let norm_a: f64 = a[..b_len].iter().map(|v| v * v).sum::<f64>().sqrt();
         let norm_b = profile.gradient_norm;
         if norm_a < 1e-10 || norm_b < 1e-10 {
@@ -561,7 +616,6 @@ mod internal {
     fn simulate_lz4(data: &[f32], ratio: f32) -> usize {
         (data.len() * 4) / ratio as usize
     }
-
 }
 
 #[cfg(feature = "v1.5-sprint1")]
@@ -654,7 +708,7 @@ mod tests {
         // Single model may not meet threshold
         match result {
             Ok(r) => assert_eq!(r.models_aligned, 1),
-            Err(AlignerV3Error::AlignmentThresholdExceeded(_)) => {},
+            Err(AlignerV3Error::AlignmentThresholdExceeded(_)) => {}
             Err(e) => panic!("Unexpected error: {}", e),
         }
     }
@@ -906,7 +960,10 @@ mod tests {
 
     #[test]
     fn test_error_display() {
-        let err = AlignerV3Error::DimensionMismatch { expected: 64, got: 32 };
+        let err = AlignerV3Error::DimensionMismatch {
+            expected: 64,
+            got: 32,
+        };
         let msg = format!("{}", err);
         assert!(msg.contains("dimension mismatch"));
     }
@@ -961,8 +1018,8 @@ mod tests {
         aligner.update_profile("m1", &grads).unwrap();
         let result = aligner.align_gradients();
         match result {
-            Ok(_) => {}, // May pass if similarity is high enough
-            Err(AlignerV3Error::AlignmentThresholdExceeded(_)) => {},
+            Ok(_) => {} // May pass if similarity is high enough
+            Err(AlignerV3Error::AlignmentThresholdExceeded(_)) => {}
             Err(e) => panic!("Unexpected error: {}", e),
         }
     }
@@ -1051,8 +1108,8 @@ mod tests {
         aligner.update_profile("m2", &grads32).unwrap();
         let result = aligner.align_gradients();
         match result {
-            Ok(_) => {}, // May pass if quality is high enough
-            Err(AlignerV3Error::ProjectionFailed(_)) => {},
+            Ok(_) => {} // May pass if quality is high enough
+            Err(AlignerV3Error::ProjectionFailed(_)) => {}
             Err(e) => panic!("Unexpected error: {}", e),
         }
     }

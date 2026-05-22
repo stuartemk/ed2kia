@@ -21,17 +21,21 @@ mod e2e {
     use std::time::Instant;
 
     // LP-123: Federation Scaling v5
-    use ed2kia::federation::scaling_v5::{ScalingV5, ScalingV5Config};
-    use ed2kia::federation::predictive_sharder_v5::{PredictiveSharderV5, SharderV5Config};
     use ed2kia::federation::gradient_sync_v5::{GradientSyncV5, GradientSyncV5Config};
+    use ed2kia::federation::predictive_sharder_v5::{PredictiveSharderV5, SharderV5Config};
+    use ed2kia::federation::scaling_v5::{ScalingV5, ScalingV5Config};
 
     // LP-124: Async ZKP v10 & Bridge v4
+    use ed2kia::bridge::federation_zkp_bridge_v4::{
+        FederationZKPBridgeV4, FederationZKPBridgeV4Config,
+    };
     use ed2kia::zkp::async_zkp_v10::{AsyncZKPV10, ZKPV10Config};
-    use ed2kia::bridge::federation_zkp_bridge_v4::{FederationZKPBridgeV4, FederationZKPBridgeV4Config};
 
     // LP-125: Dashboard v6 & WebSocket Stream
-    use ed2kia::dashboard_v6::{DashboardV6, ScalingV5Summary, ZkpV10Summary, BridgeV4Summary};
-    use ed2kia::ws_federation_stream::{WsFederationStream, WsFederationConfig, FedCategory, FedPayload};
+    use ed2kia::dashboard_v6::{BridgeV4Summary, DashboardV6, ScalingV5Summary, ZkpV10Summary};
+    use ed2kia::ws_federation_stream::{
+        FedCategory, FedPayload, WsFederationConfig, WsFederationStream,
+    };
 
     // ─── LP-123: Federation Scaling v5 ───
 
@@ -41,16 +45,20 @@ mod e2e {
 
         // Register nodes
         for i in 0..10 {
-            engine.register_node(
-                format!("node-{}", i),
-                100.0 + (i as f64 * 10.0),
-                0.7 + (i as f64 * 0.03),
-            ).unwrap();
+            engine
+                .register_node(
+                    format!("node-{}", i),
+                    100.0 + (i as f64 * 10.0),
+                    0.7 + (i as f64 * 0.03),
+                )
+                .unwrap();
         }
 
         // Update loads
         for i in 0..10 {
-            engine.update_node_load(&format!("node-{}", i), 0.3 + (i as f64 * 0.05)).unwrap();
+            engine
+                .update_node_load(&format!("node-{}", i), 0.3 + (i as f64 * 0.05))
+                .unwrap();
         }
 
         // Create shard and assign nodes
@@ -67,7 +75,9 @@ mod e2e {
         let mut engine = ScalingV5::new(config);
 
         for i in 0..5 {
-            engine.register_node(format!("node-{}", i), 100.0, 0.9).unwrap();
+            engine
+                .register_node(format!("node-{}", i), 100.0, 0.9)
+                .unwrap();
         }
         engine.create_shard("shard-1".to_string()).unwrap();
 
@@ -123,19 +133,23 @@ mod e2e {
             .unwrap()
             .as_millis() as u64;
 
-        engine.submit_gradients(
-            "node-1".to_string(),
-            "model-1".to_string(),
-            grads1.clone(),
-            now,
-        ).unwrap();
+        engine
+            .submit_gradients(
+                "node-1".to_string(),
+                "model-1".to_string(),
+                grads1.clone(),
+                now,
+            )
+            .unwrap();
 
-        engine.submit_gradients(
-            "node-2".to_string(),
-            "model-2".to_string(),
-            grads2.clone(),
-            now,
-        ).unwrap();
+        engine
+            .submit_gradients(
+                "node-2".to_string(),
+                "model-2".to_string(),
+                grads2.clone(),
+                now,
+            )
+            .unwrap();
 
         let result = engine.execute_sync().unwrap();
         assert!(result.contains_key("model-1"));
@@ -147,16 +161,20 @@ mod e2e {
     #[test]
     fn test_e2e_zkp_v10_proof_lifecycle() {
         let mut engine = AsyncZKPV10::new(ZKPV10Config::default());
-        engine.register_federation("fed-1".to_string(), 0.8).unwrap();
+        engine
+            .register_federation("fed-1".to_string(), 0.8)
+            .unwrap();
 
         // Submit proofs
         for i in 0..10 {
-            engine.submit_proof(
-                format!("proof-{}", i),
-                "fed-1".to_string(),
-                2, // priority
-                10.0 + (i as f64 * 5.0), // cost
-            ).unwrap();
+            engine
+                .submit_proof(
+                    format!("proof-{}", i),
+                    "fed-1".to_string(),
+                    2,                       // priority
+                    10.0 + (i as f64 * 5.0), // cost
+                )
+                .unwrap();
         }
 
         // Process proofs
@@ -169,15 +187,19 @@ mod e2e {
         let mut config = ZKPV10Config::default();
         config.min_cost_samples = 5;
         let mut engine = AsyncZKPV10::new(config);
-        engine.register_federation("fed-1".to_string(), 0.8).unwrap();
+        engine
+            .register_federation("fed-1".to_string(), 0.8)
+            .unwrap();
 
         for i in 0..10 {
-            engine.submit_proof(
-                format!("proof-{}", i),
-                "fed-1".to_string(),
-                2, // priority
-                50.0 + (i as f64 * 10.0), // cost
-            ).unwrap();
+            engine
+                .submit_proof(
+                    format!("proof-{}", i),
+                    "fed-1".to_string(),
+                    2,                        // priority
+                    50.0 + (i as f64 * 10.0), // cost
+                )
+                .unwrap();
         }
 
         engine.process_all();
@@ -190,18 +212,26 @@ mod e2e {
     #[test]
     fn test_e2e_bridge_v4_reputation_routing() {
         let mut engine = FederationZKPBridgeV4::new(FederationZKPBridgeV4Config::default());
-        engine.register_federation("fed-1".to_string(), 0.9, 100.0).unwrap();
-        engine.register_federation("fed-2".to_string(), 0.7, 80.0).unwrap();
-        engine.register_federation("fed-3".to_string(), 0.85, 90.0).unwrap();
+        engine
+            .register_federation("fed-1".to_string(), 0.9, 100.0)
+            .unwrap();
+        engine
+            .register_federation("fed-2".to_string(), 0.7, 80.0)
+            .unwrap();
+        engine
+            .register_federation("fed-3".to_string(), 0.85, 90.0)
+            .unwrap();
 
         // Create session
         let targets = vec!["fed-2".to_string(), "fed-3".to_string()];
-        engine.create_session(
-            "session-1".to_string(),
-            "fed-1".to_string(),
-            targets.clone(),
-            "merkle-root-1".to_string(),
-        ).unwrap();
+        engine
+            .create_session(
+                "session-1".to_string(),
+                "fed-1".to_string(),
+                targets.clone(),
+                "merkle-root-1".to_string(),
+            )
+            .unwrap();
 
         // Route proof
         let routed = engine.route_proof(&targets).unwrap();
@@ -211,17 +241,25 @@ mod e2e {
     #[test]
     fn test_e2e_bridge_v4_consensus_tracking() {
         let mut engine = FederationZKPBridgeV4::new(FederationZKPBridgeV4Config::default());
-        engine.register_federation("fed-1".to_string(), 0.9, 100.0).unwrap();
-        engine.register_federation("fed-2".to_string(), 0.8, 90.0).unwrap();
-        engine.register_federation("fed-3".to_string(), 0.85, 95.0).unwrap();
+        engine
+            .register_federation("fed-1".to_string(), 0.9, 100.0)
+            .unwrap();
+        engine
+            .register_federation("fed-2".to_string(), 0.8, 90.0)
+            .unwrap();
+        engine
+            .register_federation("fed-3".to_string(), 0.85, 95.0)
+            .unwrap();
 
         let targets = vec!["fed-2".to_string(), "fed-3".to_string()];
-        engine.create_session(
-            "session-1".to_string(),
-            "fed-1".to_string(),
-            targets,
-            "merkle-root-1".to_string(),
-        ).unwrap();
+        engine
+            .create_session(
+                "session-1".to_string(),
+                "fed-1".to_string(),
+                targets,
+                "merkle-root-1".to_string(),
+            )
+            .unwrap();
 
         // Record votes
         engine.record_vote("session-1", true).unwrap();
@@ -241,9 +279,7 @@ mod e2e {
         dashboard.update_scaling_v5(ScalingV5Summary::new(
             10, 5, 0.998, 100, 2, 5, 10, 0.85, 45.0,
         ));
-        dashboard.update_zkp_v10(ZkpV10Summary::new(
-            200, 180, 15, 20, 3, 250.0, 45.0, 0.92,
-        ));
+        dashboard.update_zkp_v10(ZkpV10Summary::new(200, 180, 15, 20, 3, 250.0, 45.0, 0.92));
         dashboard.update_bridge_v4(BridgeV4Summary::new(150, 140, 5, 30.0, 10));
 
         let snapshot = dashboard.generate_snapshot();
@@ -260,9 +296,7 @@ mod e2e {
         dashboard.update_scaling_v5(ScalingV5Summary::new(
             10, 5, 0.990, 50, 50, 5, 10, 0.85, 45.0,
         ));
-        dashboard.update_zkp_v10(ZkpV10Summary::new(
-            200, 100, 100, 20, 5, 250.0, 45.0, 0.92,
-        ));
+        dashboard.update_zkp_v10(ZkpV10Summary::new(200, 100, 100, 20, 5, 250.0, 45.0, 0.92));
 
         let snapshot = dashboard.generate_snapshot();
         assert!(snapshot.alerts.len() >= 2);
@@ -279,23 +313,32 @@ mod e2e {
         stream.subscribe("conn-1", vec![FedCategory::All]).unwrap();
 
         // Emit events
-        stream.emit_event(FedCategory::Scaling, FedPayload::NodeRegistered {
-            node_id: "node-1".into(),
-            capacity: 100.0,
-            reputation: 0.9,
-        });
+        stream.emit_event(
+            FedCategory::Scaling,
+            FedPayload::NodeRegistered {
+                node_id: "node-1".into(),
+                capacity: 100.0,
+                reputation: 0.9,
+            },
+        );
 
-        stream.emit_event(FedCategory::Zkp, FedPayload::ProofVerified {
-            proof_id: "proof-1".into(),
-            cost: 10.0,
-            time_ms: 200,
-        });
+        stream.emit_event(
+            FedCategory::Zkp,
+            FedPayload::ProofVerified {
+                proof_id: "proof-1".into(),
+                cost: 10.0,
+                time_ms: 200,
+            },
+        );
 
-        stream.emit_event(FedCategory::Bridge, FedPayload::ProofRouted {
-            session_id: "session-1".into(),
-            target_federation: "fed-2".into(),
-            routing_score: 0.85,
-        });
+        stream.emit_event(
+            FedCategory::Bridge,
+            FedPayload::ProofRouted {
+                session_id: "session-1".into(),
+                target_federation: "fed-2".into(),
+                routing_score: 0.85,
+            },
+        );
 
         assert_eq!(stream.event_buffer.len(), 3);
     }
@@ -309,7 +352,9 @@ mod e2e {
         // 1. Federation Scaling v5
         let mut scaling = ScalingV5::new(ScalingV5Config::default());
         for i in 0..10 {
-            scaling.register_node(format!("node-{}", i), 100.0, 0.8 + (i as f64 * 0.02)).unwrap();
+            scaling
+                .register_node(format!("node-{}", i), 100.0, 0.8 + (i as f64 * 0.02))
+                .unwrap();
         }
         scaling.create_shard("shard-1".to_string()).unwrap();
         scaling.assign_node_to_shard("shard-1").unwrap();
@@ -330,23 +375,37 @@ mod e2e {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_millis() as u64;
-        gradient.submit_gradients("node-1".to_string(), "model-1".to_string(), grads, now).unwrap();
+        gradient
+            .submit_gradients("node-1".to_string(), "model-1".to_string(), grads, now)
+            .unwrap();
         let sync_result = gradient.execute_sync().unwrap();
 
         // 4. Async ZKP v10
         let mut zkp = AsyncZKPV10::new(ZKPV10Config::default());
         zkp.register_federation("fed-1".to_string(), 0.8).unwrap();
         for i in 0..5 {
-            zkp.submit_proof(format!("proof-{}", i), "fed-1".to_string(), 2, 10.0).unwrap();
+            zkp.submit_proof(format!("proof-{}", i), "fed-1".to_string(), 2, 10.0)
+                .unwrap();
         }
         let verified = zkp.process_all();
 
         // 5. Bridge v4
         let mut bridge = FederationZKPBridgeV4::new(FederationZKPBridgeV4Config::default());
-        bridge.register_federation("fed-1".to_string(), 0.9, 100.0).unwrap();
-        bridge.register_federation("fed-2".to_string(), 0.8, 90.0).unwrap();
+        bridge
+            .register_federation("fed-1".to_string(), 0.9, 100.0)
+            .unwrap();
+        bridge
+            .register_federation("fed-2".to_string(), 0.8, 90.0)
+            .unwrap();
         let bridge_targets = vec!["fed-2".to_string()];
-        bridge.create_session("session-1".to_string(), "fed-1".to_string(), bridge_targets.clone(), "merkle-1".to_string()).unwrap();
+        bridge
+            .create_session(
+                "session-1".to_string(),
+                "fed-1".to_string(),
+                bridge_targets.clone(),
+                "merkle-1".to_string(),
+            )
+            .unwrap();
 
         // 6. Dashboard v6
         let mut dashboard = DashboardV6::new();
@@ -403,11 +462,15 @@ mod e2e {
         let mut bridge = FederationZKPBridgeV4::new(FederationZKPBridgeV4Config::default());
 
         // Populate each module
-        scaling.register_node("node-1".to_string(), 100.0, 0.9).unwrap();
+        scaling
+            .register_node("node-1".to_string(), 100.0, 0.9)
+            .unwrap();
         sharder.register_shard("shard-1".to_string());
         gradient.register_model("model-1".to_string(), 128).unwrap();
         zkp.register_federation("fed-1".to_string(), 0.8).unwrap();
-        bridge.register_federation("fed-1".to_string(), 0.9, 100.0).unwrap();
+        bridge
+            .register_federation("fed-1".to_string(), 0.9, 100.0)
+            .unwrap();
 
         // Verify all modules have valid state
         assert_eq!(scaling.stats().total_nodes, 1);
@@ -426,7 +489,8 @@ mod e2e {
 
         let start = Instant::now();
         for i in 0..500 {
-            zkp.submit_proof(format!("proof-{}", i), "fed-1".to_string(), 2, 10.0).unwrap();
+            zkp.submit_proof(format!("proof-{}", i), "fed-1".to_string(), 2, 10.0)
+                .unwrap();
         }
         let submit_time = start.elapsed();
 
@@ -442,13 +506,17 @@ mod e2e {
         let mut scaling = ScalingV5::new(ScalingV5Config::default());
 
         for i in 0..50 {
-            scaling.register_node(format!("node-{}", i), 100.0, 0.8).unwrap();
+            scaling
+                .register_node(format!("node-{}", i), 100.0, 0.8)
+                .unwrap();
         }
 
         let start = Instant::now();
         for i in 0..20 {
             scaling.create_shard(format!("shard-{}", i)).unwrap();
-            scaling.assign_node_to_shard(&format!("shard-{}", i)).unwrap();
+            scaling
+                .assign_node_to_shard(&format!("shard-{}", i))
+                .unwrap();
         }
         let duration = start.elapsed();
 
@@ -467,7 +535,9 @@ mod e2e {
 
         // Setup scaling
         for i in 0..10 {
-            scaling.register_node(format!("node-{}", i), 100.0, 0.85).unwrap();
+            scaling
+                .register_node(format!("node-{}", i), 100.0, 0.85)
+                .unwrap();
         }
         scaling.create_shard("shard-1".to_string()).unwrap();
         scaling.assign_node_to_shard("shard-1").unwrap();
@@ -485,7 +555,9 @@ mod e2e {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_millis() as u64;
-        gradient.submit_gradients("node-1".to_string(), "model-1".to_string(), grads, now).unwrap();
+        gradient
+            .submit_gradients("node-1".to_string(), "model-1".to_string(), grads, now)
+            .unwrap();
 
         // Execute sync
         let sync_result = gradient.execute_sync().unwrap();

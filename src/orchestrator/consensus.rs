@@ -75,9 +75,11 @@ pub fn validate_consensus(
             if reference.sparse_values.len() != other.sparse_values.len() {
                 return false;
             }
-            reference.sparse_values.iter().zip(other.sparse_values.iter()).all(|(a, b)| {
-                (a - b).abs() < epsilon
-            })
+            reference
+                .sparse_values
+                .iter()
+                .zip(other.sparse_values.iter())
+                .all(|(a, b)| (a - b).abs() < epsilon)
         });
 
         if all_match {
@@ -93,7 +95,12 @@ mod tests {
     use super::*;
     use uuid::Uuid;
 
-    fn make_result(task_id: Uuid, values: Vec<f32>, indices: Vec<usize>, node: &str) -> AuditResultPayload {
+    fn make_result(
+        task_id: Uuid,
+        values: Vec<f32>,
+        indices: Vec<usize>,
+        node: &str,
+    ) -> AuditResultPayload {
         AuditResultPayload {
             task_id,
             sparse_values: values,

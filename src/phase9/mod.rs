@@ -12,8 +12,8 @@ pub mod governance {
     pub mod liquid {
         // FIX: Use governance_v2 module path (E0432)
         pub use crate::governance_v2::liquid::{
-            Delegation, GovernanceConfig, GovernanceError, GovernanceResult,
-            GovernanceStats, LiquidGovernance, NodeProfile, Proposal, SybilCluster,
+            Delegation, GovernanceConfig, GovernanceError, GovernanceResult, GovernanceStats,
+            LiquidGovernance, NodeProfile, Proposal, SybilCluster,
         };
     }
 }
@@ -26,8 +26,8 @@ pub mod ui {
     pub mod realtime {
         // FIX: Use ui_v2 module path (E0432)
         pub use crate::ui_v2::realtime::{
-            EventType, RealtimeError, RealtimeEvent, RealtimeStats,
-            RealtimeUIBackend, SessionState, WsResult,
+            EventType, RealtimeError, RealtimeEvent, RealtimeStats, RealtimeUIBackend,
+            SessionState, WsResult,
         };
     }
 }
@@ -40,8 +40,7 @@ pub mod federation {
     pub mod async_zkp {
         // FIX: Use federation_v3 module path (E0432)
         pub use crate::federation_v3::async_zkp::{
-            AsyncZKPFederation, DeltaProof, MerkleProof, ZKPConfig,
-            ZKPError, ZKPResult, ZKPStats,
+            AsyncZKPFederation, DeltaProof, MerkleProof, ZKPConfig, ZKPError, ZKPResult, ZKPStats,
         };
     }
 }

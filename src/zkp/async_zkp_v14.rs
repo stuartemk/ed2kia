@@ -15,8 +15,8 @@
 
 #[cfg(feature = "v1.6-sprint3")]
 mod internal {
-    use std::collections::{HashMap, VecDeque, BinaryHeap};
     use std::cmp::Ordering;
+    use std::collections::{BinaryHeap, HashMap, VecDeque};
     use std::fmt;
 
     // -----------------------------------------------------------------------
@@ -284,7 +284,13 @@ mod internal {
             Ok(())
         }
 
-        pub fn finalize(&mut self, current_ms: u64, merkle_root: String, vrf_nonce: u64, avg_quality: f64) {
+        pub fn finalize(
+            &mut self,
+            current_ms: u64,
+            merkle_root: String,
+            vrf_nonce: u64,
+            avg_quality: f64,
+        ) {
             self.completed = true;
             self.completed_at_ms = Some(current_ms);
             self.merkle_root = Some(merkle_root);
@@ -293,7 +299,8 @@ mod internal {
         }
 
         pub fn duration_ms(&self) -> Option<u64> {
-            self.completed_at_ms.map(|t| t.saturating_sub(self.created_at_ms))
+            self.completed_at_ms
+                .map(|t| t.saturating_sub(self.created_at_ms))
         }
     }
 
@@ -342,15 +349,13 @@ mod internal {
                 self.quality_history.pop_front();
             }
 
-            self.ema_credibility =
-                (1.0 - alpha) * self.ema_credibility + alpha * self.credibility;
+            self.ema_credibility = (1.0 - alpha) * self.ema_credibility + alpha * self.credibility;
         }
 
         pub fn update_credibility(&mut self, success: bool, alpha: f64) {
             let delta = if success { 0.05 } else { -0.1 };
             self.credibility = (self.credibility + delta).clamp(0.0, 1.0);
-            self.ema_credibility =
-                (1.0 - alpha) * self.ema_credibility + alpha * self.credibility;
+            self.ema_credibility = (1.0 - alpha) * self.ema_credibility + alpha * self.credibility;
         }
 
         pub fn verification_rate(&self) -> f64 {
@@ -368,9 +373,7 @@ mod internal {
         }
 
         pub fn routing_score(&self) -> f64 {
-            self.ema_credibility * 0.4
-                + self.verification_rate() * 0.3
-                + self.avg_quality() * 0.3
+            self.ema_credibility * 0.4 + self.verification_rate() * 0.3 + self.avg_quality() * 0.3
         }
     }
 
@@ -414,19 +417,16 @@ mod internal {
                 if self.recent_verification_times.len() > 100 {
                     self.recent_verification_times.pop_front();
                 }
-                self.avg_verification_time_ms = self
-                    .recent_verification_times
-                    .iter()
-                    .sum::<f64>()
+                self.avg_verification_time_ms = self.recent_verification_times.iter().sum::<f64>()
                     / self.recent_verification_times.len() as f64;
             }
         }
 
         pub fn record_batch(&mut self, size: usize) {
             self.batches_completed += 1;
-            self.avg_batch_size =
-                (self.avg_batch_size * (self.batches_completed - 1) as f64 + size as f64)
-                    / self.batches_completed as f64;
+            self.avg_batch_size = (self.avg_batch_size * (self.batches_completed - 1) as f64
+                + size as f64)
+                / self.batches_completed as f64;
         }
 
         pub fn record_fallback(&mut self) {
@@ -488,8 +488,10 @@ mod internal {
                     "Credibility must be between 0 and 1".to_string(),
                 ));
             }
-            self.federations
-                .insert(federation_id.clone(), FederationEntryV14::new(federation_id, initial_credibility));
+            self.federations.insert(
+                federation_id.clone(),
+                FederationEntryV14::new(federation_id, initial_credibility),
+            );
             Ok(())
         }
 
@@ -546,10 +548,7 @@ mod internal {
             batch_id
         }
 
-        pub fn assign_proof_to_batch(
-            &mut self,
-            batch_id: &str,
-        ) -> Result<usize, ZKPV14Error> {
+        pub fn assign_proof_to_batch(&mut self, batch_id: &str) -> Result<usize, ZKPV14Error> {
             let batch = self
                 .batches
                 .get_mut(batch_id)
@@ -559,7 +558,10 @@ mod internal {
 
             // Assign from pending queue (highest priority first)
             while let Some(proof) = self.pending_queue.pop() {
-                if batch.add_proof(proof.proof_id.clone(), self.config.max_batch_size).is_err() {
+                if batch
+                    .add_proof(proof.proof_id.clone(), self.config.max_batch_size)
+                    .is_err()
+                {
                     // Put it back if batch is full
                     self.pending_queue.push(proof);
                     break;
@@ -584,9 +586,7 @@ mod internal {
             let merkle_root = self.compute_merkle_root(batch_id);
 
             // Compute aggregated VRF
-            let vrf_nonce = self
-                .compute_aggregated_vrf(batch_id)
-                .unwrap_or(current_ms);
+            let vrf_nonce = self.compute_aggregated_vrf(batch_id).unwrap_or(current_ms);
 
             // Compute average quality
             let mut total_quality = 0.0;
@@ -597,7 +597,11 @@ mod internal {
                     count += 1;
                 }
             }
-            let avg_quality = if count > 0 { total_quality / count as f64 } else { 0.5 };
+            let avg_quality = if count > 0 {
+                total_quality / count as f64
+            } else {
+                0.5
+            };
 
             // Finalize batch
             if let Some(batch) = self.batches.get_mut(batch_id) {
@@ -798,19 +802,18 @@ mod internal {
         #[test]
         fn test_register_federation() {
             let mut engine = AsyncZKPV14::default();
-            engine
-                .register_federation("fed1".to_string(), 0.9)
-                .unwrap();
+            engine.register_federation("fed1".to_string(), 0.9).unwrap();
             assert!(engine.federations.contains_key("fed1"));
         }
 
         #[test]
         fn test_register_federation_duplicate() {
             let mut engine = AsyncZKPV14::default();
-            engine
+            engine.register_federation("fed1".to_string(), 0.9).unwrap();
+            match engine
                 .register_federation("fed1".to_string(), 0.9)
-                .unwrap();
-            match engine.register_federation("fed1".to_string(), 0.9).unwrap_err() {
+                .unwrap_err()
+            {
                 ZKPV14Error::CrossModelConflict(msg) => assert!(msg.contains("already")),
                 e => panic!("Wrong error: {:?}", e),
             }
@@ -819,7 +822,10 @@ mod internal {
         #[test]
         fn test_register_federation_invalid_credibility() {
             let mut engine = AsyncZKPV14::default();
-            match engine.register_federation("fed1".to_string(), 1.5).unwrap_err() {
+            match engine
+                .register_federation("fed1".to_string(), 1.5)
+                .unwrap_err()
+            {
                 ZKPV14Error::InvalidConfig(msg) => assert!(msg.contains("Credibility")),
                 e => panic!("Wrong error: {:?}", e),
             }
@@ -828,9 +834,7 @@ mod internal {
         #[test]
         fn test_submit_proof() {
             let mut engine = AsyncZKPV14::default();
-            engine
-                .register_federation("fed1".to_string(), 0.9)
-                .unwrap();
+            engine.register_federation("fed1".to_string(), 0.9).unwrap();
             engine
                 .submit_proof(
                     "p1".to_string(),
@@ -867,14 +871,22 @@ mod internal {
                 ..make_config()
             };
             engine = AsyncZKPV14::new(config);
+            engine.register_federation("fed1".to_string(), 0.9).unwrap();
             engine
-                .register_federation("fed1".to_string(), 0.9)
+                .submit_proof(
+                    "p1".to_string(),
+                    ProofPriority::Normal,
+                    1000,
+                    "fed1".to_string(),
+                )
                 .unwrap();
             engine
-                .submit_proof("p1".to_string(), ProofPriority::Normal, 1000, "fed1".to_string())
-                .unwrap();
-            engine
-                .submit_proof("p2".to_string(), ProofPriority::Normal, 1000, "fed1".to_string())
+                .submit_proof(
+                    "p2".to_string(),
+                    ProofPriority::Normal,
+                    1000,
+                    "fed1".to_string(),
+                )
                 .unwrap();
             match engine.submit_proof(
                 "p3".to_string(),
@@ -898,11 +910,14 @@ mod internal {
         #[test]
         fn test_assign_proof_to_batch() {
             let mut engine = AsyncZKPV14::default();
+            engine.register_federation("fed1".to_string(), 0.9).unwrap();
             engine
-                .register_federation("fed1".to_string(), 0.9)
-                .unwrap();
-            engine
-                .submit_proof("p1".to_string(), ProofPriority::High, 1000, "fed1".to_string())
+                .submit_proof(
+                    "p1".to_string(),
+                    ProofPriority::High,
+                    1000,
+                    "fed1".to_string(),
+                )
                 .unwrap();
             let batch_id = engine.create_batch(1000);
             let assigned = engine.assign_proof_to_batch(&batch_id).unwrap();
@@ -912,11 +927,14 @@ mod internal {
         #[test]
         fn test_complete_batch() {
             let mut engine = AsyncZKPV14::default();
+            engine.register_federation("fed1".to_string(), 0.9).unwrap();
             engine
-                .register_federation("fed1".to_string(), 0.9)
-                .unwrap();
-            engine
-                .submit_proof("p1".to_string(), ProofPriority::High, 1000, "fed1".to_string())
+                .submit_proof(
+                    "p1".to_string(),
+                    ProofPriority::High,
+                    1000,
+                    "fed1".to_string(),
+                )
                 .unwrap();
             let batch_id = engine.create_batch(1000);
             engine.assign_proof_to_batch(&batch_id).unwrap();
@@ -930,11 +948,14 @@ mod internal {
         #[test]
         fn test_verify_proof() {
             let mut engine = AsyncZKPV14::default();
+            engine.register_federation("fed1".to_string(), 0.9).unwrap();
             engine
-                .register_federation("fed1".to_string(), 0.9)
-                .unwrap();
-            engine
-                .submit_proof("p1".to_string(), ProofPriority::High, 1000, "fed1".to_string())
+                .submit_proof(
+                    "p1".to_string(),
+                    ProofPriority::High,
+                    1000,
+                    "fed1".to_string(),
+                )
                 .unwrap();
             let result = engine.verify_proof("p1", 1010).unwrap();
             assert!(result);
@@ -954,11 +975,14 @@ mod internal {
         #[test]
         fn test_verify_proof_expired() {
             let mut engine = AsyncZKPV14::default();
+            engine.register_federation("fed1".to_string(), 0.9).unwrap();
             engine
-                .register_federation("fed1".to_string(), 0.9)
-                .unwrap();
-            engine
-                .submit_proof("p1".to_string(), ProofPriority::Normal, 1000, "fed1".to_string())
+                .submit_proof(
+                    "p1".to_string(),
+                    ProofPriority::Normal,
+                    1000,
+                    "fed1".to_string(),
+                )
                 .unwrap();
             match engine.verify_proof("p1", 20000) {
                 Err(ZKPV14Error::ProofExpired(id)) => assert_eq!(id, "p1"),
@@ -969,11 +993,14 @@ mod internal {
         #[test]
         fn test_cleanup_expired() {
             let mut engine = AsyncZKPV14::default();
+            engine.register_federation("fed1".to_string(), 0.9).unwrap();
             engine
-                .register_federation("fed1".to_string(), 0.9)
-                .unwrap();
-            engine
-                .submit_proof("p1".to_string(), ProofPriority::Normal, 1000, "fed1".to_string())
+                .submit_proof(
+                    "p1".to_string(),
+                    ProofPriority::Normal,
+                    1000,
+                    "fed1".to_string(),
+                )
                 .unwrap();
             let cleaned = engine.cleanup_expired(20000);
             assert_eq!(cleaned, 1);
@@ -982,9 +1009,7 @@ mod internal {
         #[test]
         fn test_federation_verification_rate() {
             let mut engine = AsyncZKPV14::default();
-            engine
-                .register_federation("fed1".to_string(), 0.9)
-                .unwrap();
+            engine.register_federation("fed1".to_string(), 0.9).unwrap();
             let fed = engine.federations.get("fed1").unwrap();
             assert_eq!(fed.verification_rate(), 0.0);
         }
@@ -992,11 +1017,14 @@ mod internal {
         #[test]
         fn test_federation_routing_score() {
             let mut engine = AsyncZKPV14::default();
+            engine.register_federation("fed1".to_string(), 0.9).unwrap();
             engine
-                .register_federation("fed1".to_string(), 0.9)
-                .unwrap();
-            engine
-                .submit_proof("p1".to_string(), ProofPriority::High, 1000, "fed1".to_string())
+                .submit_proof(
+                    "p1".to_string(),
+                    ProofPriority::High,
+                    1000,
+                    "fed1".to_string(),
+                )
                 .unwrap();
             engine.verify_proof("p1", 1010).unwrap();
             let fed = engine.federations.get("fed1").unwrap();
@@ -1006,11 +1034,14 @@ mod internal {
         #[test]
         fn test_metrics_recording() {
             let mut engine = AsyncZKPV14::default();
+            engine.register_federation("fed1".to_string(), 0.9).unwrap();
             engine
-                .register_federation("fed1".to_string(), 0.9)
-                .unwrap();
-            engine
-                .submit_proof("p1".to_string(), ProofPriority::High, 1000, "fed1".to_string())
+                .submit_proof(
+                    "p1".to_string(),
+                    ProofPriority::High,
+                    1000,
+                    "fed1".to_string(),
+                )
                 .unwrap();
             engine.verify_proof("p1", 1010).unwrap();
             assert_eq!(engine.metrics.proofs_verified, 1);
@@ -1072,11 +1103,14 @@ mod internal {
         #[test]
         fn test_batch_full_error() {
             let mut engine = AsyncZKPV14::default();
+            engine.register_federation("fed1".to_string(), 0.9).unwrap();
             engine
-                .register_federation("fed1".to_string(), 0.9)
-                .unwrap();
-            engine
-                .submit_proof("p1".to_string(), ProofPriority::Normal, 1000, "fed1".to_string())
+                .submit_proof(
+                    "p1".to_string(),
+                    ProofPriority::Normal,
+                    1000,
+                    "fed1".to_string(),
+                )
                 .unwrap();
             let batch_id = engine.create_batch(1000);
             engine.assign_proof_to_batch(&batch_id).unwrap();
@@ -1094,9 +1128,7 @@ mod internal {
         #[test]
         fn test_federation_credibility_update() {
             let mut engine = AsyncZKPV14::default();
-            engine
-                .register_federation("fed1".to_string(), 0.9)
-                .unwrap();
+            engine.register_federation("fed1".to_string(), 0.9).unwrap();
             {
                 let fed = engine.federations.get_mut("fed1").unwrap();
                 fed.update_credibility(true, 0.1);
@@ -1112,9 +1144,7 @@ mod internal {
         #[test]
         fn test_federation_avg_quality() {
             let mut engine = AsyncZKPV14::default();
-            engine
-                .register_federation("fed1".to_string(), 0.9)
-                .unwrap();
+            engine.register_federation("fed1".to_string(), 0.9).unwrap();
             {
                 let fed = engine.federations.get_mut("fed1").unwrap();
                 fed.record_verification(100.0, 0.95, 0.1);
@@ -1172,11 +1202,14 @@ mod internal {
         #[test]
         fn test_full_lifecycle() {
             let mut engine = AsyncZKPV14::default();
+            engine.register_federation("fed1".to_string(), 0.9).unwrap();
             engine
-                .register_federation("fed1".to_string(), 0.9)
-                .unwrap();
-            engine
-                .submit_proof("p1".to_string(), ProofPriority::High, 1000, "fed1".to_string())
+                .submit_proof(
+                    "p1".to_string(),
+                    ProofPriority::High,
+                    1000,
+                    "fed1".to_string(),
+                )
                 .unwrap();
             let batch_id = engine.create_batch(1000);
             engine.assign_proof_to_batch(&batch_id).unwrap();
@@ -1232,9 +1265,7 @@ mod internal {
         #[test]
         fn test_multiple_proofs_in_batch() {
             let mut engine = AsyncZKPV14::default();
-            engine
-                .register_federation("fed1".to_string(), 0.9)
-                .unwrap();
+            engine.register_federation("fed1".to_string(), 0.9).unwrap();
             for i in 0..5 {
                 engine
                     .submit_proof(

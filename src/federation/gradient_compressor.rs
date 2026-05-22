@@ -62,7 +62,8 @@ impl CompressedGradient {
 
     /// Estimate the serialized size in bytes.
     pub fn estimated_size_bytes(&self) -> usize {
-        self.data.len() + self.indices.len() * std::mem::size_of::<usize>()
+        self.data.len()
+            + self.indices.len() * std::mem::size_of::<usize>()
             + std::mem::size_of::<f32>() * 2
             + std::mem::size_of::<usize>()
     }
@@ -170,7 +171,11 @@ impl GradientCompressor {
     /// # Returns
     ///
     /// The reconstructed gradient vector of length `original_dim`.
-    pub fn decompress_top_k(compressed: &[f32], indices: &[usize], original_dim: usize) -> Vec<f32> {
+    pub fn decompress_top_k(
+        compressed: &[f32],
+        indices: &[usize],
+        original_dim: usize,
+    ) -> Vec<f32> {
         let mut reconstructed = vec![0.0f32; original_dim];
 
         for (&idx, &value) in indices.iter().zip(compressed.iter()) {
@@ -206,9 +211,7 @@ impl GradientCompressor {
     ///
     /// A tuple of `(quantized_values, scale_factor)`.
     pub fn quantize_int8(deltas: &[f32]) -> (Vec<i8>, f32) {
-        let max_abs = deltas
-            .iter()
-            .fold(0.0f32, |max, &v| v.abs().max(max));
+        let max_abs = deltas.iter().fold(0.0f32, |max, &v| v.abs().max(max));
 
         let scale = if max_abs > 0.0 { max_abs / 127.0 } else { 1.0 };
 
@@ -237,10 +240,7 @@ impl GradientCompressor {
     ///
     /// The reconstructed f32 gradient vector.
     pub fn dequantize_int8(quantized: &[i8], scale: f32) -> Vec<f32> {
-        quantized
-            .iter()
-            .map(|&v| v as f32 * scale)
-            .collect()
+        quantized.iter().map(|&v| v as f32 * scale).collect()
     }
 
     // ------------------------------------------------------------------
@@ -282,7 +282,13 @@ impl GradientCompressor {
             scale
         );
 
-        CompressedGradient::new(quantized_data, indices, scale, original_dim, compression_ratio)
+        CompressedGradient::new(
+            quantized_data,
+            indices,
+            scale,
+            original_dim,
+            compression_ratio,
+        )
     }
 
     /// Fully decompress a `CompressedGradient` back to f32.
@@ -370,8 +376,7 @@ mod tests {
         let k = 20;
 
         let (values, indices) = GradientCompressor::compress_top_k(&deltas, k);
-        let reconstructed =
-            GradientCompressor::decompress_top_k(&values, &indices, deltas.len());
+        let reconstructed = GradientCompressor::decompress_top_k(&values, &indices, deltas.len());
 
         assert_eq!(reconstructed.len(), deltas.len());
 
@@ -382,7 +387,10 @@ mod tests {
                 error_count += 1;
             }
         }
-        assert_eq!(error_count, 0, "Selected indices should match original values");
+        assert_eq!(
+            error_count, 0,
+            "Selected indices should match original values"
+        );
     }
 
     // ------------------------------------------------------------------
@@ -429,7 +437,11 @@ mod tests {
                 count += 1;
             }
         }
-        let mean_rel_err = if count > 0 { total_rel_err / count as f32 } else { 0.0 };
+        let mean_rel_err = if count > 0 {
+            total_rel_err / count as f32
+        } else {
+            0.0
+        };
         assert!(
             mean_rel_err < 0.02,
             "Mean relative error {:.4} should be < 2%",

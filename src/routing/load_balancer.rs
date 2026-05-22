@@ -156,17 +156,19 @@ impl LoadBalancer {
     }
 
     pub fn update_load(&mut self, node_id: &str, load: f64) -> Result<(), BalancerError> {
-        let node = self.nodes.get_mut(node_id).ok_or_else(|| {
-            BalancerError::NodeNotFound(node_id.to_string())
-        })?;
+        let node = self
+            .nodes
+            .get_mut(node_id)
+            .ok_or_else(|| BalancerError::NodeNotFound(node_id.to_string()))?;
         node.current_load = load.max(0.0).min(node.max_capacity);
         Ok(())
     }
 
     pub fn set_health(&mut self, node_id: &str, healthy: bool) -> Result<(), BalancerError> {
-        let node = self.nodes.get_mut(node_id).ok_or_else(|| {
-            BalancerError::NodeNotFound(node_id.to_string())
-        })?;
+        let node = self
+            .nodes
+            .get_mut(node_id)
+            .ok_or_else(|| BalancerError::NodeNotFound(node_id.to_string()))?;
         node.healthy = healthy;
         Ok(())
     }
@@ -188,9 +190,16 @@ impl LoadBalancer {
         self.round_robin_idx += 1;
 
         // Select node with highest effective weight
-        let best_idx = healthy.iter().enumerate().skip(start)
+        let best_idx = healthy
+            .iter()
+            .enumerate()
+            .skip(start)
             .chain(healthy.iter().enumerate().take(start))
-            .max_by(|(_, a), (_, b)| a.effective_weight().partial_cmp(&b.effective_weight()).unwrap_or(std::cmp::Ordering::Equal))
+            .max_by(|(_, a), (_, b)| {
+                a.effective_weight()
+                    .partial_cmp(&b.effective_weight())
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
             .map(|(i, _)| i)
             .unwrap_or(0);
 
@@ -252,9 +261,9 @@ impl LoadBalancer {
         }
 
         self.stats.total_rebalances += 1;
-        self.stats.avg_skew =
-            (self.stats.avg_skew * (self.stats.total_rebalances - 1) as f64 + state.skew)
-                / self.stats.total_rebalances as f64;
+        self.stats.avg_skew = (self.stats.avg_skew * (self.stats.total_rebalances - 1) as f64
+            + state.skew)
+            / self.stats.total_rebalances as f64;
         self.stats.last_rebalance_ms = current_timestamp_ms();
 
         Ok(())

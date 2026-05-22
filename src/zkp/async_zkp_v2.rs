@@ -174,10 +174,7 @@ impl AsyncZkpV2 {
     }
 
     /// Genera una prueba ZKP para un witness
-    pub fn generate_proof(
-        &mut self,
-        witness: WitnessV2,
-    ) -> Result<ProofResultV2, AsyncZkpV2Error> {
+    pub fn generate_proof(&mut self, witness: WitnessV2) -> Result<ProofResultV2, AsyncZkpV2Error> {
         // Validar tamaño
         if witness.size() > self.config.max_witness_size {
             return Err(AsyncZkpV2Error::WitnessTooLarge(witness.size()));
@@ -186,8 +183,7 @@ impl AsyncZkpV2 {
         let start = std::time::Instant::now();
 
         // Intentar generación ZKP principal
-        let proof_type = if self.config.incremental_accumulation
-            && self.incremental_state.is_some()
+        let proof_type = if self.config.incremental_accumulation && self.incremental_state.is_some()
         {
             self.generate_incremental_proof(&witness)?
         } else {
@@ -197,13 +193,12 @@ impl AsyncZkpV2 {
         let elapsed_ms = start.elapsed().as_secs_f64();
 
         // Verificar umbral de fallback
-        let (final_proof, used_fallback) = if elapsed_ms > self.config.fallback_threshold_ms
-            && self.config.fallback_enabled
-        {
-            (self.generate_fallback_proof(&witness)?, true)
-        } else {
-            (proof_type, false)
-        };
+        let (final_proof, used_fallback) =
+            if elapsed_ms > self.config.fallback_threshold_ms && self.config.fallback_enabled {
+                (self.generate_fallback_proof(&witness)?, true)
+            } else {
+                (proof_type, false)
+            };
 
         let final_elapsed = start.elapsed().as_secs_f64();
 
@@ -280,10 +275,7 @@ impl AsyncZkpV2 {
         witness: &WitnessV2,
     ) -> Result<ProofResultV2, AsyncZkpV2Error> {
         // Acumulación incremental: combina estado previo con nuevo witness
-        let previous = self
-            .incremental_state
-            .clone()
-            .unwrap_or_default();
+        let previous = self.incremental_state.clone().unwrap_or_default();
         let proof_bytes = simulate_incremental_generation(&previous, witness);
         let witness_hash = compute_hash(&witness.data);
 
@@ -305,10 +297,7 @@ impl AsyncZkpV2 {
         let proof_bytes = simulate_merkle_vrf(witness);
         let witness_hash = compute_hash(&witness.data);
 
-        warn!(
-            "Usando fallback Merkle+VRF para batch {}",
-            witness.batch_id
-        );
+        warn!("Usando fallback Merkle+VRF para batch {}", witness.batch_id);
 
         Ok(ProofResultV2 {
             proof_bytes,

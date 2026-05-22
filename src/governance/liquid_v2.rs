@@ -27,7 +27,10 @@ pub enum LiquidGovernanceError {
     ProposalNotFound(String),
 
     #[error("quorum not met: {current_weight}/{required_weight}")]
-    QuorumNotMet { current_weight: f64, required_weight: f64 },
+    QuorumNotMet {
+        current_weight: f64,
+        required_weight: f64,
+    },
 
     #[error("time-lock active until {remaining:?}")]
     TimeLockActive { remaining: Duration },
@@ -228,14 +231,20 @@ impl LiquidGovernanceV2 {
     /// Register a node profile in the governance system.
     ///
     /// Returns an error if the signature is empty (invalid).
-    pub fn register_node(&mut self, mut profile: NodeProfileV2) -> Result<(), LiquidGovernanceError> {
+    pub fn register_node(
+        &mut self,
+        mut profile: NodeProfileV2,
+    ) -> Result<(), LiquidGovernanceError> {
         if profile.crypto_signature.is_empty() {
-            return Err(LiquidGovernanceError::InvalidSignature(profile.node_id.clone()));
+            return Err(LiquidGovernanceError::InvalidSignature(
+                profile.node_id.clone(),
+            ));
         }
         // Compute reputation score if not set
         if profile.reputation_score == 0.0 {
-            profile.reputation_score =
-                profile.trust_score * profile.uptime_history * (profile.staking_credits / 1000.0).min(1.0);
+            profile.reputation_score = profile.trust_score
+                * profile.uptime_history
+                * (profile.staking_credits / 1000.0).min(1.0);
         }
         info!(node_id = %profile.node_id, "node registered for governance v2");
         self.nodes.insert(profile.node_id.clone(), profile);
@@ -343,9 +352,7 @@ impl LiquidGovernanceV2 {
         // Find active (non-expired) delegations where this node is the delegator
         let now = Instant::now();
         let delegation = self.delegations.iter().find(|d| {
-            d.delegator == node
-                && d.delegatee != node
-                && d.expires_at.is_none_or(|exp| now < exp)
+            d.delegator == node && d.delegatee != node && d.expires_at.is_none_or(|exp| now < exp)
         });
 
         match delegation {
@@ -369,7 +376,8 @@ impl LiquidGovernanceV2 {
     /// Calculate the voting weight for a node based on reputation metrics.
     fn calculate_vote_weight(&self, node_id: &str) -> Option<f64> {
         let node = self.nodes.get(node_id)?;
-        let raw_weight = node.trust_score * node.staking_credits * node.uptime_history * node.reputation_score;
+        let raw_weight =
+            node.trust_score * node.staking_credits * node.uptime_history * node.reputation_score;
         Some(raw_weight)
     }
 
@@ -385,7 +393,9 @@ impl LiquidGovernanceV2 {
     ) -> Result<f64, LiquidGovernanceError> {
         // Check proposal exists
         if !self.proposals.contains_key(proposal_id) {
-            return Err(LiquidGovernanceError::ProposalNotFound(proposal_id.to_string()));
+            return Err(LiquidGovernanceError::ProposalNotFound(
+                proposal_id.to_string(),
+            ));
         }
 
         // Check for double vote (immutable borrow)
@@ -443,11 +453,16 @@ impl LiquidGovernanceV2 {
     /// Attempt to execute a proposal.
     ///
     /// Returns `GovernanceResultV2` with execution details.
-    pub fn execute_proposal(&mut self, proposal_id: &str) -> Result<GovernanceResultV2, LiquidGovernanceError> {
-        let proposal = self
-            .proposals
-            .get(proposal_id)
-            .ok_or(LiquidGovernanceError::ProposalNotFound(proposal_id.to_string()))?;
+    pub fn execute_proposal(
+        &mut self,
+        proposal_id: &str,
+    ) -> Result<GovernanceResultV2, LiquidGovernanceError> {
+        let proposal =
+            self.proposals
+                .get(proposal_id)
+                .ok_or(LiquidGovernanceError::ProposalNotFound(
+                    proposal_id.to_string(),
+                ))?;
 
         // Check if already executed
         if proposal.executed {
@@ -485,12 +500,19 @@ impl LiquidGovernanceV2 {
             && unique_voters.len() >= self.config.min_nodes_for_quorum;
 
         if !quorum_met {
-            warn!(proposal_id, weight_for, weight_against, "quorum not met for proposal execution");
+            warn!(
+                proposal_id,
+                weight_for, weight_against, "quorum not met for proposal execution"
+            );
         }
 
         // Collect delegation chains from all voters
         let mut delegation_chain = Vec::new();
-        for (voter, _) in proposal.votes_for.iter().chain(proposal.votes_against.iter()) {
+        for (voter, _) in proposal
+            .votes_for
+            .iter()
+            .chain(proposal.votes_against.iter())
+        {
             let chain = self.resolve_delegation_chain(voter, 0);
             for node in chain {
                 if !delegation_chain.contains(&node) {
@@ -557,7 +579,10 @@ impl LiquidGovernanceV2 {
                     cluster_id: format!("cluster-{}", cluster_id),
                     node_ids: node_ids.clone(),
                     avg_trust_score: avg_trust,
-                    detection_reason: format!("asn_ip_prefix_match (ASN={}, prefix={})", asn, ip_prefix),
+                    detection_reason: format!(
+                        "asn_ip_prefix_match (ASN={}, prefix={})",
+                        asn, ip_prefix
+                    ),
                 };
                 warn!(
                     cluster_id = %cluster.cluster_id,
@@ -580,7 +605,11 @@ impl LiquidGovernanceV2 {
         let total_proposals = self.proposals.len();
         let executed_proposals = self.proposals.values().filter(|p| p.executed).count();
         let active_proposals = total_proposals - executed_proposals;
-        let active_delegations = self.delegations.iter().filter(|d| self.is_delegation_active(d)).count();
+        let active_delegations = self
+            .delegations
+            .iter()
+            .filter(|d| self.is_delegation_active(d))
+            .count();
 
         GovernanceStatsV2 {
             total_proposals,
@@ -631,7 +660,12 @@ impl fmt::Display for GovernanceConfigV2 {
 
 impl fmt::Display for SybilClusterV2 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "SybilClusterV2({}, nodes={})", self.cluster_id, self.node_ids.len())
+        write!(
+            f,
+            "SybilClusterV2({}, nodes={})",
+            self.cluster_id,
+            self.node_ids.len()
+        )
     }
 }
 
@@ -640,8 +674,11 @@ impl fmt::Display for GovernanceStatsV2 {
         write!(
             f,
             "Stats(total={}, active={}, executed={}, sybil={}, delegations={})",
-            self.total_proposals, self.active_proposals, self.executed_proposals,
-            self.sybil_clusters_detected, self.total_delegations
+            self.total_proposals,
+            self.active_proposals,
+            self.executed_proposals,
+            self.sybil_clusters_detected,
+            self.total_delegations
         )
     }
 }
@@ -672,7 +709,10 @@ mod tests {
         assert_eq!(engine.nodes.len(), 0);
         assert_eq!(engine.proposals.len(), 0);
         assert_eq!(engine.config.quorum_percentage, 0.3);
-        assert_eq!(engine.config.critical_time_lock_duration, Duration::from_hours(72));
+        assert_eq!(
+            engine.config.critical_time_lock_duration,
+            Duration::from_hours(72)
+        );
     }
 
     #[test]
@@ -706,14 +746,19 @@ mod tests {
     #[test]
     fn test_create_proposal_normal() {
         let mut engine = LiquidGovernanceV2::new();
-        engine.register_node(test_node("node-1", "AS100", "10.0.0.0/24")).unwrap();
+        engine
+            .register_node(test_node("node-1", "AS100", "10.0.0.0/24"))
+            .unwrap();
         let before = Instant::now();
-        let proposal = engine.create_proposal("Test", "Desc", "node-1", false).unwrap();
+        let proposal = engine
+            .create_proposal("Test", "Desc", "node-1", false)
+            .unwrap();
         let after = Instant::now();
         assert!(!proposal.critical);
         let expected = before + Duration::from_hours(24);
         assert!(
-            proposal.time_lock_until >= expected && proposal.time_lock_until <= after + Duration::from_hours(24),
+            proposal.time_lock_until >= expected
+                && proposal.time_lock_until <= after + Duration::from_hours(24),
             "time_lock_until {:?} not in range [{:?}, {:?}]",
             proposal.time_lock_until,
             expected,
@@ -724,14 +769,19 @@ mod tests {
     #[test]
     fn test_create_proposal_critical() {
         let mut engine = LiquidGovernanceV2::new();
-        engine.register_node(test_node("node-1", "AS100", "10.0.0.0/24")).unwrap();
+        engine
+            .register_node(test_node("node-1", "AS100", "10.0.0.0/24"))
+            .unwrap();
         let before = Instant::now();
-        let proposal = engine.create_proposal("Critical", "Desc", "node-1", true).unwrap();
+        let proposal = engine
+            .create_proposal("Critical", "Desc", "node-1", true)
+            .unwrap();
         let after = Instant::now();
         assert!(proposal.critical);
         let expected = before + Duration::from_hours(72);
         assert!(
-            proposal.time_lock_until >= expected && proposal.time_lock_until <= after + Duration::from_hours(72),
+            proposal.time_lock_until >= expected
+                && proposal.time_lock_until <= after + Duration::from_hours(72),
             "time_lock_until {:?} not in range [{:?}, {:?}]",
             proposal.time_lock_until,
             expected,
@@ -749,9 +799,15 @@ mod tests {
     #[test]
     fn test_delegate_weight_success() {
         let mut engine = LiquidGovernanceV2::new();
-        engine.register_node(test_node("node-1", "AS100", "10.0.0.0/24")).unwrap();
-        engine.register_node(test_node("node-2", "AS200", "192.168.0.0/16")).unwrap();
-        let weight = engine.delegate_weight("node-1", "node-2", 0.5, Duration::from_hours(48)).unwrap();
+        engine
+            .register_node(test_node("node-1", "AS100", "10.0.0.0/24"))
+            .unwrap();
+        engine
+            .register_node(test_node("node-2", "AS200", "192.168.0.0/16"))
+            .unwrap();
+        let weight = engine
+            .delegate_weight("node-1", "node-2", 0.5, Duration::from_hours(48))
+            .unwrap();
         assert_eq!(weight, 0.5);
         assert_eq!(engine.delegations.len(), 1);
     }
@@ -759,7 +815,9 @@ mod tests {
     #[test]
     fn test_delegate_weight_unknown_delegator() {
         let mut engine = LiquidGovernanceV2::new();
-        engine.register_node(test_node("node-2", "AS200", "192.168.0.0/16")).unwrap();
+        engine
+            .register_node(test_node("node-2", "AS200", "192.168.0.0/16"))
+            .unwrap();
         let result = engine.delegate_weight("unknown", "node-2", 0.5, Duration::from_hours(48));
         assert!(result.is_err());
     }
@@ -767,10 +825,18 @@ mod tests {
     #[test]
     fn test_cast_vote_for() {
         let mut engine = LiquidGovernanceV2::new();
-        engine.register_node(test_node("node-1", "AS100", "10.0.0.0/24")).unwrap();
-        engine.register_node(test_node("node-2", "AS200", "192.168.0.0/16")).unwrap();
-        engine.register_node(test_node("node-3", "AS300", "172.16.0.0/12")).unwrap();
-        engine.create_proposal("Test", "Desc", "node-1", false).unwrap();
+        engine
+            .register_node(test_node("node-1", "AS100", "10.0.0.0/24"))
+            .unwrap();
+        engine
+            .register_node(test_node("node-2", "AS200", "192.168.0.0/16"))
+            .unwrap();
+        engine
+            .register_node(test_node("node-3", "AS300", "172.16.0.0/12"))
+            .unwrap();
+        engine
+            .create_proposal("Test", "Desc", "node-1", false)
+            .unwrap();
         let weight = engine.cast_vote("node-2", "prop-1", true).unwrap();
         assert!(weight > 0.0);
     }
@@ -778,10 +844,18 @@ mod tests {
     #[test]
     fn test_cast_vote_against() {
         let mut engine = LiquidGovernanceV2::new();
-        engine.register_node(test_node("node-1", "AS100", "10.0.0.0/24")).unwrap();
-        engine.register_node(test_node("node-2", "AS200", "192.168.0.0/16")).unwrap();
-        engine.register_node(test_node("node-3", "AS300", "172.16.0.0/12")).unwrap();
-        engine.create_proposal("Test", "Desc", "node-1", false).unwrap();
+        engine
+            .register_node(test_node("node-1", "AS100", "10.0.0.0/24"))
+            .unwrap();
+        engine
+            .register_node(test_node("node-2", "AS200", "192.168.0.0/16"))
+            .unwrap();
+        engine
+            .register_node(test_node("node-3", "AS300", "172.16.0.0/12"))
+            .unwrap();
+        engine
+            .create_proposal("Test", "Desc", "node-1", false)
+            .unwrap();
         let weight = engine.cast_vote("node-2", "prop-1", false).unwrap();
         assert!(weight > 0.0);
     }
@@ -789,10 +863,18 @@ mod tests {
     #[test]
     fn test_double_vote_rejected() {
         let mut engine = LiquidGovernanceV2::new();
-        engine.register_node(test_node("node-1", "AS100", "10.0.0.0/24")).unwrap();
-        engine.register_node(test_node("node-2", "AS200", "192.168.0.0/16")).unwrap();
-        engine.register_node(test_node("node-3", "AS300", "172.16.0.0/12")).unwrap();
-        engine.create_proposal("Test", "Desc", "node-1", false).unwrap();
+        engine
+            .register_node(test_node("node-1", "AS100", "10.0.0.0/24"))
+            .unwrap();
+        engine
+            .register_node(test_node("node-2", "AS200", "192.168.0.0/16"))
+            .unwrap();
+        engine
+            .register_node(test_node("node-3", "AS300", "172.16.0.0/12"))
+            .unwrap();
+        engine
+            .create_proposal("Test", "Desc", "node-1", false)
+            .unwrap();
         engine.cast_vote("node-2", "prop-1", true).unwrap();
         let result = engine.cast_vote("node-2", "prop-1", false);
         assert!(result.is_err());
@@ -801,10 +883,18 @@ mod tests {
     #[test]
     fn test_timelock_enforcement() {
         let mut engine = LiquidGovernanceV2::new();
-        engine.register_node(test_node("node-1", "AS100", "10.0.0.0/24")).unwrap();
-        engine.register_node(test_node("node-2", "AS200", "192.168.0.0/16")).unwrap();
-        engine.register_node(test_node("node-3", "AS300", "172.16.0.0/12")).unwrap();
-        engine.create_proposal("Critical", "Desc", "node-1", true).unwrap();
+        engine
+            .register_node(test_node("node-1", "AS100", "10.0.0.0/24"))
+            .unwrap();
+        engine
+            .register_node(test_node("node-2", "AS200", "192.168.0.0/16"))
+            .unwrap();
+        engine
+            .register_node(test_node("node-3", "AS300", "172.16.0.0/12"))
+            .unwrap();
+        engine
+            .create_proposal("Critical", "Desc", "node-1", true)
+            .unwrap();
         let result = engine.execute_proposal("prop-1");
         assert!(result.is_err());
     }
@@ -827,8 +917,12 @@ mod tests {
     #[test]
     fn test_sybil_detection_no_cluster() {
         let mut engine = LiquidGovernanceV2::new();
-        engine.register_node(test_node("node-1", "AS100", "10.0.0.0/24")).unwrap();
-        engine.register_node(test_node("node-2", "AS200", "192.168.0.0/16")).unwrap();
+        engine
+            .register_node(test_node("node-1", "AS100", "10.0.0.0/24"))
+            .unwrap();
+        engine
+            .register_node(test_node("node-2", "AS200", "192.168.0.0/16"))
+            .unwrap();
         let clusters = engine.detect_sybil_cluster();
         assert_eq!(clusters.len(), 0);
     }
@@ -842,10 +936,18 @@ mod tests {
             ..Default::default()
         };
         let mut engine = LiquidGovernanceV2::with_config(config);
-        engine.register_node(test_node("node-1", "AS100", "10.0.0.0/24")).unwrap();
-        engine.register_node(test_node("node-2", "AS200", "192.168.0.0/16")).unwrap();
-        engine.register_node(test_node("node-3", "AS300", "172.16.0.0/12")).unwrap();
-        engine.create_proposal("Test", "Desc", "node-1", false).unwrap();
+        engine
+            .register_node(test_node("node-1", "AS100", "10.0.0.0/24"))
+            .unwrap();
+        engine
+            .register_node(test_node("node-2", "AS200", "192.168.0.0/16"))
+            .unwrap();
+        engine
+            .register_node(test_node("node-3", "AS300", "172.16.0.0/12"))
+            .unwrap();
+        engine
+            .create_proposal("Test", "Desc", "node-1", false)
+            .unwrap();
         engine.cast_vote("node-2", "prop-1", true).unwrap();
         engine.cast_vote("node-3", "prop-1", true).unwrap();
         // Wait for time-lock to expire
@@ -863,9 +965,15 @@ mod tests {
             ..Default::default()
         };
         let mut engine = LiquidGovernanceV2::with_config(config);
-        engine.register_node(test_node("node-1", "AS100", "10.0.0.0/24")).unwrap();
-        engine.register_node(test_node("node-2", "AS200", "192.168.0.0/16")).unwrap();
-        engine.create_proposal("Test", "Desc", "node-1", false).unwrap();
+        engine
+            .register_node(test_node("node-1", "AS100", "10.0.0.0/24"))
+            .unwrap();
+        engine
+            .register_node(test_node("node-2", "AS200", "192.168.0.0/16"))
+            .unwrap();
+        engine
+            .create_proposal("Test", "Desc", "node-1", false)
+            .unwrap();
         engine.cast_vote("node-2", "prop-1", true).unwrap();
         std::thread::sleep(Duration::from_secs(2));
         let result = engine.execute_proposal("prop-1").unwrap();
@@ -875,8 +983,12 @@ mod tests {
     #[test]
     fn test_stats_tracking() {
         let mut engine = LiquidGovernanceV2::new();
-        engine.register_node(test_node("node-1", "AS100", "10.0.0.0/24")).unwrap();
-        engine.create_proposal("Test", "Desc", "node-1", false).unwrap();
+        engine
+            .register_node(test_node("node-1", "AS100", "10.0.0.0/24"))
+            .unwrap();
+        engine
+            .create_proposal("Test", "Desc", "node-1", false)
+            .unwrap();
         let stats = engine.get_stats();
         assert_eq!(stats.total_proposals, 1);
         assert_eq!(stats.active_proposals, 1);
@@ -886,8 +998,12 @@ mod tests {
     #[test]
     fn test_reset_clears_state() {
         let mut engine = LiquidGovernanceV2::new();
-        engine.register_node(test_node("node-1", "AS100", "10.0.0.0/24")).unwrap();
-        engine.create_proposal("Test", "Desc", "node-1", false).unwrap();
+        engine
+            .register_node(test_node("node-1", "AS100", "10.0.0.0/24"))
+            .unwrap();
+        engine
+            .create_proposal("Test", "Desc", "node-1", false)
+            .unwrap();
         engine.reset();
         assert_eq!(engine.nodes.len(), 0);
         assert_eq!(engine.proposals.len(), 0);
@@ -906,9 +1022,15 @@ mod tests {
         let mut whale = test_node("whale", "AS100", "10.0.0.0/24");
         whale.staking_credits = 100_000.0;
         engine.register_node(whale).unwrap();
-        engine.register_node(test_node("small-1", "AS200", "192.168.0.0/16")).unwrap();
-        engine.register_node(test_node("small-2", "AS300", "172.16.0.0/12")).unwrap();
-        engine.create_proposal("Test", "Desc", "small-1", false).unwrap();
+        engine
+            .register_node(test_node("small-1", "AS200", "192.168.0.0/16"))
+            .unwrap();
+        engine
+            .register_node(test_node("small-2", "AS300", "172.16.0.0/12"))
+            .unwrap();
+        engine
+            .create_proposal("Test", "Desc", "small-1", false)
+            .unwrap();
         let weight = engine.cast_vote("whale", "prop-1", true).unwrap();
         // Weight should be capped
         let total: f64 = engine.nodes.values().map(|n| n.staking_credits).sum();
@@ -919,11 +1041,21 @@ mod tests {
     #[test]
     fn test_delegation_chain_resolution() {
         let mut engine = LiquidGovernanceV2::new();
-        engine.register_node(test_node("a", "AS100", "10.0.0.0/24")).unwrap();
-        engine.register_node(test_node("b", "AS200", "192.168.0.0/16")).unwrap();
-        engine.register_node(test_node("c", "AS300", "172.16.0.0/12")).unwrap();
-        engine.delegate_weight("a", "b", 0.5, Duration::from_hours(48)).unwrap();
-        engine.delegate_weight("b", "c", 0.5, Duration::from_hours(48)).unwrap();
+        engine
+            .register_node(test_node("a", "AS100", "10.0.0.0/24"))
+            .unwrap();
+        engine
+            .register_node(test_node("b", "AS200", "192.168.0.0/16"))
+            .unwrap();
+        engine
+            .register_node(test_node("c", "AS300", "172.16.0.0/12"))
+            .unwrap();
+        engine
+            .delegate_weight("a", "b", 0.5, Duration::from_hours(48))
+            .unwrap();
+        engine
+            .delegate_weight("b", "c", 0.5, Duration::from_hours(48))
+            .unwrap();
         let chain = engine.resolve_delegation_chain("a", 0);
         assert_eq!(chain, vec!["a", "b", "c"]);
     }
@@ -931,12 +1063,18 @@ mod tests {
     #[test]
     fn test_expired_delegation_not_resolved() {
         let mut engine = LiquidGovernanceV2::new();
-        engine.register_node(test_node("a", "AS100", "10.0.0.0/24")).unwrap();
-        engine.register_node(test_node("b", "AS200", "192.168.0.0/16")).unwrap();
+        engine
+            .register_node(test_node("a", "AS100", "10.0.0.0/24"))
+            .unwrap();
+        engine
+            .register_node(test_node("b", "AS200", "192.168.0.0/16"))
+            .unwrap();
         // Create an already-expired delegation by using a past expiry time.
         // Use checked_sub to avoid overflow on platforms where Instant::now() is close to epoch.
         let now = Instant::now();
-        let past = now.checked_sub(Duration::from_secs(1)).unwrap_or(Instant::now());
+        let past = now
+            .checked_sub(Duration::from_secs(1))
+            .unwrap_or(Instant::now());
         let expired = DelegationV2 {
             delegator: "a".to_string(),
             delegatee: "b".to_string(),
@@ -958,10 +1096,18 @@ mod tests {
             ..Default::default()
         };
         let mut engine = LiquidGovernanceV2::with_config(config);
-        engine.register_node(test_node("node-1", "AS100", "10.0.0.0/24")).unwrap();
-        engine.register_node(test_node("node-2", "AS200", "192.168.0.0/16")).unwrap();
-        engine.register_node(test_node("node-3", "AS300", "172.16.0.0/12")).unwrap();
-        engine.create_proposal("Test", "Desc", "node-1", false).unwrap();
+        engine
+            .register_node(test_node("node-1", "AS100", "10.0.0.0/24"))
+            .unwrap();
+        engine
+            .register_node(test_node("node-2", "AS200", "192.168.0.0/16"))
+            .unwrap();
+        engine
+            .register_node(test_node("node-3", "AS300", "172.16.0.0/12"))
+            .unwrap();
+        engine
+            .create_proposal("Test", "Desc", "node-1", false)
+            .unwrap();
         engine.cast_vote("node-2", "prop-1", true).unwrap();
         engine.cast_vote("node-3", "prop-1", true).unwrap();
         std::thread::sleep(Duration::from_secs(2));
@@ -978,10 +1124,18 @@ mod tests {
             ..Default::default()
         };
         let mut engine = LiquidGovernanceV2::with_config(config);
-        engine.register_node(test_node("node-1", "AS100", "10.0.0.0/24")).unwrap();
-        engine.register_node(test_node("node-2", "AS200", "192.168.0.0/16")).unwrap();
-        engine.register_node(test_node("node-3", "AS300", "172.16.0.0/12")).unwrap();
-        engine.create_proposal("Test", "Desc", "node-1", false).unwrap();
+        engine
+            .register_node(test_node("node-1", "AS100", "10.0.0.0/24"))
+            .unwrap();
+        engine
+            .register_node(test_node("node-2", "AS200", "192.168.0.0/16"))
+            .unwrap();
+        engine
+            .register_node(test_node("node-3", "AS300", "172.16.0.0/12"))
+            .unwrap();
+        engine
+            .create_proposal("Test", "Desc", "node-1", false)
+            .unwrap();
         engine.cast_vote("node-2", "prop-1", false).unwrap();
         engine.cast_vote("node-3", "prop-1", false).unwrap();
         std::thread::sleep(Duration::from_secs(2));
@@ -992,7 +1146,9 @@ mod tests {
     #[test]
     fn test_get_node_returns_profile() {
         let mut engine = LiquidGovernanceV2::new();
-        engine.register_node(test_node("node-1", "AS100", "10.0.0.0/24")).unwrap();
+        engine
+            .register_node(test_node("node-1", "AS100", "10.0.0.0/24"))
+            .unwrap();
         let node = engine.get_node("node-1");
         assert!(node.is_some());
         assert_eq!(node.unwrap().node_id, "node-1");
@@ -1001,8 +1157,12 @@ mod tests {
     #[test]
     fn test_get_proposal_returns_proposal() {
         let mut engine = LiquidGovernanceV2::new();
-        engine.register_node(test_node("node-1", "AS100", "10.0.0.0/24")).unwrap();
-        engine.create_proposal("Test", "Desc", "node-1", false).unwrap();
+        engine
+            .register_node(test_node("node-1", "AS100", "10.0.0.0/24"))
+            .unwrap();
+        engine
+            .create_proposal("Test", "Desc", "node-1", false)
+            .unwrap();
         let proposal = engine.get_proposal("prop-1");
         assert!(proposal.is_some());
         assert_eq!(proposal.unwrap().title, "Test");

@@ -8,7 +8,7 @@
 //! - `Halo2Engine` wraps the backend with batch management, fallback logic, and metrics.
 //! - Fallback to Merkle+VRF when `proof_time > 1.5s` or `cpu_cores < 4`.
 
-use crate::zkp::async_zkp_v5::{ZKPStatement, ZKPProof};
+use crate::zkp::async_zkp_v5::{ZKPProof, ZKPStatement};
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
@@ -31,7 +31,10 @@ impl std::fmt::Display for Halo2EngineError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Halo2EngineError::ProofTimeout(d) => write!(f, "Proof timeout after {:?}", d),
-            Halo2EngineError::InsufficientCores { available, required } => {
+            Halo2EngineError::InsufficientCores {
+                available,
+                required,
+            } => {
                 write!(f, "Need {} cores, have {}", required, available)
             }
             Halo2EngineError::GenerationError(msg) => write!(f, "Generation error: {}", msg),
@@ -50,8 +53,11 @@ pub trait ZKPBackend: Send + Sync {
     fn generate_proof(&self, statement: &ZKPStatement) -> Result<ZKPProof, Halo2EngineError>;
 
     /// Verify a proof against its statement.
-    fn verify_proof(&self, proof: &ZKPProof, statement: &ZKPStatement)
-        -> Result<bool, Halo2EngineError>;
+    fn verify_proof(
+        &self,
+        proof: &ZKPProof,
+        statement: &ZKPStatement,
+    ) -> Result<bool, Halo2EngineError>;
 
     /// Get backend name for metrics/logging.
     fn name(&self) -> &str;
@@ -284,7 +290,10 @@ impl<B: ZKPBackend> Halo2Engine<B> {
     }
 
     /// Generate a proof, with automatic fallback if the primary backend fails.
-    pub fn generate_proof(&mut self, statement: &ZKPStatement) -> Result<ZKPProof, Halo2EngineError> {
+    pub fn generate_proof(
+        &mut self,
+        statement: &ZKPStatement,
+    ) -> Result<ZKPProof, Halo2EngineError> {
         let start = Instant::now();
 
         // Try primary backend
@@ -419,7 +428,11 @@ mod tests {
         let backend = HashBackend::new();
         let config = Halo2EngineConfig::default();
         let mut engine = Halo2Engine::new(backend, config);
-        let stmts = vec![make_statement("b1"), make_statement("b2"), make_statement("b3")];
+        let stmts = vec![
+            make_statement("b1"),
+            make_statement("b2"),
+            make_statement("b3"),
+        ];
         let proofs = engine.generate_batch(&stmts).unwrap();
         assert_eq!(proofs.len(), 3);
         assert_eq!(engine.stats().batch_count, 1);
@@ -531,7 +544,10 @@ mod tests {
         let msg = format!("{}", err);
         assert!(msg.contains("timeout"));
 
-        let err = Halo2EngineError::InsufficientCores { available: 2, required: 4 };
+        let err = Halo2EngineError::InsufficientCores {
+            available: 2,
+            required: 4,
+        };
         let msg = format!("{}", err);
         assert!(msg.contains("cores"));
 

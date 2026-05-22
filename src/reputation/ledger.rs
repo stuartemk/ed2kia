@@ -29,8 +29,7 @@ pub enum LedgerError {
 }
 
 /// Tabla redb para contribuciones
-const CONTRIBUTIONS_TABLE: TableDefinition<&str, &[u8]> =
-    TableDefinition::new("contributions");
+const CONTRIBUTIONS_TABLE: TableDefinition<&str, &[u8]> = TableDefinition::new("contributions");
 
 /// Tipo de contribución
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -165,9 +164,9 @@ impl ReputationLedger {
                 .map_err(|e| LedgerError::Database(format!("Failed to open range: {e}")))?
                 .last()
                 .map(|result| {
-                    result.ok().map(|(_key, value)| {
-                        String::from_utf8_lossy(value.value()).to_string()
-                    })
+                    result
+                        .ok()
+                        .map(|(_key, value)| String::from_utf8_lossy(value.value()).to_string())
                 });
         }
 
@@ -199,12 +198,11 @@ impl ReputationLedger {
         let range = table
             .range(""..)
             .map_err(|e| LedgerError::Database(format!("Failed to open range: {e}")))?;
-        let last = range.last()
-            .and_then(|result| {
-                result.ok().map(|(_key, value)| {
-                    String::from_utf8_lossy(value.value()).to_string()
-                })
-            });
+        let last = range.last().and_then(|result| {
+            result
+                .ok()
+                .map(|(_key, value)| String::from_utf8_lossy(value.value()).to_string())
+        });
 
         Ok(last)
     }
@@ -242,7 +240,9 @@ impl ReputationLedger {
             // Key: "{node_id}_{timestamp}_{hash}" para unicidad
             let key = format!(
                 "{}_{}_{}",
-                contribution.node_id, contribution.timestamp, &record_hash[..8]
+                contribution.node_id,
+                contribution.timestamp,
+                &record_hash[..8]
             );
 
             // FIX: trait bound - use key.as_str() to match TableDefinition<&str, &[u8]>
@@ -282,8 +282,12 @@ impl ReputationLedger {
             .map_err(|e| LedgerError::Database(format!("Failed to open table: {e}")))?;
 
         // FIX: E0599/E0282 - table.iter() returns Result<Range>, need ? first
-        for entry in table.iter().map_err(|e| LedgerError::Database(e.to_string()))? {
-            let (_key, value) = entry.map_err(|e: redb::StorageError| LedgerError::Database(e.to_string()))?;
+        for entry in table
+            .iter()
+            .map_err(|e| LedgerError::Database(e.to_string()))?
+        {
+            let (_key, value) =
+                entry.map_err(|e: redb::StorageError| LedgerError::Database(e.to_string()))?;
             let contribution: Contribution =
                 serde_json::from_slice(value.value()).map_err(|e| {
                     LedgerError::Serialization(format!("Failed to deserialize entry: {e}"))
@@ -311,12 +315,14 @@ impl ReputationLedger {
         let mut contributions = Vec::new();
 
         // FIX: E0599/E0282 - table.iter() returns Result<Range>, need ? first
-        for entry in table.iter().map_err(|e| LedgerError::Database(e.to_string()))? {
-            let (_key, value) = entry.map_err(|e: redb::StorageError| LedgerError::Database(e.to_string()))?;
-            let contribution: Contribution =
-                serde_json::from_slice(value.value()).map_err(|e| {
-                    LedgerError::Serialization(format!("Failed to deserialize: {e}"))
-                })?;
+        for entry in table
+            .iter()
+            .map_err(|e| LedgerError::Database(e.to_string()))?
+        {
+            let (_key, value) =
+                entry.map_err(|e: redb::StorageError| LedgerError::Database(e.to_string()))?;
+            let contribution: Contribution = serde_json::from_slice(value.value())
+                .map_err(|e| LedgerError::Serialization(format!("Failed to deserialize: {e}")))?;
 
             if contribution.node_id == node_id {
                 contributions.push(contribution);
@@ -343,12 +349,14 @@ impl ReputationLedger {
         let mut contributions = Vec::new();
 
         // FIX: E0599/E0282 - table.iter() returns Result<Range>, need ? first
-        for entry in table.iter().map_err(|e| LedgerError::Database(e.to_string()))? {
-            let (_key, value) = entry.map_err(|e: redb::StorageError| LedgerError::Database(e.to_string()))?;
-            let contribution: Contribution =
-                serde_json::from_slice(value.value()).map_err(|e| {
-                    LedgerError::Serialization(format!("Failed to deserialize: {e}"))
-                })?;
+        for entry in table
+            .iter()
+            .map_err(|e| LedgerError::Database(e.to_string()))?
+        {
+            let (_key, value) =
+                entry.map_err(|e: redb::StorageError| LedgerError::Database(e.to_string()))?;
+            let contribution: Contribution = serde_json::from_slice(value.value())
+                .map_err(|e| LedgerError::Serialization(format!("Failed to deserialize: {e}")))?;
 
             if contribution.contribution_type == *contribution_type {
                 contributions.push(contribution);
@@ -364,11 +372,7 @@ impl ReputationLedger {
         let mut expected_previous: Option<String> = None;
 
         for contribution in &contributions {
-            if !contribution.verify_chain(
-                expected_previous
-                    .as_deref()
-                    .unwrap_or(""),
-            ) {
+            if !contribution.verify_chain(expected_previous.as_deref().unwrap_or("")) {
                 warn!(
                     node_id = %contribution.node_id,
                     "Chain integrity broken at contribution"
@@ -396,12 +400,14 @@ impl ReputationLedger {
         let mut contributions = Vec::new();
 
         // FIX: E0599/E0282 - table.iter() returns Result<Range>, need ? first
-        for entry in table.iter().map_err(|e| LedgerError::Database(e.to_string()))? {
-            let (_key, value) = entry.map_err(|e: redb::StorageError| LedgerError::Database(e.to_string()))?;
-            let contribution: Contribution =
-                serde_json::from_slice(value.value()).map_err(|e| {
-                    LedgerError::Serialization(format!("Failed to deserialize: {e}"))
-                })?;
+        for entry in table
+            .iter()
+            .map_err(|e| LedgerError::Database(e.to_string()))?
+        {
+            let (_key, value) =
+                entry.map_err(|e: redb::StorageError| LedgerError::Database(e.to_string()))?;
+            let contribution: Contribution = serde_json::from_slice(value.value())
+                .map_err(|e| LedgerError::Serialization(format!("Failed to deserialize: {e}")))?;
             contributions.push(contribution);
         }
 
@@ -420,9 +426,7 @@ impl ReputationLedger {
         let mut by_type: std::collections::HashMap<String, usize> =
             std::collections::HashMap::new();
         for c in &contributions {
-            *by_type
-                .entry(c.contribution_type.to_string())
-                .or_insert(0) += 1;
+            *by_type.entry(c.contribution_type.to_string()).or_insert(0) += 1;
         }
 
         // Contar por nodo

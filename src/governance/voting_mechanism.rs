@@ -267,10 +267,7 @@ impl VotingMechanism {
     pub fn process_batch(&mut self, proposal_id: &str) -> Result<BatchVote, VotingError> {
         let start = Instant::now();
 
-        let votes = self
-            .pending_votes
-            .remove(proposal_id)
-            .unwrap_or_default();
+        let votes = self.pending_votes.remove(proposal_id).unwrap_or_default();
 
         if votes.is_empty() {
             // Return an empty batch
@@ -283,7 +280,8 @@ impl VotingMechanism {
                 quorum_met: false,
                 decided: None,
             };
-            self.processed_batches.insert(proposal_id.to_string(), batch.clone());
+            self.processed_batches
+                .insert(proposal_id.to_string(), batch.clone());
             return Ok(batch);
         }
 
@@ -380,7 +378,8 @@ impl VotingMechanism {
             "batch processed"
         );
 
-        self.processed_batches.insert(proposal_id.to_string(), batch.clone());
+        self.processed_batches
+            .insert(proposal_id.to_string(), batch.clone());
         Ok(batch)
     }
 
@@ -505,7 +504,9 @@ mod tests {
     fn test_submit_vote_success() {
         let mut mech = VotingMechanism::default_mechanism();
         mech.register_voter("v1", 10.0);
-        assert!(mech.submit_vote("v1", "prop-1", VoteDirection::For, "sig-abc").is_ok());
+        assert!(mech
+            .submit_vote("v1", "prop-1", VoteDirection::For, "sig-abc")
+            .is_ok());
     }
 
     #[test]
@@ -527,7 +528,8 @@ mod tests {
     fn test_double_vote_rejected() {
         let mut mech = VotingMechanism::default_mechanism();
         mech.register_voter("v1", 10.0);
-        mech.submit_vote("v1", "prop-1", VoteDirection::For, "sig-1").unwrap();
+        mech.submit_vote("v1", "prop-1", VoteDirection::For, "sig-1")
+            .unwrap();
         let result = mech.submit_vote("v1", "prop-1", VoteDirection::Against, "sig-2");
         assert!(result.is_err());
     }
@@ -543,9 +545,12 @@ mod tests {
         mech.register_voter("v1", 10.0);
         mech.register_voter("v2", 10.0);
         mech.register_voter("v3", 10.0);
-        mech.submit_vote("v1", "prop-1", VoteDirection::For, "s1").unwrap();
-        mech.submit_vote("v2", "prop-1", VoteDirection::For, "s2").unwrap();
-        mech.submit_vote("v3", "prop-1", VoteDirection::Against, "s3").unwrap();
+        mech.submit_vote("v1", "prop-1", VoteDirection::For, "s1")
+            .unwrap();
+        mech.submit_vote("v2", "prop-1", VoteDirection::For, "s2")
+            .unwrap();
+        mech.submit_vote("v3", "prop-1", VoteDirection::Against, "s3")
+            .unwrap();
         let batch = mech.process_batch("prop-1").unwrap();
         assert_eq!(batch.total_weight_for, 20.0);
         assert_eq!(batch.total_weight_against, 10.0);
@@ -561,8 +566,10 @@ mod tests {
         let mut mech = VotingMechanism::new(config);
         mech.register_voter("v1", 10.0);
         mech.register_voter("v2", 10.0);
-        mech.submit_vote("v1", "prop-1", VoteDirection::For, "s1").unwrap();
-        mech.submit_vote("v2", "prop-1", VoteDirection::For, "s2").unwrap();
+        mech.submit_vote("v1", "prop-1", VoteDirection::For, "s1")
+            .unwrap();
+        mech.submit_vote("v2", "prop-1", VoteDirection::For, "s2")
+            .unwrap();
         let batch = mech.process_batch("prop-1").unwrap();
         assert!(batch.quorum_met);
         assert_eq!(batch.decided, Some(VoteDirection::For));
@@ -577,7 +584,8 @@ mod tests {
         };
         let mut mech = VotingMechanism::new(config);
         mech.register_voter("v1", 10.0);
-        mech.submit_vote("v1", "prop-1", VoteDirection::For, "s1").unwrap();
+        mech.submit_vote("v1", "prop-1", VoteDirection::For, "s1")
+            .unwrap();
         let batch = mech.process_batch("prop-1").unwrap();
         assert!(!batch.quorum_met);
         assert_eq!(batch.decided, None);
@@ -593,8 +601,10 @@ mod tests {
         let mut mech = VotingMechanism::new(config);
         mech.register_voter("v1", 10.0);
         mech.register_voter("v2", 10.0);
-        mech.submit_vote("v1", "prop-1", VoteDirection::Against, "s1").unwrap();
-        mech.submit_vote("v2", "prop-1", VoteDirection::For, "s2").unwrap();
+        mech.submit_vote("v1", "prop-1", VoteDirection::Against, "s1")
+            .unwrap();
+        mech.submit_vote("v2", "prop-1", VoteDirection::For, "s2")
+            .unwrap();
         let batch = mech.process_batch("prop-1").unwrap();
         // For weight = 10, Against weight = 10, ratio = 0.5 which meets quorum
         // but it's a tie, so decided = Abstain
@@ -620,7 +630,8 @@ mod tests {
         };
         let mut mech = VotingMechanism::new(config);
         mech.register_voter("solo", 100.0);
-        mech.submit_vote("solo", "prop-1", VoteDirection::For, "sig").unwrap();
+        mech.submit_vote("solo", "prop-1", VoteDirection::For, "sig")
+            .unwrap();
         let batch = mech.process_batch("prop-1").unwrap();
         assert!(batch.quorum_met);
         assert_eq!(batch.decided, Some(VoteDirection::For));
@@ -636,8 +647,10 @@ mod tests {
         let mut mech = VotingMechanism::new(config);
         mech.register_voter("v1", 10.0);
         mech.register_voter("v2", 10.0);
-        mech.submit_vote("v1", "prop-1", VoteDirection::For, "s1").unwrap();
-        mech.submit_vote("v2", "prop-1", VoteDirection::Against, "s2").unwrap();
+        mech.submit_vote("v1", "prop-1", VoteDirection::For, "s1")
+            .unwrap();
+        mech.submit_vote("v2", "prop-1", VoteDirection::Against, "s2")
+            .unwrap();
         let batch = mech.process_batch("prop-1").unwrap();
         assert_eq!(batch.decided, Some(VoteDirection::Abstain));
     }
@@ -652,8 +665,10 @@ mod tests {
         let mut mech = VotingMechanism::new(config);
         mech.register_voter("v1", 10.0);
         mech.register_voter("v2", 10.0);
-        mech.submit_vote("v1", "prop-1", VoteDirection::For, "s1").unwrap();
-        mech.submit_vote("v2", "prop-1", VoteDirection::Abstain, "s2").unwrap();
+        mech.submit_vote("v1", "prop-1", VoteDirection::For, "s1")
+            .unwrap();
+        mech.submit_vote("v2", "prop-1", VoteDirection::Abstain, "s2")
+            .unwrap();
         let batch = mech.process_batch("prop-1").unwrap();
         assert_eq!(batch.total_weight_abstain, 10.0);
         // Abstain doesn't count against decisive weight, so for/(for+against) = 10/10 = 1.0
@@ -670,7 +685,8 @@ mod tests {
         };
         let mut mech = VotingMechanism::new(config);
         mech.register_voter("v1", 10.0);
-        mech.submit_vote("v1", "prop-1", VoteDirection::For, "s1").unwrap();
+        mech.submit_vote("v1", "prop-1", VoteDirection::For, "s1")
+            .unwrap();
         mech.process_batch("prop-1").unwrap();
         let stats = mech.get_stats();
         assert_eq!(stats.total_batches, 1);
@@ -682,7 +698,8 @@ mod tests {
     fn test_reset_clears_state() {
         let mut mech = VotingMechanism::default_mechanism();
         mech.register_voter("v1", 10.0);
-        mech.submit_vote("v1", "prop-1", VoteDirection::For, "s1").unwrap();
+        mech.submit_vote("v1", "prop-1", VoteDirection::For, "s1")
+            .unwrap();
         mech.reset();
         assert_eq!(mech.voters.len(), 0);
         assert_eq!(mech.stats.total_votes, 0);
@@ -698,7 +715,8 @@ mod tests {
         };
         let mut mech = VotingMechanism::new(config);
         mech.register_voter("v1", 10.0);
-        mech.submit_vote("v1", "prop-1", VoteDirection::For, "s1").unwrap();
+        mech.submit_vote("v1", "prop-1", VoteDirection::For, "s1")
+            .unwrap();
         mech.process_batch("prop-1").unwrap();
         let batch = mech.get_batch("prop-1");
         assert!(batch.is_some());
@@ -714,7 +732,9 @@ mod tests {
         let mut mech = VotingMechanism::new(config);
         mech.register_voter("v1", 10.0);
         // Empty signature should be allowed when verification is disabled
-        assert!(mech.submit_vote("v1", "prop-1", VoteDirection::For, "").is_ok());
+        assert!(mech
+            .submit_vote("v1", "prop-1", VoteDirection::For, "")
+            .is_ok());
     }
 
     #[test]
@@ -726,8 +746,10 @@ mod tests {
         };
         let mut mech = VotingMechanism::new(config);
         mech.register_voter("v1", 10.0);
-        mech.submit_vote("v1", "prop-a", VoteDirection::For, "s1").unwrap();
-        mech.submit_vote("v1", "prop-b", VoteDirection::Against, "s2").unwrap();
+        mech.submit_vote("v1", "prop-a", VoteDirection::For, "s1")
+            .unwrap();
+        mech.submit_vote("v1", "prop-b", VoteDirection::Against, "s2")
+            .unwrap();
         let batch_a = mech.process_batch("prop-a").unwrap();
         let batch_b = mech.process_batch("prop-b").unwrap();
         assert_eq!(batch_a.total_weight_for, 10.0);
@@ -761,7 +783,8 @@ mod tests {
         };
         let mut mech = VotingMechanism::new(config);
         mech.register_voter("v1", 10.0);
-        mech.submit_vote("v1", "prop-1", VoteDirection::For, "s1").unwrap();
+        mech.submit_vote("v1", "prop-1", VoteDirection::For, "s1")
+            .unwrap();
         let result = mech.process_batch("prop-1");
         assert!(result.is_ok());
     }
@@ -777,8 +800,10 @@ mod tests {
         // v1 has weight 80, v2 has weight 20
         mech.register_voter("v1", 80.0);
         mech.register_voter("v2", 20.0);
-        mech.submit_vote("v1", "prop-1", VoteDirection::For, "s1").unwrap();
-        mech.submit_vote("v2", "prop-1", VoteDirection::Against, "s2").unwrap();
+        mech.submit_vote("v1", "prop-1", VoteDirection::For, "s1")
+            .unwrap();
+        mech.submit_vote("v2", "prop-1", VoteDirection::Against, "s2")
+            .unwrap();
         let batch = mech.process_batch("prop-1").unwrap();
         // for/(for+against) = 80/100 = 0.8 >= 0.6
         assert!(batch.quorum_met);
@@ -794,7 +819,8 @@ mod tests {
         };
         let mut mech = VotingMechanism::new(config);
         mech.register_voter("v1", 10.0);
-        mech.submit_vote("v1", "prop-1", VoteDirection::For, "s1").unwrap();
+        mech.submit_vote("v1", "prop-1", VoteDirection::For, "s1")
+            .unwrap();
         mech.process_batch("prop-1").unwrap();
         // Trying to vote again on the same proposal should fail
         let result = mech.submit_vote("v1", "prop-1", VoteDirection::Against, "s2");

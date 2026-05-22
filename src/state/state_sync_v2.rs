@@ -13,8 +13,8 @@
 
 #[cfg(feature = "v1.6-sprint1")]
 mod internal {
-    use std::collections::HashMap;
     use sha2::{Digest, Sha256};
+    use std::collections::HashMap;
 
     // ---------------------------------------------------------------------------
     // Errors
@@ -40,7 +40,11 @@ mod internal {
             match self {
                 StateSyncV2Error::KeyNotFound(key) => write!(f, "State key {} not found", key),
                 StateSyncV2Error::MerkleRootMismatch { expected, actual } => {
-                    write!(f, "Merkle root mismatch: expected={}, actual={}", expected, actual)
+                    write!(
+                        f,
+                        "Merkle root mismatch: expected={}, actual={}",
+                        expected, actual
+                    )
                 }
                 StateSyncV2Error::SyncFull => write!(f, "Sync capacity exceeded"),
                 StateSyncV2Error::DivergenceDetected(key) => {
@@ -203,7 +207,11 @@ mod internal {
         }
 
         /// Register a state entry.
-        pub fn register_state(&mut self, key: String, value: Vec<u8>) -> Result<(), StateSyncV2Error> {
+        pub fn register_state(
+            &mut self,
+            key: String,
+            value: Vec<u8>,
+        ) -> Result<(), StateSyncV2Error> {
             if self.state.len() >= self.config.max_state_entries && !self.state.contains_key(&key) {
                 return Err(StateSyncV2Error::SyncFull);
             }
@@ -303,7 +311,10 @@ mod internal {
                 hashes = next;
             }
 
-            hashes.into_iter().next().unwrap_or_else(|| compute_hash(b"empty"))
+            hashes
+                .into_iter()
+                .next()
+                .unwrap_or_else(|| compute_hash(b"empty"))
         }
 
         /// Get sync statistics.
@@ -351,17 +362,23 @@ mod internal {
         #[test]
         fn test_register_state() {
             let mut sync = StateSyncV2::default();
-            assert!(sync.register_state("key1".to_string(), vec![1, 2, 3]).is_ok());
+            assert!(sync
+                .register_state("key1".to_string(), vec![1, 2, 3])
+                .is_ok());
             assert_eq!(sync.state_count(), 1);
         }
 
         #[test]
         fn test_sync_state_no_divergence() {
             let mut sync = StateSyncV2::default();
-            sync.register_state("key1".to_string(), vec![1, 2, 3]).unwrap();
+            sync.register_state("key1".to_string(), vec![1, 2, 3])
+                .unwrap();
 
             let mut peer = HashMap::new();
-            peer.insert("key1".to_string(), StateEntry::new("key1".to_string(), vec![1, 2, 3]));
+            peer.insert(
+                "key1".to_string(),
+                StateEntry::new("key1".to_string(), vec![1, 2, 3]),
+            );
 
             let result = sync.sync_state(&peer);
             assert!(result.success);
@@ -371,10 +388,14 @@ mod internal {
         #[test]
         fn test_sync_state_with_divergence() {
             let mut sync = StateSyncV2::default();
-            sync.register_state("key1".to_string(), vec![1, 2, 3]).unwrap();
+            sync.register_state("key1".to_string(), vec![1, 2, 3])
+                .unwrap();
 
             let mut peer = HashMap::new();
-            peer.insert("key1".to_string(), StateEntry::new("key1".to_string(), vec![4, 5, 6]));
+            peer.insert(
+                "key1".to_string(),
+                StateEntry::new("key1".to_string(), vec![4, 5, 6]),
+            );
 
             let result = sync.sync_state(&peer);
             assert_eq!(result.divergences.len(), 1);
@@ -383,7 +404,8 @@ mod internal {
         #[test]
         fn test_verify_merkle_root() {
             let mut sync = StateSyncV2::default();
-            sync.register_state("key1".to_string(), vec![1, 2, 3]).unwrap();
+            sync.register_state("key1".to_string(), vec![1, 2, 3])
+                .unwrap();
             let root = sync.compute_merkle_root();
             assert!(sync.verify_merkle_root(&root));
         }
@@ -391,10 +413,14 @@ mod internal {
         #[test]
         fn test_get_divergences() {
             let mut sync = StateSyncV2::default();
-            sync.register_state("key1".to_string(), vec![1, 2, 3]).unwrap();
+            sync.register_state("key1".to_string(), vec![1, 2, 3])
+                .unwrap();
 
             let mut peer = HashMap::new();
-            peer.insert("key1".to_string(), StateEntry::new("key1".to_string(), vec![4, 5, 6]));
+            peer.insert(
+                "key1".to_string(),
+                StateEntry::new("key1".to_string(), vec![4, 5, 6]),
+            );
 
             let divergences = sync.get_divergences(&peer);
             assert_eq!(divergences.len(), 1);
@@ -403,10 +429,14 @@ mod internal {
         #[test]
         fn test_stats_recording() {
             let mut sync = StateSyncV2::default();
-            sync.register_state("key1".to_string(), vec![1, 2, 3]).unwrap();
+            sync.register_state("key1".to_string(), vec![1, 2, 3])
+                .unwrap();
 
             let mut peer = HashMap::new();
-            peer.insert("key1".to_string(), StateEntry::new("key1".to_string(), vec![1, 2, 3]));
+            peer.insert(
+                "key1".to_string(),
+                StateEntry::new("key1".to_string(), vec![1, 2, 3]),
+            );
 
             sync.sync_state(&peer);
             let stats = sync.get_stats();
@@ -416,9 +446,13 @@ mod internal {
         #[test]
         fn test_reset_stats() {
             let mut sync = StateSyncV2::default();
-            sync.register_state("key1".to_string(), vec![1, 2, 3]).unwrap();
+            sync.register_state("key1".to_string(), vec![1, 2, 3])
+                .unwrap();
             let mut peer = HashMap::new();
-            peer.insert("key1".to_string(), StateEntry::new("key1".to_string(), vec![1, 2, 3]));
+            peer.insert(
+                "key1".to_string(),
+                StateEntry::new("key1".to_string(), vec![1, 2, 3]),
+            );
             sync.sync_state(&peer);
             sync.reset_stats();
             assert_eq!(sync.get_stats().syncs_completed, 0);

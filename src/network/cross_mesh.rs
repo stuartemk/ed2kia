@@ -32,12 +32,20 @@ pub enum CrossMeshError {
 impl fmt::Display for CrossMeshError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            CrossMeshError::InvalidMeshSignature(msg) => write!(f, "Invalid mesh signature: {}", msg),
-            CrossMeshError::PeerLinkInactive(mesh_id) => write!(f, "Peer link inactive: {}", mesh_id),
-            CrossMeshError::RateLimitExceeded(mesh_id) => write!(f, "Rate limit exceeded for mesh: {}", mesh_id),
+            CrossMeshError::InvalidMeshSignature(msg) => {
+                write!(f, "Invalid mesh signature: {}", msg)
+            }
+            CrossMeshError::PeerLinkInactive(mesh_id) => {
+                write!(f, "Peer link inactive: {}", mesh_id)
+            }
+            CrossMeshError::RateLimitExceeded(mesh_id) => {
+                write!(f, "Rate limit exceeded for mesh: {}", mesh_id)
+            }
             CrossMeshError::PayloadTooLarge(size) => write!(f, "Payload too large: {} bytes", size),
             CrossMeshError::UnknownMesh(mesh_id) => write!(f, "Unknown mesh: {}", mesh_id),
-            CrossMeshError::BackoffInProgress(mesh_id) => write!(f, "Backoff in progress for mesh: {}", mesh_id),
+            CrossMeshError::BackoffInProgress(mesh_id) => {
+                write!(f, "Backoff in progress for mesh: {}", mesh_id)
+            }
         }
     }
 }
@@ -261,7 +269,9 @@ impl CrossMeshRouter {
         }
 
         // Get peer link.
-        let link = self.peer_links.get_mut(mesh_id)
+        let link = self
+            .peer_links
+            .get_mut(mesh_id)
             .ok_or_else(|| CrossMeshError::UnknownMesh(mesh_id.to_string()))?;
 
         // Check if link is active.

@@ -25,7 +25,9 @@ impl std::fmt::Display for GradientArchiveError {
         match self {
             GradientArchiveError::NotFound(id) => write!(f, "Gradient not found: {}", id),
             GradientArchiveError::ArchiveFull(max) => write!(f, "Archive full: max {}", max),
-            GradientArchiveError::InvalidDimensions(msg) => write!(f, "Invalid dimensions: {}", msg),
+            GradientArchiveError::InvalidDimensions(msg) => {
+                write!(f, "Invalid dimensions: {}", msg)
+            }
             GradientArchiveError::VersionExists(id) => write!(f, "Version exists: {}", id),
             GradientArchiveError::CorruptedData(msg) => write!(f, "Corrupted data: {}", msg),
         }
@@ -340,8 +342,7 @@ impl GradientArchive {
         if a.dimension != b.dimension {
             return Err(GradientArchiveError::InvalidDimensions(format!(
                 "Dimension mismatch: {} vs {}",
-                a.dimension,
-                b.dimension
+                a.dimension, b.dimension
             )));
         }
 
@@ -479,7 +480,12 @@ mod tests {
         let mut archive = GradientArchive::default();
         archive.set_time(1000);
         archive
-            .store("v1".to_string(), "model_a".to_string(), 1, vec![1.0, 2.0, 3.0])
+            .store(
+                "v1".to_string(),
+                "model_a".to_string(),
+                1,
+                vec![1.0, 2.0, 3.0],
+            )
             .unwrap();
         assert_eq!(archive.len(), 1);
     }

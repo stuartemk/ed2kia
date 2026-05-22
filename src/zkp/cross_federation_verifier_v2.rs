@@ -325,9 +325,9 @@ mod internal {
         }
 
         pub fn record_quorum_time(&mut self, time_ms: u64) {
-            self.avg_quorum_time_ms =
-                (self.avg_quorum_time_ms * (self.total_sessions - 1) as f64 + time_ms as f64)
-                    / self.total_sessions as f64;
+            self.avg_quorum_time_ms = (self.avg_quorum_time_ms * (self.total_sessions - 1) as f64
+                + time_ms as f64)
+                / self.total_sessions as f64;
         }
 
         pub fn reset(&mut self) {
@@ -379,20 +379,26 @@ mod internal {
                     federation_id
                 )));
             }
-            self.federations
-                .insert(federation_id.clone(), FederationVerifierV2::new(federation_id, reputation));
+            self.federations.insert(
+                federation_id.clone(),
+                FederationVerifierV2::new(federation_id, reputation),
+            );
             Ok(())
         }
 
         /// Create a verification session
-        pub fn create_session(&mut self, proof_id: String) -> Result<(), CrossFederationVerifierV2Error> {
+        pub fn create_session(
+            &mut self,
+            proof_id: String,
+        ) -> Result<(), CrossFederationVerifierV2Error> {
             if self.sessions.contains_key(&proof_id) {
                 return Err(CrossFederationVerifierV2Error::ConfigurationError(format!(
                     "Session for proof {} already exists",
                     proof_id
                 )));
             }
-            self.sessions.insert(proof_id.clone(), VerificationSessionV2::new(proof_id));
+            self.sessions
+                .insert(proof_id.clone(), VerificationSessionV2::new(proof_id));
             Ok(())
         }
 
@@ -441,7 +447,9 @@ mod internal {
                 CrossFederationVerifierV2Error::ProofNotFound(proof_id.to_string())
             })?;
 
-            let total_weight: f64 = self.federations.values()
+            let total_weight: f64 = self
+                .federations
+                .values()
                 .map(|f| f.weighted_vote(self.config.reputation_weight))
                 .sum();
 
@@ -582,7 +590,10 @@ mod internal {
         fn test_register_federation_duplicate() {
             let mut engine = CrossFederationVerifierV2::default();
             engine.register_federation("fed1".to_string(), 0.9).unwrap();
-            match engine.register_federation("fed1".to_string(), 0.9).unwrap_err() {
+            match engine
+                .register_federation("fed1".to_string(), 0.9)
+                .unwrap_err()
+            {
                 CrossFederationVerifierV2Error::ConfigurationError(_) => {}
                 e => panic!("Expected ConfigurationError, got: {}", e),
             }
@@ -610,14 +621,20 @@ mod internal {
             let mut engine = CrossFederationVerifierV2::default();
             engine.register_federation("fed1".to_string(), 0.9).unwrap();
             engine.create_session("proof1".to_string()).unwrap();
-            assert_eq!(engine.submit_vote("proof1", "fed1", Vote::Approve, 1000), Ok(()));
+            assert_eq!(
+                engine.submit_vote("proof1", "fed1", Vote::Approve, 1000),
+                Ok(())
+            );
         }
 
         #[test]
         fn test_submit_vote_federation_not_found() {
             let mut engine = CrossFederationVerifierV2::default();
             engine.create_session("proof1".to_string()).unwrap();
-            match engine.submit_vote("proof1", "unknown", Vote::Approve, 1000).unwrap_err() {
+            match engine
+                .submit_vote("proof1", "unknown", Vote::Approve, 1000)
+                .unwrap_err()
+            {
                 CrossFederationVerifierV2Error::FederationNotFound(_) => {}
                 e => panic!("Expected FederationNotFound, got: {}", e),
             }
@@ -628,8 +645,13 @@ mod internal {
             let mut engine = CrossFederationVerifierV2::default();
             engine.register_federation("fed1".to_string(), 0.9).unwrap();
             engine.create_session("proof1".to_string()).unwrap();
-            engine.submit_vote("proof1", "fed1", Vote::Approve, 1000).unwrap();
-            match engine.submit_vote("proof1", "fed1", Vote::Approve, 1001).unwrap_err() {
+            engine
+                .submit_vote("proof1", "fed1", Vote::Approve, 1000)
+                .unwrap();
+            match engine
+                .submit_vote("proof1", "fed1", Vote::Approve, 1001)
+                .unwrap_err()
+            {
                 CrossFederationVerifierV2Error::DuplicateVote(_) => {}
                 e => panic!("Expected DuplicateVote, got: {}", e),
             }
@@ -642,9 +664,15 @@ mod internal {
             engine.register_federation("fed2".to_string(), 1.0).unwrap();
             engine.register_federation("fed3".to_string(), 1.0).unwrap();
             engine.create_session("proof1".to_string()).unwrap();
-            engine.submit_vote("proof1", "fed1", Vote::Approve, 1000).unwrap();
-            engine.submit_vote("proof1", "fed2", Vote::Approve, 1000).unwrap();
-            engine.submit_vote("proof1", "fed3", Vote::Approve, 1000).unwrap();
+            engine
+                .submit_vote("proof1", "fed1", Vote::Approve, 1000)
+                .unwrap();
+            engine
+                .submit_vote("proof1", "fed2", Vote::Approve, 1000)
+                .unwrap();
+            engine
+                .submit_vote("proof1", "fed3", Vote::Approve, 1000)
+                .unwrap();
             let reached = engine.check_quorum("proof1").unwrap();
             assert!(reached);
         }
@@ -656,7 +684,9 @@ mod internal {
             engine.register_federation("fed2".to_string(), 1.0).unwrap();
             engine.register_federation("fed3".to_string(), 1.0).unwrap();
             engine.create_session("proof1".to_string()).unwrap();
-            engine.submit_vote("proof1", "fed1", Vote::Approve, 1000).unwrap();
+            engine
+                .submit_vote("proof1", "fed1", Vote::Approve, 1000)
+                .unwrap();
             let reached = engine.check_quorum("proof1").unwrap();
             assert!(!reached);
         }
@@ -665,7 +695,10 @@ mod internal {
         fn test_add_challenge() {
             let mut engine = CrossFederationVerifierV2::default();
             engine.create_session("proof1".to_string()).unwrap();
-            assert_eq!(engine.add_challenge("proof1", "challenge1".to_string()), Ok(()));
+            assert_eq!(
+                engine.add_challenge("proof1", "challenge1".to_string()),
+                Ok(())
+            );
             assert_eq!(engine.stats().total_challenges, 1);
         }
 
@@ -683,7 +716,9 @@ mod internal {
             s2.set_merkle_root("root2".to_string());
             s2.quorum_reached = true;
             s2.verified = true;
-            let root = engine.aggregate_merkle_roots(&["proof1".to_string(), "proof2".to_string()]).unwrap();
+            let root = engine
+                .aggregate_merkle_roots(&["proof1".to_string(), "proof2".to_string()])
+                .unwrap();
             assert!(!root.is_empty());
         }
 
@@ -694,7 +729,10 @@ mod internal {
                 ..Default::default()
             };
             let mut engine = CrossFederationVerifierV2::new(config);
-            match engine.aggregate_merkle_roots(&["proof1".to_string()]).unwrap_err() {
+            match engine
+                .aggregate_merkle_roots(&["proof1".to_string()])
+                .unwrap_err()
+            {
                 CrossFederationVerifierV2Error::ConfigurationError(_) => {}
                 e => panic!("Expected ConfigurationError, got: {}", e),
             }
@@ -705,7 +743,9 @@ mod internal {
             let mut engine = CrossFederationVerifierV2::default();
             engine.register_federation("fed1".to_string(), 0.9).unwrap();
             engine.create_session("proof1".to_string()).unwrap();
-            engine.submit_vote("proof1", "fed1", Vote::Approve, 1000).unwrap();
+            engine
+                .submit_vote("proof1", "fed1", Vote::Approve, 1000)
+                .unwrap();
             assert_eq!(engine.get_history().len(), 1);
         }
 
@@ -755,7 +795,8 @@ mod internal {
 
         #[test]
         fn test_merkle_root_computation() {
-            let root = CrossFederationVerifierV2::compute_merkle_root(&["a".to_string(), "b".to_string()]);
+            let root =
+                CrossFederationVerifierV2::compute_merkle_root(&["a".to_string(), "b".to_string()]);
             assert_eq!(root, "merkle_a_b");
         }
 

@@ -265,14 +265,16 @@ impl NetworkInitializer {
 
     /// Crear directorio de datos
     fn create_data_directory(&self) -> Result<(), NetworkInitError> {
-        std::fs::create_dir_all(&self.config.data_dir)
-            .map_err(|e| NetworkInitError::DatabaseInitFailed(format!("Cannot create data dir: {e}")))?;
+        std::fs::create_dir_all(&self.config.data_dir).map_err(|e| {
+            NetworkInitError::DatabaseInitFailed(format!("Cannot create data dir: {e}"))
+        })?;
 
         // Subdirectorios
         for subdir in &["models", "leases", "feedback", "governance", "reputation"] {
             let path = self.config.data_dir.join(subdir);
-            std::fs::create_dir_all(&path)
-                .map_err(|e| NetworkInitError::DatabaseInitFailed(format!("Cannot create {subdir}: {e}")))?;
+            std::fs::create_dir_all(&path).map_err(|e| {
+                NetworkInitError::DatabaseInitFailed(format!("Cannot create {subdir}: {e}"))
+            })?;
         }
 
         info!(
@@ -346,7 +348,12 @@ impl NetworkInitializer {
             // FIX: trait bound - ReadDir doesn't implement Default, use ok().into_iter().flatten()
             for entry in std::fs::read_dir(&models_dir).ok().into_iter().flatten() {
                 let entry = entry.map_err(|e| NetworkInitError::SaeLoadFailed(e.to_string()))?;
-                if entry.path().extension().is_some_and(|ext| ext == "safetensors") { // CLEANUP: map_or(false, |ext| ext == X) -> is_some_and
+                if entry
+                    .path()
+                    .extension()
+                    .is_some_and(|ext| ext == "safetensors")
+                {
+                    // CLEANUP: map_or(false, |ext| ext == X) -> is_some_and
                     info!(
                         path = %entry.path().display(),
                         "Found existing SAE model"
@@ -383,8 +390,11 @@ impl NetworkInitializer {
                     .as_secs() + 3600, // 1 hora
             });
 
-            std::fs::write(&lease_path, serde_json::to_string_pretty(&lease_data).unwrap())
-                .map_err(|e| NetworkInitError::DatabaseInitFailed(e.to_string()))?;
+            std::fs::write(
+                &lease_path,
+                serde_json::to_string_pretty(&lease_data).unwrap(),
+            )
+            .map_err(|e| NetworkInitError::DatabaseInitFailed(e.to_string()))?;
         }
 
         info!(leases = sae_layers, "Initial leases created");
@@ -415,8 +425,11 @@ impl NetworkInitializer {
             "ed2k_version": "0.5.0",
         });
 
-        std::fs::write(&self.genesis_file, serde_json::to_string_pretty(&genesis_data).unwrap())
-            .map_err(|e| NetworkInitError::DatabaseInitFailed(format!("Cannot write genesis: {e}")))?;
+        std::fs::write(
+            &self.genesis_file,
+            serde_json::to_string_pretty(&genesis_data).unwrap(),
+        )
+        .map_err(|e| NetworkInitError::DatabaseInitFailed(format!("Cannot write genesis: {e}")))?;
 
         info!(
             path = %self.genesis_file.display(),
@@ -427,8 +440,9 @@ impl NetworkInitializer {
 
     /// Cargar configuración de genesis existente
     pub fn load_genesis(&self) -> Result<serde_json::Value, NetworkInitError> {
-        let data = std::fs::read_to_string(&self.genesis_file)
-            .map_err(|e| NetworkInitError::DatabaseInitFailed(format!("Cannot read genesis: {e}")))?;
+        let data = std::fs::read_to_string(&self.genesis_file).map_err(|e| {
+            NetworkInitError::DatabaseInitFailed(format!("Cannot read genesis: {e}"))
+        })?;
 
         serde_json::from_str(&data)
             .map_err(|e| NetworkInitError::InvalidGenesisConfig(e.to_string()))
@@ -446,7 +460,10 @@ impl NetworkInitializer {
         }
 
         let genesis = self.load_genesis()?;
-        let old_version = genesis.get("ed2k_version").and_then(|v| v.as_str()).unwrap_or("0.0.0");
+        let old_version = genesis
+            .get("ed2k_version")
+            .and_then(|v| v.as_str())
+            .unwrap_or("0.0.0");
 
         info!(
             current = old_version,

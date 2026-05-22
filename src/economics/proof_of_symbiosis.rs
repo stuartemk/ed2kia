@@ -330,7 +330,10 @@ mod tests {
         // 0.75 < 1.0 -> not met
         let result = committee_threshold_met(&["alice", "bob"], &ledger, 0.5, 1.0)
             .expect("validation should succeed");
-        assert!(!result, "High load should raise threshold above committee weight");
+        assert!(
+            !result,
+            "High load should raise threshold above committee weight"
+        );
     }
 
     #[test]

@@ -32,7 +32,11 @@ pub enum WsPoolError {
     #[error("Conexión no encontrada: {0}")]
     ConnectionNotFound(String),
     #[error("Rate limit excedido: {current}/{max} msg/s para conexión {conn}")]
-    RateLimitExceeded { current: usize, max: usize, conn: String },
+    RateLimitExceeded {
+        current: usize,
+        max: usize,
+        conn: String,
+    },
     #[error("Autenticación fallida: {0}")]
     AuthFailed(String),
     #[error("Conexión duplicada: {0}")]
@@ -195,8 +199,8 @@ impl PoolConnection {
     pub fn get_pending_since(&mut self, since_sequence: u64) -> Vec<PoolMessage> {
         let mut result = Vec::new();
         while let Some(msg) = self.buffer.front() {
-            if let PoolMessage::Event { sequence, .. }
-            | PoolMessage::Snapshot { sequence, .. } = &msg
+            if let PoolMessage::Event { sequence, .. } | PoolMessage::Snapshot { sequence, .. } =
+                &msg
             {
                 if *sequence > since_sequence {
                     result.push(self.buffer.pop_front().unwrap());
@@ -480,10 +484,7 @@ impl WsPoolStream {
         self.stats.total_messages_sent += sent;
 
         if rate_limited {
-            PoolStreamResult::rate_limited(
-                "broadcast".to_string(),
-                self.stats.active_connections,
-            )
+            PoolStreamResult::rate_limited("broadcast".to_string(), self.stats.active_connections)
         } else {
             PoolStreamResult::success(
                 "broadcast".to_string(),
@@ -495,10 +496,7 @@ impl WsPoolStream {
     }
 
     /// Enviar snapshot a todas las conexiones.
-    pub fn broadcast_snapshot(
-        &mut self,
-        data: serde_json::Value,
-    ) -> PoolStreamResult {
+    pub fn broadcast_snapshot(&mut self, data: serde_json::Value) -> PoolStreamResult {
         self.sequence_counter += 1;
         let sequence = self.sequence_counter;
         let now = current_timestamp_ms();
@@ -709,10 +707,7 @@ mod tests {
         stream.authenticate("client-1".to_string(), "sig-1".to_string());
         let conn_id = stream.connections.keys().next().unwrap().clone();
         assert!(stream
-            .subscribe(
-                &conn_id,
-                vec![PoolCategory::Pool, PoolCategory::Zkp]
-            )
+            .subscribe(&conn_id, vec![PoolCategory::Pool, PoolCategory::Zkp])
             .is_ok());
         let conn = stream.get_connection(&conn_id).unwrap();
         assert!(conn.categories.contains(&PoolCategory::Pool));

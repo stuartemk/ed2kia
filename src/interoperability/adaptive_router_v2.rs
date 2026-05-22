@@ -314,7 +314,8 @@ impl AdaptiveRouter {
 
     pub fn register_node(&mut self, node_id: String, model_type: String) {
         if self.nodes.len() < self.config.max_nodes {
-            self.nodes.insert(node_id.clone(), NodeProfile::new(node_id, model_type));
+            self.nodes
+                .insert(node_id.clone(), NodeProfile::new(node_id, model_type));
         }
     }
 
@@ -323,9 +324,10 @@ impl AdaptiveRouter {
     }
 
     pub fn update_reputation(&mut self, node_id: &str, reputation: f32) -> Result<(), RouterError> {
-        let node = self.nodes.get_mut(node_id).ok_or_else(|| {
-            RouterError::NodeNotFound(node_id.to_string())
-        })?;
+        let node = self
+            .nodes
+            .get_mut(node_id)
+            .ok_or_else(|| RouterError::NodeNotFound(node_id.to_string()))?;
         node.reputation = reputation.clamp(0.0, 1.0);
         Ok(())
     }
@@ -335,9 +337,10 @@ impl AdaptiveRouter {
         node_id: &str,
         compliance: f32,
     ) -> Result<(), RouterError> {
-        let node = self.nodes.get_mut(node_id).ok_or_else(|| {
-            RouterError::NodeNotFound(node_id.to_string())
-        })?;
+        let node = self
+            .nodes
+            .get_mut(node_id)
+            .ok_or_else(|| RouterError::NodeNotFound(node_id.to_string()))?;
         node.slo_compliance = compliance.clamp(0.0, 1.0);
         Ok(())
     }
@@ -377,9 +380,7 @@ impl AdaptiveRouter {
         let candidates: Vec<&NodeProfile> = self
             .nodes
             .values()
-            .filter(|n| {
-                n.model_type == model_type && !n.circuit_breaker_open
-            })
+            .filter(|n| n.model_type == model_type && !n.circuit_breaker_open)
             .collect();
 
         if candidates.is_empty() {
@@ -417,9 +418,7 @@ impl AdaptiveRouter {
         let candidates: Vec<&NodeProfile> = self
             .nodes
             .values()
-            .filter(|n| {
-                n.model_type == model_type && !n.circuit_breaker_open
-            })
+            .filter(|n| n.model_type == model_type && !n.circuit_breaker_open)
             .collect();
 
         if candidates.is_empty() {
@@ -439,7 +438,8 @@ impl AdaptiveRouter {
             }
         }
 
-        let confidence = (best.reputation * best.slo_compliance * self.prediction_confidence).cbrt();
+        let confidence =
+            (best.reputation * best.slo_compliance * self.prediction_confidence).cbrt();
 
         Ok(RoutingDecision::new(
             best.node_id.clone(),
@@ -470,17 +470,19 @@ impl AdaptiveRouter {
     // ─── Result Recording ─────────────────────────────────────────────────────
 
     pub fn record_success(&mut self, node_id: &str, latency_ms: f32) -> Result<(), RouterError> {
-        let node = self.nodes.get_mut(node_id).ok_or_else(|| {
-            RouterError::NodeNotFound(node_id.to_string())
-        })?;
+        let node = self
+            .nodes
+            .get_mut(node_id)
+            .ok_or_else(|| RouterError::NodeNotFound(node_id.to_string()))?;
         node.record_success(latency_ms);
         Ok(())
     }
 
     pub fn record_failure(&mut self, node_id: &str) -> Result<(), RouterError> {
-        let node = self.nodes.get_mut(node_id).ok_or_else(|| {
-            RouterError::NodeNotFound(node_id.to_string())
-        })?;
+        let node = self
+            .nodes
+            .get_mut(node_id)
+            .ok_or_else(|| RouterError::NodeNotFound(node_id.to_string()))?;
         let was_closed = !node.circuit_breaker_open;
         node.record_failure();
         if node.circuit_breaker_open && was_closed {
@@ -837,13 +839,8 @@ mod tests {
     #[cfg(feature = "v1.1-sprint5")]
     #[test]
     fn test_routing_decision_creation() {
-        let decision = RoutingDecision::new(
-            "node-1".into(),
-            RoutingStrategy::Adaptive,
-            0.8,
-            50.0,
-            0.75,
-        );
+        let decision =
+            RoutingDecision::new("node-1".into(), RoutingStrategy::Adaptive, 0.8, 50.0, 0.75);
         assert_eq!(decision.target_node, "node-1");
         assert!(!decision.fallback_used);
     }

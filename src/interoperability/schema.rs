@@ -120,7 +120,9 @@ impl QwenScopeSchema {
 
         // Verificar modelo soportado
         if !self.model_rules.contains_key(&state.source_model) {
-            return Err(SchemaValidationError::UnsupportedModel(state.source_model.clone()));
+            return Err(SchemaValidationError::UnsupportedModel(
+                state.source_model.clone(),
+            ));
         }
 
         Ok(())
@@ -178,11 +180,8 @@ mod tests {
         let schema = QwenScopeSchema::default_qwen_scope();
 
         // Crear estado válido con dimensión canónica
-        let state = NormalizedHiddenState::new(
-            SourceModel::Qwen,
-            0,
-            vec![0.0f32; schema.canonical_dim],
-        );
+        let state =
+            NormalizedHiddenState::new(SourceModel::Qwen, 0, vec![0.0f32; schema.canonical_dim]);
 
         assert!(schema.validate(&state).is_ok());
     }
@@ -197,7 +196,10 @@ mod tests {
         );
 
         let err = schema.validate(&state).unwrap_err();
-        assert!(matches!(err, SchemaValidationError::DimensionMismatch { .. }));
+        assert!(matches!(
+            err,
+            SchemaValidationError::DimensionMismatch { .. }
+        ));
     }
 
     #[test]
@@ -219,11 +221,7 @@ mod tests {
         let mut data = vec![0.0f32; schema.canonical_dim];
         data[0] = 10.0; // fuera de rango (-3, 3)
 
-        let state = NormalizedHiddenState::new(
-            SourceModel::Qwen,
-            0,
-            data,
-        );
+        let state = NormalizedHiddenState::new(SourceModel::Qwen, 0, data);
 
         let err = schema.validate(&state).unwrap_err();
         assert!(matches!(err, SchemaValidationError::ValueOutOfRange { .. }));

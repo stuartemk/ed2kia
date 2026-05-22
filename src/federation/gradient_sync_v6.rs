@@ -37,11 +37,7 @@ mod internal {
                     write!(f, "Model not found: {}", id)
                 }
                 GradientSyncV6Error::DimensionMismatch { expected, got } => {
-                    write!(
-                        f,
-                        "Dimension mismatch: expected {}, got {}",
-                        expected, got
-                    )
+                    write!(f, "Dimension mismatch: expected {}, got {}", expected, got)
                 }
                 GradientSyncV6Error::InvalidWeight(weight) => {
                     write!(f, "Invalid weight value: {}", weight)
@@ -108,11 +104,7 @@ mod internal {
     }
 
     impl GradientEntryV6 {
-        pub fn new(
-            model_id: String,
-            gradients: Vec<f32>,
-            timestamp_ms: u64,
-        ) -> Self {
+        pub fn new(model_id: String, gradients: Vec<f32>, timestamp_ms: u64) -> Self {
             let norm = Self::compute_norm(&gradients);
             Self {
                 model_id,
@@ -284,16 +276,16 @@ mod internal {
     impl GradientSyncV6Stats {
         pub fn record_sync(&mut self, time_ms: u64) {
             self.total_syncs += 1;
-            self.avg_sync_time_ms =
-                (self.avg_sync_time_ms * (self.total_syncs - 1) as f64 + time_ms as f64)
-                    / self.total_syncs as f64;
+            self.avg_sync_time_ms = (self.avg_sync_time_ms * (self.total_syncs - 1) as f64
+                + time_ms as f64)
+                / self.total_syncs as f64;
         }
 
         pub fn record_gradient(&mut self, norm: f64) {
             self.total_gradients += 1;
-            self.avg_gradient_norm =
-                (self.avg_gradient_norm * (self.total_gradients - 1) as f64 + norm)
-                    / self.total_gradients as f64;
+            self.avg_gradient_norm = (self.avg_gradient_norm * (self.total_gradients - 1) as f64
+                + norm)
+                / self.total_gradients as f64;
         }
 
         pub fn record_compression(&mut self, ratio: f64) {
@@ -554,10 +546,7 @@ mod internal {
         #[test]
         fn test_register_model() {
             let mut engine = GradientSyncV6::default();
-            assert_eq!(
-                engine.register_model("model1".to_string(), 100),
-                Ok(())
-            );
+            assert_eq!(engine.register_model("model1".to_string(), 100), Ok(()));
             assert_eq!(engine.model_count(), 1);
         }
 
@@ -616,7 +605,8 @@ mod internal {
             let mut engine = GradientSyncV6::default();
             engine.register_model("model1".to_string(), 10).unwrap();
             let grads = vec![1.0f32; 10];
-            engine.submit_gradients("model1".to_string(), grads, 1000)
+            engine
+                .submit_gradients("model1".to_string(), grads, 1000)
                 .unwrap();
             let result = engine.execute_sync().unwrap();
             assert!(result.contains_key("model1"));
@@ -634,7 +624,8 @@ mod internal {
             let mut engine = GradientSyncV6::default();
             engine.register_model("model1".to_string(), 100).unwrap();
             let grads: Vec<f32> = (0..100).map(|i| i as f32).collect();
-            engine.submit_gradients("model1".to_string(), grads, 1000)
+            engine
+                .submit_gradients("model1".to_string(), grads, 1000)
                 .unwrap();
             assert!(engine.stats().total_compressions > 0);
         }
@@ -646,9 +637,11 @@ mod internal {
             engine.register_model("model2".to_string(), 10).unwrap();
             let grads1 = vec![1.0f32; 10];
             let grads2 = vec![1.1f32; 10];
-            engine.submit_gradients("model1".to_string(), grads1, 1000)
+            engine
+                .submit_gradients("model1".to_string(), grads1, 1000)
                 .unwrap();
-            engine.submit_gradients("model2".to_string(), grads2, 1000)
+            engine
+                .submit_gradients("model2".to_string(), grads2, 1000)
                 .unwrap();
             let result = engine.execute_sync().unwrap();
             assert_eq!(result.len(), 2);
@@ -658,10 +651,7 @@ mod internal {
         fn test_update_model_reputation() {
             let mut engine = GradientSyncV6::default();
             engine.register_model("model1".to_string(), 10).unwrap();
-            assert_eq!(
-                engine.update_model_reputation("model1", 0.8),
-                Ok(())
-            );
+            assert_eq!(engine.update_model_reputation("model1", 0.8), Ok(()));
         }
 
         #[test]
@@ -669,7 +659,8 @@ mod internal {
             let mut engine = GradientSyncV6::default();
             engine.register_model("model1".to_string(), 10).unwrap();
             let grads = vec![1.0f32; 10];
-            engine.submit_gradients("model1".to_string(), grads, 1000)
+            engine
+                .submit_gradients("model1".to_string(), grads, 1000)
                 .unwrap();
             engine.execute_sync().unwrap();
             assert_eq!(engine.stats().total_syncs, 1);
@@ -680,7 +671,8 @@ mod internal {
             let mut engine = GradientSyncV6::default();
             engine.register_model("model1".to_string(), 10).unwrap();
             let grads = vec![1.0f32; 10];
-            engine.submit_gradients("model1".to_string(), grads, 1000)
+            engine
+                .submit_gradients("model1".to_string(), grads, 1000)
                 .unwrap();
             engine.execute_sync().unwrap();
             engine.reset_stats();
@@ -711,9 +703,11 @@ mod internal {
             let mut engine = GradientSyncV6::default();
             engine.register_model("model1".to_string(), 10).unwrap();
             let grads = vec![1.0f32; 10];
-            engine.submit_gradients("model1".to_string(), grads.clone(), 1000)
+            engine
+                .submit_gradients("model1".to_string(), grads.clone(), 1000)
                 .unwrap();
-            engine.submit_gradients("model1".to_string(), grads, 1001)
+            engine
+                .submit_gradients("model1".to_string(), grads, 1001)
                 .unwrap();
             assert_eq!(engine.pending_count(), 2);
         }
@@ -723,10 +717,12 @@ mod internal {
             let mut engine = GradientSyncV6::default();
             engine.register_model("model1".to_string(), 10).unwrap();
             let grads = vec![1.0f32; 10];
-            engine.submit_gradients("model1".to_string(), grads.clone(), 1000)
+            engine
+                .submit_gradients("model1".to_string(), grads.clone(), 1000)
                 .unwrap();
             engine.execute_sync().unwrap();
-            engine.submit_gradients("model1".to_string(), grads, 1001)
+            engine
+                .submit_gradients("model1".to_string(), grads, 1001)
                 .unwrap();
             engine.execute_sync().unwrap();
         }
@@ -738,9 +734,11 @@ mod internal {
             engine.register_model("model2".to_string(), 5).unwrap();
             let grads1 = vec![1.0f32, 2.0f32, 3.0f32, 4.0f32, 5.0f32];
             let grads2 = vec![2.0f32, 3.0f32, 4.0f32, 5.0f32, 6.0f32];
-            engine.submit_gradients("model1".to_string(), grads1, 1000)
+            engine
+                .submit_gradients("model1".to_string(), grads1, 1000)
                 .unwrap();
-            engine.submit_gradients("model2".to_string(), grads2, 1000)
+            engine
+                .submit_gradients("model2".to_string(), grads2, 1000)
                 .unwrap();
             let result = engine.execute_sync().unwrap();
             assert_eq!(result.len(), 2);

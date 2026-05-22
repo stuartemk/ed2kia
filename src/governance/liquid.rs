@@ -104,7 +104,12 @@ pub struct NodeProfile {
 }
 
 impl NodeProfile {
-    pub fn new(node_id: String, trust_score: f64, staking_credits: f64, uptime_history: f64) -> Self {
+    pub fn new(
+        node_id: String,
+        trust_score: f64,
+        staking_credits: f64,
+        uptime_history: f64,
+    ) -> Self {
         Self {
             node_id: node_id.clone(),
             trust_score,
@@ -228,7 +233,11 @@ impl LiquidGovernance {
     }
 
     /// Calculate effective delegation weight for a node, following the delegation chain.
-    pub fn delegate_weight(&mut self, delegator: String, delegatee: String) -> Result<f64, GovernanceError> {
+    pub fn delegate_weight(
+        &mut self,
+        delegator: String,
+        delegatee: String,
+    ) -> Result<f64, GovernanceError> {
         // Validate both nodes exist
         if !self.nodes.contains_key(&delegator) {
             return Err(GovernanceError::NodeNotFound(delegator.clone()));
@@ -262,7 +271,9 @@ impl LiquidGovernance {
     ) -> Result<GovernanceResult, GovernanceError> {
         // Check proposal exists and already voted (immutable borrow first)
         {
-            let proposal = self.proposals.get(&proposal_id)
+            let proposal = self
+                .proposals
+                .get(&proposal_id)
                 .ok_or_else(|| GovernanceError::ProposalNotFound(proposal_id.clone()))?;
 
             // Check not already voted
@@ -302,7 +313,10 @@ impl LiquidGovernance {
         };
         let quorum_met = self.is_quorum_met(total_votes);
 
-        self.audit(&format!("vote_cast: {} on {} (for={})", voter, proposal_id, vote_for));
+        self.audit(&format!(
+            "vote_cast: {} on {} (for={})",
+            voter, proposal_id, vote_for
+        ));
 
         Ok(GovernanceResult {
             executed: false,
@@ -313,10 +327,15 @@ impl LiquidGovernance {
     }
 
     /// Execute a proposal after time-lock expires and quorum is met.
-    pub fn execute_proposal(&mut self, proposal_id: String) -> Result<GovernanceResult, GovernanceError> {
+    pub fn execute_proposal(
+        &mut self,
+        proposal_id: String,
+    ) -> Result<GovernanceResult, GovernanceError> {
         // First, check proposal exists and read immutable fields
         let (votes_for_count, votes_against_count) = {
-            let proposal = self.proposals.get(&proposal_id)
+            let proposal = self
+                .proposals
+                .get(&proposal_id)
                 .ok_or_else(|| GovernanceError::ProposalNotFound(proposal_id.clone()))?;
 
             // Check already executed
@@ -326,8 +345,11 @@ impl LiquidGovernance {
 
             // Check time-lock
             if Instant::now() < proposal.time_lock_until {
-                let remaining = proposal.time_lock_until.duration_since(Instant::now())
-                    .as_secs() / 3600;
+                let remaining = proposal
+                    .time_lock_until
+                    .duration_since(Instant::now())
+                    .as_secs()
+                    / 3600;
                 return Err(GovernanceError::TimeLockActive {
                     remaining_hours: remaining as u32,
                 });
@@ -377,7 +399,8 @@ impl LiquidGovernance {
             let node_a = self.nodes.get(&node_ids[i]).unwrap();
             let mut cluster_nodes = vec![node_ids[i].clone()];
 
-            for node_id_j in &node_ids[i + 1..] { // CLEANUP: Iterate by reference instead of index
+            for node_id_j in &node_ids[i + 1..] {
+                // CLEANUP: Iterate by reference instead of index
                 if processed.contains(node_id_j) {
                     continue;
                 }
@@ -390,10 +413,12 @@ impl LiquidGovernance {
 
             // Only flag clusters with 2+ nodes and low average trust
             if cluster_nodes.len() >= 2 {
-                let avg_trust: f64 = cluster_nodes.iter()
+                let avg_trust: f64 = cluster_nodes
+                    .iter()
                     .filter_map(|id| self.nodes.get(id))
                     .map(|n| n.trust_score)
-                    .sum::<f64>() / cluster_nodes.len() as f64;
+                    .sum::<f64>()
+                    / cluster_nodes.len() as f64;
 
                 if avg_trust < self.config.sybil_trust_threshold {
                     let cluster_id = format!("sybil_{}", hash_to_u32(&cluster_nodes.join(",")));
@@ -470,7 +495,8 @@ impl LiquidGovernance {
     }
 
     fn audit(&mut self, message: &str) {
-        self.audit_log.push_back(format!("[{}] {}", current_timestamp_ms(), message));
+        self.audit_log
+            .push_back(format!("[{}] {}", current_timestamp_ms(), message));
         if self.audit_log.len() > 256 {
             self.audit_log.pop_front();
         }
@@ -607,7 +633,8 @@ mod tests {
     #[test]
     fn test_create_proposal() {
         let mut gov = LiquidGovernance::new();
-        let result = gov.create_proposal("p1".into(), "Title".into(), "Desc".into(), "node1".into());
+        let result =
+            gov.create_proposal("p1".into(), "Title".into(), "Desc".into(), "node1".into());
         assert!(result.is_ok());
     }
 

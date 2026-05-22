@@ -4,8 +4,8 @@
 //! detecta drift semántico y genera `TrainingBatch` listo para exportación.
 
 // FIX: E0599 - writeln!/flush require Write trait in scope
-use std::io::Write;
 use std::collections::HashMap;
+use std::io::Write;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
@@ -353,11 +353,7 @@ impl TrainerLoop {
         let batch_num = self.batch_counter.fetch_add(1, Ordering::SeqCst);
         let batch_id = format!("batch_{}_{}", batch_num, now_ms);
 
-        let batch = TrainingBatch::new(
-            batch_id,
-            self.config.batch_window_seconds,
-            new_entries,
-        );
+        let batch = TrainingBatch::new(batch_id, self.config.batch_window_seconds, new_entries);
 
         // Guardar batch
         self.batches.write().push(batch.clone());
@@ -408,7 +404,12 @@ impl TrainerLoop {
 
         // Marcar batch como exportado
         drop(batches); // Liberar lock de lectura
-        if let Some(batch) = self.batches.write().iter_mut().find(|b| b.batch_id == batch_id) {
+        if let Some(batch) = self
+            .batches
+            .write()
+            .iter_mut()
+            .find(|b| b.batch_id == batch_id)
+        {
             batch.mark_exported();
         }
 
@@ -444,12 +445,24 @@ impl TrainerLoop {
     pub fn stats(&self) -> TrainerLoopStats {
         let batches = self.batches.read();
         let total = batches.len();
-        let ready = batches.iter().filter(|b| b.state == BatchState::Ready).count();
-        let exported = batches.iter().filter(|b| b.state == BatchState::Exported).count();
-        let processed = batches.iter().filter(|b| b.state == BatchState::Processed).count();
+        let ready = batches
+            .iter()
+            .filter(|b| b.state == BatchState::Ready)
+            .count();
+        let exported = batches
+            .iter()
+            .filter(|b| b.state == BatchState::Exported)
+            .count();
+        let processed = batches
+            .iter()
+            .filter(|b| b.state == BatchState::Processed)
+            .count();
 
         let total_entries = batches.iter().map(|b| b.statistics.total_entries).sum();
-        let drift_batches = batches.iter().filter(|b| b.semantic_drift.is_some()).count();
+        let drift_batches = batches
+            .iter()
+            .filter(|b| b.semantic_drift.is_some())
+            .count();
 
         TrainerLoopStats {
             running: self.is_running(),
@@ -471,7 +484,11 @@ impl TrainerLoop {
 
     /// Obtiene batch por ID
     pub fn get_batch(&self, batch_id: &str) -> Option<TrainingBatch> {
-        self.batches.read().iter().find(|b| b.batch_id == batch_id).cloned()
+        self.batches
+            .read()
+            .iter()
+            .find(|b| b.batch_id == batch_id)
+            .cloned()
     }
 
     fn current_timestamp_ms() -> u64 {
@@ -561,16 +578,14 @@ mod tests {
 
     #[test]
     fn test_batch_creation() {
-        let entries = vec![
-            FeedbackEntry::new(
-                "1".to_string(),
-                "layer_0".to_string(),
-                0,
-                0.9,
-                FeedbackDecision::Approved,
-                "annotator_1".to_string(),
-            ),
-        ];
+        let entries = vec![FeedbackEntry::new(
+            "1".to_string(),
+            "layer_0".to_string(),
+            0,
+            0.9,
+            FeedbackDecision::Approved,
+            "annotator_1".to_string(),
+        )];
 
         let batch = TrainingBatch::new("test_batch".to_string(), 3600, entries);
         assert_eq!(batch.batch_id, "test_batch");

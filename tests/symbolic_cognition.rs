@@ -35,7 +35,10 @@ mod symbolic_fusion_tests {
         emb.set_sct(2, poisoned_sct());
 
         // Batch: [benign, poisoned]
-        let token_ids = Tensor::new(&[1u32, 2], &device).unwrap().reshape((1, 2)).unwrap();
+        let token_ids = Tensor::new(&[1u32, 2], &device)
+            .unwrap()
+            .reshape((1, 2))
+            .unwrap();
 
         let symbolic = emb.forward(&token_ids).unwrap();
 

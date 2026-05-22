@@ -720,16 +720,10 @@ mod tests {
             .store("key-1".into(), vec![1], PayloadType::Normal)
             .unwrap();
 
-        assert_eq!(
-            cache.sync_status("key-1"),
-            Some(SyncStatus::Pending)
-        );
+        assert_eq!(cache.sync_status("key-1"), Some(SyncStatus::Pending));
 
         cache.mark_synced("key-1").unwrap();
-        assert_eq!(
-            cache.sync_status("key-1"),
-            Some(SyncStatus::Synced)
-        );
+        assert_eq!(cache.sync_status("key-1"), Some(SyncStatus::Synced));
 
         assert_eq!(cache.sync_status("nonexistent"), None);
     }

@@ -168,7 +168,10 @@ impl ModelRegistry {
         {
             let versions = self.entries.entry(repo_id.clone()).or_default(); // CLEANUP: or_insert_with -> or_default
             if versions.iter().any(|e| e.version == version) {
-                warn!(repo_id, version, "Model version already registered, skipping");
+                warn!(
+                    repo_id,
+                    version, "Model version already registered, skipping"
+                );
                 return Ok(());
             }
         }
@@ -180,11 +183,7 @@ impl ModelRegistry {
         // Ordenar por versión (más reciente primero)
         versions.sort_by(|a, b| b.version.cmp(&a.version));
 
-        info!(
-            repo_id,
-            version,
-            "Model registered in local registry"
-        );
+        info!(repo_id, version, "Model registered in local registry");
 
         Ok(())
     }
@@ -215,13 +214,13 @@ impl ModelRegistry {
         }
 
         // Activar nuevo modelo
-        let versions = self
-            .entries
-            .get_mut(repo_id)
-            .ok_or_else(|| RegistryError::ModelNotFound {
-                repo: repo_id.to_string(),
-                version: version.to_string(),
-            })?;
+        let versions =
+            self.entries
+                .get_mut(repo_id)
+                .ok_or_else(|| RegistryError::ModelNotFound {
+                    repo: repo_id.to_string(),
+                    version: version.to_string(),
+                })?;
 
         let entry = versions
             .iter_mut()
@@ -231,11 +230,7 @@ impl ModelRegistry {
         entry.set_active();
         self.active_model = Some(repo_id.to_string());
 
-        info!(
-            repo_id,
-            version,
-            "Model set as active"
-        );
+        info!(repo_id, version, "Model set as active");
 
         Ok(())
     }
@@ -271,9 +266,9 @@ impl ModelRegistry {
             }
         }
 
-        let target_version = previous_version.ok_or_else(|| RegistryError::VersionNotFound(
-            "No previous version available for rollback".to_string(),
-        ))?;
+        let target_version = previous_version.ok_or_else(|| {
+            RegistryError::VersionNotFound("No previous version available for rollback".to_string())
+        })?;
 
         // Setear versión anterior como activa
         self.set_active(repo_id, &target_version)?;
@@ -312,11 +307,7 @@ impl ModelRegistry {
         for (repo_id, versions) in &self.entries {
             for entry in versions {
                 let valid = entry.verify_checksum()?;
-                results.push((
-                    repo_id.clone(),
-                    entry.version.clone(),
-                    valid,
-                ));
+                results.push((repo_id.clone(), entry.version.clone(), valid));
 
                 if !valid && entry.status != ModelStatus::Corrupted {
                     warn!(
@@ -340,13 +331,13 @@ impl ModelRegistry {
             }
         }
 
-        let versions = self
-            .entries
-            .get_mut(repo_id)
-            .ok_or_else(|| RegistryError::ModelNotFound {
-                repo: repo_id.to_string(),
-                version: version.to_string(),
-            })?;
+        let versions =
+            self.entries
+                .get_mut(repo_id)
+                .ok_or_else(|| RegistryError::ModelNotFound {
+                    repo: repo_id.to_string(),
+                    version: version.to_string(),
+                })?;
 
         let entry = versions
             .iter_mut()
@@ -363,11 +354,7 @@ impl ModelRegistry {
 
         entry.status = ModelStatus::Uninstalled;
 
-        info!(
-            repo_id,
-            version,
-            "Model uninstalled (metadata retained)"
-        );
+        info!(repo_id, version, "Model uninstalled (metadata retained)");
 
         Ok(())
     }

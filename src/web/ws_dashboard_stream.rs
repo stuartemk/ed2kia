@@ -32,7 +32,11 @@ pub enum WsDashboardError {
     ConnectionNotFound(String),
 
     #[error("Rate limit excedido: {current}/{max} msg/s para conexión {conn}")]
-    RateLimitExceeded { current: usize, max: usize, conn: String },
+    RateLimitExceeded {
+        current: usize,
+        max: usize,
+        conn: String,
+    },
 
     #[error("Autenticación fallida: {0}")]
     AuthFailed(String),
@@ -348,7 +352,9 @@ impl WsDashboardStream {
             return Err(WsDashboardError::ConnectionAlreadyExists(connection_id));
         }
         if self.connections.len() >= self.config.max_connections {
-            return Err(WsDashboardError::MaxConnectionsReached(self.config.max_connections));
+            return Err(WsDashboardError::MaxConnectionsReached(
+                self.config.max_connections,
+            ));
         }
 
         let conn = DashboardConnection::new(
@@ -369,17 +375,16 @@ impl WsDashboardStream {
         ))
     }
 
-    pub fn close_connection(
-        &mut self,
-        connection_id: &str,
-    ) -> Result<(), WsDashboardError> {
+    pub fn close_connection(&mut self, connection_id: &str) -> Result<(), WsDashboardError> {
         match self.connections.remove(connection_id) {
             Some(_) => {
                 self.stats.active_connections = self.connections.len();
                 self.update_stats();
                 Ok(())
             }
-            None => Err(WsDashboardError::ConnectionNotFound(connection_id.to_string())),
+            None => Err(WsDashboardError::ConnectionNotFound(
+                connection_id.to_string(),
+            )),
         }
     }
 
@@ -390,9 +395,10 @@ impl WsDashboardStream {
         connection_id: &str,
         _signature: &str,
     ) -> Result<DashboardMessage, WsDashboardError> {
-        let conn = self.connections.get_mut(connection_id).ok_or_else(|| {
-            WsDashboardError::ConnectionNotFound(connection_id.to_string())
-        })?;
+        let conn = self
+            .connections
+            .get_mut(connection_id)
+            .ok_or_else(|| WsDashboardError::ConnectionNotFound(connection_id.to_string()))?;
 
         // In production, verify ed25519 signature here
         // For now, accept any non-empty signature
@@ -413,19 +419,17 @@ impl WsDashboardStream {
         connection_id: &str,
         categories: Vec<DashboardCategory>,
     ) -> Result<(), WsDashboardError> {
-        let conn = self.connections.get_mut(connection_id).ok_or_else(|| {
-            WsDashboardError::ConnectionNotFound(connection_id.to_string())
-        })?;
+        let conn = self
+            .connections
+            .get_mut(connection_id)
+            .ok_or_else(|| WsDashboardError::ConnectionNotFound(connection_id.to_string()))?;
         conn.categories = categories;
         Ok(())
     }
 
     // ─── Snapshot Broadcasting ────────────────────────────────────────────────
 
-    pub fn broadcast_snapshot(
-        &mut self,
-        data: serde_json::Value,
-    ) -> Vec<DashboardStreamResult> {
+    pub fn broadcast_snapshot(&mut self, data: serde_json::Value) -> Vec<DashboardStreamResult> {
         let sequence = self.next_sequence;
         self.next_sequence += 1;
         let now = current_timestamp_ms();
@@ -476,12 +480,7 @@ impl WsDashboardStream {
 
     // ─── Alert Broadcasting ───────────────────────────────────────────────────
 
-    pub fn broadcast_alert(
-        &mut self,
-        alert_id: String,
-        severity: String,
-        message: String,
-    ) {
+    pub fn broadcast_alert(&mut self, alert_id: String, severity: String, message: String) {
         let now = current_timestamp_ms();
         let alert_msg = DashboardMessage::Alert {
             alert_id,
@@ -511,9 +510,9 @@ impl WsDashboardStream {
         conn.record_message();
 
         match message {
-            DashboardMessage::Ping { timestamp_ms } => {
-                Some(DashboardMessage::Pong { timestamp_ms: *timestamp_ms })
-            }
+            DashboardMessage::Ping { timestamp_ms } => Some(DashboardMessage::Pong {
+                timestamp_ms: *timestamp_ms,
+            }),
             DashboardMessage::Subscribe { categories } => {
                 conn.categories = categories.clone();
                 None
@@ -528,9 +527,8 @@ impl WsDashboardStream {
         let now = current_timestamp_ms();
         let timeout = self.config.connection_timeout_ms;
         let before = self.connections.len();
-        self.connections.retain(|_, conn| {
-            now.saturating_sub(conn.last_message_ms) <= timeout
-        });
+        self.connections
+            .retain(|_, conn| now.saturating_sub(conn.last_message_ms) <= timeout);
         let removed = before - self.connections.len();
         self.stats.active_connections = self.connections.len();
         removed
@@ -562,7 +560,10 @@ impl Default for WsDashboardStream {
 
 #[cfg(feature = "v1.1-sprint5")]
 fn current_timestamp_ms() -> u64 {
-    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis() as u64
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as u64
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
@@ -602,7 +603,9 @@ mod tests {
     #[test]
     fn test_create_duplicate_connection() {
         let mut stream = WsDashboardStream::new();
-        stream.create_connection("conn-1".into(), "client-1".into()).unwrap();
+        stream
+            .create_connection("conn-1".into(), "client-1".into())
+            .unwrap();
         let result = stream.create_connection("conn-1".into(), "client-2".into());
         assert!(result.is_err());
     }
@@ -615,8 +618,12 @@ mod tests {
             ..WsDashboardConfig::default()
         };
         let mut stream = WsDashboardStream::with_config(config);
-        stream.create_connection("conn-1".into(), "client-1".into()).unwrap();
-        stream.create_connection("conn-2".into(), "client-2".into()).unwrap();
+        stream
+            .create_connection("conn-1".into(), "client-1".into())
+            .unwrap();
+        stream
+            .create_connection("conn-2".into(), "client-2".into())
+            .unwrap();
         let result = stream.create_connection("conn-3".into(), "client-3".into());
         assert!(result.is_err());
     }
@@ -625,7 +632,9 @@ mod tests {
     #[test]
     fn test_close_connection() {
         let mut stream = WsDashboardStream::new();
-        stream.create_connection("conn-1".into(), "client-1".into()).unwrap();
+        stream
+            .create_connection("conn-1".into(), "client-1".into())
+            .unwrap();
         assert!(stream.close_connection("conn-1").is_ok());
         assert_eq!(stream.connections.len(), 0);
     }
@@ -641,7 +650,9 @@ mod tests {
     #[test]
     fn test_authenticate_connection() {
         let mut stream = WsDashboardStream::new();
-        stream.create_connection("conn-1".into(), "client-1".into()).unwrap();
+        stream
+            .create_connection("conn-1".into(), "client-1".into())
+            .unwrap();
         let result = stream.authenticate_connection("conn-1", "sig123");
         assert!(result.is_ok());
         let conn = stream.connections.get("conn-1").unwrap();
@@ -652,7 +663,9 @@ mod tests {
     #[test]
     fn test_subscribe() {
         let mut stream = WsDashboardStream::new();
-        stream.create_connection("conn-1".into(), "client-1".into()).unwrap();
+        stream
+            .create_connection("conn-1".into(), "client-1".into())
+            .unwrap();
         let categories = vec![DashboardCategory::Alignment, DashboardCategory::System];
         assert!(stream.subscribe("conn-1", categories.clone()).is_ok());
         let conn = stream.connections.get("conn-1").unwrap();
@@ -663,7 +676,9 @@ mod tests {
     #[test]
     fn test_broadcast_snapshot() {
         let mut stream = WsDashboardStream::new();
-        stream.create_connection("conn-1".into(), "client-1".into()).unwrap();
+        stream
+            .create_connection("conn-1".into(), "client-1".into())
+            .unwrap();
         stream.authenticate_connection("conn-1", "sig").unwrap();
         let data = serde_json::json!({"cpu": 0.5});
         let results = stream.broadcast_snapshot(data);
@@ -675,7 +690,9 @@ mod tests {
     #[test]
     fn test_broadcast_skips_unauthenticated() {
         let mut stream = WsDashboardStream::new();
-        stream.create_connection("conn-1".into(), "client-1".into()).unwrap();
+        stream
+            .create_connection("conn-1".into(), "client-1".into())
+            .unwrap();
         let data = serde_json::json!({"cpu": 0.5});
         let results = stream.broadcast_snapshot(data);
         assert_eq!(results.len(), 0);
@@ -685,7 +702,9 @@ mod tests {
     #[test]
     fn test_broadcast_alert() {
         let mut stream = WsDashboardStream::new();
-        stream.create_connection("conn-1".into(), "client-1".into()).unwrap();
+        stream
+            .create_connection("conn-1".into(), "client-1".into())
+            .unwrap();
         stream.authenticate_connection("conn-1", "sig").unwrap();
         stream.broadcast_alert("alert-1".into(), "warning".into(), "High CPU".into());
         let conn = stream.connections.get("conn-1").unwrap();
@@ -696,7 +715,9 @@ mod tests {
     #[test]
     fn test_handle_ping() {
         let mut stream = WsDashboardStream::new();
-        stream.create_connection("conn-1".into(), "client-1".into()).unwrap();
+        stream
+            .create_connection("conn-1".into(), "client-1".into())
+            .unwrap();
         let ts = current_timestamp_ms();
         let msg = DashboardMessage::Ping { timestamp_ms: ts };
         let response = stream.handle_client_message("conn-1", &msg);
@@ -711,7 +732,9 @@ mod tests {
     #[test]
     fn test_handle_subscribe() {
         let mut stream = WsDashboardStream::new();
-        stream.create_connection("conn-1".into(), "client-1".into()).unwrap();
+        stream
+            .create_connection("conn-1".into(), "client-1".into())
+            .unwrap();
         let msg = DashboardMessage::Subscribe {
             categories: vec![DashboardCategory::Alignment],
         };
@@ -729,7 +752,9 @@ mod tests {
             ..WsDashboardConfig::default()
         };
         let mut stream = WsDashboardStream::with_config(config);
-        stream.create_connection("conn-1".into(), "client-1".into()).unwrap();
+        stream
+            .create_connection("conn-1".into(), "client-1".into())
+            .unwrap();
         // Mark as old
         if let Some(conn) = stream.connections.get_mut("conn-1") {
             conn.last_message_ms = current_timestamp_ms() - 200;
@@ -742,7 +767,9 @@ mod tests {
     #[test]
     fn test_stats_tracking() {
         let mut stream = WsDashboardStream::new();
-        stream.create_connection("conn-1".into(), "client-1".into()).unwrap();
+        stream
+            .create_connection("conn-1".into(), "client-1".into())
+            .unwrap();
         stream.authenticate_connection("conn-1", "sig").unwrap();
         let data = serde_json::json!({"cpu": 0.5});
         stream.broadcast_snapshot(data);
@@ -756,7 +783,9 @@ mod tests {
     #[test]
     fn test_reset_stats() {
         let mut stream = WsDashboardStream::new();
-        stream.create_connection("conn-1".into(), "client-1".into()).unwrap();
+        stream
+            .create_connection("conn-1".into(), "client-1".into())
+            .unwrap();
         stream.reset_stats();
         let stats = stream.get_stats();
         assert_eq!(stats.total_connections, 0);
@@ -819,8 +848,12 @@ mod tests {
     #[test]
     fn test_multiple_connections_broadcast() {
         let mut stream = WsDashboardStream::new();
-        stream.create_connection("conn-1".into(), "client-1".into()).unwrap();
-        stream.create_connection("conn-2".into(), "client-2".into()).unwrap();
+        stream
+            .create_connection("conn-1".into(), "client-1".into())
+            .unwrap();
+        stream
+            .create_connection("conn-2".into(), "client-2".into())
+            .unwrap();
         stream.authenticate_connection("conn-1", "sig").unwrap();
         stream.authenticate_connection("conn-2", "sig").unwrap();
         let data = serde_json::json!({"cpu": 0.5});
@@ -831,7 +864,8 @@ mod tests {
     #[cfg(feature = "v1.1-sprint5")]
     #[test]
     fn test_stream_result_success() {
-        let result = DashboardStreamResult::success("c1".into(), 5, 3, vec![DashboardCategory::All]);
+        let result =
+            DashboardStreamResult::success("c1".into(), 5, 3, vec![DashboardCategory::All]);
         assert_eq!(result.messages_sent, 5);
         assert!(!result.rate_limited);
     }

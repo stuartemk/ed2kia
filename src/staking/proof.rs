@@ -118,11 +118,8 @@ impl ProofGenerator {
     pub fn generate_proof(&mut self, metrics: ComputeMetrics) -> Result<StakingProof> {
         self.nonce_counter += 1;
 
-        let commitment_hash = Self::compute_commitment(
-            &self.node_id,
-            self.nonce_counter,
-            &metrics.integrity_hash,
-        );
+        let commitment_hash =
+            Self::compute_commitment(&self.node_id, self.nonce_counter, &metrics.integrity_hash);
 
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -211,7 +208,10 @@ impl ProofVerifier {
         if age_seconds > self.max_proof_age_seconds {
             return Ok(VerificationResult {
                 valid: false,
-                reason: format!("Proof expired: {}s > {}s", age_seconds, self.max_proof_age_seconds),
+                reason: format!(
+                    "Proof expired: {}s > {}s",
+                    age_seconds, self.max_proof_age_seconds
+                ),
             });
         }
 
@@ -234,9 +234,7 @@ impl ProofVerifier {
 
         info!(
             "Prueba verificada: node={}, nonce={}, samples={}",
-            proof.node_id,
-            proof.nonce,
-            proof.compute_metrics.samples_processed
+            proof.node_id, proof.nonce, proof.compute_metrics.samples_processed
         );
 
         Ok(VerificationResult {
@@ -254,7 +252,10 @@ impl ProofVerifier {
     pub fn cleanup_old_nonces(&mut self, _max_age_seconds: u64) {
         // En implementación real, usaría un mapa timestamp→nonce
         // Por ahora, solo logueamos
-        debug!("Cleanup de nonces antiguos ({} verificados)", self.verified_nonces.len());
+        debug!(
+            "Cleanup de nonces antiguos ({} verificados)",
+            self.verified_nonces.len()
+        );
     }
 }
 

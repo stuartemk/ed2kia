@@ -86,7 +86,10 @@ fn test_track_metric_window_size() {
     engine.track_metric("node_uptime", 99.9, 4).unwrap();
     // Only last 3 should remain; average should be (99.5+99.8+99.9)/3 = 99.733
     let result = engine.evaluate_slo("node_uptime").unwrap();
-    assert!(matches!(result.status, SLOStatus::Warning | SLOStatus::Critical));
+    assert!(matches!(
+        result.status,
+        SLOStatus::Warning | SLOStatus::Critical
+    ));
 }
 
 // ---- Evaluation tests ------------------------------------------------------
@@ -111,7 +114,10 @@ fn test_evaluate_slo_warning_uptime() {
     engine.track_metric("node_uptime", 97.5, 1000).unwrap();
 
     let result = engine.evaluate_slo("node_uptime").unwrap();
-    assert!(matches!(result.status, SLOStatus::Warning | SLOStatus::Critical));
+    assert!(matches!(
+        result.status,
+        SLOStatus::Warning | SLOStatus::Critical
+    ));
 }
 
 #[test]
@@ -231,7 +237,9 @@ fn test_audit_trail_capacity() {
     let mut engine = SLOEngine::new();
     engine.register_slo(make_uptime_slo());
     for i in 0..300 {
-        engine.track_metric("node_uptime", 99.0 + i as f64 * 0.01, i).unwrap();
+        engine
+            .track_metric("node_uptime", 99.0 + i as f64 * 0.01, i)
+            .unwrap();
     }
     let trail = engine.get_audit_trail();
     assert!(trail.len() <= 256);

@@ -4,11 +4,11 @@
 //! and natural language tokens, enabling the "Piedra Rosetta" translation layer.
 
 #[cfg(feature = "v2.1-semantic-graph")]
-use petgraph::stable_graph::{StableGraph, NodeIndex};
+use dashmap::DashMap;
+#[cfg(feature = "v2.1-semantic-graph")]
+use petgraph::stable_graph::{NodeIndex, StableGraph};
 #[cfg(feature = "v2.1-semantic-graph")]
 use petgraph::visit::EdgeRef;
-#[cfg(feature = "v2.1-semantic-graph")]
-use dashmap::DashMap;
 #[cfg(feature = "v2.1-semantic-graph")]
 use std::sync::{Arc, Mutex};
 
@@ -57,19 +57,27 @@ impl SemanticGraph {
     /// Creates the token node, feature node, and weighted edge if they don't exist.
     /// If the edge already exists, updates the weight.
     pub fn insert_activation(&self, token: &str, feature_id: &str, weight: f64) {
-        let token_index = Self::ensure_node(&self.index_map, &self.graph, token, NodeType::Token, weight);
-        let feature_index = Self::ensure_node(&self.index_map, &self.graph, feature_id, NodeType::Feature, weight);
+        let token_index =
+            Self::ensure_node(&self.index_map, &self.graph, token, NodeType::Token, weight);
+        let feature_index = Self::ensure_node(
+            &self.index_map,
+            &self.graph,
+            feature_id,
+            NodeType::Feature,
+            weight,
+        );
 
         // Update or insert edge
         {
             let mut g = self.graph.lock().unwrap();
-            let edge_exists = g.edges(token_index)
-                .any(|e| e.target() == feature_index);
+            let edge_exists = g.edges(token_index).any(|e| e.target() == feature_index);
             if edge_exists {
-                let edge_ref = g.edge_indices()
+                let edge_ref = g
+                    .edge_indices()
                     .find(|&idx| {
                         let (s, t) = g.edge_endpoints(idx).unwrap();
-                        (s == token_index && t == feature_index) || (s == feature_index && t == token_index)
+                        (s == token_index && t == feature_index)
+                            || (s == feature_index && t == token_index)
                     })
                     .expect("edge must exist");
                 let edge = g.edge_weight_mut(edge_ref).unwrap();
@@ -88,7 +96,8 @@ impl SemanticGraph {
         };
 
         let g = self.graph.lock().unwrap();
-        let mut edges: Vec<(String, f64)> = g.edges_directed(index, petgraph::Direction::Outgoing)
+        let mut edges: Vec<(String, f64)> = g
+            .edges_directed(index, petgraph::Direction::Outgoing)
             .filter_map(|e| {
                 let target_node = g.node_weight(e.target()).unwrap();
                 if target_node.node_type == NodeType::Feature {
@@ -110,7 +119,8 @@ impl SemanticGraph {
         };
 
         let g = self.graph.lock().unwrap();
-        let mut edges: Vec<(String, f64)> = g.edges_directed(index, petgraph::Direction::Incoming)
+        let mut edges: Vec<(String, f64)> = g
+            .edges_directed(index, petgraph::Direction::Incoming)
             .filter_map(|e| {
                 let source_node = g.node_weight(e.source()).unwrap();
                 if source_node.node_type == NodeType::Token {

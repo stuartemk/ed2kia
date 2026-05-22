@@ -449,10 +449,7 @@ impl DashboardSnapshotV6 {
                 "replay_detected".into(),
                 AlertSeverity::Critical,
                 "zkp_v10".into(),
-                format!(
-                    "{} replay attempts detected",
-                    self.zkp_v10.replays_detected
-                ),
+                format!("{} replay attempts detected", self.zkp_v10.replays_detected),
             ));
         }
 
@@ -594,9 +591,7 @@ mod tests {
     #[test]
     fn test_update_zkp_v10() {
         let mut dashboard = DashboardV6::new();
-        dashboard.update_zkp_v10(ZkpV10Summary::new(
-            200, 180, 15, 20, 3, 250.0, 45.0, 0.92,
-        ));
+        dashboard.update_zkp_v10(ZkpV10Summary::new(200, 180, 15, 20, 3, 250.0, 45.0, 0.92));
         assert_eq!(dashboard.zkp_v10.proofs_submitted, 200);
         assert_eq!(dashboard.zkp_v10.replays_detected, 3);
     }
@@ -622,9 +617,7 @@ mod tests {
     #[test]
     fn test_replay_detection_alert() {
         let mut dashboard = DashboardV6::new();
-        dashboard.update_zkp_v10(ZkpV10Summary::new(
-            200, 180, 15, 20, 5, 250.0, 45.0, 0.92,
-        ));
+        dashboard.update_zkp_v10(ZkpV10Summary::new(200, 180, 15, 20, 5, 250.0, 45.0, 0.92));
         let snapshot = dashboard.generate_snapshot();
         assert!(snapshot.alerts.iter().any(|a| a.id == "replay_detected"));
     }
@@ -723,9 +716,7 @@ mod tests {
         dashboard.update_scaling_v5(ScalingV5Summary::new(
             10, 5, 0.998, 100, 1, 5, 10, 0.85, 45.0,
         ));
-        dashboard.update_zkp_v10(ZkpV10Summary::new(
-            200, 190, 10, 20, 0, 250.0, 45.0, 0.92,
-        ));
+        dashboard.update_zkp_v10(ZkpV10Summary::new(200, 190, 10, 20, 0, 250.0, 45.0, 0.92));
         dashboard.update_bridge_v4(BridgeV4Summary::new(150, 148, 2, 30.0, 10));
         let snapshot = dashboard.generate_snapshot();
         assert!(snapshot.alerts.is_empty());
@@ -737,9 +728,7 @@ mod tests {
         dashboard.update_scaling_v5(ScalingV5Summary::new(
             10, 5, 0.990, 50, 50, 5, 10, 0.85, 45.0,
         ));
-        dashboard.update_zkp_v10(ZkpV10Summary::new(
-            200, 100, 100, 20, 5, 250.0, 45.0, 0.92,
-        ));
+        dashboard.update_zkp_v10(ZkpV10Summary::new(200, 100, 100, 20, 5, 250.0, 45.0, 0.92));
         let snapshot = dashboard.generate_snapshot();
         assert!(snapshot.alerts.len() >= 2);
     }

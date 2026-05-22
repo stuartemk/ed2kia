@@ -95,7 +95,7 @@ impl WASMSandbox {
             .wasm_multi_value(config.wasm_multi_value)
             .wasm_bulk_memory(config.wasm_bulk_memory)
             .wasm_simd(true); // SIMD para rendimiento en tensores
-        // MIGRATION: debug_info() and parallel_compilation() removed in wasmtime 17.0
+                              // MIGRATION: debug_info() and parallel_compilation() removed in wasmtime 17.0
 
         // Fuel como límite de instrucciones (opcional)
         if config.fuel_enabled {
@@ -257,9 +257,16 @@ impl WASMSandbox {
 
         // MIGRATION: wasmtime 17.0 - get_typed_func::<Vec<u8>, Vec<u8>>() no longer works
         // Using placeholder execution until raw pointer-based WASM calls are implemented
-        let _func = instance.get_func(&mut store, function_name)
-            .ok_or_else(|| anyhow!("Function '{}' not found in module '{}'", function_name, module_id))?;
-        
+        let _func = instance
+            .get_func(&mut store, function_name)
+            .ok_or_else(|| {
+                anyhow!(
+                    "Function '{}' not found in module '{}'",
+                    function_name,
+                    module_id
+                )
+            })?;
+
         // Placeholder: return empty output until WASM execution is reimplemented
         let output = Vec::new();
 
@@ -276,7 +283,11 @@ impl WASMSandbox {
             output.len() / 1024
         );
 
-        Ok(SandboxResult::new(output, execution_time_ms, memory_used_bytes))
+        Ok(SandboxResult::new(
+            output,
+            execution_time_ms,
+            memory_used_bytes,
+        ))
     }
 
     /// Configura APIs seguras en el linker
@@ -288,7 +299,8 @@ impl WASMSandbox {
                 "env",
                 "log_debug",
                 |mut caller: wasmtime::Caller<'_, ()>, msg_ptr: u32, msg_len: u32| {
-                    if let Some(memory) = caller.get_export("memory").and_then(|e| e.into_memory()) {
+                    if let Some(memory) = caller.get_export("memory").and_then(|e| e.into_memory())
+                    {
                         let data = memory.data(&caller);
                         let ptr = msg_ptr as usize;
                         let len = msg_len as usize;
@@ -305,11 +317,7 @@ impl WASMSandbox {
 
         // API de memoria segura (solo lectura de buffers asignados)
         linker
-            .func_wrap(
-                "env",
-                "memory_size",
-                || Ok(MAX_MEMORY_PAGES),
-            )
+            .func_wrap("env", "memory_size", || Ok(MAX_MEMORY_PAGES))
             .map_err(|e| anyhow!("Failed to wrap memory_size: {}", e))?;
 
         Ok(())
@@ -426,7 +434,7 @@ mod tests {
         let stats = SandboxStats {
             cached_modules: 3,
             memory_used_bytes: 128 * 1024 * 1024, // 128MB
-            memory_limit_bytes: MAX_MEMORY_BYTES,  // 256MB
+            memory_limit_bytes: MAX_MEMORY_BYTES, // 256MB
             fuel_enabled: false,
         };
         assert!((stats.memory_usage_percent() - 50.0).abs() < 0.01);

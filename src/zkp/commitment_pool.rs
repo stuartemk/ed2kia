@@ -485,12 +485,7 @@ mod internal {
 
         #[test]
         fn test_pool_entry_new() {
-            let entry = PoolEntry::new(
-                "commit_001".to_string(),
-                "BN254".to_string(),
-                0.5,
-                1000,
-            );
+            let entry = PoolEntry::new("commit_001".to_string(), "BN254".to_string(), 0.5, 1000);
             assert_eq!(entry.commitment, "commit_001");
             assert_eq!(entry.curve, "BN254");
             assert_eq!(entry.value, 0.5);
@@ -570,15 +565,41 @@ mod internal {
         #[test]
         fn test_commitment_pool_capacity() {
             let mut pool = CommitmentPool::new(2);
-            pool.add(PoolEntry::new("c1".to_string(), "BN254".to_string(), 0.5, 1000)).unwrap();
-            pool.add(PoolEntry::new("c2".to_string(), "BN254".to_string(), 0.6, 1001)).unwrap();
-            assert_eq!(pool.add(PoolEntry::new("c3".to_string(), "BN254".to_string(), 0.7, 1002)), Err(PoolError::CapacityExceeded));
+            pool.add(PoolEntry::new(
+                "c1".to_string(),
+                "BN254".to_string(),
+                0.5,
+                1000,
+            ))
+            .unwrap();
+            pool.add(PoolEntry::new(
+                "c2".to_string(),
+                "BN254".to_string(),
+                0.6,
+                1001,
+            ))
+            .unwrap();
+            assert_eq!(
+                pool.add(PoolEntry::new(
+                    "c3".to_string(),
+                    "BN254".to_string(),
+                    0.7,
+                    1002
+                )),
+                Err(PoolError::CapacityExceeded)
+            );
         }
 
         #[test]
         fn test_commitment_pool_clear() {
             let mut pool = CommitmentPool::new(10);
-            pool.add(PoolEntry::new("c1".to_string(), "BN254".to_string(), 0.5, 1000)).unwrap();
+            pool.add(PoolEntry::new(
+                "c1".to_string(),
+                "BN254".to_string(),
+                0.5,
+                1000,
+            ))
+            .unwrap();
             pool.clear();
             assert!(pool.is_empty());
             assert_eq!(pool.memory_usage(), 0);
@@ -588,7 +609,13 @@ mod internal {
         fn test_commitment_pool_utilization() {
             let mut pool = CommitmentPool::new(10);
             assert_eq!(pool.utilization(), 0.0);
-            pool.add(PoolEntry::new("c1".to_string(), "BN254".to_string(), 0.5, 1000)).unwrap();
+            pool.add(PoolEntry::new(
+                "c1".to_string(),
+                "BN254".to_string(),
+                0.5,
+                1000,
+            ))
+            .unwrap();
             assert!((pool.utilization() - 0.1).abs() < 0.001);
         }
 
@@ -601,8 +628,20 @@ mod internal {
         #[test]
         fn test_commitment_pool_aggregate() {
             let mut pool = CommitmentPool::new(10);
-            pool.add(PoolEntry::new("c1".to_string(), "BN254".to_string(), 0.5, 1000)).unwrap();
-            pool.add(PoolEntry::new("c2".to_string(), "BN254".to_string(), 0.6, 1001)).unwrap();
+            pool.add(PoolEntry::new(
+                "c1".to_string(),
+                "BN254".to_string(),
+                0.5,
+                1000,
+            ))
+            .unwrap();
+            pool.add(PoolEntry::new(
+                "c2".to_string(),
+                "BN254".to_string(),
+                0.6,
+                1001,
+            ))
+            .unwrap();
             let agg = pool.aggregate_commitment();
             assert_ne!(agg, "empty");
             assert_eq!(agg.len(), 16); // Hex hash
@@ -712,7 +751,8 @@ mod internal {
                     "BN254".to_string(),
                     i as f64 * 0.1,
                     1000 + i as u64,
-                )).unwrap();
+                ))
+                .unwrap();
             }
             assert_eq!(pool.len(), 10);
             assert!((pool.utilization() - 0.1).abs() < 0.001);
@@ -739,6 +779,6 @@ mod internal {
 }
 
 pub use internal::{
-    BasePrecomputation, CommitmentPool, CriterionAdapter, PoolBenchmark,
-    PoolEntry, PoolError, PoolStats, PrecomputeAlgo,
+    BasePrecomputation, CommitmentPool, CriterionAdapter, PoolBenchmark, PoolEntry, PoolError,
+    PoolStats, PrecomputeAlgo,
 };

@@ -157,7 +157,9 @@ impl PartialOrd for PeerScore {
 
 impl Ord for PeerScore {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.0.partial_cmp(&other.0).unwrap_or(std::cmp::Ordering::Less)
+        self.0
+            .partial_cmp(&other.0)
+            .unwrap_or(std::cmp::Ordering::Less)
     }
 }
 
@@ -307,10 +309,7 @@ impl PeerManager {
     /// Registra un nuevo peer
     pub fn register_peer(&self, peer_id: PeerId, address: Option<String>) {
         let record = PeerRecord::new(peer_id);
-        let record = PeerRecord {
-            address,
-            ..record
-        };
+        let record = PeerRecord { address, ..record };
 
         let mut peers = self.peers.write();
         if peers.insert(peer_id, record).is_none() {
@@ -420,8 +419,14 @@ impl PeerManager {
     /// Obtiene estadísticas generales
     pub fn stats(&self) -> PeerManagerStats {
         let peers = self.peers.read();
-        let connected = peers.values().filter(|p| p.state == PeerState::Connected).count();
-        let banned = peers.values().filter(|p| p.state == PeerState::Banned).count();
+        let connected = peers
+            .values()
+            .filter(|p| p.state == PeerState::Connected)
+            .count();
+        let banned = peers
+            .values()
+            .filter(|p| p.state == PeerState::Banned)
+            .count();
 
         PeerManagerStats {
             total_registered: peers.len(),

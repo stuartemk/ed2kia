@@ -24,13 +24,20 @@ pub enum SettlementError {
     #[error("Settlement not found: {0}")]
     SettlementNotFound(String),
     #[error("Invalid state transition: {from} -> {to}")]
-    InvalidStateTransition { from: SettlementState, to: SettlementState },
+    InvalidStateTransition {
+        from: SettlementState,
+        to: SettlementState,
+    },
     #[error("Commitment verification failed")]
     CommitmentFailed,
     #[error("Signature verification failed")]
     SignatureFailed,
     #[error("Insufficient funds on chain {chain}: {available:.2} < {required:.2}")]
-    InsufficientFunds { chain: String, available: f64, required: f64 },
+    InsufficientFunds {
+        chain: String,
+        available: f64,
+        required: f64,
+    },
     #[error("Settlement already finalized")]
     AlreadyFinalized,
     #[error("Timeout exceeded: {elapsed_ms}ms > {timeout_ms}ms")]
@@ -144,12 +151,8 @@ impl SettlementRecord {
         timeout_ms: u64,
     ) -> Self {
         let now = current_timestamp_ms();
-        let settlement_hash = compute_settlement_hash(
-            &settlement_id,
-            &source_chain,
-            &target_chain,
-            amount,
-        );
+        let settlement_hash =
+            compute_settlement_hash(&settlement_id, &source_chain, &target_chain, amount);
         Self {
             settlement_id,
             source_chain,
@@ -175,7 +178,10 @@ impl SettlementRecord {
 
     /// Checks if the settlement is in a terminal state.
     pub fn is_terminal(&self) -> bool {
-        matches!(self.state, SettlementState::Finalized | SettlementState::Refunded)
+        matches!(
+            self.state,
+            SettlementState::Finalized | SettlementState::Refunded
+        )
     }
 
     /// Transitions to the next state.
@@ -277,7 +283,11 @@ pub struct ChainBalance {
 impl ChainBalance {
     /// Creates a new chain balance.
     pub fn new(chain: String, balance: f64) -> Self {
-        Self { chain, balance, locked: 0.0 }
+        Self {
+            chain,
+            balance,
+            locked: 0.0,
+        }
     }
 
     /// Available (unlocked) balance.
@@ -320,8 +330,12 @@ impl CrossChainSettlement {
 
     /// Registers a chain balance.
     pub fn register_chain(&mut self, chain: String, balance: f64) {
-        self.chain_balances.insert(chain.clone(), ChainBalance::new(chain.clone(), balance));
-        info!("CrossChainSettlement: registered chain {} with balance {:.2}", chain, balance);
+        self.chain_balances
+            .insert(chain.clone(), ChainBalance::new(chain.clone(), balance));
+        info!(
+            "CrossChainSettlement: registered chain {} with balance {:.2}",
+            chain, balance
+        );
     }
 
     /// Updates chain balance.
@@ -350,7 +364,9 @@ impl CrossChainSettlement {
         }
 
         // Check source balance
-        let source_balance = self.chain_balances.get(&source_chain)
+        let source_balance = self
+            .chain_balances
+            .get(&source_chain)
             .ok_or_else(|| SettlementError::ChainNotSupported(source_chain.clone()))?;
         if source_balance.available() < amount {
             return Err(SettlementError::InsufficientFunds {
@@ -377,7 +393,10 @@ impl CrossChainSettlement {
         }
 
         // Create source commitment
-        let commitment_data = format!("{}:{}:{}:{}", record.settlement_id, record.sender_id, record.receiver_id, record.amount);
+        let commitment_data = format!(
+            "{}:{}:{}:{}",
+            record.settlement_id, record.sender_id, record.receiver_id, record.amount
+        );
         let commitment = ChainCommitment::new(commitment_data.as_bytes(), source_chain);
         let mut record = record;
         record.source_commitment = Some(commitment);
@@ -386,14 +405,19 @@ impl CrossChainSettlement {
         self.stats.total_initiated += 1;
         self.stats.active_settlements += 1;
 
-        info!("CrossChainSettlement: initiated {} for {:.2} {} -> {}",
-            record.settlement_id, record.amount, record.source_chain, record.target_chain);
+        info!(
+            "CrossChainSettlement: initiated {} for {:.2} {} -> {}",
+            record.settlement_id, record.amount, record.source_chain, record.target_chain
+        );
 
         Ok(record)
     }
 
     /// Confirms source chain.
-    pub fn confirm_source(&mut self, settlement_id: &str) -> Result<SettlementRecord, SettlementError> {
+    pub fn confirm_source(
+        &mut self,
+        settlement_id: &str,
+    ) -> Result<SettlementRecord, SettlementError> {
         let record = self.get_settlement_mut(settlement_id)?;
 
         // Check timeout
@@ -405,12 +429,18 @@ impl CrossChainSettlement {
         }
 
         record.transition(SettlementState::SourceConfirmed)?;
-        info!("CrossChainSettlement: source confirmed for {}", settlement_id);
+        info!(
+            "CrossChainSettlement: source confirmed for {}",
+            settlement_id
+        );
         Ok(record.clone())
     }
 
     /// Receives on target chain.
-    pub fn receive_on_target(&mut self, settlement_id: &str) -> Result<SettlementRecord, SettlementError> {
+    pub fn receive_on_target(
+        &mut self,
+        settlement_id: &str,
+    ) -> Result<SettlementRecord, SettlementError> {
         let record = self.get_settlement_mut(settlement_id)?;
 
         // Check timeout
@@ -423,11 +453,15 @@ impl CrossChainSettlement {
 
         // Create target commitment
         let commitment_data = format!("{}:target:{}", record.settlement_id, record.receiver_id);
-        let commitment = ChainCommitment::new(commitment_data.as_bytes(), record.target_chain.clone());
+        let commitment =
+            ChainCommitment::new(commitment_data.as_bytes(), record.target_chain.clone());
         record.target_commitment = Some(commitment);
 
         record.transition(SettlementState::TargetReceived)?;
-        info!("CrossChainSettlement: target received for {}", settlement_id);
+        info!(
+            "CrossChainSettlement: target received for {}",
+            settlement_id
+        );
         Ok(record.clone())
     }
 
@@ -445,7 +479,11 @@ impl CrossChainSettlement {
             }
 
             record.transition(SettlementState::Finalized)?;
-            (record.source_chain.clone(), record.target_chain.clone(), record.amount)
+            (
+                record.source_chain.clone(),
+                record.target_chain.clone(),
+                record.amount,
+            )
         };
 
         // Unlock source funds, credit target
@@ -460,7 +498,10 @@ impl CrossChainSettlement {
         self.stats.total_volume += amount;
         self.stats.active_settlements = self.stats.active_settlements.saturating_sub(1);
 
-        info!("CrossChainSettlement: finalized {} for {:.2}", settlement_id, amount);
+        info!(
+            "CrossChainSettlement: finalized {} for {:.2}",
+            settlement_id, amount
+        );
         self.get_settlement(settlement_id)
     }
 
@@ -491,7 +532,9 @@ impl CrossChainSettlement {
 
     /// Processes timed-out settlements.
     pub fn process_timeouts(&mut self) -> usize {
-        let ids: Vec<String> = self.settlements.iter()
+        let ids: Vec<String> = self
+            .settlements
+            .iter()
             .filter(|(_, r)| r.is_timed_out() && !r.is_terminal())
             .map(|(id, _)| id.clone())
             .collect();
@@ -511,7 +554,8 @@ impl CrossChainSettlement {
 
     /// Gets a settlement record.
     pub fn get_settlement(&self, id: &str) -> Result<SettlementRecord, SettlementError> {
-        self.settlements.get(id)
+        self.settlements
+            .get(id)
             .cloned()
             .ok_or(SettlementError::SettlementNotFound(id.to_string()))
     }
@@ -533,13 +577,15 @@ impl CrossChainSettlement {
 
     /// Gets all active settlements.
     pub fn get_active_settlements(&self) -> Vec<&SettlementRecord> {
-        self.settlements.values()
+        self.settlements
+            .values()
             .filter(|r| !r.is_terminal())
             .collect()
     }
 
     fn get_settlement_mut(&mut self, id: &str) -> Result<&mut SettlementRecord, SettlementError> {
-        self.settlements.get_mut(id)
+        self.settlements
+            .get_mut(id)
             .ok_or(SettlementError::SettlementNotFound(id.to_string()))
     }
 }
@@ -619,14 +665,16 @@ mod tests {
     #[test]
     fn test_initiate_settlement() {
         let mut engine = CrossChainSettlement::new();
-        let record = engine.initiate_settlement(
-            "s1".to_string(),
-            "ethereum".to_string(),
-            "polygon".to_string(),
-            "sender".to_string(),
-            "receiver".to_string(),
-            100.0,
-        ).unwrap();
+        let record = engine
+            .initiate_settlement(
+                "s1".to_string(),
+                "ethereum".to_string(),
+                "polygon".to_string(),
+                "sender".to_string(),
+                "receiver".to_string(),
+                100.0,
+            )
+            .unwrap();
 
         assert_eq!(record.state, SettlementState::Initiated);
         assert!(record.source_commitment.is_some());
@@ -652,14 +700,16 @@ mod tests {
         let mut engine = CrossChainSettlement::new();
 
         // Initiate
-        let record = engine.initiate_settlement(
-            "s1".to_string(),
-            "ethereum".to_string(),
-            "polygon".to_string(),
-            "sender".to_string(),
-            "receiver".to_string(),
-            100.0,
-        ).unwrap();
+        let record = engine
+            .initiate_settlement(
+                "s1".to_string(),
+                "ethereum".to_string(),
+                "polygon".to_string(),
+                "sender".to_string(),
+                "receiver".to_string(),
+                100.0,
+            )
+            .unwrap();
         assert_eq!(record.state, SettlementState::Initiated);
 
         // Confirm source
@@ -679,14 +729,16 @@ mod tests {
     #[test]
     fn test_refund() {
         let mut engine = CrossChainSettlement::new();
-        engine.initiate_settlement(
-            "s1".to_string(),
-            "ethereum".to_string(),
-            "polygon".to_string(),
-            "sender".to_string(),
-            "receiver".to_string(),
-            100.0,
-        ).unwrap();
+        engine
+            .initiate_settlement(
+                "s1".to_string(),
+                "ethereum".to_string(),
+                "polygon".to_string(),
+                "sender".to_string(),
+                "receiver".to_string(),
+                100.0,
+            )
+            .unwrap();
 
         let record = engine.refund("s1").unwrap();
         assert_eq!(record.state, SettlementState::Refunded);
@@ -695,14 +747,16 @@ mod tests {
     #[test]
     fn test_invalid_state_transition() {
         let mut engine = CrossChainSettlement::new();
-        engine.initiate_settlement(
-            "s1".to_string(),
-            "ethereum".to_string(),
-            "polygon".to_string(),
-            "sender".to_string(),
-            "receiver".to_string(),
-            100.0,
-        ).unwrap();
+        engine
+            .initiate_settlement(
+                "s1".to_string(),
+                "ethereum".to_string(),
+                "polygon".to_string(),
+                "sender".to_string(),
+                "receiver".to_string(),
+                100.0,
+            )
+            .unwrap();
 
         // Try to finalize directly (skip intermediate states)
         let result = engine.finalize("s1");
@@ -712,14 +766,16 @@ mod tests {
     #[test]
     fn test_cannot_refund_terminal() {
         let mut engine = CrossChainSettlement::new();
-        engine.initiate_settlement(
-            "s1".to_string(),
-            "ethereum".to_string(),
-            "polygon".to_string(),
-            "sender".to_string(),
-            "receiver".to_string(),
-            100.0,
-        ).unwrap();
+        engine
+            .initiate_settlement(
+                "s1".to_string(),
+                "ethereum".to_string(),
+                "polygon".to_string(),
+                "sender".to_string(),
+                "receiver".to_string(),
+                100.0,
+            )
+            .unwrap();
         engine.confirm_source("s1").unwrap();
         engine.receive_on_target("s1").unwrap();
         engine.finalize("s1").unwrap();
@@ -771,10 +827,16 @@ mod tests {
     #[test]
     fn test_stats_tracking() {
         let mut engine = CrossChainSettlement::new();
-        engine.initiate_settlement(
-            "s1".to_string(), "ethereum".to_string(), "polygon".to_string(),
-            "s".to_string(), "r".to_string(), 100.0,
-        ).unwrap();
+        engine
+            .initiate_settlement(
+                "s1".to_string(),
+                "ethereum".to_string(),
+                "polygon".to_string(),
+                "s".to_string(),
+                "r".to_string(),
+                100.0,
+            )
+            .unwrap();
         engine.confirm_source("s1").unwrap();
         engine.receive_on_target("s1").unwrap();
         engine.finalize("s1").unwrap();
@@ -790,10 +852,16 @@ mod tests {
         let mut engine = CrossChainSettlement::new();
         let balance_before = engine.get_chain_balance("ethereum").unwrap().available();
 
-        engine.initiate_settlement(
-            "s1".to_string(), "ethereum".to_string(), "polygon".to_string(),
-            "s".to_string(), "r".to_string(), 100.0,
-        ).unwrap();
+        engine
+            .initiate_settlement(
+                "s1".to_string(),
+                "ethereum".to_string(),
+                "polygon".to_string(),
+                "s".to_string(),
+                "r".to_string(),
+                100.0,
+            )
+            .unwrap();
 
         let balance_after = engine.get_chain_balance("ethereum").unwrap().available();
         assert!((balance_before - balance_after - 100.0).abs() < 0.01);
@@ -810,7 +878,10 @@ mod tests {
     fn test_update_chain_balance() {
         let mut engine = CrossChainSettlement::new();
         engine.update_chain_balance("ethereum", 2_000_000.0);
-        assert_eq!(engine.get_chain_balance("ethereum").unwrap().balance, 2_000_000.0);
+        assert_eq!(
+            engine.get_chain_balance("ethereum").unwrap().balance,
+            2_000_000.0
+        );
     }
 
     #[test]
@@ -823,14 +894,26 @@ mod tests {
     #[test]
     fn test_get_active_settlements() {
         let mut engine = CrossChainSettlement::new();
-        engine.initiate_settlement(
-            "s1".to_string(), "ethereum".to_string(), "polygon".to_string(),
-            "s".to_string(), "r".to_string(), 100.0,
-        ).unwrap();
-        engine.initiate_settlement(
-            "s2".to_string(), "ethereum".to_string(), "arbitrum".to_string(),
-            "s".to_string(), "r".to_string(), 200.0,
-        ).unwrap();
+        engine
+            .initiate_settlement(
+                "s1".to_string(),
+                "ethereum".to_string(),
+                "polygon".to_string(),
+                "s".to_string(),
+                "r".to_string(),
+                100.0,
+            )
+            .unwrap();
+        engine
+            .initiate_settlement(
+                "s2".to_string(),
+                "ethereum".to_string(),
+                "arbitrum".to_string(),
+                "s".to_string(),
+                "r".to_string(),
+                200.0,
+            )
+            .unwrap();
 
         assert_eq!(engine.get_active_settlements().len(), 2);
     }
@@ -842,10 +925,16 @@ mod tests {
             ..Default::default()
         };
         let mut engine = CrossChainSettlement::with_config(config);
-        engine.initiate_settlement(
-            "s1".to_string(), "ethereum".to_string(), "polygon".to_string(),
-            "s".to_string(), "r".to_string(), 100.0,
-        ).unwrap();
+        engine
+            .initiate_settlement(
+                "s1".to_string(),
+                "ethereum".to_string(),
+                "polygon".to_string(),
+                "s".to_string(),
+                "r".to_string(),
+                100.0,
+            )
+            .unwrap();
 
         // Wait for timeout
         std::thread::sleep(std::time::Duration::from_millis(10));
@@ -861,10 +950,16 @@ mod tests {
             ..Default::default()
         };
         let mut engine = CrossChainSettlement::with_config(config);
-        engine.initiate_settlement(
-            "s1".to_string(), "ethereum".to_string(), "polygon".to_string(),
-            "s".to_string(), "r".to_string(), 100.0,
-        ).unwrap();
+        engine
+            .initiate_settlement(
+                "s1".to_string(),
+                "ethereum".to_string(),
+                "polygon".to_string(),
+                "s".to_string(),
+                "r".to_string(),
+                100.0,
+            )
+            .unwrap();
 
         std::thread::sleep(std::time::Duration::from_millis(10));
 
@@ -897,8 +992,12 @@ mod tests {
         engine.update_chain_balance("ethereum", 50.0);
 
         let result = engine.initiate_settlement(
-            "s1".to_string(), "ethereum".to_string(), "polygon".to_string(),
-            "s".to_string(), "r".to_string(), 100.0,
+            "s1".to_string(),
+            "ethereum".to_string(),
+            "polygon".to_string(),
+            "s".to_string(),
+            "r".to_string(),
+            100.0,
         );
         assert!(result.is_err());
     }
@@ -922,7 +1021,11 @@ mod tests {
         let balance = ChainBalance::new("eth".to_string(), 1000.0);
         assert_eq!(balance.available(), 1000.0);
 
-        let locked = ChainBalance { chain: "eth".to_string(), balance: 1000.0, locked: 300.0 };
+        let locked = ChainBalance {
+            chain: "eth".to_string(),
+            balance: 1000.0,
+            locked: 300.0,
+        };
         assert_eq!(locked.available(), 700.0);
     }
 }

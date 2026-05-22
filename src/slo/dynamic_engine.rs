@@ -401,7 +401,11 @@ impl DynamicSLOEngine {
     }
 
     /// Enable or disable a rule.
-    pub fn set_rule_enabled(&mut self, rule_id: &str, enabled: bool) -> Result<(), DynamicSLOError> {
+    pub fn set_rule_enabled(
+        &mut self,
+        rule_id: &str,
+        enabled: bool,
+    ) -> Result<(), DynamicSLOError> {
         let state = self
             .rules
             .get_mut(rule_id)
@@ -479,17 +483,17 @@ impl DynamicSLOEngine {
 
             let result = self.evaluate_rule(&id);
             let latency = rule_start.elapsed().as_secs_f64() * 1000.0;
-            let mut result = result.map(|r| {
-                EvaluationResult {
-                    evaluation_latency_ms: latency,
-                    ..r
-                }
+            let mut result = result.map(|r| EvaluationResult {
+                evaluation_latency_ms: latency,
+                ..r
             });
 
             // Update consecutive breaches
             if let Some(state) = self.rules.get_mut(&id) {
                 if let Ok(ref mut r) = result {
-                    if r.compliance == SLOCompliance::Breach || r.compliance == SLOCompliance::Critical {
+                    if r.compliance == SLOCompliance::Breach
+                        || r.compliance == SLOCompliance::Critical
+                    {
                         state.consecutive_breaches += 1;
                         r.consecutive_breaches = state.consecutive_breaches;
                         // Escalate action based on consecutive breaches
@@ -509,7 +513,11 @@ impl DynamicSLOEngine {
 
         // Update stats
         self.stats.total_evaluations += results.len();
-        let total_latency: f64 = results.iter().filter_map(|r| r.as_ref().ok()).map(|r| r.evaluation_latency_ms).sum();
+        let total_latency: f64 = results
+            .iter()
+            .filter_map(|r| r.as_ref().ok())
+            .map(|r| r.evaluation_latency_ms)
+            .sum();
         if !results.is_empty() {
             self.stats.avg_evaluation_latency_ms = total_latency / results.len() as f64;
         }
@@ -517,7 +525,11 @@ impl DynamicSLOEngine {
         // Update compliance breakdown
         self.stats.compliance_breakdown.clear();
         for eval in results.iter().flatten() {
-            let count = self.stats.compliance_breakdown.entry(eval.compliance).or_insert(0);
+            let count = self
+                .stats
+                .compliance_breakdown
+                .entry(eval.compliance)
+                .or_insert(0);
             *count += 1;
         }
 
@@ -532,7 +544,10 @@ impl DynamicSLOEngine {
 
     /// Evaluate a single rule.
     fn evaluate_rule(&mut self, rule_id: &str) -> Result<EvaluationResult, DynamicSLOError> {
-        let state = self.rules.get(rule_id).ok_or(DynamicSLOError::RuleNotFound(rule_id.into()))?;
+        let state = self
+            .rules
+            .get(rule_id)
+            .ok_or(DynamicSLOError::RuleNotFound(rule_id.into()))?;
         let metric_key = &state.rule.metric_key;
         let samples = self.metrics.get(metric_key);
 
@@ -614,7 +629,10 @@ impl DynamicSLOEngine {
     }
 
     /// Static fallback evaluation (simplified, no dynamic thresholds).
-    fn evaluate_static_cycle(&mut self, cycle_start: Instant) -> Result<Vec<EvaluationResult>, DynamicSLOError> {
+    fn evaluate_static_cycle(
+        &mut self,
+        cycle_start: Instant,
+    ) -> Result<Vec<EvaluationResult>, DynamicSLOError> {
         let mut results = Vec::new();
         for (id, state) in &self.rules {
             if !state.rule.enabled {
@@ -622,7 +640,10 @@ impl DynamicSLOEngine {
             }
             let metric_key = &state.rule.metric_key;
             let samples = self.metrics.get(metric_key);
-            let current_value = samples.and_then(|s| s.back()).map(|s| s.value).unwrap_or(0.0);
+            let current_value = samples
+                .and_then(|s| s.back())
+                .map(|s| s.value)
+                .unwrap_or(0.0);
 
             let compliance = if current_value > state.rule.threshold {
                 SLOCompliance::Breach
@@ -662,7 +683,11 @@ impl DynamicSLOEngine {
 
     /// Get all active rules.
     pub fn get_active_rules(&self) -> Vec<&SLORule> {
-        self.rules.values().filter(|s| s.rule.enabled).map(|s| &s.rule).collect()
+        self.rules
+            .values()
+            .filter(|s| s.rule.enabled)
+            .map(|s| &s.rule)
+            .collect()
     }
 
     /// Check if static fallback is active.
@@ -742,7 +767,9 @@ mod tests {
     #[test]
     fn test_remove_rule() {
         let mut engine = DynamicSLOEngine::default_engine();
-        engine.add_rule(make_rule("r1", "sae_latency", 50.0)).unwrap();
+        engine
+            .add_rule(make_rule("r1", "sae_latency", 50.0))
+            .unwrap();
         assert!(engine.remove_rule("r1").is_ok());
         assert_eq!(engine.get_stats().total_rules, 0);
     }
@@ -756,7 +783,9 @@ mod tests {
     #[test]
     fn test_report_metric() {
         let mut engine = DynamicSLOEngine::default_engine();
-        engine.add_rule(make_rule("r1", "sae_latency", 50.0)).unwrap();
+        engine
+            .add_rule(make_rule("r1", "sae_latency", 50.0))
+            .unwrap();
         engine.report_metric("sae_latency", 45.0);
         engine.report_metric("sae_latency", 47.0);
         // Should not panic
@@ -765,7 +794,9 @@ mod tests {
     #[test]
     fn test_evaluation_healthy() {
         let mut engine = DynamicSLOEngine::default_engine();
-        engine.add_rule(make_rule("r1", "sae_latency", 50.0)).unwrap();
+        engine
+            .add_rule(make_rule("r1", "sae_latency", 50.0))
+            .unwrap();
         engine.report_metric("sae_latency", 30.0);
         let results = engine.evaluate_cycle().unwrap();
         assert_eq!(results.len(), 1);
@@ -775,7 +806,9 @@ mod tests {
     #[test]
     fn test_evaluation_warning() {
         let mut engine = DynamicSLOEngine::default_engine();
-        engine.add_rule(make_rule("r1", "sae_latency", 50.0)).unwrap();
+        engine
+            .add_rule(make_rule("r1", "sae_latency", 50.0))
+            .unwrap();
         // Warning threshold is 0.9 * 50 = 45, so value between 45 and 50
         engine.report_metric("sae_latency", 47.0);
         let results = engine.evaluate_cycle().unwrap();
@@ -785,7 +818,9 @@ mod tests {
     #[test]
     fn test_evaluation_breach() {
         let mut engine = DynamicSLOEngine::default_engine();
-        engine.add_rule(make_rule("r1", "sae_latency", 50.0)).unwrap();
+        engine
+            .add_rule(make_rule("r1", "sae_latency", 50.0))
+            .unwrap();
         // Breach: above threshold but below critical (1.5 * 50 = 75)
         engine.report_metric("sae_latency", 60.0);
         let results = engine.evaluate_cycle().unwrap();
@@ -795,7 +830,9 @@ mod tests {
     #[test]
     fn test_evaluation_critical() {
         let mut engine = DynamicSLOEngine::default_engine();
-        engine.add_rule(make_rule("r1", "sae_latency", 50.0)).unwrap();
+        engine
+            .add_rule(make_rule("r1", "sae_latency", 50.0))
+            .unwrap();
         // Critical: above 1.5 * 50 = 75
         engine.report_metric("sae_latency", 80.0);
         let results = engine.evaluate_cycle().unwrap();
@@ -822,7 +859,9 @@ mod tests {
     #[test]
     fn test_consecutive_breaches() {
         let mut engine = DynamicSLOEngine::default_engine();
-        engine.add_rule(make_rule("r1", "sae_latency", 50.0)).unwrap();
+        engine
+            .add_rule(make_rule("r1", "sae_latency", 50.0))
+            .unwrap();
 
         // First breach
         engine.report_metric("sae_latency", 60.0);
@@ -838,7 +877,9 @@ mod tests {
     #[test]
     fn test_breach_recovery_resets_counter() {
         let mut engine = DynamicSLOEngine::default_engine();
-        engine.add_rule(make_rule("r1", "sae_latency", 50.0)).unwrap();
+        engine
+            .add_rule(make_rule("r1", "sae_latency", 50.0))
+            .unwrap();
 
         engine.report_metric("sae_latency", 60.0);
         engine.evaluate_cycle().unwrap();
@@ -852,7 +893,9 @@ mod tests {
     #[test]
     fn test_get_rule() {
         let mut engine = DynamicSLOEngine::default_engine();
-        engine.add_rule(make_rule("r1", "sae_latency", 50.0)).unwrap();
+        engine
+            .add_rule(make_rule("r1", "sae_latency", 50.0))
+            .unwrap();
         let rule = engine.get_rule("r1");
         assert!(rule.is_some());
         assert_eq!(rule.unwrap().threshold, 50.0);
@@ -867,8 +910,12 @@ mod tests {
     #[test]
     fn test_get_active_rules() {
         let mut engine = DynamicSLOEngine::default_engine();
-        engine.add_rule(make_rule("r1", "sae_latency", 50.0)).unwrap();
-        engine.add_rule(make_rule("r2", "consensus", 100.0)).unwrap();
+        engine
+            .add_rule(make_rule("r1", "sae_latency", 50.0))
+            .unwrap();
+        engine
+            .add_rule(make_rule("r2", "consensus", 100.0))
+            .unwrap();
         engine.set_rule_enabled("r2", false).unwrap();
         let active = engine.get_active_rules();
         assert_eq!(active.len(), 1);
@@ -877,7 +924,9 @@ mod tests {
     #[test]
     fn test_set_rule_enabled() {
         let mut engine = DynamicSLOEngine::default_engine();
-        engine.add_rule(make_rule("r1", "sae_latency", 50.0)).unwrap();
+        engine
+            .add_rule(make_rule("r1", "sae_latency", 50.0))
+            .unwrap();
         assert!(engine.set_rule_enabled("r1", false).is_ok());
         assert!(!engine.get_rule("r1").unwrap().enabled);
     }
@@ -885,7 +934,9 @@ mod tests {
     #[test]
     fn test_stats_tracking() {
         let mut engine = DynamicSLOEngine::default_engine();
-        engine.add_rule(make_rule("r1", "sae_latency", 50.0)).unwrap();
+        engine
+            .add_rule(make_rule("r1", "sae_latency", 50.0))
+            .unwrap();
         engine.report_metric("sae_latency", 30.0);
         engine.evaluate_cycle().unwrap();
         let stats = engine.get_stats();
@@ -897,7 +948,9 @@ mod tests {
     #[test]
     fn test_reset() {
         let mut engine = DynamicSLOEngine::default_engine();
-        engine.add_rule(make_rule("r1", "sae_latency", 50.0)).unwrap();
+        engine
+            .add_rule(make_rule("r1", "sae_latency", 50.0))
+            .unwrap();
         engine.reset();
         assert_eq!(engine.get_stats().total_rules, 0);
         assert!(!engine.is_static_fallback());
@@ -919,7 +972,9 @@ mod tests {
     #[test]
     fn test_evaluation_latency_tracked() {
         let mut engine = DynamicSLOEngine::default_engine();
-        engine.add_rule(make_rule("r1", "sae_latency", 50.0)).unwrap();
+        engine
+            .add_rule(make_rule("r1", "sae_latency", 50.0))
+            .unwrap();
         engine.report_metric("sae_latency", 30.0);
         let results = engine.evaluate_cycle().unwrap();
         assert!(results[0].evaluation_latency_ms >= 0.0);
@@ -978,7 +1033,9 @@ mod tests {
     #[test]
     fn test_static_fallback_evaluation() {
         let mut engine = DynamicSLOEngine::default_engine();
-        engine.add_rule(make_rule("r1", "sae_latency", 50.0)).unwrap();
+        engine
+            .add_rule(make_rule("r1", "sae_latency", 50.0))
+            .unwrap();
         engine.update_cpu_load(0.95);
         engine.report_metric("sae_latency", 60.0);
         let results = engine.evaluate_cycle().unwrap();
@@ -994,7 +1051,9 @@ mod tests {
             ..DynamicSLOConfig::default()
         };
         let mut engine = DynamicSLOEngine::new(config);
-        engine.add_rule(make_rule("r1", "sae_latency", 50.0)).unwrap();
+        engine
+            .add_rule(make_rule("r1", "sae_latency", 50.0))
+            .unwrap();
         engine.report_metric("sae_latency", 60.0);
         let results = engine.evaluate_cycle().unwrap();
         // deviation = (60 - 50) / 50 * 100 = 20%
@@ -1004,7 +1063,9 @@ mod tests {
     #[test]
     fn test_disabled_rule_not_evaluated() {
         let mut engine = DynamicSLOEngine::default_engine();
-        engine.add_rule(make_rule("r1", "sae_latency", 50.0)).unwrap();
+        engine
+            .add_rule(make_rule("r1", "sae_latency", 50.0))
+            .unwrap();
         engine.set_rule_enabled("r1", false).unwrap();
         engine.report_metric("sae_latency", 60.0);
         let results = engine.evaluate_cycle().unwrap();

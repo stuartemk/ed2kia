@@ -36,7 +36,8 @@ pub struct WebServerState {
     /// Callback para obtener feedback
     pub feedback_fn: Arc<dyn Fn() -> serde_json::Value + Send + Sync>,
     /// Callback para recibir feedback
-    pub submit_feedback_fn: Arc<dyn Fn(serde_json::Value) -> Result<serde_json::Value, String> + Send + Sync>,
+    pub submit_feedback_fn:
+        Arc<dyn Fn(serde_json::Value) -> Result<serde_json::Value, String> + Send + Sync>,
     /// Callback para health check
     pub health_fn: Arc<dyn Fn() -> (bool, String) + Send + Sync>,
 }
@@ -48,7 +49,9 @@ impl WebServerState {
         network_info_fn: Arc<dyn Fn() -> serde_json::Value + Send + Sync>,
         metrics_fn: Arc<dyn Fn() -> String + Send + Sync>,
         feedback_fn: Arc<dyn Fn() -> serde_json::Value + Send + Sync>,
-        submit_feedback_fn: Arc<dyn Fn(serde_json::Value) -> Result<serde_json::Value, String> + Send + Sync>,
+        submit_feedback_fn: Arc<
+            dyn Fn(serde_json::Value) -> Result<serde_json::Value, String> + Send + Sync,
+        >,
         health_fn: Arc<dyn Fn() -> (bool, String) + Send + Sync>,
     ) -> Self {
         Self {
@@ -121,10 +124,7 @@ pub struct WebServer {
 }
 
 impl WebServer {
-    pub fn new(
-        config: WebServerConfig,
-        state: WebServerState,
-    ) -> Self {
+    pub fn new(config: WebServerConfig, state: WebServerState) -> Self {
         Self { config, state }
     }
 
@@ -154,8 +154,7 @@ impl WebServer {
             .nest("/api", api_router)
             .fallback_service(
                 // FIX: E0599 - append_index_html_on_director → append_index_html_on_directories in axum
-                ServeDir::new(&state.static_dir)
-                    .append_index_html_on_directories(true),
+                ServeDir::new(&state.static_dir).append_index_html_on_directories(true),
             )
             .layer(TraceLayer::new_for_http())
     }

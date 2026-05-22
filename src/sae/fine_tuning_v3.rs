@@ -32,7 +32,12 @@ impl fmt::Display for FineTuningV3Error {
             Self::CheckpointFailed(msg) => write!(f, "Checkpoint failed: {}", msg),
             Self::GradientMismatch(msg) => write!(f, "Gradient mismatch: {}", msg),
             Self::UptimeBelowThreshold { node_id, uptime } => {
-                write!(f, "Node {} uptime {:.1}% below 95% threshold", node_id, uptime * 100.0)
+                write!(
+                    f,
+                    "Node {} uptime {:.1}% below 95% threshold",
+                    node_id,
+                    uptime * 100.0
+                )
             }
             Self::AlignmentFailed(msg) => write!(f, "Cross-model alignment failed: {}", msg),
             Self::ModelNotFound(id) => write!(f, "Model not found: {}", id),
@@ -257,9 +262,10 @@ impl FineTuningV3 {
 
     /// Update node uptime.
     pub fn update_uptime(&mut self, node_id: &str, uptime: f64) -> Result<(), FineTuningV3Error> {
-        let node = self.nodes.get_mut(node_id).ok_or(FineTuningV3Error::NodeUnavailable(
-            node_id.to_string(),
-        ))?;
+        let node = self
+            .nodes
+            .get_mut(node_id)
+            .ok_or(FineTuningV3Error::NodeUnavailable(node_id.to_string()))?;
         node.uptime = uptime.clamp(0.0, 1.0);
         Ok(())
     }
@@ -295,10 +301,7 @@ impl FineTuningV3 {
     // ── Training ──
 
     /// Execute a training round with gradient alignment.
-    pub fn train_step(
-        &mut self,
-        gradients: &[f32],
-    ) -> Result<Vec<f32>, FineTuningV3Error> {
+    pub fn train_step(&mut self, gradients: &[f32]) -> Result<Vec<f32>, FineTuningV3Error> {
         // Validate gradients
         if gradients.is_empty() {
             return Err(FineTuningV3Error::GradientMismatch(
@@ -324,8 +327,8 @@ impl FineTuningV3 {
 
         // Update stats
         self.stats.total_rounds += 1;
-        self.stats.avg_gradient_norm = self.gradient_history.iter().sum::<f64>()
-            / self.gradient_history.len() as f64;
+        self.stats.avg_gradient_norm =
+            self.gradient_history.iter().sum::<f64>() / self.gradient_history.len() as f64;
 
         // Update model profiles
         for profile in self.models.values_mut() {
@@ -339,7 +342,11 @@ impl FineTuningV3 {
         }
 
         // Checkpoint if needed
-        if self.stats.total_rounds.is_multiple_of(self.config.checkpoint_interval) {
+        if self
+            .stats
+            .total_rounds
+            .is_multiple_of(self.config.checkpoint_interval)
+        {
             self.create_checkpoint()?;
         }
 
@@ -378,8 +385,13 @@ impl FineTuningV3 {
             return gradients.to_vec();
         }
 
-        let mut indexed: Vec<(usize, f32)> = gradients.iter().enumerate().map(|(i, &v)| (i, v)).collect();
-        indexed.sort_by(|a, b| b.1.abs().partial_cmp(&a.1.abs()).unwrap_or(std::cmp::Ordering::Equal));
+        let mut indexed: Vec<(usize, f32)> =
+            gradients.iter().enumerate().map(|(i, &v)| (i, v)).collect();
+        indexed.sort_by(|a, b| {
+            b.1.abs()
+                .partial_cmp(&a.1.abs())
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         indexed.truncate(k);
 
         let mut compressed = vec![0.0f32; gradients.len()];
@@ -421,8 +433,8 @@ impl FineTuningV3 {
         if self.models.is_empty() {
             return 1.0;
         }
-        let avg_score: f64 = self.models.values().map(|p| p.alignment_score).sum::<f64>()
-            / self.models.len() as f64;
+        let avg_score: f64 =
+            self.models.values().map(|p| p.alignment_score).sum::<f64>() / self.models.len() as f64;
         avg_score.clamp(0.5, 1.0) as f32
     }
 
@@ -434,8 +446,11 @@ impl FineTuningV3 {
 
         // gradient_history already contains current_norm at the back,
         // so we need the second-to-last entry as the previous norm.
-        let prev_norm = self.gradient_history.get(self.gradient_history.len() - 2)
-            .copied().unwrap_or(1.0);
+        let prev_norm = self
+            .gradient_history
+            .get(self.gradient_history.len() - 2)
+            .copied()
+            .unwrap_or(1.0);
         if prev_norm == 0.0 {
             return self.config.learning_rate;
         }
@@ -460,12 +475,7 @@ impl FineTuningV3 {
         let model_id = self.models.keys().next().cloned().unwrap_or_default();
         let shard_data = self.generate_shard_data();
 
-        let checkpoint = Checkpoint::new(
-            format!("ckpt-{}", round),
-            round,
-            model_id,
-            shard_data,
-        );
+        let checkpoint = Checkpoint::new(format!("ckpt-{}", round), round, model_id, shard_data);
 
         self.checkpoints.push_back(checkpoint.clone());
         self.stats.total_checkpoints += 1;
@@ -485,7 +495,12 @@ impl FineTuningV3 {
 
     /// Generate shard data from gradient history.
     fn generate_shard_data(&self) -> Vec<Vec<f32>> {
-        let dim = self.models.values().next().map(|p| p.gradient_dim).unwrap_or(128);
+        let dim = self
+            .models
+            .values()
+            .next()
+            .map(|p| p.gradient_dim)
+            .unwrap_or(128);
         vec![self.gradient_history.iter().map(|&n| n as f32).collect(); dim]
     }
 
@@ -517,7 +532,11 @@ impl Default for FineTuningV3 {
 // ─── Utilities ───
 
 fn compute_gradient_norm(gradients: &[f32]) -> f64 {
-    gradients.iter().map(|g| (*g as f64) * (*g as f64)).sum::<f64>().sqrt()
+    gradients
+        .iter()
+        .map(|g| (*g as f64) * (*g as f64))
+        .sum::<f64>()
+        .sqrt()
 }
 
 fn compute_checksum(data: &[Vec<f32>]) -> String {

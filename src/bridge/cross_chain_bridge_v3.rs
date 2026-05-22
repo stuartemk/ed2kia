@@ -49,7 +49,11 @@ mod internal {
                 BridgeV3Error::MessageNotFound(id) => write!(f, "Message {} not found", id),
                 BridgeV3Error::ValidationFailed(msg) => write!(f, "Validation failed: {}", msg),
                 BridgeV3Error::QuorumFailed { current, required } => {
-                    write!(f, "Quorum failed: {} current, {} required", current, required)
+                    write!(
+                        f,
+                        "Quorum failed: {} current, {} required",
+                        current, required
+                    )
                 }
                 BridgeV3Error::BridgeFull => write!(f, "Bridge capacity exceeded"),
                 BridgeV3Error::RelayFailed(msg) => write!(f, "Relay failed: {}", msg),
@@ -260,8 +264,7 @@ mod internal {
     impl BridgeV3Stats {
         pub fn record_validation(&mut self, time_ms: u64) {
             self.messages_validated += 1;
-            self.avg_validation_time_ms =
-                self.avg_validation_time_ms * 0.9 + time_ms as f64 * 0.1;
+            self.avg_validation_time_ms = self.avg_validation_time_ms * 0.9 + time_ms as f64 * 0.1;
         }
 
         pub fn record_relay(&mut self, time_ms: u64) {
@@ -321,8 +324,10 @@ mod internal {
             if self.chains.contains_key(&chain_id) {
                 return Err(BridgeV3Error::ChainNotFound(chain_id.clone()));
             }
-            self.chains
-                .insert(chain_id.clone(), ChainEntryV3::new(chain_id, reputation, capacity));
+            self.chains.insert(
+                chain_id.clone(),
+                ChainEntryV3::new(chain_id, reputation, capacity),
+            );
             Ok(())
         }
 
@@ -411,7 +416,11 @@ mod internal {
         }
 
         /// Add a quorum signature to a message.
-        pub fn add_signature(&mut self, message_id: &str, signer: String) -> Result<(), BridgeV3Error> {
+        pub fn add_signature(
+            &mut self,
+            message_id: &str,
+            signer: String,
+        ) -> Result<(), BridgeV3Error> {
             let entry = self
                 .messages
                 .get_mut(message_id)
@@ -424,7 +433,9 @@ mod internal {
             }
 
             if entry.quorum_signatures.contains(&signer) {
-                return Err(BridgeV3Error::RelayFailed("Duplicate signature".to_string()));
+                return Err(BridgeV3Error::RelayFailed(
+                    "Duplicate signature".to_string(),
+                ));
             }
 
             entry.quorum_signatures.push(signer);
@@ -460,8 +471,7 @@ mod internal {
                 chain.messages_relayed += 1;
             }
 
-            self.stats
-                .record_relay(entry.relay_time_ms);
+            self.stats.record_relay(entry.relay_time_ms);
             Ok(())
         }
 
@@ -553,15 +563,22 @@ mod internal {
         #[test]
         fn test_register_chain() {
             let mut bridge = CrossChainBridgeV3::default();
-            assert!(bridge.register_chain("chain_a".to_string(), 0.9, 100.0).is_ok());
+            assert!(bridge
+                .register_chain("chain_a".to_string(), 0.9, 100.0)
+                .is_ok());
             assert_eq!(bridge.chain_count(), 1);
         }
 
         #[test]
         fn test_register_chain_duplicate() {
             let mut bridge = CrossChainBridgeV3::default();
-            bridge.register_chain("chain_a".to_string(), 0.9, 100.0).unwrap();
-            match bridge.register_chain("chain_a".to_string(), 0.8, 80.0).unwrap_err() {
+            bridge
+                .register_chain("chain_a".to_string(), 0.9, 100.0)
+                .unwrap();
+            match bridge
+                .register_chain("chain_a".to_string(), 0.8, 80.0)
+                .unwrap_err()
+            {
                 BridgeV3Error::ChainNotFound(id) => assert_eq!(id, "chain_a"),
                 e => panic!("Expected ChainNotFound, got {:?}", e),
             }
@@ -580,7 +597,9 @@ mod internal {
         #[test]
         fn test_submit_message() {
             let mut bridge = CrossChainBridgeV3::default();
-            bridge.register_chain("src".to_string(), 0.9, 100.0).unwrap();
+            bridge
+                .register_chain("src".to_string(), 0.9, 100.0)
+                .unwrap();
             bridge.register_chain("dst".to_string(), 0.8, 80.0).unwrap();
             let msg_id = bridge.submit_message("src", "dst", vec![1, 2, 3]).unwrap();
             assert_eq!(msg_id, "msg_1");
@@ -591,7 +610,10 @@ mod internal {
         fn test_submit_message_source_not_found() {
             let mut bridge = CrossChainBridgeV3::default();
             bridge.register_chain("dst".to_string(), 0.8, 80.0).unwrap();
-            match bridge.submit_message("unknown", "dst", vec![1]).unwrap_err() {
+            match bridge
+                .submit_message("unknown", "dst", vec![1])
+                .unwrap_err()
+            {
                 BridgeV3Error::ChainNotFound(id) => assert_eq!(id, "unknown"),
                 e => panic!("Expected ChainNotFound, got {:?}", e),
             }
@@ -600,8 +622,13 @@ mod internal {
         #[test]
         fn test_submit_message_destination_not_found() {
             let mut bridge = CrossChainBridgeV3::default();
-            bridge.register_chain("src".to_string(), 0.9, 100.0).unwrap();
-            match bridge.submit_message("src", "unknown", vec![1]).unwrap_err() {
+            bridge
+                .register_chain("src".to_string(), 0.9, 100.0)
+                .unwrap();
+            match bridge
+                .submit_message("src", "unknown", vec![1])
+                .unwrap_err()
+            {
                 BridgeV3Error::ChainNotFound(id) => assert_eq!(id, "unknown"),
                 e => panic!("Expected ChainNotFound, got {:?}", e),
             }
@@ -612,9 +639,14 @@ mod internal {
             let mut config = CrossChainBridgeV3Config::default();
             config.max_message_size = 10;
             let mut bridge = CrossChainBridgeV3::new(config);
-            bridge.register_chain("src".to_string(), 0.9, 100.0).unwrap();
+            bridge
+                .register_chain("src".to_string(), 0.9, 100.0)
+                .unwrap();
             bridge.register_chain("dst".to_string(), 0.8, 80.0).unwrap();
-            match bridge.submit_message("src", "dst", vec![1; 20]).unwrap_err() {
+            match bridge
+                .submit_message("src", "dst", vec![1; 20])
+                .unwrap_err()
+            {
                 BridgeV3Error::InvalidMessageSize { size, max } => {
                     assert_eq!(size, 20);
                     assert_eq!(max, 10);
@@ -626,12 +658,17 @@ mod internal {
         #[test]
         fn test_verify_message() {
             let mut bridge = CrossChainBridgeV3::default();
-            bridge.register_chain("src".to_string(), 0.9, 100.0).unwrap();
+            bridge
+                .register_chain("src".to_string(), 0.9, 100.0)
+                .unwrap();
             bridge.register_chain("dst".to_string(), 0.8, 80.0).unwrap();
             let msg_id = bridge.submit_message("src", "dst", vec![1, 2, 3]).unwrap();
             let valid = bridge.verify_message(&msg_id).unwrap();
             assert!(valid);
-            assert_eq!(bridge.get_message_status(&msg_id), Some(MessageStatus::Validated));
+            assert_eq!(
+                bridge.get_message_status(&msg_id),
+                Some(MessageStatus::Validated)
+            );
         }
 
         #[test]
@@ -646,7 +683,9 @@ mod internal {
         #[test]
         fn test_add_signature() {
             let mut bridge = CrossChainBridgeV3::default();
-            bridge.register_chain("src".to_string(), 0.9, 100.0).unwrap();
+            bridge
+                .register_chain("src".to_string(), 0.9, 100.0)
+                .unwrap();
             bridge.register_chain("dst".to_string(), 0.8, 80.0).unwrap();
             let msg_id = bridge.submit_message("src", "dst", vec![1, 2, 3]).unwrap();
             bridge.verify_message(&msg_id).unwrap();
@@ -656,10 +695,15 @@ mod internal {
         #[test]
         fn test_add_signature_not_validated() {
             let mut bridge = CrossChainBridgeV3::default();
-            bridge.register_chain("src".to_string(), 0.9, 100.0).unwrap();
+            bridge
+                .register_chain("src".to_string(), 0.9, 100.0)
+                .unwrap();
             bridge.register_chain("dst".to_string(), 0.8, 80.0).unwrap();
             let msg_id = bridge.submit_message("src", "dst", vec![1, 2, 3]).unwrap();
-            match bridge.add_signature(&msg_id, "node_1".to_string()).unwrap_err() {
+            match bridge
+                .add_signature(&msg_id, "node_1".to_string())
+                .unwrap_err()
+            {
                 BridgeV3Error::ValidationFailed(msg) => assert!(!msg.is_empty()),
                 e => panic!("Expected ValidationFailed, got {:?}", e),
             }
@@ -668,7 +712,9 @@ mod internal {
         #[test]
         fn test_relay_message_quorum_met() {
             let mut bridge = CrossChainBridgeV3::default();
-            bridge.register_chain("src".to_string(), 0.9, 100.0).unwrap();
+            bridge
+                .register_chain("src".to_string(), 0.9, 100.0)
+                .unwrap();
             bridge.register_chain("dst".to_string(), 0.8, 80.0).unwrap();
             let msg_id = bridge.submit_message("src", "dst", vec![1, 2, 3]).unwrap();
             bridge.verify_message(&msg_id).unwrap();
@@ -676,13 +722,18 @@ mod internal {
             bridge.add_signature(&msg_id, "node_2".to_string()).unwrap();
             bridge.add_signature(&msg_id, "node_3".to_string()).unwrap();
             assert!(bridge.relay_message(&msg_id).is_ok());
-            assert_eq!(bridge.get_message_status(&msg_id), Some(MessageStatus::Relayed));
+            assert_eq!(
+                bridge.get_message_status(&msg_id),
+                Some(MessageStatus::Relayed)
+            );
         }
 
         #[test]
         fn test_relay_message_quorum_not_met() {
             let mut bridge = CrossChainBridgeV3::default();
-            bridge.register_chain("src".to_string(), 0.9, 100.0).unwrap();
+            bridge
+                .register_chain("src".to_string(), 0.9, 100.0)
+                .unwrap();
             bridge.register_chain("dst".to_string(), 0.8, 80.0).unwrap();
             let msg_id = bridge.submit_message("src", "dst", vec![1, 2, 3]).unwrap();
             bridge.verify_message(&msg_id).unwrap();
@@ -699,13 +750,17 @@ mod internal {
         #[test]
         fn test_cleanup_expired() {
             let mut bridge = CrossChainBridgeV3::default();
-            bridge.register_chain("src".to_string(), 0.9, 100.0).unwrap();
+            bridge
+                .register_chain("src".to_string(), 0.9, 100.0)
+                .unwrap();
             bridge.register_chain("dst".to_string(), 0.8, 80.0).unwrap();
             // Create message with very short TTL
             let mut config = CrossChainBridgeV3Config::default();
             config.proof_ttl_ms = 1;
             bridge = CrossChainBridgeV3::new(config);
-            bridge.register_chain("src".to_string(), 0.9, 100.0).unwrap();
+            bridge
+                .register_chain("src".to_string(), 0.9, 100.0)
+                .unwrap();
             bridge.register_chain("dst".to_string(), 0.8, 80.0).unwrap();
             bridge.submit_message("src", "dst", vec![1, 2, 3]).unwrap();
             std::thread::sleep(Duration::from_millis(10));
@@ -716,7 +771,9 @@ mod internal {
         #[test]
         fn test_stats_recording() {
             let mut bridge = CrossChainBridgeV3::default();
-            bridge.register_chain("src".to_string(), 0.9, 100.0).unwrap();
+            bridge
+                .register_chain("src".to_string(), 0.9, 100.0)
+                .unwrap();
             bridge.register_chain("dst".to_string(), 0.8, 80.0).unwrap();
             let msg_id = bridge.submit_message("src", "dst", vec![1, 2, 3]).unwrap();
             bridge.verify_message(&msg_id).unwrap();
@@ -728,7 +785,9 @@ mod internal {
         #[test]
         fn test_reset_stats() {
             let mut bridge = CrossChainBridgeV3::default();
-            bridge.register_chain("src".to_string(), 0.9, 100.0).unwrap();
+            bridge
+                .register_chain("src".to_string(), 0.9, 100.0)
+                .unwrap();
             bridge.register_chain("dst".to_string(), 0.8, 80.0).unwrap();
             let msg_id = bridge.submit_message("src", "dst", vec![1, 2, 3]).unwrap();
             bridge.verify_message(&msg_id).unwrap();
@@ -776,7 +835,9 @@ mod internal {
         #[test]
         fn test_nonce_increment() {
             let mut bridge = CrossChainBridgeV3::default();
-            bridge.register_chain("src".to_string(), 0.9, 100.0).unwrap();
+            bridge
+                .register_chain("src".to_string(), 0.9, 100.0)
+                .unwrap();
             bridge.register_chain("dst".to_string(), 0.8, 80.0).unwrap();
             let id1 = bridge.submit_message("src", "dst", vec![1]).unwrap();
             let id2 = bridge.submit_message("src", "dst", vec![2]).unwrap();
@@ -790,14 +851,23 @@ mod internal {
             bridge.register_chain("a".to_string(), 0.9, 100.0).unwrap();
             bridge.register_chain("b".to_string(), 0.8, 80.0).unwrap();
             let msg_id = bridge.submit_message("a", "b", vec![42]).unwrap();
-            assert_eq!(bridge.get_message_status(&msg_id), Some(MessageStatus::Pending));
+            assert_eq!(
+                bridge.get_message_status(&msg_id),
+                Some(MessageStatus::Pending)
+            );
             bridge.verify_message(&msg_id).unwrap();
-            assert_eq!(bridge.get_message_status(&msg_id), Some(MessageStatus::Validated));
+            assert_eq!(
+                bridge.get_message_status(&msg_id),
+                Some(MessageStatus::Validated)
+            );
             bridge.add_signature(&msg_id, "n1".to_string()).unwrap();
             bridge.add_signature(&msg_id, "n2".to_string()).unwrap();
             bridge.add_signature(&msg_id, "n3".to_string()).unwrap();
             bridge.relay_message(&msg_id).unwrap();
-            assert_eq!(bridge.get_message_status(&msg_id), Some(MessageStatus::Relayed));
+            assert_eq!(
+                bridge.get_message_status(&msg_id),
+                Some(MessageStatus::Relayed)
+            );
         }
     }
 }

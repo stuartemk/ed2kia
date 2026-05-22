@@ -394,10 +394,7 @@ impl TensorFlowPipeline {
             self.metrics.write().completed += 1;
 
             // Extraer sparse features de la respuesta
-            entry
-                .response
-                .as_ref()
-                .map(|r| r.sparse_features.clone())
+            entry.response.as_ref().map(|r| r.sparse_features.clone())
         } else {
             None
         }
@@ -432,12 +429,8 @@ impl TensorFlowPipeline {
 
         entries.retain(|_id, entry| {
             let should_remove = match &entry.state {
-                PipelineState::Completed { completed_at } => {
-                    completed_at.elapsed() > older_than
-                }
-                PipelineState::Errored { errored_at, .. } => {
-                    errored_at.elapsed() > older_than
-                }
+                PipelineState::Completed { completed_at } => completed_at.elapsed() > older_than,
+                PipelineState::Errored { errored_at, .. } => errored_at.elapsed() > older_than,
                 _ => false,
             };
 

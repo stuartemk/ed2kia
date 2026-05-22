@@ -9,17 +9,23 @@
 #![cfg(feature = "v1.3-sprint1")]
 
 mod stress {
-    use ed2kia::sae_v2::fine_tuning_v2::{FineTuningV2, FineTuningV2Config};
-    use ed2kia::sae_v2::checkpoint_optimizer::{CheckpointOptimizer, CheckpointOptimizerConfig};
-    use ed2kia::sae_v2::gradient_sync_v2::{GradientSyncV2, GradientSyncV2Config};
-    use ed2kia::routing_v2::cross_node_router::{CrossNodeRouter, ComputeTask, RouterConfig, TaskType};
+    use ed2kia::reputation_v2::anti_sybil::{AntiSybilConfig, AntiSybilEngine};
+    use ed2kia::reputation_v2::ledger_v2::{EventType, LedgerConfig, ReputationLedgerV2};
+    use ed2kia::reputation_v2::merit_scoring::{ContributionKind, MeritConfig, MeritScorer};
+    use ed2kia::routing_v2::cross_node_router::{
+        ComputeTask, CrossNodeRouter, RouterConfig, TaskType,
+    };
+    use ed2kia::routing_v2::load_balancer::{BalancerConfig, LoadBalancer};
     use ed2kia::routing_v2::predictive_scheduler::{PredictiveScheduler, SchedulerConfig};
-    use ed2kia::routing_v2::load_balancer::{LoadBalancer, BalancerConfig};
-    use ed2kia::reputation_v2::ledger_v2::{ReputationLedgerV2, LedgerConfig, EventType};
-    use ed2kia::reputation_v2::anti_sybil::{AntiSybilEngine, AntiSybilConfig};
-    use ed2kia::reputation_v2::merit_scoring::{MeritScorer, MeritConfig, ContributionKind};
-    use ed2kia::zkp_v3_sprint1::async_zkp_v3::{AsyncZKPV3, ZKPV3Config, ZKPStatement, CircuitType};
-    use ed2kia::zkp_v3_sprint1::zkp_federation_bridge::{ZKPFederationBridge, BridgeConfig, BridgeProof};
+    use ed2kia::sae_v2::checkpoint_optimizer::{CheckpointOptimizer, CheckpointOptimizerConfig};
+    use ed2kia::sae_v2::fine_tuning_v2::{FineTuningV2, FineTuningV2Config};
+    use ed2kia::sae_v2::gradient_sync_v2::{GradientSyncV2, GradientSyncV2Config};
+    use ed2kia::zkp_v3_sprint1::async_zkp_v3::{
+        AsyncZKPV3, CircuitType, ZKPStatement, ZKPV3Config,
+    };
+    use ed2kia::zkp_v3_sprint1::zkp_federation_bridge::{
+        BridgeConfig, BridgeProof, ZKPFederationBridge,
+    };
     use std::time::Instant;
 
     // ========================================================================
@@ -259,10 +265,7 @@ mod stress {
         let mut engine = AntiSybilEngine::new(config);
 
         for i in 0..200 {
-            engine.register_node(
-                format!("node-{}", i),
-                format!("vrf-{}", i),
-            );
+            engine.register_node(format!("node-{}", i), format!("vrf-{}", i));
             engine.record_event(&format!("node-{}", i), i as u64 * 100, (i % 5) as u8);
         }
 
@@ -291,8 +294,16 @@ mod stress {
 
         let start = Instant::now();
         for i in 0..100 {
-            let _ = scoring.record_contribution(format!("node-{}", i), ContributionKind::Code, 10.0 + (i as f64));
-            let _ = scoring.record_contribution(format!("node-{}", i), ContributionKind::ComputeWork, 5.0);
+            let _ = scoring.record_contribution(
+                format!("node-{}", i),
+                ContributionKind::Code,
+                10.0 + (i as f64),
+            );
+            let _ = scoring.record_contribution(
+                format!("node-{}", i),
+                ContributionKind::ComputeWork,
+                5.0,
+            );
         }
         let _ranking = scoring.get_ranking();
         let elapsed = start.elapsed();
@@ -419,7 +430,8 @@ mod stress {
             );
 
             // Record merit
-            let _ = scoring.record_contribution(route.target_node, ContributionKind::ComputeWork, 2.0);
+            let _ =
+                scoring.record_contribution(route.target_node, ContributionKind::ComputeWork, 2.0);
         }
 
         let elapsed = start.elapsed();

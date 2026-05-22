@@ -164,7 +164,9 @@ impl FeedbackEntryV2 {
 
     /// Calcula el drift individual de esta entrada
     pub fn drift(&self) -> f32 {
-        (self.current_activation - self.desired_value).abs().min(1.0)
+        (self.current_activation - self.desired_value)
+            .abs()
+            .min(1.0)
     }
 }
 
@@ -196,15 +198,18 @@ pub struct SteeringSignal {
 
 #[cfg(feature = "v1.1-sprint4")]
 impl SteeringSignal {
-    pub fn new(layer_id: String, delta: Vec<f32>, weighted_confidence: f32, feedback_count: usize, drift_before: f32, signing_key: &SigningKey) -> Self {
+    pub fn new(
+        layer_id: String,
+        delta: Vec<f32>,
+        weighted_confidence: f32,
+        feedback_count: usize,
+        drift_before: f32,
+        signing_key: &SigningKey,
+    ) -> Self {
         let generated_at_ms = current_timestamp_ms();
         let message = format!(
             "{}:{}:{}:{}:{}",
-            layer_id,
-            weighted_confidence,
-            feedback_count,
-            drift_before,
-            generated_at_ms
+            layer_id, weighted_confidence, feedback_count, drift_before, generated_at_ms
         );
         let signature = signing_key.sign(message.as_bytes());
         let signal_id = {
@@ -419,7 +424,10 @@ impl AlignmentLoopV2 {
         self.cleanup_expired();
 
         self.feedback_queue.push_back(entry);
-        debug!("Feedback ingested: entry_id={}", self.feedback_queue.back().unwrap().entry_id);
+        debug!(
+            "Feedback ingested: entry_id={}",
+            self.feedback_queue.back().unwrap().entry_id
+        );
         Ok(())
     }
 
@@ -494,12 +502,14 @@ impl AlignmentLoopV2 {
         }
 
         // Actualizar stats
-        self.stats.feedback_processed += self.feedback_queue.iter().filter(|e| e.processed).count() as u64;
+        self.stats.feedback_processed +=
+            self.feedback_queue.iter().filter(|e| e.processed).count() as u64;
         self.stats.signals_applied += signals.len() as u64;
         self.stats.last_cycle_ms = current_timestamp_ms();
 
         if !self.processing_latencies.is_empty() {
-            self.stats.avg_processing_ms = self.processing_latencies.iter().sum::<f64>() / self.processing_latencies.len() as f64;
+            self.stats.avg_processing_ms = self.processing_latencies.iter().sum::<f64>()
+                / self.processing_latencies.len() as f64;
         }
 
         self.running = false;
@@ -532,7 +542,9 @@ impl AlignmentLoopV2 {
         for entry in &entries {
             let drift = entry.drift();
             let weighted_drift = drift * entry.annotator_confidence;
-            let existing = feature_deltas.entry(entry.feature_idx).or_insert((0.0, 0.0));
+            let existing = feature_deltas
+                .entry(entry.feature_idx)
+                .or_insert((0.0, 0.0));
             existing.0 += weighted_drift;
             existing.1 += entry.annotator_confidence;
         }
@@ -603,9 +615,7 @@ impl AlignmentLoopV2 {
 
         self.feedback_queue
             .iter()
-            .filter(|e| {
-                e.layer_id == layer_id && !e.is_expired(Duration::from_millis(window))
-            })
+            .filter(|e| e.layer_id == layer_id && !e.is_expired(Duration::from_millis(window)))
             .map(|e| e.drift())
             .collect::<Vec<f32>>()
             .into_iter()
@@ -695,7 +705,10 @@ mod tests {
         let key = test_signing_key();
         let annotator_key = test_signing_key();
         let mut loop_v2 = AlignmentLoopV2::new(key);
-        loop_v2.register_annotator("annotator-1".to_string(), annotator_key.verifying_key().clone());
+        loop_v2.register_annotator(
+            "annotator-1".to_string(),
+            annotator_key.verifying_key().clone(),
+        );
 
         let entry = FeedbackEntryV2::new(
             "annotator-1".to_string(),
@@ -759,7 +772,10 @@ mod tests {
             ..Default::default()
         };
         let mut loop_v2 = AlignmentLoopV2::with_config(config, key);
-        loop_v2.register_annotator("annotator-1".to_string(), annotator_key.verifying_key().clone());
+        loop_v2.register_annotator(
+            "annotator-1".to_string(),
+            annotator_key.verifying_key().clone(),
+        );
 
         let entry1 = FeedbackEntryV2::new(
             "annotator-1".to_string(),
@@ -848,7 +864,10 @@ mod tests {
         let key = test_signing_key();
         let annotator_key = test_signing_key();
         let mut loop_v2 = AlignmentLoopV2::new(key);
-        loop_v2.register_annotator("annotator-1".to_string(), annotator_key.verifying_key().clone());
+        loop_v2.register_annotator(
+            "annotator-1".to_string(),
+            annotator_key.verifying_key().clone(),
+        );
 
         let entry = FeedbackEntryV2::new(
             "annotator-1".to_string(),

@@ -30,7 +30,10 @@ pub enum SchemaRegistryError {
     SchemaAlreadyRegistered { version: String },
 
     #[error("Backward compatibility broken: {source_version} -> {target_version}")]
-    BackwardCompatibilityBroken { source_version: String, target_version: String },
+    BackwardCompatibilityBroken {
+        source_version: String,
+        target_version: String,
+    },
 
     #[error("Invalid semantic version: {version}")]
     InvalidSemanticVersion { version: String },
@@ -100,14 +103,20 @@ impl SchemaDefinition {
         let mut hasher = Sha256::new();
         hasher.update(version.as_bytes());
         hasher.update(name.as_bytes());
-        hasher.update(dimensions.iter().flat_map(|d| d.to_le_bytes()).collect::<Vec<u8>>());
+        hasher.update(
+            dimensions
+                .iter()
+                .flat_map(|d| d.to_le_bytes())
+                .collect::<Vec<u8>>(),
+        );
         hasher.update(dtype.as_bytes());
         hex::encode(hasher.finalize())
     }
 
     /// Verifica checksum
     pub fn verify_checksum(&self) -> bool {
-        let expected = Self::compute_checksum(&self.version, &self.name, &self.dimensions, &self.dtype);
+        let expected =
+            Self::compute_checksum(&self.version, &self.name, &self.dimensions, &self.dtype);
         self.checksum == expected
     }
 
@@ -252,7 +261,10 @@ impl SchemaRegistry {
     /// # Returns
     ///
     /// `Ok(())` si el esquema fue registrado exitosamente
-    pub fn register(&mut self, mut definition: SchemaDefinition) -> Result<(), SchemaRegistryError> {
+    pub fn register(
+        &mut self,
+        mut definition: SchemaDefinition,
+    ) -> Result<(), SchemaRegistryError> {
         // Validar versión semántica
         Self::validate_semver(&definition.version)?;
 
@@ -273,10 +285,11 @@ impl SchemaRegistry {
 
         // Verificar compatibilidad backward si existe versión anterior
         if let Some(prev_version) = &self.current_version {
-            let prev_schema = self.schemas.get(prev_version)
-                .ok_or_else(|| SchemaRegistryError::SchemaNotFound {
+            let prev_schema = self.schemas.get(prev_version).ok_or_else(|| {
+                SchemaRegistryError::SchemaNotFound {
                     version: prev_version.clone(),
-                })?;
+                }
+            })?;
 
             let compatible = self.check_backward_compatibility(prev_schema, &definition);
 
@@ -327,10 +340,12 @@ impl SchemaRegistry {
         target_version: Option<&str>,
     ) -> Result<SchemaResult, SchemaRegistryError> {
         // Verificar existencia
-        let schema = self.schemas.get(version)
-            .ok_or_else(|| SchemaRegistryError::SchemaNotFound {
-                version: version.to_string(),
-            })?;
+        let schema =
+            self.schemas
+                .get(version)
+                .ok_or_else(|| SchemaRegistryError::SchemaNotFound {
+                    version: version.to_string(),
+                })?;
 
         // Verificar deprecación
         if schema.deprecated {
@@ -338,7 +353,10 @@ impl SchemaRegistry {
                 version: version.to_string(),
                 compatible: false,
                 migration_path: schema.migration_target.as_ref().map(|t| vec![t.clone()]),
-                error_message: Some(format!("Schema deprecated, migrate to {}", schema.migration_target.as_ref().unwrap())),
+                error_message: Some(format!(
+                    "Schema deprecated, migrate to {}",
+                    schema.migration_target.as_ref().unwrap()
+                )),
                 timestamp_ms: current_timestamp_ms(),
             });
         }
@@ -410,10 +428,12 @@ impl SchemaRegistry {
         version: &str,
         migration_target: &str,
     ) -> Result<(), SchemaRegistryError> {
-        let schema = self.schemas.get_mut(version)
-            .ok_or_else(|| SchemaRegistryError::SchemaNotFound {
-                version: version.to_string(),
-            })?;
+        let schema =
+            self.schemas
+                .get_mut(version)
+                .ok_or_else(|| SchemaRegistryError::SchemaNotFound {
+                    version: version.to_string(),
+                })?;
 
         schema.deprecated = true;
         schema.migration_target = Some(migration_target.to_string());
@@ -627,7 +647,12 @@ mod tests {
     use super::*;
 
     fn make_schema(version: &str, name: &str) -> SchemaDefinition {
-        SchemaDefinition::new(version.to_string(), name.to_string(), vec![256], "f32".to_string())
+        SchemaDefinition::new(
+            version.to_string(),
+            name.to_string(),
+            vec![256],
+            "f32".to_string(),
+        )
     }
 
     #[test]
@@ -652,7 +677,10 @@ mod tests {
 
         let schema2 = make_schema("1.0.0", "qwen-scope");
         let result = registry.register(schema2);
-        assert!(matches!(result, Err(SchemaRegistryError::SchemaAlreadyRegistered { .. })));
+        assert!(matches!(
+            result,
+            Err(SchemaRegistryError::SchemaAlreadyRegistered { .. })
+        ));
     }
 
     #[test]
@@ -661,13 +689,18 @@ mod tests {
         let mut schema = make_schema("1.0", "qwen-scope"); // Missing patch
         schema.checksum = SchemaDefinition::compute_checksum("1.0", "qwen-scope", &[256], "f32");
         let result = registry.register(schema);
-        assert!(matches!(result, Err(SchemaRegistryError::InvalidSemanticVersion { .. })));
+        assert!(matches!(
+            result,
+            Err(SchemaRegistryError::InvalidSemanticVersion { .. })
+        ));
     }
 
     #[test]
     fn test_validate_compatible() {
         let mut registry = SchemaRegistry::new();
-        registry.register(make_schema("1.0.0", "qwen-scope")).unwrap();
+        registry
+            .register(make_schema("1.0.0", "qwen-scope"))
+            .unwrap();
 
         let result = registry.validate("1.0.0", None);
         assert!(result.is_ok());
@@ -678,14 +711,21 @@ mod tests {
     fn test_validate_not_found() {
         let registry = SchemaRegistry::new();
         let result = registry.validate("9.9.9", None);
-        assert!(matches!(result, Err(SchemaRegistryError::SchemaNotFound { .. })));
+        assert!(matches!(
+            result,
+            Err(SchemaRegistryError::SchemaNotFound { .. })
+        ));
     }
 
     #[test]
     fn test_deprecate_schema() {
         let mut registry = SchemaRegistry::new();
-        registry.register(make_schema("1.0.0", "qwen-scope")).unwrap();
-        registry.register(make_schema("2.0.0", "qwen-scope")).unwrap();
+        registry
+            .register(make_schema("1.0.0", "qwen-scope"))
+            .unwrap();
+        registry
+            .register(make_schema("2.0.0", "qwen-scope"))
+            .unwrap();
 
         assert!(registry.deprecate("1.0.0", "2.0.0").is_ok());
 
@@ -697,8 +737,12 @@ mod tests {
     #[test]
     fn test_validate_deprecated_schema() {
         let mut registry = SchemaRegistry::new();
-        registry.register(make_schema("1.0.0", "qwen-scope")).unwrap();
-        registry.register(make_schema("2.0.0", "qwen-scope")).unwrap();
+        registry
+            .register(make_schema("1.0.0", "qwen-scope"))
+            .unwrap();
+        registry
+            .register(make_schema("2.0.0", "qwen-scope"))
+            .unwrap();
         registry.deprecate("1.0.0", "2.0.0").unwrap();
 
         let result = registry.validate("1.0.0", None).unwrap();
@@ -709,8 +753,12 @@ mod tests {
     #[test]
     fn test_get_compatible() {
         let mut registry = SchemaRegistry::new();
-        registry.register(make_schema("1.0.0", "qwen-scope")).unwrap();
-        registry.register(make_schema("2.0.0", "qwen-scope")).unwrap();
+        registry
+            .register(make_schema("1.0.0", "qwen-scope"))
+            .unwrap();
+        registry
+            .register(make_schema("2.0.0", "qwen-scope"))
+            .unwrap();
 
         let compatible = registry.get_compatible("2.0.0");
         assert!(!compatible.is_empty()); // Should contain 1.0.0
@@ -719,8 +767,12 @@ mod tests {
     #[test]
     fn test_stats() {
         let mut registry = SchemaRegistry::new();
-        registry.register(make_schema("1.0.0", "qwen-scope")).unwrap();
-        registry.register(make_schema("2.0.0", "qwen-scope")).unwrap();
+        registry
+            .register(make_schema("1.0.0", "qwen-scope"))
+            .unwrap();
+        registry
+            .register(make_schema("2.0.0", "qwen-scope"))
+            .unwrap();
         registry.deprecate("1.0.0", "2.0.0").unwrap();
 
         let stats = registry.stats();
@@ -747,7 +799,12 @@ mod tests {
     fn test_backward_compatibility_check() {
         let registry = SchemaRegistry::new();
         let old = make_schema("1.0.0", "qwen-scope");
-        let new = SchemaDefinition::new("2.0.0".to_string(), "qwen-scope".to_string(), vec![512], "f32".to_string());
+        let new = SchemaDefinition::new(
+            "2.0.0".to_string(),
+            "qwen-scope".to_string(),
+            vec![512],
+            "f32".to_string(),
+        );
         assert!(registry.check_backward_compatibility(&old, &new)); // Expanded dim = OK
     }
 
@@ -755,7 +812,12 @@ mod tests {
     fn test_backward_compatibility_breaking() {
         let registry = SchemaRegistry::new();
         let old = make_schema("1.0.0", "qwen-scope");
-        let new = SchemaDefinition::new("2.0.0".to_string(), "qwen-scope".to_string(), vec![128], "f32".to_string());
+        let new = SchemaDefinition::new(
+            "2.0.0".to_string(),
+            "qwen-scope".to_string(),
+            vec![128],
+            "f32".to_string(),
+        );
         assert!(!registry.check_backward_compatibility(&old, &new)); // Shrinking dim = breaking
     }
 
@@ -791,15 +853,22 @@ mod tests {
     #[test]
     fn test_set_current_version() {
         let mut registry = SchemaRegistry::new();
-        registry.register(make_schema("1.0.0", "qwen-scope")).unwrap();
+        registry
+            .register(make_schema("1.0.0", "qwen-scope"))
+            .unwrap();
         assert!(registry.set_current_version("1.0.0").is_ok());
         assert_eq!(registry.current_version(), Some("1.0.0"));
     }
 
     #[test]
     fn test_metadata() {
-        let schema = SchemaDefinition::new("1.0.0".to_string(), "test".to_string(), vec![256], "f32".to_string())
-            .with_metadata("author".to_string(), "ed2kIA".to_string());
+        let schema = SchemaDefinition::new(
+            "1.0.0".to_string(),
+            "test".to_string(),
+            vec![256],
+            "f32".to_string(),
+        )
+        .with_metadata("author".to_string(), "ed2kIA".to_string());
         assert_eq!(schema.metadata.get("author").unwrap(), "ed2kIA");
     }
 }

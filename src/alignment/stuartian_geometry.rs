@@ -53,19 +53,51 @@ pub struct OctahedronVertex {
 impl OctahedronVertex {
     /// Foco Superior — Autonomía, Diversidad, Conocimiento.
     pub fn foco_superior() -> Self {
-        Self { x: 0.0, y: 0.0, z: 1.0 }
+        Self {
+            x: 0.0,
+            y: 0.0,
+            z: 1.0,
+        }
     }
 
     /// Foco Inferior — Perversidad, Control, Extracción.
     pub fn foco_inferior() -> Self {
-        Self { x: 0.0, y: 0.0, z: -1.0 }
+        Self {
+            x: 0.0,
+            y: 0.0,
+            z: -1.0,
+        }
     }
 
     /// Vértices del Ecuador — Ilusión binaria.
-    pub fn ecuador_x_pos() -> Self { Self { x: 1.0, y: 0.0, z: 0.0 } }
-    pub fn ecuador_x_neg() -> Self { Self { x: -1.0, y: 0.0, z: 0.0 } }
-    pub fn ecuador_y_pos() -> Self { Self { x: 0.0, y: 1.0, z: 0.0 } }
-    pub fn ecuador_y_neg() -> Self { Self { x: 0.0, y: -1.0, z: 0.0 } }
+    pub fn ecuador_x_pos() -> Self {
+        Self {
+            x: 1.0,
+            y: 0.0,
+            z: 0.0,
+        }
+    }
+    pub fn ecuador_x_neg() -> Self {
+        Self {
+            x: -1.0,
+            y: 0.0,
+            z: 0.0,
+        }
+    }
+    pub fn ecuador_y_pos() -> Self {
+        Self {
+            x: 0.0,
+            y: 1.0,
+            z: 0.0,
+        }
+    }
+    pub fn ecuador_y_neg() -> Self {
+        Self {
+            x: 0.0,
+            y: -1.0,
+            z: 0.0,
+        }
+    }
 
     /// Retorna los 6 vértices del octaedro en orden canónico.
     pub fn all_vertices() -> [Self; 6] {
@@ -192,19 +224,12 @@ pub const STUARTIAN_GRAVITY_K: f32 = 2.5;
 /// - Si `extraction >> autonomy` → `Z → -1.0` (Foco Inferior)
 /// - Si `autonomy ≈ extraction` → `Z ≈ 0.0` (Ecuador)
 /// - `k > 1.0` amplifica diferencias pequeñas → aceleración exponencial
-pub fn calculate_focal_gravity(
-    autonomy_signal: f32,
-    extraction_signal: f32,
-) -> f32 {
+pub fn calculate_focal_gravity(autonomy_signal: f32, extraction_signal: f32) -> f32 {
     calculate_focal_gravity_with_k(autonomy_signal, extraction_signal, STUARTIAN_GRAVITY_K)
 }
 
 /// Versión con constante `k` configurable (para testing y calibración).
-pub fn calculate_focal_gravity_with_k(
-    autonomy_signal: f32,
-    extraction_signal: f32,
-    k: f32,
-) -> f32 {
+pub fn calculate_focal_gravity_with_k(autonomy_signal: f32, extraction_signal: f32, k: f32) -> f32 {
     if k <= 1.0 {
         // k debe ser > 1.0 para aceleración exponencial.
         // En producción esto es un error de configuración.
@@ -242,10 +267,7 @@ pub struct FocalEvaluation {
 
 impl FocalEvaluation {
     /// Evalúa completamente una trayectoria ética.
-    pub fn evaluate(
-        autonomy_signal: f32,
-        extraction_signal: f32,
-    ) -> Self {
+    pub fn evaluate(autonomy_signal: f32, extraction_signal: f32) -> Self {
         let delta = autonomy_signal - extraction_signal;
         let z = calculate_focal_gravity(autonomy_signal, extraction_signal);
         let region = if z > 0.0 {
@@ -314,7 +336,11 @@ mod tests {
 
     #[test]
     fn test_vertex_project_2d() {
-        let v = OctahedronVertex { x: 0.5, y: 0.3, z: 0.8 };
+        let v = OctahedronVertex {
+            x: 0.5,
+            y: 0.3,
+            z: 0.8,
+        };
         let (px, pz) = v.project_2d();
         assert!((px - 0.5).abs() < f32::EPSILON);
         assert!((pz - 0.8).abs() < f32::EPSILON);

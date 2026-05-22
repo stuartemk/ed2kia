@@ -6,12 +6,18 @@
 //!
 //! Feature-gated: `#[cfg(feature = "v1.1-sprint3")]`
 
-use crate::marketplace_v2::escrow_ledger::{EscrowLedger, EscrowState, EscrowTransaction, SLOMetrics};
-use crate::marketplace_v2::matchmaker::{MatchResult, ResourceMatchmaker, ResourceRequest, ResourceListing, ResourceType};
-use crate::marketplace_v2::pricing_engine::{PricingEngine, PricingResourceType, PriceQuote, MarketSample};
+use crate::marketplace_v2::escrow_ledger::{
+    EscrowLedger, EscrowState, EscrowTransaction, SLOMetrics,
+};
+use crate::marketplace_v2::matchmaker::{
+    MatchResult, ResourceListing, ResourceMatchmaker, ResourceRequest, ResourceType,
+};
+use crate::marketplace_v2::pricing_engine::{
+    MarketSample, PriceQuote, PricingEngine, PricingResourceType,
+};
 use crate::zkp::async_prover::AsyncProver;
-use crate::zkp::circuit::Witness;
 use crate::zkp::batch_accumulator::BatchAccumulator;
+use crate::zkp::circuit::Witness;
 use crate::zkp::circuit::{BatchCommitment, ZKPProof};
 use crate::zkp::verifier_pool::VerifierPool;
 use serde::{Deserialize, Serialize};
@@ -138,7 +144,12 @@ impl ResourceWorkflowResult {
         }
     }
 
-    pub fn failed(workflow_id: String, state: ResourceWorkflowState, reason: String, total_time_ms: f64) -> Self {
+    pub fn failed(
+        workflow_id: String,
+        state: ResourceWorkflowState,
+        reason: String,
+        total_time_ms: f64,
+    ) -> Self {
         Self {
             workflow_id,
             final_state: state,
@@ -181,7 +192,7 @@ impl ZKPMarketplaceBridge {
         let verifier_pool = VerifierPool::new();
         let escrow_ledger = Arc::new(
             EscrowLedger::new(escrow_db_path, Self::test_signing_key())
-                .map_err(|e| BridgeError::Escrow(e.to_string()))?
+                .map_err(|e| BridgeError::Escrow(e.to_string()))?,
         );
         let accumulator = BatchAccumulator::new();
 
@@ -210,7 +221,7 @@ impl ZKPMarketplaceBridge {
         let verifier_pool = VerifierPool::new();
         let escrow_ledger = Arc::new(
             EscrowLedger::new(db_path.to_str().unwrap(), Self::test_signing_key())
-                .map_err(|e| BridgeError::Escrow(e.to_string()))?
+                .map_err(|e| BridgeError::Escrow(e.to_string()))?,
         );
         let accumulator = BatchAccumulator::new();
         Ok(Self {
@@ -240,7 +251,9 @@ impl ZKPMarketplaceBridge {
         info!(workflow_id = %workflow_id, requester = %request.requester_id, "Resource workflow started");
 
         // Paso 1: Matching
-        let match_result = self.matchmaker.match_request(&request)
+        let match_result = self
+            .matchmaker
+            .match_request(&request)
             .map_err(|e| BridgeError::Matchmaker(e.to_string()))?;
 
         if !match_result.matched {
@@ -252,9 +265,10 @@ impl ZKPMarketplaceBridge {
             ));
         }
 
-        let listing = match_result.listing.as_ref().ok_or_else(|| {
-            BridgeError::Matchmaker("Matched but no listing found".into())
-        })?;
+        let listing = match_result
+            .listing
+            .as_ref()
+            .ok_or_else(|| BridgeError::Matchmaker("Matched but no listing found".into()))?;
 
         info!(workflow_id = %workflow_id, matched_node = %listing.node_id, "Resource matched");
 
@@ -265,11 +279,10 @@ impl ZKPMarketplaceBridge {
             ResourceType::Bandwidth { .. } => PricingResourceType::Bandwidth,
         };
 
-        let price_quote = self.pricing_engine.compute_price(
-            pricing_type,
-            listing.base_price,
-            request.quantity,
-        ).map_err(|e| BridgeError::Pricing(e.to_string()))?;
+        let price_quote = self
+            .pricing_engine
+            .compute_price(pricing_type, listing.base_price, request.quantity)
+            .map_err(|e| BridgeError::Pricing(e.to_string()))?;
 
         // Registrar sample de mercado
         self.pricing_engine.record_sample(MarketSample {
@@ -283,20 +296,24 @@ impl ZKPMarketplaceBridge {
 
         // Paso 3: Generar ZKP de integridad del batch
         let witness = self.create_witness_for_listing(listing, &request);
-        let proof_result = self.prover.generate_proof(
-            workflow_id.clone(),
-            witness,
-        ).await.map_err(|e| BridgeError::Prover(e.to_string()))?;
+        let proof_result = self
+            .prover
+            .generate_proof(workflow_id.clone(), witness)
+            .await
+            .map_err(|e| BridgeError::Prover(e.to_string()))?;
 
         info!(workflow_id = %workflow_id, proof_time_ms = %proof_result.generation_time_ms, "ZKP generated");
 
         // Paso 4: Verificar ZKP en pool
-        let verification_result = self.verifier_pool.verify(
-            proof_result.proof.clone(),
-            proof_result.commitment.clone(),
-        ).map_err(|e| BridgeError::Verifier(e.to_string()))?;
+        let verification_result = self
+            .verifier_pool
+            .verify(proof_result.proof.clone(), proof_result.commitment.clone())
+            .map_err(|e| BridgeError::Verifier(e.to_string()))?;
 
-        let verification_success = matches!(verification_result.record.result, crate::zkp::verifier::VerificationResult::ZKPVerified { .. });
+        let verification_success = matches!(
+            verification_result.record.result,
+            crate::zkp::verifier::VerificationResult::ZKPVerified { .. }
+        );
         if !verification_success {
             return Ok(ResourceWorkflowResult::failed(
                 workflow_id,
@@ -309,20 +326,22 @@ impl ZKPMarketplaceBridge {
         info!(workflow_id = %workflow_id, verification_time_ms = %verification_result.total_time_ms, "ZKP verified");
 
         // Paso 5: Acumular batch (add_batch solo acepta batch_id y commitment)
-        self.accumulator.add_batch(
-            workflow_id.clone(),
-            proof_result.commitment.clone(),
-        ).map_err(|e| BridgeError::Accumulator(e.to_string()))?;
+        self.accumulator
+            .add_batch(workflow_id.clone(), proof_result.commitment.clone())
+            .map_err(|e| BridgeError::Accumulator(e.to_string()))?;
 
         // Paso 6: Crear escrow
         let escrow_amount: f64 = (price_quote.unit_price * request.quantity).into();
-        let escrow_tx = self.escrow_ledger.create_escrow(
-            workflow_id.clone(),
-            listing.node_id.clone(),
-            request.requester_id.clone(),
-            escrow_amount,
-            match_result.settlement_hash.clone(),
-        ).map_err(|e| BridgeError::Escrow(e.to_string()))?;
+        let escrow_tx = self
+            .escrow_ledger
+            .create_escrow(
+                workflow_id.clone(),
+                listing.node_id.clone(),
+                request.requester_id.clone(),
+                escrow_amount,
+                match_result.settlement_hash.clone(),
+            )
+            .map_err(|e| BridgeError::Escrow(e.to_string()))?;
 
         info!(workflow_id = %workflow_id, amount = %escrow_tx.amount, "Escrow created");
 
@@ -330,19 +349,23 @@ impl ZKPMarketplaceBridge {
         let slo_metrics = self.simulate_delivery_slo(listing, &request);
 
         // Transicionar a delivered
-        self.escrow_ledger.transition_state(&workflow_id, EscrowState::Delivered)
+        self.escrow_ledger
+            .transition_state(&workflow_id, EscrowState::Delivered)
             .map_err(|e| BridgeError::Escrow(e.to_string()))?;
 
         // Paso 8: Liberar fondos si SLO cumplido
         let final_tx = if slo_metrics.meets_slo() {
-            self.escrow_ledger.release_on_zkp(
-                &workflow_id,
-                hex::encode(proof_result.commitment.batch_hash),
-                slo_metrics,
-            ).map_err(|e| BridgeError::Escrow(e.to_string()))?
+            self.escrow_ledger
+                .release_on_zkp(
+                    &workflow_id,
+                    hex::encode(proof_result.commitment.batch_hash),
+                    slo_metrics,
+                )
+                .map_err(|e| BridgeError::Escrow(e.to_string()))?
         } else {
             warn!(workflow_id = %workflow_id, "SLO not met, initiating refund");
-            self.escrow_ledger.refund(&workflow_id, "SLO metrics not met")
+            self.escrow_ledger
+                .refund(&workflow_id, "SLO metrics not met")
                 .map_err(|e| BridgeError::Escrow(e.to_string()))?
         };
 
@@ -374,20 +397,25 @@ impl ZKPMarketplaceBridge {
     }
 
     /// Crea un witness para un listing dado.
-    fn create_witness_for_listing(&self, listing: &ResourceListing, request: &ResourceRequest) -> Witness {
+    fn create_witness_for_listing(
+        &self,
+        listing: &ResourceListing,
+        request: &ResourceRequest,
+    ) -> Witness {
         use ark_ff::UniformRand;
         use ark_std::rand::thread_rng;
 
         let mut rng = thread_rng();
-        let feature_values: Vec<ark_bn254::Fr> = (0..8)
-            .map(|_| ark_bn254::Fr::rand(&mut rng))
-            .collect();
-        let blinding_factors: Vec<ark_bn254::Fr> = (0..4)
-            .map(|_| ark_bn254::Fr::rand(&mut rng))
-            .collect();
+        let feature_values: Vec<ark_bn254::Fr> =
+            (0..8).map(|_| ark_bn254::Fr::rand(&mut rng)).collect();
+        let blinding_factors: Vec<ark_bn254::Fr> =
+            (0..4).map(|_| ark_bn254::Fr::rand(&mut rng)).collect();
 
         let mut batch_hash = [0u8; 32];
-        let data = format!("{}{}{}", listing.node_id, request.requester_id, listing.listed_at);
+        let data = format!(
+            "{}{}{}",
+            listing.node_id, request.requester_id, listing.listed_at
+        );
         batch_hash.copy_from_slice(&Sha256::digest(data.as_bytes()));
 
         Witness {
@@ -398,7 +426,11 @@ impl ZKPMarketplaceBridge {
     }
 
     /// Simula métricas SLO de entrega.
-    fn simulate_delivery_slo(&self, listing: &ResourceListing, request: &ResourceRequest) -> SLOMetrics {
+    fn simulate_delivery_slo(
+        &self,
+        listing: &ResourceListing,
+        request: &ResourceRequest,
+    ) -> SLOMetrics {
         // Simulación determinística para tests
         // Siempre pasamos SLO para tests determinísticos
         SLOMetrics {
@@ -445,7 +477,10 @@ mod tests {
         let now = chrono::Utc::now().timestamp_millis() as u64;
         ResourceListing {
             node_id: node_id.into(),
-            resource_type: ResourceType::SAEShard { model_id: "scope-v2".into(), layer: 5 },
+            resource_type: ResourceType::SAEShard {
+                model_id: "scope-v2".into(),
+                layer: 5,
+            },
             quantity: 10.0,
             base_price: 100.0,
             listed_at: now,
@@ -459,7 +494,10 @@ mod tests {
     fn make_request(requester: &str) -> ResourceRequest {
         ResourceRequest {
             requester_id: requester.into(),
-            resource_type: ResourceType::SAEShard { model_id: "scope-v2".into(), layer: 5 },
+            resource_type: ResourceType::SAEShard {
+                model_id: "scope-v2".into(),
+                layer: 5,
+            },
             quantity: 5.0,
             max_price: 150.0,
             max_latency_ms: 100,
@@ -472,7 +510,9 @@ mod tests {
         let mut bridge = ZKPMarketplaceBridge::new_test().unwrap();
         bridge.publish_resource(make_listing("seller1"));
 
-        let result = bridge.execute_resource_workflow(make_request("buyer1")).await;
+        let result = bridge
+            .execute_resource_workflow(make_request("buyer1"))
+            .await;
         assert!(result.is_ok());
 
         let workflow = result.unwrap();
@@ -486,7 +526,9 @@ mod tests {
         let mut bridge = ZKPMarketplaceBridge::new_test().unwrap();
         // Sin listings publicados
 
-        let result = bridge.execute_resource_workflow(make_request("buyer1")).await;
+        let result = bridge
+            .execute_resource_workflow(make_request("buyer1"))
+            .await;
         assert!(result.is_ok());
 
         let workflow = result.unwrap();
@@ -502,7 +544,9 @@ mod tests {
 
         assert_eq!(bridge.get_matchmaker_stats(), 2);
 
-        let result = bridge.execute_resource_workflow(make_request("buyer1")).await;
+        let result = bridge
+            .execute_resource_workflow(make_request("buyer1"))
+            .await;
         assert!(result.is_ok());
     }
 
@@ -524,7 +568,9 @@ mod tests {
         let mut bridge = ZKPMarketplaceBridge::new_test().unwrap();
         bridge.publish_resource(make_listing("seller1"));
 
-        let _ = bridge.execute_resource_workflow(make_request("buyer1")).await;
+        let _ = bridge
+            .execute_resource_workflow(make_request("buyer1"))
+            .await;
 
         let stats = bridge.get_pricing_stats();
         assert!(stats.total_quotes >= 1);

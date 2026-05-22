@@ -29,7 +29,11 @@ pub enum WsFederationError {
     #[error("Conexión no encontrada: {0}")]
     ConnectionNotFound(String),
     #[error("Rate limit excedido: {current}/{max} msg/s para conexión {conn}")]
-    RateLimitExceeded { current: usize, max: usize, conn: String },
+    RateLimitExceeded {
+        current: usize,
+        max: usize,
+        conn: String,
+    },
     #[error("Autenticación fallida: {0}")]
     AuthFailed(String),
     #[error("Conexión duplicada: {0}")]
@@ -302,12 +306,18 @@ impl WsFederationStream {
         }
     }
 
-    pub fn connect(&mut self, connection_id: String, client_id: String) -> Result<(), WsFederationError> {
+    pub fn connect(
+        &mut self,
+        connection_id: String,
+        client_id: String,
+    ) -> Result<(), WsFederationError> {
         if self.connections.contains_key(&connection_id) {
             return Err(WsFederationError::ConnectionAlreadyExists(connection_id));
         }
         if self.connections.len() >= self.config.max_connections {
-            return Err(WsFederationError::MaxConnectionsReached(self.config.max_connections));
+            return Err(WsFederationError::MaxConnectionsReached(
+                self.config.max_connections,
+            ));
         }
         let conn = FedConnection::new(connection_id.clone(), client_id);
         self.connections.insert(connection_id, conn);
@@ -317,19 +327,21 @@ impl WsFederationStream {
     }
 
     pub fn authenticate(&mut self, connection_id: &str) -> Result<(), WsFederationError> {
-        let conn = self
-            .connections
-            .get_mut(connection_id)
-            .ok_or(WsFederationError::ConnectionNotFound(connection_id.to_string()))?;
+        let conn = self.connections.get_mut(connection_id).ok_or(
+            WsFederationError::ConnectionNotFound(connection_id.to_string()),
+        )?;
         conn.authenticated = true;
         Ok(())
     }
 
-    pub fn subscribe(&mut self, connection_id: &str, categories: Vec<FedCategory>) -> Result<(), WsFederationError> {
-        let conn = self
-            .connections
-            .get_mut(connection_id)
-            .ok_or(WsFederationError::ConnectionNotFound(connection_id.to_string()))?;
+    pub fn subscribe(
+        &mut self,
+        connection_id: &str,
+        categories: Vec<FedCategory>,
+    ) -> Result<(), WsFederationError> {
+        let conn = self.connections.get_mut(connection_id).ok_or(
+            WsFederationError::ConnectionNotFound(connection_id.to_string()),
+        )?;
         conn.categories = categories;
         Ok(())
     }
@@ -337,7 +349,9 @@ impl WsFederationStream {
     pub fn disconnect(&mut self, connection_id: &str) -> Result<(), WsFederationError> {
         self.connections
             .remove(connection_id)
-            .ok_or(WsFederationError::ConnectionNotFound(connection_id.to_string()))?;
+            .ok_or(WsFederationError::ConnectionNotFound(
+                connection_id.to_string(),
+            ))?;
         self.stats.active_connections -= 1;
         Ok(())
     }
@@ -371,10 +385,9 @@ impl WsFederationStream {
     }
 
     pub fn check_rate_limit(&mut self, connection_id: &str) -> Result<(), WsFederationError> {
-        let conn = self
-            .connections
-            .get_mut(connection_id)
-            .ok_or(WsFederationError::ConnectionNotFound(connection_id.to_string()))?;
+        let conn = self.connections.get_mut(connection_id).ok_or(
+            WsFederationError::ConnectionNotFound(connection_id.to_string()),
+        )?;
         if conn.messages_this_second >= self.config.rate_limit_per_sec {
             self.stats.rate_limited += 1;
             return Err(WsFederationError::RateLimitExceeded {
@@ -437,7 +450,9 @@ mod tests {
     fn test_connect_duplicate() {
         let mut stream = WsFederationStream::default();
         stream.connect("conn-1".into(), "client-1".into()).unwrap();
-        let err = stream.connect("conn-1".into(), "client-2".into()).unwrap_err();
+        let err = stream
+            .connect("conn-1".into(), "client-2".into())
+            .unwrap_err();
         assert!(matches!(err, WsFederationError::ConnectionAlreadyExists(_)));
     }
 
@@ -448,7 +463,9 @@ mod tests {
         let mut stream = WsFederationStream::new(config);
         stream.connect("conn-1".into(), "client-1".into()).unwrap();
         stream.connect("conn-2".into(), "client-2".into()).unwrap();
-        let err = stream.connect("conn-3".into(), "client-3".into()).unwrap_err();
+        let err = stream
+            .connect("conn-3".into(), "client-3".into())
+            .unwrap_err();
         assert!(matches!(err, WsFederationError::MaxConnectionsReached(2)));
     }
 
@@ -464,7 +481,9 @@ mod tests {
     fn test_subscribe() {
         let mut stream = WsFederationStream::default();
         stream.connect("conn-1".into(), "client-1".into()).unwrap();
-        stream.subscribe("conn-1", vec![FedCategory::Scaling, FedCategory::Zkp]).unwrap();
+        stream
+            .subscribe("conn-1", vec![FedCategory::Scaling, FedCategory::Zkp])
+            .unwrap();
         let conn = stream.connections.get("conn-1").unwrap();
         assert_eq!(conn.categories.len(), 2);
     }
@@ -494,16 +513,22 @@ mod tests {
     #[test]
     fn test_catchup() {
         let mut stream = WsFederationStream::default();
-        stream.emit_event(FedCategory::Scaling, FedPayload::NodeRegistered {
-            node_id: "n1".into(),
-            capacity: 100.0,
-            reputation: 0.9,
-        });
-        stream.emit_event(FedCategory::Zkp, FedPayload::ProofVerified {
-            proof_id: "p1".into(),
-            cost: 10.0,
-            time_ms: 200,
-        });
+        stream.emit_event(
+            FedCategory::Scaling,
+            FedPayload::NodeRegistered {
+                node_id: "n1".into(),
+                capacity: 100.0,
+                reputation: 0.9,
+            },
+        );
+        stream.emit_event(
+            FedCategory::Zkp,
+            FedPayload::ProofVerified {
+                proof_id: "p1".into(),
+                cost: 10.0,
+                time_ms: 200,
+            },
+        );
         let catchup = stream.get_catchup(0);
         assert_eq!(catchup.len(), 2);
     }
@@ -591,16 +616,22 @@ mod tests {
     #[test]
     fn test_sequence_increments() {
         let mut stream = WsFederationStream::default();
-        stream.emit_event(FedCategory::Scaling, FedPayload::NodeRegistered {
-            node_id: "n1".into(),
-            capacity: 100.0,
-            reputation: 0.9,
-        });
-        stream.emit_event(FedCategory::Zkp, FedPayload::ProofVerified {
-            proof_id: "p1".into(),
-            cost: 10.0,
-            time_ms: 200,
-        });
+        stream.emit_event(
+            FedCategory::Scaling,
+            FedPayload::NodeRegistered {
+                node_id: "n1".into(),
+                capacity: 100.0,
+                reputation: 0.9,
+            },
+        );
+        stream.emit_event(
+            FedCategory::Zkp,
+            FedPayload::ProofVerified {
+                proof_id: "p1".into(),
+                cost: 10.0,
+                time_ms: 200,
+            },
+        );
         let events: Vec<_> = stream.event_buffer.iter().collect();
         assert!(events[0].sequence < events[1].sequence);
     }

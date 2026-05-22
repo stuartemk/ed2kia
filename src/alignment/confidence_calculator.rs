@@ -104,7 +104,8 @@ impl AnnotatorTrustRecord {
 
         // Suavizado exponencial
         let alpha = 0.3;
-        self.current_confidence = alpha * acceptance_ratio + (1.0 - alpha) * self.current_confidence;
+        self.current_confidence =
+            alpha * acceptance_ratio + (1.0 - alpha) * self.current_confidence;
 
         // Clamp a [0.0, 1.0]
         self.current_confidence = self.current_confidence.clamp(0.0, 1.0);
@@ -119,10 +120,7 @@ impl AnnotatorTrustRecord {
 
         debug!(
             "Trust updated: annotator={}, confidence={:.4}, accepted={}/{}",
-            self.annotator_id,
-            self.current_confidence,
-            self.accepted_feedback,
-            self.total_feedback,
+            self.annotator_id, self.current_confidence, self.accepted_feedback, self.total_feedback,
         );
     }
 
@@ -131,8 +129,10 @@ impl AnnotatorTrustRecord {
             return 0.0;
         }
 
-        let mean: f32 = self.confidence_history.iter().sum::<f32>() / self.confidence_history.len() as f32;
-        let variance: f32 = self.confidence_history
+        let mean: f32 =
+            self.confidence_history.iter().sum::<f32>() / self.confidence_history.len() as f32;
+        let variance: f32 = self
+            .confidence_history
             .iter()
             .map(|&v| (v - mean).powi(2))
             .sum::<f32>()
@@ -172,7 +172,13 @@ impl AnnotatorTrustRecord {
 
         // Anomalía si confianza cae abruptamente
         if self.confidence_history.len() >= 3 {
-            let recent: Vec<f32> = self.confidence_history.iter().rev().take(3).cloned().collect();
+            let recent: Vec<f32> = self
+                .confidence_history
+                .iter()
+                .rev()
+                .take(3)
+                .cloned()
+                .collect();
             if recent[0] + 0.3 < recent[2] {
                 // Caída de más de 0.3 en 3 muestras
                 return true;
@@ -322,16 +328,21 @@ impl ConfidenceCalculator {
         self.recalc_stats();
 
         // Devolver confianza actual
-        Ok(self.records.get(annotator_id).map(|r| r.current_confidence).unwrap_or(0.0))
+        Ok(self
+            .records
+            .get(annotator_id)
+            .map(|r| r.current_confidence)
+            .unwrap_or(0.0))
     }
 
     /// Obtiene confianza actual de un anotador
     pub fn get_confidence(&self, annotator_id: &str) -> Result<f32, ConfidenceError> {
-        let record = self.records.get(annotator_id).ok_or_else(|| {
-            ConfidenceError::AnnotatorNotFound {
-                annotator_id: annotator_id.to_string(),
-            }
-        })?;
+        let record =
+            self.records
+                .get(annotator_id)
+                .ok_or_else(|| ConfidenceError::AnnotatorNotFound {
+                    annotator_id: annotator_id.to_string(),
+                })?;
 
         Ok(record.current_confidence)
     }
@@ -352,11 +363,12 @@ impl ConfidenceCalculator {
         let mut total_confidence: f32 = 0.0;
 
         for id in annotator_ids {
-            let record = self.records.get(id).ok_or_else(|| {
-                ConfidenceError::AnnotatorNotFound {
-                    annotator_id: id.clone(),
-                }
-            })?;
+            let record =
+                self.records
+                    .get(id)
+                    .ok_or_else(|| ConfidenceError::AnnotatorNotFound {
+                        annotator_id: id.clone(),
+                    })?;
 
             // Verificar mínimo de feedback
             if record.total_feedback < self.config.min_feedback_for_confidence as u64 {
@@ -410,11 +422,12 @@ impl ConfidenceCalculator {
 
     /// Obtiene registro completo de un anotador
     pub fn get_record(&self, annotator_id: &str) -> Result<AnnotatorTrustRecord, ConfidenceError> {
-        self.records.get(annotator_id).cloned().ok_or_else(|| {
-            ConfidenceError::AnnotatorNotFound {
+        self.records
+            .get(annotator_id)
+            .cloned()
+            .ok_or_else(|| ConfidenceError::AnnotatorNotFound {
                 annotator_id: annotator_id.to_string(),
-            }
-        })
+            })
     }
 
     fn recalc_stats(&mut self) {
@@ -423,13 +436,23 @@ impl ConfidenceCalculator {
             return;
         }
 
-        let confidences: Vec<f32> = self.records.values().map(|r| r.current_confidence).collect();
+        let confidences: Vec<f32> = self
+            .records
+            .values()
+            .map(|r| r.current_confidence)
+            .collect();
         let total: f32 = confidences.iter().sum();
 
         self.stats.total_annotators = self.records.len();
         self.stats.avg_confidence = total / self.records.len() as f32;
-        self.stats.max_confidence = *confidences.iter().max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap_or(&0.0);
-        self.stats.min_confidence = *confidences.iter().min_by(|a, b| a.partial_cmp(b).unwrap()).unwrap_or(&1.0);
+        self.stats.max_confidence = *confidences
+            .iter()
+            .max_by(|a, b| a.partial_cmp(b).unwrap())
+            .unwrap_or(&0.0);
+        self.stats.min_confidence = *confidences
+            .iter()
+            .min_by(|a, b| a.partial_cmp(b).unwrap())
+            .unwrap_or(&1.0);
         self.stats.anomaly_count = self.detect_anomalies().len();
         self.stats.total_feedback_processed = self.records.values().map(|r| r.total_feedback).sum();
     }
@@ -531,7 +554,9 @@ mod tests {
             calc.update_confidence("a2", true).unwrap();
         }
 
-        let weighted = calc.compute_weighted_confidence(&["a1".to_string(), "a2".to_string()]).unwrap();
+        let weighted = calc
+            .compute_weighted_confidence(&["a1".to_string(), "a2".to_string()])
+            .unwrap();
         assert!(weighted > 0.7);
     }
 

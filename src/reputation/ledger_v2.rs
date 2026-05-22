@@ -98,7 +98,14 @@ impl ReputationEvent {
         prev_hash: String,
     ) -> Self {
         let signature = compute_signature(&event_id, &node_id, score_delta);
-        let data = format!("{}:{}:{}:{}:{}", event_id, node_id, score_delta, prev_hash, current_timestamp_ms());
+        let data = format!(
+            "{}:{}:{}:{}:{}",
+            event_id,
+            node_id,
+            score_delta,
+            prev_hash,
+            current_timestamp_ms()
+        );
         let hash = compute_hash(&data);
         Self {
             event_id,
@@ -214,7 +221,13 @@ impl ReputationLedgerV2 {
             .map(|e| e.hash.clone())
             .unwrap_or_else(|| self.genesis_hash.clone());
 
-        let event = ReputationEvent::new(event_id.clone(), node_id.clone(), event_type, score_delta, prev_hash);
+        let event = ReputationEvent::new(
+            event_id.clone(),
+            node_id.clone(),
+            event_type,
+            score_delta,
+            prev_hash,
+        );
 
         // Verify signature
         if !event.verify_signature() {
@@ -282,7 +295,10 @@ impl ReputationLedgerV2 {
     }
 
     pub fn get_node_events(&self, node_id: &str) -> Vec<&ReputationEvent> {
-        self.events.iter().filter(|e| e.node_id == node_id).collect()
+        self.events
+            .iter()
+            .filter(|e| e.node_id == node_id)
+            .collect()
     }
 }
 
@@ -327,7 +343,10 @@ fn compute_merkle_root(leaves: &[String]) -> String {
         }
         current = next;
     }
-    current.into_iter().next().unwrap_or_else(|| compute_hash("none"))
+    current
+        .into_iter()
+        .next()
+        .unwrap_or_else(|| compute_hash("none"))
 }
 
 fn current_timestamp_ms() -> u64 {
@@ -353,7 +372,12 @@ mod tests {
     fn test_record_event() {
         let mut ledger = ReputationLedgerV2::with_defaults();
         let event = ledger
-            .record_event("e1".to_string(), "n1".to_string(), EventType::Contribution, 10.0)
+            .record_event(
+                "e1".to_string(),
+                "n1".to_string(),
+                EventType::Contribution,
+                10.0,
+            )
             .unwrap();
         assert_eq!(event.event_id, "e1");
         assert_eq!(ledger.get_stats().total_events, 1);
@@ -362,18 +386,36 @@ mod tests {
     #[test]
     fn test_duplicate_event() {
         let mut ledger = ReputationLedgerV2::with_defaults();
-        ledger.record_event("e1".to_string(), "n1".to_string(), EventType::Contribution, 10.0)
+        ledger
+            .record_event(
+                "e1".to_string(),
+                "n1".to_string(),
+                EventType::Contribution,
+                10.0,
+            )
             .unwrap();
-        let result = ledger.record_event("e1".to_string(), "n1".to_string(), EventType::Contribution, 5.0);
+        let result = ledger.record_event(
+            "e1".to_string(),
+            "n1".to_string(),
+            EventType::Contribution,
+            5.0,
+        );
         assert!(result.is_err());
     }
 
     #[test]
     fn test_chain_verification() {
         let mut ledger = ReputationLedgerV2::with_defaults();
-        ledger.record_event("e1".to_string(), "n1".to_string(), EventType::Contribution, 10.0)
+        ledger
+            .record_event(
+                "e1".to_string(),
+                "n1".to_string(),
+                EventType::Contribution,
+                10.0,
+            )
             .unwrap();
-        ledger.record_event("e2".to_string(), "n1".to_string(), EventType::Review, 5.0)
+        ledger
+            .record_event("e2".to_string(), "n1".to_string(), EventType::Review, 5.0)
             .unwrap();
         ledger.verify_chain().unwrap();
     }
@@ -381,7 +423,13 @@ mod tests {
     #[test]
     fn test_profile_update() {
         let mut ledger = ReputationLedgerV2::with_defaults();
-        ledger.record_event("e1".to_string(), "n1".to_string(), EventType::Contribution, 10.0)
+        ledger
+            .record_event(
+                "e1".to_string(),
+                "n1".to_string(),
+                EventType::Contribution,
+                10.0,
+            )
             .unwrap();
         let profile = ledger.get_profile("n1").unwrap();
         assert!((profile.total_score - 10.0).abs() < 0.01);
@@ -391,9 +439,16 @@ mod tests {
     #[test]
     fn test_merkle_root() {
         let mut ledger = ReputationLedgerV2::with_defaults();
-        ledger.record_event("e1".to_string(), "n1".to_string(), EventType::Contribution, 10.0)
+        ledger
+            .record_event(
+                "e1".to_string(),
+                "n1".to_string(),
+                EventType::Contribution,
+                10.0,
+            )
             .unwrap();
-        ledger.record_event("e2".to_string(), "n2".to_string(), EventType::Review, 5.0)
+        ledger
+            .record_event("e2".to_string(), "n2".to_string(), EventType::Review, 5.0)
             .unwrap();
         let root = ledger.compute_merkle_root();
         assert!(!root.is_empty());
@@ -407,14 +462,26 @@ mod tests {
 
     #[test]
     fn test_signature_verification() {
-        let event = ReputationEvent::new("e1".to_string(), "n1".to_string(), EventType::Contribution, 10.0, "prev".to_string());
+        let event = ReputationEvent::new(
+            "e1".to_string(),
+            "n1".to_string(),
+            EventType::Contribution,
+            10.0,
+            "prev".to_string(),
+        );
         assert!(event.verify_signature());
     }
 
     #[test]
     fn test_score_clamping() {
         let mut ledger = ReputationLedgerV2::with_defaults();
-        ledger.record_event("e1".to_string(), "n1".to_string(), EventType::Contribution, 1500.0)
+        ledger
+            .record_event(
+                "e1".to_string(),
+                "n1".to_string(),
+                EventType::Contribution,
+                1500.0,
+            )
             .unwrap();
         let profile = ledger.get_profile("n1").unwrap();
         assert!(profile.total_score <= 1000.0);
@@ -424,7 +491,13 @@ mod tests {
     fn test_recent_events() {
         let mut ledger = ReputationLedgerV2::with_defaults();
         for i in 0..10 {
-            ledger.record_event(format!("e{}", i), "n1".to_string(), EventType::Contribution, 1.0)
+            ledger
+                .record_event(
+                    format!("e{}", i),
+                    "n1".to_string(),
+                    EventType::Contribution,
+                    1.0,
+                )
                 .unwrap();
         }
         let recent = ledger.get_recent_events(5);
@@ -434,9 +507,16 @@ mod tests {
     #[test]
     fn test_node_events() {
         let mut ledger = ReputationLedgerV2::with_defaults();
-        ledger.record_event("e1".to_string(), "n1".to_string(), EventType::Contribution, 1.0)
+        ledger
+            .record_event(
+                "e1".to_string(),
+                "n1".to_string(),
+                EventType::Contribution,
+                1.0,
+            )
             .unwrap();
-        ledger.record_event("e2".to_string(), "n2".to_string(), EventType::Review, 1.0)
+        ledger
+            .record_event("e2".to_string(), "n2".to_string(), EventType::Review, 1.0)
             .unwrap();
         assert_eq!(ledger.get_node_events("n1").len(), 1);
     }

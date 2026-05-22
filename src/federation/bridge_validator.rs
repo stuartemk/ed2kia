@@ -237,10 +237,7 @@ impl BridgeValidator {
     }
 
     /// Registra una transacción de puente
-    pub fn register_transaction(
-        &mut self,
-        tx: BridgeTransaction,
-    ) -> Result<(), BridgeError> {
+    pub fn register_transaction(&mut self, tx: BridgeTransaction) -> Result<(), BridgeError> {
         // Verificar cadenas soportadas
         if !self.is_chain_supported(&tx.source_chain) {
             return Err(BridgeError::BridgeNotConfigured(tx.source_chain));
@@ -272,7 +269,9 @@ impl BridgeValidator {
         tx_id: &str,
         confirmations: u32,
     ) -> Result<(), BridgeError> {
-        let tx = self.transactions.get_mut(tx_id)
+        let tx = self
+            .transactions
+            .get_mut(tx_id)
             .ok_or(BridgeError::TransactionAlreadyProcessed(tx_id.to_string()))?;
 
         tx.confirmations = confirmations;
@@ -291,7 +290,9 @@ impl BridgeValidator {
         lock_proof: &LockProof,
     ) -> Result<ValidationResult, BridgeError> {
         let confirmations = {
-            let tx = self.transactions.get(tx_id)
+            let tx = self
+                .transactions
+                .get(tx_id)
                 .ok_or(BridgeError::TransactionAlreadyProcessed(tx_id.to_string()))?;
             tx.confirmations
         };
@@ -362,7 +363,9 @@ impl BridgeValidator {
 
     /// Ejecuta una transacción validada
     pub fn execute_transaction(&mut self, tx_id: &str) -> Result<(), BridgeError> {
-        let tx = self.transactions.get_mut(tx_id)
+        let tx = self
+            .transactions
+            .get_mut(tx_id)
             .ok_or(BridgeError::TransactionAlreadyProcessed(tx_id.to_string()))?;
 
         if tx.state != BridgeTxState::Validated {
@@ -501,7 +504,9 @@ mod tests {
         validator.add_supported_chain("chain-b".to_string());
         validator.register_transaction(make_tx("tx-1")).unwrap();
 
-        let result = validator.validate_transaction("tx-1", &make_lock_proof("tx-1")).unwrap();
+        let result = validator
+            .validate_transaction("tx-1", &make_lock_proof("tx-1"))
+            .unwrap();
         assert!(!result.valid);
     }
 
@@ -513,7 +518,9 @@ mod tests {
         validator.register_transaction(make_tx("tx-1")).unwrap();
         validator.update_confirmations("tx-1", 12).unwrap();
 
-        let result = validator.validate_transaction("tx-1", &make_lock_proof("tx-1")).unwrap();
+        let result = validator
+            .validate_transaction("tx-1", &make_lock_proof("tx-1"))
+            .unwrap();
         assert!(result.valid);
         assert!(result.lock_verified);
     }
@@ -525,7 +532,9 @@ mod tests {
         validator.add_supported_chain("chain-b".to_string());
         validator.register_transaction(make_tx("tx-1")).unwrap();
         validator.update_confirmations("tx-1", 12).unwrap();
-        validator.validate_transaction("tx-1", &make_lock_proof("tx-1")).unwrap();
+        validator
+            .validate_transaction("tx-1", &make_lock_proof("tx-1"))
+            .unwrap();
         validator.execute_transaction("tx-1").unwrap();
 
         let tx = validator.get_transaction("tx-1").unwrap();

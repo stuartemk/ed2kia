@@ -14,23 +14,29 @@
 #[cfg(feature = "v1.3-sprint1")]
 mod e2e {
     // LP-76: SAE Fine-Tuning v2
-    use ed2kia::sae_v2::fine_tuning_v2::{FineTuningV2, FineTuningV2Config};
     use ed2kia::sae_v2::checkpoint_optimizer::{CheckpointOptimizer, CheckpointOptimizerConfig};
+    use ed2kia::sae_v2::fine_tuning_v2::{FineTuningV2, FineTuningV2Config};
     use ed2kia::sae_v2::gradient_sync_v2::{GradientSyncV2, GradientSyncV2Config};
 
     // LP-77: Cross-Node Compute Routing
-    use ed2kia::routing_v2::cross_node_router::{CrossNodeRouter, ComputeTask, RouterConfig, TaskType};
+    use ed2kia::routing_v2::cross_node_router::{
+        ComputeTask, CrossNodeRouter, RouterConfig, TaskType,
+    };
+    use ed2kia::routing_v2::load_balancer::{BalancerConfig, LoadBalancer};
     use ed2kia::routing_v2::predictive_scheduler::{PredictiveScheduler, SchedulerConfig};
-    use ed2kia::routing_v2::load_balancer::{LoadBalancer, BalancerConfig};
 
     // LP-78: Reputation Ledger v2
-    use ed2kia::reputation_v2::ledger_v2::{ReputationLedgerV2, LedgerConfig, EventType};
-    use ed2kia::reputation_v2::anti_sybil::{AntiSybilEngine, AntiSybilConfig};
-    use ed2kia::reputation_v2::merit_scoring::{MeritScorer, MeritConfig, ContributionKind};
+    use ed2kia::reputation_v2::anti_sybil::{AntiSybilConfig, AntiSybilEngine};
+    use ed2kia::reputation_v2::ledger_v2::{EventType, LedgerConfig, ReputationLedgerV2};
+    use ed2kia::reputation_v2::merit_scoring::{ContributionKind, MeritConfig, MeritScorer};
 
     // LP-79: Async ZKP v3 & Federation Bridge
-    use ed2kia::zkp_v3_sprint1::async_zkp_v3::{AsyncZKPV3, ZKPV3Config, ZKPStatement, CircuitType};
-    use ed2kia::zkp_v3_sprint1::zkp_federation_bridge::{ZKPFederationBridge, BridgeConfig, BridgeProof, VerificationVote};
+    use ed2kia::zkp_v3_sprint1::async_zkp_v3::{
+        AsyncZKPV3, CircuitType, ZKPStatement, ZKPV3Config,
+    };
+    use ed2kia::zkp_v3_sprint1::zkp_federation_bridge::{
+        BridgeConfig, BridgeProof, VerificationVote, ZKPFederationBridge,
+    };
 
     // ========================================================================
     // LP-76: SAE Fine-Tuning v2 E2E
@@ -215,19 +221,23 @@ mod e2e {
         let mut ledger = ReputationLedgerV2::new(config);
 
         // Record events
-        ledger.record_event(
-            "evt-1".to_string(),
-            "node-1".to_string(),
-            EventType::Contribution,
-            10.0,
-        ).unwrap();
+        ledger
+            .record_event(
+                "evt-1".to_string(),
+                "node-1".to_string(),
+                EventType::Contribution,
+                10.0,
+            )
+            .unwrap();
 
-        ledger.record_event(
-            "evt-2".to_string(),
-            "node-2".to_string(),
-            EventType::ComputeCredit,
-            25.0,
-        ).unwrap();
+        ledger
+            .record_event(
+                "evt-2".to_string(),
+                "node-2".to_string(),
+                EventType::ComputeCredit,
+                25.0,
+            )
+            .unwrap();
 
         // Verify chain integrity
         assert!(ledger.verify_chain().is_ok());
@@ -270,8 +280,12 @@ mod e2e {
         };
         let mut scorer = MeritScorer::new(config);
 
-        scorer.record_contribution("node-1".to_string(), ContributionKind::Code, 50.0).unwrap();
-        scorer.record_contribution("node-1".to_string(), ContributionKind::ComputeWork, 30.0).unwrap();
+        scorer
+            .record_contribution("node-1".to_string(), ContributionKind::Code, 50.0)
+            .unwrap();
+        scorer
+            .record_contribution("node-1".to_string(), ContributionKind::ComputeWork, 30.0)
+            .unwrap();
 
         let ranking = scorer.get_ranking();
         assert_eq!(ranking.len(), 1);
@@ -435,12 +449,14 @@ mod e2e {
             retention_days: 30,
         };
         let mut ledger = ReputationLedgerV2::new(ledger_config);
-        ledger.record_event(
-            "pipeline-evt".to_string(),
-            route.target_node,
-            EventType::ComputeCredit,
-            result.loss,
-        ).unwrap();
+        ledger
+            .record_event(
+                "pipeline-evt".to_string(),
+                route.target_node,
+                EventType::ComputeCredit,
+                result.loss,
+            )
+            .unwrap();
         assert!(ledger.verify_chain().is_ok());
 
         // 4. Generate ZKP proof via batch

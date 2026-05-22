@@ -26,11 +26,7 @@ impl fmt::Display for AggregatorError {
                 write!(f, "Insufficient participants (min: {})", min)
             }
             AggregatorError::DimensionMismatch { expected, got } => {
-                write!(
-                    f,
-                    "Dimension mismatch: expected {}, got {}",
-                    expected, got
-                )
+                write!(f, "Dimension mismatch: expected {}, got {}", expected, got)
             }
             AggregatorError::NoGradientsSubmitted => write!(f, "No gradients submitted"),
             AggregatorError::CompressionFailed(msg) => write!(f, "Compression failed: {}", msg),
@@ -172,7 +168,11 @@ impl GradientAggregatorV3 {
             ));
         }
 
-        let gradients: Vec<&[f32]> = self.submissions.iter().map(|s| s.gradient.as_slice()).collect();
+        let gradients: Vec<&[f32]> = self
+            .submissions
+            .iter()
+            .map(|s| s.gradient.as_slice())
+            .collect();
 
         // Detect outliers
         let outlier_indices = self.detect_outliers(&gradients);
@@ -204,7 +204,10 @@ impl GradientAggregatorV3 {
 
         // Compute weighted average
         let aggregated = self.compute_weighted_average(
-            &filtered_gradients.iter().map(|s| s.gradient.as_slice()).collect::<Vec<_>>(),
+            &filtered_gradients
+                .iter()
+                .map(|s| s.gradient.as_slice())
+                .collect::<Vec<_>>(),
             &weights,
         );
 
@@ -321,13 +324,7 @@ impl GradientAggregatorV3 {
 
         gradient
             .iter()
-            .map(|v| {
-                if v.abs() >= threshold {
-                    *v
-                } else {
-                    0.0
-                }
-            })
+            .map(|v| if v.abs() >= threshold { *v } else { 0.0 })
             .collect()
     }
 
@@ -388,7 +385,9 @@ mod tests {
         let config = make_config();
         let mut aggregator = GradientAggregatorV3::new(config);
         let gradient = make_gradient(10, 1.0);
-        assert!(aggregator.submit_gradient("node-1".to_string(), gradient).is_ok());
+        assert!(aggregator
+            .submit_gradient("node-1".to_string(), gradient)
+            .is_ok());
         assert_eq!(aggregator.submission_count(), 1);
     }
 
@@ -506,7 +505,11 @@ mod tests {
             .unwrap();
         let result = aggregator.aggregate().unwrap();
         // Should have some zeros from compression
-        let zero_count = result.aggregated_gradient.iter().filter(|v| **v == 0.0).count();
+        let zero_count = result
+            .aggregated_gradient
+            .iter()
+            .filter(|v| **v == 0.0)
+            .count();
         assert!(zero_count > 0);
     }
 

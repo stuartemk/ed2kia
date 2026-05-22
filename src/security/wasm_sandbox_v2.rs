@@ -27,9 +27,7 @@
 //! Apache 2.0 + Ethical Use Clause
 
 #[cfg(feature = "v1.1-sprint1")]
-use crate::security::wasm_profiler::{
-    ExecutionProfile, Profiler, ProfilingAlert,
-};
+use crate::security::wasm_profiler::{ExecutionProfile, Profiler, ProfilingAlert};
 #[cfg(feature = "v1.1-sprint1")]
 use std::time::Instant;
 #[cfg(feature = "v1.1-sprint1")]
@@ -248,8 +246,7 @@ impl WasmSandboxV2 {
         let module_id = uuid::Uuid::new_v4().to_string();
         let id = ModuleId::new(module_id.clone(), code.len());
 
-        self.modules
-            .insert(module_id, (module, None));
+        self.modules.insert(module_id, (module, None));
 
         info!(
             "Module {} loaded: {} bytes, total modules: {}",
@@ -321,9 +318,9 @@ impl WasmSandboxV2 {
         // Create store with sandbox state
         let state = SandboxState { memory_bytes: 0 };
         let mut store = Store::new(&self.engine, state);
-        store.set_fuel(fuel_limit).map_err(|e| {
-            SandboxError::ExecutionError(format!("Failed to set fuel: {}", e))
-        })?;
+        store
+            .set_fuel(fuel_limit)
+            .map_err(|e| SandboxError::ExecutionError(format!("Failed to set fuel: {}", e)))?;
 
         // Get module reference and execute
         let result = self.run_function(&mut store, module_id, function, fuel_limit);
@@ -362,10 +359,7 @@ impl WasmSandboxV2 {
                 })
             }
             Err(e) => {
-                warn!(
-                    "Module {} function '{}' failed: {}",
-                    module_id, function, e
-                );
+                warn!("Module {} function '{}' failed: {}", module_id, function, e);
                 Err(e)
             }
         }
@@ -523,10 +517,8 @@ mod tests {
             0x00, 0x61, 0x73, 0x6D, // magic "\0asm"
             0x01, 0x00, 0x00, 0x00, // version 1.0.0
             // Type section (id=1, size=4)
-            0x01, 0x04, 0x01, 0x60, 0x00, 0x00,
-            // Function section (id=3, size=2)
-            0x03, 0x02, 0x01, 0x00,
-            // Export section (id=7, size=7)
+            0x01, 0x04, 0x01, 0x60, 0x00, 0x00, // Function section (id=3, size=2)
+            0x03, 0x02, 0x01, 0x00, // Export section (id=7, size=7)
             0x07, 0x07, 0x01, 0x03, b'r', b'u', b'n', 0x00, 0x00,
             // Code section (id=10, size=4)
             0x0A, 0x04, 0x01, 0x02, 0x00, 0x0B,
@@ -619,7 +611,13 @@ mod tests {
         let module_id = sandbox.load_module(&wasm).expect("should load");
 
         let result = sandbox
-            .execute_with_limits(&module_id.id, "run", Vec::new(), 128 * 1024 * 1024, 50_000_000)
+            .execute_with_limits(
+                &module_id.id,
+                "run",
+                Vec::new(),
+                128 * 1024 * 1024,
+                50_000_000,
+            )
             .expect("should execute");
 
         assert!(!result.fallback_triggered);
@@ -705,7 +703,9 @@ mod tests {
         let wasm = wasm_with_function();
         let module_id = sandbox.load_module(&wasm).expect("should load");
 
-        sandbox.execute(&module_id.id, "run", Vec::new()).expect("should execute");
+        sandbox
+            .execute(&module_id.id, "run", Vec::new())
+            .expect("should execute");
 
         let stats = sandbox.get_profiler_stats();
         assert_eq!(stats.total_sessions, 1);

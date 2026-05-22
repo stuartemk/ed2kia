@@ -15,8 +15,8 @@
 
 // ─── Fase 1: Core Modules ───
 mod p2p {
-    pub mod swarm;
     pub mod protocol;
+    pub mod swarm;
 }
 
 mod sae {
@@ -25,8 +25,8 @@ mod sae {
 }
 
 mod bridge {
-    pub mod tensor_flow;
     pub mod consciousness;
+    pub mod tensor_flow;
 }
 
 // ─── Fase 2: Interpretation, Feedback & Consensus ───
@@ -36,14 +36,14 @@ mod interpret {
 }
 
 mod consensus {
-    pub mod validator;
     pub mod merkle;
+    pub mod validator;
 }
 
 // ─── Fase 3: Security, ZKP, Human-in-the-Loop ───
 mod security {
-    pub mod wasm_sandbox;
     pub mod memory_guard;
+    pub mod wasm_sandbox;
 }
 
 mod zkp {
@@ -52,16 +52,16 @@ mod zkp {
 }
 
 mod human {
-    pub mod feedback_cli;
     pub mod concept_updater;
+    pub mod feedback_cli;
 }
 
 // ─── Fase 4: Scaling, RLHF, Web UI, Monitoring ───
 // CONSOLIDATION: v1.0.0 - All modules enabled via `stable` feature
 #[cfg(feature = "stable")]
 mod scaling {
-    pub mod peer_manager;
     pub mod bootstrap;
+    pub mod peer_manager;
     // FIX: v1.0.1-patch - Add cross_model for phase8-sprint2 (E0432)
     #[cfg(feature = "phase8-sprint2")]
     pub mod cross_model;
@@ -75,14 +75,14 @@ mod rlhf {
 
 #[cfg(feature = "stable")]
 mod web {
-    pub mod server;
     pub mod routes;
+    pub mod server;
 }
 
 #[cfg(feature = "stable")]
 mod monitoring {
-    pub mod metrics;
     pub mod health;
+    pub mod metrics;
 }
 
 // ─── Fase 5: Governance, Reputation, Ecosystem, Bootstrap ───
@@ -107,8 +107,8 @@ mod ecosystem {
 
 #[cfg(feature = "stable")]
 mod bootstrap {
-    pub mod seed_registry;
     pub mod network_init;
+    pub mod seed_registry;
 }
 
 // ─── Fase 6: Interoperability, Federation, Staking, API ───
@@ -116,8 +116,8 @@ mod bootstrap {
 #[cfg(feature = "stable")]
 mod interoperability {
     pub mod adapter;
-    pub mod schema;
     pub mod onnx_adapter;
+    pub mod schema;
 }
 
 #[cfg(feature = "stable")]
@@ -137,9 +137,9 @@ mod phase6;
 
 #[cfg(feature = "stable")]
 mod api {
+    pub mod auth;
     pub mod openapi;
     pub mod routes;
-    pub mod auth;
 }
 
 // ─── Fase 7: Continuous Alignment, Cross-Net Federation, Dynamic Trust ───
@@ -210,21 +210,21 @@ mod federation_v3 {
 mod phase9;
 
 use anyhow::Result;
+use bridge::consciousness::ConsciousnessBridge;
 use clap::{Parser, Subcommand};
+use consensus::validator::ConsensusValidator;
+use human::feedback_cli::FeedbackManager;
+use interpret::feature_analyzer::FeatureAnalyzer;
 use p2p::swarm::Ed2kSwarm;
 use sae::loader::SAELoader;
 use sae::router::LayerRouter;
-use bridge::consciousness::ConsciousnessBridge;
-use consensus::validator::ConsensusValidator;
-use interpret::feature_analyzer::FeatureAnalyzer;
 use security::wasm_sandbox::WASMSandbox;
 use zkp::verifier::ZKPVerifier;
-use human::feedback_cli::FeedbackManager;
 // CONSOLIDATION: v1.0.0 - All imports enabled via `stable` feature
 #[cfg(feature = "stable")]
-use scaling::peer_manager::PeerManager;
-#[cfg(feature = "stable")]
 use scaling::bootstrap::BootstrapManager;
+#[cfg(feature = "stable")]
+use scaling::peer_manager::PeerManager;
 // CLEANUP: Removed unused imports FeedbackStore, TrainerLoop, WebServer, MetricsManager
 #[cfg(feature = "stable")]
 use monitoring::health::HealthManager;
@@ -236,32 +236,32 @@ use governance::proposal::{Proposal, ProposalManager, ProposalType};
 // CLEANUP: Removed unused imports VotingManager, Vote, VoteDirection, VotingConfig
 // CLEANUP: Removed unused imports ReputationLedger, Contribution, ContributionType
 #[cfg(feature = "stable")]
-use reputation::scoring::ReputationScorer;
+use ecosystem::hf_sync::HfSyncManager;
 #[cfg(feature = "stable")]
-use ecosystem::hf_sync::HfSyncManager; // CLEANUP: Removed unused ModelSource
-// CLEANUP: Removed unused import ModelRegistry
+use reputation::scoring::ReputationScorer; // CLEANUP: Removed unused ModelSource
+                                           // CLEANUP: Removed unused import ModelRegistry
+#[cfg(feature = "stable")]
+use bootstrap::network_init::{GenesisConfig, NetworkInitializer};
 #[cfg(feature = "stable")]
 use bootstrap::seed_registry::SeedRegistry;
-#[cfg(feature = "stable")]
-use bootstrap::network_init::{NetworkInitializer, GenesisConfig};
 
 // CONSOLIDATION: v1.0.0 - Fase 6 imports enabled via `stable` feature
 // FIX: v1.0.1-patch - ModelNormConfig removed from adapter (no longer exported)
 #[cfg(feature = "stable")]
-use interoperability::adapter::{TensorAdapter, SourceModel}; // CLEANUP: Removed unused NormalizedHiddenState
-#[cfg(feature = "stable")]
-use interoperability::schema::QwenScopeSchema;
+use api::openapi::{Components, Contact, Info, OpenApiSpec, Paths, Server};
 #[cfg(feature = "stable")]
 use federation::avg_aggregator::{FedAvgAggregator, FedAvgConfig, WeightUpdate};
 #[cfg(feature = "stable")]
 use federation::sync_protocol::SyncProtocol; // CLEANUP: Removed unused SyncMessage, SyncPayload
 #[cfg(feature = "stable")]
-use staking::proof::{ProofGenerator, ProofVerifier, ComputeMetrics}; // CLEANUP: Removed unused StakingProof
+use interoperability::adapter::{SourceModel, TensorAdapter}; // CLEANUP: Removed unused NormalizedHiddenState
 #[cfg(feature = "stable")]
-use staking::registry::{ResourceRegistry, ResourceCommitment};
+use interoperability::schema::QwenScopeSchema;
 #[cfg(feature = "stable")]
-use api::openapi::{OpenApiSpec, Info, Server, Paths, Contact, Components}; // CLEANUP: Removed unused PathItem, Operation
-// CLEANUP: Removed unused import ApiV2State
+use staking::proof::{ComputeMetrics, ProofGenerator, ProofVerifier}; // CLEANUP: Removed unused StakingProof
+#[cfg(feature = "stable")]
+use staking::registry::{ResourceCommitment, ResourceRegistry}; // CLEANUP: Removed unused PathItem, Operation
+                                                               // CLEANUP: Removed unused import ApiV2State
 
 /// ed2kIA v1.0.0 STABLE - Descentralized Distributed Interpretability Network
 #[derive(Parser, Debug)]
@@ -615,8 +615,7 @@ async fn main() -> Result<()> {
     // Inicializar logging
     tracing_subscriber::fmt()
         .with_env_filter(
-            tracing_subscriber::EnvFilter::from_default_env()
-                .add_directive("ed2kia=info".parse()?),
+            tracing_subscriber::EnvFilter::from_default_env().add_directive("ed2kia=info".parse()?),
         )
         .init();
 
@@ -629,9 +628,18 @@ async fn main() -> Result<()> {
         println!("  Package:    {}", env!("CARGO_PKG_NAME"));
         println!("  Authors:    {}", env!("CARGO_PKG_AUTHORS"));
         println!("  Repository: {}", env!("CARGO_PKG_REPOSITORY"));
-        println!("  Profile:    {}", std::env::var("PROFILE").unwrap_or_else(|_| "dev".to_string()));
-        println!("  Target:     {}", std::env::var("TARGET").unwrap_or_else(|_| "unknown".to_string()));
-        println!("  Debug:      {}", std::env::var("DEBUG").unwrap_or_else(|_| "true".to_string()));
+        println!(
+            "  Profile:    {}",
+            std::env::var("PROFILE").unwrap_or_else(|_| "dev".to_string())
+        );
+        println!(
+            "  Target:     {}",
+            std::env::var("TARGET").unwrap_or_else(|_| "unknown".to_string())
+        );
+        println!(
+            "  Debug:      {}",
+            std::env::var("DEBUG").unwrap_or_else(|_| "true".to_string())
+        );
         println!("  Features:   {}", get_enabled_features());
         return Ok(());
     }
@@ -643,7 +651,10 @@ async fn main() -> Result<()> {
         Some(cmd) => cmd,
         None => {
             // No command provided, print help
-            println!("ed2kIA v{} - Red descentralizada para análisis interpretativo de LLMs", env!("CARGO_PKG_VERSION"));
+            println!(
+                "ed2kIA v{} - Red descentralizada para análisis interpretativo de LLMs",
+                env!("CARGO_PKG_VERSION")
+            );
             println!("Use --help for usage information.");
             return Ok(());
         }
@@ -819,8 +830,15 @@ async fn main() -> Result<()> {
             }
         }
         // ─── Fase 3: Nuevos comandos ───
-        Commands::Sandbox { module, input, function } => {
-            info!("Ejecutando WASM sandbox: module={}, input={}", module, input);
+        Commands::Sandbox {
+            module,
+            input,
+            function,
+        } => {
+            info!(
+                "Ejecutando WASM sandbox: module={}, input={}",
+                module, input
+            );
 
             let mut sandbox = WASMSandbox::new(None);
 
@@ -847,7 +865,10 @@ async fn main() -> Result<()> {
                             let stats = sandbox.get_stats();
                             println!("\n=== Sandbox Stats ===");
                             println!("Cached Modules: {}", stats.cached_modules);
-                            println!("Memory Limit: {}MB", stats.memory_limit_bytes / (1024 * 1024));
+                            println!(
+                                "Memory Limit: {}MB",
+                                stats.memory_limit_bytes / (1024 * 1024)
+                            );
                         }
                         Err(e) => {
                             eprintln!("WASM execution failed: {}", e);
@@ -861,14 +882,22 @@ async fn main() -> Result<()> {
                 }
             }
         }
-        Commands::Verify { batch_id, features, verifier_id } => {
-            info!("Verificando batch con ZKP: batch_id={}, verifier={}", batch_id, verifier_id);
+        Commands::Verify {
+            batch_id,
+            features,
+            verifier_id,
+        } => {
+            info!(
+                "Verificando batch con ZKP: batch_id={}, verifier={}",
+                batch_id, verifier_id
+            );
 
             let verifier = ZKPVerifier::new(Some(0.6));
 
             // Parsea features o usa valores de ejemplo
             let feature_values: Vec<f64> = if let Some(feat_str) = &features {
-                feat_str.split(',')
+                feat_str
+                    .split(',')
                     .map(|s| s.trim().parse::<f64>().unwrap_or(0.0))
                     .collect()
             } else {
@@ -879,12 +908,20 @@ async fn main() -> Result<()> {
 
             println!("=== ZKP Verification Result ===");
             match &result {
-                zkp::verifier::VerificationResult::ZKPVerified { proof_hash, confidence, .. } => {
+                zkp::verifier::VerificationResult::ZKPVerified {
+                    proof_hash,
+                    confidence,
+                    ..
+                } => {
                     println!("Status: ZKP VERIFIED");
                     println!("Proof Hash: {}", hex::encode(proof_hash));
                     println!("Confidence: {:.3}", confidence);
                 }
-                zkp::verifier::VerificationResult::MerkleVerified { merkle_root, confidence, .. } => {
+                zkp::verifier::VerificationResult::MerkleVerified {
+                    merkle_root,
+                    confidence,
+                    ..
+                } => {
                     println!("Status: MERKLE VERIFIED (fallback)");
                     println!("Merkle Root: {}", hex::encode(merkle_root));
                     println!("Confidence: {:.3}", confidence);
@@ -909,7 +946,10 @@ async fn main() -> Result<()> {
         Commands::Feedback { mode } => {
             match mode {
                 FeedbackMode::Interactive { annotator_id } => {
-                    info!("Iniciando sesión interactiva de feedback: annotator={}", annotator_id);
+                    info!(
+                        "Iniciando sesión interactiva de feedback: annotator={}",
+                        annotator_id
+                    );
 
                     let mut manager = FeedbackManager::new(None);
 
@@ -922,7 +962,8 @@ async fn main() -> Result<()> {
                         (4, 0.60, "positive_sentiment".to_string()),
                     ];
 
-                    let requests = manager.generate_labeling_requests("demo-batch", &features, &annotator_id);
+                    let requests =
+                        manager.generate_labeling_requests("demo-batch", &features, &annotator_id);
 
                     if let Err(e) = manager.run_interactive(requests, &annotator_id) {
                         eprintln!("Feedback session error: {}", e);
@@ -970,32 +1011,33 @@ async fn main() -> Result<()> {
                 }
             }
         }
-        Commands::Deploy { target } => {
-            match target {
-                DeployTarget::Docker => {
-                    println!("=== Docker Deployment ===");
-                    println!("Build: docker build -f deploy/Dockerfile -t ed2kia:latest .");
-                    println!("Run:   docker run -p 9000:9000 ed2kia:latest ed2kia --port 9000 join");
-                    println!("Multi: docker-compose -f deploy/docker-compose.yml up -d");
-                }
-                DeployTarget::Systemd => {
-                    println!("=== Systemd Deployment ===");
-                    println!("Install: sudo cp deploy/systemd/ed2kia.service /etc/systemd/system/");
-                    println!("Enable:  sudo systemctl enable ed2kia");
-                    println!("Start:   sudo systemctl start ed2kia");
-                    println!("Status:  sudo systemctl status ed2kia");
-                }
-                DeployTarget::Cross => {
-                    println!("=== Cross-Compilation ===");
-                    println!("Linux x86_64:  cross build --release --target x86_64-unknown-linux-gnu");
-                    println!("Linux ARM64:   cross build --release --target aarch64-unknown-linux-gnu");
-                    println!("macOS x86_64:  cross build --release --target x86_64-apple-darwin");
-                    println!("macOS ARM64:   cross build --release --target aarch64-apple-darwin");
-                    println!("Windows:       cross build --release --target x86_64-pc-windows-msvc");
-                }
+        Commands::Deploy { target } => match target {
+            DeployTarget::Docker => {
+                println!("=== Docker Deployment ===");
+                println!("Build: docker build -f deploy/Dockerfile -t ed2kia:latest .");
+                println!("Run:   docker run -p 9000:9000 ed2kia:latest ed2kia --port 9000 join");
+                println!("Multi: docker-compose -f deploy/docker-compose.yml up -d");
             }
-        }
-        Commands::Network { info, crypto_reputation } => {
+            DeployTarget::Systemd => {
+                println!("=== Systemd Deployment ===");
+                println!("Install: sudo cp deploy/systemd/ed2kia.service /etc/systemd/system/");
+                println!("Enable:  sudo systemctl enable ed2kia");
+                println!("Start:   sudo systemctl start ed2kia");
+                println!("Status:  sudo systemctl status ed2kia");
+            }
+            DeployTarget::Cross => {
+                println!("=== Cross-Compilation ===");
+                println!("Linux x86_64:  cross build --release --target x86_64-unknown-linux-gnu");
+                println!("Linux ARM64:   cross build --release --target aarch64-unknown-linux-gnu");
+                println!("macOS x86_64:  cross build --release --target x86_64-apple-darwin");
+                println!("macOS ARM64:   cross build --release --target aarch64-apple-darwin");
+                println!("Windows:       cross build --release --target x86_64-pc-windows-msvc");
+            }
+        },
+        Commands::Network {
+            info,
+            crypto_reputation,
+        } => {
             if info {
                 println!("=== Network Info ===");
                 let status = swarm.get_status().await?;
@@ -1070,7 +1112,9 @@ async fn main() -> Result<()> {
                 println!("=== RLHF Export ===");
                 println!("Export path: {}", path);
                 // TODO: Phase 5 - Integración completa con feedback store
-                println!("Feedback export ready. Use 'cargo run -- feedback' to collect data first.");
+                println!(
+                    "Feedback export ready. Use 'cargo run -- feedback' to collect data first."
+                );
             }
         }
         #[cfg(feature = "stable")]
@@ -1083,18 +1127,29 @@ async fn main() -> Result<()> {
                 println!("=== Health Check ===");
                 println!("Status: {}", report.status);
                 println!("Uptime: {}s", report.uptime_seconds);
-                println!("Checks: {}/{} passed", report.summary.passed, report.summary.total);
+                println!(
+                    "Checks: {}/{} passed",
+                    report.summary.passed, report.summary.total
+                );
                 println!();
 
                 for check in &report.checks {
                     let icon = if check.passed { "✅" } else { "❌" };
-                    println!("  {} {} - {} ({:.1}ms)", icon, check.name, check.message, check.latency_ms);
+                    println!(
+                        "  {} {} - {} ({:.1}ms)",
+                        icon, check.name, check.message, check.latency_ms
+                    );
                 }
             }
         }
         // ─── Fase 5: Handlers (experimental) ───
         #[cfg(feature = "stable")]
-        Commands::Govern { propose, list, vote, type_ } => {
+        Commands::Govern {
+            propose,
+            list,
+            vote,
+            type_,
+        } => {
             let mut manager = ProposalManager::new();
 
             if let Some(ref title) = propose {
@@ -1147,7 +1202,11 @@ async fn main() -> Result<()> {
             }
         }
         #[cfg(feature = "stable")]
-        Commands::Reputation { status, leaderboard, decay } => {
+        Commands::Reputation {
+            status,
+            leaderboard,
+            decay,
+        } => {
             let mut scorer = ReputationScorer::new();
 
             if status {
@@ -1178,7 +1237,12 @@ async fn main() -> Result<()> {
             }
         }
         #[cfg(feature = "stable")]
-        Commands::Sync { download, repo, file, list } => {
+        Commands::Sync {
+            download,
+            repo,
+            file,
+            list,
+        } => {
             if list {
                 let sync_manager = HfSyncManager::new();
                 let cached = sync_manager.list_cached_models()?;
@@ -1203,7 +1267,15 @@ async fn main() -> Result<()> {
             }
         }
         #[cfg(feature = "stable")]
-        Commands::Bootstrap { genesis, join, status, data_dir, p2p_port, http_port, is_bootstrap } => {
+        Commands::Bootstrap {
+            genesis,
+            join,
+            status,
+            data_dir,
+            p2p_port,
+            http_port,
+            is_bootstrap,
+        } => {
             if genesis {
                 let config = GenesisConfig {
                     data_dir: std::path::PathBuf::from(&data_dir),
@@ -1263,7 +1335,12 @@ async fn main() -> Result<()> {
         }
         // ─── Fase 6: Handlers (experimental) ───
         #[cfg(feature = "stable")]
-        Commands::Adapt { source, input_dim, output_dim, validate } => {
+        Commands::Adapt {
+            source,
+            input_dim,
+            output_dim,
+            validate,
+        } => {
             println!("=== Tensor Adapter (Cross-Model) ===");
             println!("Source: {}", source);
             println!("Output Dim: {}", output_dim);
@@ -1287,11 +1364,19 @@ async fn main() -> Result<()> {
                 let schema = QwenScopeSchema::default();
                 println!("Schema validation: canonical_dim={}", schema.canonical_dim);
                 println!("Norm required: {}", schema.required_norm);
-                println!("Value range: ({}, {})", schema.value_range.0, schema.value_range.1);
+                println!(
+                    "Value range: ({}, {})",
+                    schema.value_range.0, schema.value_range.1
+                );
             }
         }
         #[cfg(feature = "stable")]
-        Commands::Federate { start, layer, min_participants, status } => {
+        Commands::Federate {
+            start,
+            layer,
+            min_participants,
+            status,
+        } => {
             if start {
                 let config = FedAvgConfig {
                     min_participants,
@@ -1332,7 +1417,15 @@ async fn main() -> Result<()> {
             }
         }
         #[cfg(feature = "stable")]
-        Commands::Stake { register, prove, verify, registry: show_registry, cpu_cores, ram_gb, has_gpu } => {
+        Commands::Stake {
+            register,
+            prove,
+            verify,
+            registry: show_registry,
+            cpu_cores,
+            ram_gb,
+            has_gpu,
+        } => {
             // FIX: v1.0.1-patch - ResourceRegistry::new() requires (max_heartbeat_age, slash_threshold)
             let mut registry = ResourceRegistry::new(60, 3);
 
@@ -1361,7 +1454,9 @@ async fn main() -> Result<()> {
                 // FIX: v1..1-patch - generate_proof() takes ComputeMetrics, returns Result
                 let mut generator = ProofGenerator::new("local-node".to_string());
                 let metrics = ComputeMetrics::new(1000, 500, 2048.0, 75.0);
-                let proof = generator.generate_proof(metrics).expect("Failed to generate proof");
+                let proof = generator
+                    .generate_proof(metrics)
+                    .expect("Failed to generate proof");
                 println!("=== Proof Generated ===");
                 println!("Nonce: {}", proof.nonce);
                 println!("Commitment: {}", proof.commitment_hash);
@@ -1388,13 +1483,19 @@ async fn main() -> Result<()> {
             }
         }
         #[cfg(feature = "stable")]
-        Commands::Api { openapi, output, serve, port } => {
+        Commands::Api {
+            openapi,
+            output,
+            serve,
+            port,
+        } => {
             if openapi {
                 let spec = OpenApiSpec {
                     openapi: "3.0.3".to_string(),
                     info: Info {
                         title: "ed2kIA API v2".to_string(),
-                        description: "API para interoperabilidad, federación, staking y gobernanza".to_string(),
+                        description: "API para interoperabilidad, federación, staking y gobernanza"
+                            .to_string(),
                         version: "v2".to_string(),
                         contact: Contact {
                             name: "ed2kIA Team".to_string(),

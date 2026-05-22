@@ -307,8 +307,7 @@ impl GenesisState {
     pub fn export_json<P: AsRef<Path>>(&self, path: P) -> Result<(), GenesisError> {
         let json = serde_json::to_string_pretty(self)
             .map_err(|e| GenesisError::SerializationError(e.to_string()))?;
-        fs::write(path, json)
-            .map_err(|e| GenesisError::IoError(e.to_string()))?;
+        fs::write(path, json).map_err(|e| GenesisError::IoError(e.to_string()))?;
         Ok(())
     }
 
@@ -316,25 +315,22 @@ impl GenesisState {
     pub fn export_bincode<P: AsRef<Path>>(&self, path: P) -> Result<(), GenesisError> {
         let bytes = bincode::serialize(self)
             .map_err(|e| GenesisError::SerializationError(e.to_string()))?;
-        fs::write(path, bytes)
-            .map_err(|e| GenesisError::IoError(e.to_string()))?;
+        fs::write(path, bytes).map_err(|e| GenesisError::IoError(e.to_string()))?;
         Ok(())
     }
 
     /// Load from JSON.
     pub fn from_json<P: AsRef<Path>>(path: P) -> Result<Self, GenesisError> {
-        let contents = fs::read_to_string(path)
-            .map_err(|e| GenesisError::IoError(e.to_string()))?;
+        let contents =
+            fs::read_to_string(path).map_err(|e| GenesisError::IoError(e.to_string()))?;
         serde_json::from_str(&contents)
             .map_err(|e| GenesisError::DeserializationError(e.to_string()))
     }
 
     /// Load from bincode.
     pub fn from_bincode<P: AsRef<Path>>(path: P) -> Result<Self, GenesisError> {
-        let bytes = fs::read(path)
-            .map_err(|e| GenesisError::IoError(e.to_string()))?;
-        bincode::deserialize(&bytes)
-            .map_err(|e| GenesisError::DeserializationError(e.to_string()))
+        let bytes = fs::read(path).map_err(|e| GenesisError::IoError(e.to_string()))?;
+        bincode::deserialize(&bytes).map_err(|e| GenesisError::DeserializationError(e.to_string()))
     }
 
     /// Get the state hash as a hex string.

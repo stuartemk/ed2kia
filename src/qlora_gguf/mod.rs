@@ -41,9 +41,7 @@ pub use loader::{GgufLoader, GgufLoaderError, GgufModelInfo};
 pub use loader::GgufBaseModel;
 
 // Adapter exports
-pub use adapter::{
-    AdapterInfo, QloraAdapter, QloraAdapterError, QuantizationType,
-};
+pub use adapter::{AdapterInfo, QloraAdapter, QloraAdapterError, QuantizationType};
 
 // Payload exports
-pub use payload::{MAX_PAYLOAD_BYTES, QloraPayload, QloraPayloadError};
+pub use payload::{QloraPayload, QloraPayloadError, MAX_PAYLOAD_BYTES};

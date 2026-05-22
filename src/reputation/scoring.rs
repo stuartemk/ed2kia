@@ -214,7 +214,11 @@ impl ReputationScorer {
         let credits_for_score = reputation.current_credits;
         let total_for_score = reputation.total_contributions;
         let zkp_for_score = reputation.zkp_verified_contributions;
-        let new_score = Self::calculate_reputation_score_static(credits_for_score, total_for_score, zkp_for_score);
+        let new_score = Self::calculate_reputation_score_static(
+            credits_for_score,
+            total_for_score,
+            zkp_for_score,
+        );
         reputation.reputation_score = new_score;
 
         info!(
@@ -273,8 +277,7 @@ impl ReputationScorer {
         let elapsed_days = (now - reputation.last_decay_timestamp) as f64 / 86400.0;
 
         // Decay exponencial: 50% cada decay_period_days
-        let decay_factor =
-            2.0_f64.powf(-elapsed_days / self.config.decay_period_days as f64);
+        let decay_factor = 2.0_f64.powf(-elapsed_days / self.config.decay_period_days as f64);
 
         let old_credits = reputation.current_credits;
         reputation.current_credits *= decay_factor;
@@ -313,11 +316,7 @@ impl ReputationScorer {
 
     /// Aplicar decay a todos los nodos
     pub fn apply_decay_to_all(&mut self) -> Result<usize, ScoringError> {
-        let node_ids: Vec<String> = self
-            .reputations
-            .keys()
-            .cloned()
-            .collect();
+        let node_ids: Vec<String> = self.reputations.keys().cloned().collect();
 
         let mut count = 0;
         for node_id in node_ids {
@@ -388,11 +387,7 @@ impl ReputationScorer {
     /// Estadísticas globales
     pub fn global_stats(&self) -> GlobalReputationStats {
         let total_nodes = self.reputations.len();
-        let total_credits: f64 = self
-            .reputations
-            .values()
-            .map(|r| r.current_credits)
-            .sum();
+        let total_credits: f64 = self.reputations.values().map(|r| r.current_credits).sum();
 
         let avg_score = if total_nodes > 0 {
             self.reputations

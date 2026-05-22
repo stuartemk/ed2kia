@@ -35,7 +35,9 @@ mod internal {
                 MobileError::ThermalLimitExceeded => write!(f, "mobile: thermal limit exceeded"),
                 MobileError::BatteryLimitExceeded => write!(f, "mobile: battery limit exceeded"),
                 MobileError::BridgeUnavailable => write!(f, "mobile: bridge unavailable"),
-                MobileError::InvalidSliderValue => write!(f, "mobile: slider value must be in [0.0, 1.0]"),
+                MobileError::InvalidSliderValue => {
+                    write!(f, "mobile: slider value must be in [0.0, 1.0]")
+                }
                 MobileError::UnknownPlatform => write!(f, "mobile: unknown platform"),
             }
         }
@@ -133,7 +135,8 @@ mod internal {
         /// # Arguments
         /// * `current_temp_celsius` - Current temperature reading
         pub fn check_thermal_limit(&self, current_temp_celsius: f64) -> Result<(), MobileError> {
-            if self.thermal_limit_celsius > 0.0 && current_temp_celsius > self.thermal_limit_celsius {
+            if self.thermal_limit_celsius > 0.0 && current_temp_celsius > self.thermal_limit_celsius
+            {
                 return Err(MobileError::ThermalLimitExceeded);
             }
             Ok(())
@@ -144,7 +147,8 @@ mod internal {
         /// # Arguments
         /// * `current_battery_pct` - Current battery percentage
         pub fn check_battery_limit(&self, current_battery_pct: f64) -> Result<(), MobileError> {
-            if self.battery_threshold_pct > 0.0 && current_battery_pct < self.battery_threshold_pct {
+            if self.battery_threshold_pct > 0.0 && current_battery_pct < self.battery_threshold_pct
+            {
                 return Err(MobileError::BatteryLimitExceeded);
             }
             Ok(())
@@ -329,10 +333,9 @@ mod internal {
 
         /// Get the current effective allocation, applying constraints.
         pub fn get_effective_allocation(&self) -> f64 {
-            let adjusted = self.config.apply_constraints(
-                self.current_temp_celsius,
-                self.current_battery_pct,
-            );
+            let adjusted = self
+                .config
+                .apply_constraints(self.current_temp_celsius, self.current_battery_pct);
             adjusted.effective_allocation()
         }
 
@@ -351,7 +354,10 @@ mod internal {
             self.config
                 .check_thermal_limit(self.current_temp_celsius)
                 .is_ok()
-                && self.config.check_battery_limit(self.current_battery_pct).is_ok()
+                && self
+                    .config
+                    .check_battery_limit(self.current_battery_pct)
+                    .is_ok()
         }
     }
 
@@ -383,7 +389,8 @@ mod internal {
         #[test]
         fn test_config_invalid_slider() {
             assert_eq!(
-                ResourceSliderConfig::new(1.5, 0.5, 0.5, 85.0, 20.0, Platform::Android).unwrap_err(),
+                ResourceSliderConfig::new(1.5, 0.5, 0.5, 85.0, 20.0, Platform::Android)
+                    .unwrap_err(),
                 MobileError::InvalidSliderValue
             );
         }
@@ -464,7 +471,10 @@ mod internal {
         fn test_bridge_unavailable() {
             let mut bridge = MobileBridge::new(Platform::Ios);
             bridge.deactivate();
-            assert_eq!(bridge.send("resource", "update").unwrap_err(), MobileError::BridgeUnavailable);
+            assert_eq!(
+                bridge.send("resource", "update").unwrap_err(),
+                MobileError::BridgeUnavailable
+            );
         }
 
         #[test]
@@ -537,6 +547,4 @@ mod internal {
     }
 }
 
-pub use internal::{
-    MobileBridge, MobileError, Platform, ResourceSliderConfig, ResourceManager,
-};
+pub use internal::{MobileBridge, MobileError, Platform, ResourceManager, ResourceSliderConfig};

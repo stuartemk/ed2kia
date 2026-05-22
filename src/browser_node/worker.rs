@@ -13,7 +13,7 @@ use wasm_bindgen::JsValue;
 
 // Re-export audit payloads for worker messaging
 #[cfg(feature = "v2.1-audit-payloads")]
-use crate::protocol::audit_payloads::{AuditTaskPayload, AuditResultPayload};
+use crate::protocol::audit_payloads::{AuditResultPayload, AuditTaskPayload};
 
 // ============================================================================
 // Error Types
@@ -62,9 +62,8 @@ impl WorkerBridge {
     /// The worker listens for `audit_task` messages and responds with
     /// `audit_result` messages.
     pub fn init_worker() -> Result<Self, WorkerError> {
-        let window = web_sys::window().ok_or_else(|| {
-            WorkerError::WorkerInit("No window available".to_string())
-        })?;
+        let window = web_sys::window()
+            .ok_or_else(|| WorkerError::WorkerInit("No window available".to_string()))?;
 
         // Inline worker script as blob URL
         let worker_script = r#"
@@ -118,27 +117,28 @@ impl WorkerBridge {
         &mut self,
         payload: &AuditTaskPayload,
     ) -> Result<AuditResultPayload, WorkerError> {
-        let worker = self.worker.as_ref().ok_or_else(|| {
-            WorkerError::WorkerInit("Worker not initialized".to_string())
-        })?;
+        let worker = self
+            .worker
+            .as_ref()
+            .ok_or_else(|| WorkerError::WorkerInit("Worker not initialized".to_string()))?;
 
         // Build message object
         let msg = js_sys::Object::new();
-        js_sys::Reflect::set_str(&msg, "type", "audit_task").map_err(|_| {
-            WorkerError::Serialization("Failed to set message type".to_string())
-        })?;
-        js_sys::Reflect::set_str(&msg, "task_id", &payload.task_id.to_string()).map_err(|_| {
-            WorkerError::Serialization("Failed to set task_id".to_string())
-        })?;
-        js_sys::Reflect::set(&msg, "shard_weights".into(), &JsValue::from(&payload.shard_weights))
-            .map_err(|_| {
-                WorkerError::Serialization("Failed to set shard_weights".to_string())
-            })?;
+        js_sys::Reflect::set_str(&msg, "type", "audit_task")
+            .map_err(|_| WorkerError::Serialization("Failed to set message type".to_string()))?;
+        js_sys::Reflect::set_str(&msg, "task_id", &payload.task_id.to_string())
+            .map_err(|_| WorkerError::Serialization("Failed to set task_id".to_string()))?;
+        js_sys::Reflect::set(
+            &msg,
+            "shard_weights".into(),
+            &JsValue::from(&payload.shard_weights),
+        )
+        .map_err(|_| WorkerError::Serialization("Failed to set shard_weights".to_string()))?;
 
         // Send message
-        worker.post_message(&msg).map_err(|e| {
-            WorkerError::MessageSend(format!("postMessage failed: {:?}", e))
-        })?;
+        worker
+            .post_message(&msg)
+            .map_err(|e| WorkerError::MessageSend(format!("postMessage failed: {:?}", e)))?;
 
         self.pending_resolves += 1;
 

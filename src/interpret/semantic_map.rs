@@ -248,10 +248,7 @@ impl SemanticMap {
     pub fn lookup_by_feature(&self, feature_index: u32) -> Vec<&SemanticConcept> {
         let concept_ids = self.feature_to_concepts.get(&feature_index);
         match concept_ids {
-            Some(ids) => ids
-                .iter()
-                .filter_map(|id| self.concepts.get(id))
-                .collect(),
+            Some(ids) => ids.iter().filter_map(|id| self.concepts.get(id)).collect(),
             None => vec![],
         }
     }
@@ -260,10 +257,7 @@ impl SemanticMap {
     pub fn lookup_by_category(&self, category: &ConceptCategory) -> Vec<&SemanticConcept> {
         let concept_ids = self.category_to_concepts.get(category);
         match concept_ids {
-            Some(ids) => ids
-                .iter()
-                .filter_map(|id| self.concepts.get(id))
-                .collect(),
+            Some(ids) => ids.iter().filter_map(|id| self.concepts.get(id)).collect(),
             None => vec![],
         }
     }
@@ -302,21 +296,12 @@ impl SemanticMap {
     }
 
     /// Generar descripción semántica de un batch de features
-    pub fn describe_features(
-        &self,
-        active_features: &[(u32, f32)],
-        max_concepts: usize,
-    ) -> String {
+    pub fn describe_features(&self, active_features: &[(u32, f32)], max_concepts: usize) -> String {
         let active = self.get_active_concepts(active_features);
         let limited = active.iter().take(max_concepts);
 
         let descriptions: Vec<String> = limited
-            .map(|ac| {
-                format!(
-                    "[{}] ({:.2}) - {}",
-                    ac.name, ac.activation, ac.category
-                )
-            })
+            .map(|ac| format!("[{}] ({:.2}) - {}", ac.name, ac.activation, ac.category))
             .collect();
 
         if descriptions.is_empty() {
@@ -442,9 +427,9 @@ impl SemanticMap {
             description,
             category,
             feature_indices: features.to_vec(),
-            relevant_layers: vec![], // Se determinará con más datos
+            relevant_layers: vec![],   // Se determinará con más datos
             activation_threshold: 0.6, // Umbral por defecto
-            importance: 0.5, // Importancia moderada inicial
+            importance: 0.5,           // Importancia moderada inicial
             metadata: Some(serde_json::json!({
                 "source": "human_feedback",
                 "learned_at": std::time::SystemTime::now()
@@ -467,8 +452,14 @@ impl SemanticMap {
     }
 
     /// Actualiza un concepto existente con nueva información
-    pub fn update_concept(&mut self, concept_id: &str, new_name: Option<&str>) -> anyhow::Result<()> {
-        let concept = self.concepts.get_mut(concept_id)
+    pub fn update_concept(
+        &mut self,
+        concept_id: &str,
+        new_name: Option<&str>,
+    ) -> anyhow::Result<()> {
+        let concept = self
+            .concepts
+            .get_mut(concept_id)
             .ok_or_else(|| anyhow::anyhow!("Concept '{}' not found", concept_id))?;
 
         if let Some(name) = new_name {

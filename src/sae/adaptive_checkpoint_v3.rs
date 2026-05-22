@@ -253,7 +253,13 @@ mod internal {
     }
 
     impl CheckpointV3Stats {
-        pub fn record_checkpoint(&mut self, is_delta: bool, compressed: usize, ratio: f64, depth: usize) {
+        pub fn record_checkpoint(
+            &mut self,
+            is_delta: bool,
+            compressed: usize,
+            ratio: f64,
+            depth: usize,
+        ) {
             self.total_checkpoints += 1;
             if is_delta {
                 self.total_deltas += 1;
@@ -355,9 +361,10 @@ mod internal {
                         self.stats.total_fallbacks += 1;
                         (None, 0, Vec::new())
                     } else {
-                        return Err(CheckpointV3Error::FallbackTriggered(
-                            format!("Delta depth {} exceeds max {}", depth, self.config.max_delta_depth),
-                        ));
+                        return Err(CheckpointV3Error::FallbackTriggered(format!(
+                            "Delta depth {} exceeds max {}",
+                            depth, self.config.max_delta_depth
+                        )));
                     }
                 } else {
                     // Build lineage
@@ -391,7 +398,10 @@ mod internal {
 
             // Index
             self.id_index.insert(id.clone(), self.checkpoints.len());
-            self.shard_index.entry(shard_id).or_default().push(id.clone());
+            self.shard_index
+                .entry(shard_id)
+                .or_default()
+                .push(id.clone());
 
             if is_snapshot {
                 self.snapshot_ids.insert(id.clone());
@@ -411,7 +421,12 @@ mod internal {
             );
 
             // Check if merge needed
-            if self.stats.total_deltas.is_multiple_of(self.config.merge_interval) && self.stats.total_deltas > 0 {
+            if self
+                .stats
+                .total_deltas
+                .is_multiple_of(self.config.merge_interval)
+                && self.stats.total_deltas > 0
+            {
                 self.merge_deltas().ok();
             }
 
@@ -437,7 +452,11 @@ mod internal {
 
         /// Get checkpoints by shard.
         pub fn get_shard_checkpoints(&self, shard_id: usize) -> Vec<&DeltaCheckpointV3> {
-            let ids = self.shard_index.get(&shard_id).map(|v| v.as_slice()).unwrap_or(&[]);
+            let ids = self
+                .shard_index
+                .get(&shard_id)
+                .map(|v| v.as_slice())
+                .unwrap_or(&[]);
             ids.iter()
                 .filter_map(|id| self.get_checkpoint(id))
                 .collect()
@@ -445,7 +464,8 @@ mod internal {
 
         /// Get snapshots.
         pub fn get_snapshots(&self) -> Vec<&DeltaCheckpointV3> {
-            self.checkpoints.iter()
+            self.checkpoints
+                .iter()
                 .filter(|c| self.snapshot_ids.contains(&c.id))
                 .collect()
         }
@@ -458,7 +478,9 @@ mod internal {
         /// Merge delta checkpoints using configured strategy.
         pub fn merge_deltas(&mut self) -> Result<usize, CheckpointV3Error> {
             // Collect delta IDs to avoid holding immutable borrow while calling &mut self methods
-            let delta_ids: Vec<String> = self.checkpoints.iter()
+            let delta_ids: Vec<String> = self
+                .checkpoints
+                .iter()
                 .filter(|c| c.is_delta)
                 .map(|c| c.id.clone())
                 .collect();
@@ -477,7 +499,8 @@ mod internal {
         fn merge_incremental(&mut self, delta_ids: &[String]) -> Result<usize, CheckpointV3Error> {
             let count = delta_ids.len();
             self.stats.total_merges += 1;
-            self.stats.record_merge_strategy(&MergeStrategyV3::Incremental);
+            self.stats
+                .record_merge_strategy(&MergeStrategyV3::Incremental);
             Ok(count)
         }
 
@@ -488,7 +511,8 @@ mod internal {
             }
 
             // Look up deltas by ID
-            let deltas: Vec<&DeltaCheckpointV3> = delta_ids.iter()
+            let deltas: Vec<&DeltaCheckpointV3> = delta_ids
+                .iter()
                 .filter_map(|id| self.checkpoints.iter().find(|c| c.id == *id))
                 .collect();
 
@@ -497,13 +521,21 @@ mod internal {
             }
 
             // Find base (first non-delta or earliest checkpoint)
-            let base_data: Vec<f32> = self.checkpoints.iter()
+            let base_data: Vec<f32> = self
+                .checkpoints
+                .iter()
                 .find(|c| !c.is_delta || c.parent_id.is_none())
-                .ok_or_else(|| CheckpointV3Error::MergeFailed("No base checkpoint found".to_string()))?
-                .data.clone();
+                .ok_or_else(|| {
+                    CheckpointV3Error::MergeFailed("No base checkpoint found".to_string())
+                })?
+                .data
+                .clone();
 
             // Merge by summing delta data onto base
-            let max_len = std::cmp::max(base_data.len(), deltas.iter().map(|c| c.data.len()).max().unwrap_or(0));
+            let max_len = std::cmp::max(
+                base_data.len(),
+                deltas.iter().map(|c| c.data.len()).max().unwrap_or(0),
+            );
             let mut merged: Vec<f32> = vec![0.0; max_len];
 
             // Copy base data
@@ -534,7 +566,9 @@ mod internal {
             // Depth-aware compaction: reduce delta depth for remaining deltas
             if self.config.depth_aware_compaction {
                 for checkpoint in self.checkpoints.iter_mut() {
-                    if checkpoint.is_delta && checkpoint.delta_depth > self.config.max_delta_depth / 2 {
+                    if checkpoint.is_delta
+                        && checkpoint.delta_depth > self.config.max_delta_depth / 2
+                    {
                         checkpoint.delta_depth = 0;
                         checkpoint.parent_id = None;
                         checkpoint.lineage.clear();
@@ -547,7 +581,10 @@ mod internal {
         }
 
         /// Quarantine a corrupted checkpoint.
-        fn quarantine_checkpoint(&mut self, checkpoint: DeltaCheckpointV3) -> Result<(), CheckpointV3Error> {
+        fn quarantine_checkpoint(
+            &mut self,
+            checkpoint: DeltaCheckpointV3,
+        ) -> Result<(), CheckpointV3Error> {
             if self.quarantine.len() >= self.config.quarantine_limit {
                 return Err(CheckpointV3Error::QuarantineFull);
             }
@@ -566,7 +603,9 @@ mod internal {
                 }
                 Ok(())
             } else {
-                Err(CheckpointV3Error::MergeFailed("No checkpoints to evict".to_string()))
+                Err(CheckpointV3Error::MergeFailed(
+                    "No checkpoints to evict".to_string(),
+                ))
             }
         }
 
@@ -645,7 +684,6 @@ mod internal {
             .unwrap_or_default()
             .as_millis() as u64
     }
-
 }
 
 #[cfg(feature = "v1.5-sprint1")]
@@ -780,8 +818,8 @@ mod tests {
         engine.save_checkpoint(3, data3).unwrap();
         let result = engine.save_checkpoint(4, data4);
         match result {
-            Err(CheckpointV3Error::FallbackTriggered(_)) => {},
-            Ok(_) => {}, // May succeed if fallback happened
+            Err(CheckpointV3Error::FallbackTriggered(_)) => {}
+            Ok(_) => {} // May succeed if fallback happened
             Err(e) => panic!("Unexpected error: {}", e),
         }
     }
@@ -862,10 +900,16 @@ mod tests {
     #[test]
     fn test_checkpoint_new() {
         let checkpoint = DeltaCheckpointV3::new(
-            "test".to_string(), 1, 0,
+            "test".to_string(),
+            1,
+            0,
             vec![1.0, 2.0, 3.0],
-            None, 0, 3,
-            Vec::new(), false, MergeStrategyV3::Incremental,
+            None,
+            0,
+            3,
+            Vec::new(),
+            false,
+            MergeStrategyV3::Incremental,
         );
         assert_eq!(checkpoint.id, "test");
         assert_eq!(checkpoint.version, 3);
@@ -875,10 +919,16 @@ mod tests {
     #[test]
     fn test_checkpoint_delta_new() {
         let checkpoint = DeltaCheckpointV3::new(
-            "test".to_string(), 1, 0,
+            "test".to_string(),
+            1,
+            0,
             vec![1.0, 2.0, 3.0],
-            Some("parent".to_string()), 1, 3,
-            vec!["base".to_string()], false, MergeStrategyV3::Incremental,
+            Some("parent".to_string()),
+            1,
+            3,
+            vec!["base".to_string()],
+            false,
+            MergeStrategyV3::Incremental,
         );
         assert!(checkpoint.is_delta);
         assert_eq!(checkpoint.lineage.len(), 1);
@@ -999,7 +1049,10 @@ mod tests {
 
     #[test]
     fn test_error_version_conflict_display() {
-        let err = CheckpointV3Error::VersionConflict { expected: 3, got: 2 };
+        let err = CheckpointV3Error::VersionConflict {
+            expected: 3,
+            got: 2,
+        };
         let msg = format!("{}", err);
         assert!(msg.contains("Version conflict"));
     }
@@ -1021,9 +1074,16 @@ mod tests {
     #[test]
     fn test_checkpoint_add_to_lineage() {
         let mut checkpoint = DeltaCheckpointV3::new(
-            "test".to_string(), 1, 0,
-            vec![1.0], None, 0, 3,
-            vec!["a".to_string()], false, MergeStrategyV3::Incremental,
+            "test".to_string(),
+            1,
+            0,
+            vec![1.0],
+            None,
+            0,
+            3,
+            vec!["a".to_string()],
+            false,
+            MergeStrategyV3::Incremental,
         );
         checkpoint.add_to_lineage("b".to_string());
         assert_eq!(checkpoint.lineage.len(), 2);
@@ -1073,9 +1133,16 @@ mod tests {
     #[test]
     fn test_secondary_checksum() {
         let checkpoint = DeltaCheckpointV3::new(
-            "test".to_string(), 1, 0,
+            "test".to_string(),
+            1,
+            0,
             vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0],
-            None, 0, 3, Vec::new(), false, MergeStrategyV3::Incremental,
+            None,
+            0,
+            3,
+            Vec::new(),
+            false,
+            MergeStrategyV3::Incremental,
         );
         assert!(!checkpoint.secondary_checksum.is_empty());
         assert_ne!(checkpoint.checksum, checkpoint.secondary_checksum);

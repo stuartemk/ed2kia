@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::time::Instant;
 
-use ed25519_dalek::{SigningKey, VerifyingKey, Signature, Signer};
+use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
 
 // ============================================================================
 // Error Types
@@ -224,11 +224,7 @@ impl CrossChainIdentity {
 
     /// Register a derived chain key
     pub fn register_chain_key(&mut self, chain_id: &str, public_key: String) {
-        let key_pair = ChainKeyPair::new(
-            chain_id.to_string(),
-            public_key,
-            true,
-        );
+        let key_pair = ChainKeyPair::new(chain_id.to_string(), public_key, true);
         self.chain_keys.insert(chain_id.to_string(), key_pair);
     }
 

@@ -217,7 +217,7 @@ impl Default for NormalizerConfig {
     fn default() -> Self {
         Self {
             target_dim: 1024,
-            outlier_threshold: 3.0, // 3 desviaciones estándar
+            outlier_threshold: 3.0,        // 3 desviaciones estándar
             gradient_age_decay_ms: 60_000, // 1 minuto
             max_gradients_per_round: 500,
             use_l2_normalization: true,
@@ -290,7 +290,14 @@ impl GradientNormalizer {
         let node_id = capacity.node_id.clone();
         self.node_capacities.insert(node_id.clone(), capacity);
         self.stats.nodes_registered = self.node_capacities.len();
-        debug!("Node registered: {} (capacity: {:.4})", self.stats.nodes_registered, self.node_capacities.get(&node_id).unwrap().weighted_capacity());
+        debug!(
+            "Node registered: {} (capacity: {:.4})",
+            self.stats.nodes_registered,
+            self.node_capacities
+                .get(&node_id)
+                .unwrap()
+                .weighted_capacity()
+        );
 
         Ok(())
     }
@@ -309,9 +316,7 @@ impl GradientNormalizer {
 
         // Obtener capacidad del nodo
         let capacity = self.node_capacities.get(&batch.node_id);
-        let capacity_factor = capacity
-            .map(|c| c.weighted_capacity())
-            .unwrap_or(1.0);
+        let capacity_factor = capacity.map(|c| c.weighted_capacity()).unwrap_or(1.0);
 
         // Escalar a dimensión objetivo
         let scaled = self.scale_to_target_dim(&batch.data, batch.original_dim);
@@ -362,19 +367,16 @@ impl GradientNormalizer {
         // Actualizar stats
         self.stats.batches_normalized += 1;
         self.stats.last_round = batch.round;
-        self.stats.avg_normalization_factor =
-            self.normalization_factors.iter().sum::<f32>() / self.normalization_factors.len() as f32;
-        self.stats.avg_normalization_ms =
-            (self.stats.avg_normalization_ms * (self.stats.batches_normalized - 1) as f64 + elapsed_ms)
-                / self.stats.batches_normalized as f64;
+        self.stats.avg_normalization_factor = self.normalization_factors.iter().sum::<f32>()
+            / self.normalization_factors.len() as f32;
+        self.stats.avg_normalization_ms = (self.stats.avg_normalization_ms
+            * (self.stats.batches_normalized - 1) as f64
+            + elapsed_ms)
+            / self.stats.batches_normalized as f64;
 
         debug!(
             "Gradient normalized: node={}, dim={}→{}, factor={:.4}, time={:.1}ms",
-            batch.node_id,
-            batch.original_dim,
-            self.config.target_dim,
-            factor,
-            elapsed_ms
+            batch.node_id, batch.original_dim, self.config.target_dim, factor, elapsed_ms
         );
 
         Ok(capacity_scaled)
@@ -576,23 +578,13 @@ mod tests {
 
     #[test]
     fn test_gradient_batch_checksum() {
-        let batch = GradientBatch::new(
-            "node-1".to_string(),
-            vec![0.1, -0.2, 0.3, -0.4],
-            1,
-            4,
-        );
+        let batch = GradientBatch::new("node-1".to_string(), vec![0.1, -0.2, 0.3, -0.4], 1, 4);
         assert!(batch.verify_checksum());
     }
 
     #[test]
     fn test_gradient_batch_norms() {
-        let batch = GradientBatch::new(
-            "node-1".to_string(),
-            vec![3.0, 4.0],
-            1,
-            2,
-        );
+        let batch = GradientBatch::new("node-1".to_string(), vec![3.0, 4.0], 1, 2);
         assert!((batch.l2_norm() - 5.0).abs() < 0.01);
         assert!((batch.l1_norm() - 7.0).abs() < 0.01);
     }

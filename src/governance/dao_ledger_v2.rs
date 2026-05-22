@@ -227,7 +227,9 @@ impl DaoLedgerV2 {
         }
 
         // Get previous hash
-        let previous_hash = self.entries.last()
+        let previous_hash = self
+            .entries
+            .last()
             .map(|e| e.hash.clone())
             .unwrap_or_else(|| "genesis".to_string());
 
@@ -280,14 +282,16 @@ impl DaoLedgerV2 {
 
     /// Get entries filtered by event type.
     pub fn get_entries_by_type(&self, event_type: &DaoEventType) -> Vec<&DaoEntry> {
-        self.entries.iter()
+        self.entries
+            .iter()
             .filter(|e| &e.event_type == event_type)
             .collect()
     }
 
     /// Get entries filtered by actor.
     pub fn get_entries_by_actor(&self, actor_id: &str) -> Vec<&DaoEntry> {
-        self.entries.iter()
+        self.entries
+            .iter()
             .filter(|e| e.actor_id == actor_id)
             .collect()
     }
@@ -355,8 +359,17 @@ impl Default for DaoLedgerV2 {
 }
 
 /// Compute cryptographic hash for an entry.
-fn compute_hash(entry_id: &str, sequence: u64, payload: &str, previous_hash: &str, timestamp_ms: u64) -> String {
-    let data = format!("{}:{}:{}:{}:{}", entry_id, sequence, payload, previous_hash, timestamp_ms);
+fn compute_hash(
+    entry_id: &str,
+    sequence: u64,
+    payload: &str,
+    previous_hash: &str,
+    timestamp_ms: u64,
+) -> String {
+    let data = format!(
+        "{}:{}:{}:{}:{}",
+        entry_id, sequence, payload, previous_hash, timestamp_ms
+    );
     use std::hash::Hasher;
     let mut hasher = std::collections::hash_map::DefaultHasher::default();
     hasher.write(data.as_bytes());
@@ -383,7 +396,10 @@ fn compute_merkle_root(leaves: &[String]) -> String {
         }
         current = next;
     }
-    current.into_iter().next().unwrap_or_else(|| "empty".to_string())
+    current
+        .into_iter()
+        .next()
+        .unwrap_or_else(|| "empty".to_string())
 }
 
 /// Helper to get current timestamp in milliseconds.
@@ -408,13 +424,15 @@ mod tests {
     #[test]
     fn test_record_event() {
         let mut ledger = DaoLedgerV2::with_defaults();
-        let entry = ledger.record_event(
-            "e1".to_string(),
-            DaoEventType::ShardRegistered,
-            "node1".to_string(),
-            "shard1".to_string(),
-            "registered".to_string(),
-        ).unwrap();
+        let entry = ledger
+            .record_event(
+                "e1".to_string(),
+                DaoEventType::ShardRegistered,
+                "node1".to_string(),
+                "shard1".to_string(),
+                "registered".to_string(),
+            )
+            .unwrap();
         assert_eq!(entry.entry_id, "e1");
         assert_eq!(entry.sequence, 1);
         assert_eq!(ledger.entry_count(), 1);
@@ -423,13 +441,15 @@ mod tests {
     #[test]
     fn test_duplicate_entry() {
         let mut ledger = DaoLedgerV2::with_defaults();
-        ledger.record_event(
-            "e1".to_string(),
-            DaoEventType::ShardRegistered,
-            "node1".to_string(),
-            "shard1".to_string(),
-            "data".to_string(),
-        ).unwrap();
+        ledger
+            .record_event(
+                "e1".to_string(),
+                DaoEventType::ShardRegistered,
+                "node1".to_string(),
+                "shard1".to_string(),
+                "data".to_string(),
+            )
+            .unwrap();
         match ledger.record_event(
             "e1".to_string(),
             DaoEventType::ShardRegistered,
@@ -445,40 +465,48 @@ mod tests {
     #[test]
     fn test_chain_verification() {
         let mut ledger = DaoLedgerV2::with_defaults();
-        ledger.record_event(
-            "e1".to_string(),
-            DaoEventType::ShardRegistered,
-            "node1".to_string(),
-            "shard1".to_string(),
-            "data1".to_string(),
-        ).unwrap();
-        ledger.record_event(
-            "e2".to_string(),
-            DaoEventType::ResourceAllocated,
-            "node2".to_string(),
-            "pool1".to_string(),
-            "data2".to_string(),
-        ).unwrap();
+        ledger
+            .record_event(
+                "e1".to_string(),
+                DaoEventType::ShardRegistered,
+                "node1".to_string(),
+                "shard1".to_string(),
+                "data1".to_string(),
+            )
+            .unwrap();
+        ledger
+            .record_event(
+                "e2".to_string(),
+                DaoEventType::ResourceAllocated,
+                "node2".to_string(),
+                "pool1".to_string(),
+                "data2".to_string(),
+            )
+            .unwrap();
         assert!(ledger.verify_chain().is_ok());
     }
 
     #[test]
     fn test_chain_linking() {
         let mut ledger = DaoLedgerV2::with_defaults();
-        ledger.record_event(
-            "e1".to_string(),
-            DaoEventType::ShardRegistered,
-            "node1".to_string(),
-            "s1".to_string(),
-            "d1".to_string(),
-        ).unwrap();
-        ledger.record_event(
-            "e2".to_string(),
-            DaoEventType::ShardRegistered,
-            "node1".to_string(),
-            "s2".to_string(),
-            "d2".to_string(),
-        ).unwrap();
+        ledger
+            .record_event(
+                "e1".to_string(),
+                DaoEventType::ShardRegistered,
+                "node1".to_string(),
+                "s1".to_string(),
+                "d1".to_string(),
+            )
+            .unwrap();
+        ledger
+            .record_event(
+                "e2".to_string(),
+                DaoEventType::ShardRegistered,
+                "node1".to_string(),
+                "s2".to_string(),
+                "d2".to_string(),
+            )
+            .unwrap();
         let e1 = ledger.get_entry("e1").unwrap();
         let e2 = ledger.get_entry("e2").unwrap();
         assert_eq!(e2.previous_hash, e1.hash);
@@ -487,33 +515,39 @@ mod tests {
     #[test]
     fn test_hash_verification() {
         let mut ledger = DaoLedgerV2::with_defaults();
-        let entry = ledger.record_event(
-            "e1".to_string(),
-            DaoEventType::ShardRegistered,
-            "node1".to_string(),
-            "s1".to_string(),
-            "data".to_string(),
-        ).unwrap();
+        let entry = ledger
+            .record_event(
+                "e1".to_string(),
+                DaoEventType::ShardRegistered,
+                "node1".to_string(),
+                "s1".to_string(),
+                "data".to_string(),
+            )
+            .unwrap();
         assert!(entry.verify_hash());
     }
 
     #[test]
     fn test_get_entry_by_type() {
         let mut ledger = DaoLedgerV2::with_defaults();
-        ledger.record_event(
-            "e1".to_string(),
-            DaoEventType::ShardRegistered,
-            "node1".to_string(),
-            "s1".to_string(),
-            "d1".to_string(),
-        ).unwrap();
-        ledger.record_event(
-            "e2".to_string(),
-            DaoEventType::ResourceAllocated,
-            "node1".to_string(),
-            "p1".to_string(),
-            "d2".to_string(),
-        ).unwrap();
+        ledger
+            .record_event(
+                "e1".to_string(),
+                DaoEventType::ShardRegistered,
+                "node1".to_string(),
+                "s1".to_string(),
+                "d1".to_string(),
+            )
+            .unwrap();
+        ledger
+            .record_event(
+                "e2".to_string(),
+                DaoEventType::ResourceAllocated,
+                "node1".to_string(),
+                "p1".to_string(),
+                "d2".to_string(),
+            )
+            .unwrap();
         let shards = ledger.get_entries_by_type(&DaoEventType::ShardRegistered);
         assert_eq!(shards.len(), 1);
         let allocs = ledger.get_entries_by_type(&DaoEventType::ResourceAllocated);
@@ -523,20 +557,24 @@ mod tests {
     #[test]
     fn test_get_entries_by_actor() {
         let mut ledger = DaoLedgerV2::with_defaults();
-        ledger.record_event(
-            "e1".to_string(),
-            DaoEventType::ShardRegistered,
-            "node1".to_string(),
-            "s1".to_string(),
-            "d1".to_string(),
-        ).unwrap();
-        ledger.record_event(
-            "e2".to_string(),
-            DaoEventType::ShardRegistered,
-            "node2".to_string(),
-            "s2".to_string(),
-            "d2".to_string(),
-        ).unwrap();
+        ledger
+            .record_event(
+                "e1".to_string(),
+                DaoEventType::ShardRegistered,
+                "node1".to_string(),
+                "s1".to_string(),
+                "d1".to_string(),
+            )
+            .unwrap();
+        ledger
+            .record_event(
+                "e2".to_string(),
+                DaoEventType::ShardRegistered,
+                "node2".to_string(),
+                "s2".to_string(),
+                "d2".to_string(),
+            )
+            .unwrap();
         let node1_entries = ledger.get_entries_by_actor("node1");
         assert_eq!(node1_entries.len(), 1);
     }
@@ -544,13 +582,15 @@ mod tests {
     #[test]
     fn test_merkle_root() {
         let mut ledger = DaoLedgerV2::with_defaults();
-        ledger.record_event(
-            "e1".to_string(),
-            DaoEventType::ShardRegistered,
-            "node1".to_string(),
-            "s1".to_string(),
-            "data".to_string(),
-        ).unwrap();
+        ledger
+            .record_event(
+                "e1".to_string(),
+                DaoEventType::ShardRegistered,
+                "node1".to_string(),
+                "s1".to_string(),
+                "data".to_string(),
+            )
+            .unwrap();
         let root = ledger.compute_merkle_root();
         assert!(!root.is_empty());
         assert_ne!(root, "empty");
@@ -559,13 +599,15 @@ mod tests {
     #[test]
     fn test_stats_tracking() {
         let mut ledger = DaoLedgerV2::with_defaults();
-        ledger.record_event(
-            "e1".to_string(),
-            DaoEventType::ShardRegistered,
-            "node1".to_string(),
-            "s1".to_string(),
-            "data".to_string(),
-        ).unwrap();
+        ledger
+            .record_event(
+                "e1".to_string(),
+                DaoEventType::ShardRegistered,
+                "node1".to_string(),
+                "s1".to_string(),
+                "data".to_string(),
+            )
+            .unwrap();
         ledger.verify_chain().unwrap();
         let stats = ledger.get_stats();
         assert_eq!(stats.total_entries, 1);
@@ -575,20 +617,24 @@ mod tests {
     #[test]
     fn test_root_history() {
         let mut ledger = DaoLedgerV2::with_defaults();
-        ledger.record_event(
-            "e1".to_string(),
-            DaoEventType::ShardRegistered,
-            "node1".to_string(),
-            "s1".to_string(),
-            "d1".to_string(),
-        ).unwrap();
-        ledger.record_event(
-            "e2".to_string(),
-            DaoEventType::ShardRegistered,
-            "node1".to_string(),
-            "s2".to_string(),
-            "d2".to_string(),
-        ).unwrap();
+        ledger
+            .record_event(
+                "e1".to_string(),
+                DaoEventType::ShardRegistered,
+                "node1".to_string(),
+                "s1".to_string(),
+                "d1".to_string(),
+            )
+            .unwrap();
+        ledger
+            .record_event(
+                "e2".to_string(),
+                DaoEventType::ShardRegistered,
+                "node1".to_string(),
+                "s2".to_string(),
+                "d2".to_string(),
+            )
+            .unwrap();
         let history = ledger.get_root_history();
         assert_eq!(history.len(), 2);
     }
@@ -597,13 +643,15 @@ mod tests {
     fn test_get_recent_entries() {
         let mut ledger = DaoLedgerV2::with_defaults();
         for i in 0..5 {
-            ledger.record_event(
-                format!("e{}", i),
-                DaoEventType::ShardRegistered,
-                "node1".to_string(),
-                format!("s{}", i),
-                "data".to_string(),
-            ).unwrap();
+            ledger
+                .record_event(
+                    format!("e{}", i),
+                    DaoEventType::ShardRegistered,
+                    "node1".to_string(),
+                    format!("s{}", i),
+                    "data".to_string(),
+                )
+                .unwrap();
         }
         let recent = ledger.get_recent_entries(3);
         assert_eq!(recent.len(), 3);
@@ -613,13 +661,15 @@ mod tests {
     #[test]
     fn test_get_entry_by_sequence() {
         let mut ledger = DaoLedgerV2::with_defaults();
-        ledger.record_event(
-            "e1".to_string(),
-            DaoEventType::ShardRegistered,
-            "node1".to_string(),
-            "s1".to_string(),
-            "data".to_string(),
-        ).unwrap();
+        ledger
+            .record_event(
+                "e1".to_string(),
+                DaoEventType::ShardRegistered,
+                "node1".to_string(),
+                "s1".to_string(),
+                "data".to_string(),
+            )
+            .unwrap();
         let entry = ledger.get_entry_by_sequence(1).unwrap();
         assert_eq!(entry.entry_id, "e1");
         assert!(ledger.get_entry_by_sequence(2).is_none());
@@ -628,8 +678,14 @@ mod tests {
     #[test]
     fn test_event_type_display() {
         assert_eq!(DaoEventType::ShardRegistered.to_string(), "ShardRegistered");
-        assert_eq!(DaoEventType::ResourceAllocated.to_string(), "ResourceAllocated");
-        assert_eq!(DaoEventType::Custom("test".to_string()).to_string(), "Custom(test)");
+        assert_eq!(
+            DaoEventType::ResourceAllocated.to_string(),
+            "ResourceAllocated"
+        );
+        assert_eq!(
+            DaoEventType::Custom("test".to_string()).to_string(),
+            "Custom(test)"
+        );
     }
 
     #[test]
@@ -671,13 +727,15 @@ mod tests {
     #[test]
     fn test_genesis_previous_hash() {
         let mut ledger = DaoLedgerV2::with_defaults();
-        let entry = ledger.record_event(
-            "e1".to_string(),
-            DaoEventType::ShardRegistered,
-            "node1".to_string(),
-            "s1".to_string(),
-            "data".to_string(),
-        ).unwrap();
+        let entry = ledger
+            .record_event(
+                "e1".to_string(),
+                DaoEventType::ShardRegistered,
+                "node1".to_string(),
+                "s1".to_string(),
+                "data".to_string(),
+            )
+            .unwrap();
         assert_eq!(entry.previous_hash, "genesis");
     }
 }

@@ -16,7 +16,9 @@ use std::time::Instant;
 #[derive(Parser, Debug)]
 #[command(name = "ed2k_mvp")]
 #[command(about = "ed2kIA MVP: End-to-End Local Testnet Simulation")]
-#[command(long_about = "ed2kIA MVP — End-to-End Local Simulation (La Chispa)\n\nDemuestra el ciclo completo del Kernel Estuardiano:\n3 nodos → SAE payloads → SCT Guard → BFT Consensus → Resultados\n\nLey 2 (Reconocimiento del Error): SCT Hard Reject cuando Z < 0\nLey 3 (Cero desperdicio): Simulación ligera, logs deterministas")]
+#[command(
+    long_about = "ed2kIA MVP — End-to-End Local Simulation (La Chispa)\n\nDemuestra el ciclo completo del Kernel Estuardiano:\n3 nodos → SAE payloads → SCT Guard → BFT Consensus → Resultados\n\nLey 2 (Reconocimiento del Error): SCT Hard Reject cuando Z < 0\nLey 3 (Cero desperdicio): Simulación ligera, logs deterministas"
+)]
 struct Cli {
     /// Dry-run mode (simulate without network binding)
     #[arg(long, default_value_t = true)]
@@ -79,7 +81,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\x1b[0m");
 
     if cli.verbose {
-        println!("\n[CONFIG] dry_run={}, verbose={}", cli.dry_run, cli.verbose);
+        println!(
+            "\n[CONFIG] dry_run={}, verbose={}",
+            cli.dry_run, cli.verbose
+        );
         println!("[CONFIG] output_json={}", cli.output_json);
     }
 

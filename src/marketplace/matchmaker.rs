@@ -227,7 +227,10 @@ impl ResourceMatchmaker {
     pub fn register_listing(&mut self, listing: ResourceListing) {
         let key = Self::resource_key(&listing.resource_type);
         self.listings.entry(key).or_default().push(listing.clone());
-        *self.node_resource_counts.entry(listing.node_id.clone()).or_insert(0) += 1;
+        *self
+            .node_resource_counts
+            .entry(listing.node_id.clone())
+            .or_insert(0) += 1;
         debug!(
             node = %listing.node_id,
             resource = %listing.resource_type.description(),
@@ -238,9 +241,12 @@ impl ResourceMatchmaker {
     /// Elimina listings expirados.
     pub fn cleanup_expired(&mut self, now_ms: u64) -> usize {
         let mut removed = 0;
-        let expired_keys: Vec<String> = self.listings.keys()
+        let expired_keys: Vec<String> = self
+            .listings
+            .keys()
             .filter(|key| {
-                self.listings.get(*key)
+                self.listings
+                    .get(*key)
                     .map(|listings| listings.iter().all(|l| l.expires_at <= now_ms))
                     .unwrap_or(false)
             })
@@ -267,7 +273,10 @@ impl ResourceMatchmaker {
     }
 
     /// Encuentra el mejor match para una request.
-    pub fn match_request(&mut self, request: &ResourceRequest) -> Result<MatchResult, MatchmakerError> {
+    pub fn match_request(
+        &mut self,
+        request: &ResourceRequest,
+    ) -> Result<MatchResult, MatchmakerError> {
         let start = Instant::now();
 
         let key = Self::resource_key(&request.resource_type);
@@ -277,10 +286,13 @@ impl ResourceMatchmaker {
 
         // Timeout check
         if match_time_ms > self.match_timeout_ms as f64 {
-            return Ok(MatchResult::rejected(match_time_ms, &format!(
-                "SLO violation: match timeout {}ms > {}ms",
-                match_time_ms, self.match_timeout_ms
-            )));
+            return Ok(MatchResult::rejected(
+                match_time_ms,
+                &format!(
+                    "SLO violation: match timeout {}ms > {}ms",
+                    match_time_ms, self.match_timeout_ms
+                ),
+            ));
         }
 
         let listings = match listings {
@@ -288,28 +300,42 @@ impl ResourceMatchmaker {
             _ => {
                 return Ok(MatchResult::rejected(
                     match_time_ms,
-                    &format!("No listings available for {}", request.resource_type.description()),
+                    &format!(
+                        "No listings available for {}",
+                        request.resource_type.description()
+                    ),
                 ));
             }
         };
 
         // Filtrar por disponibilidad y SLO
-        let valid: Vec<&ResourceListing> = listings.iter().filter(|l| {
-            l.expires_at > chrono::Utc::now().timestamp_millis() as u64
-                && l.availability_slo >= request.min_availability
-                && l.max_latency_ms <= request.max_latency_ms
-                && l.quantity >= request.quantity
-                && l.base_price <= request.max_price
-        }).collect();
+        let valid: Vec<&ResourceListing> = listings
+            .iter()
+            .filter(|l| {
+                l.expires_at > chrono::Utc::now().timestamp_millis() as u64
+                    && l.availability_slo >= request.min_availability
+                    && l.max_latency_ms <= request.max_latency_ms
+                    && l.quantity >= request.quantity
+                    && l.base_price <= request.max_price
+            })
+            .collect();
 
         if valid.is_empty() {
-            return Ok(MatchResult::rejected(match_time_ms, "No valid listings match request criteria"));
+            return Ok(MatchResult::rejected(
+                match_time_ms,
+                "No valid listings match request criteria",
+            ));
         }
 
         // Seleccionar el de menor precio
-        let best = valid.iter().min_by(|a, b| {
-            a.base_price.partial_cmp(&b.base_price).unwrap_or(std::cmp::Ordering::Equal)
-        }).unwrap();
+        let best = valid
+            .iter()
+            .min_by(|a, b| {
+                a.base_price
+                    .partial_cmp(&b.base_price)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
+            .unwrap();
 
         // Verificar anti-monopolio
         let total_for_type = listings.len();
@@ -372,12 +398,18 @@ impl ResourceMatchmaker {
     /// Retorna listings por tipo de recurso.
     pub fn listings_by_type(&self, resource_type: &ResourceType) -> Vec<&ResourceListing> {
         let key = Self::resource_key(resource_type);
-        self.listings.get(&key).map(|v| v.iter().collect()).unwrap_or_default()
+        self.listings
+            .get(&key)
+            .map(|v| v.iter().collect())
+            .unwrap_or_default()
     }
 
     /// Calcula hash de settlement para escrow.
     fn compute_settlement_hash(listing: &ResourceListing, requester_id: &str) -> String {
-        let data = format!("{}{}{}{}", listing.node_id, requester_id, listing.base_price, listing.listed_at);
+        let data = format!(
+            "{}{}{}{}",
+            listing.node_id, requester_id, listing.base_price, listing.listed_at
+        );
         hex::encode(Sha256::digest(data.as_bytes()))
     }
 
@@ -409,7 +441,10 @@ mod tests {
         let now = chrono::Utc::now().timestamp_millis() as u64;
         ResourceListing {
             node_id: node.into(),
-            resource_type: ResourceType::SAEShard { model_id: model.into(), layer },
+            resource_type: ResourceType::SAEShard {
+                model_id: model.into(),
+                layer,
+            },
             quantity: 10.0,
             base_price: price,
             listed_at: now,
@@ -423,7 +458,10 @@ mod tests {
     fn vram_request(node: &str, gpu: &str, qty: f32, max_price: f32) -> ResourceRequest {
         ResourceRequest {
             requester_id: node.into(),
-            resource_type: ResourceType::VRAM { gpu_model: gpu.into(), vram_gb: qty },
+            resource_type: ResourceType::VRAM {
+                gpu_model: gpu.into(),
+                vram_gb: qty,
+            },
             quantity: qty,
             max_price,
             max_latency_ms: 50,
@@ -446,7 +484,10 @@ mod tests {
         mm.register_listing(sae_listing("n1", "scope-v2", 5, 100.0));
         let req = ResourceRequest {
             requester_id: "buyer".into(),
-            resource_type: ResourceType::SAEShard { model_id: "scope-v2".into(), layer: 5 },
+            resource_type: ResourceType::SAEShard {
+                model_id: "scope-v2".into(),
+                layer: 5,
+            },
             quantity: 5.0,
             max_price: 120.0,
             max_latency_ms: 100,
@@ -465,7 +506,10 @@ mod tests {
         mm.register_listing(sae_listing("expensive", "scope-v2", 5, 120.0));
         let req = ResourceRequest {
             requester_id: "buyer".into(),
-            resource_type: ResourceType::SAEShard { model_id: "scope-v2".into(), layer: 5 },
+            resource_type: ResourceType::SAEShard {
+                model_id: "scope-v2".into(),
+                layer: 5,
+            },
             quantity: 5.0,
             max_price: 150.0,
             max_latency_ms: 100,
@@ -481,7 +525,10 @@ mod tests {
         let mut mm = ResourceMatchmaker::new();
         let req = ResourceRequest {
             requester_id: "buyer".into(),
-            resource_type: ResourceType::SAEShard { model_id: "scope-v3".into(), layer: 3 },
+            resource_type: ResourceType::SAEShard {
+                model_id: "scope-v3".into(),
+                layer: 3,
+            },
             quantity: 5.0,
             max_price: 150.0,
             max_latency_ms: 100,
@@ -500,7 +547,10 @@ mod tests {
         mm.register_listing(sae_listing("n1", "scope-v2", 5, 100.0));
         mm.register_listing(ResourceListing {
             node_id: "n2".into(),
-            resource_type: ResourceType::SAEShard { model_id: "scope-v2".into(), layer: 5 },
+            resource_type: ResourceType::SAEShard {
+                model_id: "scope-v2".into(),
+                layer: 5,
+            },
             quantity: 10.0,
             base_price: 90.0,
             listed_at: 100,
@@ -521,7 +571,10 @@ mod tests {
         mm.register_listing(sae_listing("n1", "scope-v2", 5, 200.0));
         let req = ResourceRequest {
             requester_id: "buyer".into(),
-            resource_type: ResourceType::SAEShard { model_id: "scope-v2".into(), layer: 5 },
+            resource_type: ResourceType::SAEShard {
+                model_id: "scope-v2".into(),
+                layer: 5,
+            },
             quantity: 5.0,
             max_price: 150.0,
             max_latency_ms: 100,

@@ -210,8 +210,8 @@ impl RetryPolicy {
     }
 
     pub fn get_backoff(&self, attempt: u32) -> Duration {
-        let mut backoff = self.initial_backoff.as_millis() as f64
-            * self.backoff_multiplier.powi(attempt as i32);
+        let mut backoff =
+            self.initial_backoff.as_millis() as f64 * self.backoff_multiplier.powi(attempt as i32);
 
         if self.jitter_enabled {
             // Simple jitter: add random variation (simulated)
@@ -514,10 +514,8 @@ impl FaultToleranceManager {
             .values()
             .filter(|record| {
                 !record.is_isolated
-                    && (matches!(
-                        record.health,
-                        NodeHealth::Unhealthy | NodeHealth::Degraded
-                    ) || record.is_stale(self.config.heartbeat_timeout))
+                    && (matches!(record.health, NodeHealth::Unhealthy | NodeHealth::Degraded)
+                        || record.is_stale(self.config.heartbeat_timeout))
             })
             .filter_map(|record| {
                 let strategy = self.select_recovery_strategy(record)?;
@@ -877,7 +875,9 @@ mod tests {
         manager.register_node("n1".to_string()).unwrap();
         manager.register_node("n2".to_string()).unwrap();
 
-        manager.record_node_failure("n1", FailureType::Timeout).unwrap();
+        manager
+            .record_node_failure("n1", FailureType::Timeout)
+            .unwrap();
 
         let unhealthy = manager.get_unhealthy_nodes();
         assert_eq!(unhealthy, vec!["n1"]);
@@ -916,10 +916,7 @@ mod tests {
 
     #[test]
     fn test_failure_type_display() {
-        assert_eq!(
-            format!("{}", FailureType::Timeout),
-            "Timeout"
-        );
+        assert_eq!(format!("{}", FailureType::Timeout), "Timeout");
         assert_eq!(
             format!("{}", FailureType::GradientCorruption),
             "GradientCorruption"
@@ -928,10 +925,7 @@ mod tests {
 
     #[test]
     fn test_recovery_strategy_display() {
-        assert_eq!(
-            format!("{}", RecoveryStrategy::Restart),
-            "Restart"
-        );
+        assert_eq!(format!("{}", RecoveryStrategy::Restart), "Restart");
         assert_eq!(
             format!("{}", RecoveryStrategy::IsolateAndReplace),
             "IsolateAndReplace"
@@ -941,10 +935,7 @@ mod tests {
     #[test]
     fn test_circuit_state_display() {
         assert_eq!(format!("{}", CircuitState::Closed), "Closed");
-        assert_eq!(
-            format!("{}", CircuitState::HalfOpen),
-            "HalfOpen"
-        );
+        assert_eq!(format!("{}", CircuitState::HalfOpen), "HalfOpen");
     }
 
     #[test]
@@ -962,7 +953,9 @@ mod tests {
         manager.config.auto_recovery_enabled = true;
         manager.register_node("n1".to_string()).unwrap();
 
-        manager.record_node_failure("n1", FailureType::Timeout).unwrap();
+        manager
+            .record_node_failure("n1", FailureType::Timeout)
+            .unwrap();
         manager.detect_and_recover();
 
         assert!(!manager.get_recovery_log().is_empty());

@@ -48,7 +48,11 @@ mod internal {
                 Self::RestoreFailed(msg) => write!(f, "Restore failed: {}", msg),
                 Self::ModelNotFound(id) => write!(f, "Model not found: {}", id),
                 Self::CheckpointNotFound { round, model_id } => {
-                    write!(f, "Checkpoint not found: round {}, model {}", round, model_id)
+                    write!(
+                        f,
+                        "Checkpoint not found: round {}, model {}",
+                        round, model_id
+                    )
                 }
                 Self::FallbackExhausted(msg) => write!(f, "Fallback exhausted: {}", msg),
                 Self::RetentionPolicyViolation(msg) => {
@@ -217,10 +221,7 @@ mod internal {
         }
 
         pub fn get_latest_valid(&self) -> Option<&CheckpointEntryV5> {
-            self.checkpoints
-                .iter()
-                .rev()
-                .find(|c| c.integrity_valid)
+            self.checkpoints.iter().rev().find(|c| c.integrity_valid)
         }
 
         pub fn get_fallback_candidates(&self, lookback: usize) -> Vec<&CheckpointEntryV5> {
@@ -262,7 +263,13 @@ mod internal {
     }
 
     impl CheckpointV5Stats {
-        pub fn record_checkpoint(&mut self, incremental: bool, compressed: bool, ratio: f64, time_ms: u64) {
+        pub fn record_checkpoint(
+            &mut self,
+            incremental: bool,
+            compressed: bool,
+            ratio: f64,
+            time_ms: u64,
+        ) {
             self.total_checkpoints += 1;
             if incremental {
                 self.incremental_checkpoints += 1;
@@ -351,14 +358,15 @@ mod internal {
             simulated_size: usize,
             simulated_time_ms: u64,
         ) -> Result<CheckpointEntryV5, AdaptiveCheckpointV5Error> {
-            let state = self
-                .models
-                .get_mut(model_id)
-                .ok_or(AdaptiveCheckpointV5Error::ModelNotFound(
-                    model_id.to_string(),
-                ))?;
+            let state =
+                self.models
+                    .get_mut(model_id)
+                    .ok_or(AdaptiveCheckpointV5Error::ModelNotFound(
+                        model_id.to_string(),
+                    ))?;
 
-            let mut entry = CheckpointEntryV5::new(round, model_id.to_string(), simulated_hash, simulated_size);
+            let mut entry =
+                CheckpointEntryV5::new(round, model_id.to_string(), simulated_hash, simulated_size);
             entry.creation_time_ms = simulated_time_ms;
 
             // Incremental checkpoint
@@ -370,7 +378,10 @@ mod internal {
 
             // LZ4 compression
             if self.config.lz4_compression {
-                entry.mark_compressed((simulated_size as f64 / 3.0) as usize, self.config.lz4_level);
+                entry.mark_compressed(
+                    (simulated_size as f64 / 3.0) as usize,
+                    self.config.lz4_level,
+                );
             }
 
             // Integrity validation
@@ -406,19 +417,19 @@ mod internal {
             round: u64,
             model_id: &str,
         ) -> Result<bool, AdaptiveCheckpointV5Error> {
-            let state = self
-                .models
-                .get(model_id)
-                .ok_or(AdaptiveCheckpointV5Error::ModelNotFound(
-                    model_id.to_string(),
-                ))?;
+            let state =
+                self.models
+                    .get(model_id)
+                    .ok_or(AdaptiveCheckpointV5Error::ModelNotFound(
+                        model_id.to_string(),
+                    ))?;
 
-            let entry = state
-                .get_checkpoint(round)
-                .ok_or(AdaptiveCheckpointV5Error::CheckpointNotFound {
+            let entry = state.get_checkpoint(round).ok_or(
+                AdaptiveCheckpointV5Error::CheckpointNotFound {
                     round,
                     model_id: model_id.to_string(),
-                })?;
+                },
+            )?;
 
             Ok(entry.integrity_valid)
         }
@@ -434,12 +445,12 @@ mod internal {
                 ));
             }
 
-            let state = self
-                .models
-                .get_mut(model_id)
-                .ok_or(AdaptiveCheckpointV5Error::ModelNotFound(
-                    model_id.to_string(),
-                ))?;
+            let state =
+                self.models
+                    .get_mut(model_id)
+                    .ok_or(AdaptiveCheckpointV5Error::ModelNotFound(
+                        model_id.to_string(),
+                    ))?;
 
             let candidates = state.get_fallback_candidates(self.config.fallback_lookback);
             if candidates.is_empty() {
@@ -456,11 +467,7 @@ mod internal {
             Ok(Some(fallback_round))
         }
 
-        pub fn get_checkpoint(
-            &self,
-            round: u64,
-            model_id: &str,
-        ) -> Option<&CheckpointEntryV5> {
+        pub fn get_checkpoint(&self, round: u64, model_id: &str) -> Option<&CheckpointEntryV5> {
             self.models
                 .get(model_id)
                 .and_then(|s| s.get_checkpoint(round))
@@ -471,9 +478,7 @@ mod internal {
         }
 
         pub fn get_latest_valid_checkpoint(&self, model_id: &str) -> Option<&CheckpointEntryV5> {
-            self.models
-                .get(model_id)
-                .and_then(|s| s.get_latest_valid())
+            self.models.get(model_id).and_then(|s| s.get_latest_valid())
         }
 
         pub fn get_stats(&self) -> &CheckpointV5Stats {
@@ -547,13 +552,9 @@ mod internal {
         fn test_create_checkpoint() {
             let mut engine = AdaptiveCheckpointV5::default();
             engine.register_model("m1".to_string());
-            let entry = engine.create_checkpoint(
-                1,
-                "m1",
-                "hash1".to_string(),
-                1024 * 1024,
-                150,
-            ).unwrap();
+            let entry = engine
+                .create_checkpoint(1, "m1", "hash1".to_string(), 1024 * 1024, 150)
+                .unwrap();
             assert_eq!(entry.round, 1);
             assert_eq!(entry.model_id, "m1");
         }
@@ -561,7 +562,10 @@ mod internal {
         #[test]
         fn test_create_checkpoint_model_not_found() {
             let mut engine = AdaptiveCheckpointV5::default();
-            match engine.create_checkpoint(1, "unknown", "h".to_string(), 100, 10).unwrap_err() {
+            match engine
+                .create_checkpoint(1, "unknown", "h".to_string(), 100, 10)
+                .unwrap_err()
+            {
                 AdaptiveCheckpointV5Error::ModelNotFound(id) => assert_eq!(id, "unknown"),
                 e => panic!("Wrong error: {:?}", e),
             }
@@ -571,8 +575,12 @@ mod internal {
         fn test_incremental_checkpoint() {
             let mut engine = AdaptiveCheckpointV5::default();
             engine.register_model("m1".to_string());
-            engine.create_checkpoint(1, "m1", "h1".to_string(), 1024, 100).unwrap();
-            let entry2 = engine.create_checkpoint(2, "m1", "h2".to_string(), 1024, 100).unwrap();
+            engine
+                .create_checkpoint(1, "m1", "h1".to_string(), 1024, 100)
+                .unwrap();
+            let entry2 = engine
+                .create_checkpoint(2, "m1", "h2".to_string(), 1024, 100)
+                .unwrap();
             assert!(entry2.incremental);
             assert!(entry2.parent_hash.is_some());
         }
@@ -581,7 +589,9 @@ mod internal {
         fn test_lz4_compression() {
             let mut engine = AdaptiveCheckpointV5::default();
             engine.register_model("m1".to_string());
-            let entry = engine.create_checkpoint(1, "m1", "h1".to_string(), 3000, 100).unwrap();
+            let entry = engine
+                .create_checkpoint(1, "m1", "h1".to_string(), 3000, 100)
+                .unwrap();
             assert!(entry.compressed);
             assert!((entry.compression_ratio() - 3.0).abs() < 0.01);
         }
@@ -590,7 +600,9 @@ mod internal {
         fn test_integrity_validation() {
             let mut engine = AdaptiveCheckpointV5::default();
             engine.register_model("m1".to_string());
-            engine.create_checkpoint(1, "m1", "h1".to_string(), 1024, 100).unwrap();
+            engine
+                .create_checkpoint(1, "m1", "h1".to_string(), 1024, 100)
+                .unwrap();
             assert!(engine.get_stats().integrity_validations > 0);
         }
 
@@ -598,7 +610,9 @@ mod internal {
         fn test_validate_checkpoint() {
             let mut engine = AdaptiveCheckpointV5::default();
             engine.register_model("m1".to_string());
-            engine.create_checkpoint(1, "m1", "h1".to_string(), 1024, 100).unwrap();
+            engine
+                .create_checkpoint(1, "m1", "h1".to_string(), 1024, 100)
+                .unwrap();
             let valid = engine.validate_checkpoint(1, "m1").unwrap();
             assert!(valid);
         }
@@ -620,8 +634,12 @@ mod internal {
         fn test_fallback_restore() {
             let mut engine = AdaptiveCheckpointV5::default();
             engine.register_model("m1".to_string());
-            engine.create_checkpoint(1, "m1", "h1".to_string(), 1024, 100).unwrap();
-            engine.create_checkpoint(2, "m1", "h2".to_string(), 1024, 100).unwrap();
+            engine
+                .create_checkpoint(1, "m1", "h1".to_string(), 1024, 100)
+                .unwrap();
+            engine
+                .create_checkpoint(2, "m1", "h2".to_string(), 1024, 100)
+                .unwrap();
             let fallback = engine.fallback_restore(3, "m1").unwrap();
             assert!(fallback.is_some());
             assert_eq!(fallback.unwrap(), 2);
@@ -632,7 +650,9 @@ mod internal {
             let mut engine = AdaptiveCheckpointV5::default();
             engine.register_model("m1".to_string());
             match engine.fallback_restore(1, "m1").unwrap_err() {
-                AdaptiveCheckpointV5Error::FallbackExhausted(msg) => assert!(msg.contains("No valid")),
+                AdaptiveCheckpointV5Error::FallbackExhausted(msg) => {
+                    assert!(msg.contains("No valid"))
+                }
                 e => panic!("Wrong error: {:?}", e),
             }
         }
@@ -646,7 +666,9 @@ mod internal {
             let mut engine = AdaptiveCheckpointV5::new(config);
             engine.register_model("m1".to_string());
             match engine.fallback_restore(1, "m1").unwrap_err() {
-                AdaptiveCheckpointV5Error::FallbackExhausted(msg) => assert!(msg.contains("disabled")),
+                AdaptiveCheckpointV5Error::FallbackExhausted(msg) => {
+                    assert!(msg.contains("disabled"))
+                }
                 e => panic!("Wrong error: {:?}", e),
             }
         }
@@ -655,7 +677,9 @@ mod internal {
         fn test_get_checkpoint() {
             let mut engine = AdaptiveCheckpointV5::default();
             engine.register_model("m1".to_string());
-            engine.create_checkpoint(5, "m1", "h5".to_string(), 1024, 100).unwrap();
+            engine
+                .create_checkpoint(5, "m1", "h5".to_string(), 1024, 100)
+                .unwrap();
             let cp = engine.get_checkpoint(5, "m1");
             assert!(cp.is_some());
             assert_eq!(cp.unwrap().round, 5);
@@ -665,8 +689,12 @@ mod internal {
         fn test_get_latest_checkpoint() {
             let mut engine = AdaptiveCheckpointV5::default();
             engine.register_model("m1".to_string());
-            engine.create_checkpoint(1, "m1", "h1".to_string(), 1024, 100).unwrap();
-            engine.create_checkpoint(2, "m1", "h2".to_string(), 1024, 100).unwrap();
+            engine
+                .create_checkpoint(1, "m1", "h1".to_string(), 1024, 100)
+                .unwrap();
+            engine
+                .create_checkpoint(2, "m1", "h2".to_string(), 1024, 100)
+                .unwrap();
             let latest = engine.get_latest_checkpoint("m1").unwrap();
             assert_eq!(latest.round, 2);
         }
@@ -675,7 +703,9 @@ mod internal {
         fn test_get_latest_valid_checkpoint() {
             let mut engine = AdaptiveCheckpointV5::default();
             engine.register_model("m1".to_string());
-            engine.create_checkpoint(1, "m1", "h1".to_string(), 1024, 100).unwrap();
+            engine
+                .create_checkpoint(1, "m1", "h1".to_string(), 1024, 100)
+                .unwrap();
             let valid = engine.get_latest_valid_checkpoint("m1").unwrap();
             assert_eq!(valid.round, 1);
         }
@@ -689,7 +719,9 @@ mod internal {
             let mut engine = AdaptiveCheckpointV5::new(config);
             engine.register_model("m1".to_string());
             for i in 1..=5 {
-                engine.create_checkpoint(i, "m1", format!("h{}", i), 1024, 100).unwrap();
+                engine
+                    .create_checkpoint(i, "m1", format!("h{}", i), 1024, 100)
+                    .unwrap();
             }
             assert_eq!(engine.checkpoint_count("m1"), 3);
         }
@@ -703,8 +735,12 @@ mod internal {
             };
             let mut engine = AdaptiveCheckpointV5::new(config);
             engine.register_model("m1".to_string());
-            engine.create_checkpoint(1, "m1", "h1".to_string(), 1024, 100).unwrap();
-            engine.create_checkpoint(10, "m1", "h10".to_string(), 1024, 100).unwrap();
+            engine
+                .create_checkpoint(1, "m1", "h1".to_string(), 1024, 100)
+                .unwrap();
+            engine
+                .create_checkpoint(10, "m1", "h10".to_string(), 1024, 100)
+                .unwrap();
             assert!(engine.get_stats().checkpoints_pruned > 0);
         }
 
@@ -712,7 +748,9 @@ mod internal {
         fn test_stats_tracking() {
             let mut engine = AdaptiveCheckpointV5::default();
             engine.register_model("m1".to_string());
-            engine.create_checkpoint(1, "m1", "h1".to_string(), 1024, 100).unwrap();
+            engine
+                .create_checkpoint(1, "m1", "h1".to_string(), 1024, 100)
+                .unwrap();
             let stats = engine.get_stats();
             assert_eq!(stats.total_checkpoints, 1);
         }
@@ -721,7 +759,9 @@ mod internal {
         fn test_reset_stats() {
             let mut engine = AdaptiveCheckpointV5::default();
             engine.register_model("m1".to_string());
-            engine.create_checkpoint(1, "m1", "h1".to_string(), 1024, 100).unwrap();
+            engine
+                .create_checkpoint(1, "m1", "h1".to_string(), 1024, 100)
+                .unwrap();
             engine.reset_stats();
             assert_eq!(engine.get_stats().total_checkpoints, 0);
         }
@@ -835,8 +875,12 @@ mod internal {
             let mut engine = AdaptiveCheckpointV5::default();
             engine.register_model("m1".to_string());
             engine.register_model("m2".to_string());
-            engine.create_checkpoint(1, "m1", "h1".to_string(), 1024, 100).unwrap();
-            engine.create_checkpoint(1, "m2", "h2".to_string(), 2048, 100).unwrap();
+            engine
+                .create_checkpoint(1, "m1", "h1".to_string(), 1024, 100)
+                .unwrap();
+            engine
+                .create_checkpoint(1, "m2", "h2".to_string(), 2048, 100)
+                .unwrap();
             assert_eq!(engine.checkpoint_count("m1"), 1);
             assert_eq!(engine.checkpoint_count("m2"), 1);
             assert_eq!(engine.get_stats().total_checkpoints, 2);
@@ -846,8 +890,12 @@ mod internal {
         fn test_compression_stats() {
             let mut engine = AdaptiveCheckpointV5::default();
             engine.register_model("m1".to_string());
-            engine.create_checkpoint(1, "m1", "h1".to_string(), 3000, 100).unwrap();
-            engine.create_checkpoint(2, "m1", "h2".to_string(), 3000, 100).unwrap();
+            engine
+                .create_checkpoint(1, "m1", "h1".to_string(), 3000, 100)
+                .unwrap();
+            engine
+                .create_checkpoint(2, "m1", "h2".to_string(), 3000, 100)
+                .unwrap();
             let stats = engine.get_stats();
             assert_eq!(stats.compressed_checkpoints, 2);
             assert!(stats.avg_compression_ratio > 0.0);
@@ -858,6 +906,6 @@ mod internal {
 // Re-export public types
 #[cfg(feature = "v1.6-sprint3")]
 pub use internal::{
-    AdaptiveCheckpointV5, AdaptiveCheckpointV5Config, AdaptiveCheckpointV5Error,
-    CheckpointEntryV5, CheckpointV5Stats, ModelCheckpointStateV5,
+    AdaptiveCheckpointV5, AdaptiveCheckpointV5Config, AdaptiveCheckpointV5Error, CheckpointEntryV5,
+    CheckpointV5Stats, ModelCheckpointStateV5,
 };

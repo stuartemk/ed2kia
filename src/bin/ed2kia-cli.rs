@@ -30,7 +30,7 @@
 use std::process;
 
 use clap::Parser;
-use cli::{Ed2kiaCli, Commands, LogFormat, Role};
+use cli::{Commands, Ed2kiaCli, LogFormat, Role};
 use wizard::Wizard;
 
 #[tokio::main]
@@ -64,12 +64,12 @@ async fn main() {
             cli::ConfigCommand::Validate { path } => validate_config(path),
         },
         Commands::Health { endpoint } => {
-            let endpoint = endpoint.clone().unwrap_or_else(|| "http://localhost:3000".to_string());
+            let endpoint = endpoint
+                .clone()
+                .unwrap_or_else(|| "http://localhost:3000".to_string());
             run_health_check(&endpoint).await
         }
-        Commands::Logs { last, follow } => {
-            export_logs(last.as_deref(), *follow)
-        }
+        Commands::Logs { last, follow } => export_logs(last.as_deref(), *follow),
         Commands::Version => {
             println!("ed2kIA CLI v{}", cli::VERSION);
             println!("Build: {}", cli::build_commit());
@@ -112,8 +112,8 @@ fn write_config_to_file(config: &str, path: &str) -> Result<(), String> {
 
 /// Validate an existing configuration file.
 fn validate_config(path: &str) -> Result<(), String> {
-    let content = std::fs::read_to_string(path)
-        .map_err(|e| format!("Failed to read {}: {}", path, e))?;
+    let content =
+        std::fs::read_to_string(path).map_err(|e| format!("Failed to read {}: {}", path, e))?;
 
     // Basic validation: check if file is non-empty and contains expected sections.
     if content.trim().is_empty() {
@@ -139,7 +139,12 @@ async fn run_health_check(endpoint: &str) -> Result<(), String> {
     let health_url = format!("{}/api/health", endpoint);
     let client = reqwest::Client::new();
 
-    match client.get(&health_url).timeout(std::time::Duration::from_secs(10)).send().await {
+    match client
+        .get(&health_url)
+        .timeout(std::time::Duration::from_secs(10))
+        .send()
+        .await
+    {
         Ok(response) => {
             let status = response.status();
             if status.is_success() {
@@ -155,8 +160,7 @@ async fn run_health_check(endpoint: &str) -> Result<(), String> {
 
 /// Export logs.
 fn export_logs(last: Option<&str>, follow: bool) -> Result<(), String> {
-    let log_dir = std::env::var("ED2KIA_LOG_DIR")
-        .unwrap_or_else(|_| "./logs".to_string());
+    let log_dir = std::env::var("ED2KIA_LOG_DIR").unwrap_or_else(|_| "./logs".to_string());
 
     println!("Log directory: {}", log_dir);
 
@@ -420,22 +424,29 @@ mod wizard {
             println!();
 
             // Step 1: Role Selection
-            let role = self.select_role_step().map_err(|e| format!("Role selection failed: {}", e))?;
+            let role = self
+                .select_role_step()
+                .map_err(|e| format!("Role selection failed: {}", e))?;
             println!("✓ Selected role: {:?}", role);
             println!();
 
             // Step 2: Network Configuration
-            let port = self.port_step().map_err(|e| format!("Port selection failed: {}", e))?;
+            let port = self
+                .port_step()
+                .map_err(|e| format!("Port selection failed: {}", e))?;
             println!("✓ Listen port: {}", port);
             println!();
 
             // Step 3: Environment Verification
-            self.verify_environment().map_err(|e| format!("Environment verification failed: {}", e))?;
+            self.verify_environment()
+                .map_err(|e| format!("Environment verification failed: {}", e))?;
             println!("✓ Environment verified");
             println!();
 
             // Step 4: Generate Config
-            let output_path = self.config_step().map_err(|e| format!("Config generation failed: {}", e))?;
+            let output_path = self
+                .config_step()
+                .map_err(|e| format!("Config generation failed: {}", e))?;
             println!("✓ Config generated: {}", output_path.display());
             println!();
 
@@ -457,8 +468,14 @@ mod wizard {
             println!("║                                                           ║");
             println!("║  Next steps:                                              ║");
             println!("║  1. Review your config: {} ║", output_path.display());
-            println!("║  2. Start your node: ed2kia --config {} ║", output_path.display());
-            println!("║  3. Monitor: ed2kia-cli health --endpoint http://localhost:{}", port);
+            println!(
+                "║  2. Start your node: ed2kia --config {} ║",
+                output_path.display()
+            );
+            println!(
+                "║  3. Monitor: ed2kia-cli health --endpoint http://localhost:{}",
+                port
+            );
             println!("╚═══════════════════════════════════════════════════════════╝");
 
             Ok(())
@@ -505,10 +522,12 @@ mod wizard {
                 .default(default_port.to_string())
                 .interact_text()?;
 
-            port.parse().map_err(|_| dialoguer::Error::IO(std::io::Error::new(
-                std::io::ErrorKind::InvalidInput,
-                "Invalid port number",
-            )))
+            port.parse().map_err(|_| {
+                dialoguer::Error::IO(std::io::Error::new(
+                    std::io::ErrorKind::InvalidInput,
+                    "Invalid port number",
+                ))
+            })
         }
 
         fn verify_environment(&self) -> Result<(), String> {

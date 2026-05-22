@@ -6,7 +6,7 @@
 //! - VRF (Verifiable Random Function) para selección determinística de auditores
 //! - Reputación criptográfica basada en historial de verificaciones
 
-use super::circuit::{BatchCommitment, ZKPProof, ZKPCircuit, ZKPError};
+use super::circuit::{BatchCommitment, ZKPCircuit, ZKPError, ZKPProof};
 use crate::consensus::merkle::MerkleTree;
 // MIGRATION: CanonicalSerialize moved to ark_serialize crate
 use ark_serialize::CanonicalSerialize;
@@ -38,10 +38,7 @@ pub enum VerificationResult {
         confidence: f64,
     },
     /// Verificación fallida
-    Failed {
-        batch_id: String,
-        reason: String,
-    },
+    Failed { batch_id: String, reason: String },
 }
 
 /// Registro de verificación
@@ -84,7 +81,13 @@ impl CryptoReputation {
     }
 
     /// Actualiza reputación basado en resultado de verificación
-    pub fn update(&mut self, result: &VerificationResult, _is_zkp: bool, _is_merkle: bool, _is_vrf: bool) {
+    pub fn update(
+        &mut self,
+        result: &VerificationResult,
+        _is_zkp: bool,
+        _is_merkle: bool,
+        _is_vrf: bool,
+    ) {
         self.total_verifications += 1;
         self.last_updated = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -190,15 +193,28 @@ impl ZKPVerifier {
         // Intenta verificación ZKP primero
         match self.verify_with_zkp(batch_id, feature_values) {
             Ok(result) => {
-                self.record_verification(batch_id.to_string(), result.clone(), verifier_id, start_time);
+                self.record_verification(
+                    batch_id.to_string(),
+                    result.clone(),
+                    verifier_id,
+                    start_time,
+                );
                 result
             }
             Err(e) => {
-                warn!("ZKP verification failed for batch {}: {}. Falling back to Merkle.", batch_id, e);
+                warn!(
+                    "ZKP verification failed for batch {}: {}. Falling back to Merkle.",
+                    batch_id, e
+                );
                 // Fallback a Merkle
                 match self.verify_with_merkle(batch_id, feature_values) {
                     Ok(result) => {
-                        self.record_verification(batch_id.to_string(), result.clone(), verifier_id, start_time);
+                        self.record_verification(
+                            batch_id.to_string(),
+                            result.clone(),
+                            verifier_id,
+                            start_time,
+                        );
                         result
                     }
                     Err(e) => {
@@ -207,7 +223,12 @@ impl ZKPVerifier {
                             batch_id: batch_id.to_string(),
                             reason: format!("ZKP: {}; Merkle: {}", e, e),
                         };
-                        self.record_verification(batch_id.to_string(), result.clone(), verifier_id, start_time);
+                        self.record_verification(
+                            batch_id.to_string(),
+                            result.clone(),
+                            verifier_id,
+                            start_time,
+                        );
                         result
                     }
                 }
@@ -216,7 +237,11 @@ impl ZKPVerifier {
     }
 
     /// Verifica usando ZKP
-    fn verify_with_zkp(&self, batch_id: &str, feature_values: &[f64]) -> Result<VerificationResult, ZKPError> {
+    fn verify_with_zkp(
+        &self,
+        batch_id: &str,
+        feature_values: &[f64],
+    ) -> Result<VerificationResult, ZKPError> {
         // Crea compromiso
         let commitment = self.circuit.create_commitment(feature_values, batch_id)?;
 
@@ -246,7 +271,11 @@ impl ZKPVerifier {
     }
 
     /// Verifica usando árbol Merkle (fallback)
-    fn verify_with_merkle(&self, batch_id: &str, feature_values: &[f64]) -> Result<VerificationResult, ZKPError> {
+    fn verify_with_merkle(
+        &self,
+        batch_id: &str,
+        feature_values: &[f64],
+    ) -> Result<VerificationResult, ZKPError> {
         // Convierte features a hashes de hojas
         let leaf_data: Vec<Vec<u8>> = feature_values
             .iter()
@@ -259,7 +288,8 @@ impl ZKPVerifier {
 
         // Construye árbol Merkle
         // MIGRATION: MerkleTree::from_data returns Result, need to unwrap
-        let merkle_tree = MerkleTree::from_data(leaf_data).map_err(|e| ZKPError::ProofVerificationFailed(e.to_string()))?;
+        let merkle_tree = MerkleTree::from_data(leaf_data)
+            .map_err(|e| ZKPError::ProofVerificationFailed(e.to_string()))?;
         let merkle_root = merkle_tree.root.hash.clone();
 
         // Verifica que el árbol es válido
@@ -275,13 +305,16 @@ impl ZKPVerifier {
             hasher.update(value.to_le_bytes());
             let leaf_hash = hasher.finalize();
 
-            let proof = merkle_tree.generate_proof(i).map_err(|e| ZKPError::ProofVerificationFailed(e.to_string()))?;
+            let proof = merkle_tree
+                .generate_proof(i)
+                .map_err(|e| ZKPError::ProofVerificationFailed(e.to_string()))?;
             let leaf_hash_hex = format!("{:x}", leaf_hash);
             // MIGRATION: MerkleTree::verify_proof is a static method that takes leaf_hash, proof, root, index
             if !MerkleTree::verify_proof(&leaf_hash_hex, &proof, &merkle_root, i) {
-                return Err(ZKPError::ProofVerificationFailed(
-                    format!("Merkle proof failed for feature {}", i),
-                ));
+                return Err(ZKPError::ProofVerificationFailed(format!(
+                    "Merkle proof failed for feature {}",
+                    i
+                )));
             }
         }
 
@@ -297,7 +330,12 @@ impl ZKPVerifier {
     }
 
     /// Genera y verifica prueba VRF (para selección de auditores)
-    pub fn verify_vrf(&self, batch_id: &str, verifier_id: &str, secret_seed: &[u8]) -> VerificationResult {
+    pub fn verify_vrf(
+        &self,
+        batch_id: &str,
+        verifier_id: &str,
+        secret_seed: &[u8],
+    ) -> VerificationResult {
         let start_time = std::time::Instant::now();
 
         // Genera prueba VRF simplificada
@@ -314,14 +352,24 @@ impl ZKPVerifier {
                 vrf_proof,
                 confidence,
             };
-            self.record_verification(batch_id.to_string(), result.clone(), verifier_id, start_time);
+            self.record_verification(
+                batch_id.to_string(),
+                result.clone(),
+                verifier_id,
+                start_time,
+            );
             result
         } else {
             let result = VerificationResult::Failed {
                 batch_id: batch_id.to_string(),
                 reason: "VRF proof verification failed".to_string(),
             };
-            self.record_verification(batch_id.to_string(), result.clone(), verifier_id, start_time);
+            self.record_verification(
+                batch_id.to_string(),
+                result.clone(),
+                verifier_id,
+                start_time,
+            );
             result
         }
     }
@@ -336,7 +384,13 @@ impl ZKPVerifier {
     }
 
     /// Verifica prueba VRF
-    fn verify_vrf_proof(&self, verifier_id: &str, batch_id: &str, proof: &[u8], secret_seed: &[u8]) -> bool {
+    fn verify_vrf_proof(
+        &self,
+        verifier_id: &str,
+        batch_id: &str,
+        proof: &[u8],
+        secret_seed: &[u8],
+    ) -> bool {
         let expected = self.generate_vrf_proof(verifier_id, batch_id, secret_seed);
         proof == expected
     }
@@ -503,17 +557,24 @@ impl ZKPVerifier {
     /// Establece umbral mínimo de confianza
     pub fn set_min_confidence(&mut self, threshold: f64) {
         self.min_confidence_threshold = threshold.clamp(0.0, 1.0);
-        info!("Min confidence threshold set to {}", self.min_confidence_threshold);
+        info!(
+            "Min confidence threshold set to {}",
+            self.min_confidence_threshold
+        );
     }
 
     /// Verifica una prueba ZKP con su compromiso asociado
-    pub fn verify(&self, proof: ZKPProof, commitment: BatchCommitment) -> Result<VerificationResult, ZKPError> {
+    pub fn verify(
+        &self,
+        proof: ZKPProof,
+        commitment: BatchCommitment,
+    ) -> Result<VerificationResult, ZKPError> {
         let is_valid = self.circuit.verify_proof(&proof, &commitment)?;
-        
+
         if is_valid {
             let proof_hash = Self::compute_proof_hash(&proof);
             let confidence = self.calculate_zkp_confidence(&proof, &commitment);
-            
+
             Ok(VerificationResult::ZKPVerified {
                 batch_id: proof.batch_id.clone(),
                 proof_hash,

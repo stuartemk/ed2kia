@@ -6,9 +6,9 @@
 //! **Linux Analogy:** Like `auditd` + `journald` where ZKP proofs are audit logs
 //! verified across multiple journal instances (pools) with resource-aware routing.
 
+use std::collections::hash_map::DefaultHasher;
 use std::collections::{HashMap, VecDeque};
 use std::hash::{Hash, Hasher};
-use std::collections::hash_map::DefaultHasher;
 
 // ─── Errors ───
 
@@ -37,8 +37,15 @@ impl std::fmt::Display for PoolZKPError {
             Self::PoolNotFound(id) => write!(f, "Pool not found: {}", id),
             Self::ProofNotFound(id) => write!(f, "Proof not found: {}", id),
             Self::VerificationFailed(msg) => write!(f, "Verification failed: {}", msg),
-            Self::InsufficientResources { available, required } => {
-                write!(f, "Insufficient resources: available={}, required={}", available, required)
+            Self::InsufficientResources {
+                available,
+                required,
+            } => {
+                write!(
+                    f,
+                    "Insufficient resources: available={}, required={}",
+                    available, required
+                )
             }
             Self::BridgeFull => write!(f, "Bridge capacity exceeded"),
             Self::ConsensusFailed { yes, no } => {
@@ -205,8 +212,7 @@ impl PoolBridgeState {
         self.available_resources = (self.available_resources - cost).max(0.0);
         self.proofs_verified += 1;
         self.active_proofs = self.active_proofs.saturating_sub(1);
-        self.avg_verification_time_ms = 
-            self.avg_verification_time_ms * 0.9 + time_ms as f64 * 0.1;
+        self.avg_verification_time_ms = self.avg_verification_time_ms * 0.9 + time_ms as f64 * 0.1;
     }
 
     /// Record failed verification.
@@ -308,10 +314,8 @@ impl PoolZKPBridge {
         if self.pools.len() >= self.config.max_proofs_in_flight {
             return Err(PoolZKPError::BridgeFull);
         }
-        self.pools.insert(
-            pool_id.clone(),
-            PoolBridgeState::new(pool_id, resources),
-        );
+        self.pools
+            .insert(pool_id.clone(), PoolBridgeState::new(pool_id, resources));
         Ok(())
     }
 
@@ -321,7 +325,9 @@ impl PoolZKPBridge {
         pool_id: &str,
         resources: f64,
     ) -> Result<(), PoolZKPError> {
-        let pool = self.pools.get_mut(pool_id)
+        let pool = self
+            .pools
+            .get_mut(pool_id)
             .ok_or(PoolZKPError::PoolNotFound(pool_id.to_string()))?;
         pool.available_resources = resources.max(0.0);
         Ok(())
@@ -378,7 +384,9 @@ impl PoolZKPBridge {
         pool_id: String,
         valid: bool,
     ) -> Result<(), PoolZKPError> {
-        let proof = self.bridge_proofs.get_mut(proof_id)
+        let proof = self
+            .bridge_proofs
+            .get_mut(proof_id)
             .ok_or(PoolZKPError::ProofNotFound(proof_id.to_string()))?;
 
         proof.add_vote(pool_id.clone(), valid);
@@ -401,7 +409,9 @@ impl PoolZKPBridge {
 
     /// Check consensus for a proof.
     pub fn check_consensus(&mut self, proof_id: &str) -> Result<bool, PoolZKPError> {
-        let proof = self.bridge_proofs.get(proof_id)
+        let proof = self
+            .bridge_proofs
+            .get(proof_id)
             .ok_or(PoolZKPError::ProofNotFound(proof_id.to_string()))?;
 
         let result = proof.consensus(self.config.consensus_threshold)?;
@@ -441,8 +451,7 @@ impl PoolZKPBridge {
         }
 
         self.stats.total_resources_consumed += cost;
-        self.stats.avg_bridge_time_ms = 
-            self.stats.avg_bridge_time_ms * 0.9 + time_ms as f64 * 0.1;
+        self.stats.avg_bridge_time_ms = self.stats.avg_bridge_time_ms * 0.9 + time_ms as f64 * 0.1;
 
         Ok(())
     }
@@ -450,9 +459,8 @@ impl PoolZKPBridge {
     /// Remove expired proofs.
     pub fn cleanup_expired(&mut self) -> usize {
         let before = self.bridge_proofs.len();
-        self.bridge_proofs.retain(|_, proof| {
-            !proof.is_expired(self.config.proof_ttl_ms)
-        });
+        self.bridge_proofs
+            .retain(|_, proof| !proof.is_expired(self.config.proof_ttl_ms));
         before - self.bridge_proofs.len()
     }
 
@@ -584,8 +592,12 @@ mod tests {
         let mut bridge = PoolZKPBridge::with_defaults();
         bridge.register_pool("source".to_string(), 100.0).unwrap();
         bridge.register_pool("target1".to_string(), 100.0).unwrap();
-        bridge.submit_proof(make_proof("p1", "source", &["target1"])).unwrap();
-        bridge.submit_vote("p1", "target1".to_string(), true).unwrap();
+        bridge
+            .submit_proof(make_proof("p1", "source", &["target1"]))
+            .unwrap();
+        bridge
+            .submit_vote("p1", "target1".to_string(), true)
+            .unwrap();
         let proof = bridge.get_proof("p1").unwrap();
         assert_eq!(proof.votes.len(), 1);
     }
@@ -597,7 +609,9 @@ mod tests {
         bridge.register_pool("t1".to_string(), 100.0).unwrap();
         bridge.register_pool("t2".to_string(), 100.0).unwrap();
         bridge.register_pool("t3".to_string(), 100.0).unwrap();
-        bridge.submit_proof(make_proof("p1", "source", &["t1", "t2", "t3"])).unwrap();
+        bridge
+            .submit_proof(make_proof("p1", "source", &["t1", "t2", "t3"]))
+            .unwrap();
         bridge.submit_vote("p1", "t1".to_string(), true).unwrap();
         bridge.submit_vote("p1", "t2".to_string(), true).unwrap();
         bridge.submit_vote("p1", "t3".to_string(), true).unwrap();
@@ -612,7 +626,9 @@ mod tests {
         bridge.register_pool("source".to_string(), 100.0).unwrap();
         bridge.register_pool("t1".to_string(), 100.0).unwrap();
         bridge.register_pool("t2".to_string(), 100.0).unwrap();
-        bridge.submit_proof(make_proof("p1", "source", &["t1", "t2"])).unwrap();
+        bridge
+            .submit_proof(make_proof("p1", "source", &["t1", "t2"]))
+            .unwrap();
         bridge.submit_vote("p1", "t1".to_string(), true).unwrap();
         bridge.submit_vote("p1", "t2".to_string(), false).unwrap();
         let result = bridge.check_consensus("p1");
@@ -624,8 +640,12 @@ mod tests {
         let mut bridge = PoolZKPBridge::with_defaults();
         bridge.register_pool("source".to_string(), 100.0).unwrap();
         bridge.register_pool("target1".to_string(), 100.0).unwrap();
-        bridge.submit_proof(make_proof("p1", "source", &["target1"])).unwrap();
-        bridge.complete_verification("p1", "target1", true, 50).unwrap();
+        bridge
+            .submit_proof(make_proof("p1", "source", &["target1"]))
+            .unwrap();
+        bridge
+            .complete_verification("p1", "target1", true, 50)
+            .unwrap();
         let state = bridge.get_pool_state("target1").unwrap();
         assert_eq!(state.proofs_verified, 1);
     }
@@ -647,7 +667,9 @@ mod tests {
         let mut bridge = PoolZKPBridge::with_defaults();
         bridge.register_pool("source".to_string(), 100.0).unwrap();
         bridge.register_pool("target1".to_string(), 100.0).unwrap();
-        bridge.submit_proof(make_proof("p1", "source", &["target1"])).unwrap();
+        bridge
+            .submit_proof(make_proof("p1", "source", &["target1"]))
+            .unwrap();
         let stats = bridge.get_stats();
         assert_eq!(stats.total_proofs_bridged, 1);
     }
@@ -657,7 +679,9 @@ mod tests {
         let mut bridge = PoolZKPBridge::with_defaults();
         bridge.register_pool("source".to_string(), 100.0).unwrap();
         bridge.register_pool("target1".to_string(), 100.0).unwrap();
-        bridge.submit_proof(make_proof("p1", "source", &["target1"])).unwrap();
+        bridge
+            .submit_proof(make_proof("p1", "source", &["target1"]))
+            .unwrap();
         bridge.reset_stats();
         let stats = bridge.get_stats();
         assert_eq!(stats.total_proofs_bridged, 0);
@@ -692,8 +716,12 @@ mod tests {
         let mut bridge = PoolZKPBridge::with_defaults();
         bridge.register_pool("source".to_string(), 100.0).unwrap();
         bridge.register_pool("target1".to_string(), 100.0).unwrap();
-        bridge.submit_proof(make_proof("p1", "source", &["target1"])).unwrap();
-        bridge.submit_vote("p1", "target1".to_string(), true).unwrap();
+        bridge
+            .submit_proof(make_proof("p1", "source", &["target1"]))
+            .unwrap();
+        bridge
+            .submit_vote("p1", "target1".to_string(), true)
+            .unwrap();
         assert_eq!(bridge.get_verification_history().len(), 1);
     }
 
@@ -752,7 +780,9 @@ mod tests {
         let mut bridge = PoolZKPBridge::with_defaults();
         bridge.register_pool("source".to_string(), 100.0).unwrap();
         bridge.register_pool("target1".to_string(), 100.0).unwrap();
-        bridge.submit_proof(make_proof("p1", "source", &["target1"])).unwrap();
+        bridge
+            .submit_proof(make_proof("p1", "source", &["target1"]))
+            .unwrap();
         let proof = bridge.get_proof("p1");
         assert!(proof.is_some());
         assert!(bridge.get_proof("nonexistent").is_none());

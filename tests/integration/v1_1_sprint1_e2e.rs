@@ -24,16 +24,12 @@ mod imports {
         AggregationResultV2, FedAvgAggregatorV2, FedAvgConfigV2,
     };
     pub use ed2kia::federation_v2_sprint1::gradient_compressor::GradientCompressor;
-    pub use ed2kia::interoperability::capability_registry::{
-        CapabilityRegistry, ModelCapability,
-    };
+    pub use ed2kia::interoperability::capability_registry::{CapabilityRegistry, ModelCapability};
     pub use ed2kia::interoperability::cross_model_router::{
         CrossModelRouter, RoutingPriority, RoutingRequest,
     };
     pub use ed2kia::security::wasm_profiler::{ExecutionProfile, Profiler, ProfilingAlert};
-    pub use ed2kia::security::wasm_sandbox_v2::{
-        SandboxConfigV2, WasmSandboxV2,
-    };
+    pub use ed2kia::security::wasm_sandbox_v2::{SandboxConfigV2, WasmSandboxV2};
 }
 
 #[cfg(feature = "v1.1-sprint1")]
@@ -63,8 +59,7 @@ mod tests {
             // Type section: 1 func type () -> ()
             0x01, 0x04, 0x01, 0x60, 0x00, 0x00,
             // Function section: 1 func referencing type 0
-            0x03, 0x02, 0x01, 0x00,
-            // Export section: "run" -> func 0
+            0x03, 0x02, 0x01, 0x00, // Export section: "run" -> func 0
             0x07, 0x07, 0x01, 0x03, b'r', b'u', b'n', 0x00, 0x00,
             // Code section: 1 function body (empty)
             0x0A, 0x04, 0x01, 0x02, 0x00, 0x0B,
@@ -105,7 +100,11 @@ mod tests {
 
         // Verify result structure
         assert_eq!(result.layer_id, 0, "Layer ID should match input");
-        assert_eq!(result.final_weights.len(), 100, "Final weights should have correct dimension");
+        assert_eq!(
+            result.final_weights.len(),
+            100,
+            "Final weights should have correct dimension"
+        );
         assert!(
             result.accepted_updates >= 2,
             "At least min_participants should be accepted, got {}",
@@ -154,9 +153,20 @@ mod tests {
         // Compress using static methods
         let compressed = GradientCompressor::compress_and_quantize(&deltas, k);
 
-        assert_eq!(compressed.original_dim, dim, "Original dimension should be preserved");
-        assert_eq!(compressed.data.len(), k, "Compressed data should have k elements");
-        assert_eq!(compressed.indices.len(), k, "Indices should have k elements");
+        assert_eq!(
+            compressed.original_dim, dim,
+            "Original dimension should be preserved"
+        );
+        assert_eq!(
+            compressed.data.len(),
+            k,
+            "Compressed data should have k elements"
+        );
+        assert_eq!(
+            compressed.indices.len(),
+            k,
+            "Indices should have k elements"
+        );
         assert!(
             (compressed.compression_ratio - k as f32 / dim as f32).abs() < 1e-5,
             "Compression ratio should match k/dim"
@@ -165,7 +175,11 @@ mod tests {
         // Decompress using static method
         let reconstructed = GradientCompressor::decompress_full(&compressed);
 
-        assert_eq!(reconstructed.len(), dim, "Reconstructed vector should have original dimension");
+        assert_eq!(
+            reconstructed.len(),
+            dim,
+            "Reconstructed vector should have original dimension"
+        );
 
         // Verify accuracy for selected indices
         let mut correct = 0usize;
@@ -222,7 +236,11 @@ mod tests {
             .load_module(&wasm)
             .expect("Should load valid WASM module");
 
-        assert_eq!(module_id.size_bytes, wasm.len(), "Module size should match input");
+        assert_eq!(
+            module_id.size_bytes,
+            wasm.len(),
+            "Module size should match input"
+        );
 
         // Execute function
         let result = sandbox
@@ -254,8 +272,7 @@ mod tests {
         assert_eq!(modules.len(), 1, "Should have exactly 1 loaded module");
 
         // Remove module
-        let removed = sandbox
-            .remove_module(&module_id.id);
+        let removed = sandbox.remove_module(&module_id.id);
         assert!(removed, "Should successfully remove loaded module");
 
         let modules = sandbox.list_modules();
@@ -288,9 +305,15 @@ mod tests {
             .finalize_session(&session)
             .expect("Session should finalize");
 
-        assert_eq!(profile.memory_bytes_peak, 850_000, "Peak memory should be 850KB");
+        assert_eq!(
+            profile.memory_bytes_peak, 850_000,
+            "Peak memory should be 850KB"
+        );
         assert_eq!(profile.fuel_consumed, 50_000, "Fuel consumed should be 50K");
-        assert!((profile.wall_time_ms - 100.0).abs() < 0.01, "Wall time should be 100ms");
+        assert!(
+            (profile.wall_time_ms - 100.0).abs() < 0.01,
+            "Wall time should be 100ms"
+        );
 
         // Check thresholds - should trigger MemoryHigh (> 80%)
         let alert = profiler.check_thresholds(&profile);
@@ -302,10 +325,7 @@ mod tests {
                     percent
                 );
             }
-            other => panic!(
-                "Expected MemoryHigh alert, got {:?}",
-                other
-            ),
+            other => panic!("Expected MemoryHigh alert, got {:?}", other),
         }
 
         // Test MemoryCritical (> 95%)
@@ -326,10 +346,7 @@ mod tests {
                     percent
                 );
             }
-            other => panic!(
-                "Expected MemoryCritical alert, got {:?}",
-                other
-            ),
+            other => panic!("Expected MemoryCritical alert, got {:?}", other),
         }
 
         // Test FuelExhausted
@@ -398,9 +415,9 @@ mod tests {
                 4096,
                 22528,
                 32,
-                8.0,   // latency p50
-                20.0,  // latency p99
-                256,   // memory MB
+                8.0,  // latency p50
+                20.0, // latency p99
+                256,  // memory MB
             ))
             .expect("Should register fast_model");
 
@@ -413,9 +430,9 @@ mod tests {
                 4096,
                 22528,
                 32,
-                25.0,  // latency p50
-                60.0,  // latency p99
-                512,   // memory MB
+                25.0, // latency p50
+                60.0, // latency p99
+                512,  // memory MB
             ))
             .expect("Should register slow_model");
 
@@ -425,14 +442,12 @@ mod tests {
         let request = RoutingRequest::new(
             "sae_forward".to_string(),
             "1.0.0".to_string(),
-            50.0,   // latency budget
-            1024,   // memory budget
+            50.0, // latency budget
+            1024, // memory budget
             RoutingPriority::Normal,
         );
 
-        let result = router
-            .route(request)
-            .expect("Routing should succeed");
+        let result = router.route(request).expect("Routing should succeed");
 
         assert_eq!(
             result.selected_model, "fast_model",
@@ -520,8 +535,8 @@ mod tests {
         let request = RoutingRequest::new(
             "inference".to_string(),
             "1.0.0".to_string(),
-            50.0,   // latency budget (excludes primary at 100ms)
-            1024,   // memory budget (excludes primary at 2048MB)
+            50.0, // latency budget (excludes primary at 100ms)
+            1024, // memory budget (excludes primary at 2048MB)
             RoutingPriority::Normal,
         );
 
@@ -619,7 +634,10 @@ mod tests {
         // Verify registry stats
         let stats = registry.stats();
         assert_eq!(stats.total_models, 3, "Should have 3 registered models");
-        assert_eq!(stats.schema_versions, 2, "Should have 2 unique schema versions");
+        assert_eq!(
+            stats.schema_versions, 2,
+            "Should have 2 unique schema versions"
+        );
         assert_eq!(stats.unique_tasks, 1, "Should have 1 unique task");
     }
 
@@ -656,7 +674,10 @@ mod tests {
             .aggregate(layer_id)
             .expect("FedAvg aggregation should succeed");
 
-        assert_eq!(agg_result.layer_id, layer_id, "Aggregated layer should match");
+        assert_eq!(
+            agg_result.layer_id, layer_id,
+            "Aggregated layer should match"
+        );
         assert_eq!(
             agg_result.final_weights.len(),
             dim,
@@ -724,7 +745,10 @@ mod tests {
 
         // Verify full pipeline stats
         let routing_stats = router.get_routing_stats();
-        assert_eq!(routing_stats.total_requests, 1, "Should have 1 routed request");
+        assert_eq!(
+            routing_stats.total_requests, 1,
+            "Should have 1 routed request"
+        );
     }
 
     // =========================================================================
@@ -768,7 +792,11 @@ mod tests {
         let layer_ids: Vec<u32> = (0..num_layers).collect();
         let results = agg.aggregate_parallel(&layer_ids);
 
-        assert_eq!(results.len(), num_layers as usize, "Should have results for all layers");
+        assert_eq!(
+            results.len(),
+            num_layers as usize,
+            "Should have results for all layers"
+        );
 
         for (i, result) in results.iter().enumerate() {
             let result: &AggregationResultV2 = result
@@ -776,8 +804,7 @@ mod tests {
                 .expect(&format!("Layer {} aggregation should succeed", i));
 
             assert_eq!(
-                result.layer_id,
-                i as u32,
+                result.layer_id, i as u32,
                 "Layer ID should match for result {}",
                 i
             );
@@ -785,7 +812,8 @@ mod tests {
                 result.final_weights.len(),
                 dim,
                 "Layer {} should have {} weights",
-                i, dim
+                i,
+                dim
             );
             assert!(
                 result.accepted_updates >= 3,
@@ -818,8 +846,7 @@ mod tests {
         // Add 5 honest nodes with similar updates (seed=10)
         for i in 0..5 {
             let update = make_update(&format!("honest_{}", i), 0, 100, 10);
-            agg.add_update(update)
-                .expect("Should accept honest update");
+            agg.add_update(update).expect("Should accept honest update");
         }
 
         // Add 2 Byzantine nodes with extreme outlier updates (seed=9999)

@@ -136,7 +136,11 @@ pub struct SseSession {
 
 impl SseSession {
     /// Crea nueva sesión SSE
-    pub fn new(session_id: String, subscribed_types: Vec<TelemetryEventType>, rate_limit_per_sec: usize) -> Self {
+    pub fn new(
+        session_id: String,
+        subscribed_types: Vec<TelemetryEventType>,
+        rate_limit_per_sec: usize,
+    ) -> Self {
         Self {
             session_id,
             subscribed_types,
@@ -311,16 +315,16 @@ impl TelemetryBackend {
     }
 
     /// Publica evento a todas las sesiones suscritas
-    pub fn publish_event(&mut self, event_type: TelemetryEventType, payload: serde_json::Value, source_node: Option<String>) -> SseResult {
+    pub fn publish_event(
+        &mut self,
+        event_type: TelemetryEventType,
+        payload: serde_json::Value,
+        source_node: Option<String>,
+    ) -> SseResult {
         let start = Instant::now();
 
         self.sequence_counter += 1;
-        let event = TelemetryEvent::new(
-            event_type,
-            payload,
-            source_node,
-            self.sequence_counter,
-        );
+        let event = TelemetryEvent::new(event_type, payload, source_node, self.sequence_counter);
 
         let mut events_sent = 0;
         let mut events_filtered = 0;
@@ -485,10 +489,8 @@ mod tests {
     #[test]
     fn test_create_session() {
         let mut backend = TelemetryBackend::new();
-        let result = backend.create_session(
-            "sess-1".to_string(),
-            vec![TelemetryEventType::Metrics],
-        );
+        let result =
+            backend.create_session("sess-1".to_string(), vec![TelemetryEventType::Metrics]);
         assert!(result.is_ok());
         let stats = backend.get_stats();
         assert_eq!(stats.active_sessions, 1);
@@ -502,7 +504,8 @@ mod tests {
         };
         let mut backend = TelemetryBackend::with_config(config);
         let _ = backend.create_session("sess-1".to_string(), vec![TelemetryEventType::Metrics]);
-        let result = backend.create_session("sess-2".to_string(), vec![TelemetryEventType::Metrics]);
+        let result =
+            backend.create_session("sess-2".to_string(), vec![TelemetryEventType::Metrics]);
         assert!(result.is_err());
     }
 
@@ -517,10 +520,7 @@ mod tests {
     #[test]
     fn test_publish_event_to_subscribed() {
         let mut backend = TelemetryBackend::new();
-        let _ = backend.create_session(
-            "sess-1".to_string(),
-            vec![TelemetryEventType::Metrics],
-        );
+        let _ = backend.create_session("sess-1".to_string(), vec![TelemetryEventType::Metrics]);
         let result = backend.publish_event(
             TelemetryEventType::Metrics,
             serde_json::json!({"cpu": 42.0}),
@@ -533,10 +533,7 @@ mod tests {
     #[test]
     fn test_publish_event_filtered() {
         let mut backend = TelemetryBackend::new();
-        let _ = backend.create_session(
-            "sess-1".to_string(),
-            vec![TelemetryEventType::Metrics],
-        );
+        let _ = backend.create_session("sess-1".to_string(), vec![TelemetryEventType::Metrics]);
         let result = backend.publish_event(
             TelemetryEventType::Governance,
             serde_json::json!({"vote": true}),
@@ -549,10 +546,7 @@ mod tests {
     #[test]
     fn test_publish_event_increases_sequence() {
         let mut backend = TelemetryBackend::new();
-        let _ = backend.create_session(
-            "sess-1".to_string(),
-            vec![TelemetryEventType::Metrics],
-        );
+        let _ = backend.create_session("sess-1".to_string(), vec![TelemetryEventType::Metrics]);
         backend.publish_event(
             TelemetryEventType::Metrics,
             serde_json::json!({"v": 1}),
@@ -574,10 +568,7 @@ mod tests {
             ..Default::default()
         };
         let mut backend = TelemetryBackend::with_config(config);
-        let _ = backend.create_session(
-            "sess-1".to_string(),
-            vec![TelemetryEventType::Metrics],
-        );
+        let _ = backend.create_session("sess-1".to_string(), vec![TelemetryEventType::Metrics]);
         let r1 = backend.publish_event(
             TelemetryEventType::Metrics,
             serde_json::json!({"v": 1}),
@@ -646,10 +637,7 @@ mod tests {
             ..Default::default()
         };
         let mut backend = TelemetryBackend::with_config(config);
-        let _ = backend.create_session(
-            "sess-1".to_string(),
-            vec![TelemetryEventType::Metrics],
-        );
+        let _ = backend.create_session("sess-1".to_string(), vec![TelemetryEventType::Metrics]);
         let removed = backend.cleanup_expired_sessions();
         assert_eq!(removed, 1);
     }
@@ -657,10 +645,7 @@ mod tests {
     #[test]
     fn test_stats_tracking() {
         let mut backend = TelemetryBackend::new();
-        let _ = backend.create_session(
-            "sess-1".to_string(),
-            vec![TelemetryEventType::Metrics],
-        );
+        let _ = backend.create_session("sess-1".to_string(), vec![TelemetryEventType::Metrics]);
         backend.publish_event(
             TelemetryEventType::Metrics,
             serde_json::json!({"v": 1}),
@@ -676,10 +661,7 @@ mod tests {
     #[test]
     fn test_reset() {
         let mut backend = TelemetryBackend::new();
-        let _ = backend.create_session(
-            "sess-1".to_string(),
-            vec![TelemetryEventType::Metrics],
-        );
+        let _ = backend.create_session("sess-1".to_string(), vec![TelemetryEventType::Metrics]);
         backend.publish_event(
             TelemetryEventType::Metrics,
             serde_json::json!({"v": 1}),
@@ -739,11 +721,7 @@ mod tests {
 
     #[test]
     fn test_session_deactivate() {
-        let mut session = SseSession::new(
-            "s1".to_string(),
-            vec![TelemetryEventType::Metrics],
-            100,
-        );
+        let mut session = SseSession::new("s1".to_string(), vec![TelemetryEventType::Metrics], 100);
         assert!(session.active);
         session.deactivate();
         assert!(!session.active);
@@ -751,11 +729,7 @@ mod tests {
 
     #[test]
     fn test_session_queue_event() {
-        let mut session = SseSession::new(
-            "s1".to_string(),
-            vec![TelemetryEventType::Metrics],
-            100,
-        );
+        let mut session = SseSession::new("s1".to_string(), vec![TelemetryEventType::Metrics], 100);
         let event = TelemetryEvent::new(
             TelemetryEventType::Metrics,
             serde_json::json!({"v": 1}),
@@ -796,10 +770,7 @@ mod tests {
             ..Default::default()
         };
         let mut backend = TelemetryBackend::with_config(config);
-        let _ = backend.create_session(
-            "sess-1".to_string(),
-            vec![TelemetryEventType::Metrics],
-        );
+        let _ = backend.create_session("sess-1".to_string(), vec![TelemetryEventType::Metrics]);
         for i in 0..5 {
             backend.publish_event(
                 TelemetryEventType::Metrics,

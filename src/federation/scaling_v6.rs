@@ -39,14 +39,36 @@ mod internal {
                 Self::NodeUnavailable(id) => write!(f, "Node unavailable: {}", id),
                 Self::ShardNotFound(id) => write!(f, "Shard not found: {}", id),
                 Self::CapacityExceeded(msg) => write!(f, "Capacity exceeded: {}", msg),
-                Self::PartitionDetected { shard_id, tolerance } => {
-                    write!(f, "Partition detected in shard {}: tolerance {:.1}%", shard_id, tolerance * 100.0)
+                Self::PartitionDetected {
+                    shard_id,
+                    tolerance,
+                } => {
+                    write!(
+                        f,
+                        "Partition detected in shard {}: tolerance {:.1}%",
+                        shard_id,
+                        tolerance * 100.0
+                    )
                 }
-                Self::ReputationBelowThreshold { node_id, reputation } => {
-                    write!(f, "Node {} reputation {:.2} below threshold", node_id, reputation)
+                Self::ReputationBelowThreshold {
+                    node_id,
+                    reputation,
+                } => {
+                    write!(
+                        f,
+                        "Node {} reputation {:.2} below threshold",
+                        node_id, reputation
+                    )
                 }
-                Self::LatencyExceeded { node_id, latency_ms } => {
-                    write!(f, "Node {} latency {:.0}ms exceeds limit", node_id, latency_ms)
+                Self::LatencyExceeded {
+                    node_id,
+                    latency_ms,
+                } => {
+                    write!(
+                        f,
+                        "Node {} latency {:.0}ms exceeds limit",
+                        node_id, latency_ms
+                    )
                 }
             }
         }
@@ -134,7 +156,8 @@ mod internal {
         }
 
         pub fn record_latency(&mut self, latency_ms: f64, alpha: f64) {
-            self.historical_latency_ms = alpha * latency_ms + (1.0 - alpha) * self.historical_latency_ms;
+            self.historical_latency_ms =
+                alpha * latency_ms + (1.0 - alpha) * self.historical_latency_ms;
             self.latency_history.push_back(latency_ms);
             if self.latency_history.len() > 20 {
                 self.latency_history.pop_front();
@@ -222,9 +245,10 @@ mod internal {
     impl ScalingV6Stats {
         pub fn record_assignment(&mut self, time_ms: u64) {
             self.total_assignments += 1;
-            self.avg_assignment_time_ms =
-                (self.avg_assignment_time_ms * (self.total_assignments - 1) as f64 + time_ms as f64)
-                    / self.total_assignments as f64;
+            self.avg_assignment_time_ms = (self.avg_assignment_time_ms
+                * (self.total_assignments - 1) as f64
+                + time_ms as f64)
+                / self.total_assignments as f64;
         }
 
         pub fn record_rebalance(&mut self) {
@@ -288,18 +312,18 @@ mod internal {
                     "Reputation must be between 0.0 and 1.0".to_string(),
                 ));
             }
-            self.nodes.insert(node_id.clone(), NodeEntryV6::new(node_id, capacity, reputation));
+            self.nodes.insert(
+                node_id.clone(),
+                NodeEntryV6::new(node_id, capacity, reputation),
+            );
             Ok(())
         }
 
-        pub fn update_node_load(
-            &mut self,
-            node_id: &str,
-            load: f64,
-        ) -> Result<(), ScalingV6Error> {
-            let node = self.nodes.get_mut(node_id).ok_or(
-                ScalingV6Error::NodeUnavailable(node_id.to_string()),
-            )?;
+        pub fn update_node_load(&mut self, node_id: &str, load: f64) -> Result<(), ScalingV6Error> {
+            let node = self
+                .nodes
+                .get_mut(node_id)
+                .ok_or(ScalingV6Error::NodeUnavailable(node_id.to_string()))?;
             node.update_load(load, self.config.load_alpha);
             Ok(())
         }
@@ -309,9 +333,10 @@ mod internal {
             node_id: &str,
             latency_ms: f64,
         ) -> Result<(), ScalingV6Error> {
-            let node = self.nodes.get_mut(node_id).ok_or(
-                ScalingV6Error::NodeUnavailable(node_id.to_string()),
-            )?;
+            let node = self
+                .nodes
+                .get_mut(node_id)
+                .ok_or(ScalingV6Error::NodeUnavailable(node_id.to_string()))?;
             node.record_latency(latency_ms, self.config.latency_alpha);
             Ok(())
         }
@@ -323,7 +348,8 @@ mod internal {
                     shard_id
                 )));
             }
-            self.shards.insert(shard_id.clone(), ShardEntryV6::new(shard_id));
+            self.shards
+                .insert(shard_id.clone(), ShardEntryV6::new(shard_id));
             Ok(())
         }
 
@@ -331,9 +357,10 @@ mod internal {
             &mut self,
             shard_id: &str,
         ) -> Result<Option<String>, ScalingV6Error> {
-            let shard = self.shards.get(shard_id).ok_or(
-                ScalingV6Error::ShardNotFound(shard_id.to_string()),
-            )?;
+            let shard = self
+                .shards
+                .get(shard_id)
+                .ok_or(ScalingV6Error::ShardNotFound(shard_id.to_string()))?;
             if shard.nodes.len() >= self.config.max_nodes_per_shard {
                 return Err(ScalingV6Error::CapacityExceeded(format!(
                     "Shard {} at max capacity",
@@ -396,9 +423,10 @@ mod internal {
         }
 
         pub fn predict_load(&self, node_id: &str, horizon: usize) -> Result<f64, ScalingV6Error> {
-            let node = self.nodes.get(node_id).ok_or(
-                ScalingV6Error::NodeUnavailable(node_id.to_string()),
-            )?;
+            let node = self
+                .nodes
+                .get(node_id)
+                .ok_or(ScalingV6Error::NodeUnavailable(node_id.to_string()))?;
             if node.load_history.len() < 2 {
                 return Ok(node.predicted_load);
             }
@@ -415,7 +443,8 @@ mod internal {
 
         pub fn should_rebalance(&self) -> bool {
             for shard in self.shards.values() {
-                if !shard.meets_tolerance(self.config.partition_tolerance) && shard.nodes.len() > 1 {
+                if !shard.meets_tolerance(self.config.partition_tolerance) && shard.nodes.len() > 1
+                {
                     return true;
                 }
             }
@@ -472,7 +501,9 @@ mod internal {
         #[test]
         fn test_register_node() {
             let mut engine = ScalingV6::default();
-            engine.register_node("node-1".to_string(), 100.0, 0.8).unwrap();
+            engine
+                .register_node("node-1".to_string(), 100.0, 0.8)
+                .unwrap();
             assert_eq!(engine.node_count(), 1);
         }
 
@@ -493,14 +524,18 @@ mod internal {
         #[test]
         fn test_update_node_load() {
             let mut engine = ScalingV6::default();
-            engine.register_node("node-1".to_string(), 100.0, 0.8).unwrap();
+            engine
+                .register_node("node-1".to_string(), 100.0, 0.8)
+                .unwrap();
             engine.update_node_load("node-1", 0.6).unwrap();
         }
 
         #[test]
         fn test_record_node_latency() {
             let mut engine = ScalingV6::default();
-            engine.register_node("node-1".to_string(), 100.0, 0.8).unwrap();
+            engine
+                .register_node("node-1".to_string(), 100.0, 0.8)
+                .unwrap();
             engine.record_node_latency("node-1", 45.0).unwrap();
         }
 
@@ -514,7 +549,9 @@ mod internal {
         #[test]
         fn test_assign_node_to_shard() {
             let mut engine = ScalingV6::default();
-            engine.register_node("node-1".to_string(), 100.0, 0.8).unwrap();
+            engine
+                .register_node("node-1".to_string(), 100.0, 0.8)
+                .unwrap();
             engine.create_shard("shard-1".to_string()).unwrap();
             let assigned = engine.assign_node_to_shard("shard-1").unwrap();
             assert!(assigned.is_some());
@@ -526,7 +563,9 @@ mod internal {
             let mut config = make_config();
             config.min_reputation = 0.9;
             let mut engine = ScalingV6::new(config);
-            engine.register_node("node-1".to_string(), 100.0, 0.5).unwrap();
+            engine
+                .register_node("node-1".to_string(), 100.0, 0.5)
+                .unwrap();
             engine.create_shard("shard-1".to_string()).unwrap();
             let assigned = engine.assign_node_to_shard("shard-1").unwrap();
             assert!(assigned.is_none());
@@ -535,7 +574,9 @@ mod internal {
         #[test]
         fn test_predict_load() {
             let mut engine = ScalingV6::default();
-            engine.register_node("node-1".to_string(), 100.0, 0.8).unwrap();
+            engine
+                .register_node("node-1".to_string(), 100.0, 0.8)
+                .unwrap();
             engine.update_node_load("node-1", 0.6).unwrap();
             engine.update_node_load("node-1", 0.7).unwrap();
             let predicted = engine.predict_load("node-1", 2).unwrap();
@@ -551,7 +592,9 @@ mod internal {
         #[test]
         fn test_stats_recording() {
             let mut engine = ScalingV6::default();
-            engine.register_node("node-1".to_string(), 100.0, 0.8).unwrap();
+            engine
+                .register_node("node-1".to_string(), 100.0, 0.8)
+                .unwrap();
             engine.create_shard("shard-1".to_string()).unwrap();
             engine.assign_node_to_shard("shard-1").unwrap();
             assert_eq!(engine.stats.total_assignments, 1);
@@ -604,8 +647,12 @@ mod internal {
         #[test]
         fn test_multiple_nodes_shard_selection() {
             let mut engine = ScalingV6::default();
-            engine.register_node("node-1".to_string(), 100.0, 0.8).unwrap();
-            engine.register_node("node-2".to_string(), 200.0, 0.95).unwrap();
+            engine
+                .register_node("node-1".to_string(), 100.0, 0.8)
+                .unwrap();
+            engine
+                .register_node("node-2".to_string(), 200.0, 0.95)
+                .unwrap();
             engine.create_shard("shard-1".to_string()).unwrap();
             let assigned = engine.assign_node_to_shard("shard-1").unwrap();
             assert_eq!(assigned, Some("node-2".to_string()));

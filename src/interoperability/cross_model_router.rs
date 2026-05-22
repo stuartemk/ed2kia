@@ -82,7 +82,11 @@ mod impl_ {
 
     impl SchemaTranslation {
         /// Crear una nueva traducción de esquema
-        pub fn new(source_schema: String, target_schema: String, translation_function: String) -> Self {
+        pub fn new(
+            source_schema: String,
+            target_schema: String,
+            translation_function: String,
+        ) -> Self {
             Self {
                 source_schema,
                 target_schema,
@@ -224,7 +228,10 @@ mod impl_ {
     impl CrossModelRouter {
         /// Crear un nuevo enrutador con el registro proporcionado
         pub fn new(registry: CapabilityRegistry) -> Self {
-            info!("Creating CrossModelRouter with {} registered models", registry.get_all().len());
+            info!(
+                "Creating CrossModelRouter with {} registered models",
+                registry.get_all().len()
+            );
             Self {
                 registry,
                 runtime_status: HashMap::new(),
@@ -280,7 +287,8 @@ mod impl_ {
                         .map(|s| s.memory_mb)
                         .unwrap_or(m.memory_footprint_mb);
 
-                    runtime_latency <= request.latency_budget_ms && runtime_memory <= request.memory_budget_mb
+                    runtime_latency <= request.latency_budget_ms
+                        && runtime_memory <= request.memory_budget_mb
                 })
                 .copied()
                 .collect();
@@ -320,10 +328,7 @@ mod impl_ {
                         .unwrap_or(0);
 
                     // Primero por latencia, luego por carga (round-robin)
-                    let latency_cmp = a
-                        .latency_p50_ms
-                        .partial_cmp(&b.latency_p50_ms)
-                        .unwrap();
+                    let latency_cmp = a.latency_p50_ms.partial_cmp(&b.latency_p50_ms).unwrap();
                     if latency_cmp != std::cmp::Ordering::Equal {
                         latency_cmp
                     } else {
@@ -399,9 +404,10 @@ mod impl_ {
             if schema_translation.is_some() {
                 self.stats.schema_translations += 1;
             }
-            self.stats.avg_latency_ms =
-                (self.stats.avg_latency_ms * (self.stats.total_requests - 1) as f64 + estimated_latency)
-                    / self.stats.total_requests as f64;
+            self.stats.avg_latency_ms = (self.stats.avg_latency_ms
+                * (self.stats.total_requests - 1) as f64
+                + estimated_latency)
+                / self.stats.total_requests as f64;
 
             // Actualizar contador de carga
             self.runtime_status
@@ -415,10 +421,7 @@ mod impl_ {
 
             info!(
                 "Routed task '{}' to model '{}' (strategy={:?}, latency={}ms)",
-                task,
-                selected.model_name,
-                routing_strategy,
-                estimated_latency
+                task, selected.model_name, routing_strategy, estimated_latency
             );
 
             Ok(RoutingResult {
@@ -461,7 +464,10 @@ mod impl_ {
                                         && !extended_result.fallback_chain.contains(&m.model_id)
                                 })
                                 .map(|m| m.model_id.clone())
-                                .take(max_fallbacks.saturating_sub(extended_result.fallback_chain.len()))
+                                .take(
+                                    max_fallbacks
+                                        .saturating_sub(extended_result.fallback_chain.len()),
+                                )
                                 .collect();
                             extended_result.fallback_chain.extend(extra_fallbacks);
                         }
@@ -497,7 +503,8 @@ mod impl_ {
                                 .collect();
                             fallback_chain.sort();
 
-                            let schema_translation = if model.schema_version != request.input_schema {
+                            let schema_translation = if model.schema_version != request.input_schema
+                            {
                                 Some(SchemaTranslation::new(
                                     request.input_schema.clone(),
                                     model.schema_version.clone(),
@@ -535,8 +542,18 @@ mod impl_ {
         /// Actualizar métricas en tiempo de ejecución de un modelo
         ///
         /// Retorna `true` si el modelo fue encontrado en el registro
-        pub fn update_model_status(&mut self, model_id: &str, latency_ms: f64, memory_mb: usize) -> bool {
-            if self.registry.get_all().iter().any(|m| m.model_id == model_id) {
+        pub fn update_model_status(
+            &mut self,
+            model_id: &str,
+            latency_ms: f64,
+            memory_mb: usize,
+        ) -> bool {
+            if self
+                .registry
+                .get_all()
+                .iter()
+                .any(|m| m.model_id == model_id)
+            {
                 self.runtime_status
                     .entry(model_id.to_string())
                     .and_modify(|s| {
@@ -585,15 +602,14 @@ mod impl_ {
                         .map(|s| s.memory_mb)
                         .unwrap_or(m.memory_footprint_mb);
 
-                    runtime_latency <= request.latency_budget_ms && runtime_memory <= request.memory_budget_mb
+                    runtime_latency <= request.latency_budget_ms
+                        && runtime_memory <= request.memory_budget_mb
                 })
                 .copied()
                 .collect();
 
-            let mut result: Vec<String> = within_budget
-                .iter()
-                .map(|m| m.model_id.clone())
-                .collect();
+            let mut result: Vec<String> =
+                within_budget.iter().map(|m| m.model_id.clone()).collect();
             result.sort();
 
             debug!(
@@ -815,7 +831,10 @@ mod impl_ {
             );
 
             let result = router.route(request);
-            assert!(matches!(result, Err(RoutingError::NoCompatibleModel { .. })));
+            assert!(matches!(
+                result,
+                Err(RoutingError::NoCompatibleModel { .. })
+            ));
         }
 
         #[test]
@@ -893,7 +912,10 @@ mod impl_ {
             );
 
             let result = router.route_with_fallback(request, 5);
-            assert!(matches!(result, Err(RoutingError::AllFallbacksExhausted { .. })));
+            assert!(matches!(
+                result,
+                Err(RoutingError::AllFallbacksExhausted { .. })
+            ));
         }
 
         #[test]

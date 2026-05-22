@@ -28,7 +28,9 @@ impl std::fmt::Display for CheckpointCacheError {
             CheckpointCacheError::CacheFull(max) => write!(f, "Cache full: max {}", max),
             CheckpointCacheError::AlreadyExists(id) => write!(f, "Checkpoint exists: {}", id),
             CheckpointCacheError::InvalidData(msg) => write!(f, "Invalid data: {}", msg),
-            CheckpointCacheError::QuotaExceeded(bytes) => write!(f, "Quota exceeded: {} bytes", bytes),
+            CheckpointCacheError::QuotaExceeded(bytes) => {
+                write!(f, "Quota exceeded: {} bytes", bytes)
+            }
         }
     }
 }
@@ -284,7 +286,9 @@ impl CheckpointCache {
 
     /// Get checkpoint by model and round.
     pub fn get_by_model_round(&self, model_id: &str, round: u64) -> Option<&CheckpointEntry> {
-        self.entries.values().find(|e| e.model_id == model_id && e.round == round)
+        self.entries
+            .values()
+            .find(|e| e.model_id == model_id && e.round == round)
     }
 
     /// Get all checkpoints for a model.
@@ -348,7 +352,8 @@ impl CheckpointCache {
         // Check storage limit
         let mut current_storage: usize = self.entries.values().map(|e| e.stored_size).sum();
         if self.config.max_storage_bytes > 0 {
-            while current_storage + new_size > self.config.max_storage_bytes && !self.entries.is_empty()
+            while current_storage + new_size > self.config.max_storage_bytes
+                && !self.entries.is_empty()
             {
                 let evicted_size = self.evict_next()?;
                 current_storage = current_storage.saturating_sub(evicted_size);
@@ -412,14 +417,18 @@ mod tests {
     fn test_store_checkpoint() {
         let mut cache = CheckpointCache::default();
         cache.set_time(1000);
-        cache.store("cp1".to_string(), 1, "model_a".to_string(), vec![1, 2, 3]).unwrap();
+        cache
+            .store("cp1".to_string(), 1, "model_a".to_string(), vec![1, 2, 3])
+            .unwrap();
         assert_eq!(cache.len(), 1);
     }
 
     #[test]
     fn test_store_duplicate() {
         let mut cache = CheckpointCache::default();
-        cache.store("cp1".to_string(), 1, "m".to_string(), vec![1]).unwrap();
+        cache
+            .store("cp1".to_string(), 1, "m".to_string(), vec![1])
+            .unwrap();
         let result = cache.store("cp1".to_string(), 2, "m".to_string(), vec![2]);
         assert!(result.is_err());
     }
@@ -428,7 +437,9 @@ mod tests {
     fn test_get_checkpoint() {
         let mut cache = CheckpointCache::default();
         cache.set_time(1000);
-        cache.store("cp1".to_string(), 1, "m".to_string(), vec![1, 2, 3]).unwrap();
+        cache
+            .store("cp1".to_string(), 1, "m".to_string(), vec![1, 2, 3])
+            .unwrap();
         let entry = cache.get("cp1").unwrap();
         assert_eq!(entry.access_count, 1);
     }
@@ -443,7 +454,9 @@ mod tests {
     #[test]
     fn test_remove_checkpoint() {
         let mut cache = CheckpointCache::default();
-        cache.store("cp1".to_string(), 1, "m".to_string(), vec![1]).unwrap();
+        cache
+            .store("cp1".to_string(), 1, "m".to_string(), vec![1])
+            .unwrap();
         cache.remove("cp1").unwrap();
         assert!(cache.is_empty());
     }
@@ -464,16 +477,24 @@ mod tests {
         };
         let mut cache = CheckpointCache::new(config);
         cache.set_time(1000);
-        cache.store("cp1".to_string(), 1, "m".to_string(), vec![1]).unwrap();
+        cache
+            .store("cp1".to_string(), 1, "m".to_string(), vec![1])
+            .unwrap();
         cache.set_time(2000);
-        cache.store("cp2".to_string(), 2, "m".to_string(), vec![2]).unwrap();
+        cache
+            .store("cp2".to_string(), 2, "m".to_string(), vec![2])
+            .unwrap();
         cache.set_time(3000);
-        cache.store("cp3".to_string(), 3, "m".to_string(), vec![3]).unwrap();
+        cache
+            .store("cp3".to_string(), 3, "m".to_string(), vec![3])
+            .unwrap();
         // Access cp1 to make it recently used
         cache.get("cp1").unwrap();
         // Add cp4, should evict cp2 (least recently used)
         cache.set_time(4000);
-        cache.store("cp4".to_string(), 4, "m".to_string(), vec![4]).unwrap();
+        cache
+            .store("cp4".to_string(), 4, "m".to_string(), vec![4])
+            .unwrap();
         assert!(cache.get("cp2").is_err());
         assert!(cache.get("cp1").is_ok());
     }
@@ -487,14 +508,22 @@ mod tests {
         };
         let mut cache = CheckpointCache::new(config);
         cache.set_time(1000);
-        cache.store("cp1".to_string(), 1, "m".to_string(), vec![1]).unwrap();
-        cache.store("cp2".to_string(), 2, "m".to_string(), vec![2]).unwrap();
-        cache.store("cp3".to_string(), 3, "m".to_string(), vec![3]).unwrap();
+        cache
+            .store("cp1".to_string(), 1, "m".to_string(), vec![1])
+            .unwrap();
+        cache
+            .store("cp2".to_string(), 2, "m".to_string(), vec![2])
+            .unwrap();
+        cache
+            .store("cp3".to_string(), 3, "m".to_string(), vec![3])
+            .unwrap();
         // Access cp1 multiple times
         cache.get("cp1").unwrap();
         cache.get("cp1").unwrap();
         // Add cp4, should evict cp2 or cp3 (least frequently used)
-        cache.store("cp4".to_string(), 4, "m".to_string(), vec![4]).unwrap();
+        cache
+            .store("cp4".to_string(), 4, "m".to_string(), vec![4])
+            .unwrap();
         assert!(cache.get("cp1").is_ok());
     }
 
@@ -506,9 +535,13 @@ mod tests {
         };
         let mut cache = CheckpointCache::new(config);
         cache.set_time(1000);
-        cache.store("cp1".to_string(), 1, "m".to_string(), vec![1]).unwrap();
+        cache
+            .store("cp1".to_string(), 1, "m".to_string(), vec![1])
+            .unwrap();
         cache.set_time(2000);
-        cache.store("cp2".to_string(), 2, "m".to_string(), vec![2]).unwrap();
+        cache
+            .store("cp2".to_string(), 2, "m".to_string(), vec![2])
+            .unwrap();
         // Advance time past threshold
         cache.set_time(5000);
         let evicted = cache.evict_stale();
@@ -519,8 +552,12 @@ mod tests {
     #[test]
     fn test_get_by_model_round() {
         let mut cache = CheckpointCache::default();
-        cache.store("cp1".to_string(), 1, "model_a".to_string(), vec![1]).unwrap();
-        cache.store("cp2".to_string(), 2, "model_a".to_string(), vec![2]).unwrap();
+        cache
+            .store("cp1".to_string(), 1, "model_a".to_string(), vec![1])
+            .unwrap();
+        cache
+            .store("cp2".to_string(), 2, "model_a".to_string(), vec![2])
+            .unwrap();
         let entry = cache.get_by_model_round("model_a", 1);
         assert!(entry.is_some());
         assert_eq!(entry.unwrap().checkpoint_id, "cp1");
@@ -529,9 +566,15 @@ mod tests {
     #[test]
     fn test_get_model_checkpoints() {
         let mut cache = CheckpointCache::default();
-        cache.store("cp1".to_string(), 1, "model_a".to_string(), vec![1]).unwrap();
-        cache.store("cp2".to_string(), 2, "model_b".to_string(), vec![2]).unwrap();
-        cache.store("cp3".to_string(), 3, "model_a".to_string(), vec![3]).unwrap();
+        cache
+            .store("cp1".to_string(), 1, "model_a".to_string(), vec![1])
+            .unwrap();
+        cache
+            .store("cp2".to_string(), 2, "model_b".to_string(), vec![2])
+            .unwrap();
+        cache
+            .store("cp3".to_string(), 3, "model_a".to_string(), vec![3])
+            .unwrap();
         let checkpoints = cache.get_model_checkpoints("model_a");
         assert_eq!(checkpoints.len(), 2);
     }
@@ -539,7 +582,9 @@ mod tests {
     #[test]
     fn test_stats_tracking() {
         let mut cache = CheckpointCache::default();
-        cache.store("cp1".to_string(), 1, "m".to_string(), vec![1]).unwrap();
+        cache
+            .store("cp1".to_string(), 1, "m".to_string(), vec![1])
+            .unwrap();
         cache.get("cp1").unwrap();
         cache.get("missing").unwrap_err();
         let stats = cache.stats();
@@ -561,7 +606,9 @@ mod tests {
     #[test]
     fn test_reset_stats() {
         let mut cache = CheckpointCache::default();
-        cache.store("cp1".to_string(), 1, "m".to_string(), vec![1]).unwrap();
+        cache
+            .store("cp1".to_string(), 1, "m".to_string(), vec![1])
+            .unwrap();
         cache.reset_stats();
         assert_eq!(cache.stats().total_stored, 0);
     }
@@ -573,7 +620,9 @@ mod tests {
             ..Default::default()
         };
         let mut cache = CheckpointCache::new(config);
-        cache.store("cp1".to_string(), 1, "m".to_string(), vec![42u8; 512]).unwrap();
+        cache
+            .store("cp1".to_string(), 1, "m".to_string(), vec![42u8; 512])
+            .unwrap();
         let entry = cache.get_by_model_round("m", 1).unwrap();
         assert!(entry.compression_ratio < 1.0);
     }
@@ -620,7 +669,9 @@ mod tests {
             ..Default::default()
         };
         let mut cache = CheckpointCache::new(config);
-        cache.store("cp1".to_string(), 1, "m".to_string(), vec![1; 10]).unwrap();
+        cache
+            .store("cp1".to_string(), 1, "m".to_string(), vec![1; 10])
+            .unwrap();
         let result = cache.store("cp2".to_string(), 2, "m".to_string(), vec![1; 10]);
         // Should evict cp1 to make room
         assert!(result.is_ok());

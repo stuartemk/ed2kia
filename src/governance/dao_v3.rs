@@ -132,7 +132,7 @@ impl Default for DaoConfig {
             quorum_threshold: 0.25,
             approval_threshold: 0.60,
             timelock_duration: Duration::from_secs(72 * 3600), // 72h
-            voting_duration: Duration::from_secs(48 * 3600), // 48h
+            voting_duration: Duration::from_secs(48 * 3600),   // 48h
             min_proposal_stake: 10000,
             max_delegation_depth: 10,
             hybrid_onchain_ratio: 0.30,
@@ -326,11 +326,7 @@ impl DaoGovernanceV3 {
     }
 
     /// Delega voto
-    pub fn delegate_vote(
-        &self,
-        member_id: &str,
-        delegate_to: &str,
-    ) -> Result<(), DaoError> {
+    pub fn delegate_vote(&self, member_id: &str, delegate_to: &str) -> Result<(), DaoError> {
         // Verificar que ambos existen
         if !self.members.contains_key(member_id) {
             return Err(DaoError::ProposalNotFound(member_id.to_string()));
@@ -367,10 +363,7 @@ impl DaoGovernanceV3 {
     }
 
     /// Crea propuesta
-    pub fn create_proposal(
-        &mut self,
-        proposal: DaoProposal,
-    ) -> Result<(), DaoError> {
+    pub fn create_proposal(&mut self, proposal: DaoProposal) -> Result<(), DaoError> {
         // Verificar stake del creador
         let creator = self
             .members
@@ -390,9 +383,10 @@ impl DaoGovernanceV3 {
 
     /// Inicia votación
     pub fn start_voting(&mut self, proposal_id: &str) -> Result<(), DaoError> {
-        let proposal = self.proposals.get_mut(proposal_id).ok_or(
-            DaoError::ProposalNotFound(proposal_id.to_string())
-        )?;
+        let proposal = self
+            .proposals
+            .get_mut(proposal_id)
+            .ok_or(DaoError::ProposalNotFound(proposal_id.to_string()))?;
 
         if proposal.state != DaoProposalState::Proposed {
             return Err(DaoError::VotingNotActive(proposal_id.to_string()));
@@ -427,9 +421,10 @@ impl DaoGovernanceV3 {
         }
 
         // Verificar propuesta
-        let proposal = self.proposals.get_mut(proposal_id).ok_or(
-            DaoError::ProposalNotFound(proposal_id.to_string())
-        )?;
+        let proposal = self
+            .proposals
+            .get_mut(proposal_id)
+            .ok_or(DaoError::ProposalNotFound(proposal_id.to_string()))?;
 
         if proposal.state != DaoProposalState::Voting
             && proposal.state != DaoProposalState::Approved
@@ -467,15 +462,12 @@ impl DaoGovernanceV3 {
 
     /// Verifica umbrales de votación
     fn check_vote_thresholds(&mut self, proposal_id: &str) -> Result<(), DaoError> {
-        let proposal = self.proposals.get(proposal_id).ok_or(DaoError::ProposalNotFound(
-            proposal_id.to_string(),
-        ))?;
+        let proposal = self
+            .proposals
+            .get(proposal_id)
+            .ok_or(DaoError::ProposalNotFound(proposal_id.to_string()))?;
 
-        let active_members: usize = self
-            .members
-            .values()
-            .filter(|m| m.active)
-            .count();
+        let active_members: usize = self.members.values().filter(|m| m.active).count();
 
         let voter_count = proposal.voter_count();
         let quorum_ratio = voter_count as f64 / active_members as f64;
@@ -520,13 +512,11 @@ impl DaoGovernanceV3 {
     }
 
     /// Verifica time-lock
-    pub fn check_timelock(
-        &mut self,
-        proposal_id: &str,
-    ) -> Result<DaoProposalState, DaoError> {
-        let proposal = self.proposals.get(proposal_id).ok_or(DaoError::ProposalNotFound(
-            proposal_id.to_string(),
-        ))?;
+    pub fn check_timelock(&mut self, proposal_id: &str) -> Result<DaoProposalState, DaoError> {
+        let proposal = self
+            .proposals
+            .get(proposal_id)
+            .ok_or(DaoError::ProposalNotFound(proposal_id.to_string()))?;
 
         match proposal.state {
             DaoProposalState::Approved => {
@@ -556,13 +546,11 @@ impl DaoGovernanceV3 {
     }
 
     /// Ejecuta propuesta
-    pub fn execute_proposal(
-        &mut self,
-        proposal_id: &str,
-    ) -> Result<ExecutionResult, DaoError> {
-        let proposal = self.proposals.get(proposal_id).ok_or(DaoError::ProposalNotFound(
-            proposal_id.to_string(),
-        ))?;
+    pub fn execute_proposal(&mut self, proposal_id: &str) -> Result<ExecutionResult, DaoError> {
+        let proposal = self
+            .proposals
+            .get(proposal_id)
+            .ok_or(DaoError::ProposalNotFound(proposal_id.to_string()))?;
 
         if proposal.state != DaoProposalState::Ready {
             return Err(DaoError::VotingNotActive(proposal_id.to_string()));

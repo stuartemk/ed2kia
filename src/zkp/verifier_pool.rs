@@ -5,8 +5,8 @@
 //!
 //! Feature-gated: `#[cfg(feature = "v1.1-sprint3")]`
 
-use crate::zkp::circuit::{BatchCommitment, ZKPProof, ZKPCircuit};
-use crate::zkp::verifier::{VerificationResult, VerificationRecord, ZKPVerifier};
+use crate::zkp::circuit::{BatchCommitment, ZKPCircuit, ZKPProof};
+use crate::zkp::verifier::{VerificationRecord, VerificationResult, ZKPVerifier};
 use parking_lot::Mutex;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::mpsc::{channel, RecvTimeoutError, Sender};
@@ -155,8 +155,7 @@ impl VerifierPool {
                             Ok(item) => {
                                 let start = Instant::now();
                                 let batch_id = item.proof.batch_id.clone();
-                                let verify_result =
-                                    verifier.verify(item.proof, item.commitment);
+                                let verify_result = verifier.verify(item.proof, item.commitment);
                                 let elapsed_ms = start.elapsed().as_secs_f64() * 1000.0;
 
                                 // Determinar el resultado de verificación para el record
@@ -240,7 +239,9 @@ impl VerifierPool {
         self.pending.fetch_add(1, Ordering::Relaxed);
         let start = Instant::now();
 
-        sender.send(work_item).map_err(|_| VerifierPoolError::Shutdown)?;
+        sender
+            .send(work_item)
+            .map_err(|_| VerifierPoolError::Shutdown)?;
 
         match response_rx.recv_timeout(self.config.verification_timeout) {
             Ok(record) => {
@@ -373,7 +374,9 @@ mod tests {
         };
         let circuit = ZKPCircuit::new(None);
         let proof = circuit.generate_proof(&witness, batch_id);
-        let commitment = circuit.create_commitment(&feature_values, batch_id).unwrap();
+        let commitment = circuit
+            .create_commitment(&feature_values, batch_id)
+            .unwrap();
         (proof, commitment)
     }
 

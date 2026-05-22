@@ -32,15 +32,21 @@ mod internal {
     impl fmt::Display for CircuitOptError {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             match self {
-                CircuitOptError::PoolExhausted => write!(f, "circuit_opt: constraint pool exhausted"),
+                CircuitOptError::PoolExhausted => {
+                    write!(f, "circuit_opt: constraint pool exhausted")
+                }
                 CircuitOptError::InvalidConstraintCount => {
                     write!(f, "circuit_opt: constraint count must be > 0")
                 }
-                CircuitOptError::NotPrecomputed => write!(f, "circuit_opt: precomputation not initialized"),
+                CircuitOptError::NotPrecomputed => {
+                    write!(f, "circuit_opt: precomputation not initialized")
+                }
                 CircuitOptError::BenchmarkAlreadyStarted => {
                     write!(f, "circuit_opt: benchmark already started")
                 }
-                CircuitOptError::BenchmarkNotStarted => write!(f, "circuit_opt: benchmark not started"),
+                CircuitOptError::BenchmarkNotStarted => {
+                    write!(f, "circuit_opt: benchmark not started")
+                }
             }
         }
     }
@@ -97,9 +103,8 @@ mod internal {
             if capacity == 0 {
                 return Err(CircuitOptError::InvalidConstraintCount);
             }
-            let slots: Vec<ConstraintSlot> = (0..capacity)
-                .map(|i| ConstraintSlot::new(i, 1.0))
-                .collect();
+            let slots: Vec<ConstraintSlot> =
+                (0..capacity).map(|i| ConstraintSlot::new(i, 1.0)).collect();
             Ok(Self {
                 slots,
                 next_index: 0,
@@ -446,7 +451,10 @@ mod internal {
 
         #[test]
         fn test_pool_zero_capacity() {
-            assert_eq!(ConstraintPool::new(0).unwrap_err(), CircuitOptError::InvalidConstraintCount);
+            assert_eq!(
+                ConstraintPool::new(0).unwrap_err(),
+                CircuitOptError::InvalidConstraintCount
+            );
         }
 
         #[test]
@@ -523,7 +531,10 @@ mod internal {
         #[test]
         fn test_pedersen_get_base_before_init() {
             let precompute = PedersenPrecompute::new(64);
-            assert_eq!(precompute.get_base(0).unwrap_err(), CircuitOptError::NotPrecomputed);
+            assert_eq!(
+                precompute.get_base(0).unwrap_err(),
+                CircuitOptError::NotPrecomputed
+            );
         }
 
         #[test]
@@ -538,7 +549,10 @@ mod internal {
         fn test_pedersen_get_base_out_of_range() {
             let mut precompute = PedersenPrecompute::new(10);
             precompute.initialize();
-            assert_eq!(precompute.get_base(99).unwrap_err(), CircuitOptError::InvalidConstraintCount);
+            assert_eq!(
+                precompute.get_base(99).unwrap_err(),
+                CircuitOptError::InvalidConstraintCount
+            );
         }
 
         #[test]
@@ -575,7 +589,10 @@ mod internal {
         fn test_benchmark_already_started() {
             let mut bench = CircuitBenchmark::new();
             bench.start(10).unwrap();
-            assert_eq!(bench.start(5).unwrap_err(), CircuitOptError::BenchmarkAlreadyStarted);
+            assert_eq!(
+                bench.start(5).unwrap_err(),
+                CircuitOptError::BenchmarkAlreadyStarted
+            );
         }
 
         #[test]
@@ -588,7 +605,10 @@ mod internal {
         #[test]
         fn test_benchmark_record_weight_not_started() {
             let mut bench = CircuitBenchmark::new();
-            assert_eq!(bench.record_weight(1.0).unwrap_err(), CircuitOptError::BenchmarkNotStarted);
+            assert_eq!(
+                bench.record_weight(1.0).unwrap_err(),
+                CircuitOptError::BenchmarkNotStarted
+            );
         }
 
         #[test]
@@ -607,7 +627,10 @@ mod internal {
         #[test]
         fn test_benchmark_stop_not_started() {
             let mut bench = CircuitBenchmark::new();
-            assert_eq!(bench.stop(10, 100.0, 0.5).unwrap_err(), CircuitOptError::BenchmarkNotStarted);
+            assert_eq!(
+                bench.stop(10, 100.0, 0.5).unwrap_err(),
+                CircuitOptError::BenchmarkNotStarted
+            );
         }
 
         #[test]

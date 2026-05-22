@@ -10,10 +10,10 @@
 //! - Proof aggregation with cross-pool consensus tracking
 //! - Fallback to Merkle+VRF with automatic recovery
 
-use std::collections::{HashMap, BinaryHeap, VecDeque};
 use std::cmp::Ordering;
-use std::hash::{Hash, Hasher};
 use std::collections::hash_map::DefaultHasher;
+use std::collections::{BinaryHeap, HashMap, VecDeque};
+use std::hash::{Hash, Hasher};
 
 // ─── Errors ───
 
@@ -46,13 +46,23 @@ impl std::fmt::Display for ZKPV5Error {
             Self::ProofGenerationFailed(msg) => write!(f, "Proof generation failed: {}", msg),
             Self::VerificationFailed(msg) => write!(f, "Verification failed: {}", msg),
             Self::BatchFull => write!(f, "Batch capacity reached"),
-            Self::TimeoutExceeded { limit_ms, actual_ms } => {
+            Self::TimeoutExceeded {
+                limit_ms,
+                actual_ms,
+            } => {
                 write!(f, "Timeout: {}ms > {}ms limit", actual_ms, limit_ms)
             }
             Self::CircuitError(msg) => write!(f, "Circuit error: {}", msg),
             Self::PoolNotRegistered(id) => write!(f, "Pool not registered: {}", id),
-            Self::InsufficientPoolResources { available, required } => {
-                write!(f, "Insufficient pool resources: available={}, required={}", available, required)
+            Self::InsufficientPoolResources {
+                available,
+                required,
+            } => {
+                write!(
+                    f,
+                    "Insufficient pool resources: available={}, required={}",
+                    available, required
+                )
             }
             Self::AccumulatorError(msg) => write!(f, "Accumulator error: {}", msg),
             Self::WorkerError(msg) => write!(f, "Worker error: {}", msg),
@@ -282,7 +292,10 @@ impl ProofBatch {
 
     /// Add a statement to the batch.
     pub fn add_statement(&mut self, statement: ZKPStatement) -> Result<(), ZKPV5Error> {
-        if !matches!(self.status, BatchStatus::Accumulating | BatchStatus::Precompiling) {
+        if !matches!(
+            self.status,
+            BatchStatus::Accumulating | BatchStatus::Precompiling
+        ) {
             return Err(ZKPV5Error::BatchFull);
         }
         if !self.pool_ids.contains(&statement.source_pool) {
@@ -294,8 +307,10 @@ impl ProofBatch {
 
     /// Check if batch is ready for processing.
     pub fn is_ready(&self) -> bool {
-        matches!(self.status, BatchStatus::Accumulating | BatchStatus::Precompiling)
-            && !self.statements.is_empty()
+        matches!(
+            self.status,
+            BatchStatus::Accumulating | BatchStatus::Precompiling
+        ) && !self.statements.is_empty()
     }
 }
 
@@ -357,7 +372,9 @@ impl PartialEq for PriorityItem {
 
 impl Ord for PriorityItem {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.statement.priority.cmp(&other.statement.priority)
+        self.statement
+            .priority
+            .cmp(&other.statement.priority)
             .then_with(|| other.timestamp_ms.cmp(&self.timestamp_ms))
     }
 }
@@ -584,7 +601,9 @@ impl AsyncZKPV5 {
 
     /// Update pool credits.
     pub fn update_pool_credits(&mut self, pool_id: &str, credits: f64) -> Result<(), ZKPV5Error> {
-        let pool = self.pools.get_mut(pool_id)
+        let pool = self
+            .pools
+            .get_mut(pool_id)
             .ok_or(ZKPV5Error::PoolNotRegistered(pool_id.to_string()))?;
         pool.available_credits = credits;
         Ok(())
@@ -631,8 +650,7 @@ impl AsyncZKPV5 {
 
     /// Add statements from queue to active batch.
     pub fn add_to_batch(&mut self, max_count: usize) -> Result<usize, ZKPV5Error> {
-        let batch = self.active_batch.as_mut()
-            .ok_or(ZKPV5Error::BatchFull)?;
+        let batch = self.active_batch.as_mut().ok_or(ZKPV5Error::BatchFull)?;
 
         let mut count = 0;
         while count < max_count && !self.pending_queue.is_empty() {
@@ -646,8 +664,7 @@ impl AsyncZKPV5 {
 
     /// Pre-compile batch if threshold met.
     pub fn precompile_batch(&mut self) -> Result<bool, ZKPV5Error> {
-        let batch = self.active_batch.as_mut()
-            .ok_or(ZKPV5Error::BatchFull)?;
+        let batch = self.active_batch.as_mut().ok_or(ZKPV5Error::BatchFull)?;
 
         if batch.statements.len() < self.config.precompile_threshold {
             return Ok(false);
@@ -664,8 +681,7 @@ impl AsyncZKPV5 {
 
     /// Generate proofs for the active batch.
     pub fn generate_batch_proofs(&mut self) -> Result<ProofBatch, ZKPV5Error> {
-        let mut batch = self.active_batch.take()
-            .ok_or(ZKPV5Error::BatchFull)?;
+        let mut batch = self.active_batch.take().ok_or(ZKPV5Error::BatchFull)?;
 
         if batch.statements.is_empty() {
             return Err(ZKPV5Error::ProofGenerationFailed(
@@ -689,7 +705,8 @@ impl AsyncZKPV5 {
 
         for statement in batch.statements.iter() {
             // VRF sampling check.
-            let is_sample = !should_sample || ((hash_u64(&statement.statement_id) % 100) as f64) < sample_rate * 100.0;
+            let is_sample = !should_sample
+                || ((hash_u64(&statement.statement_id) % 100) as f64) < sample_rate * 100.0;
             if !is_sample {
                 continue;
             }
@@ -737,8 +754,8 @@ impl AsyncZKPV5 {
         // Update averages.
         let proof_count = batch.proofs.len() as f64;
         if proof_count > 0.0 {
-            self.stats.avg_generation_time_ms =
-                self.stats.avg_generation_time_ms * 0.8 + (total_time_ms as f64 / proof_count) * 0.2;
+            self.stats.avg_generation_time_ms = self.stats.avg_generation_time_ms * 0.8
+                + (total_time_ms as f64 / proof_count) * 0.2;
         }
         self.stats.fallback_count += fallback_count;
         self.stats.vrf_sampled_count += vrf_sampled;
@@ -761,7 +778,9 @@ impl AsyncZKPV5 {
         statement: &ZKPStatement,
     ) -> Result<VerificationResult, ZKPV5Error> {
         // Find available worker.
-        let worker = self.workers.iter_mut()
+        let worker = self
+            .workers
+            .iter_mut()
             .find(|w| !w.busy)
             .ok_or(ZKPV5Error::WorkerError("No available workers".to_string()))?;
 
@@ -774,8 +793,8 @@ impl AsyncZKPV5 {
         self.stats.parallel_verifications += 1;
 
         if result.verification_time_ms > 0 {
-            self.stats.avg_verification_time_ms =
-                self.stats.avg_verification_time_ms * 0.8 + result.verification_time_ms as f64 * 0.2;
+            self.stats.avg_verification_time_ms = self.stats.avg_verification_time_ms * 0.8
+                + result.verification_time_ms as f64 * 0.2;
         }
 
         Ok(result)
@@ -798,7 +817,8 @@ impl AsyncZKPV5 {
 
     /// Select the best pool for verification.
     pub fn select_best_pool(&self) -> Option<&PoolContext> {
-        self.pools.values()
+        self.pools
+            .values()
             .filter(|p| p.available_credits >= self.config.min_pool_credits)
             .max_by_key(|p| p.verification_score() as u64)
     }
@@ -1061,7 +1081,9 @@ mod tests {
     #[test]
     fn test_submit_statement() {
         let mut engine = AsyncZKPV5::with_defaults();
-        engine.submit_statement(make_statement("s1", "pool1", 10)).unwrap();
+        engine
+            .submit_statement(make_statement("s1", "pool1", 10))
+            .unwrap();
         assert_eq!(engine.pending_count(), 1);
     }
 
@@ -1084,8 +1106,12 @@ mod tests {
     fn test_add_to_batch() {
         let mut engine = AsyncZKPV5::with_defaults();
         engine.start_batch("batch1".to_string()).unwrap();
-        engine.submit_statement(make_statement("s1", "pool1", 10)).unwrap();
-        engine.submit_statement(make_statement("s2", "pool1", 5)).unwrap();
+        engine
+            .submit_statement(make_statement("s1", "pool1", 10))
+            .unwrap();
+        engine
+            .submit_statement(make_statement("s2", "pool1", 5))
+            .unwrap();
         let count = engine.add_to_batch(10).unwrap();
         assert_eq!(count, 2);
     }
@@ -1095,7 +1121,9 @@ mod tests {
         let mut engine = AsyncZKPV5::with_defaults();
         engine.start_batch("batch1".to_string()).unwrap();
         for i in 0..20 {
-            engine.submit_statement(make_statement(&format!("s{}", i), "pool1", 10)).unwrap();
+            engine
+                .submit_statement(make_statement(&format!("s{}", i), "pool1", 10))
+                .unwrap();
         }
         engine.add_to_batch(50).unwrap();
         let precompiled = engine.precompile_batch().unwrap();
@@ -1109,7 +1137,9 @@ mod tests {
         engine.register_pool(make_pool("pool1", 100.0)).unwrap();
         engine.start_batch("batch1".to_string()).unwrap();
         for i in 0..10 {
-            engine.submit_statement(make_statement(&format!("s{}", i), "pool1", 10)).unwrap();
+            engine
+                .submit_statement(make_statement(&format!("s{}", i), "pool1", 10))
+                .unwrap();
         }
         engine.add_to_batch(20).unwrap();
         let batch = engine.generate_batch_proofs().unwrap();
@@ -1130,7 +1160,9 @@ mod tests {
         let mut engine = AsyncZKPV5::with_defaults();
         engine.register_pool(make_pool("pool1", 100.0)).unwrap();
         engine.start_batch("batch1".to_string()).unwrap();
-        engine.submit_statement(make_statement("s1", "pool1", 10)).unwrap();
+        engine
+            .submit_statement(make_statement("s1", "pool1", 10))
+            .unwrap();
         engine.add_to_batch(10).unwrap();
         let batch = engine.generate_batch_proofs().unwrap();
         let proof = &batch.proofs[0];
@@ -1145,7 +1177,9 @@ mod tests {
         engine.register_pool(make_pool("pool1", 100.0)).unwrap();
         engine.start_batch("batch1".to_string()).unwrap();
         for i in 0..5 {
-            engine.submit_statement(make_statement(&format!("s{}", i), "pool1", 10)).unwrap();
+            engine
+                .submit_statement(make_statement(&format!("s{}", i), "pool1", 10))
+                .unwrap();
         }
         engine.add_to_batch(10).unwrap();
         let batch = engine.generate_batch_proofs().unwrap();
@@ -1158,7 +1192,9 @@ mod tests {
     fn test_select_best_pool() {
         let mut engine = AsyncZKPV5::with_defaults();
         engine.register_pool(make_pool("pool1", 100.0)).unwrap();
-        engine.register_pool(PoolContext::new("pool2".to_string(), 200.0, 0.9)).unwrap();
+        engine
+            .register_pool(PoolContext::new("pool2".to_string(), 200.0, 0.9))
+            .unwrap();
         let best = engine.select_best_pool().unwrap();
         assert_eq!(best.pool_id, "pool2");
     }
@@ -1194,7 +1230,9 @@ mod tests {
         engine.register_pool(make_pool("pool1", 100.0)).unwrap();
         engine.start_batch("batch1".to_string()).unwrap();
         for i in 0..100 {
-            engine.submit_statement(make_statement(&format!("s{}", i), "pool1", 10)).unwrap();
+            engine
+                .submit_statement(make_statement(&format!("s{}", i), "pool1", 10))
+                .unwrap();
         }
         engine.add_to_batch(200).unwrap();
         let batch = engine.generate_batch_proofs().unwrap();
@@ -1210,7 +1248,9 @@ mod tests {
         engine.start_batch("batch1".to_string()).unwrap();
         // Submit multiple baseline statements to establish low average complexity.
         for i in 0..10 {
-            engine.submit_statement(make_statement(&format!("b{}", i), "pool1", 10)).unwrap();
+            engine
+                .submit_statement(make_statement(&format!("b{}", i), "pool1", 10))
+                .unwrap();
         }
         // Now submit a high-complexity statement that exceeds avg * 2.
         // Profile: [0.5 x10, 10.0] → avg = 15.0/11 ≈ 1.36, threshold ≈ 2.73, 10.0 > 2.73 → true
@@ -1235,7 +1275,9 @@ mod tests {
         let mut engine = AsyncZKPV5::with_defaults();
         engine.register_pool(make_pool("pool1", 100.0)).unwrap();
         engine.start_batch("batch1".to_string()).unwrap();
-        engine.submit_statement(make_statement("s1", "pool1", 10)).unwrap();
+        engine
+            .submit_statement(make_statement("s1", "pool1", 10))
+            .unwrap();
         engine.add_to_batch(10).unwrap();
         engine.generate_batch_proofs().unwrap();
         let proof = engine.get_proof(&format!("proof-s1"));
@@ -1247,7 +1289,9 @@ mod tests {
         let mut engine = AsyncZKPV5::with_defaults();
         engine.register_pool(make_pool("pool1", 100.0)).unwrap();
         engine.start_batch("batch1".to_string()).unwrap();
-        engine.submit_statement(make_statement("s1", "pool1", 10)).unwrap();
+        engine
+            .submit_statement(make_statement("s1", "pool1", 10))
+            .unwrap();
         engine.add_to_batch(10).unwrap();
         engine.generate_batch_proofs().unwrap();
         engine.reset_stats();
@@ -1263,8 +1307,12 @@ mod tests {
     #[test]
     fn test_avg_complexity() {
         let mut engine = AsyncZKPV5::with_defaults();
-        engine.submit_statement(make_statement("s1", "pool1", 10)).unwrap();
-        engine.submit_statement(make_statement("s2", "pool1", 10)).unwrap();
+        engine
+            .submit_statement(make_statement("s1", "pool1", 10))
+            .unwrap();
+        engine
+            .submit_statement(make_statement("s2", "pool1", 10))
+            .unwrap();
         let avg = engine.avg_complexity(&CircuitType::Membership);
         assert_eq!(avg, 0.5);
     }
@@ -1294,7 +1342,10 @@ mod tests {
     #[test]
     fn test_circuit_type_display() {
         assert_eq!(format!("{}", CircuitType::Membership), "membership");
-        assert_eq!(format!("{}", CircuitType::IncrementalAccumulator), "incremental_accumulator");
+        assert_eq!(
+            format!("{}", CircuitType::IncrementalAccumulator),
+            "incremental_accumulator"
+        );
     }
 
     #[test]
@@ -1397,7 +1448,9 @@ mod tests {
         // Submit statements.
         for i in 0..20 {
             let pool = if i % 2 == 0 { "pool1" } else { "pool2" };
-            engine.submit_statement(make_statement(&format!("s{}", i), pool, 10)).unwrap();
+            engine
+                .submit_statement(make_statement(&format!("s{}", i), pool, 10))
+                .unwrap();
         }
 
         // Create and fill batch.
@@ -1430,8 +1483,12 @@ mod tests {
         engine.register_pool(make_pool("pool1", 100.0)).unwrap();
         engine.register_pool(make_pool("pool2", 100.0)).unwrap();
         engine.start_batch("batch1".to_string()).unwrap();
-        engine.submit_statement(make_statement("s1", "pool1", 10)).unwrap();
-        engine.submit_statement(make_statement("s2", "pool2", 10)).unwrap();
+        engine
+            .submit_statement(make_statement("s1", "pool1", 10))
+            .unwrap();
+        engine
+            .submit_statement(make_statement("s2", "pool2", 10))
+            .unwrap();
         engine.add_to_batch(10).unwrap();
         let batch = engine.generate_batch_proofs().unwrap();
         assert_eq!(batch.pool_ids.len(), 2);
@@ -1443,7 +1500,9 @@ mod tests {
         let batch = ProofBatch::new("b1".to_string());
         assert!(!batch.is_ready());
         let mut batch2 = ProofBatch::new("b2".to_string());
-        batch2.add_statement(make_statement("s1", "pool1", 10)).unwrap();
+        batch2
+            .add_statement(make_statement("s1", "pool1", 10))
+            .unwrap();
         assert!(batch2.is_ready());
     }
 
@@ -1467,7 +1526,9 @@ mod tests {
         engine.register_pool(make_pool("pool1", 100.0)).unwrap();
         for i in 0..3 {
             engine.start_batch(format!("batch{}", i)).unwrap();
-            engine.submit_statement(make_statement(&format!("s{}", i), "pool1", 10)).unwrap();
+            engine
+                .submit_statement(make_statement(&format!("s{}", i), "pool1", 10))
+                .unwrap();
             engine.add_to_batch(10).unwrap();
             engine.generate_batch_proofs().unwrap();
         }

@@ -6,13 +6,13 @@
 //!
 //! Feature-gated: `#[cfg(feature = "v1.1-sprint3")]`
 
-use crate::zkp::circuit::{BatchCommitment, ZKPProof, ZKPCircuit};
 pub use crate::zkp::circuit::Witness;
+use crate::zkp::circuit::{BatchCommitment, ZKPCircuit, ZKPProof};
 use ark_bn254::{Fr, G1Projective};
-use ark_ec::{Group, CurveGroup};
-use ark_ff::{PrimeField, BigInteger};
-use ark_std::rand::thread_rng;
+use ark_ec::{CurveGroup, Group};
 use ark_ff::UniformRand;
+use ark_ff::{BigInteger, PrimeField};
+use ark_std::rand::thread_rng;
 use parking_lot::Mutex;
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
@@ -131,7 +131,11 @@ impl AsyncProver {
     ///
     /// Ejecuta el prover en un hilo separado usando `spawn_blocking`.
     /// Si la generación excede `proof_timeout`, activa fallback Merkle+VRF.
-    pub async fn generate_proof(&self, batch_id: String, witness: Witness) -> Result<ProofResult, AsyncProverError> {
+    pub async fn generate_proof(
+        &self,
+        batch_id: String,
+        witness: Witness,
+    ) -> Result<ProofResult, AsyncProverError> {
         if witness.feature_values.len() > self.config.max_batch_size {
             return Err(AsyncProverError::InvalidWitness(format!(
                 "Witness has {} features, max is {}",
@@ -153,25 +157,31 @@ impl AsyncProver {
             let circ = circuit.lock();
             let proof = circ.generate_proof(&witness, &batch_id);
             // Convertir feature_values de Vec<Fr> a Vec<f64> para create_commitment
-            let feature_f64: Vec<f64> = witness.feature_values.iter().map(|fr| {
-                let bigint = fr.into_bigint();
-                let bytes = bigint.to_bytes_be();
-                // Usar solo los primeros 8 bytes para f64
-                let mut f64_bytes = [0u8; 8];
-                let len = bytes.len().min(8);
-                f64_bytes.copy_from_slice(&bytes[bytes.len() - len..]);
-                f64::from_be_bytes(f64_bytes)
-            }).collect();
-            let commitment = circ.create_commitment(&feature_f64, &batch_id).unwrap_or_else(|_| {
-                // Fallback: crear compromiso vacío en caso de error
-                let gen = <ark_bn254::G1Projective as Group>::generator().into_affine();
-                BatchCommitment {
-                    commitment_point: gen,
-                    batch_hash: [1u8; 32],
-                    feature_count: witness.feature_values.len(),
-                    compact_bytes: Vec::new(),
-                }
-            });
+            let feature_f64: Vec<f64> = witness
+                .feature_values
+                .iter()
+                .map(|fr| {
+                    let bigint = fr.into_bigint();
+                    let bytes = bigint.to_bytes_be();
+                    // Usar solo los primeros 8 bytes para f64
+                    let mut f64_bytes = [0u8; 8];
+                    let len = bytes.len().min(8);
+                    f64_bytes.copy_from_slice(&bytes[bytes.len() - len..]);
+                    f64::from_be_bytes(f64_bytes)
+                })
+                .collect();
+            let commitment = circ
+                .create_commitment(&feature_f64, &batch_id)
+                .unwrap_or_else(|_| {
+                    // Fallback: crear compromiso vacío en caso de error
+                    let gen = <ark_bn254::G1Projective as Group>::generator().into_affine();
+                    BatchCommitment {
+                        commitment_point: gen,
+                        batch_hash: [1u8; 32],
+                        feature_count: witness.feature_values.len(),
+                        compact_bytes: Vec::new(),
+                    }
+                });
             (proof, commitment)
         });
 
@@ -191,7 +201,11 @@ impl AsyncProver {
                         "Proof generation exceeded timeout, using fallback"
                     );
                     self.update_stats(elapsed_ms, true, true);
-                    return self.generate_fallback_proof(batch_id_for_task, witness_for_fallback, elapsed_ms);
+                    return self.generate_fallback_proof(
+                        batch_id_for_task,
+                        witness_for_fallback,
+                        elapsed_ms,
+                    );
                 }
 
                 self.update_stats(elapsed_ms, true, false);
@@ -216,7 +230,11 @@ impl AsyncProver {
                 self.update_stats(elapsed_ms, false, true);
                 warn!(timeout_ms = %timeout.as_millis(), "Proof generation timed out");
                 if enable_fallback {
-                    self.generate_fallback_proof(batch_id_for_task, witness_for_fallback, elapsed_ms)
+                    self.generate_fallback_proof(
+                        batch_id_for_task,
+                        witness_for_fallback,
+                        elapsed_ms,
+                    )
                 } else {
                     Err(AsyncProverError::Timeout(timeout.as_secs_f64()))
                 }
@@ -262,7 +280,10 @@ impl AsyncProver {
                 }
                 hashes = next;
             }
-            hashes.into_iter().next().unwrap_or(Sha256::digest(b"fallback").into())
+            hashes
+                .into_iter()
+                .next()
+                .unwrap_or(Sha256::digest(b"fallback").into())
         };
 
         // VRF proof
@@ -290,7 +311,10 @@ impl AsyncProver {
             bytes.copy_from_slice(&merkle_root);
             let fr = Fr::from_le_bytes_mod_order(&bytes);
             let circ = self.circuit.lock();
-            let gen = circ.generators.first().cloned().unwrap_or_else(|| <ark_bn254::G1Projective as Group>::generator().into_affine());
+            let gen =
+                circ.generators.first().cloned().unwrap_or_else(|| {
+                    <ark_bn254::G1Projective as Group>::generator().into_affine()
+                });
             (G1Projective::from(gen) * fr).into_affine()
         };
 
@@ -328,7 +352,10 @@ impl AsyncProver {
             let sub_id = format!("{}-{}", batch_id, i);
             let circuit = self.circuit.clone();
             let config = self.config.clone();
-            let stats = { let s = self.stats.lock(); s.clone() };
+            let stats = {
+                let s = self.stats.lock();
+                s.clone()
+            };
             handles.push(tokio::spawn(async move {
                 let prover = AsyncProver {
                     config,
@@ -338,12 +365,16 @@ impl AsyncProver {
                 prover.generate_proof(sub_id, witness).await
             }));
         }
-        futures::future::join_all(handles).await.into_iter().collect::<Vec<_>>().into_iter().map(|r| {
-            match r {
+        futures::future::join_all(handles)
+            .await
+            .into_iter()
+            .collect::<Vec<_>>()
+            .into_iter()
+            .map(|r| match r {
                 Ok(inner) => inner,
                 Err(_) => Err(AsyncProverError::TaskJoin),
-            }
-        }).collect()
+            })
+            .collect()
     }
 
     /// Actualiza estadísticas
@@ -435,7 +466,9 @@ mod tests {
     async fn test_generate_proof_single() {
         let prover = AsyncProver::new();
         let witness = make_witness(4);
-        let result = prover.generate_proof("test-batch-1".to_string(), witness).await;
+        let result = prover
+            .generate_proof("test-batch-1".to_string(), witness)
+            .await;
         assert!(result.is_ok());
         let proof_result = result.unwrap();
         assert!(!proof_result.used_fallback);
@@ -455,7 +488,9 @@ mod tests {
     async fn test_generate_proof_max_batch() {
         let prover = AsyncProver::new();
         let witness = make_witness(64);
-        let result = prover.generate_proof("max-batch".to_string(), witness).await;
+        let result = prover
+            .generate_proof("max-batch".to_string(), witness)
+            .await;
         assert!(result.is_ok());
     }
 
@@ -481,7 +516,9 @@ mod tests {
         };
         let prover = AsyncProver::with_config(config);
         let witness = make_witness(16);
-        let result = prover.generate_proof("fallback-test".to_string(), witness).await;
+        let result = prover
+            .generate_proof("fallback-test".to_string(), witness)
+            .await;
         // Should succeed via fallback
         assert!(result.is_ok());
         let proof_result = result.unwrap();
@@ -497,7 +534,9 @@ mod tests {
         };
         let prover = AsyncProver::with_config(config);
         let witness = make_witness(16);
-        let result = prover.generate_proof("no-fallback".to_string(), witness).await;
+        let result = prover
+            .generate_proof("no-fallback".to_string(), witness)
+            .await;
         // Should fail with timeout
         assert!(result.is_err());
     }
@@ -506,7 +545,9 @@ mod tests {
     async fn test_batch_proof_generation() {
         let prover = AsyncProver::new();
         let witnesses = vec![make_witness(4), make_witness(4), make_witness(4)];
-        let results = prover.generate_batch_proofs("batch-parent".to_string(), witnesses).await;
+        let results = prover
+            .generate_batch_proofs("batch-parent".to_string(), witnesses)
+            .await;
         assert_eq!(results.len(), 3);
         for r in &results {
             assert!(r.is_ok());
@@ -517,8 +558,14 @@ mod tests {
     async fn test_stats_tracking() {
         let prover = AsyncProver::new();
         let witness = make_witness(4);
-        prover.generate_proof("stats-1".to_string(), witness).await.ok();
-        prover.generate_proof("stats-2".to_string(), make_witness(4)).await.ok();
+        prover
+            .generate_proof("stats-1".to_string(), witness)
+            .await
+            .ok();
+        prover
+            .generate_proof("stats-2".to_string(), make_witness(4))
+            .await
+            .ok();
         let stats = prover.get_stats();
         assert_eq!(stats.total_proofs, 2);
         assert!(stats.avg_generation_ms > 0.0);
@@ -527,7 +574,10 @@ mod tests {
     #[tokio::test]
     async fn test_reset_stats() {
         let prover = AsyncProver::new();
-        prover.generate_proof("r1".to_string(), make_witness(2)).await.ok();
+        prover
+            .generate_proof("r1".to_string(), make_witness(2))
+            .await
+            .ok();
         prover.reset_stats();
         let stats = prover.get_stats();
         assert_eq!(stats.total_proofs, 0);
@@ -537,7 +587,10 @@ mod tests {
     async fn test_proof_result_fields() {
         let prover = AsyncProver::new();
         let witness = make_witness(2);
-        let result = prover.generate_proof("fields".to_string(), witness).await.unwrap();
+        let result = prover
+            .generate_proof("fields".to_string(), witness)
+            .await
+            .unwrap();
         assert_eq!(result.proof.feature_count, 2);
         assert_eq!(result.commitment.feature_count, 2);
         assert!(!result.proof.batch_id.is_empty());
@@ -589,7 +642,7 @@ mod tests {
                 let p = AsyncProver {
                     config,
                     circuit,
-                    stats: parking_lot::Mutex::new(ProverStats::default())
+                    stats: parking_lot::Mutex::new(ProverStats::default()),
                 };
                 p.generate_proof(format!("concurrent-{}", i), w).await
             }));

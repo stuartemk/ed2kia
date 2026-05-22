@@ -6,9 +6,9 @@
 //!
 //! Feature-gated: `#[cfg(feature = "v1.1-sprint3")]`
 
+use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
 use redb::{Database, ReadableTable, TableDefinition};
 use serde::{Deserialize, Serialize};
-use ed25519_dalek::{Signer, Verifier, SigningKey, VerifyingKey, Signature};
 use std::fs;
 use std::path::Path;
 use thiserror::Error;
@@ -177,7 +177,11 @@ impl EscrowLedger {
 
         info!(path = %db_path, "EscrowLedger initialized with redb");
 
-        Ok(Self { db, signing_key, verifying_key })
+        Ok(Self {
+            db,
+            signing_key,
+            verifying_key,
+        })
     }
 
     /// Crea un ledger en memoria temporal (modo test).
@@ -202,18 +206,27 @@ impl EscrowLedger {
         node_id: &str,
         _verifying_key: VerifyingKey,
     ) -> Result<(), EscrowError> {
-        let write_txn = self.db.begin_write().map_err(|e| EscrowError::Database(e.to_string()))?;
+        let write_txn = self
+            .db
+            .begin_write()
+            .map_err(|e| EscrowError::Database(e.to_string()))?;
         {
-            let mut table = write_txn.open_table(NODE_KEYS_TABLE).map_err(|e| EscrowError::Database(e.to_string()))?;
+            let mut table = write_txn
+                .open_table(NODE_KEYS_TABLE)
+                .map_err(|e| EscrowError::Database(e.to_string()))?;
             let key_bytes = node_id.as_bytes();
             let mut val_bytes = Vec::new();
             // VerifyingKey no implementa Serialize, usar representación manual
             let vk_bytes = self.verifying_key.to_bytes();
             bincode::serialize_into(&mut val_bytes, &vk_bytes)
                 .map_err(|e| EscrowError::Database(e.to_string()))?;
-            table.insert(key_bytes, val_bytes.as_slice()).map_err(|e| EscrowError::Database(e.to_string()))?;
+            table
+                .insert(key_bytes, val_bytes.as_slice())
+                .map_err(|e| EscrowError::Database(e.to_string()))?;
         }
-        write_txn.commit().map_err(|e| EscrowError::Database(e.to_string()))?;
+        write_txn
+            .commit()
+            .map_err(|e| EscrowError::Database(e.to_string()))?;
         debug!(node = %node_id, "Node key registered");
         Ok(())
     }
@@ -253,20 +266,33 @@ impl EscrowLedger {
         tx_signed.signature = sig_bytes;
 
         // Persistir
-        let write_txn = self.db.begin_write().map_err(|e| EscrowError::Database(e.to_string()))?;
+        let write_txn = self
+            .db
+            .begin_write()
+            .map_err(|e| EscrowError::Database(e.to_string()))?;
         {
-            let mut table = write_txn.open_table(ESCROW_TABLE).map_err(|e| EscrowError::Database(e.to_string()))?;
+            let mut table = write_txn
+                .open_table(ESCROW_TABLE)
+                .map_err(|e| EscrowError::Database(e.to_string()))?;
             let key_bytes = tx_id.as_bytes();
             let mut val_bytes = Vec::new();
             bincode::serialize(&tx_signed).map_err(|e| EscrowError::Database(e.to_string()))?;
             bincode::serialize_into(&mut val_bytes, &tx_signed)
                 .map_err(|e| EscrowError::Database(e.to_string()))?;
-            table.insert(key_bytes, val_bytes.as_slice()).map_err(|e| EscrowError::Database(e.to_string()))?;
+            table
+                .insert(key_bytes, val_bytes.as_slice())
+                .map_err(|e| EscrowError::Database(e.to_string()))?;
         }
-        write_txn.commit().map_err(|e| EscrowError::Database(e.to_string()))?;
+        write_txn
+            .commit()
+            .map_err(|e| EscrowError::Database(e.to_string()))?;
 
         // Registrar evento de auditoría
-        self.log_audit_event(&tx_id, "ESCROW_CREATED", format!("Locked {} credits", amount))?;
+        self.log_audit_event(
+            &tx_id,
+            "ESCROW_CREATED",
+            format!("Locked {} credits", amount),
+        )?;
 
         info!(
             tx_id = %tx_id,
@@ -285,12 +311,20 @@ impl EscrowLedger {
         tx_id: &str,
         new_state: EscrowState,
     ) -> Result<EscrowTransaction, EscrowError> {
-        let read_txn = self.db.begin_read().map_err(|e| EscrowError::Database(e.to_string()))?;
-        let table = read_txn.open_table(ESCROW_TABLE).map_err(|e| EscrowError::Database(e.to_string()))?;
-        let tx_opt = table.get(tx_id.as_bytes()).map_err(|e| EscrowError::Database(e.to_string()))?;
+        let read_txn = self
+            .db
+            .begin_read()
+            .map_err(|e| EscrowError::Database(e.to_string()))?;
+        let table = read_txn
+            .open_table(ESCROW_TABLE)
+            .map_err(|e| EscrowError::Database(e.to_string()))?;
+        let tx_opt = table
+            .get(tx_id.as_bytes())
+            .map_err(|e| EscrowError::Database(e.to_string()))?;
 
         let mut tx: EscrowTransaction = match tx_opt {
-            Some(val) => bincode::deserialize(val.value()).map_err(|e| EscrowError::Database(e.to_string()))?,
+            Some(val) => bincode::deserialize(val.value())
+                .map_err(|e| EscrowError::Database(e.to_string()))?,
             None => return Err(EscrowError::TransactionNotFound(tx_id.into())),
         };
 
@@ -302,17 +336,30 @@ impl EscrowLedger {
         tx.updated_at = chrono::Utc::now().timestamp_millis() as u64;
 
         // Persistir
-        let write_txn = self.db.begin_write().map_err(|e| EscrowError::Database(e.to_string()))?;
+        let write_txn = self
+            .db
+            .begin_write()
+            .map_err(|e| EscrowError::Database(e.to_string()))?;
         {
-            let mut table = write_txn.open_table(ESCROW_TABLE).map_err(|e| EscrowError::Database(e.to_string()))?;
+            let mut table = write_txn
+                .open_table(ESCROW_TABLE)
+                .map_err(|e| EscrowError::Database(e.to_string()))?;
             let mut val_bytes = Vec::new();
             bincode::serialize_into(&mut val_bytes, &tx)
                 .map_err(|e| EscrowError::Database(e.to_string()))?;
-            table.insert(tx_id.as_bytes(), val_bytes.as_slice()).map_err(|e| EscrowError::Database(e.to_string()))?;
+            table
+                .insert(tx_id.as_bytes(), val_bytes.as_slice())
+                .map_err(|e| EscrowError::Database(e.to_string()))?;
         }
-        write_txn.commit().map_err(|e| EscrowError::Database(e.to_string()))?;
+        write_txn
+            .commit()
+            .map_err(|e| EscrowError::Database(e.to_string()))?;
 
-        self.log_audit_event(tx_id, "STATE_TRANSITION", format!("{} -> {}", old_state, new_state))?;
+        self.log_audit_event(
+            tx_id,
+            "STATE_TRANSITION",
+            format!("{} -> {}", old_state, new_state),
+        )?;
 
         debug!(tx_id = %tx_id, from = %old_state, to = %new_state, "State transitioned");
 
@@ -329,9 +376,12 @@ impl EscrowLedger {
         if !slo_metrics.meets_slo() {
             return Err(EscrowError::SLONotMet(format!(
                 "latency: {}>{}ms, availability: {}<{}, throughput: {}<{}",
-                slo_metrics.observed_latency_ms, slo_metrics.agreed_latency_ms,
-                slo_metrics.observed_availability, slo_metrics.agreed_availability,
-                slo_metrics.observed_throughput, slo_metrics.agreed_throughput
+                slo_metrics.observed_latency_ms,
+                slo_metrics.agreed_latency_ms,
+                slo_metrics.observed_availability,
+                slo_metrics.agreed_availability,
+                slo_metrics.observed_throughput,
+                slo_metrics.agreed_throughput
             )));
         }
 
@@ -347,15 +397,24 @@ impl EscrowLedger {
         tx.slo_metrics = Some(slo_metrics);
 
         // Persistir actualización
-        let write_txn = self.db.begin_write().map_err(|e| EscrowError::Database(e.to_string()))?;
+        let write_txn = self
+            .db
+            .begin_write()
+            .map_err(|e| EscrowError::Database(e.to_string()))?;
         {
-            let mut table = write_txn.open_table(ESCROW_TABLE).map_err(|e| EscrowError::Database(e.to_string()))?;
+            let mut table = write_txn
+                .open_table(ESCROW_TABLE)
+                .map_err(|e| EscrowError::Database(e.to_string()))?;
             let mut val_bytes = Vec::new();
             bincode::serialize_into(&mut val_bytes, &tx)
                 .map_err(|e| EscrowError::Database(e.to_string()))?;
-            table.insert(tx_id.as_bytes(), val_bytes.as_slice()).map_err(|e| EscrowError::Database(e.to_string()))?;
+            table
+                .insert(tx_id.as_bytes(), val_bytes.as_slice())
+                .map_err(|e| EscrowError::Database(e.to_string()))?;
         }
-        write_txn.commit().map_err(|e| EscrowError::Database(e.to_string()))?;
+        write_txn
+            .commit()
+            .map_err(|e| EscrowError::Database(e.to_string()))?;
 
         self.log_audit_event(tx_id, "RELEASED", format!("ZKP={}, SLO=OK", zkp_hash))?;
 
@@ -383,26 +442,46 @@ impl EscrowLedger {
 
     /// Obtiene una transacción por ID.
     pub fn get_transaction(&self, tx_id: &str) -> Result<EscrowTransaction, EscrowError> {
-        let read_txn = self.db.begin_read().map_err(|e| EscrowError::Database(e.to_string()))?;
-        let table = read_txn.open_table(ESCROW_TABLE).map_err(|e| EscrowError::Database(e.to_string()))?;
-        let tx_opt = table.get(tx_id.as_bytes()).map_err(|e| EscrowError::Database(e.to_string()))?;
+        let read_txn = self
+            .db
+            .begin_read()
+            .map_err(|e| EscrowError::Database(e.to_string()))?;
+        let table = read_txn
+            .open_table(ESCROW_TABLE)
+            .map_err(|e| EscrowError::Database(e.to_string()))?;
+        let tx_opt = table
+            .get(tx_id.as_bytes())
+            .map_err(|e| EscrowError::Database(e.to_string()))?;
 
         match tx_opt {
-            Some(val) => Ok(bincode::deserialize(val.value()).map_err(|e| EscrowError::Database(e.to_string()))?),
+            Some(val) => Ok(bincode::deserialize(val.value())
+                .map_err(|e| EscrowError::Database(e.to_string()))?),
             None => Err(EscrowError::TransactionNotFound(tx_id.into())),
         }
     }
 
     /// Obtiene todas las transacciones de un nodo.
-    pub fn get_transactions_by_node(&self, node_id: &str) -> Result<Vec<EscrowTransaction>, EscrowError> {
-        let read_txn = self.db.begin_read().map_err(|e| EscrowError::Database(e.to_string()))?;
-        let table = read_txn.open_table(ESCROW_TABLE).map_err(|e| EscrowError::Database(e.to_string()))?;
+    pub fn get_transactions_by_node(
+        &self,
+        node_id: &str,
+    ) -> Result<Vec<EscrowTransaction>, EscrowError> {
+        let read_txn = self
+            .db
+            .begin_read()
+            .map_err(|e| EscrowError::Database(e.to_string()))?;
+        let table = read_txn
+            .open_table(ESCROW_TABLE)
+            .map_err(|e| EscrowError::Database(e.to_string()))?;
 
         let mut results = Vec::new();
-        for entry in table.iter().map_err(|e| EscrowError::Database(e.to_string()))? {
+        for entry in table
+            .iter()
+            .map_err(|e| EscrowError::Database(e.to_string()))?
+        {
             let entry = entry.map_err(|e| EscrowError::Database(e.to_string()))?;
             // entry.0 = key (tx_id), entry.1 = value (serialized EscrowTransaction)
-            let tx: EscrowTransaction = bincode::deserialize(entry.1.value()).map_err(|e| EscrowError::Database(e.to_string()))?;
+            let tx: EscrowTransaction = bincode::deserialize(entry.1.value())
+                .map_err(|e| EscrowError::Database(e.to_string()))?;
             if tx.seller_id == node_id || tx.buyer_id == node_id {
                 results.push(tx);
             }
@@ -416,8 +495,9 @@ impl EscrowLedger {
         let mut tx_clone = tx.clone();
         tx_clone.signature = Vec::new();
 
-        let tx_bytes = bincode::serialize(&tx_clone).map_err(|e| EscrowError::Database(e.to_string()))?;
-        
+        let tx_bytes =
+            bincode::serialize(&tx_clone).map_err(|e| EscrowError::Database(e.to_string()))?;
+
         let mut sig_array = [0u8; 64];
         if tx.signature.len() < 64 {
             return Ok(false);
@@ -425,7 +505,11 @@ impl EscrowLedger {
         sig_array.copy_from_slice(&tx.signature[..64]);
         let signature = Signature::from_bytes(&sig_array);
 
-        Ok(self.signing_key.verifying_key().verify(&tx_bytes, &signature).is_ok())
+        Ok(self
+            .signing_key
+            .verifying_key()
+            .verify(&tx_bytes, &signature)
+            .is_ok())
     }
 
     /// Firma datos internos.
@@ -437,8 +521,14 @@ impl EscrowLedger {
     /// Valida transiciones de estado permitidas.
     fn validate_transition(&self, from: &EscrowState, to: &EscrowState) -> Result<(), EscrowError> {
         let valid = match from {
-            EscrowState::Locked => matches!(to, EscrowState::Delivered | EscrowState::Refunded | EscrowState::Disputed),
-            EscrowState::Delivered => matches!(to, EscrowState::ZKPVerified | EscrowState::Refunded | EscrowState::Disputed),
+            EscrowState::Locked => matches!(
+                to,
+                EscrowState::Delivered | EscrowState::Refunded | EscrowState::Disputed
+            ),
+            EscrowState::Delivered => matches!(
+                to,
+                EscrowState::ZKPVerified | EscrowState::Refunded | EscrowState::Disputed
+            ),
             EscrowState::ZKPVerified => matches!(to, EscrowState::Released | EscrowState::Disputed),
             EscrowState::Released | EscrowState::Refunded => false,
             EscrowState::Disputed => matches!(to, EscrowState::Released | EscrowState::Refunded),
@@ -455,7 +545,12 @@ impl EscrowLedger {
     }
 
     /// Registra un evento de auditoría.
-    fn log_audit_event(&self, tx_id: &str, event_type: &str, details: String) -> Result<(), EscrowError> {
+    fn log_audit_event(
+        &self,
+        tx_id: &str,
+        event_type: &str,
+        details: String,
+    ) -> Result<(), EscrowError> {
         let event_id = format!("evt_{}_{}", tx_id, chrono::Utc::now().timestamp_millis());
         let event = AuditEvent {
             event_id: event_id.clone(),
@@ -466,15 +561,24 @@ impl EscrowLedger {
             signature: self.sign(event_id.as_bytes()),
         };
 
-        let write_txn = self.db.begin_write().map_err(|e| EscrowError::Database(e.to_string()))?;
+        let write_txn = self
+            .db
+            .begin_write()
+            .map_err(|e| EscrowError::Database(e.to_string()))?;
         {
-            let mut table = write_txn.open_table(AUDIT_TABLE).map_err(|e| EscrowError::Database(e.to_string()))?;
+            let mut table = write_txn
+                .open_table(AUDIT_TABLE)
+                .map_err(|e| EscrowError::Database(e.to_string()))?;
             let mut val_bytes = Vec::new();
             bincode::serialize_into(&mut val_bytes, &event)
                 .map_err(|e| EscrowError::Database(e.to_string()))?;
-            table.insert(event_id.as_bytes(), val_bytes.as_slice()).map_err(|e| EscrowError::Database(e.to_string()))?;
+            table
+                .insert(event_id.as_bytes(), val_bytes.as_slice())
+                .map_err(|e| EscrowError::Database(e.to_string()))?;
         }
-        write_txn.commit().map_err(|e| EscrowError::Database(e.to_string()))?;
+        write_txn
+            .commit()
+            .map_err(|e| EscrowError::Database(e.to_string()))?;
 
         Ok(())
     }
@@ -487,13 +591,15 @@ mod tests {
     #[test]
     fn test_create_and_get_escrow() {
         let (ledger, _, _path) = EscrowLedger::new_test().unwrap();
-        let tx = ledger.create_escrow(
-            "tx1".into(),
-            "seller".into(),
-            "buyer".into(),
-            100.0,
-            "settlement_hash_1".into(),
-        ).unwrap();
+        let tx = ledger
+            .create_escrow(
+                "tx1".into(),
+                "seller".into(),
+                "buyer".into(),
+                100.0,
+                "settlement_hash_1".into(),
+            )
+            .unwrap();
 
         assert_eq!(tx.tx_id, "tx1");
         assert_eq!(tx.state, EscrowState::Locked);
@@ -507,31 +613,47 @@ mod tests {
     #[test]
     fn test_state_transitions() {
         let (ledger, _, _path) = EscrowLedger::new_test().unwrap();
-        ledger.create_escrow(
-            "tx1".into(), "seller".into(), "buyer".into(),
-            100.0, "settlement_hash_1".into(),
-        ).unwrap();
+        ledger
+            .create_escrow(
+                "tx1".into(),
+                "seller".into(),
+                "buyer".into(),
+                100.0,
+                "settlement_hash_1".into(),
+            )
+            .unwrap();
 
         // Locked -> Delivered
-        let tx = ledger.transition_state("tx1", EscrowState::Delivered).unwrap();
+        let tx = ledger
+            .transition_state("tx1", EscrowState::Delivered)
+            .unwrap();
         assert_eq!(tx.state, EscrowState::Delivered);
 
         // Delivered -> ZKPVerified
-        let tx = ledger.transition_state("tx1", EscrowState::ZKPVerified).unwrap();
+        let tx = ledger
+            .transition_state("tx1", EscrowState::ZKPVerified)
+            .unwrap();
         assert_eq!(tx.state, EscrowState::ZKPVerified);
 
         // ZKPVerified -> Released
-        let tx = ledger.transition_state("tx1", EscrowState::Released).unwrap();
+        let tx = ledger
+            .transition_state("tx1", EscrowState::Released)
+            .unwrap();
         assert_eq!(tx.state, EscrowState::Released);
     }
 
     #[test]
     fn test_invalid_state_transition() {
         let (ledger, _, _path) = EscrowLedger::new_test().unwrap();
-        ledger.create_escrow(
-            "tx1".into(), "seller".into(), "buyer".into(),
-            100.0, "settlement_hash_1".into(),
-        ).unwrap();
+        ledger
+            .create_escrow(
+                "tx1".into(),
+                "seller".into(),
+                "buyer".into(),
+                100.0,
+                "settlement_hash_1".into(),
+            )
+            .unwrap();
 
         // Locked -> Released is invalid
         let result = ledger.transition_state("tx1", EscrowState::Released);
@@ -541,13 +663,20 @@ mod tests {
     #[test]
     fn test_release_on_zkp_success() {
         let (ledger, _, _path) = EscrowLedger::new_test().unwrap();
-        ledger.create_escrow(
-            "tx1".into(), "seller".into(), "buyer".into(),
-            100.0, "settlement_hash_1".into(),
-        ).unwrap();
+        ledger
+            .create_escrow(
+                "tx1".into(),
+                "seller".into(),
+                "buyer".into(),
+                100.0,
+                "settlement_hash_1".into(),
+            )
+            .unwrap();
 
         // Transición: Locked → Delivered → ZKPVerified → Released
-        ledger.transition_state("tx1", EscrowState::Delivered).unwrap();
+        ledger
+            .transition_state("tx1", EscrowState::Delivered)
+            .unwrap();
 
         let slo = SLOMetrics {
             observed_latency_ms: 50,
@@ -558,7 +687,9 @@ mod tests {
             agreed_throughput: 1000,
         };
 
-        let tx = ledger.release_on_zkp("tx1", "zkp_hash_abc".into(), slo).unwrap();
+        let tx = ledger
+            .release_on_zkp("tx1", "zkp_hash_abc".into(), slo)
+            .unwrap();
         assert_eq!(tx.state, EscrowState::Released);
         assert_eq!(tx.zkp_hash, Some("zkp_hash_abc".into()));
     }
@@ -566,13 +697,18 @@ mod tests {
     #[test]
     fn test_release_on_zkp_slo_failure() {
         let (ledger, _, _path) = EscrowLedger::new_test().unwrap();
-        ledger.create_escrow(
-            "tx1".into(), "seller".into(), "buyer".into(),
-            100.0, "settlement_hash_1".into(),
-        ).unwrap();
+        ledger
+            .create_escrow(
+                "tx1".into(),
+                "seller".into(),
+                "buyer".into(),
+                100.0,
+                "settlement_hash_1".into(),
+            )
+            .unwrap();
 
         let slo = SLOMetrics {
-            observed_latency_ms: 200,  // exceeds agreed 100
+            observed_latency_ms: 200, // exceeds agreed 100
             agreed_latency_ms: 100,
             observed_availability: 0.99,
             agreed_availability: 0.95,
@@ -587,10 +723,15 @@ mod tests {
     #[test]
     fn test_refund() {
         let (ledger, _, _path) = EscrowLedger::new_test().unwrap();
-        ledger.create_escrow(
-            "tx1".into(), "seller".into(), "buyer".into(),
-            100.0, "settlement_hash_1".into(),
-        ).unwrap();
+        ledger
+            .create_escrow(
+                "tx1".into(),
+                "seller".into(),
+                "buyer".into(),
+                100.0,
+                "settlement_hash_1".into(),
+            )
+            .unwrap();
 
         let tx = ledger.refund("tx1", "Seller did not deliver").unwrap();
         assert_eq!(tx.state, EscrowState::Refunded);
@@ -599,10 +740,15 @@ mod tests {
     #[test]
     fn test_dispute() {
         let (ledger, _, _path) = EscrowLedger::new_test().unwrap();
-        ledger.create_escrow(
-            "tx1".into(), "seller".into(), "buyer".into(),
-            100.0, "settlement_hash_1".into(),
-        ).unwrap();
+        ledger
+            .create_escrow(
+                "tx1".into(),
+                "seller".into(),
+                "buyer".into(),
+                100.0,
+                "settlement_hash_1".into(),
+            )
+            .unwrap();
 
         let tx = ledger.dispute("tx1", "Quality issue").unwrap();
         assert_eq!(tx.state, EscrowState::Disputed);
@@ -618,14 +764,24 @@ mod tests {
     #[test]
     fn test_get_transactions_by_node() {
         let (ledger, _, _path) = EscrowLedger::new_test().unwrap();
-        ledger.create_escrow(
-            "tx1".into(), "seller".into(), "buyer1".into(),
-            100.0, "settlement_hash_1".into(),
-        ).unwrap();
-        ledger.create_escrow(
-            "tx2".into(), "seller".into(), "buyer2".into(),
-            200.0, "settlement_hash_2".into(),
-        ).unwrap();
+        ledger
+            .create_escrow(
+                "tx1".into(),
+                "seller".into(),
+                "buyer1".into(),
+                100.0,
+                "settlement_hash_1".into(),
+            )
+            .unwrap();
+        ledger
+            .create_escrow(
+                "tx2".into(),
+                "seller".into(),
+                "buyer2".into(),
+                200.0,
+                "settlement_hash_2".into(),
+            )
+            .unwrap();
 
         let seller_txs = ledger.get_transactions_by_node("seller").unwrap();
         assert_eq!(seller_txs.len(), 2);

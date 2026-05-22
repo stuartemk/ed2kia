@@ -103,11 +103,7 @@ pub struct SeedNode {
 }
 
 impl SeedNode {
-    pub fn new(
-        multiaddress: String,
-        http_addr: Option<SocketAddr>,
-        source: SeedSource,
-    ) -> Self {
+    pub fn new(multiaddress: String, http_addr: Option<SocketAddr>, source: SeedSource) -> Self {
         let health_url = http_addr
             .map(|addr| format!("http://{}/api/health", addr))
             .unwrap_or_else(|| "http://localhost/api/health".to_string());
@@ -178,10 +174,7 @@ impl SeedNode {
 
     /// Verificar si el seed es usable
     pub fn is_usable(&self) -> bool {
-        matches!(
-            self.health,
-            SeedHealth::Healthy | SeedHealth::Degraded
-        )
+        matches!(self.health, SeedHealth::Healthy | SeedHealth::Degraded)
     }
 }
 
@@ -286,7 +279,11 @@ impl SeedRegistry {
         self.seeds
             .values()
             .filter(|s| s.is_usable())
-            .max_by(|a, b| a.weight.partial_cmp(&b.weight).unwrap_or(std::cmp::Ordering::Equal))
+            .max_by(|a, b| {
+                a.weight
+                    .partial_cmp(&b.weight)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
     }
 
     /// Seleccionar seed aleatorio ponderado
@@ -322,7 +319,9 @@ impl SeedRegistry {
         let mut checked = 0;
 
         // Collect health check results first to avoid immutable borrow during mutable iteration
-        let health_results: Vec<(String, bool)> = self.seeds.values()
+        let health_results: Vec<(String, bool)> = self
+            .seeds
+            .values()
             .map(|seed| (seed.multiaddress.clone(), self.simulate_health_check(seed)))
             .collect();
 
@@ -383,10 +382,26 @@ impl SeedRegistry {
     /// Estadísticas del registry
     pub fn stats(&self) -> SeedRegistryStats {
         let total = self.seeds.len();
-        let healthy = self.seeds.values().filter(|s| s.health == SeedHealth::Healthy).count();
-        let degraded = self.seeds.values().filter(|s| s.health == SeedHealth::Degraded).count();
-        let unhealthy = self.seeds.values().filter(|s| s.health == SeedHealth::Unhealthy).count();
-        let unknown = self.seeds.values().filter(|s| s.health == SeedHealth::Unknown).count();
+        let healthy = self
+            .seeds
+            .values()
+            .filter(|s| s.health == SeedHealth::Healthy)
+            .count();
+        let degraded = self
+            .seeds
+            .values()
+            .filter(|s| s.health == SeedHealth::Degraded)
+            .count();
+        let unhealthy = self
+            .seeds
+            .values()
+            .filter(|s| s.health == SeedHealth::Unhealthy)
+            .count();
+        let unknown = self
+            .seeds
+            .values()
+            .filter(|s| s.health == SeedHealth::Unknown)
+            .count();
 
         let avg_latency = if healthy > 0 {
             self.get_healthy_seeds()

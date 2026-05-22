@@ -43,10 +43,12 @@ impl CircuitProfile {
     /// Update profile with new proof data.
     pub fn update(&mut self, gen_time_ms: f64, verify_time_ms: f64, success: bool) {
         self.total_proofs += 1;
-        self.avg_gen_time_ms =
-            (self.avg_gen_time_ms * (self.total_proofs - 1) as f64 + gen_time_ms) / self.total_proofs as f64;
-        self.avg_verify_time_ms =
-            (self.avg_verify_time_ms * (self.total_proofs - 1) as f64 + verify_time_ms) / self.total_proofs as f64;
+        self.avg_gen_time_ms = (self.avg_gen_time_ms * (self.total_proofs - 1) as f64
+            + gen_time_ms)
+            / self.total_proofs as f64;
+        self.avg_verify_time_ms = (self.avg_verify_time_ms * (self.total_proofs - 1) as f64
+            + verify_time_ms)
+            / self.total_proofs as f64;
         if !success {
             self.success_rate =
                 (self.success_rate * (self.total_proofs - 1) as f64) / self.total_proofs as f64;

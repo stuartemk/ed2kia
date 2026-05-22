@@ -116,13 +116,7 @@ impl SteeringSignal {
     ) -> Self {
         let zkp_proof = compute_zkp_proof(&signal_id, &layer_id, adjustment);
         let integrity_hash = compute_integrity_hash(
-            &signal_id,
-            &source_id,
-            &layer_id,
-            adjustment,
-            confidence,
-            bias_score,
-            sequence,
+            &signal_id, &source_id, &layer_id, adjustment, confidence, bias_score, sequence,
         );
         Self {
             signal_id,
@@ -199,7 +193,14 @@ impl VerificationResult {
     }
 
     /// Creates a failed verification result.
-    pub fn failed(signal_id: String, status: VerificationStatus, details: String, zkp_valid: bool, integrity_valid: bool, fresh: bool) -> Self {
+    pub fn failed(
+        signal_id: String,
+        status: VerificationStatus,
+        details: String,
+        zkp_valid: bool,
+        integrity_valid: bool,
+        fresh: bool,
+    ) -> Self {
         Self {
             signal_id,
             status,
@@ -328,7 +329,10 @@ impl SteeringVerifier {
     }
 
     /// Verifies a steering signal.
-    pub fn verify(&mut self, signal: &SteeringSignal) -> Result<VerificationResult, SteeringVerifierError> {
+    pub fn verify(
+        &mut self,
+        signal: &SteeringSignal,
+    ) -> Result<VerificationResult, SteeringVerifierError> {
         let start = current_timestamp_ms();
 
         // Check for duplicate
@@ -339,10 +343,14 @@ impl SteeringVerifier {
                 signal.signal_id.clone(),
                 VerificationStatus::Duplicate,
                 "Duplicate signal detected".to_string(),
-                true, true, true,
+                true,
+                true,
+                true,
             );
             self.record_result(result.clone());
-            return Err(SteeringVerifierError::DuplicateSignal(signal.signal_id.clone()));
+            return Err(SteeringVerifierError::DuplicateSignal(
+                signal.signal_id.clone(),
+            ));
         }
 
         // Check rate limit
@@ -356,7 +364,9 @@ impl SteeringVerifier {
                 signal.signal_id.clone(),
                 VerificationStatus::Expired,
                 "Signal age exceeds maximum".to_string(),
-                true, true, false,
+                true,
+                true,
+                false,
             );
             self.record_result(result.clone());
             return Err(SteeringVerifierError::SignalExpired {
@@ -374,14 +384,20 @@ impl SteeringVerifier {
                 signal.signal_id.clone(),
                 VerificationStatus::Unauthorized,
                 format!("Layer {} not authorized", signal.layer_id),
-                true, true, true,
+                true,
+                true,
+                true,
             );
             self.record_result(result.clone());
-            return Err(SteeringVerifierError::LayerNotAuthorized(signal.layer_id.clone()));
+            return Err(SteeringVerifierError::LayerNotAuthorized(
+                signal.layer_id.clone(),
+            ));
         }
 
         // Check adjustment bounds
-        if signal.adjustment < self.config.min_adjustment || signal.adjustment > self.config.max_adjustment {
+        if signal.adjustment < self.config.min_adjustment
+            || signal.adjustment > self.config.max_adjustment
+        {
             return Err(SteeringVerifierError::AdjustmentOutOfBounds {
                 adjustment: signal.adjustment,
                 min: self.config.min_adjustment,
@@ -406,10 +422,14 @@ impl SteeringVerifier {
                 signal.signal_id.clone(),
                 VerificationStatus::ZKPFailed,
                 "ZKP proof verification failed".to_string(),
-                false, true, true,
+                false,
+                true,
+                true,
             );
             self.record_result(result.clone());
-            return Err(SteeringVerifierError::ZKPProofFailed(signal.signal_id.clone()));
+            return Err(SteeringVerifierError::ZKPProofFailed(
+                signal.signal_id.clone(),
+            ));
         }
 
         // Verify integrity
@@ -421,10 +441,14 @@ impl SteeringVerifier {
                 signal.signal_id.clone(),
                 VerificationStatus::IntegrityFailed,
                 "Integrity hash mismatch - signal may have been tampered".to_string(),
-                true, false, true,
+                true,
+                false,
+                true,
             );
             self.record_result(result.clone());
-            return Err(SteeringVerifierError::TamperingDetected(signal.signal_id.clone()));
+            return Err(SteeringVerifierError::TamperingDetected(
+                signal.signal_id.clone(),
+            ));
         }
 
         // All checks passed
@@ -433,12 +457,16 @@ impl SteeringVerifier {
         self.update_avg_verification_time(elapsed);
 
         // Record verified signal
-        self.verified_signals.insert(signal.signal_id.clone(), signal.issued_at_ms);
+        self.verified_signals
+            .insert(signal.signal_id.clone(), signal.issued_at_ms);
 
         let result = VerificationResult::verified(signal.signal_id.clone());
         self.record_result(result.clone());
 
-        info!("SteeringVerifier: signal {} verified successfully", signal.signal_id);
+        info!(
+            "SteeringVerifier: signal {} verified successfully",
+            signal.signal_id
+        );
         Ok(result)
     }
 
@@ -485,20 +513,19 @@ impl SteeringVerifier {
         let initial_len = self.history.len();
 
         // Clean history
-        self.history.retain(|r| {
-            now.saturating_sub(r.verified_at_ms) < max_age_ms
-        });
+        self.history
+            .retain(|r| now.saturating_sub(r.verified_at_ms) < max_age_ms);
 
         // Clean verified signals registry
-        self.verified_signals.retain(|_, &mut timestamp| {
-            now.saturating_sub(timestamp) < max_age_ms
-        });
+        self.verified_signals
+            .retain(|_, &mut timestamp| now.saturating_sub(timestamp) < max_age_ms);
 
         // Clean rate limit registry
         for timestamps in self.rate_limit_registry.values_mut() {
             timestamps.retain(|&ts| now.saturating_sub(ts) < max_age_ms);
         }
-        self.rate_limit_registry.retain(|_, timestamps| !timestamps.is_empty());
+        self.rate_limit_registry
+            .retain(|_, timestamps| !timestamps.is_empty());
 
         initial_len - self.history.len()
     }
@@ -513,13 +540,18 @@ impl SteeringVerifier {
         if self.config.authorized_layers.is_empty() {
             return true; // Empty list means all layers authorized
         }
-        self.config.authorized_layers.contains(&layer_id.to_string())
+        self.config
+            .authorized_layers
+            .contains(&layer_id.to_string())
     }
 
     /// Checks rate limit for a source.
     fn check_rate_limit(&mut self, source_id: &str) -> Result<(), SteeringVerifierError> {
         let now = current_timestamp_ms();
-        let timestamps = self.rate_limit_registry.entry(source_id.to_string()).or_default();
+        let timestamps = self
+            .rate_limit_registry
+            .entry(source_id.to_string())
+            .or_default();
 
         // Remove old timestamps
         timestamps.retain(|&ts| now.saturating_sub(ts) <= self.config.rate_limit_window_ms);
@@ -774,13 +806,8 @@ mod tests {
             );
             assert!(verifier.verify(&signal).is_ok());
         }
-        let signal = verifier.create_signal(
-            "node-1".to_string(),
-            "layer_0".to_string(),
-            0.6,
-            0.95,
-            0.1,
-        );
+        let signal =
+            verifier.create_signal("node-1".to_string(), "layer_0".to_string(), 0.6, 0.95, 0.1);
         let result = verifier.verify(&signal);
         assert!(result.is_err());
         match result.unwrap_err() {
@@ -810,7 +837,8 @@ mod tests {
     #[test]
     fn test_create_signal() {
         let mut verifier = SteeringVerifier::new();
-        let signal = verifier.create_signal("node-1".to_string(), "layer_0".to_string(), 0.3, 0.95, 0.1);
+        let signal =
+            verifier.create_signal("node-1".to_string(), "layer_0".to_string(), 0.3, 0.95, 0.1);
         assert!(signal.verify_zkp());
         assert!(signal.verify_integrity());
         assert_eq!(signal.source_id, "node-1");
@@ -905,7 +933,9 @@ mod tests {
             "sig-1".to_string(),
             VerificationStatus::ZKPFailed,
             "test failure".to_string(),
-            false, true, true,
+            false,
+            true,
+            true,
         );
         assert_eq!(result.status, VerificationStatus::ZKPFailed);
         assert!(!result.zkp_valid);

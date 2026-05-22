@@ -259,33 +259,25 @@ impl PredictiveBalancer {
         throughput: f64,
         queue_size: f64,
     ) -> Result<(), BalancerError> {
-        let history = self.histories.get_mut(node_id).ok_or_else(|| {
-            BalancerError::NodeNotRegistered(node_id.to_string())
-        })?;
+        let history = self
+            .histories
+            .get_mut(node_id)
+            .ok_or_else(|| BalancerError::NodeNotRegistered(node_id.to_string()))?;
         history.record(latency, throughput, queue_size);
         Ok(())
     }
 
     // ─── Prediction ───────────────────────────────────────────────────────────
 
-    pub fn predict_latency(
-        &mut self,
-        node_id: &str,
-    ) -> Result<PredictionResult, BalancerError> {
+    pub fn predict_latency(&mut self, node_id: &str) -> Result<PredictionResult, BalancerError> {
         self.predict_metric(node_id, "latency", |h: &NodeLoadHistory| &h.latencies)
     }
 
-    pub fn predict_throughput(
-        &mut self,
-        node_id: &str,
-    ) -> Result<PredictionResult, BalancerError> {
+    pub fn predict_throughput(&mut self, node_id: &str) -> Result<PredictionResult, BalancerError> {
         self.predict_metric(node_id, "throughput", |h: &NodeLoadHistory| &h.throughputs)
     }
 
-    pub fn predict_queue(
-        &mut self,
-        node_id: &str,
-    ) -> Result<PredictionResult, BalancerError> {
+    pub fn predict_queue(&mut self, node_id: &str) -> Result<PredictionResult, BalancerError> {
         self.predict_metric(node_id, "queue_size", |h: &NodeLoadHistory| &h.queue_sizes)
     }
 
@@ -298,9 +290,10 @@ impl PredictiveBalancer {
     where
         F: Fn(&NodeLoadHistory) -> &VecDeque<f64>,
     {
-        let history = self.histories.get(node_id).ok_or_else(|| {
-            BalancerError::NodeNotRegistered(node_id.to_string())
-        })?;
+        let history = self
+            .histories
+            .get(node_id)
+            .ok_or_else(|| BalancerError::NodeNotRegistered(node_id.to_string()))?;
 
         let data = extractor(history);
         if data.len() < self.config.min_data_points {
@@ -417,7 +410,10 @@ impl PredictiveBalancer {
         Ok(latency_score * 0.6 + queue_score * 0.4)
     }
 
-    pub fn get_best_node(&mut self, candidates: &[String]) -> Result<Option<String>, BalancerError> {
+    pub fn get_best_node(
+        &mut self,
+        candidates: &[String],
+    ) -> Result<Option<String>, BalancerError> {
         let mut best_id: Option<String> = None;
         let mut best_score = f32::MIN;
 
@@ -470,7 +466,10 @@ impl Default for PredictiveBalancer {
 
 #[cfg(feature = "v1.1-sprint5")]
 fn current_timestamp_ms() -> u64 {
-    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis() as u64
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as u64
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
@@ -597,9 +596,7 @@ mod tests {
         let mut balancer = PredictiveBalancer::new();
         balancer.register_node("node-1".into());
         for _i in 0..20 {
-            balancer
-                .record_load("node-1", 50.0, 1000.0, 3.0)
-                .unwrap();
+            balancer.record_load("node-1", 50.0, 1000.0, 3.0).unwrap();
         }
         let score = balancer.compute_node_score("node-1").unwrap();
         assert!(score > 0.0 && score <= 1.0);
@@ -628,8 +625,7 @@ mod tests {
     #[test]
     fn test_linear_regression_perfect_line() {
         let data: Vec<f64> = (0..20).map(|i| i as f64 * 2.0 + 10.0).collect();
-        let (slope, intercept, r_squared) =
-            PredictiveBalancer::linear_regression(&data).unwrap();
+        let (slope, intercept, r_squared) = PredictiveBalancer::linear_regression(&data).unwrap();
         assert!((slope - 2.0).abs() < 0.01);
         assert!((intercept - 10.0).abs() < 0.01);
         assert!((r_squared - 1.0).abs() < 0.01);
@@ -807,7 +803,12 @@ mod tests {
         balancer.register_node("node-1".into());
         for i in 0..20 {
             balancer
-                .record_load("node-1", 50.0 + i as f64 * 2.0, 1000.0 - i as f64 * 5.0, 5.0)
+                .record_load(
+                    "node-1",
+                    50.0 + i as f64 * 2.0,
+                    1000.0 - i as f64 * 5.0,
+                    5.0,
+                )
                 .unwrap();
         }
         balancer.predict_latency("node-1").unwrap();

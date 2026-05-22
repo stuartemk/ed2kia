@@ -374,6 +374,9 @@ mod stub {
     #[test]
     fn formal_validation_disabled() {
         // Tests are feature-gated behind v2.1-formal-validation
-        assert!(true, "Formal validation tests disabled without feature flag");
+        assert!(
+            true,
+            "Formal validation tests disabled without feature flag"
+        );
     }
 }

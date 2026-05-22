@@ -36,10 +36,10 @@ pub enum MeritError {
 /// Merit tier based on audit count. Cero valor financiero.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub enum MeritTier {
-    Novice,     // 0-9 audits
+    Novice,      // 0-9 audits
     Contributor, // 10-99 audits
-    Guardian,   // 100-999 audits
-    Steward,    // 1000+ audits
+    Guardian,    // 100-999 audits
+    Steward,     // 1000+ audits
 }
 
 impl MeritTier {
@@ -189,11 +189,15 @@ impl MeritEngine {
     }
 
     /// Issue a signed merit proof for a node.
-    pub fn claim_proof(&mut self, request: MeritClaimRequest) -> Result<MeritClaimResponse, MeritError> {
+    pub fn claim_proof(
+        &mut self,
+        request: MeritClaimRequest,
+    ) -> Result<MeritClaimResponse, MeritError> {
         // Check node exists in ledger
-        let entry = self.ledger.get(&request.node_id).ok_or_else(|| {
-            MeritError::NodeNotFound(request.node_id.clone())
-        })?;
+        let entry = self
+            .ledger
+            .get(&request.node_id)
+            .ok_or_else(|| MeritError::NodeNotFound(request.node_id.clone()))?;
 
         // Verify audit count matches
         if request.audit_count > entry.audit_count {
@@ -236,7 +240,8 @@ impl MeritEngine {
 
         Ok(MeritClaimResponse {
             proof,
-            message: "Prueba de mérito firmada criptográficamente. Cero valor financiero.".to_string(),
+            message: "Prueba de mérito firmada criptográficamente. Cero valor financiero."
+                .to_string(),
         })
     }
 
@@ -245,8 +250,11 @@ impl MeritEngine {
         // Verify signature
         use ed25519_dalek::Verifier;
         self.verifying_key
-            .verify(proof.hash.as_bytes(), &ed25519_dalek::Signature::from_slice(&proof.signature)
-                .map_err(|e| MeritError::InvalidSignature(format!("{}", e)))?)
+            .verify(
+                proof.hash.as_bytes(),
+                &ed25519_dalek::Signature::from_slice(&proof.signature)
+                    .map_err(|e| MeritError::InvalidSignature(format!("{}", e)))?,
+            )
             .map_err(|_| MeritError::InvalidSignature("Signature verification failed".into()))?;
 
         // Verify freshness
@@ -352,10 +360,12 @@ mod tests {
         let mut engine = MeritEngine::new();
         engine.record_audit("node-1".to_string(), 50);
 
-        let response = engine.claim_proof(MeritClaimRequest {
-            node_id: "node-1".to_string(),
-            audit_count: 50,
-        }).unwrap();
+        let response = engine
+            .claim_proof(MeritClaimRequest {
+                node_id: "node-1".to_string(),
+                audit_count: 50,
+            })
+            .unwrap();
 
         assert_eq!(response.proof.node_id, "node-1");
         assert_eq!(response.proof.audit_count, 50);
@@ -391,10 +401,12 @@ mod tests {
         let mut engine = MeritEngine::new();
         engine.record_audit("node-1".to_string(), 25);
 
-        let response = engine.claim_proof(MeritClaimRequest {
-            node_id: "node-1".to_string(),
-            audit_count: 25,
-        }).unwrap();
+        let response = engine
+            .claim_proof(MeritClaimRequest {
+                node_id: "node-1".to_string(),
+                audit_count: 25,
+            })
+            .unwrap();
 
         assert!(engine.verify_proof(&response.proof).unwrap());
     }
@@ -404,10 +416,12 @@ mod tests {
         let mut engine = MeritEngine::new();
         engine.record_audit("node-1".to_string(), 25);
 
-        let response = engine.claim_proof(MeritClaimRequest {
-            node_id: "node-1".to_string(),
-            audit_count: 25,
-        }).unwrap();
+        let response = engine
+            .claim_proof(MeritClaimRequest {
+                node_id: "node-1".to_string(),
+                audit_count: 25,
+            })
+            .unwrap();
 
         assert!(engine.verify_proof(&response.proof).unwrap());
     }

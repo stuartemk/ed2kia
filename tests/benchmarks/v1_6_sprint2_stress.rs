@@ -25,13 +25,13 @@
 mod stress {
     use std::time::Instant;
 
-    use ed2kia::federation::scaling_v7::{ScalingV7, ScalingV7Config};
-    use ed2kia::zkp::async_zkp_v13::{AsyncZKPV13, ZKPV13Config, ProofPriority};
     use ed2kia::bridge::federation_zkp_bridge_v6::{
         FederationZKPBridgeV6, FederationZKPBridgeV6Config,
     };
+    use ed2kia::federation::scaling_v7::{ScalingV7, ScalingV7Config};
     use ed2kia::ui::dashboard_v7::{DashboardV7, MetricV7, MetricValueV7};
     use ed2kia::web::ws_federation_stream_v2::WsFederationStreamV2;
+    use ed2kia::zkp::async_zkp_v13::{AsyncZKPV13, ProofPriority, ZKPV13Config};
 
     // === ZKP v13 Stress Tests ===
 
@@ -299,11 +299,7 @@ mod stress {
         });
         for i in 0..100 {
             scaling
-                .register_node(
-                    format!("node_{}", i),
-                    format!("model_{}", i % 5),
-                    100.0,
-                )
+                .register_node(format!("node_{}", i), format!("model_{}", i % 5), 100.0)
                 .ok();
         }
         for i in 0..10 {
@@ -314,8 +310,7 @@ mod stress {
 
         // 2. ZKP v13 — Submit and verify 100 proofs
         let mut zkp = AsyncZKPV13::default();
-        zkp.register_federation("fed1".to_string(), 0.95)
-            .unwrap();
+        zkp.register_federation("fed1".to_string(), 0.95).unwrap();
         for i in 0..100 {
             zkp.submit_proof(
                 format!("p{}", i),
@@ -370,7 +365,11 @@ mod stress {
         let mut stream = WsFederationStreamV2::new();
         for i in 0..10 {
             stream
-                .authenticate(format!("client_{}", i), format!("sig_{}", i), 1000 + i as u64)
+                .authenticate(
+                    format!("client_{}", i),
+                    format!("sig_{}", i),
+                    1000 + i as u64,
+                )
                 .ok();
         }
         for i in 0..100 {

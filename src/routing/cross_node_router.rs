@@ -24,7 +24,11 @@ impl std::fmt::Display for RoutingError {
             Self::NoHealthyNodes => write!(f, "No healthy nodes available for routing"),
             Self::NodeNotFound(id) => write!(f, "Node not found: {}", id),
             Self::PredictionUnreliable { confidence } => {
-                write!(f, "Prediction confidence {:.2} below 0.75 threshold", confidence)
+                write!(
+                    f,
+                    "Prediction confidence {:.2} below 0.75 threshold",
+                    confidence
+                )
             }
             Self::InvalidTask(msg) => write!(f, "Invalid task: {}", msg),
         }
@@ -193,7 +197,8 @@ impl CrossNodeRouter {
     }
 
     pub fn register_node(&mut self, node_id: String, capacity: f64) {
-        self.nodes.insert(node_id.clone(), NodeProfile::new(node_id, capacity));
+        self.nodes
+            .insert(node_id.clone(), NodeProfile::new(node_id, capacity));
     }
 
     pub fn update_node_load(&mut self, node_id: &str, load: f64) {

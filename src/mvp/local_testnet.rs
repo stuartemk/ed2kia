@@ -8,8 +8,8 @@
 use std::time::Instant;
 use thiserror::Error;
 
-use crate::mvp::consensus_runner::{ConsensusMetrics, ConsensusRunner, ConsensusError};
-use crate::mvp::sae_simulator::{NodeProfile, SaePayload, SaeSimulator, SaeSimError};
+use crate::mvp::consensus_runner::{ConsensusError, ConsensusMetrics, ConsensusRunner};
+use crate::mvp::sae_simulator::{NodeProfile, SaePayload, SaeSimError, SaeSimulator};
 
 /// Error del testnet local.
 #[derive(Debug, Error)]
@@ -187,10 +187,7 @@ impl LocalTestnet {
                     node.id
                 );
             }
-            println!(
-                "  [✓] Node '{}' connected — State: {}",
-                node.id, node.state
-            );
+            println!("  [✓] Node '{}' connected — State: {}", node.id, node.state);
         }
 
         // Phase 3: Generate and inject payloads
@@ -240,10 +237,7 @@ impl LocalTestnet {
             if let Some(node) = nodes.iter_mut().find(|n| n.id == eval.node_id) {
                 if !eval.approved {
                     node.slash();
-                    println!(
-                        "  [⚠] Node '{}' slashed — State: {}",
-                        node.id, node.state
-                    );
+                    println!("  [⚠] Node '{}' slashed — State: {}", node.id, node.state);
                 }
             }
         }
@@ -276,7 +270,11 @@ impl LocalTestnet {
         );
         println!(
             "║ BFT Converged:     {:<30} ║",
-            if metrics.bft_result.is_some() { "YES" } else { "NO" }
+            if metrics.bft_result.is_some() {
+                "YES"
+            } else {
+                "NO"
+            }
         );
         println!(
             "║ Total Latency:     {:<30} ║",

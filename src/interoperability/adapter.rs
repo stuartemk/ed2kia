@@ -10,7 +10,7 @@
 //! This module is gated behind `#[cfg(feature = "phase6-core")]`.
 
 #[cfg(feature = "phase6-core")]
-use candle_core::{Device, DType, Tensor};
+use candle_core::{DType, Device, Tensor};
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
@@ -119,11 +119,14 @@ fn tensor_to_vec_f32(tensor: &Tensor) -> std::result::Result<Vec<f32>, AdapterEr
 fn tensor_to_vec_f64(tensor: &Tensor) -> std::result::Result<Vec<f64>, anyhow::Error> {
     let rank = tensor.rank();
     let flat = if rank > 1 {
-        tensor.flatten(0, rank - 1).map_err(|e| anyhow::anyhow!("flatten: {}", e))?
+        tensor
+            .flatten(0, rank - 1)
+            .map_err(|e| anyhow::anyhow!("flatten: {}", e))?
     } else {
         tensor.clone()
     };
-    flat.to_vec1().map_err(|e| anyhow::anyhow!("to_vec1: {}", e))
+    flat.to_vec1()
+        .map_err(|e| anyhow::anyhow!("to_vec1: {}", e))
 }
 
 #[cfg(feature = "phase6-core")]
@@ -220,7 +223,12 @@ impl TensorAdapter {
         }
     }
 
-    fn _shrink(&self, flat: &Tensor, src_dim: usize, batch: usize) -> std::result::Result<Tensor, AdapterError> {
+    fn _shrink(
+        &self,
+        flat: &Tensor,
+        src_dim: usize,
+        batch: usize,
+    ) -> std::result::Result<Tensor, AdapterError> {
         let data: Vec<f32> = tensor_to_vec_f32(flat)?;
 
         let ratio = src_dim as f64 / self.target_dim as f64;
@@ -233,23 +241,32 @@ impl TensorAdapter {
             *val = (sum / (end - start) as f64) as f32;
         }
 
-        Tensor::from_vec(projected, (batch, self.target_dim), &Device::Cpu).map_err(|e| AdapterError {
-            source: format!("shrink tensor build: {}", e),
-            expected_shape: vec![batch, self.target_dim],
-            got: vec![batch, src_dim],
+        Tensor::from_vec(projected, (batch, self.target_dim), &Device::Cpu).map_err(|e| {
+            AdapterError {
+                source: format!("shrink tensor build: {}", e),
+                expected_shape: vec![batch, self.target_dim],
+                got: vec![batch, src_dim],
+            }
         })
     }
 
-    fn _expand(&self, flat: &Tensor, src_dim: usize, batch: usize) -> std::result::Result<Tensor, AdapterError> {
+    fn _expand(
+        &self,
+        flat: &Tensor,
+        src_dim: usize,
+        batch: usize,
+    ) -> std::result::Result<Tensor, AdapterError> {
         let data: Vec<f32> = tensor_to_vec_f32(flat)?;
 
         let mut expanded = data;
         expanded.resize(self.target_dim, 0.0);
 
-        Tensor::from_vec(expanded, (batch, self.target_dim), &Device::Cpu).map_err(|e| AdapterError {
-            source: format!("expand tensor build: {}", e),
-            expected_shape: vec![batch, self.target_dim],
-            got: vec![batch, src_dim],
+        Tensor::from_vec(expanded, (batch, self.target_dim), &Device::Cpu).map_err(|e| {
+            AdapterError {
+                source: format!("expand tensor build: {}", e),
+                expected_shape: vec![batch, self.target_dim],
+                got: vec![batch, src_dim],
+            }
         })
     }
 
@@ -258,7 +275,11 @@ impl TensorAdapter {
     // ------------------------------------------------------------------
 
     /// Apply zero-padding (or truncation) to reach the target shape.
-    pub fn apply_padding(&self, tensor: &Tensor, target_shape: &[usize]) -> std::result::Result<Tensor, AdapterError> {
+    pub fn apply_padding(
+        &self,
+        tensor: &Tensor,
+        target_shape: &[usize],
+    ) -> std::result::Result<Tensor, AdapterError> {
         let current_shape = shape_dims(tensor.shape());
         if current_shape == target_shape {
             return Ok(tensor.clone());
@@ -285,11 +306,13 @@ impl TensorAdapter {
         }
 
         if current_last > target_last {
-            return tensor.narrow(rank - 1, 0, target_last).map_err(|e| AdapterError {
-                source: format!("apply_padding narrow: {}", e),
-                expected_shape: target_shape.to_vec(),
-                got: current_shape,
-            });
+            return tensor
+                .narrow(rank - 1, 0, target_last)
+                .map_err(|e| AdapterError {
+                    source: format!("apply_padding narrow: {}", e),
+                    expected_shape: target_shape.to_vec(),
+                    got: current_shape,
+                });
         }
 
         // Pad: extract vec, resize, rebuild
@@ -311,7 +334,11 @@ impl TensorAdapter {
     // ------------------------------------------------------------------
 
     /// Validate that the tensor matches the expected schema (shape + dtype).
-    pub fn validate_schema(&self, tensor: &Tensor, expected_shape: &[usize]) -> std::result::Result<(), AdapterError> {
+    pub fn validate_schema(
+        &self,
+        tensor: &Tensor,
+        expected_shape: &[usize],
+    ) -> std::result::Result<(), AdapterError> {
         let current_shape = shape_dims(tensor.shape());
         let current_dtype = tensor.dtype();
 
@@ -342,9 +369,17 @@ impl TensorAdapter {
     // ------------------------------------------------------------------
 
     /// Run the full adaptation pipeline.
-    pub fn adapt(&self, tensor: &Tensor, source_model: SourceModel) -> std::result::Result<NormalizedHiddenState, AdapterError> {
-        info!("Adapting {} tensor shape={:?} dtype={:?}",
-            source_model, shape_dims(tensor.shape()), tensor.dtype());
+    pub fn adapt(
+        &self,
+        tensor: &Tensor,
+        source_model: SourceModel,
+    ) -> std::result::Result<NormalizedHiddenState, AdapterError> {
+        info!(
+            "Adapting {} tensor shape={:?} dtype={:?}",
+            source_model,
+            shape_dims(tensor.shape()),
+            tensor.dtype()
+        );
 
         let normalized = self.normalize_dtype(tensor)?;
         let reshaped = self.reshape_to_qwen(&normalized)?;
@@ -384,7 +419,10 @@ mod tests {
         assert_eq!(SourceModel::Mistral.to_string(), "mistral");
         assert_eq!(SourceModel::Qwen.to_string(), "qwen");
         assert_eq!(SourceModel::GPT2.to_string(), "gpt2");
-        assert_eq!(SourceModel::Custom("test".into()).to_string(), "custom:test");
+        assert_eq!(
+            SourceModel::Custom("test".into()).to_string(),
+            "custom:test"
+        );
     }
 
     #[test]
@@ -429,7 +467,9 @@ mod tests {
         fn test_normalize_dtype_f16_to_f32() {
             let adapter = TensorAdapter::qwen2_7b();
             let t = Tensor::from_vec(vec![1.0f64, 2.0, 3.0], &[3], &Device::Cpu)
-                .unwrap().to_dtype(DType::F16).unwrap();
+                .unwrap()
+                .to_dtype(DType::F16)
+                .unwrap();
             let result = adapter.normalize_dtype(&t).unwrap();
             assert_eq!(result.dtype(), DType::F32);
         }

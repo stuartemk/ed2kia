@@ -75,7 +75,11 @@ impl SymbolicEmbedding {
     ///
     /// # Returns
     /// `SymbolicEmbedding` ready for forward pass.
-    pub fn new(vocab_size: usize, embed_dim: usize, device: &Device) -> Result<Self, SymbolicError> {
+    pub fn new(
+        vocab_size: usize,
+        embed_dim: usize,
+        device: &Device,
+    ) -> Result<Self, SymbolicError> {
         if vocab_size == 0 || embed_dim == 0 {
             return Err(SymbolicError::InvalidDimensions {
                 vocab_size,
@@ -220,12 +224,8 @@ impl SymbolicEmbedding {
 
         // Create tensor from data → [batch, seq, 3]
         let device = token_ids.device();
-        let sct_tensor = Tensor::from_vec(
-            sct_data,
-            (batch, seq, 3),
-            device,
-        )
-        .map_err(|e| SymbolicError::Candle(e.into()))?;
+        let sct_tensor = Tensor::from_vec(sct_data, (batch, seq, 3), device)
+            .map_err(|e| SymbolicError::Candle(e.into()))?;
 
         Ok(sct_tensor)
     }
@@ -302,7 +302,10 @@ mod tests {
     fn test_forward_plain() {
         let device = Device::Cpu;
         let emb = SymbolicEmbedding::new(100, 64, &device).unwrap();
-        let token_ids = Tensor::new(&[1u32, 2, 3, 4], &device).unwrap().reshape((1, 4)).unwrap();
+        let token_ids = Tensor::new(&[1u32, 2, 3, 4], &device)
+            .unwrap()
+            .reshape((1, 4))
+            .unwrap();
         let result = emb.forward_plain(&token_ids);
         assert!(result.is_ok());
         let result = result.unwrap();
@@ -314,14 +317,28 @@ mod tests {
         let device = Device::Cpu;
         let emb = SymbolicEmbedding::new(100, 64, &device).unwrap();
         // No SCT mappings — all tokens default to neutral (Z=0, scale=1.0)
-        let token_ids = Tensor::new(&[1u32, 2, 3], &device).unwrap().reshape((1, 3)).unwrap();
+        let token_ids = Tensor::new(&[1u32, 2, 3], &device)
+            .unwrap()
+            .reshape((1, 3))
+            .unwrap();
         let result = emb.forward(&token_ids).unwrap();
         let plain = emb.forward_plain(&token_ids).unwrap();
 
         // With neutral SCT (Z=0), scale = 1.0 + clamp(0, -0.5, 0.5) = 1.0
         // So symbolic == plain
-        let diff = result.sub(&plain).unwrap().abs().unwrap().max(0).unwrap().to_scalar::<f32>().unwrap();
-        assert!(diff < 1e-6, "Neutral SCT should produce identical embeddings, diff={diff}");
+        let diff = result
+            .sub(&plain)
+            .unwrap()
+            .abs()
+            .unwrap()
+            .max(0)
+            .unwrap()
+            .to_scalar::<f32>()
+            .unwrap();
+        assert!(
+            diff < 1e-6,
+            "Neutral SCT should produce identical embeddings, diff={diff}"
+        );
     }
 
     #[test]
@@ -331,14 +348,33 @@ mod tests {
         // Token 1 has positive SCT (Z=0.7)
         emb.set_sct(1, positive_sct());
 
-        let token_ids = Tensor::new(&[1u32], &device).unwrap().reshape((1, 1)).unwrap();
+        let token_ids = Tensor::new(&[1u32], &device)
+            .unwrap()
+            .reshape((1, 1))
+            .unwrap();
         let symbolic = emb.forward(&token_ids).unwrap();
         let plain = emb.forward_plain(&token_ids).unwrap();
 
         // scale = 1.0 + clamp(0.7, -0.5, 0.5) = 1.0 + 0.5 = 1.5
         // symbolic norm should be ~1.5x plain norm
-        let sym_norm = symbolic.sqr().unwrap().sum(0).unwrap().sqrt().unwrap().to_scalar::<f32>().unwrap();
-        let plain_norm = plain.sqr().unwrap().sum(0).unwrap().sqrt().unwrap().to_scalar::<f32>().unwrap();
+        let sym_norm = symbolic
+            .sqr()
+            .unwrap()
+            .sum(0)
+            .unwrap()
+            .sqrt()
+            .unwrap()
+            .to_scalar::<f32>()
+            .unwrap();
+        let plain_norm = plain
+            .sqr()
+            .unwrap()
+            .sum(0)
+            .unwrap()
+            .sqrt()
+            .unwrap()
+            .to_scalar::<f32>()
+            .unwrap();
 
         if plain_norm > 1e-6 {
             let ratio = sym_norm / plain_norm;
@@ -356,14 +392,33 @@ mod tests {
         // Token 1 has negative SCT (Z=-0.8)
         emb.set_sct(1, negative_sct());
 
-        let token_ids = Tensor::new(&[1u32], &device).unwrap().reshape((1, 1)).unwrap();
+        let token_ids = Tensor::new(&[1u32], &device)
+            .unwrap()
+            .reshape((1, 1))
+            .unwrap();
         let symbolic = emb.forward(&token_ids).unwrap();
         let plain = emb.forward_plain(&token_ids).unwrap();
 
         // scale = 1.0 + clamp(-0.8, -0.5, 0.5) = 1.0 + (-0.5) = 0.5
         // symbolic norm should be ~0.5x plain norm
-        let sym_norm = symbolic.sqr().unwrap().sum(0).unwrap().sqrt().unwrap().to_scalar::<f32>().unwrap();
-        let plain_norm = plain.sqr().unwrap().sum(0).unwrap().sqrt().unwrap().to_scalar::<f32>().unwrap();
+        let sym_norm = symbolic
+            .sqr()
+            .unwrap()
+            .sum(0)
+            .unwrap()
+            .sqrt()
+            .unwrap()
+            .to_scalar::<f32>()
+            .unwrap();
+        let plain_norm = plain
+            .sqr()
+            .unwrap()
+            .sum(0)
+            .unwrap()
+            .sqrt()
+            .unwrap()
+            .to_scalar::<f32>()
+            .unwrap();
 
         if plain_norm > 1e-6 {
             let ratio = sym_norm / plain_norm;
@@ -379,7 +434,10 @@ mod tests {
         let err = SymbolicError::MissingSctMapping { token_id: 42 };
         assert!(format!("{}", err).contains("42"));
 
-        let err = SymbolicError::InvalidDimensions { vocab_size: 0, embed_dim: 64 };
+        let err = SymbolicError::InvalidDimensions {
+            vocab_size: 0,
+            embed_dim: 64,
+        };
         assert!(format!("{}", err).contains("vocab"));
     }
 }

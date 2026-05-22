@@ -359,11 +359,7 @@ impl StreamingMetricsCollector {
             metric.evict_expired();
             metric.recalculate();
 
-            results.push((
-                name.clone(),
-                metric.current_value,
-                metric.metric_type,
-            ));
+            results.push((name.clone(), metric.current_value, metric.metric_type));
         }
 
         self.total_emissions += 1;
@@ -384,15 +380,19 @@ impl StreamingMetricsCollector {
 
     /// Genera payload JSON para emisión SSE
     pub fn emit_payload(&self) -> serde_json::Value {
-        let metrics: Vec<serde_json::Value> = self.metrics.values().map(|m| {
-            serde_json::json!({
-                "name": m.name,
-                "value": m.current_value,
-                "type": m.metric_type.to_string(),
-                "window_seconds": m.window_seconds,
-                "points_in_window": m.points.len(),
+        let metrics: Vec<serde_json::Value> = self
+            .metrics
+            .values()
+            .map(|m| {
+                serde_json::json!({
+                    "name": m.name,
+                    "value": m.current_value,
+                    "type": m.metric_type.to_string(),
+                    "window_seconds": m.window_seconds,
+                    "points_in_window": m.points.len(),
+                })
             })
-        }).collect();
+            .collect();
 
         serde_json::json!({
             "timestamp_ms": current_timestamp_ms(),
@@ -403,9 +403,9 @@ impl StreamingMetricsCollector {
 
     /// Genera resumen de histograma para métrica específica
     pub fn get_histogram_summary(&self, name: &str) -> Option<HistogramSummary> {
-        self.metrics.get(name).map(|m| {
-            m.histogram_summary(&self.config.default_histogram_buckets)
-        })
+        self.metrics
+            .get(name)
+            .map(|m| m.histogram_summary(&self.config.default_histogram_buckets))
     }
 
     /// Obtiene valor actual de métrica
@@ -762,11 +762,23 @@ mod tests {
         // 8.0 <= 10, 25, 50, 100...
         // 15.0 <= 25, 50, 100...
         // 60.0 <= 100...
-        let bucket_5 = summary.buckets.iter().find(|b| b.upper_bound == 5.0).unwrap();
+        let bucket_5 = summary
+            .buckets
+            .iter()
+            .find(|b| b.upper_bound == 5.0)
+            .unwrap();
         assert_eq!(bucket_5.count, 1); // Only 3.0
-        let bucket_10 = summary.buckets.iter().find(|b| b.upper_bound == 10.0).unwrap();
+        let bucket_10 = summary
+            .buckets
+            .iter()
+            .find(|b| b.upper_bound == 10.0)
+            .unwrap();
         assert_eq!(bucket_10.count, 2); // 3.0 and 8.0
-        let bucket_25 = summary.buckets.iter().find(|b| b.upper_bound == 25.0).unwrap();
+        let bucket_25 = summary
+            .buckets
+            .iter()
+            .find(|b| b.upper_bound == 25.0)
+            .unwrap();
         assert_eq!(bucket_25.count, 3); // 3.0, 8.0, 15.0
     }
 }

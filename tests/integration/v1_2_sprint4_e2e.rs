@@ -13,14 +13,10 @@
 #[cfg(feature = "v1.2-sprint4")]
 mod e2e {
     // LP-66: Federation Scaling v3
+    use ed2kia::federation_scaling_v3::adaptive_sharder::{AdaptiveSharder, AdaptiveSharderConfig};
+    use ed2kia::federation_scaling_v3::gradient_sync_v3::{GradientSyncV3, GradientSyncV3Config};
     use ed2kia::federation_scaling_v3::scaling_v3::{
         FederationScalingV3, NodeCapabilityV3, ScalingV3Config,
-    };
-    use ed2kia::federation_scaling_v3::adaptive_sharder::{
-        AdaptiveSharder, AdaptiveSharderConfig,
-    };
-    use ed2kia::federation_scaling_v3::gradient_sync_v3::{
-        GradientSyncV3, GradientSyncV3Config,
     };
 
     // ========================================================================
@@ -51,7 +47,9 @@ mod e2e {
 
         // Simulate load increase on some nodes
         for i in 0..5 {
-            scaling.update_node(&format!("node-{}", i), 0.9, 150.0).unwrap();
+            scaling
+                .update_node(&format!("node-{}", i), 0.9, 150.0)
+                .unwrap();
         }
 
         // Re-evaluate — decisions depend on federation load vs threshold
@@ -67,16 +65,15 @@ mod e2e {
 
         // Register nodes
         for i in 0..5 {
-            let node = NodeCapabilityV3::new(
-                format!("node-{}", i),
-                0.8, 0.8, 0.8, 0.8,
-            );
+            let node = NodeCapabilityV3::new(format!("node-{}", i), 0.8, 0.8, 0.8, 0.8);
             scaling.register_node(node);
         }
 
         // Assign nodes to shards
         for i in 0..5 {
-            let shard = scaling.assign_node_to_shard(&format!("node-{}", i)).unwrap();
+            let shard = scaling
+                .assign_node_to_shard(&format!("node-{}", i))
+                .unwrap();
             assert!(!shard.is_empty());
         }
 
@@ -99,10 +96,7 @@ mod e2e {
         let mut scaling = FederationScalingV3::with_config(config);
 
         for i in 0..8 {
-            let mut node = NodeCapabilityV3::new(
-                format!("node-{}", i),
-                0.9, 0.9, 0.9, 0.9,
-            );
+            let mut node = NodeCapabilityV3::new(format!("node-{}", i), 0.9, 0.9, 0.9, 0.9);
             node.load_factor = 0.8;
             node.avg_latency_ms = 100.0;
             node.reputation = 0.85;
@@ -177,13 +171,16 @@ mod e2e {
         sharder.create_shard("node-1".to_string()).unwrap();
 
         // Get the auto-generated shard ID (need to copy to avoid borrow conflict)
-        let shard_id = sharder.get_active_shards()
+        let shard_id = sharder
+            .get_active_shards()
             .last()
             .map(|s| s.shard_id.clone())
             .unwrap_or_else(|| "shard_4".to_string());
 
         // Start migration
-        let migration = sharder.start_migration(&shard_id, "node-2".to_string()).unwrap();
+        let migration = sharder
+            .start_migration(&shard_id, "node-2".to_string())
+            .unwrap();
         assert_eq!(migration.shard_id, shard_id);
         assert_eq!(migration.target_node, "node-2");
 
@@ -241,12 +238,15 @@ mod e2e {
 
         // Create gradient batch
         let gradients = vec![0.1, 0.2, 0.3, 0.4, 0.5];
-        let batch = sync.create_batch("node-0".to_string(), gradients.clone()).unwrap();
+        let batch = sync
+            .create_batch("node-0".to_string(), gradients.clone())
+            .unwrap();
         assert_eq!(batch.dimensions, 5);
 
         // Sync to other nodes
         for i in 1..5 {
-            sync.sync_batch(&batch.batch_id, &format!("node-{}", i)).unwrap();
+            sync.sync_batch(&batch.batch_id, &format!("node-{}", i))
+                .unwrap();
         }
 
         // Check quorum
@@ -285,7 +285,8 @@ mod e2e {
 
         // Sync to 3 nodes
         for i in 1..4 {
-            sync.sync_batch(&batch.batch_id, &format!("node-{}", i)).unwrap();
+            sync.sync_batch(&batch.batch_id, &format!("node-{}", i))
+                .unwrap();
         }
 
         // Detect partitions — nodes just registered, so no stale nodes
@@ -314,8 +315,12 @@ mod e2e {
         sync.register_node("node-B");
 
         // Create batches with different gradients
-        let batch_a = sync.create_batch("node-A".to_string(), vec![1.0, 0.0, 0.0]).unwrap();
-        let batch_b = sync.create_batch("node-B".to_string(), vec![0.0, 1.0, 0.0]).unwrap();
+        let batch_a = sync
+            .create_batch("node-A".to_string(), vec![1.0, 0.0, 0.0])
+            .unwrap();
+        let batch_b = sync
+            .create_batch("node-B".to_string(), vec![0.0, 1.0, 0.0])
+            .unwrap();
 
         // Sync both
         sync.sync_batch(&batch_a.batch_id, "node-B").unwrap();
@@ -336,10 +341,7 @@ mod e2e {
         // Phase 1: Scaling evaluation
         let mut scaling = FederationScalingV3::new();
         for i in 0..8 {
-            let node = NodeCapabilityV3::new(
-                format!("node-{}", i),
-                0.85, 0.85, 0.85, 0.85,
-            );
+            let node = NodeCapabilityV3::new(format!("node-{}", i), 0.85, 0.85, 0.85, 0.85);
             scaling.register_node(node);
         }
         let _decisions = scaling.evaluate();
@@ -361,10 +363,14 @@ mod e2e {
         }
 
         let gradients = vec![0.1, 0.2, 0.3, 0.4];
-        let batch = gradient_sync.create_batch("node-0".to_string(), gradients).unwrap();
+        let batch = gradient_sync
+            .create_batch("node-0".to_string(), gradients)
+            .unwrap();
 
         for i in 1..nodes_count {
-            gradient_sync.sync_batch(&batch.batch_id, &format!("node-{}", i)).unwrap();
+            gradient_sync
+                .sync_batch(&batch.batch_id, &format!("node-{}", i))
+                .unwrap();
         }
 
         let quorum = gradient_sync.check_quorum(&batch.batch_id).unwrap();
@@ -412,7 +418,9 @@ mod e2e {
         sync.register_node("node-A");
         sync.register_node("node-B");
 
-        let batch = sync.create_batch("node-A".to_string(), vec![0.1, 0.2]).unwrap();
+        let batch = sync
+            .create_batch("node-A".to_string(), vec![0.1, 0.2])
+            .unwrap();
         sync.sync_batch(&batch.batch_id, "node-B").unwrap();
 
         let timed_out = sync.process_timeouts();
@@ -482,7 +490,9 @@ mod e2e {
         let mut batch_ids = Vec::new();
         for _seq in 1..=10 {
             let gradients = vec![0.1, 0.2, 0.3];
-            let batch = sync.create_batch(format!("node-{}", batch_ids.len() % 5), gradients).unwrap();
+            let batch = sync
+                .create_batch(format!("node-{}", batch_ids.len() % 5), gradients)
+                .unwrap();
             batch_ids.push(batch.batch_id);
         }
 

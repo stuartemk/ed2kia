@@ -28,7 +28,11 @@ impl fmt::Display for FineTuningError {
             Self::CheckpointFailed(msg) => write!(f, "Checkpoint failed: {}", msg),
             Self::GradientMismatch(msg) => write!(f, "Gradient mismatch: {}", msg),
             Self::UptimeBelowThreshold { node_id, uptime } => {
-                write!(f, "Node {} uptime {:.1}% below 95% threshold", node_id, uptime)
+                write!(
+                    f,
+                    "Node {} uptime {:.1}% below 95% threshold",
+                    node_id, uptime
+                )
             }
         }
     }
@@ -184,7 +188,8 @@ impl FineTuningV2 {
     // ─── Node Management ───
 
     pub fn register_node(&mut self, node_id: String, uptime: f64) {
-        self.nodes.insert(node_id.clone(), NodeState::new(node_id, uptime));
+        self.nodes
+            .insert(node_id.clone(), NodeState::new(node_id, uptime));
     }
 
     pub fn update_node_uptime(&mut self, node_id: &str, uptime: f64) -> Option<NodeState> {
@@ -236,9 +241,8 @@ impl FineTuningV2 {
 
         // Update stats
         self.stats.total_rounds += 1;
-        self.stats.avg_loss =
-            (self.stats.avg_loss * (self.stats.total_rounds - 1) as f64 + loss)
-                / self.stats.total_rounds as f64;
+        self.stats.avg_loss = (self.stats.avg_loss * (self.stats.total_rounds - 1) as f64 + loss)
+            / self.stats.total_rounds as f64;
 
         // Adaptive LR
         if self.config.adaptive_lr {
@@ -246,7 +250,10 @@ impl FineTuningV2 {
         }
 
         // Checkpoint
-        let checkpoint_id = if self.current_round.is_multiple_of(self.config.checkpoint_interval) {
+        let checkpoint_id = if self
+            .current_round
+            .is_multiple_of(self.config.checkpoint_interval)
+        {
             let cp = self.create_checkpoint(&compressed)?;
             self.stats.total_checkpoints += 1;
             Some(cp.id)
@@ -301,10 +308,7 @@ impl FineTuningV2 {
     fn create_checkpoint(&mut self, data: &[f32]) -> Result<Checkpoint, FineTuningError> {
         let shard_size = (data.len() as f32 / self.config.compression_ratio) as usize;
         let shard_size = shard_size.max(1);
-        let shards: Vec<Vec<f32>> = data
-            .chunks(shard_size)
-            .map(|c| c.to_vec())
-            .collect();
+        let shards: Vec<Vec<f32>> = data.chunks(shard_size).map(|c| c.to_vec()).collect();
 
         let cp = Checkpoint::new(
             format!("cp-{}", self.current_round),
@@ -345,8 +349,13 @@ impl FineTuningV2 {
         }
 
         // Top-k magnitude compression
-        let mut indexed: Vec<(usize, f32)> = gradients.iter().enumerate().map(|(i, &v)| (i, v)).collect();
-        indexed.sort_by(|a, b| b.1.abs().partial_cmp(&a.1.abs()).unwrap_or(std::cmp::Ordering::Equal));
+        let mut indexed: Vec<(usize, f32)> =
+            gradients.iter().enumerate().map(|(i, &v)| (i, v)).collect();
+        indexed.sort_by(|a, b| {
+            b.1.abs()
+                .partial_cmp(&a.1.abs())
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         indexed.truncate(target_len);
         indexed.sort_by_key(|(i, _)| *i);
         indexed.into_iter().map(|(_, v)| v).collect()

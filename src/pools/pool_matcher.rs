@@ -102,14 +102,31 @@ pub enum RequestType {
 impl std::fmt::Display for RequestType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            RequestType::Compute { credits, max_latency_ms } => {
-                write!(f, "Compute(credits={}, max_latency={}ms)", credits, max_latency_ms)
+            RequestType::Compute {
+                credits,
+                max_latency_ms,
+            } => {
+                write!(
+                    f,
+                    "Compute(credits={}, max_latency={}ms)",
+                    credits, max_latency_ms
+                )
             }
-            RequestType::Storage { credits, durability } => {
+            RequestType::Storage {
+                credits,
+                durability,
+            } => {
                 write!(f, "Storage(credits={}, durability={})", credits, durability)
             }
-            RequestType::Inference { credits, model_size } => {
-                write!(f, "Inference(credits={}, model_size={})", credits, model_size)
+            RequestType::Inference {
+                credits,
+                model_size,
+            } => {
+                write!(
+                    f,
+                    "Inference(credits={}, model_size={})",
+                    credits, model_size
+                )
             }
             RequestType::Custom { credits, .. } => {
                 write!(f, "Custom(credits={})", credits)
@@ -308,7 +325,8 @@ impl PoolMatcher {
 
     /// Register a shard candidate.
     pub fn register_candidate(&mut self, candidate: ShardCandidate) {
-        self.candidates.insert(candidate.shard_id.clone(), candidate);
+        self.candidates
+            .insert(candidate.shard_id.clone(), candidate);
     }
 
     /// Remove a shard candidate.
@@ -330,7 +348,9 @@ impl PoolMatcher {
         avg_latency_ms: f64,
         load_factor: f64,
     ) -> Result<(), MatcherError> {
-        let candidate = self.candidates.get_mut(shard_id)
+        let candidate = self
+            .candidates
+            .get_mut(shard_id)
             .ok_or(MatcherError::ShardUnavailable(shard_id.to_string()))?;
         candidate.available_credits = available_credits;
         candidate.reputation = reputation.clamp(0.0, 1.0);
@@ -345,23 +365,29 @@ impl PoolMatcher {
 
         // Filter eligible candidates
         let required = request.required_credits();
-        let eligible: Vec<&ShardCandidate> = self.candidates.values()
+        let eligible: Vec<&ShardCandidate> = self
+            .candidates
+            .values()
             .filter(|c| c.can_fulfill(required))
             .collect();
 
         if eligible.is_empty() {
             self.stats.total_requests += 1;
             self.stats.failed_matches += 1;
-            return Err(MatcherError::NoSuitableShard(
-                format!("No shard with {} credits", required),
-            ));
+            return Err(MatcherError::NoSuitableShard(format!(
+                "No shard with {} credits",
+                required
+            )));
         }
 
         // Limit candidates
         let limited: Vec<&ShardCandidate> = if self.config.max_candidates > 0 {
             let mut sorted: Vec<&ShardCandidate> = eligible;
             sorted.sort_by(|a, b| b.reputation.partial_cmp(&a.reputation).unwrap());
-            sorted.into_iter().take(self.config.max_candidates).collect()
+            sorted
+                .into_iter()
+                .take(self.config.max_candidates)
+                .collect()
         } else {
             eligible
         };
@@ -387,16 +413,16 @@ impl PoolMatcher {
         // Sort by composite score descending
         scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
 
-        let best = scored.first()
-            .ok_or(MatcherError::PoolEmpty)?;
+        let best = scored.first().ok_or(MatcherError::PoolEmpty)?;
 
         // Check minimum score threshold
         if best.1 < self.config.min_match_score {
             self.stats.total_requests += 1;
             self.stats.failed_matches += 1;
-            return Err(MatcherError::NoSuitableShard(
-                format!("Best score {} below minimum {}", best.1, self.config.min_match_score),
-            ));
+            return Err(MatcherError::NoSuitableShard(format!(
+                "Best score {} below minimum {}",
+                best.1, self.config.min_match_score
+            )));
         }
 
         let elapsed_ms = current_timestamp_ms().saturating_sub(start_ms);
@@ -413,10 +439,13 @@ impl PoolMatcher {
         // Update stats
         self.stats.total_requests += 1;
         self.stats.successful_matches += 1;
-        self.stats.avg_match_score = (self.stats.avg_match_score * (self.stats.successful_matches - 1) as f64
-            + best.1) / self.stats.successful_matches as f64;
-        self.stats.avg_match_time_ms = (self.stats.avg_match_time_ms * (self.stats.successful_matches - 1) as f64
-            + elapsed_ms as f64) / self.stats.successful_matches as f64;
+        self.stats.avg_match_score =
+            (self.stats.avg_match_score * (self.stats.successful_matches - 1) as f64 + best.1)
+                / self.stats.successful_matches as f64;
+        self.stats.avg_match_time_ms = (self.stats.avg_match_time_ms
+            * (self.stats.successful_matches - 1) as f64
+            + elapsed_ms as f64)
+            / self.stats.successful_matches as f64;
         self.stats.last_match_ms = current_timestamp_ms();
 
         Ok(result)
@@ -486,14 +515,14 @@ fn current_timestamp_ms() -> u64 {
 mod tests {
     use super::*;
 
-    fn make_candidate(id: &str, credits: f64, reputation: f64, latency: f64, load: f64) -> ShardCandidate {
-        ShardCandidate::new(
-            id.to_string(),
-            credits,
-            reputation,
-            latency,
-            load,
-        )
+    fn make_candidate(
+        id: &str,
+        credits: f64,
+        reputation: f64,
+        latency: f64,
+        load: f64,
+    ) -> ShardCandidate {
+        ShardCandidate::new(id.to_string(), credits, reputation, latency, load)
     }
 
     fn make_request(id: &str, requester: &str, credits: f64, priority: u32) -> PoolRequest {
@@ -539,7 +568,9 @@ mod tests {
         let mut matcher = PoolMatcher::with_defaults();
         let c = make_candidate("s1", 100.0, 0.9, 50.0, 0.3);
         matcher.register_candidate(c);
-        assert!(matcher.update_candidate("s1", 200.0, 0.95, 30.0, 0.2).is_ok());
+        assert!(matcher
+            .update_candidate("s1", 200.0, 0.95, 30.0, 0.2)
+            .is_ok());
         let updated = matcher.get_candidate("s1").unwrap();
         assert_eq!(updated.available_credits, 200.0);
         assert_eq!(updated.reputation, 0.95);
@@ -561,7 +592,7 @@ mod tests {
         let mut matcher = PoolMatcher::with_defaults();
         let req = make_request("r1", "node1", 50.0, 5);
         match matcher.match_request(&req) {
-            Err(MatcherError::NoSuitableShard(_)) => {},
+            Err(MatcherError::NoSuitableShard(_)) => {}
             _ => panic!("Expected NoSuitableShard"),
         }
     }
@@ -573,7 +604,7 @@ mod tests {
         matcher.register_candidate(c);
         let req = make_request("r1", "node1", 50.0, 5);
         match matcher.match_request(&req) {
-            Err(MatcherError::NoSuitableShard(_)) => {},
+            Err(MatcherError::NoSuitableShard(_)) => {}
             _ => panic!("Expected NoSuitableShard"),
         }
     }
@@ -689,7 +720,10 @@ mod tests {
         let req = PoolRequest::new(
             "r1".to_string(),
             "node1".to_string(),
-            RequestType::Compute { credits: 50.0, max_latency_ms: 500.0 },
+            RequestType::Compute {
+                credits: 50.0,
+                max_latency_ms: 500.0,
+            },
             15, // Above max
         );
         assert_eq!(req.priority, 10);
@@ -777,7 +811,9 @@ mod tests {
     #[test]
     fn test_clear_cache() {
         let mut matcher = PoolMatcher::with_defaults();
-        matcher.score_cache.insert("key".to_string(), vec![("s1".to_string(), 0.9)]);
+        matcher
+            .score_cache
+            .insert("key".to_string(), vec![("s1".to_string(), 0.9)]);
         matcher.clear_cache();
         assert!(matcher.score_cache.is_empty());
     }
@@ -790,7 +826,10 @@ mod tests {
         let req = PoolRequest::new(
             "r1".to_string(),
             "node1".to_string(),
-            RequestType::Storage { credits: 50.0, durability: 0.8 },
+            RequestType::Storage {
+                credits: 50.0,
+                durability: 0.8,
+            },
             5,
         );
         let result = matcher.match_request(&req).unwrap();
@@ -805,7 +844,10 @@ mod tests {
         let req = PoolRequest::new(
             "r1".to_string(),
             "node1".to_string(),
-            RequestType::Inference { credits: 50.0, model_size: 2 },
+            RequestType::Inference {
+                credits: 50.0,
+                model_size: 2,
+            },
             5,
         );
         let result = matcher.match_request(&req).unwrap();
@@ -822,7 +864,10 @@ mod tests {
         let req = PoolRequest::new(
             "r1".to_string(),
             "node1".to_string(),
-            RequestType::Custom { credits: 50.0, metadata },
+            RequestType::Custom {
+                credits: 50.0,
+                metadata,
+            },
             5,
         );
         let result = matcher.match_request(&req).unwrap();

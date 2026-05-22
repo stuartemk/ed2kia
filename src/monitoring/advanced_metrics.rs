@@ -266,22 +266,14 @@ impl AdvancedMetrics {
     }
 
     /// Register a new counter.
-    pub fn register_counter(
-        &mut self,
-        name: String,
-        help: String,
-    ) -> Result<(), MetricsError> {
+    pub fn register_counter(&mut self, name: String, help: String) -> Result<(), MetricsError> {
         self.check_registration(&name, MetricType::Counter)?;
         self.counters.insert(name.clone(), Counter::new(name, help));
         Ok(())
     }
 
     /// Register a new gauge.
-    pub fn register_gauge(
-        &mut self,
-        name: String,
-        help: String,
-    ) -> Result<(), MetricsError> {
+    pub fn register_gauge(&mut self, name: String, help: String) -> Result<(), MetricsError> {
         self.check_registration(&name, MetricType::Gauge)?;
         self.gauges.insert(name.clone(), Gauge::new(name, help));
         Ok(())
@@ -361,17 +353,23 @@ impl AdvancedMetrics {
 
     /// Get histogram p99.
     pub fn histogram_p99(&self, name: &str) -> Option<f64> {
-        self.histograms.get(name).map(|h| h.buckets.percentile(99.0))
+        self.histograms
+            .get(name)
+            .map(|h| h.buckets.percentile(99.0))
     }
 
     /// Get histogram p95.
     pub fn histogram_p95(&self, name: &str) -> Option<f64> {
-        self.histograms.get(name).map(|h| h.buckets.percentile(95.0))
+        self.histograms
+            .get(name)
+            .map(|h| h.buckets.percentile(95.0))
     }
 
     /// Get histogram p50 (median).
     pub fn histogram_p50(&self, name: &str) -> Option<f64> {
-        self.histograms.get(name).map(|h| h.buckets.percentile(50.0))
+        self.histograms
+            .get(name)
+            .map(|h| h.buckets.percentile(50.0))
     }
 
     /// Get histogram count.
@@ -424,7 +422,11 @@ impl AdvancedMetrics {
 
     // ─── Internal ───
 
-    fn check_registration(&mut self, name: &str, metric_type: MetricType) -> Result<(), MetricsError> {
+    fn check_registration(
+        &mut self,
+        name: &str,
+        metric_type: MetricType,
+    ) -> Result<(), MetricsError> {
         if name.is_empty() {
             return Err(MetricsError::InvalidName(name.to_string()));
         }
@@ -464,14 +466,18 @@ mod tests {
     #[test]
     fn test_register_counter() {
         let mut metrics = AdvancedMetrics::default();
-        metrics.register_counter("requests".to_string(), "Total requests".to_string()).unwrap();
+        metrics
+            .register_counter("requests".to_string(), "Total requests".to_string())
+            .unwrap();
         assert_eq!(metrics.metric_count(), 1);
     }
 
     #[test]
     fn test_counter_inc() {
         let mut metrics = AdvancedMetrics::default();
-        metrics.register_counter("req".to_string(), "h".to_string()).unwrap();
+        metrics
+            .register_counter("req".to_string(), "h".to_string())
+            .unwrap();
         metrics.counter_inc("req").unwrap();
         metrics.counter_inc("req").unwrap();
         assert_eq!(metrics.counter_get("req"), Some(2));
@@ -480,7 +486,9 @@ mod tests {
     #[test]
     fn test_counter_add() {
         let mut metrics = AdvancedMetrics::default();
-        metrics.register_counter("bytes".to_string(), "h".to_string()).unwrap();
+        metrics
+            .register_counter("bytes".to_string(), "h".to_string())
+            .unwrap();
         metrics.counter_add("bytes", 100).unwrap();
         assert_eq!(metrics.counter_get("bytes"), Some(100));
     }
@@ -494,14 +502,18 @@ mod tests {
     #[test]
     fn test_register_gauge() {
         let mut metrics = AdvancedMetrics::default();
-        metrics.register_gauge("cpu".to_string(), "CPU usage".to_string()).unwrap();
+        metrics
+            .register_gauge("cpu".to_string(), "CPU usage".to_string())
+            .unwrap();
         assert_eq!(metrics.metric_count(), 1);
     }
 
     #[test]
     fn test_gauge_set() {
         let mut metrics = AdvancedMetrics::default();
-        metrics.register_gauge("temp".to_string(), "h".to_string()).unwrap();
+        metrics
+            .register_gauge("temp".to_string(), "h".to_string())
+            .unwrap();
         metrics.gauge_set("temp", 42.5).unwrap();
         assert_eq!(metrics.gauge_get("temp"), Some(42.5));
     }
@@ -509,7 +521,9 @@ mod tests {
     #[test]
     fn test_gauge_inc_dec() {
         let mut metrics = AdvancedMetrics::default();
-        metrics.register_gauge("queue".to_string(), "h".to_string()).unwrap();
+        metrics
+            .register_gauge("queue".to_string(), "h".to_string())
+            .unwrap();
         metrics.gauge_set("queue", 10.0).unwrap();
         metrics.gauges.get_mut("queue").unwrap().inc(5.0);
         metrics.gauges.get_mut("queue").unwrap().dec(3.0);
@@ -541,7 +555,11 @@ mod tests {
     fn test_histogram_percentiles() {
         let mut metrics = AdvancedMetrics::default();
         metrics
-            .register_histogram("lat".to_string(), "h".to_string(), Some(vec![5.0, 10.0, 50.0, 100.0]))
+            .register_histogram(
+                "lat".to_string(),
+                "h".to_string(),
+                Some(vec![5.0, 10.0, 50.0, 100.0]),
+            )
             .unwrap();
         for _ in 0..95 {
             metrics.histogram_observe("lat", 10.0).unwrap();
@@ -556,7 +574,9 @@ mod tests {
     #[test]
     fn test_type_mismatch() {
         let mut metrics = AdvancedMetrics::default();
-        metrics.register_counter("x".to_string(), "h".to_string()).unwrap();
+        metrics
+            .register_counter("x".to_string(), "h".to_string())
+            .unwrap();
         let result = metrics.register_gauge("x".to_string(), "h".to_string());
         assert!(result.is_err());
     }
@@ -572,7 +592,9 @@ mod tests {
     fn test_snapshot() {
         let mut metrics = AdvancedMetrics::default();
         metrics.set_time(1000);
-        metrics.register_counter("c".to_string(), "h".to_string()).unwrap();
+        metrics
+            .register_counter("c".to_string(), "h".to_string())
+            .unwrap();
         metrics.counter_inc("c").unwrap();
         let snap = metrics.snapshot();
         assert_eq!(snap.counters.len(), 1);
@@ -582,7 +604,9 @@ mod tests {
     #[test]
     fn test_reset() {
         let mut metrics = AdvancedMetrics::default();
-        metrics.register_counter("c".to_string(), "h".to_string()).unwrap();
+        metrics
+            .register_counter("c".to_string(), "h".to_string())
+            .unwrap();
         metrics.reset();
         assert_eq!(metrics.metric_count(), 0);
     }
@@ -638,8 +662,12 @@ mod tests {
             ..Default::default()
         };
         let mut metrics = AdvancedMetrics::new(config);
-        metrics.register_counter("a".to_string(), "h".to_string()).unwrap();
-        metrics.register_gauge("b".to_string(), "h".to_string()).unwrap();
+        metrics
+            .register_counter("a".to_string(), "h".to_string())
+            .unwrap();
+        metrics
+            .register_gauge("b".to_string(), "h".to_string())
+            .unwrap();
         let result = metrics.register_counter("c".to_string(), "h".to_string());
         assert!(result.is_err());
     }

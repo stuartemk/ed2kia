@@ -145,10 +145,14 @@ mod internal {
     impl CircuitParams {
         pub fn new(constraint_count: usize, complexity: f64) -> Result<Self, CurveError> {
             if constraint_count == 0 {
-                return Err(CurveError::InvalidParameter("Constraint count must be > 0".to_string()));
+                return Err(CurveError::InvalidParameter(
+                    "Constraint count must be > 0".to_string(),
+                ));
             }
             if !(0.0..=1.0).contains(&complexity) {
-                return Err(CurveError::InvalidParameter("Complexity must be between 0.0 and 1.0".to_string()));
+                return Err(CurveError::InvalidParameter(
+                    "Complexity must be between 0.0 and 1.0".to_string(),
+                ));
             }
             Ok(Self {
                 constraint_count,
@@ -343,12 +347,22 @@ mod internal {
 
         #[test]
         fn test_circuit_params_zero_constraints() {
-            assert_eq!(CircuitParams::new(0, 0.5), Err(CurveError::InvalidParameter("Constraint count must be > 0".to_string())));
+            assert_eq!(
+                CircuitParams::new(0, 0.5),
+                Err(CurveError::InvalidParameter(
+                    "Constraint count must be > 0".to_string()
+                ))
+            );
         }
 
         #[test]
         fn test_circuit_params_invalid_complexity() {
-            assert_eq!(CircuitParams::new(100, 1.5), Err(CurveError::InvalidParameter("Complexity must be between 0.0 and 1.0".to_string())));
+            assert_eq!(
+                CircuitParams::new(100, 1.5),
+                Err(CurveError::InvalidParameter(
+                    "Complexity must be between 0.0 and 1.0".to_string()
+                ))
+            );
         }
 
         #[test]
@@ -366,8 +380,8 @@ mod internal {
 
         #[test]
         fn test_config_with_aggregation() {
-            let config = MultiCurveConfig::new(ZKPCurve::BN254)
-                .with_aggregation(ZKPCurve::BLS12_381);
+            let config =
+                MultiCurveConfig::new(ZKPCurve::BN254).with_aggregation(ZKPCurve::BLS12_381);
             assert!(config.supports_aggregation());
         }
 
@@ -381,12 +395,14 @@ mod internal {
         #[test]
         fn test_batch_add() {
             let mut batch = AggregationBatchV2::new("b1".to_string(), 2);
-            batch.add(AggregationEntryV2 {
-                proof_id: "p1".to_string(),
-                curve: ZKPCurve::BN254,
-                proof_size: 64,
-                verified: true,
-            }).unwrap();
+            batch
+                .add(AggregationEntryV2 {
+                    proof_id: "p1".to_string(),
+                    curve: ZKPCurve::BN254,
+                    proof_size: 64,
+                    verified: true,
+                })
+                .unwrap();
             assert_eq!(batch.size(), 1);
             assert_eq!(batch.verified_count(), 1);
         }
@@ -394,19 +410,24 @@ mod internal {
         #[test]
         fn test_batch_full() {
             let mut batch = AggregationBatchV2::new("b1".to_string(), 1);
-            batch.add(AggregationEntryV2 {
-                proof_id: "p1".to_string(),
-                curve: ZKPCurve::BN254,
-                proof_size: 64,
-                verified: false,
-            }).unwrap();
+            batch
+                .add(AggregationEntryV2 {
+                    proof_id: "p1".to_string(),
+                    curve: ZKPCurve::BN254,
+                    proof_size: 64,
+                    verified: false,
+                })
+                .unwrap();
             assert!(batch.is_full());
-            assert_eq!(batch.add(AggregationEntryV2 {
-                proof_id: "p2".to_string(),
-                curve: ZKPCurve::BN254,
-                proof_size: 64,
-                verified: false,
-            }), Err(CurveError::InvalidParameter("Batch full".to_string())));
+            assert_eq!(
+                batch.add(AggregationEntryV2 {
+                    proof_id: "p2".to_string(),
+                    curve: ZKPCurve::BN254,
+                    proof_size: 64,
+                    verified: false,
+                }),
+                Err(CurveError::InvalidParameter("Batch full".to_string()))
+            );
         }
 
         #[test]
@@ -444,8 +465,8 @@ mod internal {
 
         #[test]
         fn test_full_lifecycle() {
-            let config = MultiCurveConfig::new(ZKPCurve::BN254)
-                .with_aggregation(ZKPCurve::BLS12_381);
+            let config =
+                MultiCurveConfig::new(ZKPCurve::BN254).with_aggregation(ZKPCurve::BLS12_381);
             let mut manager = MultiCurveManager::new(config);
 
             let params = CircuitParams::new(500, 0.7).unwrap();
@@ -454,12 +475,14 @@ mod internal {
 
             let mut batch = AggregationBatchV2::new("batch1".to_string(), 16);
             for i in 0..5 {
-                batch.add(AggregationEntryV2 {
-                    proof_id: format!("p{}", i),
-                    curve: ZKPCurve::BN254,
-                    proof_size: 64,
-                    verified: true,
-                }).unwrap();
+                batch
+                    .add(AggregationEntryV2 {
+                        proof_id: format!("p{}", i),
+                        curve: ZKPCurve::BN254,
+                        proof_size: 64,
+                        verified: true,
+                    })
+                    .unwrap();
             }
             assert_eq!(batch.size(), 5);
             assert_eq!(batch.verified_count(), 5);

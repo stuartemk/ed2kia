@@ -29,8 +29,8 @@
 //! Feature-gated behind `cfg(feature = "v2.0-sprint2")`.
 
 mod internal {
-    use std::collections::BinaryHeap;
     use std::cmp::Ordering;
+    use std::collections::BinaryHeap;
     use std::fmt;
 
     // ============================================================================
@@ -133,7 +133,9 @@ mod internal {
         pub fn try_allocate(&mut self, bytes: usize) -> Result<(), HardeningError> {
             if self.current_usage + bytes > self.max_bytes {
                 self.rejected_count += 1;
-                return Err(HardeningError::MemoryLimitExceeded(self.current_usage + bytes));
+                return Err(HardeningError::MemoryLimitExceeded(
+                    self.current_usage + bytes,
+                ));
             }
             self.current_usage += bytes;
             if self.current_usage > self.high_water_mark {
@@ -485,7 +487,8 @@ mod internal {
     impl Ord for SchedulableTask {
         fn cmp(&self, other: &Self) -> Ordering {
             // Higher priority first, then by task_id for stability
-            self.priority.cmp(&other.priority)
+            self.priority
+                .cmp(&other.priority)
                 .then_with(|| self.task_id.cmp(&other.task_id))
         }
     }
@@ -807,16 +810,47 @@ mod internal {
         #[test]
         fn test_scheduler_queue_full() {
             let mut scheduler = PriorityScheduler::new(1, 1024);
-            scheduler.add_task(SchedulableTask::new("t1".to_string(), TaskPriority::Normal, 100)).unwrap();
-            assert_eq!(scheduler.add_task(SchedulableTask::new("t2".to_string(), TaskPriority::Normal, 100)), Err(HardeningError::SchedulerQueueFull));
+            scheduler
+                .add_task(SchedulableTask::new(
+                    "t1".to_string(),
+                    TaskPriority::Normal,
+                    100,
+                ))
+                .unwrap();
+            assert_eq!(
+                scheduler.add_task(SchedulableTask::new(
+                    "t2".to_string(),
+                    TaskPriority::Normal,
+                    100
+                )),
+                Err(HardeningError::SchedulerQueueFull)
+            );
         }
 
         #[test]
         fn test_scheduler_priority_order() {
             let mut scheduler = PriorityScheduler::new(10, 1024);
-            scheduler.add_task(SchedulableTask::new("low".to_string(), TaskPriority::Low, 100)).unwrap();
-            scheduler.add_task(SchedulableTask::new("critical".to_string(), TaskPriority::Critical, 100)).unwrap();
-            scheduler.add_task(SchedulableTask::new("normal".to_string(), TaskPriority::Normal, 100)).unwrap();
+            scheduler
+                .add_task(SchedulableTask::new(
+                    "low".to_string(),
+                    TaskPriority::Low,
+                    100,
+                ))
+                .unwrap();
+            scheduler
+                .add_task(SchedulableTask::new(
+                    "critical".to_string(),
+                    TaskPriority::Critical,
+                    100,
+                ))
+                .unwrap();
+            scheduler
+                .add_task(SchedulableTask::new(
+                    "normal".to_string(),
+                    TaskPriority::Normal,
+                    100,
+                ))
+                .unwrap();
 
             let task = scheduler.next_task().unwrap();
             assert_eq!(task.task_id, "critical");
@@ -825,7 +859,13 @@ mod internal {
         #[test]
         fn test_scheduler_thermal_throttle() {
             let mut scheduler = PriorityScheduler::new(10, 1024);
-            scheduler.add_task(SchedulableTask::new("normal".to_string(), TaskPriority::Normal, 100)).unwrap();
+            scheduler
+                .add_task(SchedulableTask::new(
+                    "normal".to_string(),
+                    TaskPriority::Normal,
+                    100,
+                ))
+                .unwrap();
             scheduler.update_thermal(90.0); // Critical
 
             let result = scheduler.execute_next();
@@ -837,7 +877,13 @@ mod internal {
         #[test]
         fn test_scheduler_memory_limit() {
             let mut scheduler = PriorityScheduler::new(10, 100); // Small memory
-            scheduler.add_task(SchedulableTask::new("big".to_string(), TaskPriority::Critical, 200)).unwrap();
+            scheduler
+                .add_task(SchedulableTask::new(
+                    "big".to_string(),
+                    TaskPriority::Critical,
+                    200,
+                ))
+                .unwrap();
 
             let result = scheduler.execute_next();
             // Task exceeds memory limit
@@ -848,7 +894,13 @@ mod internal {
         #[test]
         fn test_scheduler_execute_success() {
             let mut scheduler = PriorityScheduler::new(10, 1024);
-            scheduler.add_task(SchedulableTask::new("task-1".to_string(), TaskPriority::Critical, 100)).unwrap();
+            scheduler
+                .add_task(SchedulableTask::new(
+                    "task-1".to_string(),
+                    TaskPriority::Critical,
+                    100,
+                ))
+                .unwrap();
 
             let task = scheduler.execute_next().unwrap().unwrap();
             assert_eq!(task.task_id, "task-1");
@@ -867,9 +919,27 @@ mod internal {
             let mut scheduler = PriorityScheduler::new(20, 4096);
 
             // Add tasks with different priorities
-            scheduler.add_task(SchedulableTask::new("bg-sync".to_string(), TaskPriority::Low, 512)).unwrap();
-            scheduler.add_task(SchedulableTask::new("zkp-proof".to_string(), TaskPriority::High, 1024)).unwrap();
-            scheduler.add_task(SchedulableTask::new("heartbeat".to_string(), TaskPriority::Critical, 128)).unwrap();
+            scheduler
+                .add_task(SchedulableTask::new(
+                    "bg-sync".to_string(),
+                    TaskPriority::Low,
+                    512,
+                ))
+                .unwrap();
+            scheduler
+                .add_task(SchedulableTask::new(
+                    "zkp-proof".to_string(),
+                    TaskPriority::High,
+                    1024,
+                ))
+                .unwrap();
+            scheduler
+                .add_task(SchedulableTask::new(
+                    "heartbeat".to_string(),
+                    TaskPriority::Critical,
+                    128,
+                ))
+                .unwrap();
 
             assert_eq!(scheduler.queue_len(), 3);
 
@@ -892,6 +962,6 @@ mod internal {
 }
 
 pub use internal::{
-    HardeningError, MemoryLimiter, MemoryLevel, PriorityScheduler,
-    SchedulableTask, SyscallFilter, TaskPriority, ThermalLevel, ThermalMonitor,
+    HardeningError, MemoryLevel, MemoryLimiter, PriorityScheduler, SchedulableTask, SyscallFilter,
+    TaskPriority, ThermalLevel, ThermalMonitor,
 };

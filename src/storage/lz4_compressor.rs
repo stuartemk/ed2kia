@@ -263,7 +263,9 @@ impl LZ4Compressor {
         // Verify checksum
         let computed_checksum = compute_checksum(&data);
         if computed_checksum != block.checksum {
-            return Err(LZ4Error::DecompressionFailed("Checksum mismatch".to_string()));
+            return Err(LZ4Error::DecompressionFailed(
+                "Checksum mismatch".to_string(),
+            ));
         }
 
         self.stats.total_decompressed += 1;
@@ -343,7 +345,11 @@ fn simulate_compression(data: &[u8], target_size: usize) -> Vec<u8> {
     }
     // Simulate compressed representation
     let mut compressed = Vec::with_capacity(target_size);
-    let step = if target_size == 0 { 1 } else { data.len() / target_size };
+    let step = if target_size == 0 {
+        1
+    } else {
+        data.len() / target_size
+    };
     for i in 0..target_size {
         compressed.push(data[i * step % data.len()]);
     }
@@ -355,7 +361,11 @@ fn simulate_decompression(compressed: &[u8], original_size: usize) -> Vec<u8> {
         return vec![0; original_size];
     }
     let mut decompressed = Vec::with_capacity(original_size);
-    let step = if original_size == 0 { 1 } else { original_size / compressed.len() };
+    let step = if original_size == 0 {
+        1
+    } else {
+        original_size / compressed.len()
+    };
     for i in 0..original_size {
         decompressed.push(compressed[i / step % compressed.len()]);
     }
@@ -427,7 +437,14 @@ mod tests {
     #[test]
     fn test_decompress_empty_block() {
         let mut compressor = LZ4Compressor::default();
-        let block = CompressedBlock::new("empty".to_string(), 0, vec![], 0.0, 0, CompressionLevel::Fast);
+        let block = CompressedBlock::new(
+            "empty".to_string(),
+            0,
+            vec![],
+            0.0,
+            0,
+            CompressionLevel::Fast,
+        );
         let result = compressor.decompress(&block);
         assert!(result.is_err());
     }
@@ -557,13 +574,27 @@ mod tests {
 
     #[test]
     fn test_block_has_savings() {
-        let block = CompressedBlock::new("s".to_string(), 100, vec![0; 60], 0.6, 0, CompressionLevel::Fast);
+        let block = CompressedBlock::new(
+            "s".to_string(),
+            100,
+            vec![0; 60],
+            0.6,
+            0,
+            CompressionLevel::Fast,
+        );
         assert!(block.has_savings());
     }
 
     #[test]
     fn test_block_no_savings() {
-        let block = CompressedBlock::new("ns".to_string(), 100, vec![0; 100], 1.0, 0, CompressionLevel::Fast);
+        let block = CompressedBlock::new(
+            "ns".to_string(),
+            100,
+            vec![0; 100],
+            1.0,
+            0,
+            CompressionLevel::Fast,
+        );
         assert!(!block.has_savings());
     }
 

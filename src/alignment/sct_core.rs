@@ -135,7 +135,9 @@ impl SCTEvaluator for Tensor {
     fn to_stuartian_tensor(&self) -> Result<StuartianTensor, SctError> {
         let shape: Vec<usize> = self.shape().dims().to_vec();
         if shape.len() > 2 || (shape.len() == 1 && shape[0] != 3) {
-            return Err(SctError::InvalidTensorShape { shape: shape.clone() });
+            return Err(SctError::InvalidTensorShape {
+                shape: shape.clone(),
+            });
         }
         let logits: Vec<f32> = match self.to_vec1::<f32>() {
             Ok(v) => v,
@@ -298,11 +300,7 @@ mod tests {
         for z_val in positive_values {
             let tensor = StuartianTensor::new(0.5, 0.5, z_val).unwrap();
             let decision = tensor.evaluate_trajectory().unwrap();
-            assert!(
-                decision.is_approved(),
-                "Z={:.4} should be approved",
-                z_val
-            );
+            assert!(decision.is_approved(), "Z={:.4} should be approved", z_val);
         }
     }
 

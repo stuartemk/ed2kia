@@ -206,12 +206,7 @@ impl SLOEngine {
             }
         }
 
-        self.audit(
-            &format!(
-                "metric tracked: {} = {:.4}",
-                metric_key, value
-            ),
-        );
+        self.audit(&format!("metric tracked: {} = {:.4}", metric_key, value));
 
         Ok(())
     }
@@ -229,10 +224,7 @@ impl SLOEngine {
         let has_data = window.is_some_and(|w| !w.is_empty()); // CLEANUP: map_or(false, |w| ...) -> is_some_and
         if !has_data {
             let name = config.name.clone();
-            return Ok(SLOResult::warning(&format!(
-                "No data for {}",
-                name
-            )));
+            return Ok(SLOResult::warning(&format!("No data for {}", name)));
         }
 
         let window = window.unwrap();
@@ -308,11 +300,7 @@ impl SLOEngine {
         let name = config.name.clone();
         let max_windows = config.max_breach_windows;
 
-        let breach_count = self
-            .breach_counters
-            .get(metric_key)
-            .copied()
-            .unwrap_or(0);
+        let breach_count = self.breach_counters.get(metric_key).copied().unwrap_or(0);
 
         if breach_count >= max_windows {
             let action = self.trigger_degradation(&name);
@@ -321,10 +309,7 @@ impl SLOEngine {
                 name, breach_count, action
             ));
             Ok(SLOResult::critical(
-                &format!(
-                    "{} breached SLA after {} windows",
-                    name, breach_count
-                ),
+                &format!("{} breached SLA after {} windows", name, breach_count),
                 &action.to_string(),
                 breach_count as u64,
             ))
@@ -357,10 +342,7 @@ impl SLOEngine {
             "degradation triggered"
         );
 
-        self.audit(&format!(
-            "degradation: {} → {}",
-            slo_name, action
-        ));
+        self.audit(&format!("degradation: {} → {}", slo_name, action));
 
         action
     }
@@ -382,11 +364,8 @@ impl SLOEngine {
 
     fn audit(&mut self, message: &str) {
         let hash = format!("{:x}", Sha256::digest(message.as_bytes()));
-        self.audit_trail.push_back(format!(
-            "[{}] {}",
-            &hash[..8],
-            message
-        ));
+        self.audit_trail
+            .push_back(format!("[{}] {}", &hash[..8], message));
         while self.audit_trail.len() > 256 {
             self.audit_trail.pop_front();
         }

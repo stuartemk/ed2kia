@@ -231,9 +231,7 @@ impl CrossModelScalerV2 {
             .values()
             .filter(|n| {
                 n.can_accept(self.config.max_load_threshold)
-                    && required_capabilities
-                        .iter()
-                        .all(|c| n.has_capability(c))
+                    && required_capabilities.iter().all(|c| n.has_capability(c))
             })
             .collect();
 
@@ -275,11 +273,7 @@ impl CrossModelScalerV2 {
     }
 
     /// Actualiza la carga de un nodo.
-    pub fn update_load(
-        &mut self,
-        node_id: &str,
-        new_load: usize,
-    ) -> Result<(), ScalingV2Error> {
+    pub fn update_load(&mut self, node_id: &str, new_load: usize) -> Result<(), ScalingV2Error> {
         let node = self
             .nodes
             .get_mut(node_id)

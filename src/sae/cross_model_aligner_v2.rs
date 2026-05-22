@@ -30,7 +30,11 @@ mod internal {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             match self {
                 Self::DimensionMismatch { expected, got } => {
-                    write!(f, "Gradient dimension mismatch: expected {}, got {}", expected, got)
+                    write!(
+                        f,
+                        "Gradient dimension mismatch: expected {}, got {}",
+                        expected, got
+                    )
                 }
                 Self::NoModelsRegistered => write!(f, "No models registered for alignment"),
                 Self::ModelNotFound(id) => write!(f, "Model not found: {}", id),
@@ -198,7 +202,11 @@ mod internal {
         }
 
         /// Register a model gradient profile.
-        pub fn register_model(&mut self, model_id: String, dimension: usize) -> Result<(), AlignerV2Error> {
+        pub fn register_model(
+            &mut self,
+            model_id: String,
+            dimension: usize,
+        ) -> Result<(), AlignerV2Error> {
             if self.profiles.len() >= self.config.max_models {
                 return Err(AlignerV2Error::NoModelsRegistered);
             }
@@ -215,7 +223,9 @@ mod internal {
             model_id: &str,
             gradients: &[f32],
         ) -> Result<(), AlignerV2Error> {
-            let profile = self.profiles.get_mut(model_id)
+            let profile = self
+                .profiles
+                .get_mut(model_id)
                 .ok_or(AlignerV2Error::ModelNotFound(model_id.to_string()))?;
 
             if gradients.len() != profile.dimension {
@@ -247,7 +257,9 @@ mod internal {
             let target_dim = profiles.iter().map(|p| p.dimension).min().unwrap_or(0);
 
             if target_dim == 0 {
-                return Err(AlignerV2Error::ProjectionFailed("No valid dimensions".to_string()));
+                return Err(AlignerV2Error::ProjectionFailed(
+                    "No valid dimensions".to_string(),
+                ));
             }
 
             // Project gradients to common dimension if needed
@@ -285,14 +297,22 @@ mod internal {
 
             // Adaptive normalization
             let normalization_factor = if self.config.adaptive_normalization {
-                let avg_std: f64 = profiles.iter().map(|p| p.std_dev()).sum::<f64>() / profiles.len() as f64;
-                if avg_std > 0.0 { 1.0 / avg_std } else { 1.0 }
+                let avg_std: f64 =
+                    profiles.iter().map(|p| p.std_dev()).sum::<f64>() / profiles.len() as f64;
+                if avg_std > 0.0 {
+                    1.0 / avg_std
+                } else {
+                    1.0
+                }
             } else {
                 1.0
             };
 
             // Build aligned gradients
-            let aligned: Vec<f32> = mean_grad.iter().map(|g| (*g * normalization_factor) as f32).collect();
+            let aligned: Vec<f32> = mean_grad
+                .iter()
+                .map(|g| (*g * normalization_factor) as f32)
+                .collect();
 
             // Compressed bytes
             let compressed_bytes: usize = profiles.iter().map(|p| p.compressed_size).sum();
@@ -306,11 +326,13 @@ mod internal {
             // Apply decay to profile scores
             let models_count = profiles.len();
             for (_, profile) in self.profiles.iter_mut() {
-                profile.alignment_score = profile.alignment_score * self.config.score_decay + avg_similarity * (1.0 - self.config.score_decay);
+                profile.alignment_score = profile.alignment_score * self.config.score_decay
+                    + avg_similarity * (1.0 - self.config.score_decay);
             }
 
             // Record stats
-            self.stats.record(avg_similarity, dimension_projected, compressed_bytes);
+            self.stats
+                .record(avg_similarity, dimension_projected, compressed_bytes);
 
             // Check threshold
             if avg_similarity < self.config.min_similarity {
@@ -361,7 +383,10 @@ mod internal {
         if b_len == 0 {
             return 0.0;
         }
-        let dot: f64 = a[..b_len].iter().map(|v| v * profile.gradient_norm * 0.1).sum();
+        let dot: f64 = a[..b_len]
+            .iter()
+            .map(|v| v * profile.gradient_norm * 0.1)
+            .sum();
         let norm_a: f64 = a[..b_len].iter().map(|v| v * v).sum::<f64>().sqrt();
         let norm_b = profile.gradient_norm;
         if norm_a < 1e-10 || norm_b < 1e-10 {
@@ -374,7 +399,6 @@ mod internal {
     fn simulate_lz4(data: &[f32], ratio: f32) -> usize {
         (data.len() * 4) / ratio as usize
     }
-
 }
 
 #[cfg(feature = "v1.4-sprint3")]
@@ -469,7 +493,9 @@ mod tests {
         for i in 0..3 {
             aligner.register_model(format!("model-{}", i), 64).unwrap();
             let grads: Vec<f32> = (0..64).map(|j| j as f32 * (i + 1) as f32 * 0.01).collect();
-            aligner.update_profile(&format!("model-{}", i), &grads).unwrap();
+            aligner
+                .update_profile(&format!("model-{}", i), &grads)
+                .unwrap();
         }
 
         let result = aligner.align_gradients().unwrap();
@@ -639,9 +665,9 @@ mod tests {
         let result = aligner.align_gradients();
         // Either Ok or Err with threshold exceeded
         match result {
-            Ok(_) => {},
-            Err(AlignerV2Error::AlignmentThresholdExceeded(_)) => {},
-            Err(AlignerV2Error::DimensionMismatch { .. }) => {},
+            Ok(_) => {}
+            Err(AlignerV2Error::AlignmentThresholdExceeded(_)) => {}
+            Err(AlignerV2Error::DimensionMismatch { .. }) => {}
             Err(e) => panic!("Unexpected error: {}", e),
         }
     }

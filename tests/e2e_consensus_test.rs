@@ -52,11 +52,11 @@ fn make_malicious_result(task_id: Uuid, node_id: &str) -> AuditResultPayload {
 fn make_test_task() -> AuditTaskPayload {
     AuditTaskPayload::new(
         vec![1.0, 2.0, 3.0, 4.0], // shard_weights
-        (64, 64),                  // shard_shape
+        (64, 64),                 // shard_shape
         vec![0.1, 0.2, 0.3, 0.4], // input_activation
-        2,                         // batch_size
-        3,                         // k
-        0.01,                      // sparsity_threshold
+        2,                        // batch_size
+        3,                        // k
+        0.01,                     // sparsity_threshold
     )
 }
 
@@ -185,8 +185,16 @@ async fn test_e2e_full_immune_sequence() {
     assert!(reputation.is_banned("peer-C"));
     assert!(!reputation.is_banned("peer-A"));
     assert!(!reputation.is_banned("peer-B"));
-    assert_eq!(reputation.banned_count(), 1, "Exactly 1 peer should be banned");
-    assert_eq!(reputation.tracked_count(), 3, "All 3 peers should be tracked");
+    assert_eq!(
+        reputation.banned_count(),
+        1,
+        "Exactly 1 peer should be banned"
+    );
+    assert_eq!(
+        reputation.tracked_count(),
+        3,
+        "All 3 peers should be tracked"
+    );
 }
 
 #[tokio::test]

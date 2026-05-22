@@ -37,7 +37,12 @@ mod internal {
     #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
     pub enum BridgeError {
         /// Slider value outside ethical bounds.
-        ValueOutOfBounds { slider: String, value: f32, min: f32, max: f32 },
+        ValueOutOfBounds {
+            slider: String,
+            value: f32,
+            min: f32,
+            max: f32,
+        },
         /// Safety threshold violated.
         SafetyThresholdViolated { value: f32, threshold: f32 },
         /// Invalid configuration from frontend.
@@ -51,8 +56,17 @@ mod internal {
     impl std::fmt::Display for BridgeError {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             match self {
-                BridgeError::ValueOutOfBounds { slider, value, min, max } => {
-                    write!(f, "Slider '{}' value {} outside bounds [{}, {}]", slider, value, min, max)
+                BridgeError::ValueOutOfBounds {
+                    slider,
+                    value,
+                    min,
+                    max,
+                } => {
+                    write!(
+                        f,
+                        "Slider '{}' value {} outside bounds [{}, {}]",
+                        slider, value, min, max
+                    )
                 }
                 BridgeError::SafetyThresholdViolated { value, threshold } => {
                     write!(f, "Safety value {} below threshold {}", value, threshold)
@@ -139,7 +153,12 @@ mod internal {
         }
 
         /// Validate all three slider values at once.
-        pub fn validate_all(&self, empathy: f32, creativity: f32, safety: f32) -> Result<(), BridgeError> {
+        pub fn validate_all(
+            &self,
+            empathy: f32,
+            creativity: f32,
+            safety: f32,
+        ) -> Result<(), BridgeError> {
             self.validate_empathy(empathy)?;
             self.validate_creativity(creativity)?;
             self.validate_safety(safety)?;
@@ -259,7 +278,11 @@ mod internal {
 
             // Clamp values and generate warnings
             let (empathy, empathy_orig) = (
-                Self::clamp_value(request.empathy, self.bounds.empathy_min, self.bounds.empathy_max),
+                Self::clamp_value(
+                    request.empathy,
+                    self.bounds.empathy_min,
+                    self.bounds.empathy_max,
+                ),
                 request.empathy,
             );
             if empathy != empathy_orig {
@@ -271,7 +294,11 @@ mod internal {
             }
 
             let (creativity, creativity_orig) = (
-                Self::clamp_value(request.creativity, self.bounds.creativity_min, self.bounds.creativity_max),
+                Self::clamp_value(
+                    request.creativity,
+                    self.bounds.creativity_min,
+                    self.bounds.creativity_max,
+                ),
                 request.creativity,
             );
             if creativity != creativity_orig {
@@ -283,14 +310,15 @@ mod internal {
             }
 
             let (safety, safety_orig) = (
-                Self::clamp_value(request.safety, self.bounds.safety_min, self.bounds.safety_max),
+                Self::clamp_value(
+                    request.safety,
+                    self.bounds.safety_min,
+                    self.bounds.safety_max,
+                ),
                 request.safety,
             );
             if safety != safety_orig {
-                warnings.push(format!(
-                    "safety clamped from {} to {}",
-                    safety_orig, safety
-                ));
+                warnings.push(format!("safety clamped from {} to {}", safety_orig, safety));
                 accepted = false;
             }
 
@@ -361,8 +389,7 @@ mod internal {
 
         /// Deserialize config from JSON string.
         pub fn deserialize_config(json: &str) -> Result<SteerConfigResponse, BridgeError> {
-            serde_json::from_str(json)
-                .map_err(|e| BridgeError::SerializationError(e.to_string()))
+            serde_json::from_str(json).map_err(|e| BridgeError::SerializationError(e.to_string()))
         }
 
         /// Reset bridge state.
@@ -411,7 +438,10 @@ mod internal {
         }
 
         /// Process steering config request through the bridge.
-        pub fn process_steer_request(&mut self, request: SteerConfigRequest) -> SteerConfigResponse {
+        pub fn process_steer_request(
+            &mut self,
+            request: SteerConfigRequest,
+        ) -> SteerConfigResponse {
             self.bridge.process_request(request)
         }
 
@@ -565,9 +595,9 @@ mod internal {
         fn test_bridge_process_request_with_clamping() {
             let mut bridge = NeuralTauriBridge::new();
             let request = SteerConfigRequest {
-                empathy: 1.0, // exceeds max 0.8
+                empathy: 1.0,     // exceeds max 0.8
                 creativity: -0.5, // below min -0.3
-                safety: 0.1, // below min 0.2
+                safety: 0.1,      // below min 0.2
                 request_id: None,
             };
             let response = bridge.process_request(request);
@@ -762,6 +792,6 @@ mod internal {
 }
 
 pub use internal::{
-    BridgeError, EthicalBounds, NeuralTauriBridge, NeuralTauriState,
-    SteerConfigRequest, SteerConfigResponse,
+    BridgeError, EthicalBounds, NeuralTauriBridge, NeuralTauriState, SteerConfigRequest,
+    SteerConfigResponse,
 };

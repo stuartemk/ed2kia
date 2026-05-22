@@ -12,7 +12,7 @@ use libp2p::{
     mdns,
     request_response::{self, cbor},
     swarm::{NetworkBehaviour, SwarmEvent},
-    PeerId, Swarm, SwarmBuilder, Multiaddr,
+    Multiaddr, PeerId, Swarm, SwarmBuilder,
 };
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
@@ -135,15 +135,15 @@ impl Ed2kSwarm {
             // MIGRATION: mdns::new() now requires PeerId as second argument
             mdns: mdns::tokio::Behaviour::new(mdns::Config::default(), local_peer_id)
                 .context("Failed to initialise mDNS behaviour")?,
-            kad: kad::Behaviour::new(
-                local_peer_id,
-                kad::store::MemoryStore::new(local_peer_id),
-            ),
+            kad: kad::Behaviour::new(local_peer_id, kad::store::MemoryStore::new(local_peer_id)),
             // MIGRATION: libp2p 0.53 - use cbor::Behaviour with protocol paths
             request_response: {
                 let protocol = Ed2kMessageCodec::protocol_name();
                 let config = request_response::Config::default();
-                cbor::Behaviour::new([(protocol, request_response::ProtocolSupport::Full)], config)
+                cbor::Behaviour::new(
+                    [(protocol, request_response::ProtocolSupport::Full)],
+                    config,
+                )
             },
             pubsub,
         };
@@ -165,9 +165,7 @@ impl Ed2kSwarm {
 
         // Escuchar en puerto especificado (0 = auto)
         let listen_addr = format!("/ip4/0.0.0.0/tcp/{}", port);
-        let listen_addr: Multiaddr = listen_addr
-            .parse()
-            .context("Invalid listen address")?;
+        let listen_addr: Multiaddr = listen_addr.parse().context("Invalid listen address")?;
         swarm.listen_on(listen_addr.clone())?;
         info!("Escuchando en: {}", listen_addr);
 
@@ -193,7 +191,10 @@ impl Ed2kSwarm {
             let topic = gossipsub::IdentTopic::new(topic_str.to_string());
             match self.swarm.behaviour_mut().pubsub.subscribe(&topic) {
                 Ok(propagation_delta) => {
-                    info!("Suscrito a topic: {} (delta: {:?})", topic_str, propagation_delta);
+                    info!(
+                        "Suscrito a topic: {} (delta: {:?})",
+                        topic_str, propagation_delta
+                    );
                     self.subscribed_topics.push(topic);
                 }
                 Err(e) => {
@@ -209,7 +210,12 @@ impl Ed2kSwarm {
     pub fn publish_gossipsub(&mut self, topic: &str, data: Vec<u8>) -> Result<()> {
         let topic_str = topic.to_string();
         let gossip_topic = gossipsub::IdentTopic::new(&topic_str);
-        match self.swarm.behaviour_mut().pubsub.publish(gossip_topic, data) {
+        match self
+            .swarm
+            .behaviour_mut()
+            .pubsub
+            .publish(gossip_topic, data)
+        {
             Ok(_) => {
                 debug!("Mensaje publicado a topic: {}", topic_str);
                 Ok(())
@@ -234,7 +240,10 @@ impl Ed2kSwarm {
         // Si reputación muy baja, considerar revocar lease
         if let Some(rep) = self.peer_reputation.get(&peer_id) {
             if *rep < -0.5 {
-                warn!("Peer {} con reputación baja: {:.3} - revocando lease", peer_id, rep);
+                warn!(
+                    "Peer {} con reputación baja: {:.3} - revocando lease",
+                    peer_id, rep
+                );
                 self.lease_expirations.remove(&peer_id);
             }
         }
@@ -260,13 +269,15 @@ impl Ed2kSwarm {
                 }
                 SwarmEvent::ConnectionEstablished { peer_id, .. } => {
                     info!("Conexión establecida con: {}", peer_id);
-                    self.connected_peers.entry(peer_id).or_insert_with(|| PeerInfo {
-                        peer_id,
-                        addresses: Vec::new(),
-                        connected_at: Instant::now(),
-                        resources: None,
-                        assigned_layers: Vec::new(),
-                    });
+                    self.connected_peers
+                        .entry(peer_id)
+                        .or_insert_with(|| PeerInfo {
+                            peer_id,
+                            addresses: Vec::new(),
+                            connected_at: Instant::now(),
+                            resources: None,
+                            assigned_layers: Vec::new(),
+                        });
 
                     // Limitar peers
                     if self.connected_peers.len() > max_peers {
@@ -290,10 +301,12 @@ impl Ed2kSwarm {
                     }
                 }
                 // MIGRATION: kad::QueryResult::GetClosestPeers -> GetClosestPeers result has .peers() method
-                SwarmEvent::Behaviour(Ed2kBehaviourEvent::Kad(kad::Event::OutboundQueryProgressed {
-                    result: kad::QueryResult::GetClosestPeers(Ok(result)),
-                    ..
-                })) => {
+                SwarmEvent::Behaviour(Ed2kBehaviourEvent::Kad(
+                    kad::Event::OutboundQueryProgressed {
+                        result: kad::QueryResult::GetClosestPeers(Ok(result)),
+                        ..
+                    },
+                )) => {
                     // MIGRATION: libp2p 0.53 - result.peers() → result.peers (field)
                     for peer in result.peers {
                         debug!("KAD closest peer: {}", peer);
@@ -321,9 +334,11 @@ impl Ed2kSwarm {
                 }
                 // MIGRATION: IncomingRequest removed in libp2p 0.53, handled via Message event
                 // ─── Fase 2: GossipSub Events ───
-                SwarmEvent::Behaviour(Ed2kBehaviourEvent::Pubsub(
-                    gossipsub::Event::Message { propagation_source, message, .. },
-                )) => {
+                SwarmEvent::Behaviour(Ed2kBehaviourEvent::Pubsub(gossipsub::Event::Message {
+                    propagation_source,
+                    message,
+                    ..
+                })) => {
                     debug!(
                         "GossipSub message de {}: topic={}, size={} bytes",
                         propagation_source,
@@ -374,10 +389,11 @@ impl Ed2kSwarm {
                     confidence_score: 0.0,
                     error: None,
                 };
-                let _ = self.swarm.behaviour_mut().request_response.send_request(
-                    &peer,
-                    Ed2kMessage::TensorResponse(response),
-                );
+                let _ = self
+                    .swarm
+                    .behaviour_mut()
+                    .request_response
+                    .send_request(&peer, Ed2kMessage::TensorResponse(response));
             }
             Ed2kMessage::TensorResponse(resp) => {
                 info!(
@@ -404,7 +420,10 @@ impl Ed2kSwarm {
                 }
             }
             Ed2kMessage::SteeringSignal(signal) => {
-                debug!("SteeringSignal: type={}, payload={}", signal.signal_type, signal.payload);
+                debug!(
+                    "SteeringSignal: type={}, payload={}",
+                    signal.signal_type, signal.payload
+                );
                 // TODO: Phase 2 - Procesar steering signals (atención, temperatura, etc.)
             }
             Ed2kMessage::ResourceAdvertisement(resources) => {
@@ -426,7 +445,10 @@ impl Ed2kSwarm {
             Ed2kMessage::FeatureBatch(batch) => {
                 info!(
                     "FeatureBatch de {}: batch={}, layer={}, features={}",
-                    peer, batch.batch_id, batch.layer_id, batch.features.len()
+                    peer,
+                    batch.batch_id,
+                    batch.layer_id,
+                    batch.features.len()
                 );
                 // TODO: Phase 2 - Enviar a ConsensusValidator
                 // validator.receive_vote(ConsensusVote { ... })?;
@@ -452,10 +474,10 @@ impl Ed2kSwarm {
 
     /// Enviar TensorRequest a un peer específico
     pub fn send_tensor_request(&mut self, peer: &PeerId, req: TensorRequest) -> Result<()> {
-        self.swarm.behaviour_mut().request_response.send_request(
-            peer,
-            Ed2kMessage::TensorRequest(req),
-        );
+        self.swarm
+            .behaviour_mut()
+            .request_response
+            .send_request(peer, Ed2kMessage::TensorRequest(req));
         Ok(())
     }
 
@@ -471,7 +493,10 @@ impl Ed2kSwarm {
 
     /// Salida ordenada de la red
     pub async fn graceful_exit(&mut self) -> Result<()> {
-        info!("Enviando señales de salida a {} peers...", self.connected_peers.len());
+        info!(
+            "Enviando señales de salida a {} peers...",
+            self.connected_peers.len()
+        );
 
         // TODO: Phase 2 - Notificar a peers sobre liberación de leases
         // TODO: Phase 2 - Transferir leases activos a otros peers

@@ -23,10 +23,10 @@
 
 #[cfg(feature = "v1.1-sprint5")]
 mod stress {
-    use ed2kia::ui::dashboard_v2::*;
-    use ed2kia::web::ws_dashboard_stream::*;
     use ed2kia::interoperability::adaptive_router_v2::*;
     use ed2kia::scaling::predictive_balancer::*;
+    use ed2kia::ui::dashboard_v2::*;
+    use ed2kia::web::ws_dashboard_stream::*;
 
     // ========================================================================
     // Dashboard v2 Stress Tests
@@ -167,10 +167,7 @@ mod stress {
 
         // Create 200 connections
         for i in 0..200 {
-            let result = stream.create_connection(
-                format!("conn-{}", i),
-                format!("client-{}", i),
-            );
+            let result = stream.create_connection(format!("conn-{}", i), format!("client-{}", i));
             assert!(result.is_ok());
         }
 
@@ -188,15 +185,13 @@ mod stress {
 
         // Fill to capacity
         for i in 0..50 {
-            let result = stream.create_connection(
-                format!("conn-{}", i),
-                format!("client-{}", i),
-            );
+            let result = stream.create_connection(format!("conn-{}", i), format!("client-{}", i));
             assert!(result.is_ok());
         }
 
         // 51st should fail
-        let result = stream.create_connection("conn-overflow".to_string(), "client-overflow".to_string());
+        let result =
+            stream.create_connection("conn-overflow".to_string(), "client-overflow".to_string());
         assert!(result.is_err());
     }
 
@@ -210,11 +205,9 @@ mod stress {
 
         // Create 80 authenticated connections
         for i in 0..80 {
-            let _ = stream.create_connection(
-                format!("conn-{}", i),
-                format!("client-{}", i),
-            );
-            let _ = stream.authenticate_connection(&format!("conn-{}", i), &format!("client-{}", i));
+            let _ = stream.create_connection(format!("conn-{}", i), format!("client-{}", i));
+            let _ =
+                stream.authenticate_connection(&format!("conn-{}", i), &format!("client-{}", i));
         }
 
         // Broadcast snapshot to all
@@ -255,11 +248,9 @@ mod stress {
 
         // Create 40 connections
         for i in 0..40 {
-            let _ = stream.create_connection(
-                format!("conn-{}", i),
-                format!("client-{}", i),
-            );
-            let _ = stream.authenticate_connection(&format!("conn-{}", i), &format!("client-{}", i));
+            let _ = stream.create_connection(format!("conn-{}", i), format!("client-{}", i));
+            let _ =
+                stream.authenticate_connection(&format!("conn-{}", i), &format!("client-{}", i));
         }
 
         // Broadcast 100 alerts rapidly using string args
@@ -282,10 +273,7 @@ mod stress {
 
         // Create 30 connections
         for i in 0..30 {
-            let _ = stream.create_connection(
-                format!("conn-{}", i),
-                format!("client-{}", i),
-            );
+            let _ = stream.create_connection(format!("conn-{}", i), format!("client-{}", i));
         }
 
         // Cleanup will remove expired connections
@@ -423,7 +411,8 @@ mod stress {
                 let latency = 20.0 + (i as f64) * 0.5;
                 let throughput = 500.0 + (i as f64) * 2.0;
                 let queue_size = 5.0 + (i as f64) % 20.0;
-                let _ = balancer.record_load(&format!("node-{}", i), latency, throughput, queue_size);
+                let _ =
+                    balancer.record_load(&format!("node-{}", i), latency, throughput, queue_size);
             }
         }
 
@@ -572,11 +561,9 @@ mod stress {
         }
 
         for i in 0..200 {
-            let _ = stream.create_connection(
-                format!("conn-{}", i),
-                format!("client-{}", i),
-            );
-            let _ = stream.authenticate_connection(&format!("conn-{}", i), &format!("client-{}", i));
+            let _ = stream.create_connection(format!("conn-{}", i), format!("client-{}", i));
+            let _ =
+                stream.authenticate_connection(&format!("conn-{}", i), &format!("client-{}", i));
         }
 
         // Record metrics and broadcast
@@ -655,11 +642,9 @@ mod stress {
 
         // 10 stream connections
         for i in 0..10 {
-            let _ = stream.create_connection(
-                format!("conn-{}", i),
-                format!("client-{}", i),
-            );
-            let _ = stream.authenticate_connection(&format!("conn-{}", i), &format!("client-{}", i));
+            let _ = stream.create_connection(format!("conn-{}", i), format!("client-{}", i));
+            let _ =
+                stream.authenticate_connection(&format!("conn-{}", i), &format!("client-{}", i));
         }
 
         // Simulate 15 rounds of operation
@@ -669,7 +654,11 @@ mod stress {
                 let node_id = format!("node-{}", i);
                 let latency = 20.0 + (i as f64) * 1.5;
                 let _ = balancer.record_load(&node_id, latency, 600.0, 8.0);
-                dashboard.record_metric(DashboardMetric::SystemNetworkLatency, latency, Some(node_id));
+                dashboard.record_metric(
+                    DashboardMetric::SystemNetworkLatency,
+                    latency,
+                    Some(node_id),
+                );
             }
 
             // Route requests
@@ -711,11 +700,9 @@ mod stress {
         }
 
         for i in 0..15 {
-            let _ = stream.create_connection(
-                format!("conn-{}", i),
-                format!("client-{}", i),
-            );
-            let _ = stream.authenticate_connection(&format!("conn-{}", i), &format!("client-{}", i));
+            let _ = stream.create_connection(format!("conn-{}", i), format!("client-{}", i));
+            let _ =
+                stream.authenticate_connection(&format!("conn-{}", i), &format!("client-{}", i));
         }
 
         // Phase 2: Operations loop
@@ -782,6 +769,9 @@ mod feature_flag_test {
     fn test_stress_feature_flag_disabled() {
         // When feature is disabled, stress tests should not compile
         // This test ensures the feature flag is properly configured
-        assert!(true, "Feature v1.1-sprint5 is disabled - stress tests skipped");
+        assert!(
+            true,
+            "Feature v1.1-sprint5 is disabled - stress tests skipped"
+        );
     }
 }

@@ -50,8 +50,12 @@ mod internal {
                 DaoLedgerV5Error::SignatureInvalid(id) => write!(f, "Invalid signature: {}", id),
                 DaoLedgerV5Error::HashMismatch(id) => write!(f, "Hash mismatch: {}", id),
                 DaoLedgerV5Error::QuorumNotReached(q) => write!(f, "Quorum not reached: {:.2}", q),
-                DaoLedgerV5Error::ApprovalNotReached(a) => write!(f, "Approval not reached: {:.2}", a),
-                DaoLedgerV5Error::TimeLockActive(ms) => write!(f, "Time-lock active: {}ms remaining", ms),
+                DaoLedgerV5Error::ApprovalNotReached(a) => {
+                    write!(f, "Approval not reached: {:.2}", a)
+                }
+                DaoLedgerV5Error::TimeLockActive(ms) => {
+                    write!(f, "Time-lock active: {}ms remaining", ms)
+                }
                 DaoLedgerV5Error::InvalidConfig(msg) => write!(f, "Invalid config: {}", msg),
                 DaoLedgerV5Error::LedgerFull => write!(f, "Ledger is full"),
                 DaoLedgerV5Error::RollbackFailed(msg) => write!(f, "Rollback failed: {}", msg),
@@ -278,7 +282,13 @@ mod internal {
         }
 
         pub fn verify_hash(&self) -> bool {
-            let expected = compute_hash(&self.entry_id, self.sequence, &self.payload, &self.previous_hash, self.timestamp_ms);
+            let expected = compute_hash(
+                &self.entry_id,
+                self.sequence,
+                &self.payload,
+                &self.previous_hash,
+                self.timestamp_ms,
+            );
             self.hash == expected
         }
     }
@@ -324,7 +334,8 @@ mod internal {
                 self.compliance_score = 1.0;
                 return;
             }
-            self.compliance_score = 1.0 - (self.violations as f64 / self.total_proposals as f64) * 0.5;
+            self.compliance_score =
+                1.0 - (self.violations as f64 / self.total_proposals as f64) * 0.5;
         }
     }
 
@@ -458,7 +469,9 @@ mod internal {
             reputation_weight: f64,
             vote_value: bool,
         ) -> Result<(), DaoLedgerV5Error> {
-            let proposal = self.proposals.get_mut(&proposal_id)
+            let proposal = self
+                .proposals
+                .get_mut(&proposal_id)
                 .ok_or(DaoLedgerV5Error::EntryNotFound(proposal_id.clone()))?;
 
             // Check time-lock
@@ -500,7 +513,9 @@ mod internal {
             &mut self,
             proposal_id: &str,
         ) -> Result<HybridExecutionState, DaoLedgerV5Error> {
-            let proposal = self.proposals.get(proposal_id)
+            let proposal = self
+                .proposals
+                .get(proposal_id)
                 .ok_or(DaoLedgerV5Error::EntryNotFound(proposal_id.to_string()))?;
 
             // Check quorum
@@ -540,29 +555,31 @@ mod internal {
             self.metrics.active_proposals = self.metrics.active_proposals.saturating_sub(1);
 
             // Create hybrid execution state
-            let state = HybridExecutionState::new(
-                proposal_id.to_string(),
-                current_timestamp_ms(),
-            );
-            self.hybrid_states.insert(proposal_id.to_string(), state.clone());
+            let state = HybridExecutionState::new(proposal_id.to_string(), current_timestamp_ms());
+            self.hybrid_states
+                .insert(proposal_id.to_string(), state.clone());
 
-            self.append_entry(EntryType::ProposalExecuted, "system".to_string(), proposal_id.to_string())?;
+            self.append_entry(
+                EntryType::ProposalExecuted,
+                "system".to_string(),
+                proposal_id.to_string(),
+            )?;
             Ok(state)
         }
 
         // ── Rollback ───────────────────────────────────────────────────────
 
-        pub fn rollback_proposal(
-            &mut self,
-            proposal_id: &str,
-        ) -> Result<(), DaoLedgerV5Error> {
-            let proposal = self.proposals.get_mut(proposal_id)
+        pub fn rollback_proposal(&mut self, proposal_id: &str) -> Result<(), DaoLedgerV5Error> {
+            let proposal = self
+                .proposals
+                .get_mut(proposal_id)
                 .ok_or(DaoLedgerV5Error::EntryNotFound(proposal_id.to_string()))?;
 
             if proposal.status != ProposalStatus::Executed {
-                return Err(DaoLedgerV5Error::RollbackFailed(
-                    format!("Cannot rollback proposal with status: {}", proposal.status),
-                ));
+                return Err(DaoLedgerV5Error::RollbackFailed(format!(
+                    "Cannot rollback proposal with status: {}",
+                    proposal.status
+                )));
             }
 
             proposal.status = ProposalStatus::RolledBack;
@@ -570,7 +587,11 @@ mod internal {
             self.metrics.violations += 1;
             self.metrics.update_compliance();
 
-            self.append_entry(EntryType::Rollback, "system".to_string(), proposal_id.to_string())?;
+            self.append_entry(
+                EntryType::Rollback,
+                "system".to_string(),
+                proposal_id.to_string(),
+            )?;
             Ok(())
         }
 
@@ -713,13 +734,15 @@ mod internal {
         #[test]
         fn test_create_proposal_duplicate() {
             let mut ledger = DaoLedgerV5::default();
-            ledger.create_proposal(
-                "p1".to_string(),
-                "author1".to_string(),
-                "Test".to_string(),
-                "Desc".to_string(),
-                false,
-            ).unwrap();
+            ledger
+                .create_proposal(
+                    "p1".to_string(),
+                    "author1".to_string(),
+                    "Test".to_string(),
+                    "Desc".to_string(),
+                    false,
+                )
+                .unwrap();
             let result = ledger.create_proposal(
                 "p1".to_string(),
                 "author1".to_string(),
@@ -733,13 +756,15 @@ mod internal {
         #[test]
         fn test_critical_proposal_timelock() {
             let mut ledger = DaoLedgerV5::default();
-            ledger.create_proposal(
-                "p1".to_string(),
-                "author1".to_string(),
-                "Critical".to_string(),
-                "Critical proposal".to_string(),
-                true,
-            ).unwrap();
+            ledger
+                .create_proposal(
+                    "p1".to_string(),
+                    "author1".to_string(),
+                    "Critical".to_string(),
+                    "Critical proposal".to_string(),
+                    true,
+                )
+                .unwrap();
             let proposal = ledger.get_proposal("p1").unwrap();
             assert_eq!(proposal.status, ProposalStatus::Timelocked);
             assert!(proposal.timelock_until_ms.is_some());
@@ -748,13 +773,15 @@ mod internal {
         #[test]
         fn test_cast_vote() {
             let mut ledger = DaoLedgerV5::default();
-            ledger.create_proposal(
-                "p1".to_string(),
-                "author1".to_string(),
-                "Test".to_string(),
-                "Desc".to_string(),
-                false,
-            ).unwrap();
+            ledger
+                .create_proposal(
+                    "p1".to_string(),
+                    "author1".to_string(),
+                    "Test".to_string(),
+                    "Desc".to_string(),
+                    false,
+                )
+                .unwrap();
             let result = ledger.cast_vote(
                 "v1".to_string(),
                 "p1".to_string(),
@@ -782,16 +809,42 @@ mod internal {
         #[test]
         fn test_vote_weight_accumulation() {
             let mut ledger = DaoLedgerV5::default();
-            ledger.create_proposal(
-                "p1".to_string(),
-                "author1".to_string(),
-                "Test".to_string(),
-                "Desc".to_string(),
-                false,
-            ).unwrap();
-            ledger.cast_vote("v1".to_string(), "p1".to_string(), "voter1".to_string(), 0.8, true).unwrap();
-            ledger.cast_vote("v2".to_string(), "p1".to_string(), "voter2".to_string(), 0.6, true).unwrap();
-            ledger.cast_vote("v3".to_string(), "p1".to_string(), "voter3".to_string(), 0.4, false).unwrap();
+            ledger
+                .create_proposal(
+                    "p1".to_string(),
+                    "author1".to_string(),
+                    "Test".to_string(),
+                    "Desc".to_string(),
+                    false,
+                )
+                .unwrap();
+            ledger
+                .cast_vote(
+                    "v1".to_string(),
+                    "p1".to_string(),
+                    "voter1".to_string(),
+                    0.8,
+                    true,
+                )
+                .unwrap();
+            ledger
+                .cast_vote(
+                    "v2".to_string(),
+                    "p1".to_string(),
+                    "voter2".to_string(),
+                    0.6,
+                    true,
+                )
+                .unwrap();
+            ledger
+                .cast_vote(
+                    "v3".to_string(),
+                    "p1".to_string(),
+                    "voter3".to_string(),
+                    0.4,
+                    false,
+                )
+                .unwrap();
             let proposal = ledger.get_proposal("p1").unwrap();
             assert!((proposal.yes_weight - 1.4).abs() < 0.01);
             assert!((proposal.no_weight - 0.4).abs() < 0.01);
@@ -814,13 +867,15 @@ mod internal {
         #[test]
         fn test_execute_proposal_insufficient_quorum() {
             let mut ledger = DaoLedgerV5::default();
-            ledger.create_proposal(
-                "p1".to_string(),
-                "author1".to_string(),
-                "Test".to_string(),
-                "Desc".to_string(),
-                false,
-            ).unwrap();
+            ledger
+                .create_proposal(
+                    "p1".to_string(),
+                    "author1".to_string(),
+                    "Test".to_string(),
+                    "Desc".to_string(),
+                    false,
+                )
+                .unwrap();
             let result = ledger.execute_proposal("p1");
             assert!(matches!(result, Err(DaoLedgerV5Error::QuorumNotReached(_))));
         }
@@ -830,16 +885,29 @@ mod internal {
             let mut ledger = DaoLedgerV5::default();
             ledger.config.quorum_threshold = 0.0;
             ledger.config.approval_threshold = 0.51;
-            ledger.create_proposal(
-                "p1".to_string(),
-                "author1".to_string(),
-                "Test".to_string(),
-                "Desc".to_string(),
-                false,
-            ).unwrap();
-            ledger.cast_vote("v1".to_string(), "p1".to_string(), "voter1".to_string(), 0.9, false).unwrap();
+            ledger
+                .create_proposal(
+                    "p1".to_string(),
+                    "author1".to_string(),
+                    "Test".to_string(),
+                    "Desc".to_string(),
+                    false,
+                )
+                .unwrap();
+            ledger
+                .cast_vote(
+                    "v1".to_string(),
+                    "p1".to_string(),
+                    "voter1".to_string(),
+                    0.9,
+                    false,
+                )
+                .unwrap();
             let result = ledger.execute_proposal("p1");
-            assert!(matches!(result, Err(DaoLedgerV5Error::ApprovalNotReached(_))));
+            assert!(matches!(
+                result,
+                Err(DaoLedgerV5Error::ApprovalNotReached(_))
+            ));
         }
 
         #[test]
@@ -847,14 +915,24 @@ mod internal {
             let mut ledger = DaoLedgerV5::default();
             ledger.config.quorum_threshold = 0.0;
             ledger.config.approval_threshold = 0.0;
-            ledger.create_proposal(
-                "p1".to_string(),
-                "author1".to_string(),
-                "Test".to_string(),
-                "Desc".to_string(),
-                false,
-            ).unwrap();
-            ledger.cast_vote("v1".to_string(), "p1".to_string(), "voter1".to_string(), 0.9, true).unwrap();
+            ledger
+                .create_proposal(
+                    "p1".to_string(),
+                    "author1".to_string(),
+                    "Test".to_string(),
+                    "Desc".to_string(),
+                    false,
+                )
+                .unwrap();
+            ledger
+                .cast_vote(
+                    "v1".to_string(),
+                    "p1".to_string(),
+                    "voter1".to_string(),
+                    0.9,
+                    true,
+                )
+                .unwrap();
             let result = ledger.execute_proposal("p1");
             assert!(result.is_ok());
             let proposal = ledger.get_proposal("p1").unwrap();
@@ -866,14 +944,24 @@ mod internal {
             let mut ledger = DaoLedgerV5::default();
             ledger.config.quorum_threshold = 0.0;
             ledger.config.approval_threshold = 0.0;
-            ledger.create_proposal(
-                "p1".to_string(),
-                "author1".to_string(),
-                "Test".to_string(),
-                "Desc".to_string(),
-                false,
-            ).unwrap();
-            ledger.cast_vote("v1".to_string(), "p1".to_string(), "voter1".to_string(), 0.9, true).unwrap();
+            ledger
+                .create_proposal(
+                    "p1".to_string(),
+                    "author1".to_string(),
+                    "Test".to_string(),
+                    "Desc".to_string(),
+                    false,
+                )
+                .unwrap();
+            ledger
+                .cast_vote(
+                    "v1".to_string(),
+                    "p1".to_string(),
+                    "voter1".to_string(),
+                    0.9,
+                    true,
+                )
+                .unwrap();
             ledger.execute_proposal("p1").unwrap();
             let result = ledger.rollback_proposal("p1");
             assert!(result.is_ok());
@@ -884,13 +972,15 @@ mod internal {
         #[test]
         fn test_rollback_non_executed() {
             let mut ledger = DaoLedgerV5::default();
-            ledger.create_proposal(
-                "p1".to_string(),
-                "author1".to_string(),
-                "Test".to_string(),
-                "Desc".to_string(),
-                false,
-            ).unwrap();
+            ledger
+                .create_proposal(
+                    "p1".to_string(),
+                    "author1".to_string(),
+                    "Test".to_string(),
+                    "Desc".to_string(),
+                    false,
+                )
+                .unwrap();
             let result = ledger.rollback_proposal("p1");
             assert!(matches!(result, Err(DaoLedgerV5Error::RollbackFailed(_))));
         }
@@ -898,11 +988,13 @@ mod internal {
         #[test]
         fn test_ledger_entry_append() {
             let mut ledger = DaoLedgerV5::default();
-            let entry = ledger.append_entry(
-                EntryType::ProposalCreated,
-                "actor1".to_string(),
-                "payload".to_string(),
-            ).unwrap();
+            let entry = ledger
+                .append_entry(
+                    EntryType::ProposalCreated,
+                    "actor1".to_string(),
+                    "payload".to_string(),
+                )
+                .unwrap();
             assert_eq!(entry.sequence, 0);
             assert_eq!(ledger.entries.len(), 1);
         }
@@ -910,15 +1002,29 @@ mod internal {
         #[test]
         fn test_ledger_chain_verification() {
             let mut ledger = DaoLedgerV5::default();
-            ledger.append_entry(EntryType::ProposalCreated, "a1".to_string(), "p1".to_string()).unwrap();
-            ledger.append_entry(EntryType::VoteCast, "v1".to_string(), "p1".to_string()).unwrap();
+            ledger
+                .append_entry(
+                    EntryType::ProposalCreated,
+                    "a1".to_string(),
+                    "p1".to_string(),
+                )
+                .unwrap();
+            ledger
+                .append_entry(EntryType::VoteCast, "v1".to_string(), "p1".to_string())
+                .unwrap();
             assert!(ledger.verify_chain());
         }
 
         #[test]
         fn test_get_entry() {
             let mut ledger = DaoLedgerV5::default();
-            ledger.append_entry(EntryType::ProposalCreated, "a1".to_string(), "p1".to_string()).unwrap();
+            ledger
+                .append_entry(
+                    EntryType::ProposalCreated,
+                    "a1".to_string(),
+                    "p1".to_string(),
+                )
+                .unwrap();
             let entry = ledger.get_entry(0);
             assert!(entry.is_some());
             assert_eq!(entry.unwrap().sequence, 0);
@@ -1005,7 +1111,9 @@ mod internal {
                 max_entries: 1,
                 ..DaoLedgerV5Config::default()
             });
-            ledger.append_entry(EntryType::ProposalCreated, "a".to_string(), "p".to_string()).unwrap();
+            ledger
+                .append_entry(EntryType::ProposalCreated, "a".to_string(), "p".to_string())
+                .unwrap();
             let result = ledger.append_entry(EntryType::VoteCast, "a".to_string(), "p".to_string());
             assert!(matches!(result, Err(DaoLedgerV5Error::LedgerFull)));
         }
@@ -1056,13 +1164,15 @@ mod internal {
         fn test_multiple_proposals() {
             let mut ledger = DaoLedgerV5::default();
             for i in 0..5 {
-                ledger.create_proposal(
-                    format!("p{}", i),
-                    "author".to_string(),
-                    format!("Proposal {}", i),
-                    "Desc".to_string(),
-                    false,
-                ).unwrap();
+                ledger
+                    .create_proposal(
+                        format!("p{}", i),
+                        "author".to_string(),
+                        format!("Proposal {}", i),
+                        "Desc".to_string(),
+                        false,
+                    )
+                    .unwrap();
             }
             assert_eq!(ledger.proposals.len(), 5);
             assert_eq!(ledger.metrics.total_proposals, 5);
@@ -1071,8 +1181,12 @@ mod internal {
         #[test]
         fn test_ledger_sequence_increments() {
             let mut ledger = DaoLedgerV5::default();
-            ledger.append_entry(EntryType::ProposalCreated, "a".to_string(), "p".to_string()).unwrap();
-            ledger.append_entry(EntryType::VoteCast, "a".to_string(), "p".to_string()).unwrap();
+            ledger
+                .append_entry(EntryType::ProposalCreated, "a".to_string(), "p".to_string())
+                .unwrap();
+            ledger
+                .append_entry(EntryType::VoteCast, "a".to_string(), "p".to_string())
+                .unwrap();
             assert_eq!(ledger.next_sequence, 2);
         }
 
@@ -1088,14 +1202,24 @@ mod internal {
             let mut ledger = DaoLedgerV5::default();
             ledger.config.quorum_threshold = 0.0;
             ledger.config.approval_threshold = 0.0;
-            ledger.create_proposal(
-                "p1".to_string(),
-                "a1".to_string(),
-                "T".to_string(),
-                "D".to_string(),
-                false,
-            ).unwrap();
-            ledger.cast_vote("v1".to_string(), "p1".to_string(), "v1".to_string(), 0.9, true).unwrap();
+            ledger
+                .create_proposal(
+                    "p1".to_string(),
+                    "a1".to_string(),
+                    "T".to_string(),
+                    "D".to_string(),
+                    false,
+                )
+                .unwrap();
+            ledger
+                .cast_vote(
+                    "v1".to_string(),
+                    "p1".to_string(),
+                    "v1".to_string(),
+                    0.9,
+                    true,
+                )
+                .unwrap();
             ledger.execute_proposal("p1").unwrap();
             assert!(ledger.hybrid_states.contains_key("p1"));
         }

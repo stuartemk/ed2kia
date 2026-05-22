@@ -14,8 +14,8 @@
 
 #[cfg(feature = "v1.5-sprint2")]
 mod internal {
-    use std::collections::{HashMap, BinaryHeap, HashSet};
     use std::cmp::Ordering;
+    use std::collections::{BinaryHeap, HashMap, HashSet};
 
     // ---------------------------------------------------------------------------
     // Errors
@@ -49,12 +49,18 @@ mod internal {
     impl std::fmt::Display for ZKPV10Error {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             match self {
-                ZKPV10Error::ProofGenerationFailed(msg) => write!(f, "Proof generation failed: {}", msg),
+                ZKPV10Error::ProofGenerationFailed(msg) => {
+                    write!(f, "Proof generation failed: {}", msg)
+                }
                 ZKPV10Error::VerificationFailed(msg) => write!(f, "Verification failed: {}", msg),
                 ZKPV10Error::FederationNotFound(id) => write!(f, "Federation {} not found", id),
                 ZKPV10Error::ProofNotFound(id) => write!(f, "Proof {} not found", id),
                 ZKPV10Error::CredibilityTooLow { score, threshold } => {
-                    write!(f, "Credibility {:.3} below threshold {:.3}", score, threshold)
+                    write!(
+                        f,
+                        "Credibility {:.3} below threshold {:.3}",
+                        score, threshold
+                    )
                 }
                 ZKPV10Error::BudgetExceeded { budget, used } => {
                     write!(f, "Budget {:.1} exceeded (used: {:.1})", budget, used)
@@ -323,8 +329,9 @@ mod internal {
                 self.total_failed += 1;
             }
             let total = self.total_verified + self.total_failed;
-            self.avg_verification_time_ms =
-                (self.avg_verification_time_ms * (total - 1) as f64 + time_ms as f64) / total as f64;
+            self.avg_verification_time_ms = (self.avg_verification_time_ms * (total - 1) as f64
+                + time_ms as f64)
+                / total as f64;
         }
 
         pub fn record_delegation(&mut self) {
@@ -465,7 +472,11 @@ mod internal {
 
             // Update cost prediction
             if let Some(fed) = self.federations.get_mut(&federation_id) {
-                fed.record_cost(cost, self.config.cost_ema_alpha, self.config.min_cost_samples);
+                fed.record_cost(
+                    cost,
+                    self.config.cost_ema_alpha,
+                    self.config.min_cost_samples,
+                );
             }
 
             Ok(proof)
@@ -492,8 +503,13 @@ mod internal {
                     self.config.credibility_decay,
                     self.config.credibility_boost,
                 );
-                fed.record_cost(proof.cost, self.config.cost_ema_alpha, self.config.min_cost_samples);
-                self.metrics.record_cost_prediction(fed.ema_cost, proof.cost);
+                fed.record_cost(
+                    proof.cost,
+                    self.config.cost_ema_alpha,
+                    self.config.min_cost_samples,
+                );
+                self.metrics
+                    .record_cost_prediction(fed.ema_cost, proof.cost);
             }
 
             self.proof_index.remove(&proof.id);
@@ -506,13 +522,15 @@ mod internal {
             proof_id: &str,
             target_federation: String,
         ) -> Result<(), ZKPV10Error> {
-            let proof = self.proof_index.get(proof_id).ok_or_else(|| {
-                ZKPV10Error::ProofNotFound(proof_id.to_string())
-            })?;
+            let proof = self
+                .proof_index
+                .get(proof_id)
+                .ok_or_else(|| ZKPV10Error::ProofNotFound(proof_id.to_string()))?;
 
-            let target = self.federations.get_mut(&target_federation).ok_or_else(|| {
-                ZKPV10Error::FederationNotFound(target_federation.clone())
-            })?;
+            let target = self
+                .federations
+                .get_mut(&target_federation)
+                .ok_or_else(|| ZKPV10Error::FederationNotFound(target_federation.clone()))?;
 
             if !target.can_delegate(
                 self.config.max_delegation_depth,
@@ -635,12 +653,7 @@ mod internal {
             engine
                 .register_federation("fed-1".to_string(), 0.9)
                 .unwrap();
-            let proof = engine.submit_proof(
-                "proof-1".to_string(),
-                "fed-1".to_string(),
-                3,
-                10.0,
-            );
+            let proof = engine.submit_proof("proof-1".to_string(), "fed-1".to_string(), 3, 10.0);
             assert!(proof.is_ok());
         }
 
@@ -650,24 +663,14 @@ mod internal {
             engine
                 .register_federation("fed-1".to_string(), 0.3)
                 .unwrap();
-            let result = engine.submit_proof(
-                "proof-1".to_string(),
-                "fed-1".to_string(),
-                3,
-                10.0,
-            );
+            let result = engine.submit_proof("proof-1".to_string(), "fed-1".to_string(), 3, 10.0);
             assert!(result.is_err());
         }
 
         #[test]
         fn test_submit_proof_federation_not_found() {
             let mut engine = AsyncZKPV10::default();
-            let result = engine.submit_proof(
-                "proof-1".to_string(),
-                "unknown".to_string(),
-                3,
-                10.0,
-            );
+            let result = engine.submit_proof("proof-1".to_string(), "unknown".to_string(), 3, 10.0);
             assert!(result.is_err());
         }
 

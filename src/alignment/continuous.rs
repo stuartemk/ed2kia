@@ -214,7 +214,10 @@ impl ContinuousAlignmentLoop {
     }
 
     /// Ingesta feedback humano en el buffer
-    pub fn ingest_feedback(&mut self, feedback: ContinuousFeedback) -> Result<(), AlignmentLoopError> {
+    pub fn ingest_feedback(
+        &mut self,
+        feedback: ContinuousFeedback,
+    ) -> Result<(), AlignmentLoopError> {
         // Validar valores
         if feedback.current_activation.is_nan() || feedback.current_activation.is_infinite() {
             return Err(AlignmentLoopError::FeedbackIngestionFailed {
@@ -235,10 +238,7 @@ impl ContinuousAlignmentLoop {
         let layer_id = feedback.layer_id;
         let concept_index = feedback.concept_index;
         let confidence = feedback.annotator_confidence;
-        let buffer = self
-            .feedback_buffer
-            .entry(layer_id)
-            .or_default();
+        let buffer = self.feedback_buffer.entry(layer_id).or_default();
 
         buffer.push_back(feedback);
 
@@ -374,7 +374,11 @@ impl ContinuousAlignmentLoop {
     }
 
     /// Ejecuta un ciclo completo del loop
-    pub fn run_cycle(&mut self, layer_id: u32, activations: &[f32]) -> Result<AlignmentLoopResult, AlignmentLoopError> {
+    pub fn run_cycle(
+        &mut self,
+        layer_id: u32,
+        activations: &[f32],
+    ) -> Result<AlignmentLoopResult, AlignmentLoopError> {
         // Resetear contador de iteraciones
         self.current_iterations = 0;
 
@@ -503,7 +507,13 @@ fn current_timestamp_ms() -> u64 {
 mod tests {
     use super::*;
 
-    fn make_feedback(layer: u32, concept: u32, current: f32, desired: f32, confidence: f32) -> ContinuousFeedback {
+    fn make_feedback(
+        layer: u32,
+        concept: u32,
+        current: f32,
+        desired: f32,
+        confidence: f32,
+    ) -> ContinuousFeedback {
         ContinuousFeedback::new(layer, concept, current, desired, confidence)
     }
 
@@ -540,7 +550,9 @@ mod tests {
     #[test]
     fn test_compute_drift() {
         let mut loop_ = ContinuousAlignmentLoop::new();
-        loop_.ingest_feedback(make_feedback(0, 5, 0.2, 0.8, 1.0)).unwrap();
+        loop_
+            .ingest_feedback(make_feedback(0, 5, 0.2, 0.8, 1.0))
+            .unwrap();
         let drift = loop_.compute_drift(0).unwrap();
         assert!((drift - 0.6) < 0.01);
     }
@@ -560,7 +572,9 @@ mod tests {
             ..LoopConfig::default()
         });
         // High drift, low confidence
-        loop_.ingest_feedback(make_feedback(0, 5, 0.1, 0.9, 0.5)).unwrap();
+        loop_
+            .ingest_feedback(make_feedback(0, 5, 0.1, 0.9, 0.5))
+            .unwrap();
         let needs_review = loop_.request_human_review(0).unwrap();
         assert!(needs_review);
     }
@@ -569,7 +583,9 @@ mod tests {
     fn test_human_review_not_needed() {
         let mut loop_ = ContinuousAlignmentLoop::new();
         // Low drift, high confidence
-        loop_.ingest_feedback(make_feedback(0, 5, 0.4, 0.5, 0.95)).unwrap();
+        loop_
+            .ingest_feedback(make_feedback(0, 5, 0.4, 0.5, 0.95))
+            .unwrap();
         let needs_review = loop_.request_human_review(0).unwrap();
         assert!(!needs_review);
     }
@@ -577,7 +593,9 @@ mod tests {
     #[test]
     fn test_apply_steering_success() {
         let mut loop_ = ContinuousAlignmentLoop::new();
-        loop_.ingest_feedback(make_feedback(0, 5, 0.4, 0.5, 0.95)).unwrap();
+        loop_
+            .ingest_feedback(make_feedback(0, 5, 0.4, 0.5, 0.95))
+            .unwrap();
         let activations = vec![0.1, 0.2, 0.3];
         let result = loop_.apply_steering(0, &activations).unwrap();
         assert!(result.applied);
@@ -591,7 +609,9 @@ mod tests {
             confidence_threshold: 0.99,
             ..LoopConfig::default()
         });
-        loop_.ingest_feedback(make_feedback(0, 5, 0.1, 0.9, 0.5)).unwrap();
+        loop_
+            .ingest_feedback(make_feedback(0, 5, 0.1, 0.9, 0.5))
+            .unwrap();
         let activations = vec![0.1, 0.2, 0.3];
         let result = loop_.apply_steering(0, &activations);
         assert!(matches!(result, Err(AlignmentLoopError::SteeringPaused)));
@@ -604,7 +624,9 @@ mod tests {
             confidence_threshold: 0.5,
             ..LoopConfig::default()
         });
-        loop_.ingest_feedback(make_feedback(0, 5, 0.1, 0.9, 0.3)).unwrap();
+        loop_
+            .ingest_feedback(make_feedback(0, 5, 0.1, 0.9, 0.3))
+            .unwrap();
         let _ = loop_.request_human_review(0);
         assert_eq!(loop_.pending_review_count(), 1);
 
@@ -616,7 +638,9 @@ mod tests {
     #[test]
     fn test_audit_trail_populated() {
         let mut loop_ = ContinuousAlignmentLoop::new();
-        loop_.ingest_feedback(make_feedback(0, 5, 0.3, 0.7, 0.9)).unwrap();
+        loop_
+            .ingest_feedback(make_feedback(0, 5, 0.3, 0.7, 0.9))
+            .unwrap();
         let trail = loop_.audit_trail();
         assert!(!trail.is_empty());
         assert!(trail[0].contains("feedback ingested"));
@@ -625,7 +649,9 @@ mod tests {
     #[test]
     fn test_clear_feedback() {
         let mut loop_ = ContinuousAlignmentLoop::new();
-        loop_.ingest_feedback(make_feedback(0, 5, 0.3, 0.7, 0.9)).unwrap();
+        loop_
+            .ingest_feedback(make_feedback(0, 5, 0.3, 0.7, 0.9))
+            .unwrap();
         loop_.clear_feedback(0);
         assert_eq!(loop_.layers_with_feedback().len(), 0);
     }
@@ -633,7 +659,9 @@ mod tests {
     #[test]
     fn test_reset() {
         let mut loop_ = ContinuousAlignmentLoop::new();
-        loop_.ingest_feedback(make_feedback(0, 5, 0.3, 0.7, 0.9)).unwrap();
+        loop_
+            .ingest_feedback(make_feedback(0, 5, 0.3, 0.7, 0.9))
+            .unwrap();
         loop_.reset();
         assert_eq!(loop_.layers_with_feedback().len(), 0);
         assert!(loop_.audit_trail().is_empty());

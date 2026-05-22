@@ -243,8 +243,7 @@ mod internal {
             let sum: u64 = self.sync_times.iter().sum();
             self.avg_sync_time_ms = sum as f64 / self.sync_times.len() as f64;
             // EMA for alignment
-            self.avg_alignment_score =
-                0.3 * alignment + 0.7 * self.avg_alignment_score;
+            self.avg_alignment_score = 0.3 * alignment + 0.7 * self.avg_alignment_score;
         }
 
         pub fn record_divergence(&mut self) {
@@ -299,7 +298,8 @@ mod internal {
             if self.models.contains_key(&model_id) {
                 return Err(GradientSyncV7Error::ModelNotFound(model_id));
             }
-            self.models.insert(model_id.clone(), ModelEntryV7::new(model_id, gradient));
+            self.models
+                .insert(model_id.clone(), ModelEntryV7::new(model_id, gradient));
             Ok(())
         }
 
@@ -334,7 +334,11 @@ mod internal {
                         count += 1;
                     }
                 }
-                let avg = if count > 0 { total_similarity / count as f64 } else { 1.0 };
+                let avg = if count > 0 {
+                    total_similarity / count as f64
+                } else {
+                    1.0
+                };
                 scores.insert((*id).clone(), avg);
             }
             // Update alignment scores
@@ -356,9 +360,7 @@ mod internal {
         }
 
         /// Attempt recovery for diverged models.
-        pub fn recover_diverged(
-            &mut self,
-        ) -> Result<Vec<String>, GradientSyncV7Error> {
+        pub fn recover_diverged(&mut self) -> Result<Vec<String>, GradientSyncV7Error> {
             let diverged = self.detect_divergence();
             let mut recovered = Vec::new();
             for id in &diverged {
@@ -426,7 +428,8 @@ mod internal {
         /// Cleanup models with no recent sync.
         pub fn cleanup_stale(&mut self, current_ms: u64, timeout_ms: u64) -> usize {
             let before = self.models.len();
-            self.models.retain(|_, m| current_ms.saturating_sub(m.last_sync_ms) < timeout_ms);
+            self.models
+                .retain(|_, m| current_ms.saturating_sub(m.last_sync_ms) < timeout_ms);
             before.saturating_sub(self.models.len())
         }
     }
@@ -539,7 +542,9 @@ mod internal {
             engine
                 .register_model("m1".to_string(), make_gradient(64, 1.0))
                 .unwrap();
-            engine.update_gradient("m1", make_gradient(64, 2.0), 1000).unwrap();
+            engine
+                .update_gradient("m1", make_gradient(64, 2.0), 1000)
+                .unwrap();
             let model = engine.get_model("m1").unwrap();
             assert_eq!(model.last_sync_ms, 1000);
         }
@@ -674,7 +679,9 @@ mod internal {
             engine
                 .register_model("m1".to_string(), make_gradient(64, 1.0))
                 .unwrap();
-            engine.update_gradient("m1", make_gradient(64, 2.0), 1000).unwrap();
+            engine
+                .update_gradient("m1", make_gradient(64, 2.0), 1000)
+                .unwrap();
             let cleaned = engine.cleanup_stale(2000, 500);
             assert_eq!(cleaned, 1);
         }

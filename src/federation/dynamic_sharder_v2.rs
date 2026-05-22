@@ -130,7 +130,10 @@ mod internal {
                 ShardActionV2::Split { shard_id, .. } => {
                     write!(f, "Split({})", shard_id)
                 }
-                ShardActionV2::Merge { source_id, target_id } => {
+                ShardActionV2::Merge {
+                    source_id,
+                    target_id,
+                } => {
                     write!(f, "Merge({} -> {})", source_id, target_id)
                 }
                 ShardActionV2::Rebalance {
@@ -253,7 +256,8 @@ mod internal {
             if recent.len() >= 2 {
                 let first_half = recent.len() / 2;
                 let first_avg: f64 = recent[..first_half].iter().sum::<f64>() / first_half as f64;
-                let second_avg: f64 = recent[first_half..].iter().sum::<f64>() / (recent.len() - first_half) as f64;
+                let second_avg: f64 =
+                    recent[first_half..].iter().sum::<f64>() / (recent.len() - first_half) as f64;
                 let trend = second_avg - first_avg;
                 Ok((avg + trend).clamp(0.0, 1.0))
             } else {
@@ -364,7 +368,8 @@ mod internal {
             if self.shards.len() >= self.config.max_shards {
                 return Err(DynamicSharderV2Error::InsufficientShards);
             }
-            self.shards.insert(shard_id.clone(), ShardStateV2::new(shard_id));
+            self.shards
+                .insert(shard_id.clone(), ShardStateV2::new(shard_id));
             Ok(())
         }
 
@@ -430,10 +435,7 @@ mod internal {
         }
 
         /// Predict load for a shard
-        pub fn predict_load(
-            &mut self,
-            shard_id: &str,
-        ) -> Result<f64, DynamicSharderV2Error> {
+        pub fn predict_load(&mut self, shard_id: &str) -> Result<f64, DynamicSharderV2Error> {
             self.stats.record_prediction();
             match self.shards.get(shard_id) {
                 Some(shard) => shard.predict_load(self.config.prediction_horizon),
@@ -553,8 +555,10 @@ mod internal {
                 };
 
                 // Create new shard
-                self.shards
-                    .insert(new_shard_id.clone(), ShardStateV2::new(new_shard_id.clone()));
+                self.shards.insert(
+                    new_shard_id.clone(),
+                    ShardStateV2::new(new_shard_id.clone()),
+                );
 
                 // Migrate nodes
                 if let Some(new_shard) = self.shards.get_mut(new_shard_id) {
@@ -730,7 +734,8 @@ mod internal {
             let mut engine = DynamicSharderV2::default();
             engine.register_shard("shard1".to_string()).unwrap();
             for i in 1..=15 {
-                engine.update_shard_load("shard1", 0.5 + i as f64 * 0.01)
+                engine
+                    .update_shard_load("shard1", 0.5 + i as f64 * 0.01)
                     .unwrap();
             }
             let prediction = engine.predict_load("shard1").unwrap();

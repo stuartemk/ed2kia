@@ -33,7 +33,11 @@ pub enum StreamEngineError {
     #[error("Sesión no encontrada: {0}")]
     SessionNotFound(String),
     #[error("Rate limit excedido: {current}/{max} msg/s para sesión {session}")]
-    RateLimitExceeded { current: usize, max: usize, session: String },
+    RateLimitExceeded {
+        current: usize,
+        max: usize,
+        session: String,
+    },
     #[error("Categoría inválida: {0}")]
     InvalidCategory(String),
     #[error("Sesión ya existe: {0}")]
@@ -437,7 +441,9 @@ impl PoolStreamEngine {
             return Err(StreamEngineError::SessionAlreadyExists(session_id));
         }
         if self.sessions.len() >= self.config.max_sessions {
-            return Err(StreamEngineError::MaxSessionsReached(self.config.max_sessions));
+            return Err(StreamEngineError::MaxSessionsReached(
+                self.config.max_sessions,
+            ));
         }
 
         let session = StreamSession::new(
@@ -448,9 +454,16 @@ impl PoolStreamEngine {
 
         self.stats.active_sessions = self.sessions.len() + 1;
         self.sessions.insert(session_id.clone(), session);
-        info!("Sesión de streaming creada: {} con categorías: {:?}", session_id, self.sessions.get(&session_id).unwrap().categories);
+        info!(
+            "Sesión de streaming creada: {} con categorías: {:?}",
+            session_id,
+            self.sessions.get(&session_id).unwrap().categories
+        );
 
-        self.sessions.get(&session_id).cloned().ok_or(StreamEngineError::SessionNotFound(session_id))
+        self.sessions
+            .get(&session_id)
+            .cloned()
+            .ok_or(StreamEngineError::SessionNotFound(session_id))
     }
 
     /// Cerrar una sesión.
@@ -483,12 +496,7 @@ impl PoolStreamEngine {
         source: Option<String>,
     ) -> StreamResult {
         self.sequence_counter += 1;
-        let event = StreamEvent::new(
-            event_type.clone(),
-            payload,
-            source,
-            self.sequence_counter,
-        );
+        let event = StreamEvent::new(event_type.clone(), payload, source, self.sequence_counter);
 
         let category = event.category.clone();
         let start = Instant::now();
@@ -565,11 +573,7 @@ impl PoolStreamEngine {
 
     /// Obtener historial de eventos (para catchup).
     pub fn get_event_history(&self, limit: usize) -> Vec<&StreamEvent> {
-        self.event_history
-            .iter()
-            .rev()
-            .take(limit)
-            .collect()
+        self.event_history.iter().rev().take(limit).collect()
     }
 
     /// Limpiar sesiones expiradas.
@@ -602,10 +606,7 @@ impl PoolStreamEngine {
                     session.categories.push(cat);
                 }
             }
-            debug!(
-                "Sesión {} suscrita a nuevas categorías",
-                session_id
-            );
+            debug!("Sesión {} suscrita a nuevas categorías", session_id);
             Ok(())
         } else {
             Err(StreamEngineError::SessionNotFound(session_id.to_string()))
@@ -697,8 +698,7 @@ mod tests {
     fn test_create_duplicate_session() {
         let mut engine = make_engine();
         engine.create_session("s1".to_string(), vec![StreamCategory::Pool]);
-        let result =
-            engine.create_session("s1".to_string(), vec![StreamCategory::Zkp]);
+        let result = engine.create_session("s1".to_string(), vec![StreamCategory::Zkp]);
         assert!(result.is_err());
         match result.unwrap_err() {
             StreamEngineError::SessionAlreadyExists(id) => assert_eq!(id, "s1"),
@@ -729,10 +729,7 @@ mod tests {
     #[cfg(feature = "v1.3-sprint2")]
     fn test_publish_event() {
         let mut engine = make_engine();
-        engine.create_session(
-            "s1".to_string(),
-            vec![StreamCategory::Pool],
-        );
+        engine.create_session("s1".to_string(), vec![StreamCategory::Pool]);
         let result = engine.publish_event(
             PoolStreamEvent::PoolShardRegistered,
             make_payload("shard_id", 1.0),
@@ -773,14 +770,8 @@ mod tests {
     #[cfg(feature = "v1.3-sprint2")]
     fn test_publish_multiple_sessions() {
         let mut engine = make_engine();
-        engine.create_session(
-            "s1".to_string(),
-            vec![StreamCategory::Pool],
-        );
-        engine.create_session(
-            "s2".to_string(),
-            vec![StreamCategory::Pool],
-        );
+        engine.create_session("s1".to_string(), vec![StreamCategory::Pool]);
+        engine.create_session("s2".to_string(), vec![StreamCategory::Pool]);
         let result = engine.publish_event(
             PoolStreamEvent::PoolAllocationCreated,
             make_payload("credits", 100.0),
@@ -793,10 +784,7 @@ mod tests {
     #[cfg(feature = "v1.3-sprint2")]
     fn test_get_pending_events() {
         let mut engine = make_engine();
-        engine.create_session(
-            "s1".to_string(),
-            vec![StreamCategory::Pool],
-        );
+        engine.create_session("s1".to_string(), vec![StreamCategory::Pool]);
         engine.publish_event(
             PoolStreamEvent::PoolShardRegistered,
             make_payload("shard_id", 1.0),
@@ -811,10 +799,7 @@ mod tests {
     #[cfg(feature = "v1.3-sprint2")]
     fn test_get_pending_events_empty() {
         let mut engine = make_engine();
-        engine.create_session(
-            "s1".to_string(),
-            vec![StreamCategory::Pool],
-        );
+        engine.create_session("s1".to_string(), vec![StreamCategory::Pool]);
         let events = engine.get_pending_events("s1").unwrap();
         assert_eq!(events.len(), 0);
     }
@@ -831,10 +816,7 @@ mod tests {
     #[cfg(feature = "v1.3-sprint2")]
     fn test_event_history() {
         let mut engine = make_engine();
-        engine.create_session(
-            "s1".to_string(),
-            vec![StreamCategory::All],
-        );
+        engine.create_session("s1".to_string(), vec![StreamCategory::All]);
         engine.publish_event(
             PoolStreamEvent::PoolShardRegistered,
             make_payload("shard_id", 1.0),
@@ -855,10 +837,7 @@ mod tests {
         let mut engine = make_engine();
         engine.create_session("s1".to_string(), vec![StreamCategory::Pool]);
         assert!(engine
-            .subscribe_categories(
-                "s1",
-                vec![StreamCategory::Zkp, StreamCategory::Dao]
-            )
+            .subscribe_categories("s1", vec![StreamCategory::Zkp, StreamCategory::Dao])
             .is_ok());
         let session = engine.get_session("s1").unwrap();
         assert_eq!(session.categories.len(), 3);
@@ -868,10 +847,7 @@ mod tests {
     #[cfg(feature = "v1.3-sprint2")]
     fn test_stats_tracking() {
         let mut engine = make_engine();
-        engine.create_session(
-            "s1".to_string(),
-            vec![StreamCategory::All],
-        );
+        engine.create_session("s1".to_string(), vec![StreamCategory::All]);
         engine.publish_event(
             PoolStreamEvent::PoolShardRegistered,
             make_payload("shard_id", 1.0),
@@ -897,10 +873,7 @@ mod tests {
     #[cfg(feature = "v1.3-sprint2")]
     fn test_reset_stats() {
         let mut engine = make_engine();
-        engine.create_session(
-            "s1".to_string(),
-            vec![StreamCategory::All],
-        );
+        engine.create_session("s1".to_string(), vec![StreamCategory::All]);
         engine.publish_event(
             PoolStreamEvent::PoolShardRegistered,
             make_payload("shard_id", 1.0),
@@ -1033,10 +1006,7 @@ mod tests {
         let mut engine = PoolStreamEngine::with_config(config);
         engine.create_session("s1".to_string(), vec![StreamCategory::Pool]);
         engine.create_session("s2".to_string(), vec![StreamCategory::Zkp]);
-        let result = engine.create_session(
-            "s3".to_string(),
-            vec![StreamCategory::Dao],
-        );
+        let result = engine.create_session("s3".to_string(), vec![StreamCategory::Dao]);
         assert!(result.is_err());
         match result.unwrap_err() {
             StreamEngineError::MaxSessionsReached(2) => {}
@@ -1109,18 +1079,9 @@ mod tests {
     fn test_full_stream_pipeline() {
         let mut engine = make_engine();
         // Create sessions
-        engine.create_session(
-            "pool-watcher".to_string(),
-            vec![StreamCategory::Pool],
-        );
-        engine.create_session(
-            "zkp-watcher".to_string(),
-            vec![StreamCategory::Zkp],
-        );
-        engine.create_session(
-            "all-watcher".to_string(),
-            vec![StreamCategory::All],
-        );
+        engine.create_session("pool-watcher".to_string(), vec![StreamCategory::Pool]);
+        engine.create_session("zkp-watcher".to_string(), vec![StreamCategory::Zkp]);
+        engine.create_session("all-watcher".to_string(), vec![StreamCategory::All]);
 
         // Publish events
         engine.publish_event(

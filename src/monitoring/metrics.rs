@@ -7,8 +7,7 @@
 use std::time::Instant;
 
 use prometheus::{
-    Counter, CounterVec, Encoder, Gauge, Histogram, HistogramOpts, Opts, Registry,
-    TextEncoder,
+    Counter, CounterVec, Encoder, Gauge, Histogram, HistogramOpts, Opts, Registry, TextEncoder,
 };
 
 // CLEANUP: changed /// to // for lazy_static macros (rustdoc cannot document macro invocations)
@@ -195,7 +194,9 @@ impl MetricsManager {
 
 /// Registra mensaje P2P recibido
 pub fn inc_p2p_messages_received(message_type: &str) {
-    P2P_MESSAGES_RECEIVED.with_label_values(&[message_type]).inc();
+    P2P_MESSAGES_RECEIVED
+        .with_label_values(&[message_type])
+        .inc();
 }
 
 /// Registra mensaje P2P enviado
@@ -222,7 +223,9 @@ pub fn record_consensus_batch(result: &str, latency_ms: f64) {
 
 /// Registra feedback procesado
 pub fn record_feedback_processed(decision: &str) {
-    FEEDBACK_PROCESSED_TOTAL.with_label_values(&[decision]).inc();
+    FEEDBACK_PROCESSED_TOTAL
+        .with_label_values(&[decision])
+        .inc();
 }
 
 /// Registra error de sandbox WASM

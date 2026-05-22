@@ -37,7 +37,11 @@ mod internal {
                 GradientSyncV5Error::ModelNotFound(id) => write!(f, "Model {} not found", id),
                 GradientSyncV5Error::NodeNotFound(id) => write!(f, "Node {} not found", id),
                 GradientSyncV5Error::DimensionMismatch { expected, actual } => {
-                    write!(f, "Dimension mismatch: expected={}, actual={}", expected, actual)
+                    write!(
+                        f,
+                        "Dimension mismatch: expected={}, actual={}",
+                        expected, actual
+                    )
                 }
                 GradientSyncV5Error::CompressionFailed(msg) => {
                     write!(f, "Compression failed: {}", msg)
@@ -146,8 +150,12 @@ mod internal {
             let dim = self.gradients.len();
             let topk = k.min(dim);
             // Keep top-k largest magnitude gradients
-            let mut indexed: Vec<(usize, f32)> =
-                self.gradients.iter().enumerate().map(|(i, &v)| (i, v)).collect();
+            let mut indexed: Vec<(usize, f32)> = self
+                .gradients
+                .iter()
+                .enumerate()
+                .map(|(i, &v)| (i, v))
+                .collect();
             indexed.sort_by(|a, b| b.1.abs().partial_cmp(&a.1.abs()).unwrap());
             let mut compressed = vec![0.0f32; dim];
             for &(i, v) in indexed.iter().take(topk) {
@@ -160,7 +168,11 @@ mod internal {
 
         /// Compute L2 norm.
         pub fn l2_norm(&self) -> f64 {
-            self.gradients.iter().map(|g| (*g as f64) * (*g as f64)).sum::<f64>().sqrt()
+            self.gradients
+                .iter()
+                .map(|g| (*g as f64) * (*g as f64))
+                .sum::<f64>()
+                .sqrt()
         }
     }
 
@@ -279,7 +291,8 @@ mod internal {
                     actual: dimension,
                 });
             }
-            self.models.insert(model_id.clone(), ModelRegistryV5::new(model_id, dimension));
+            self.models
+                .insert(model_id.clone(), ModelRegistryV5::new(model_id, dimension));
             Ok(())
         }
 
@@ -291,9 +304,10 @@ mod internal {
             gradients: Vec<f32>,
             timestamp_ms: u64,
         ) -> Result<(), GradientSyncV5Error> {
-            let model = self.models.get(&model_id).ok_or_else(|| {
-                GradientSyncV5Error::ModelNotFound(model_id.to_string())
-            })?;
+            let model = self
+                .models
+                .get(&model_id)
+                .ok_or_else(|| GradientSyncV5Error::ModelNotFound(model_id.to_string()))?;
 
             if gradients.len() != model.dimension {
                 return Err(GradientSyncV5Error::DimensionMismatch {
@@ -336,15 +350,13 @@ mod internal {
 
             // Group by model
             for entry in self.pending.drain(..) {
-                let grads = aggregated
-                    .entry(entry.model_id.clone())
-                    .or_insert_with(|| {
-                        if let Some(model) = self.models.get(&entry.model_id) {
-                            vec![0.0; model.dimension]
-                        } else {
-                            vec![]
-                        }
-                    });
+                let grads = aggregated.entry(entry.model_id.clone()).or_insert_with(|| {
+                    if let Some(model) = self.models.get(&entry.model_id) {
+                        vec![0.0; model.dimension]
+                    } else {
+                        vec![]
+                    }
+                });
 
                 for (i, g) in entry.gradients.iter().enumerate() {
                     if i < grads.len() {
@@ -439,7 +451,9 @@ mod internal {
             let mut engine = GradientSyncV5::default();
             engine.register_model("model-1".to_string(), 128).unwrap();
             let grads = vec![0.01f32; 128];
-            engine.submit_gradients("node-1".to_string(), "model-1".to_string(), grads, 1000).unwrap();
+            engine
+                .submit_gradients("node-1".to_string(), "model-1".to_string(), grads, 1000)
+                .unwrap();
             assert_eq!(engine.pending_count(), 1);
         }
 
@@ -447,7 +461,8 @@ mod internal {
         fn test_submit_gradients_model_not_found() {
             let mut engine = GradientSyncV5::default();
             let grads = vec![0.01f32; 128];
-            let result = engine.submit_gradients("node-1".to_string(), "missing".to_string(), grads, 1000);
+            let result =
+                engine.submit_gradients("node-1".to_string(), "missing".to_string(), grads, 1000);
             assert!(result.is_err());
         }
 
@@ -456,7 +471,8 @@ mod internal {
             let mut engine = GradientSyncV5::default();
             engine.register_model("model-1".to_string(), 128).unwrap();
             let grads = vec![0.01f32; 64];
-            let result = engine.submit_gradients("node-1".to_string(), "model-1".to_string(), grads, 1000);
+            let result =
+                engine.submit_gradients("node-1".to_string(), "model-1".to_string(), grads, 1000);
             assert!(result.is_err());
         }
 
@@ -465,8 +481,17 @@ mod internal {
             let mut engine = GradientSyncV5::default();
             engine.register_model("model-1".to_string(), 64).unwrap();
             let grads = vec![0.1f32; 64];
-            engine.submit_gradients("node-1".to_string(), "model-1".to_string(), grads.clone(), 1000).unwrap();
-            engine.submit_gradients("node-2".to_string(), "model-1".to_string(), grads, 1001).unwrap();
+            engine
+                .submit_gradients(
+                    "node-1".to_string(),
+                    "model-1".to_string(),
+                    grads.clone(),
+                    1000,
+                )
+                .unwrap();
+            engine
+                .submit_gradients("node-2".to_string(), "model-1".to_string(), grads, 1001)
+                .unwrap();
             let result = engine.execute_sync().unwrap();
             assert!(result.contains_key("model-1"));
             assert_eq!(engine.stats().total_syncs, 1);
@@ -484,7 +509,9 @@ mod internal {
             let mut engine = GradientSyncV5::default();
             engine.register_model("model-1".to_string(), 128).unwrap();
             let grads: Vec<f32> = (0..128).map(|i| i as f32 * 0.01).collect();
-            engine.submit_gradients("node-1".to_string(), "model-1".to_string(), grads, 1000).unwrap();
+            engine
+                .submit_gradients("node-1".to_string(), "model-1".to_string(), grads, 1000)
+                .unwrap();
             let entry = &engine.pending[0];
             assert!(entry.compression_ratio < 1.0);
             assert!(entry.compressed_size < entry.original_size);
@@ -502,7 +529,9 @@ mod internal {
             let mut engine = GradientSyncV5::default();
             engine.register_model("model-1".to_string(), 64).unwrap();
             let grads = vec![0.1f32; 64];
-            engine.submit_gradients("node-1".to_string(), "model-1".to_string(), grads, 1000).unwrap();
+            engine
+                .submit_gradients("node-1".to_string(), "model-1".to_string(), grads, 1000)
+                .unwrap();
             engine.execute_sync().unwrap();
             assert_eq!(engine.stats().total_syncs, 1);
             assert_eq!(engine.stats().gradients_processed, 1);

@@ -14,12 +14,12 @@
 #![cfg(feature = "v2.1-mvp-core")]
 
 pub mod discovery;
-pub mod task_router;
 pub mod inference_bridge;
+pub mod task_router;
 
 pub use discovery::MvpDiscovery;
-pub use task_router::TaskRouter;
 pub use inference_bridge::InferenceBridge;
+pub use task_router::TaskRouter;
 
 use thiserror::Error;
 
@@ -68,19 +68,31 @@ impl CoreLoop {
     /// 4. Collect and return results
     pub async fn run_cycle(&mut self) -> Result<CoreLoopResult, CoreLoopError> {
         // Step 1: Discover peers
-        let peers = self.discovery.discover_peers().await
+        let peers = self
+            .discovery
+            .discover_peers()
+            .await
             .map_err(|e| CoreLoopError::Discovery(e.to_string()))?;
 
         // Step 2: Distribute tensor tasks
-        let task_ids = self.router.distribute_tensor(peers.len(), 1024).await
+        let task_ids = self
+            .router
+            .distribute_tensor(peers.len(), 1024)
+            .await
             .map_err(|e| CoreLoopError::Routing(e.to_string()))?;
 
         // Step 3: Run SAE inference
-        let inference_results = self.bridge.run_sae_forward(&task_ids).await
+        let inference_results = self
+            .bridge
+            .run_sae_forward(&task_ids)
+            .await
             .map_err(|e| CoreLoopError::Inference(e.to_string()))?;
 
         // Step 4: Collect results
-        let results = self.router.collect_results(&task_ids).await
+        let results = self
+            .router
+            .collect_results(&task_ids)
+            .await
             .map_err(|e| CoreLoopError::Routing(e.to_string()))?;
 
         Ok(CoreLoopResult {

@@ -154,7 +154,11 @@ impl CheckpointOptimizer {
         Self::new(CheckpointOptimizerConfig::default())
     }
 
-    pub fn save_checkpoint(&mut self, round: u64, data: &[f32]) -> Result<DeltaCheckpoint, CheckpointOptError> {
+    pub fn save_checkpoint(
+        &mut self,
+        round: u64,
+        data: &[f32],
+    ) -> Result<DeltaCheckpoint, CheckpointOptError> {
         if self.checkpoints.len() >= self.config.max_checkpoints {
             self.checkpoints.pop_front();
         }
@@ -192,8 +196,7 @@ impl CheckpointOptimizer {
 
     pub fn prune_before(&mut self, round: u64) -> usize {
         let len_before = self.checkpoints.len();
-        self.checkpoints
-            .retain(|cp| cp.round >= round);
+        self.checkpoints.retain(|cp| cp.round >= round);
         len_before - self.checkpoints.len()
     }
 
@@ -221,9 +224,10 @@ impl CheckpointOptimizer {
                 } else {
                     1.0
                 };
-                self.stats.avg_compression_ratio =
-                    (self.stats.avg_compression_ratio * (self.stats.total_checkpoints as f32) + ratio)
-                        / (self.stats.total_checkpoints as f32 + 1.0);
+                self.stats.avg_compression_ratio = (self.stats.avg_compression_ratio
+                    * (self.stats.total_checkpoints as f32)
+                    + ratio)
+                    / (self.stats.total_checkpoints as f32 + 1.0);
 
                 DeltaCheckpoint::from_delta(
                     format!("cp-delta-{}", round),

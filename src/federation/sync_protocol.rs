@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tracing::{debug, info, warn};
 
-use super::avg_aggregator::{WeightUpdate, FedAvgAggregator, AggregationResult};
+use super::avg_aggregator::{AggregationResult, FedAvgAggregator, WeightUpdate};
 
 /// Tipo de mensaje de sincronización federada
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -56,7 +56,12 @@ pub struct SyncMessage {
 }
 
 impl SyncMessage {
-    pub fn new(msg_type: SyncMessageType, sender_id: String, round: u64, payload: SyncPayload) -> Self {
+    pub fn new(
+        msg_type: SyncMessageType,
+        sender_id: String,
+        round: u64,
+        payload: SyncPayload,
+    ) -> Self {
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default()
@@ -114,7 +119,10 @@ pub enum SyncPayload {
     /// Solicitud de round
     RoundRequest { min_participants: usize },
     /// Respuesta a round (nodo acepta/participa)
-    RoundResponse { accepts: bool, reason: Option<String> },
+    RoundResponse {
+        accepts: bool,
+        reason: Option<String>,
+    },
     /// Actualización de pesos
     WeightUpdate(WeightUpdate),
     /// Modelo global agregado
@@ -219,25 +227,15 @@ impl SyncProtocol {
         );
 
         match message.msg_type {
-            SyncMessageType::RoundRequest => {
-                self.handle_round_request(message)
-            }
-            SyncMessageType::WeightUpdate => {
-                self.handle_weight_update(message)
-            }
-            SyncMessageType::GlobalModel => {
-                self.handle_global_model(message)
-            }
-            SyncMessageType::Ack => {
-                Ok(None)
-            }
+            SyncMessageType::RoundRequest => self.handle_round_request(message),
+            SyncMessageType::WeightUpdate => self.handle_weight_update(message),
+            SyncMessageType::GlobalModel => self.handle_global_model(message),
+            SyncMessageType::Ack => Ok(None),
             SyncMessageType::Error => {
                 warn!("Error recibido: {:#?}", message.payload);
                 Ok(None)
             }
-            SyncMessageType::RoundResponse => {
-                self.handle_round_response(message)
-            }
+            SyncMessageType::RoundResponse => self.handle_round_response(message),
         }
     }
 
@@ -265,7 +263,10 @@ impl SyncProtocol {
         if let Some(round) = self.active_rounds.get_mut(&message.round) {
             if !round.participants.contains(&message.sender_id) {
                 round.participants.push(message.sender_id.clone());
-                info!("Participante {} unido al round {}", message.sender_id, message.round);
+                info!(
+                    "Participante {} unido al round {}",
+                    message.sender_id, message.round
+                );
 
                 if round.participants.len() >= round.min_participants {
                     round.state = RoundState::Collecting;
@@ -344,7 +345,8 @@ impl SyncProtocol {
 
     /// Limpiar rounds completados
     pub fn cleanup_completed(&mut self) {
-        let completed: Vec<u64> = self.active_rounds
+        let completed: Vec<u64> = self
+            .active_rounds
             .iter()
             .filter(|(_, r)| r.is_complete())
             .map(|(&id, _)| id)
@@ -419,11 +421,7 @@ mod tests {
         // Send weight updates
         for i in 0..3 {
             let update = make_update(&format!("node{}", i), round_id);
-            let msg = SyncMessage::weight_update(
-                format!("node{}", i),
-                round_id,
-                update,
-            );
+            let msg = SyncMessage::weight_update(format!("node{}", i), round_id, update);
             protocol.process_message(msg).unwrap();
         }
 

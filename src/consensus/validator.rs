@@ -13,7 +13,7 @@ use tracing::{debug, info, warn};
 
 use super::merkle::FeatureBatchHash;
 use crate::p2p::protocol::SparseFeature;
-use crate::zkp::verifier::{ZKPVerifier, VerificationResult, CryptoReputation};
+use crate::zkp::verifier::{CryptoReputation, VerificationResult, ZKPVerifier};
 
 // ============================================================================
 // Consensus Types
@@ -202,7 +202,7 @@ impl ConsensusValidator {
             pending_batches: RwLock::new(HashMap::new()),
             min_votes: 3,
             agreement_threshold: 0.67, // 2/3 majority
-            time_window_ms: 5000, // 5 segundos
+            time_window_ms: 5000,      // 5 segundos
             batch_timeout_secs: 30,
             events: RwLock::new(Vec::new()),
             node_reputation: RwLock::new(HashMap::new()),
@@ -290,16 +290,16 @@ impl ConsensusValidator {
                 .or_insert_with(|| NodeReputation::new(vote.voter_peer_id.clone()));
 
             if rep.is_banned {
-                warn!(
-                    "Voto rechazado de nodo baneado: {}",
-                    vote.voter_peer_id
-                );
+                warn!("Voto rechazado de nodo baneado: {}", vote.voter_peer_id);
                 return Err(anyhow::anyhow!("Voter is banned"));
             }
         }
 
         // Encontrar batch correspondiente
-        let batch_key = self.pending_batches.read().keys()
+        let batch_key = self
+            .pending_batches
+            .read()
+            .keys()
             .find(|k| k.starts_with(&format!("{}-{}", vote.layer_id, vote.time_window)))
             .cloned();
 
@@ -308,11 +308,7 @@ impl ConsensusValidator {
             if let Some(batch) = batches.get_mut(&key) {
                 if batch.state == BatchState::Collecting {
                     batch.votes.push(vote);
-                    debug!(
-                        "Voto recibido: batch={}, votes={}",
-                        key,
-                        batch.votes.len()
-                    );
+                    debug!("Voto recibido: batch={}, votes={}", key, batch.votes.len());
 
                     // Verificar si hay suficientes votos para decidir
                     if batch.votes.len() >= self.min_votes {
@@ -339,9 +335,7 @@ impl ConsensusValidator {
         // Contar votos por raíz Merkle
         let mut root_votes: HashMap<String, usize> = HashMap::new();
         for vote in &batch.votes {
-            *root_votes
-                .entry(vote.merkle_root.clone())
-                .or_insert(0) += 1;
+            *root_votes.entry(vote.merkle_root.clone()).or_insert(0) += 1;
         }
 
         // Encontrar raíz líder
@@ -359,8 +353,8 @@ impl ConsensusValidator {
         );
 
         // Verificar consenso
-        let approved = leading_votes >= self.min_votes
-            && agreement_ratio >= self.agreement_threshold;
+        let approved =
+            leading_votes >= self.min_votes && agreement_ratio >= self.agreement_threshold;
 
         let event = ConsensusEvent {
             approved,
@@ -378,10 +372,7 @@ impl ConsensusValidator {
             rejection_reason: if !approved {
                 Some(format!(
                     "Agreement ratio {:.3} < {:.3} or votes {} < {}",
-                    agreement_ratio,
-                    self.agreement_threshold,
-                    leading_votes,
-                    self.min_votes
+                    agreement_ratio, self.agreement_threshold, leading_votes, self.min_votes
                 ))
             } else {
                 None
@@ -423,12 +414,7 @@ impl ConsensusValidator {
     }
 
     /// Actualizar reputación de nodos tras consenso
-    fn update_node_reputation(
-        &self,
-        votes: &[ConsensusVote],
-        leading_root: &str,
-        _approved: bool,
-    ) {
+    fn update_node_reputation(&self, votes: &[ConsensusVote], leading_root: &str, _approved: bool) {
         let mut reputation = self.node_reputation.write();
 
         for vote in votes {
@@ -539,33 +525,39 @@ impl ConsensusValidator {
         verifier_id: &str,
     ) -> VerificationResult {
         // Convierte features a valores f64
-        let feature_values: Vec<f64> = features
-            .iter()
-            .map(|f| f.activation_value as f64)
-            .collect();
+        let feature_values: Vec<f64> = features.iter().map(|f| f.activation_value as f64).collect();
 
-        let result = self.zkp_verifier.verify_batch(batch_id, &feature_values, verifier_id);
+        let result = self
+            .zkp_verifier
+            .verify_batch(batch_id, &feature_values, verifier_id);
 
         // Actualiza reputación criptográfica
         {
             let mut crypto_rep = self.crypto_reputation.write();
             let _rep = crypto_rep
                 .entry(verifier_id.to_string())
-                .or_insert_with(|| {
-                    CryptoReputation::new(verifier_id.to_string())
-                });
+                .or_insert_with(|| CryptoReputation::new(verifier_id.to_string()));
             // La reputación se actualiza internamente en verify_batch
         }
 
         match &result {
             VerificationResult::ZKPVerified { confidence, .. } => {
-                info!("ZKP verification successful: batch={}, confidence={:.3}", batch_id, confidence);
+                info!(
+                    "ZKP verification successful: batch={}, confidence={:.3}",
+                    batch_id, confidence
+                );
             }
             VerificationResult::MerkleVerified { confidence, .. } => {
-                info!("Merkle fallback verification: batch={}, confidence={:.3}", batch_id, confidence);
+                info!(
+                    "Merkle fallback verification: batch={}, confidence={:.3}",
+                    batch_id, confidence
+                );
             }
             VerificationResult::Failed { reason, .. } => {
-                warn!("ZKP verification failed: batch={}, reason={}", batch_id, reason);
+                warn!(
+                    "ZKP verification failed: batch={}, reason={}",
+                    batch_id, reason
+                );
             }
             _ => {}
         }

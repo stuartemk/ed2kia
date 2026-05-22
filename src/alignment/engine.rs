@@ -17,7 +17,9 @@ use tracing::{debug, info, warn};
 /// Error específico del motor de alineación
 #[derive(Debug, Error)]
 pub enum AlignmentError {
-    #[error("Drift threshold exceeded: {reason} (threshold={drift_threshold:.4}, current={current:.4})")]
+    #[error(
+        "Drift threshold exceeded: {reason} (threshold={drift_threshold:.4}, current={current:.4})"
+    )]
     DriftThresholdExceeded {
         reason: String,
         drift_threshold: f32,
@@ -26,10 +28,7 @@ pub enum AlignmentError {
 
     // FIX: E0599 - Vec<usize> doesn't implement Display, format as joined string
     #[error("Tensor shape mismatch: expected [{expected}], got [{actual}]")]
-    TensorShapeMismatch {
-        expected: String,
-        actual: String,
-    },
+    TensorShapeMismatch { expected: String, actual: String },
 
     #[error("Invalid feedback data: {reason}")]
     InvalidFeedback { reason: String },
@@ -173,10 +172,7 @@ impl AlignmentScorer {
         let layer_id = feedback.layer_id.clone();
 
         // Almacenar en buffer con límite
-        let buffer = self
-            .feedback_buffer
-            .entry(layer_id.clone())
-            .or_default(); // CLEANUP: or_insert_with -> or_default
+        let buffer = self.feedback_buffer.entry(layer_id.clone()).or_default(); // CLEANUP: or_insert_with -> or_default
 
         if buffer.len() >= self.config.feedback_window {
             buffer.remove(0); // FIFO eviction
@@ -233,7 +229,9 @@ impl AlignmentScorer {
         }
 
         // Convertir activations a vector para procesamiento
-        let activations_vec = activations.to_vec2::<f32>().map_err(AlignmentError::Device)?; // CLEANUP: redundant closure
+        let activations_vec = activations
+            .to_vec2::<f32>()
+            .map_err(AlignmentError::Device)?; // CLEANUP: redundant closure
 
         if activations_vec.is_empty() {
             return Err(AlignmentError::EmptyActivations);
@@ -323,7 +321,9 @@ impl AlignmentScorer {
         let mut flagged_concepts = Vec::new();
         let mut concept_drift: HashMap<String, (f64, f64)> = HashMap::new(); // concept -> (total_div, total_weight)
 
-        let activations_vec = current_activations.to_vec2::<f32>().map_err(AlignmentError::Device)?; // CLEANUP: redundant closure
+        let activations_vec = current_activations
+            .to_vec2::<f32>()
+            .map_err(AlignmentError::Device)?; // CLEANUP: redundant closure
 
         for fb in feedback_list {
             let concept = match &fb.concept {
@@ -362,7 +362,8 @@ impl AlignmentScorer {
         }
 
         // Calcular steering delta como tensor
-        let steering_delta = self.compute_steering_delta(layer_id, &activations_vec, feedback_list)?;
+        let steering_delta =
+            self.compute_steering_delta(layer_id, &activations_vec, feedback_list)?;
 
         // Calcular confianza basado en cantidad y calidad de feedback
         let confidence = self.compute_confidence(feedback_list);
@@ -436,7 +437,10 @@ impl AlignmentScorer {
 
     /// Obtiene el historial de drift para una capa
     pub fn get_drift_history(&self, layer_id: &str) -> Vec<f32> {
-        self.drift_history.get(layer_id).cloned().unwrap_or_default()
+        self.drift_history
+            .get(layer_id)
+            .cloned()
+            .unwrap_or_default()
     }
 
     /// Número de entries de feedback en buffer para una capa
@@ -470,8 +474,10 @@ impl AlignmentScorer {
 
             // Delta = learning_rate * feedback_weight * confidence * (desired - current)
             let correction = fb.desired_value - fb.current_activation;
-            let weighted_delta =
-                self.config.learning_rate * self.config.feedback_weight * fb.annotator_confidence * correction;
+            let weighted_delta = self.config.learning_rate
+                * self.config.feedback_weight
+                * fb.annotator_confidence
+                * correction;
 
             delta[idx] += weighted_delta;
         }
@@ -498,13 +504,17 @@ impl AlignmentScorer {
             / feedback_list.len() as f32;
 
         // Bonus por volumen de feedback (saturating a 1.0)
-        let volume_bonus = (feedback_list.len() as f32 / self.config.feedback_window as f32).min(0.3);
+        let volume_bonus =
+            (feedback_list.len() as f32 / self.config.feedback_window as f32).min(0.3);
 
         (avg_confidence + volume_bonus).min(1.0)
     }
 
     /// Crea resultado neutro cuando no hay feedback
-    fn create_neutral_result(&self, activations: &Tensor) -> Result<AlignmentResult, AlignmentError> {
+    fn create_neutral_result(
+        &self,
+        activations: &Tensor,
+    ) -> Result<AlignmentResult, AlignmentError> {
         let shape = activations.shape().dims().to_vec();
         let features_analyzed = shape.iter().product::<usize>();
 

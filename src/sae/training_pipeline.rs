@@ -6,7 +6,7 @@
 //!
 //! Feature gate: `#[cfg(feature = "v2.1-sae-training")]`
 
-use candle_core::{Device, DType, Module, Tensor, D};
+use candle_core::{DType, Device, Module, Tensor, D};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -245,19 +245,11 @@ impl SaeModel {
     pub fn new(d_model: usize, d_sae: usize, device: &Device) -> Result<Self, TrainingError> {
         let scale = 1.0 / (d_model as f64).sqrt();
 
-        let w_enc = Tensor::rand(
-            -scale,
-            scale,
-            (d_sae, d_model),
-            device,
-        ).map_err(|e| TrainingError::DeviceError(e.to_string()))?;
+        let w_enc = Tensor::rand(-scale, scale, (d_sae, d_model), device)
+            .map_err(|e| TrainingError::DeviceError(e.to_string()))?;
 
-        let w_dec = Tensor::rand(
-            -scale,
-            scale,
-            (d_model, d_sae),
-            device,
-        ).map_err(|e| TrainingError::DeviceError(e.to_string()))?;
+        let w_dec = Tensor::rand(-scale, scale, (d_model, d_sae), device)
+            .map_err(|e| TrainingError::DeviceError(e.to_string()))?;
 
         let b_enc = Tensor::zeros(d_sae, DType::F32, device)
             .map_err(|e| TrainingError::DeviceError(e.to_string()))?;
@@ -299,7 +291,11 @@ impl SaeModel {
     }
 
     /// Aplicar sparsity mask (top-k activation).
-    pub fn apply_sparsity(&self, activations: &Tensor, threshold: f32) -> Result<Tensor, TrainingError> {
+    pub fn apply_sparsity(
+        &self,
+        activations: &Tensor,
+        threshold: f32,
+    ) -> Result<Tensor, TrainingError> {
         // Top-k: mantener solo los valores por encima del percentil
         let flat = activations
             .flatten_all()
@@ -350,10 +346,7 @@ pub struct TrainingPipeline {
 
 impl TrainingPipeline {
     /// Crear nuevo pipeline de entrenamiento.
-    pub fn new(
-        model: SaeModel,
-        config: TrainingConfig,
-    ) -> Result<Self, TrainingError> {
+    pub fn new(model: SaeModel, config: TrainingConfig) -> Result<Self, TrainingError> {
         config.validate()?;
         let device = model.w_enc.device().clone();
 
@@ -447,27 +440,35 @@ impl TrainingPipeline {
     }
 
     /// Ejecutar un paso de entrenamiento.
-    pub fn train_step(&mut self, input: &Tensor, target: &Tensor) -> Result<TrainingMetrics, TrainingError> {
+    pub fn train_step(
+        &mut self,
+        input: &Tensor,
+        target: &Tensor,
+    ) -> Result<TrainingMetrics, TrainingError> {
         let start = Instant::now();
 
         // Forward pass
         let predicted = self.model.forward(input)?;
 
         // Sparsity mask
-        let _sparse = self.model.apply_sparsity(&predicted, self.config.sparsity_threshold)?;
+        let _sparse = self
+            .model
+            .apply_sparsity(&predicted, self.config.sparsity_threshold)?;
 
         // Compute loss
         let loss = self.compute_loss(&predicted, target)?;
         self.current_loss = loss;
 
         // Simulated gradient extraction (en producción: backward pass real con candle-nn)
-        let grad_dim = self.model.d_sae * self.model.d_model + self.model.d_model * self.model.d_sae;
+        let grad_dim =
+            self.model.d_sae * self.model.d_model + self.model.d_model * self.model.d_sae;
         let mut gradients: Vec<f32> = (0..grad_dim)
             .map(|_| fastrand::f32() * 0.01) // simulated gradients
             .collect();
 
         // Gradient clipping
-        let (grad_norm, clipped_norm) = self.clip_gradients(&mut gradients, self.config.gradient_clip_norm);
+        let (grad_norm, clipped_norm) =
+            self.clip_gradients(&mut gradients, self.config.gradient_clip_norm);
 
         // Compression
         let _compressed = if self.config.int8_compression {
@@ -517,10 +518,7 @@ impl TrainingPipeline {
     }
 
     /// Ejecutar una época completa.
-    pub fn train_epoch(
-        &mut self,
-        data: &[(&Tensor, &Tensor)],
-    ) -> Result<f64, TrainingError> {
+    pub fn train_epoch(&mut self, data: &[(&Tensor, &Tensor)]) -> Result<f64, TrainingError> {
         if data.is_empty() {
             return Ok(0.0);
         }
@@ -563,7 +561,10 @@ impl TrainingPipeline {
             }
 
             // Check loss stability
-            if self.current_loss.abs_diff(self.best_loss, self.config.convergence_tolerance) {
+            if self
+                .current_loss
+                .abs_diff(self.best_loss, self.config.convergence_tolerance)
+            {
                 for hook in &self.hooks {
                     hook.on_convergence(avg_loss, epoch, self.current_step);
                 }
@@ -683,7 +684,8 @@ mod tests {
         let pipeline = TrainingPipeline::new(
             SaeModel::new(128, 256, &Device::Cpu).unwrap(),
             TrainingConfig::default(),
-        ).unwrap();
+        )
+        .unwrap();
 
         let mut grads = vec![0.1, 0.2, 0.3];
         let (norm, clipped) = pipeline.clip_gradients(&mut grads, 10.0);
@@ -695,7 +697,8 @@ mod tests {
         let pipeline = TrainingPipeline::new(
             SaeModel::new(128, 256, &Device::Cpu).unwrap(),
             TrainingConfig::default(),
-        ).unwrap();
+        )
+        .unwrap();
 
         let mut grads = vec![10.0, 20.0, 30.0];
         let (norm, clipped) = pipeline.clip_gradients(&mut grads, 5.0);
@@ -708,7 +711,8 @@ mod tests {
         let pipeline = TrainingPipeline::new(
             SaeModel::new(128, 256, &Device::Cpu).unwrap(),
             TrainingConfig::default(),
-        ).unwrap();
+        )
+        .unwrap();
 
         let grads = vec![0.0, 0.5, 1.0, -0.5, -1.0];
         let compressed = pipeline.compress_int8(&grads);
@@ -723,7 +727,8 @@ mod tests {
         let pipeline = TrainingPipeline::new(
             SaeModel::new(128, 256, &Device::Cpu).unwrap(),
             TrainingConfig::default(),
-        ).unwrap();
+        )
+        .unwrap();
 
         let compressed = pipeline.compress_int8(&[]);
         assert!(compressed.is_empty());

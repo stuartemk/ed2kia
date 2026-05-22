@@ -10,9 +10,9 @@
 //! **Linux Analogy:** Like `systemd-journal-remote` where ZKP proofs are journal entries
 //! replicated across remote instances with integrity verification via Merkle roots.
 
+use std::collections::hash_map::DefaultHasher;
 use std::collections::{HashMap, VecDeque};
 use std::hash::{Hash, Hasher};
-use std::collections::hash_map::DefaultHasher;
 
 // ─── Errors ───
 
@@ -45,8 +45,15 @@ impl std::fmt::Display for FederationZKPError {
             Self::ShardNotFound(id) => write!(f, "Shard not found: {}", id),
             Self::ProofNotFound(id) => write!(f, "Proof not found: {}", id),
             Self::VerificationFailed(msg) => write!(f, "Verification failed: {}", msg),
-            Self::InsufficientResources { available, required } => {
-                write!(f, "Insufficient resources: available={}, required={}", available, required)
+            Self::InsufficientResources {
+                available,
+                required,
+            } => {
+                write!(
+                    f,
+                    "Insufficient resources: available={}, required={}",
+                    available, required
+                )
             }
             Self::BridgeFull => write!(f, "Bridge capacity exceeded"),
             Self::ConsensusFailed { yes, no } => {
@@ -54,7 +61,11 @@ impl std::fmt::Display for FederationZKPError {
             }
             Self::ProofExpired(id) => write!(f, "Proof expired: {}", id),
             Self::MerkleMismatch { expected, actual } => {
-                write!(f, "Merkle mismatch: expected={}, actual={}", expected, actual)
+                write!(
+                    f,
+                    "Merkle mismatch: expected={}, actual={}",
+                    expected, actual
+                )
             }
             Self::RoutingFailed(msg) => write!(f, "Routing failed: {}", msg),
         }
@@ -252,8 +263,7 @@ impl ShardBridgeState {
         self.available_resources = (self.available_resources - cost).max(0.0);
         self.proofs_verified += 1;
         self.active_proofs = self.active_proofs.saturating_sub(1);
-        self.avg_verification_time_ms =
-            self.avg_verification_time_ms * 0.9 + time_ms as f64 * 0.1;
+        self.avg_verification_time_ms = self.avg_verification_time_ms * 0.9 + time_ms as f64 * 0.1;
     }
 
     /// Record failed verification.
@@ -434,7 +444,9 @@ impl FederationZKPBridge {
         shard_id: &str,
         resources: f64,
     ) -> Result<(), FederationZKPError> {
-        let shard = self.shards.get_mut(shard_id)
+        let shard = self
+            .shards
+            .get_mut(shard_id)
             .ok_or(FederationZKPError::ShardNotFound(shard_id.to_string()))?;
         shard.available_resources = resources;
         Ok(())
@@ -446,7 +458,9 @@ impl FederationZKPBridge {
         shard_id: &str,
         reputation: f64,
     ) -> Result<(), FederationZKPError> {
-        let shard = self.shards.get_mut(shard_id)
+        let shard = self
+            .shards
+            .get_mut(shard_id)
             .ok_or(FederationZKPError::ShardNotFound(shard_id.to_string()))?;
         shard.reputation = reputation.clamp(0.0, 1.0);
         Ok(())
@@ -458,7 +472,9 @@ impl FederationZKPBridge {
         shard_id: &str,
         load: f64,
     ) -> Result<(), FederationZKPError> {
-        let shard = self.shards.get_mut(shard_id)
+        let shard = self
+            .shards
+            .get_mut(shard_id)
             .ok_or(FederationZKPError::ShardNotFound(shard_id.to_string()))?;
         shard.current_load = load.clamp(0.0, 1.0);
         Ok(())
@@ -475,12 +491,17 @@ impl FederationZKPBridge {
 
         // Verify source shard exists.
         if !self.shards.contains_key(&proof.source_shard) {
-            return Err(FederationZKPError::ShardNotFound(proof.source_shard.clone()));
+            return Err(FederationZKPError::ShardNotFound(
+                proof.source_shard.clone(),
+            ));
         }
 
         // Check source shard resources.
         let source = self.shards.get(&proof.source_shard).unwrap();
-        if !source.can_accept_proof(self.config.resource_cost_per_proof, self.config.max_proofs_in_flight) {
+        if !source.can_accept_proof(
+            self.config.resource_cost_per_proof,
+            self.config.max_proofs_in_flight,
+        ) {
             return Err(FederationZKPError::InsufficientResources {
                 available: source.available_resources,
                 required: self.config.resource_cost_per_proof,
@@ -488,7 +509,10 @@ impl FederationZKPBridge {
         }
 
         // Start proof on source shard.
-        self.shards.get_mut(&proof.source_shard).unwrap().start_proof();
+        self.shards
+            .get_mut(&proof.source_shard)
+            .unwrap()
+            .start_proof();
 
         proof.resource_cost = self.config.resource_cost_per_proof;
         self.federation_proofs.insert(proof.proof_id.clone(), proof);
@@ -503,7 +527,9 @@ impl FederationZKPBridge {
         shard_id: &str,
         valid: bool,
     ) -> Result<(), FederationZKPError> {
-        let proof = self.federation_proofs.get_mut(proof_id)
+        let proof = self
+            .federation_proofs
+            .get_mut(proof_id)
             .ok_or(FederationZKPError::ProofNotFound(proof_id.to_string()))?;
 
         proof.add_vote(shard_id.to_string(), valid);
@@ -536,7 +562,9 @@ impl FederationZKPBridge {
 
     /// Check consensus for a proof.
     pub fn check_consensus(&mut self, proof_id: &str) -> Result<bool, FederationZKPError> {
-        let proof = self.federation_proofs.get(proof_id)
+        let proof = self
+            .federation_proofs
+            .get(proof_id)
             .ok_or(FederationZKPError::ProofNotFound(proof_id.to_string()))?;
 
         let result = proof.consensus(self.config.consensus_threshold)?;
@@ -553,7 +581,9 @@ impl FederationZKPBridge {
         proof_id: &str,
         valid: bool,
     ) -> Result<(), FederationZKPError> {
-        let proof = self.federation_proofs.get(proof_id)
+        let proof = self
+            .federation_proofs
+            .get(proof_id)
             .ok_or(FederationZKPError::ProofNotFound(proof_id.to_string()))?;
 
         // Complete on source shard.
@@ -597,7 +627,8 @@ impl FederationZKPBridge {
             }
             _ => {
                 // Capacity or reputation-based: find best scoring shard.
-                self.shards.values()
+                self.shards
+                    .values()
                     .filter(|s| s.available_resources >= min_resources)
                     .max_by_key(|s| s.routing_score(self.config.routing_strategy) as u64)
                     .map(|s| s.shard_id.clone())
@@ -656,7 +687,9 @@ impl FederationZKPBridge {
         source_shard: &str,
         merkle_root: String,
     ) -> Result<usize, FederationZKPError> {
-        let target_ids: Vec<String> = self.shards.keys()
+        let target_ids: Vec<String> = self
+            .shards
+            .keys()
             .filter(|id| id != &source_shard)
             .cloned()
             .collect();
@@ -671,9 +704,8 @@ impl FederationZKPBridge {
     /// Clean up expired proofs.
     pub fn cleanup_expired(&mut self) -> usize {
         let before = self.federation_proofs.len();
-        self.federation_proofs.retain(|_id, proof| {
-            !proof.is_expired(self.config.proof_ttl_ms)
-        });
+        self.federation_proofs
+            .retain(|_id, proof| !proof.is_expired(self.config.proof_ttl_ms));
         before - self.federation_proofs.len()
     }
 
@@ -789,15 +821,21 @@ mod tests {
     #[test]
     fn test_register_shard() {
         let mut bridge = FederationZKPBridge::with_defaults();
-        bridge.register_shard("shard1".to_string(), 100.0, 0.8).unwrap();
+        bridge
+            .register_shard("shard1".to_string(), 100.0, 0.8)
+            .unwrap();
         assert_eq!(bridge.shard_count(), 1);
     }
 
     #[test]
     fn test_register_shard_duplicate() {
         let mut bridge = FederationZKPBridge::with_defaults();
-        bridge.register_shard("shard1".to_string(), 100.0, 0.8).unwrap();
-        bridge.register_shard("shard1".to_string(), 200.0, 0.9).unwrap();
+        bridge
+            .register_shard("shard1".to_string(), 100.0, 0.8)
+            .unwrap();
+        bridge
+            .register_shard("shard1".to_string(), 200.0, 0.9)
+            .unwrap();
         assert_eq!(bridge.shard_count(), 1);
     }
 
@@ -814,7 +852,9 @@ mod tests {
     #[test]
     fn test_update_shard_resources() {
         let mut bridge = FederationZKPBridge::with_defaults();
-        bridge.register_shard("shard1".to_string(), 100.0, 0.8).unwrap();
+        bridge
+            .register_shard("shard1".to_string(), 100.0, 0.8)
+            .unwrap();
         bridge.update_shard_resources("shard1", 200.0).unwrap();
         assert_eq!(
             bridge.get_shard("shard1").unwrap().available_resources,
@@ -825,7 +865,9 @@ mod tests {
     #[test]
     fn test_update_shard_reputation() {
         let mut bridge = FederationZKPBridge::with_defaults();
-        bridge.register_shard("shard1".to_string(), 100.0, 0.8).unwrap();
+        bridge
+            .register_shard("shard1".to_string(), 100.0, 0.8)
+            .unwrap();
         bridge.update_shard_reputation("shard1", 0.95).unwrap();
         assert_eq!(bridge.get_shard("shard1").unwrap().reputation, 0.95);
     }
@@ -833,7 +875,9 @@ mod tests {
     #[test]
     fn test_update_shard_load() {
         let mut bridge = FederationZKPBridge::with_defaults();
-        bridge.register_shard("shard1".to_string(), 100.0, 0.8).unwrap();
+        bridge
+            .register_shard("shard1".to_string(), 100.0, 0.8)
+            .unwrap();
         bridge.update_shard_load("shard1", 0.6).unwrap();
         assert_eq!(bridge.get_shard("shard1").unwrap().current_load, 0.6);
     }
@@ -841,8 +885,12 @@ mod tests {
     #[test]
     fn test_submit_proof() {
         let mut bridge = FederationZKPBridge::with_defaults();
-        bridge.register_shard("shard1".to_string(), 100.0, 0.8).unwrap();
-        bridge.register_shard("shard2".to_string(), 100.0, 0.8).unwrap();
+        bridge
+            .register_shard("shard1".to_string(), 100.0, 0.8)
+            .unwrap();
+        bridge
+            .register_shard("shard2".to_string(), 100.0, 0.8)
+            .unwrap();
         let proof = make_proof("p1", "shard1", &["shard2"]);
         bridge.submit_proof(proof).unwrap();
         assert_eq!(bridge.active_proof_count(), 1);
@@ -859,7 +907,9 @@ mod tests {
     #[test]
     fn test_submit_proof_duplicate() {
         let mut bridge = FederationZKPBridge::with_defaults();
-        bridge.register_shard("shard1".to_string(), 100.0, 0.8).unwrap();
+        bridge
+            .register_shard("shard1".to_string(), 100.0, 0.8)
+            .unwrap();
         let proof = make_proof("p1", "shard1", &[]);
         bridge.submit_proof(proof.clone()).unwrap();
         bridge.submit_proof(proof).unwrap(); // Dedup.
@@ -869,8 +919,12 @@ mod tests {
     #[test]
     fn test_submit_vote() {
         let mut bridge = FederationZKPBridge::with_defaults();
-        bridge.register_shard("shard1".to_string(), 100.0, 0.8).unwrap();
-        bridge.register_shard("shard2".to_string(), 100.0, 0.8).unwrap();
+        bridge
+            .register_shard("shard1".to_string(), 100.0, 0.8)
+            .unwrap();
+        bridge
+            .register_shard("shard2".to_string(), 100.0, 0.8)
+            .unwrap();
         let proof = make_proof("p1", "shard1", &["shard2"]);
         bridge.submit_proof(proof).unwrap();
         bridge.submit_vote("p1", "shard2", true).unwrap();
@@ -881,9 +935,15 @@ mod tests {
     #[test]
     fn test_consensus_reached() {
         let mut bridge = FederationZKPBridge::with_defaults();
-        bridge.register_shard("shard1".to_string(), 100.0, 0.8).unwrap();
-        bridge.register_shard("shard2".to_string(), 100.0, 0.8).unwrap();
-        bridge.register_shard("shard3".to_string(), 100.0, 0.8).unwrap();
+        bridge
+            .register_shard("shard1".to_string(), 100.0, 0.8)
+            .unwrap();
+        bridge
+            .register_shard("shard2".to_string(), 100.0, 0.8)
+            .unwrap();
+        bridge
+            .register_shard("shard3".to_string(), 100.0, 0.8)
+            .unwrap();
         let proof = make_proof("p1", "shard1", &["shard2", "shard3"]);
         bridge.submit_proof(proof).unwrap();
         bridge.submit_vote("p1", "shard2", true).unwrap();
@@ -896,8 +956,12 @@ mod tests {
     #[test]
     fn test_consensus_failed() {
         let mut bridge = FederationZKPBridge::with_defaults();
-        bridge.register_shard("shard1".to_string(), 100.0, 0.8).unwrap();
-        bridge.register_shard("shard2".to_string(), 100.0, 0.8).unwrap();
+        bridge
+            .register_shard("shard1".to_string(), 100.0, 0.8)
+            .unwrap();
+        bridge
+            .register_shard("shard2".to_string(), 100.0, 0.8)
+            .unwrap();
         let proof = make_proof("p1", "shard1", &["shard2"]);
         bridge.submit_proof(proof).unwrap();
         bridge.submit_vote("p1", "shard2", false).unwrap();
@@ -908,7 +972,9 @@ mod tests {
     #[test]
     fn test_complete_verification() {
         let mut bridge = FederationZKPBridge::with_defaults();
-        bridge.register_shard("shard1".to_string(), 100.0, 0.8).unwrap();
+        bridge
+            .register_shard("shard1".to_string(), 100.0, 0.8)
+            .unwrap();
         let proof = make_proof("p1", "shard1", &[]);
         bridge.submit_proof(proof).unwrap();
         bridge.complete_verification("p1", true).unwrap();
@@ -940,7 +1006,9 @@ mod tests {
         let mut bridge = FederationZKPBridge::with_defaults();
         bridge.register_shard("s1".to_string(), 100.0, 0.8).unwrap();
         bridge.register_shard("s2".to_string(), 100.0, 0.8).unwrap();
-        bridge.sync_merkle_root("s1", "s2", "root123".to_string()).unwrap();
+        bridge
+            .sync_merkle_root("s1", "s2", "root123".to_string())
+            .unwrap();
         assert_eq!(bridge.get_shard("s2").unwrap().last_merkle_root, "root123");
         assert_eq!(bridge.stats.total_merkle_syncs, 1);
     }
@@ -951,14 +1019,18 @@ mod tests {
         bridge.register_shard("s1".to_string(), 100.0, 0.8).unwrap();
         bridge.register_shard("s2".to_string(), 100.0, 0.8).unwrap();
         bridge.register_shard("s3".to_string(), 100.0, 0.8).unwrap();
-        let count = bridge.broadcast_merkle_root("s1", "root1".to_string()).unwrap();
+        let count = bridge
+            .broadcast_merkle_root("s1", "root1".to_string())
+            .unwrap();
         assert_eq!(count, 2);
     }
 
     #[test]
     fn test_proof_expiration() {
         let mut bridge = FederationZKPBridge::with_defaults();
-        bridge.register_shard("shard1".to_string(), 100.0, 0.8).unwrap();
+        bridge
+            .register_shard("shard1".to_string(), 100.0, 0.8)
+            .unwrap();
         let mut proof = make_proof("p1", "shard1", &[]);
         proof.timestamp_ms = 0; // Very old.
         bridge.submit_proof(proof).unwrap();
@@ -969,7 +1041,9 @@ mod tests {
     #[test]
     fn test_get_proof() {
         let mut bridge = FederationZKPBridge::with_defaults();
-        bridge.register_shard("shard1".to_string(), 100.0, 0.8).unwrap();
+        bridge
+            .register_shard("shard1".to_string(), 100.0, 0.8)
+            .unwrap();
         let proof = make_proof("p1", "shard1", &[]);
         bridge.submit_proof(proof).unwrap();
         assert!(bridge.get_proof("p1").is_some());
@@ -979,7 +1053,9 @@ mod tests {
     #[test]
     fn test_reset_stats() {
         let mut bridge = FederationZKPBridge::with_defaults();
-        bridge.register_shard("shard1".to_string(), 100.0, 0.8).unwrap();
+        bridge
+            .register_shard("shard1".to_string(), 100.0, 0.8)
+            .unwrap();
         let proof = make_proof("p1", "shard1", &[]);
         bridge.submit_proof(proof).unwrap();
         bridge.reset_stats();
@@ -1079,7 +1155,9 @@ mod tests {
         let mut bridge = FederationZKPBridge::with_defaults();
         bridge.register_shard("s1".to_string(), 100.0, 0.8).unwrap();
         bridge.register_shard("s2".to_string(), 100.0, 0.8).unwrap();
-        bridge.sync_merkle_root("s1", "s2", "root1".to_string()).unwrap();
+        bridge
+            .sync_merkle_root("s1", "s2", "root1".to_string())
+            .unwrap();
         assert_eq!(bridge.get_merkle_sync_history().len(), 1);
     }
 
@@ -1133,9 +1211,15 @@ mod tests {
         let mut bridge = FederationZKPBridge::with_defaults();
 
         // Register shards.
-        bridge.register_shard("shard1".to_string(), 200.0, 0.9).unwrap();
-        bridge.register_shard("shard2".to_string(), 150.0, 0.85).unwrap();
-        bridge.register_shard("shard3".to_string(), 100.0, 0.8).unwrap();
+        bridge
+            .register_shard("shard1".to_string(), 200.0, 0.9)
+            .unwrap();
+        bridge
+            .register_shard("shard2".to_string(), 150.0, 0.85)
+            .unwrap();
+        bridge
+            .register_shard("shard3".to_string(), 100.0, 0.8)
+            .unwrap();
 
         // Submit proof.
         let proof = make_proof("p1", "shard1", &["shard2", "shard3"]);
@@ -1156,7 +1240,9 @@ mod tests {
         assert_eq!(bridge.stats.total_consensus_reached, 1);
 
         // Sync Merkle root.
-        bridge.broadcast_merkle_root("shard1", "root_final".to_string()).unwrap();
+        bridge
+            .broadcast_merkle_root("shard1", "root_final".to_string())
+            .unwrap();
         assert_eq!(bridge.stats.total_merkle_syncs, 2);
 
         // Route new proof.

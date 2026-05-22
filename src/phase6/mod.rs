@@ -51,10 +51,7 @@ pub mod interoperability {
     // Use `allow(unused_imports)` since these are public API re-exports
     #[allow(unused_imports)]
     pub use crate::interoperability::adapter::{
-        AdapterError,
-        NormalizedHiddenState,
-        SourceModel,
-        TensorAdapter,
+        AdapterError, NormalizedHiddenState, SourceModel, TensorAdapter,
     };
 }
 
@@ -63,10 +60,7 @@ pub mod federation {
     // Re-exports for phase6-core consumers
     #[allow(unused_imports)]
     pub use crate::federation::avg_aggregator::{
-        AggregationResult,
-        FedAvgAggregator,
-        FedAvgConfig,
-        WeightUpdate,
+        AggregationResult, FedAvgAggregator, FedAvgConfig, WeightUpdate,
     };
 }
 
@@ -79,10 +73,7 @@ pub mod onnx {
     // Re-exports for phase6-sprint2 ONNX adapter
     #[allow(unused_imports)]
     pub use crate::interoperability::onnx_adapter::{
-        OnnxAdapter,
-        OnnxAdapterConfig,
-        OnnxConversionResult,
-        OnnxError,
+        OnnxAdapter, OnnxAdapterConfig, OnnxConversionResult, OnnxError,
     };
 }
 
@@ -90,12 +81,7 @@ pub mod onnx {
 pub mod auth {
     // Re-exports for phase6-sprint2 auth
     #[allow(unused_imports)]
-    pub use crate::api::auth::{
-        AuthConfig,
-        AuthValidator,
-        AuthError,
-        SignatureValidationResult,
-    };
+    pub use crate::api::auth::{AuthConfig, AuthError, AuthValidator, SignatureValidationResult};
 }
 
 #[cfg(feature = "phase6-sprint2")]
@@ -103,10 +89,7 @@ pub mod staking {
     // Re-exports for phase6-sprint2 staking
     #[allow(unused_imports)]
     pub use crate::staking::registry::{
-        NodeStatus,
-        RegistryStats,
-        ResourceCommitment,
-        ResourceRegistry,
+        NodeStatus, RegistryStats, ResourceCommitment, ResourceRegistry,
     };
 }
 

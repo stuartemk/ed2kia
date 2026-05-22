@@ -465,12 +465,7 @@ impl NetworkSimulator {
             let model = SimulatedNode::select_model(i);
             let latency = self.config.base_latency_ms
                 + (i as f64 % 50.0) * self.config.latency_variance_ms / 10.0;
-            let node = SimulatedNode::with_config(
-                node_id,
-                model,
-                100,
-                latency,
-            );
+            let node = SimulatedNode::with_config(node_id, model, 100, latency);
             self.add_node(node).await;
         }
     }
@@ -564,10 +559,7 @@ impl NetworkSimulator {
         }
 
         // Select mesh_size peers
-        let mesh_peers: Vec<String> = peer_ids
-            .into_iter()
-            .take(self.config.mesh_size)
-            .collect();
+        let mesh_peers: Vec<String> = peer_ids.into_iter().take(self.config.mesh_size).collect();
 
         drop(nodes);
 
@@ -669,8 +661,7 @@ impl NetworkSimulator {
 
         let total_votes = votes_for + votes_against;
         let threshold = self.config.consensus_threshold;
-        let success = total_votes > 0
-            && votes_for as f64 / total_votes as f64 >= threshold;
+        let success = total_votes > 0 && votes_for as f64 / total_votes as f64 >= threshold;
 
         let mut metrics = self.metrics.write().await;
         metrics.consensus_rounds += 1;
@@ -687,7 +678,8 @@ impl NetworkSimulator {
         // First collect basic data synchronously, then read loads asynchronously
         let raw_data: Vec<(String, String, f64, Arc<tokio::sync::RwLock<usize>>, usize)> = {
             let nodes = self.nodes.read().await;
-            nodes.values()
+            nodes
+                .values()
                 .filter(|n| n.health == NodeHealth::Healthy)
                 .map(|n| {
                     (
@@ -854,8 +846,7 @@ impl NetworkSimulator {
 
         // Estimate CPU utilization based on throughput
         let cpu_cores = num_cpus::get() as f64;
-        metrics.cpu_utilization_estimate =
-            (metrics.throughput / (cpu_cores * 10000.0)).min(1.0);
+        metrics.cpu_utilization_estimate = (metrics.throughput / (cpu_cores * 10000.0)).min(1.0);
     }
 
     /// Get a clone of current metrics
@@ -930,9 +921,7 @@ async fn test_50_nodes_concurrent() {
                 ttl: 3,
             };
 
-            network_propagate
-                .propagate_gossip(source, msg)
-                .await;
+            network_propagate.propagate_gossip(source, msg).await;
 
             msg_count += 1;
         }
@@ -1029,9 +1018,7 @@ async fn test_100_nodes_concurrent() {
                 ttl: 3,
             };
 
-            network_propagate
-                .propagate_gossip(source, msg)
-                .await;
+            network_propagate.propagate_gossip(source, msg).await;
 
             msg_count += 1;
         }
@@ -1084,12 +1071,12 @@ async fn test_network_partition_heal() {
     let group_b: Vec<String> = all_ids[mid..].to_vec();
 
     // Create partition
-    network.create_partition(group_a.clone(), group_b.clone()).await;
+    network
+        .create_partition(group_a.clone(), group_b.clone())
+        .await;
 
     // Verify partition: nodes in different groups cannot communicate
-    let can_comm = network
-        .can_communicate(&group_a[0], &group_b[0])
-        .await;
+    let can_comm = network.can_communicate(&group_a[0], &group_b[0]).await;
     assert!(
         !can_comm,
         "Nodes in different partitions should not be able to communicate"
@@ -1112,9 +1099,7 @@ async fn test_network_partition_heal() {
     network.heal_partition().await;
 
     // Verify healing: all nodes can communicate again
-    let can_comm_healed = network
-        .can_communicate(&group_a[0], &group_b[0])
-        .await;
+    let can_comm_healed = network.can_communicate(&group_a[0], &group_b[0]).await;
     assert!(
         can_comm_healed,
         "Nodes should be able to communicate after partition healing"
@@ -1263,9 +1248,7 @@ async fn test_reputation_under_attack() {
     );
 
     // Simulate Sybil attack
-    let sybil_resistance = network
-        .simulate_sybil_attack(15, 10)
-        .await;
+    let sybil_resistance = network.simulate_sybil_attack(15, 10).await;
 
     // The sybil_resistance score combines consensus success rate and avg reputation
     // A healthy network should maintain reasonable resistance
@@ -1350,11 +1333,7 @@ async fn test_message_flood() {
         "Some messages should be rejected by rate limiting: rejected={}",
         rejected
     );
-    assert!(
-        sent > 0,
-        "Some messages should be accepted: sent={}",
-        sent
-    );
+    assert!(sent > 0, "Some messages should be accepted: sent={}", sent);
 
     // Verify rate limit ratio (should reject significant portion)
     let rejection_rate = rejected as f64 / (sent + rejected) as f64;
@@ -1405,10 +1384,7 @@ async fn test_cross_model_routing_stress() {
             let request_id = format!("cross_req_{}", i);
             let layer_id = (i % 16) as u32;
 
-            match network_clone
-                .route_cross_model(request_id, layer_id)
-                .await
-            {
+            match network_clone.route_cross_model(request_id, layer_id).await {
                 Some(_target) => routed += 1,
                 None => failed += 1,
             }
@@ -1417,9 +1393,7 @@ async fn test_cross_model_routing_stress() {
         (routed, failed)
     });
 
-    let (routed, failed) = routing_handle
-        .await
-        .expect("Routing task should complete");
+    let (routed, failed) = routing_handle.await.expect("Routing task should complete");
 
     println!(
         "Cross-model routing: routed={}, failed={}, total={}",
@@ -1458,7 +1432,8 @@ async fn test_cross_model_routing_stress() {
     // Count messages sent via routing (tensor requests enqueued on nodes)
     let total_routed_messages = {
         let nodes = network.nodes.read().await;
-        nodes.values()
+        nodes
+            .values()
             .map(|n| n.messages_sent.load(Ordering::Relaxed))
             .sum::<usize>()
     };
@@ -1476,8 +1451,7 @@ async fn test_cross_model_routing_stress() {
         let node_count = network.nodes.read().await.len();
         metrics.peak_memory_estimate = node_count * 4096 + total_routed_messages * 128;
         let cpu_cores = num_cpus::get() as f64;
-        metrics.cpu_utilization_estimate =
-            (metrics.throughput / (cpu_cores * 10000.0)).min(1.0);
+        metrics.cpu_utilization_estimate = (metrics.throughput / (cpu_cores * 10000.0)).min(1.0);
     }
 
     let metrics = network.get_metrics().await;
@@ -1653,10 +1627,7 @@ async fn test_node_health_transitions() {
         reputation: 1.0,
     };
     let result = node.enqueue_message(msg).await;
-    assert!(
-        !result,
-        "Unhealthy node should not enqueue messages"
-    );
+    assert!(!result, "Unhealthy node should not enqueue messages");
 
     // Transition to partitioned
     node.set_health(NodeHealth::Partitioned);
@@ -1669,10 +1640,7 @@ async fn test_node_health_transitions() {
         reputation: 1.0,
     };
     let result = node.enqueue_message(msg).await;
-    assert!(
-        !result,
-        "Partitioned node should not enqueue messages"
-    );
+    assert!(!result, "Partitioned node should not enqueue messages");
 
     // Recover to healthy
     node.set_health(NodeHealth::Healthy);
@@ -1685,10 +1653,7 @@ async fn test_node_health_transitions() {
         reputation: 1.0,
     };
     let result = node.enqueue_message(msg).await;
-    assert!(
-        result,
-        "Healthy node should enqueue messages"
-    );
+    assert!(result, "Healthy node should enqueue messages");
 }
 
 /// Test: Reputation scoring bounds
@@ -1734,7 +1699,9 @@ async fn test_partition_isolation() {
     // Create partition
     let group_a: Vec<String> = ids[..10].to_vec();
     let group_b: Vec<String> = ids[10..].to_vec();
-    network.create_partition(group_a.clone(), group_b.clone()).await;
+    network
+        .create_partition(group_a.clone(), group_b.clone())
+        .await;
 
     // Cross-partition communication should fail
     let can_comm = network.can_communicate(&group_a[0], &group_b[0]).await;
@@ -1792,8 +1759,14 @@ async fn test_global_counters() {
     let initial_messages = TOTAL_MESSAGES_PROCESSED.load(Ordering::Relaxed);
     let initial_consensus = TOTAL_CONSENSUS_ROUNDS.load(Ordering::Relaxed);
 
-    assert_eq!(initial_messages, 0, "Messages counter should be 0 after reset");
-    assert_eq!(initial_consensus, 0, "Consensus counter should be 0 after reset");
+    assert_eq!(
+        initial_messages, 0,
+        "Messages counter should be 0 after reset"
+    );
+    assert_eq!(
+        initial_consensus, 0,
+        "Consensus counter should be 0 after reset"
+    );
 
     // Increment counters
     TOTAL_MESSAGES_PROCESSED.fetch_add(100, Ordering::Relaxed);
@@ -1885,10 +1858,7 @@ mod benchmarks {
         let duration = start.elapsed();
         let avg_time = duration.as_secs_f64() / iterations as f64;
 
-        println!(
-            "Benchmark: 30-node consensus avg={:.4}s/round",
-            avg_time
-        );
+        println!("Benchmark: 30-node consensus avg={:.4}s/round", avg_time);
 
         assert!(
             avg_time < 0.5,

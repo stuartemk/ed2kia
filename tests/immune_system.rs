@@ -177,9 +177,8 @@ mod proof_of_symbiosis_tests {
 
         // All 3 Sybils combined = 0.5, also meets 0.4.
         // But they need 3x coordination, which is the anti-Sybil cost.
-        let result =
-            committee_threshold_met(&["sybil1", "sybil2", "sybil3"], &ledger, 0.4, 0.0)
-                .expect("validation should succeed");
+        let result = committee_threshold_met(&["sybil1", "sybil2", "sybil3"], &ledger, 0.4, 0.0)
+            .expect("validation should succeed");
         assert!(
             result,
             "All Sybils combined should meet threshold (but with coordination cost)"
@@ -188,10 +187,7 @@ mod proof_of_symbiosis_tests {
         // Single Sybil = 0.167 < 0.4
         let result = committee_threshold_met(&["sybil1"], &ledger, 0.4, 0.0)
             .expect("validation should succeed");
-        assert!(
-            !result,
-            "Single Sybil should not meet threshold alone"
-        );
+        assert!(!result, "Single Sybil should not meet threshold alone");
     }
 }
 
@@ -201,9 +197,7 @@ mod proof_of_symbiosis_tests {
 ))]
 mod apoptosis_flow_tests {
     use ed2kia::economics::existential_credit::ExistentialCreditLedger;
-    use ed2kia::federated::network_apoptosis::{
-        ImmuneState, ImmuneConfig, NetworkImmuneSystem,
-    };
+    use ed2kia::federated::network_apoptosis::{ImmuneConfig, ImmuneState, NetworkImmuneSystem};
 
     #[test]
     fn test_full_apoptosis_flow() {
@@ -212,10 +206,7 @@ mod apoptosis_flow_tests {
 
         // Phase 1: Peer starts healthy.
         ledger.emit_credit("node1", 50.0, 1.0).ok();
-        assert_eq!(
-            immune.evaluate_peer("node1", &ledger),
-            ImmuneState::Healthy
-        );
+        assert_eq!(immune.evaluate_peer("node1", &ledger), ImmuneState::Healthy);
 
         // Phase 2: Peer enters Pain (score goes negative).
         ledger.burn_credit("node1", -60.0, 1.0).ok();

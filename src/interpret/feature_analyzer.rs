@@ -175,7 +175,7 @@ impl FeatureAnalyzer {
     pub fn new(total_features: usize) -> Self {
         Self {
             statistics: HashMap::new(),
-            anomaly_z_threshold: 2.0, // 2σ default
+            anomaly_z_threshold: 2.0,     // 2σ default
             concentrated_threshold: 0.05, // <5% features activas = concentrado
             dispersed_threshold: 0.5,     // >50% features activas = disperso
             total_features,
@@ -233,10 +233,7 @@ impl FeatureAnalyzer {
             let idx = feature.neuron_index as usize;
 
             // Obtener o crear estadísticas
-            let stats = self
-                .statistics
-                .entry(idx)
-                .or_default(); // CLEANUP: or_insert_with -> or_default (FeatureStatistics implements Default)
+            let stats = self.statistics.entry(idx).or_default(); // CLEANUP: or_insert_with -> or_default (FeatureStatistics implements Default)
 
             // Calcular z-score antes de actualizar
             let z_score = stats.z_score(feature.activation_value);
@@ -272,8 +269,7 @@ impl FeatureAnalyzer {
         }
 
         // Patrón: Repetición (comparar con historial)
-        let current_active: Vec<usize> =
-            features.iter().map(|f| f.neuron_index as usize).collect();
+        let current_active: Vec<usize> = features.iter().map(|f| f.neuron_index as usize).collect();
         self.activation_history.push(current_active.clone());
         if self.activation_history.len() > self.max_history_size {
             self.activation_history.remove(0);
@@ -288,11 +284,8 @@ impl FeatureAnalyzer {
         }
 
         // Calcular score de anomalía
-        let anomaly_score = self.compute_anomaly_score(
-            &flagged_features,
-            &detected_patterns,
-            activation_density,
-        );
+        let anomaly_score =
+            self.compute_anomaly_score(&flagged_features, &detected_patterns, activation_density);
 
         // Calcular confianza
         let confidence = self.compute_confidence(features.len(), &detected_patterns);
@@ -562,7 +555,9 @@ mod tests {
             },
         ];
         let result = analyzer.analyze(&features, 0);
-        assert!(result.detected_patterns.contains(&PatternType::Concentrated));
+        assert!(result
+            .detected_patterns
+            .contains(&PatternType::Concentrated));
     }
 
     #[test]

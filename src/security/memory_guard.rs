@@ -43,7 +43,10 @@ struct AllocationRecord {
 impl MemoryGuard {
     /// Crea un nuevo MemoryGuard con el límite especificado
     pub fn new(limit_bytes: u64) -> Self {
-        info!("MemoryGuard created: limit={}MB", limit_bytes / (1024 * 1024));
+        info!(
+            "MemoryGuard created: limit={}MB",
+            limit_bytes / (1024 * 1024)
+        );
         Self {
             limit_bytes,
             current_usage: AtomicU64::new(0),
@@ -98,7 +101,9 @@ impl MemoryGuard {
             allocs.push(record);
         }
 
-        let new_usage = self.current_usage.fetch_add(size_bytes as u64, Ordering::AcqRel)
+        let new_usage = self
+            .current_usage
+            .fetch_add(size_bytes as u64, Ordering::AcqRel)
             + size_bytes as u64;
 
         // Actualiza pico de memoria
@@ -119,7 +124,9 @@ impl MemoryGuard {
 
     /// Registra una deallocation de memoria
     pub fn record_dealloc(&self, size_bytes: usize) {
-        let previous = self.current_usage.fetch_sub(size_bytes as u64, Ordering::AcqRel);
+        let previous = self
+            .current_usage
+            .fetch_sub(size_bytes as u64, Ordering::AcqRel);
         self.deallocation_count.fetch_add(1, Ordering::Relaxed);
 
         debug!(
@@ -220,7 +227,10 @@ impl MemoryGuard {
         // Patrón 3: Repetición de bloques de 8 bytes (posible address leak)
         if data.len() >= 16 && data.len().is_multiple_of(8) {
             let first_block: [u8; 8] = data[..8].try_into().unwrap();
-            let repetitions = data.chunks(8).filter(|c| *c == first_block.as_slice()).count();
+            let repetitions = data
+                .chunks(8)
+                .filter(|c| *c == first_block.as_slice())
+                .count();
             if repetitions * 8 > data.len() / 2 {
                 return true;
             }

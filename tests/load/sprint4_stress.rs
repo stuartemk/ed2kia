@@ -19,15 +19,9 @@
 
 #[cfg(feature = "v1.2-sprint4")]
 mod stress {
-    use ed2kia::federation_scaling_v3::scaling_v3::{
-        FederationScalingV3, NodeCapabilityV3,
-    };
-    use ed2kia::federation_scaling_v3::adaptive_sharder::{
-        AdaptiveSharder, AdaptiveSharderConfig,
-    };
-    use ed2kia::federation_scaling_v3::gradient_sync_v3::{
-        GradientSyncV3, GradientSyncV3Config,
-    };
+    use ed2kia::federation_scaling_v3::adaptive_sharder::{AdaptiveSharder, AdaptiveSharderConfig};
+    use ed2kia::federation_scaling_v3::gradient_sync_v3::{GradientSyncV3, GradientSyncV3Config};
+    use ed2kia::federation_scaling_v3::scaling_v3::{FederationScalingV3, NodeCapabilityV3};
 
     // ========================================================================
     // Federation Scaling v3 Stress Tests
@@ -64,10 +58,7 @@ mod stress {
         let mut scaling = FederationScalingV3::new();
 
         for i in 0..50 {
-            let node = NodeCapabilityV3::new(
-                format!("node-{}", i),
-                0.7, 0.7, 0.7, 0.7,
-            );
+            let node = NodeCapabilityV3::new(format!("node-{}", i), 0.7, 0.7, 0.7, 0.7);
             scaling.register_node(node);
         }
 
@@ -86,10 +77,7 @@ mod stress {
 
         // Register and unregister nodes rapidly
         for i in 0..100 {
-            let node = NodeCapabilityV3::new(
-                format!("node-{}", i),
-                0.6, 0.6, 0.6, 0.6,
-            );
+            let node = NodeCapabilityV3::new(format!("node-{}", i), 0.6, 0.6, 0.6, 0.6);
             scaling.register_node(node);
         }
 
@@ -100,10 +88,7 @@ mod stress {
 
         // Register new batch
         for i in 100..150 {
-            let node = NodeCapabilityV3::new(
-                format!("node-{}", i),
-                0.6, 0.6, 0.6, 0.6,
-            );
+            let node = NodeCapabilityV3::new(format!("node-{}", i), 0.6, 0.6, 0.6, 0.6);
             scaling.register_node(node);
         }
 
@@ -116,10 +101,7 @@ mod stress {
         let mut scaling = FederationScalingV3::new();
 
         for i in 0..100 {
-            let node = NodeCapabilityV3::new(
-                format!("node-{}", i),
-                0.8, 0.8, 0.8, 0.8,
-            );
+            let node = NodeCapabilityV3::new(format!("node-{}", i), 0.8, 0.8, 0.8, 0.8);
             scaling.register_node(node);
         }
 
@@ -137,10 +119,7 @@ mod stress {
         let mut scaling = FederationScalingV3::new();
 
         for i in 0..30 {
-            let node = NodeCapabilityV3::new(
-                format!("node-{}", i),
-                0.8, 0.8, 0.8, 0.8,
-            );
+            let node = NodeCapabilityV3::new(format!("node-{}", i), 0.8, 0.8, 0.8, 0.8);
             scaling.register_node(node);
         }
 
@@ -276,7 +255,9 @@ mod stress {
         // Start multiple migrations
         let mut migration_ids = Vec::new();
         for i in 0..5 {
-            if let Ok(migration) = sharder.start_migration(&format!("shard-{}", i), format!("node-{}", (i + 5) % 10)) {
+            if let Ok(migration) =
+                sharder.start_migration(&format!("shard-{}", i), format!("node-{}", (i + 5) % 10))
+            {
                 migration_ids.push(migration.migration_id);
             }
         }
@@ -418,7 +399,9 @@ mod stress {
         // Create batches and sync to all nodes
         for seq in 0..50 {
             let gradients = vec![0.1, 0.2, 0.3];
-            let batch = sync.create_batch(format!("node-{}", seq % 15), gradients).unwrap();
+            let batch = sync
+                .create_batch(format!("node-{}", seq % 15), gradients)
+                .unwrap();
 
             for i in 0..15 {
                 let _ = sync.sync_batch(&batch.batch_id, &format!("node-{}", i));
@@ -468,11 +451,14 @@ mod stress {
             sync.register_node(&format!("node-{}", i));
         }
 
-        let batch = sync.create_batch("node-0".to_string(), vec![0.1, 0.2]).unwrap();
+        let batch = sync
+            .create_batch("node-0".to_string(), vec![0.1, 0.2])
+            .unwrap();
 
         // Sync to 7 nodes (70% quorum with default 67%)
         for i in 1..8 {
-            sync.sync_batch(&batch.batch_id, &format!("node-{}", i)).unwrap();
+            sync.sync_batch(&batch.batch_id, &format!("node-{}", i))
+                .unwrap();
         }
 
         // Check quorum multiple times
@@ -491,10 +477,7 @@ mod stress {
         // Phase 1: Scale with 50 nodes
         let mut scaling = FederationScalingV3::new();
         for i in 0..50 {
-            let node = NodeCapabilityV3::new(
-                format!("node-{}", i),
-                0.7, 0.7, 0.7, 0.7,
-            );
+            let node = NodeCapabilityV3::new(format!("node-{}", i), 0.7, 0.7, 0.7, 0.7);
             scaling.register_node(node);
         }
 
@@ -520,7 +503,8 @@ mod stress {
 
             // Create and sync gradient batch
             let gradients = vec![0.1 * iter as f64, 0.2 * iter as f64];
-            if let Ok(batch) = gradient_sync.create_batch(format!("node-{}", iter % 50), gradients) {
+            if let Ok(batch) = gradient_sync.create_batch(format!("node-{}", iter % 50), gradients)
+            {
                 for i in 0..50 {
                     let _ = gradient_sync.sync_batch(&batch.batch_id, &format!("node-{}", i));
                 }
@@ -545,10 +529,7 @@ mod stress {
 
         // Register 30 nodes across all modules
         for i in 0..30 {
-            let node = NodeCapabilityV3::new(
-                format!("node-{}", i),
-                0.75, 0.75, 0.75, 0.75,
-            );
+            let node = NodeCapabilityV3::new(format!("node-{}", i), 0.75, 0.75, 0.75, 0.75);
             scaling.register_node(node);
             sharder.register_node(&format!("node-{}", i), 0.5);
             gradient_sync.register_node(&format!("node-{}", i));

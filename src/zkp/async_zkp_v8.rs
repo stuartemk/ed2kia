@@ -14,8 +14,8 @@
 
 #[cfg(feature = "v1.4-sprint3")]
 mod internal {
-    use std::collections::{HashMap, BinaryHeap};
     use std::cmp::Ordering;
+    use std::collections::{BinaryHeap, HashMap};
 
     // ---------------------------------------------------------------------------
     // Errors
@@ -45,11 +45,17 @@ mod internal {
     impl std::fmt::Display for ZKPV8Error {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             match self {
-                ZKPV8Error::ProofGenerationFailed(msg) => write!(f, "Proof generation failed: {}", msg),
+                ZKPV8Error::ProofGenerationFailed(msg) => {
+                    write!(f, "Proof generation failed: {}", msg)
+                }
                 ZKPV8Error::VerificationFailed(msg) => write!(f, "Verification failed: {}", msg),
                 ZKPV8Error::FederationNotFound(id) => write!(f, "Federation {} not found", id),
                 ZKPV8Error::CredibilityTooLow { score, threshold } => {
-                    write!(f, "Credibility {:.3} below threshold {:.3}", score, threshold)
+                    write!(
+                        f,
+                        "Credibility {:.3} below threshold {:.3}",
+                        score, threshold
+                    )
                 }
                 ZKPV8Error::BudgetExceeded { budget, used } => {
                     write!(f, "Budget {:.1} exceeded (used: {:.1})", budget, used)
@@ -208,10 +214,14 @@ mod internal {
         /// Add federation to relay chain.
         pub fn extend_relay(&mut self, federation_id: String) -> Result<(), ZKPV8Error> {
             if self.relay_chain.len() >= 10 {
-                return Err(ZKPV8Error::RelayChainBroken("Max relay depth reached".to_string()));
+                return Err(ZKPV8Error::RelayChainBroken(
+                    "Max relay depth reached".to_string(),
+                ));
             }
             if self.relay_chain.contains(&federation_id) {
-                return Err(ZKPV8Error::RelayChainBroken("Cycle detected in relay chain".to_string()));
+                return Err(ZKPV8Error::RelayChainBroken(
+                    "Cycle detected in relay chain".to_string(),
+                ));
             }
             self.relay_chain.push(federation_id);
             Ok(())
@@ -228,7 +238,8 @@ mod internal {
 
     impl Ord for ProofEntry {
         fn cmp(&self, other: &Self) -> Ordering {
-            self.priority.cmp(&other.priority)
+            self.priority
+                .cmp(&other.priority)
                 .then_with(|| other.created_ms.cmp(&self.created_ms))
         }
     }
@@ -322,16 +333,30 @@ mod internal {
         }
 
         /// Update federation credibility.
-        pub fn update_credibility(&mut self, federation_id: &str, success: bool) -> Result<(), ZKPV8Error> {
-            let fed = self.federations.get_mut(federation_id)
+        pub fn update_credibility(
+            &mut self,
+            federation_id: &str,
+            success: bool,
+        ) -> Result<(), ZKPV8Error> {
+            let fed = self
+                .federations
+                .get_mut(federation_id)
                 .ok_or(ZKPV8Error::FederationNotFound(federation_id.to_string()))?;
             fed.update_credibility(success, self.config.credibility_decay);
             Ok(())
         }
 
         /// Submit a proof for scheduling.
-        pub fn submit_proof(&mut self, id: String, federation_id: String, priority: u32, cost: f64) -> Result<(), ZKPV8Error> {
-            let fed = self.federations.get(&federation_id)
+        pub fn submit_proof(
+            &mut self,
+            id: String,
+            federation_id: String,
+            priority: u32,
+            cost: f64,
+        ) -> Result<(), ZKPV8Error> {
+            let fed = self
+                .federations
+                .get(&federation_id)
                 .ok_or(ZKPV8Error::FederationNotFound(federation_id.to_string()))?;
             if !fed.meets_threshold(self.config.min_credibility) {
                 return Err(ZKPV8Error::CredibilityTooLow {
@@ -363,7 +388,8 @@ mod internal {
             if let Some(fed) = self.federations.get_mut(proof.federation_id.as_str()) {
                 fed.consume_budget(proof.cost);
             }
-            self.stats.record_relay(proof.relay_chain.len() - 1, proof.cost);
+            self.stats
+                .record_relay(proof.relay_chain.len() - 1, proof.cost);
             let mut proof = proof;
             proof.verified = true;
             self.stats.record_proof(true);
@@ -372,9 +398,18 @@ mod internal {
         }
 
         /// Relay proof to another federation.
-        pub fn relay_proof(&mut self, proof_id: &str, target_federation: String) -> Result<(), ZKPV8Error> {
-            let proof = self.proofs.get(proof_id)
-                .ok_or(ZKPV8Error::ProofGenerationFailed(format!("Proof {} not found", proof_id)))?;
+        pub fn relay_proof(
+            &mut self,
+            proof_id: &str,
+            target_federation: String,
+        ) -> Result<(), ZKPV8Error> {
+            let proof = self
+                .proofs
+                .get(proof_id)
+                .ok_or(ZKPV8Error::ProofGenerationFailed(format!(
+                    "Proof {} not found",
+                    proof_id
+                )))?;
             let mut proof = proof.clone();
             proof.extend_relay(target_federation.clone())?;
             if let Some(fed) = self.federations.get_mut(target_federation.as_str()) {
@@ -398,7 +433,9 @@ mod internal {
 
         /// Clean up expired proofs.
         pub fn cleanup_expired(&mut self) -> usize {
-            let expired: Vec<String> = self.proofs.values()
+            let expired: Vec<String> = self
+                .proofs
+                .values()
                 .filter(|p| p.is_expired(self.config.proof_ttl_ms))
                 .map(|p| p.id.clone())
                 .collect();
@@ -520,7 +557,9 @@ mod internal {
         fn test_submit_proof() {
             let mut engine = AsyncZKPV8::with_defaults();
             engine.register_federation("fed1".to_string());
-            engine.submit_proof("p1".to_string(), "fed1".to_string(), 10, 50.0).unwrap();
+            engine
+                .submit_proof("p1".to_string(), "fed1".to_string(), 10, 50.0)
+                .unwrap();
             assert_eq!(engine.queue_size(), 1);
         }
 
@@ -556,7 +595,9 @@ mod internal {
         fn test_process_next() {
             let mut engine = AsyncZKPV8::with_defaults();
             engine.register_federation("fed1".to_string());
-            engine.submit_proof("p1".to_string(), "fed1".to_string(), 10, 50.0).unwrap();
+            engine
+                .submit_proof("p1".to_string(), "fed1".to_string(), 10, 50.0)
+                .unwrap();
             let proof = engine.process_next().unwrap();
             assert_eq!(proof.id, "p1");
             assert!(proof.verified);
@@ -572,8 +613,12 @@ mod internal {
         fn test_priority_ordering() {
             let mut engine = AsyncZKPV8::with_defaults();
             engine.register_federation("fed1".to_string());
-            engine.submit_proof("low".to_string(), "fed1".to_string(), 1, 10.0).unwrap();
-            engine.submit_proof("high".to_string(), "fed1".to_string(), 100, 10.0).unwrap();
+            engine
+                .submit_proof("low".to_string(), "fed1".to_string(), 1, 10.0)
+                .unwrap();
+            engine
+                .submit_proof("high".to_string(), "fed1".to_string(), 100, 10.0)
+                .unwrap();
             let proof = engine.process_next().unwrap();
             assert_eq!(proof.id, "high");
         }
@@ -583,7 +628,9 @@ mod internal {
             let mut engine = AsyncZKPV8::with_defaults();
             engine.register_federation("fed1".to_string());
             engine.register_federation("fed2".to_string());
-            engine.submit_proof("p1".to_string(), "fed1".to_string(), 10, 50.0).unwrap();
+            engine
+                .submit_proof("p1".to_string(), "fed1".to_string(), 10, 50.0)
+                .unwrap();
             engine.process_next();
             engine.relay_proof("p1", "fed2".to_string()).unwrap();
             let proof = engine.proofs.get("p1").unwrap();
@@ -595,7 +642,9 @@ mod internal {
         fn test_relay_proof_cycle_detected() {
             let mut engine = AsyncZKPV8::with_defaults();
             engine.register_federation("fed1".to_string());
-            engine.submit_proof("p1".to_string(), "fed1".to_string(), 10, 50.0).unwrap();
+            engine
+                .submit_proof("p1".to_string(), "fed1".to_string(), 10, 50.0)
+                .unwrap();
             engine.process_next();
             let result = engine.relay_proof("p1", "fed1".to_string());
             assert!(matches!(result, Err(ZKPV8Error::RelayChainBroken(_))));
@@ -616,7 +665,9 @@ mod internal {
         fn test_cleanup_expired() {
             let mut engine = AsyncZKPV8::with_defaults();
             engine.register_federation("fed1".to_string());
-            engine.submit_proof("p1".to_string(), "fed1".to_string(), 10, 50.0).unwrap();
+            engine
+                .submit_proof("p1".to_string(), "fed1".to_string(), 10, 50.0)
+                .unwrap();
             engine.process_next();
             let proof = engine.proofs.get_mut("p1").unwrap();
             proof.created_ms = 0;
@@ -646,8 +697,12 @@ mod internal {
             let mut engine = AsyncZKPV8::with_defaults();
             engine.config.queue_limit = 2;
             engine.register_federation("fed1".to_string());
-            engine.submit_proof("p1".to_string(), "fed1".to_string(), 10, 10.0).unwrap();
-            engine.submit_proof("p2".to_string(), "fed1".to_string(), 10, 10.0).unwrap();
+            engine
+                .submit_proof("p1".to_string(), "fed1".to_string(), 10, 10.0)
+                .unwrap();
+            engine
+                .submit_proof("p2".to_string(), "fed1".to_string(), 10, 10.0)
+                .unwrap();
             let result = engine.submit_proof("p3".to_string(), "fed1".to_string(), 10, 10.0);
             assert!(matches!(result, Err(ZKPV8Error::SchedulingConflict(_))));
         }
@@ -656,7 +711,9 @@ mod internal {
         fn test_stats_tracking() {
             let mut engine = AsyncZKPV8::with_defaults();
             engine.register_federation("fed1".to_string());
-            engine.submit_proof("p1".to_string(), "fed1".to_string(), 10, 50.0).unwrap();
+            engine
+                .submit_proof("p1".to_string(), "fed1".to_string(), 10, 50.0)
+                .unwrap();
             engine.process_next();
             let stats = engine.get_stats();
             assert_eq!(stats.total_proofs_generated, 1);
@@ -667,7 +724,9 @@ mod internal {
         fn test_reset_stats() {
             let mut engine = AsyncZKPV8::with_defaults();
             engine.register_federation("fed1".to_string());
-            engine.submit_proof("p1".to_string(), "fed1".to_string(), 10, 50.0).unwrap();
+            engine
+                .submit_proof("p1".to_string(), "fed1".to_string(), 10, 50.0)
+                .unwrap();
             engine.process_next();
             engine.reset_stats();
             let stats = engine.get_stats();

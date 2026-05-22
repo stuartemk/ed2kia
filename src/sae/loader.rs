@@ -256,21 +256,14 @@ impl SAELoader {
 
     /// Cargar configuración del SAE
     // MIGRATION: safetensors::load::OwnedSafetensors removed in 0.3, use bytes directly
-    fn load_config_from_bytes(
-        &self,
-        _data: &[u8],
-    ) -> Result<SAEConfig> {
+    fn load_config_from_bytes(&self, _data: &[u8]) -> Result<SAEConfig> {
         // TODO: Phase 2 - Parsear config del header de safetensors
         // Por ahora, usar defaults
         Ok(SAEConfig::default())
     }
 
     /// Cargar pesos desde safetensors
-    fn load_weights_from_bytes(
-        &self,
-        _data: &[u8],
-        config: &SAEConfig,
-    ) -> Result<SAEPweights> {
+    fn load_weights_from_bytes(&self, _data: &[u8], config: &SAEConfig) -> Result<SAEPweights> {
         // MIGRATION: Use candle_core Tensor::from_safetensors directly
         // For now, create placeholder tensors (file loading in Phase 2)
         let w_enc = Tensor::zeros(
@@ -329,9 +322,9 @@ mod tests {
         let device = SAELoader::detect_device();
         // CLEANUP: Device doesn't implement PartialEq; use pattern matching instead
         match device {
-            Device::Cpu => {},
-            Device::Cuda(_) => {},
-            Device::Metal(_) => {},
+            Device::Cpu => {}
+            Device::Cuda(_) => {}
+            Device::Metal(_) => {}
         }
     }
 

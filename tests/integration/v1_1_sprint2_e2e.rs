@@ -4,12 +4,12 @@
 
 #[cfg(feature = "v1.1-sprint2")]
 mod e2e {
-    use ed2kia::slo::dynamic_engine::*;
-    use ed2kia::slo::contract_manager::*;
     use ed2kia::governance::liquid_v2::*;
     use ed2kia::governance::voting_mechanism::*;
-    use ed2kia::web::realtime::*;
     use ed2kia::monitoring::streaming_metrics::*;
+    use ed2kia::slo::contract_manager::*;
+    use ed2kia::slo::dynamic_engine::*;
+    use ed2kia::web::realtime::*;
 
     // ========================================================================
     // Dynamic SLO Engine E2E
@@ -25,8 +25,8 @@ mod e2e {
             "CPU Usage".to_string(),
             "cpu_usage".to_string(),
             80.0,
-            0.90,   // warning_threshold (fraction of threshold)
-            1.20,   // critical_threshold (multiplier of threshold)
+            0.90, // warning_threshold (fraction of threshold)
+            1.20, // critical_threshold (multiplier of threshold)
             60,
             3,
         );
@@ -43,7 +43,10 @@ mod e2e {
         // Report breaching metric
         engine.report_metric("cpu_usage", 120.0);
         let results = engine.evaluate_cycle().expect("evaluate");
-        assert!(results[0].compliance == SLOCompliance::Breach || results[0].compliance == SLOCompliance::Warning);
+        assert!(
+            results[0].compliance == SLOCompliance::Breach
+                || results[0].compliance == SLOCompliance::Warning
+        );
 
         // Stats
         let stats = engine.get_stats();
@@ -126,13 +129,16 @@ mod e2e {
             vec![metric],
             vec![clause],
             3,
-        ).expect("create contract");
+        )
+        .expect("create contract");
         let _ = manager.register_contract(contract);
 
         // Validate with compliant metrics
         let mut metrics = std::collections::HashMap::new();
         metrics.insert("uptime".to_string(), 99.95);
-        let result = manager.validate_contract("sla-1", &metrics).expect("validate");
+        let result = manager
+            .validate_contract("sla-1", &metrics)
+            .expect("validate");
         assert!(result.compliant);
 
         // Stats
@@ -171,13 +177,16 @@ mod e2e {
             vec![metric],
             vec![clause],
             5,
-        ).expect("create contract");
+        )
+        .expect("create contract");
         let _ = manager.register_contract(contract);
 
         // Validate with violating metrics
         let mut metrics = std::collections::HashMap::new();
         metrics.insert("latency".to_string(), 250.0);
-        let result = manager.validate_contract("sla-2", &metrics).expect("validate");
+        let result = manager
+            .validate_contract("sla-2", &metrics)
+            .expect("validate");
         assert!(!result.compliant);
         assert!(result.total_penalty > 0.0);
     }
@@ -201,7 +210,8 @@ mod e2e {
             ip_prefix: "10.0.0".to_string(),
             voting_history: vec![],
             reputation_score: 0.95,
-        }).expect("register node-1");
+        })
+        .expect("register node-1");
 
         gov.register_node(NodeProfileV2 {
             node_id: "node-2".to_string(),
@@ -213,7 +223,8 @@ mod e2e {
             ip_prefix: "10.0.1".to_string(),
             voting_history: vec![],
             reputation_score: 0.85,
-        }).expect("register node-2");
+        })
+        .expect("register node-2");
 
         gov.register_node(NodeProfileV2 {
             node_id: "node-3".to_string(),
@@ -225,16 +236,21 @@ mod e2e {
             ip_prefix: "10.0.2".to_string(),
             voting_history: vec![],
             reputation_score: 0.90,
-        }).expect("register node-3");
+        })
+        .expect("register node-3");
 
         // Create proposal using create_proposal(title, description, proposer, critical)
-        let _proposal = gov.create_proposal("Upgrade", "System upgrade", "node-1", false)
+        let _proposal = gov
+            .create_proposal("Upgrade", "System upgrade", "node-1", false)
             .expect("create proposal");
 
         // Cast votes
-        gov.cast_vote("node-1", "prop-1", true).expect("vote node-1");
-        gov.cast_vote("node-2", "prop-1", true).expect("vote node-2");
-        gov.cast_vote("node-3", "prop-1", true).expect("vote node-3");
+        gov.cast_vote("node-1", "prop-1", true)
+            .expect("vote node-1");
+        gov.cast_vote("node-2", "prop-1", true)
+            .expect("vote node-2");
+        gov.cast_vote("node-3", "prop-1", true)
+            .expect("vote node-3");
 
         // Stats
         let stats = gov.get_stats();
@@ -255,10 +271,12 @@ mod e2e {
             ip_prefix: "10.0.0".to_string(),
             voting_history: vec![],
             reputation_score: 0.95,
-        }).expect("register node-1");
+        })
+        .expect("register node-1");
 
         // Critical proposal has time-lock
-        let _proposal = gov.create_proposal("Critical Change", "Emergency fix", "node-1", true)
+        let _proposal = gov
+            .create_proposal("Critical Change", "Emergency fix", "node-1", true)
             .expect("create proposal");
 
         gov.cast_vote("node-1", "prop-1", true).expect("vote");
@@ -283,7 +301,8 @@ mod e2e {
             ip_prefix: "10.0.0".to_string(),
             voting_history: vec![],
             reputation_score: 0.5,
-        }).expect("register sybil-1");
+        })
+        .expect("register sybil-1");
 
         gov.register_node(NodeProfileV2 {
             node_id: "sybil-2".to_string(),
@@ -295,7 +314,8 @@ mod e2e {
             ip_prefix: "10.0.0".to_string(),
             voting_history: vec![],
             reputation_score: 0.5,
-        }).expect("register sybil-2");
+        })
+        .expect("register sybil-2");
 
         let clusters = gov.detect_sybil_cluster();
         assert!(!clusters.is_empty());
@@ -315,11 +335,14 @@ mod e2e {
         mechanism.register_voter("voter-3", 75.0);
 
         // Submit votes
-        mechanism.submit_vote("voter-1", "prop-1", VoteDirection::For, "sig-1")
+        mechanism
+            .submit_vote("voter-1", "prop-1", VoteDirection::For, "sig-1")
             .expect("vote 1");
-        mechanism.submit_vote("voter-2", "prop-1", VoteDirection::For, "sig-2")
+        mechanism
+            .submit_vote("voter-2", "prop-1", VoteDirection::For, "sig-2")
             .expect("vote 2");
-        mechanism.submit_vote("voter-3", "prop-1", VoteDirection::Against, "sig-3")
+        mechanism
+            .submit_vote("voter-3", "prop-1", VoteDirection::Against, "sig-3")
             .expect("vote 3");
 
         // Process batch
@@ -464,10 +487,7 @@ mod e2e {
         engine.add_rule(rule).expect("add rule");
 
         // Create telemetry session
-        let _ = backend.create_session(
-            "slo-monitor".to_string(),
-            vec![TelemetryEventType::Slo],
-        );
+        let _ = backend.create_session("slo-monitor".to_string(), vec![TelemetryEventType::Slo]);
 
         // Report metric and evaluate
         engine.report_metric("api_latency", 150.0);
@@ -503,14 +523,16 @@ mod e2e {
             ip_prefix: "10.0.0".to_string(),
             voting_history: vec![],
             reputation_score: 0.95,
-        }).expect("register node-1");
+        })
+        .expect("register node-1");
 
         let _ = backend.create_session(
             "gov-monitor".to_string(),
             vec![TelemetryEventType::Governance],
         );
 
-        let _proposal = gov.create_proposal("Feature Flag", "Enable new feature", "node-1", false)
+        let _proposal = gov
+            .create_proposal("Feature Flag", "Enable new feature", "node-1", false)
             .expect("create proposal");
 
         // Publish governance event
@@ -551,11 +573,7 @@ mod e2e {
                 (name.clone(), *value)
             }).collect::<std::collections::HashMap<_, _>>(),
         });
-        let result = backend.publish_event(
-            TelemetryEventType::Metrics,
-            payload,
-            None,
-        );
+        let result = backend.publish_event(TelemetryEventType::Metrics, payload, None);
         assert_eq!(result.events_sent, 1);
     }
 }

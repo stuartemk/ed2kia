@@ -234,7 +234,12 @@ mod internal {
     }
 
     impl OrchestratorStats {
-        pub fn record_decision(&mut self, confidence: f64, used_fallback: bool, action: &ScalingAction) {
+        pub fn record_decision(
+            &mut self,
+            confidence: f64,
+            used_fallback: bool,
+            action: &ScalingAction,
+        ) {
             self.total_decisions += 1;
             if used_fallback {
                 self.fallback_count += 1;
@@ -279,12 +284,18 @@ mod internal {
             }
         }
 
-        pub fn register_pool(&mut self, pool_id: String, capacity: f64) -> Result<(), OrchestratorError> {
+        pub fn register_pool(
+            &mut self,
+            pool_id: String,
+            capacity: f64,
+        ) -> Result<(), OrchestratorError> {
             if self.states.len() >= self.config.max_pools {
                 return Err(OrchestratorError::CapacityExceeded(self.states.len() as f64));
             }
             if capacity <= 0.0 {
-                return Err(OrchestratorError::InvalidParameter("Capacity must be positive".to_string()));
+                return Err(OrchestratorError::InvalidParameter(
+                    "Capacity must be positive".to_string(),
+                ));
             }
             let state = OrchestratorState::new(pool_id.clone(), capacity);
             self.states.insert(pool_id, state);
@@ -298,8 +309,14 @@ mod internal {
             Ok(())
         }
 
-        pub fn update_demand(&mut self, pool_id: &str, demand: f64) -> Result<(), OrchestratorError> {
-            let state = self.states.get_mut(pool_id)
+        pub fn update_demand(
+            &mut self,
+            pool_id: &str,
+            demand: f64,
+        ) -> Result<(), OrchestratorError> {
+            let state = self
+                .states
+                .get_mut(pool_id)
                 .ok_or_else(|| OrchestratorError::PoolNotFound(pool_id.to_string()))?;
             state.record_demand(demand, self.config.prediction_alpha);
             state.used_capacity = demand;
@@ -309,7 +326,9 @@ mod internal {
 
         pub fn predict_demand_for_pool(&mut self, pool_id: &str) -> Result<f64, OrchestratorError> {
             let predicted = {
-                let state = self.states.get(pool_id)
+                let state = self
+                    .states
+                    .get(pool_id)
                     .ok_or_else(|| OrchestratorError::PoolNotFound(pool_id.to_string()))?;
                 state.predict_demand(
                     self.config.demand_prediction_horizon,
@@ -322,7 +341,9 @@ mod internal {
 
         pub fn decide(&self, required_capacity: f64) -> Result<RoutingDecision, OrchestratorError> {
             if self.states.is_empty() {
-                return Err(OrchestratorError::PoolNotFound("No pools registered".to_string()));
+                return Err(OrchestratorError::PoolNotFound(
+                    "No pools registered".to_string(),
+                ));
             }
 
             // Find best pool by available capacity and confidence
@@ -367,9 +388,10 @@ mod internal {
                                 }
                             }
                             // No fallback available, return error
-                            return Err(OrchestratorError::FallbackActivated(
-                                format!("No static fallback available, confidence: {:.3}", confidence)
-                            ));
+                            return Err(OrchestratorError::FallbackActivated(format!(
+                                "No static fallback available, confidence: {:.3}",
+                                confidence
+                            )));
                         } else {
                             // Fallback disabled — return error
                             return Err(OrchestratorError::ConfidenceTooLow(confidence));
@@ -387,9 +409,7 @@ mod internal {
                         scaling_action: action,
                     })
                 }
-                None => {
-                    Err(OrchestratorError::CapacityExceeded(required_capacity))
-                }
+                None => Err(OrchestratorError::CapacityExceeded(required_capacity)),
             }
         }
 
@@ -398,14 +418,18 @@ mod internal {
         }
 
         pub fn deactivate_pool(&mut self, pool_id: &str) -> Result<(), OrchestratorError> {
-            let state = self.states.get_mut(pool_id)
+            let state = self
+                .states
+                .get_mut(pool_id)
                 .ok_or_else(|| OrchestratorError::PoolNotFound(pool_id.to_string()))?;
             state.active = false;
             Ok(())
         }
 
         pub fn activate_pool(&mut self, pool_id: &str) -> Result<(), OrchestratorError> {
-            let state = self.states.get_mut(pool_id)
+            let state = self
+                .states
+                .get_mut(pool_id)
                 .ok_or_else(|| OrchestratorError::PoolNotFound(pool_id.to_string()))?;
             state.active = true;
             Ok(())
@@ -419,8 +443,14 @@ mod internal {
             &self.states
         }
 
-        pub fn record_decision(&mut self, confidence: f64, used_fallback: bool, action: &ScalingAction) {
-            self.stats.record_decision(confidence, used_fallback, action);
+        pub fn record_decision(
+            &mut self,
+            confidence: f64,
+            used_fallback: bool,
+            action: &ScalingAction,
+        ) {
+            self.stats
+                .record_decision(confidence, used_fallback, action);
         }
 
         pub fn get_stats(&self) -> &OrchestratorStats {

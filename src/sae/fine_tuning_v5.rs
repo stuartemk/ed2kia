@@ -44,14 +44,21 @@ mod internal {
                 Self::CheckpointFailed(msg) => write!(f, "Checkpoint failed: {}", msg),
                 Self::GradientMismatch(msg) => write!(f, "Gradient mismatch: {}", msg),
                 Self::UptimeBelowThreshold { node_id, uptime } => {
-                    write!(f, "Node {} uptime {:.1}% below threshold", node_id, uptime * 100.0)
+                    write!(
+                        f,
+                        "Node {} uptime {:.1}% below threshold",
+                        node_id,
+                        uptime * 100.0
+                    )
                 }
                 Self::AlignmentFailed(msg) => write!(f, "Cross-model alignment failed: {}", msg),
                 Self::ModelNotFound(id) => write!(f, "Model not found: {}", id),
                 Self::SyncTimeout(id) => write!(f, "Sync timeout for: {}", id),
                 Self::CompressionFailed(msg) => write!(f, "Compression failed: {}", msg),
                 Self::ConvergenceDivergence(msg) => write!(f, "Convergence divergence: {}", msg),
-                Self::LearningRateExhausted => write!(f, "Learning rate exhausted minimum threshold"),
+                Self::LearningRateExhausted => {
+                    write!(f, "Learning rate exhausted minimum threshold")
+                }
             }
         }
     }
@@ -244,10 +251,11 @@ mod internal {
     impl FineTuningV5Stats {
         pub fn record_sync(&mut self, time_ms: u64, alignment: f64) {
             self.total_syncs += 1;
-            self.avg_sync_time_ms =
-                (self.avg_sync_time_ms * (self.total_syncs - 1) as f64 + time_ms as f64) / self.total_syncs as f64;
-            self.avg_alignment =
-                (self.avg_alignment * (self.total_syncs - 1) as f64 + alignment) / self.total_syncs as f64;
+            self.avg_sync_time_ms = (self.avg_sync_time_ms * (self.total_syncs - 1) as f64
+                + time_ms as f64)
+                / self.total_syncs as f64;
+            self.avg_alignment = (self.avg_alignment * (self.total_syncs - 1) as f64 + alignment)
+                / self.total_syncs as f64;
         }
 
         pub fn record_convergence(&mut self) {
@@ -321,7 +329,10 @@ mod internal {
             if !self.nodes.contains_key(&node_id) {
                 return Err(FineTuningV5Error::NodeUnavailable(node_id));
             }
-            self.models.insert(model_id.clone(), ModelProfileV5::new(model_id, node_id, gradient_dim));
+            self.models.insert(
+                model_id.clone(),
+                ModelProfileV5::new(model_id, node_id, gradient_dim),
+            );
             Ok(())
         }
 
@@ -332,9 +343,14 @@ mod internal {
             reputation: f64,
         ) -> Result<(), FineTuningV5Error> {
             if !(0.0..=1.0).contains(&uptime) {
-                return Err(FineTuningV5Error::InvalidConfig("Uptime must be between 0.0 and 1.0".to_string()));
+                return Err(FineTuningV5Error::InvalidConfig(
+                    "Uptime must be between 0.0 and 1.0".to_string(),
+                ));
             }
-            self.nodes.insert(node_id.clone(), NodeEntryV5::new(node_id, uptime, reputation));
+            self.nodes.insert(
+                node_id.clone(),
+                NodeEntryV5::new(node_id, uptime, reputation),
+            );
             Ok(())
         }
 
@@ -413,8 +429,16 @@ mod internal {
             }
 
             // Convergence detection
-            let avg_alignment = if models_trained > 0 { total_alignment / models_trained as f64 } else { 0.0 };
-            let avg_loss = if models_trained > 0 { total_loss / models_trained as f64 } else { 0.0 };
+            let avg_alignment = if models_trained > 0 {
+                total_alignment / models_trained as f64
+            } else {
+                0.0
+            };
+            let avg_loss = if models_trained > 0 {
+                total_loss / models_trained as f64
+            } else {
+                0.0
+            };
 
             let mut converged = false;
             if self.config.convergence_detection {
@@ -451,8 +475,10 @@ mod internal {
             }
 
             // Checkpoint interval
-            let checkpoint_saved =
-                self.config.checkpoint_interval > 0 && self.current_round.is_multiple_of(self.config.checkpoint_interval as u64);
+            let checkpoint_saved = self.config.checkpoint_interval > 0
+                && self
+                    .current_round
+                    .is_multiple_of(self.config.checkpoint_interval as u64);
             if checkpoint_saved {
                 self.stats.checkpoints_saved += 1;
             }
@@ -514,7 +540,6 @@ mod internal {
         let sum: f64 = grads.iter().map(|g| (*g as f64) * (*g as f64)).sum();
         sum.sqrt().min(1.0)
     }
-
 }
 
 #[cfg(feature = "v1.5-sprint1")]
@@ -583,7 +608,9 @@ mod tests {
     fn test_register_model() {
         let mut engine = FineTuningV5::default();
         engine.register_node("n1".to_string(), 0.95, 0.8).unwrap();
-        engine.register_model("m1".to_string(), "n1".to_string(), 128).unwrap();
+        engine
+            .register_model("m1".to_string(), "n1".to_string(), 128)
+            .unwrap();
         assert!(engine._models().contains_key("m1"));
     }
 
@@ -599,7 +626,9 @@ mod tests {
         let mut engine = FineTuningV5::new(make_config());
         engine.register_node("n1".to_string(), 0.95, 0.8).unwrap();
         for i in 0..8 {
-            engine.register_model(format!("m{}", i), "n1".to_string(), 128).unwrap();
+            engine
+                .register_model(format!("m{}", i), "n1".to_string(), 128)
+                .unwrap();
         }
         let result = engine.register_model("m9".to_string(), "n1".to_string(), 128);
         assert!(result.is_err());
@@ -618,7 +647,9 @@ mod tests {
     fn test_execute_round_basic() {
         let mut engine = FineTuningV5::default();
         engine.register_node("n1".to_string(), 0.95, 0.8).unwrap();
-        engine.register_model("m1".to_string(), "n1".to_string(), 128).unwrap();
+        engine
+            .register_model("m1".to_string(), "n1".to_string(), 128)
+            .unwrap();
         let grads = HashMap::from([("m1".to_string(), vec![0.1; 128])]);
         let result = engine.execute_round(grads).unwrap();
         assert_eq!(result.models_trained, 1);
@@ -629,8 +660,12 @@ mod tests {
     fn test_execute_round_multiple_models() {
         let mut engine = FineTuningV5::default();
         engine.register_node("n1".to_string(), 0.95, 0.8).unwrap();
-        engine.register_model("m1".to_string(), "n1".to_string(), 64).unwrap();
-        engine.register_model("m2".to_string(), "n1".to_string(), 64).unwrap();
+        engine
+            .register_model("m1".to_string(), "n1".to_string(), 64)
+            .unwrap();
+        engine
+            .register_model("m2".to_string(), "n1".to_string(), 64)
+            .unwrap();
         let grads = HashMap::from([
             ("m1".to_string(), vec![0.1; 64]),
             ("m2".to_string(), vec![0.2; 64]),
@@ -643,7 +678,9 @@ mod tests {
     fn test_checkpoint_interval() {
         let mut engine = FineTuningV5::new(make_config());
         engine.register_node("n1".to_string(), 0.95, 0.8).unwrap();
-        engine.register_model("m1".to_string(), "n1".to_string(), 64).unwrap();
+        engine
+            .register_model("m1".to_string(), "n1".to_string(), 64)
+            .unwrap();
         let grads = HashMap::from([("m1".to_string(), vec![0.1; 64])]);
         for _ in 0..5 {
             let result = engine.execute_round(grads.clone()).unwrap();
@@ -657,7 +694,9 @@ mod tests {
     fn test_convergence_detection() {
         let mut engine = FineTuningV5::new(make_config());
         engine.register_node("n1".to_string(), 0.95, 0.8).unwrap();
-        engine.register_model("m1".to_string(), "n1".to_string(), 64).unwrap();
+        engine
+            .register_model("m1".to_string(), "n1".to_string(), 64)
+            .unwrap();
         let grads = HashMap::from([("m1".to_string(), vec![0.1; 64])]);
         // Run enough rounds for LR decay to reach min_learning_rate
         for _ in 0..50 {
@@ -670,7 +709,9 @@ mod tests {
     fn test_adaptive_lr_decay() {
         let mut engine = FineTuningV5::new(make_config());
         engine.register_node("n1".to_string(), 0.95, 0.8).unwrap();
-        engine.register_model("m1".to_string(), "n1".to_string(), 64).unwrap();
+        engine
+            .register_model("m1".to_string(), "n1".to_string(), 64)
+            .unwrap();
         let grads = HashMap::from([("m1".to_string(), vec![0.1; 64])]);
         for _ in 0..10 {
             engine.execute_round(grads.clone()).unwrap();
@@ -682,7 +723,9 @@ mod tests {
     fn test_stats_tracking() {
         let mut engine = FineTuningV5::default();
         engine.register_node("n1".to_string(), 0.95, 0.8).unwrap();
-        engine.register_model("m1".to_string(), "n1".to_string(), 64).unwrap();
+        engine
+            .register_model("m1".to_string(), "n1".to_string(), 64)
+            .unwrap();
         let grads = HashMap::from([("m1".to_string(), vec![0.1; 64])]);
         engine.execute_round(grads).unwrap();
         assert_eq!(engine.stats.total_rounds, 1);
@@ -693,7 +736,9 @@ mod tests {
     fn test_reset_stats() {
         let mut engine = FineTuningV5::default();
         engine.register_node("n1".to_string(), 0.95, 0.8).unwrap();
-        engine.register_model("m1".to_string(), "n1".to_string(), 64).unwrap();
+        engine
+            .register_model("m1".to_string(), "n1".to_string(), 64)
+            .unwrap();
         let grads = HashMap::from([("m1".to_string(), vec![0.1; 64])]);
         engine.execute_round(grads).unwrap();
         engine.reset_stats();
@@ -707,7 +752,9 @@ mod tests {
         config.refinement_passes = 3;
         let mut engine = FineTuningV5::new(config);
         engine.register_node("n1".to_string(), 0.95, 0.8).unwrap();
-        engine.register_model("m1".to_string(), "n1".to_string(), 64).unwrap();
+        engine
+            .register_model("m1".to_string(), "n1".to_string(), 64)
+            .unwrap();
         let grads = HashMap::from([("m1".to_string(), vec![0.1; 64])]);
         let result = engine.execute_round(grads).unwrap();
         assert!(result.avg_alignment > 0.0);
@@ -767,7 +814,9 @@ mod tests {
     fn test_multiple_rounds_increment() {
         let mut engine = FineTuningV5::default();
         engine.register_node("n1".to_string(), 0.95, 0.8).unwrap();
-        engine.register_model("m1".to_string(), "n1".to_string(), 64).unwrap();
+        engine
+            .register_model("m1".to_string(), "n1".to_string(), 64)
+            .unwrap();
         let grads = HashMap::from([("m1".to_string(), vec![0.1; 64])]);
         engine.execute_round(grads.clone()).unwrap();
         engine.execute_round(grads.clone()).unwrap();
@@ -779,7 +828,9 @@ mod tests {
     fn test_gradient_compression() {
         let mut engine = FineTuningV5::new(make_config());
         engine.register_node("n1".to_string(), 0.95, 0.8).unwrap();
-        engine.register_model("m1".to_string(), "n1".to_string(), 256).unwrap();
+        engine
+            .register_model("m1".to_string(), "n1".to_string(), 256)
+            .unwrap();
         let grads = HashMap::from([("m1".to_string(), vec![0.5; 256])]);
         let result = engine.execute_round(grads).unwrap();
         assert_eq!(result.models_trained, 1);

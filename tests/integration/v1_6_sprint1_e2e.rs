@@ -8,20 +8,20 @@ mod e2e {
     use std::time::Instant;
 
     // LP-140: Cross-Chain Bridge v3
-    use ed2kia::bridge::cross_chain_bridge_v3::{CrossChainBridgeV3, CrossChainBridgeV3Config};
     use ed2kia::bridge::bridge_validator::BridgeValidator;
+    use ed2kia::bridge::cross_chain_bridge_v3::{CrossChainBridgeV3, CrossChainBridgeV3Config};
     use ed2kia::bridge::relay_manager::RelayManager;
 
     // LP-141: Interop Layer v2
     use ed2kia::interop::interop_layer_v2::{InteropLayerV2, InteropMessage};
     use ed2kia::interop::protocol_adapter::{ProtocolAdapter, ProtocolMessage, ProtocolType};
-    use ed2kia::interop::schema_negotiator::{SchemaNegotiator, SchemaDefinition};
+    use ed2kia::interop::schema_negotiator::{SchemaDefinition, SchemaNegotiator};
 
     // LP-142: State Sync v2
-    use ed2kia::state::state_sync_v2::{StateSyncV2, StateEntry};
-    use sha2::Digest;
     use ed2kia::state::merkle_aggregator::MerkleAggregator;
-    use ed2kia::state::snapshot_manager::{SnapshotManager, SnapshotConfig};
+    use ed2kia::state::snapshot_manager::{SnapshotConfig, SnapshotManager};
+    use ed2kia::state::state_sync_v2::{StateEntry, StateSyncV2};
+    use sha2::Digest;
 
     fn current_ms() -> u64 {
         std::time::SystemTime::now()
@@ -42,8 +42,12 @@ mod e2e {
             ..CrossChainBridgeV3Config::default()
         });
 
-        bridge.register_chain("chain_a".to_string(), 0.9, 100.0).unwrap();
-        bridge.register_chain("chain_b".to_string(), 0.85, 80.0).unwrap();
+        bridge
+            .register_chain("chain_a".to_string(), 0.9, 100.0)
+            .unwrap();
+        bridge
+            .register_chain("chain_b".to_string(), 0.85, 80.0)
+            .unwrap();
 
         let msg_id = bridge
             .submit_message("chain_a", "chain_b", b"hello cross-chain".to_vec())
@@ -52,9 +56,15 @@ mod e2e {
         let verified = bridge.verify_message(&msg_id).unwrap();
         assert!(verified);
 
-        bridge.add_signature(&msg_id, "signer_1".to_string()).unwrap();
-        bridge.add_signature(&msg_id, "signer_2".to_string()).unwrap();
-        bridge.add_signature(&msg_id, "signer_3".to_string()).unwrap();
+        bridge
+            .add_signature(&msg_id, "signer_1".to_string())
+            .unwrap();
+        bridge
+            .add_signature(&msg_id, "signer_2".to_string())
+            .unwrap();
+        bridge
+            .add_signature(&msg_id, "signer_3".to_string())
+            .unwrap();
 
         bridge.relay_message(&msg_id).unwrap();
     }
@@ -118,10 +128,18 @@ mod e2e {
     fn test_e2e_interop_v2_path_discovery() {
         let mut interop = InteropLayerV2::default();
 
-        interop.register_federation("fed_a".to_string(), vec!["ep_a".to_string()]).unwrap();
-        interop.register_federation("fed_b".to_string(), vec!["ep_b".to_string()]).unwrap();
-        interop.register_federation("fed_c".to_string(), vec!["ep_c".to_string()]).unwrap();
-        interop.register_federation("fed_d".to_string(), vec!["ep_d".to_string()]).unwrap();
+        interop
+            .register_federation("fed_a".to_string(), vec!["ep_a".to_string()])
+            .unwrap();
+        interop
+            .register_federation("fed_b".to_string(), vec!["ep_b".to_string()])
+            .unwrap();
+        interop
+            .register_federation("fed_c".to_string(), vec!["ep_c".to_string()])
+            .unwrap();
+        interop
+            .register_federation("fed_d".to_string(), vec!["ep_d".to_string()])
+            .unwrap();
 
         interop.add_connection("fed_a", "fed_b").unwrap();
         interop.add_connection("fed_b", "fed_c").unwrap();
@@ -137,8 +155,12 @@ mod e2e {
     fn test_e2e_interop_v2_message_routing() {
         let mut interop = InteropLayerV2::default();
 
-        interop.register_federation("src".to_string(), vec!["ep_src".to_string()]).unwrap();
-        interop.register_federation("dst".to_string(), vec!["ep_dst".to_string()]).unwrap();
+        interop
+            .register_federation("src".to_string(), vec!["ep_src".to_string()])
+            .unwrap();
+        interop
+            .register_federation("dst".to_string(), vec!["ep_dst".to_string()])
+            .unwrap();
         interop.add_connection("src", "dst").unwrap();
 
         let msg = InteropMessage {
@@ -164,7 +186,9 @@ mod e2e {
         msg.fields.insert("key2".to_string(), vec![4, 5, 6]);
 
         let serialized = adapter.serialize(&msg).unwrap();
-        let deserialized = adapter.deserialize(&serialized, ProtocolType::Protobuf).unwrap();
+        let deserialized = adapter
+            .deserialize(&serialized, ProtocolType::Protobuf)
+            .unwrap();
 
         assert_eq!(deserialized.protocol, ProtocolType::Protobuf);
         assert_eq!(deserialized.schema_version, 1);
@@ -184,7 +208,9 @@ mod e2e {
         negotiator.register_schema(schema_a);
         negotiator.register_schema(schema_b);
 
-        let result = negotiator.negotiate("test_schema", 1, "test_schema", 1).unwrap();
+        let result = negotiator
+            .negotiate("test_schema", 1, "test_schema", 1)
+            .unwrap();
         assert!(result.compatible);
     }
 
@@ -194,13 +220,23 @@ mod e2e {
     fn test_e2e_state_sync_v2_divergence_detection() {
         let mut sync_a = StateSyncV2::default();
 
-        sync_a.register_state("key1".to_string(), vec![1, 2, 3]).unwrap();
-        sync_a.register_state("key2".to_string(), vec![4, 5, 6]).unwrap();
+        sync_a
+            .register_state("key1".to_string(), vec![1, 2, 3])
+            .unwrap();
+        sync_a
+            .register_state("key2".to_string(), vec![4, 5, 6])
+            .unwrap();
 
         // Build peer state with divergence on key2
         let mut peer_state = HashMap::new();
-        peer_state.insert("key1".to_string(), StateEntry::new("key1".to_string(), vec![1, 2, 3]));
-        peer_state.insert("key2".to_string(), StateEntry::new("key2".to_string(), vec![7, 8, 9]));
+        peer_state.insert(
+            "key1".to_string(),
+            StateEntry::new("key1".to_string(), vec![1, 2, 3]),
+        );
+        peer_state.insert(
+            "key2".to_string(),
+            StateEntry::new("key2".to_string(), vec![7, 8, 9]),
+        );
 
         let result = sync_a.sync_state(&peer_state);
         assert_eq!(result.divergences.len(), 1);
@@ -252,7 +288,9 @@ mod e2e {
         let mut state1 = HashMap::new();
         state1.insert("config".to_string(), vec![1, 0, 0]);
         state1.insert("data".to_string(), vec![10, 20, 30]);
-        manager.create_snapshot("snap_v1".to_string(), state1, None).unwrap();
+        manager
+            .create_snapshot("snap_v1".to_string(), state1, None)
+            .unwrap();
 
         // Create updated snapshot
         let mut state2 = HashMap::new();
@@ -285,11 +323,19 @@ mod e2e {
         let mut state_sync = StateSyncV2::default();
 
         // Register chains and federations
-        bridge.register_chain("chain_a".to_string(), 0.9, 100.0).unwrap();
-        bridge.register_chain("chain_b".to_string(), 0.85, 80.0).unwrap();
+        bridge
+            .register_chain("chain_a".to_string(), 0.9, 100.0)
+            .unwrap();
+        bridge
+            .register_chain("chain_b".to_string(), 0.85, 80.0)
+            .unwrap();
 
-        interop.register_federation("fed_a".to_string(), vec!["ep_a".to_string()]).unwrap();
-        interop.register_federation("fed_b".to_string(), vec!["ep_b".to_string()]).unwrap();
+        interop
+            .register_federation("fed_a".to_string(), vec!["ep_a".to_string()])
+            .unwrap();
+        interop
+            .register_federation("fed_b".to_string(), vec!["ep_b".to_string()])
+            .unwrap();
         interop.add_connection("fed_a", "fed_b").unwrap();
 
         // Submit cross-chain message
@@ -330,18 +376,20 @@ mod e2e {
             enable_merkle_proof: true,
             ..CrossChainBridgeV3Config::default()
         });
-        bridge.register_chain("alpha".to_string(), 0.95, 200.0).unwrap();
-        bridge.register_chain("beta".to_string(), 0.90, 150.0).unwrap();
-        bridge.register_chain("gamma".to_string(), 0.85, 100.0).unwrap();
+        bridge
+            .register_chain("alpha".to_string(), 0.95, 200.0)
+            .unwrap();
+        bridge
+            .register_chain("beta".to_string(), 0.90, 150.0)
+            .unwrap();
+        bridge
+            .register_chain("gamma".to_string(), 0.85, 100.0)
+            .unwrap();
 
         let msg_ids: Vec<String> = (0..10)
             .map(|i| {
                 bridge
-                    .submit_message(
-                        "alpha",
-                        "beta",
-                        format!("message_{}", i).into_bytes(),
-                    )
+                    .submit_message("alpha", "beta", format!("message_{}", i).into_bytes())
                     .unwrap()
             })
             .collect();
@@ -421,8 +469,12 @@ mod e2e {
     #[test]
     fn test_e2e_stress_bridge_v3_high_volume() {
         let mut bridge = CrossChainBridgeV3::default();
-        bridge.register_chain("src".to_string(), 0.95, 500.0).unwrap();
-        bridge.register_chain("dst".to_string(), 0.90, 400.0).unwrap();
+        bridge
+            .register_chain("src".to_string(), 0.95, 500.0)
+            .unwrap();
+        bridge
+            .register_chain("dst".to_string(), 0.90, 400.0)
+            .unwrap();
 
         for i in 0..100 {
             let msg_id = bridge

@@ -18,24 +18,26 @@
 
 #[cfg(feature = "v1.5-sprint1")]
 mod bench {
-    use std::time::Instant;
     use std::collections::HashMap;
+    use std::time::Instant;
 
     // LP-118: SAE Fine-Tuning v5
     use ed2kia::sae::fine_tuning_v5::{FineTuningV5, FineTuningV5Config};
 
     // LP-119: Cross-Chain Pools v4 & Dynamic Routing
+    use ed2kia::pools_v4::capacity_orchestrator::{CapacityOrchestrator, OrchestratorConfig};
     use ed2kia::pools_v4::cross_chain_pools_v4::{CrossChainPoolsV4, PoolV4Config};
     use ed2kia::pools_v4::dynamic_router::{DynamicRouter, RouterConfig};
-    use ed2kia::pools_v4::capacity_orchestrator::{CapacityOrchestrator, OrchestratorConfig};
 
     // LP-120: DAO Ledger v5 & Hybrid Governance
+    use ed2kia::governance_v5::audit_trail_v2::{
+        AuditCategory, AuditSeverity, AuditTrailConfig, AuditTrailV2,
+    };
     use ed2kia::governance_v5::dao_ledger_v5::{DaoLedgerV5, DaoLedgerV5Config};
     use ed2kia::governance_v5::hybrid_governance::{HybridGovernance, HybridGovernanceConfig};
-    use ed2kia::governance_v5::audit_trail_v2::{AuditTrailV2, AuditTrailConfig, AuditCategory, AuditSeverity};
 
     // LP-121: Async ZKP v9
-    use ed2kia::zkp_v9::async_zkp_v9::{AsyncZKPV9, ZKPV9Config, ProofPriority};
+    use ed2kia::zkp_v9::async_zkp_v9::{AsyncZKPV9, ProofPriority, ZKPV9Config};
 
     // =====================================================================
     // LP-118: Fine-Tuning v5 Benchmarks
@@ -43,8 +45,12 @@ mod bench {
 
     pub fn bench_finetune_v5_sync() {
         let mut engine = FineTuningV5::new(FineTuningV5Config::default());
-        engine.register_node("node-1".to_string(), 0.95, 0.9).unwrap();
-        engine.register_model("model-1".to_string(), "node-1".to_string(), 128).unwrap();
+        engine
+            .register_node("node-1".to_string(), 0.95, 0.9)
+            .unwrap();
+        engine
+            .register_model("model-1".to_string(), "node-1".to_string(), 128)
+            .unwrap();
 
         // Build gradients map
         let mut gradients = HashMap::new();
@@ -56,7 +62,10 @@ mod bench {
         }
         let elapsed_ms = start.elapsed().as_millis();
         println!("bench_finetune_v5_sync: {}ms (10 rounds)", elapsed_ms);
-        assert!(elapsed_ms <= 1200, "finetune_sync exceeds 1200ms for 10 rounds");
+        assert!(
+            elapsed_ms <= 1200,
+            "finetune_sync exceeds 1200ms for 10 rounds"
+        );
     }
 
     // =====================================================================
@@ -66,13 +75,17 @@ mod bench {
     pub fn bench_pool_v4_allocation() {
         let mut pools = CrossChainPoolsV4::new(PoolV4Config::default());
         pools.create_pool("pool-1".to_string()).unwrap();
-        pools.add_chain_slot("pool-1", "chain-1".to_string(), 10000.0, 0.9).unwrap();
+        pools
+            .add_chain_slot("pool-1", "chain-1".to_string(), 10000.0, 0.9)
+            .unwrap();
 
         let start = Instant::now();
         for i in 0..100 {
             pools.allocate("pool-1", 50.0).ok();
             if i % 20 == 0 {
-                pools.update_load("pool-1", "chain-1", (i as f64) * 5.0).ok();
+                pools
+                    .update_load("pool-1", "chain-1", (i as f64) * 5.0)
+                    .ok();
             }
         }
         let elapsed_ms = start.elapsed().as_millis();
@@ -87,13 +100,20 @@ mod bench {
     pub fn bench_dynamic_router_v4() {
         let mut router = DynamicRouter::new(RouterConfig::default());
         for i in 0..10 {
-            router.register_route(format!("target-{}", i), 0.8 + (i as f64) * 0.01).unwrap();
+            router
+                .register_route(format!("target-{}", i), 0.8 + (i as f64) * 0.01)
+                .unwrap();
         }
 
         let start = Instant::now();
         for i in 0..100 {
             for j in 0..10 {
-                router.record_latency(&format!("target-{}", j), 10.0 + (j as f64) * 2.0 + (i as f64 % 5.0)).ok();
+                router
+                    .record_latency(
+                        &format!("target-{}", j),
+                        10.0 + (j as f64) * 2.0 + (i as f64 % 5.0),
+                    )
+                    .ok();
             }
             router.decide().ok();
         }
@@ -115,13 +135,20 @@ mod bench {
         let start = Instant::now();
         for i in 0..100 {
             for j in 0..5 {
-                orch.update_demand(&format!("pool-{}", j), 500.0 + (i as f64) * 10.0).ok();
+                orch.update_demand(&format!("pool-{}", j), 500.0 + (i as f64) * 10.0)
+                    .ok();
             }
             orch.decide(1000.0).ok();
         }
         let elapsed_ms = start.elapsed().as_millis();
-        println!("bench_capacity_orchestrator: {}ms (100 decisions)", elapsed_ms);
-        assert!(elapsed_ms <= 500, "orchestrator exceeds 500ms for 100 decisions");
+        println!(
+            "bench_capacity_orchestrator: {}ms (100 decisions)",
+            elapsed_ms
+        );
+        assert!(
+            elapsed_ms <= 500,
+            "orchestrator exceeds 500ms for 100 decisions"
+        );
     }
 
     // =====================================================================
@@ -139,27 +166,34 @@ mod bench {
         let start = Instant::now();
         for i in 0..50 {
             let prop_id = format!("prop-{}", i);
-            ledger.create_proposal(
-                prop_id.clone(),
-                format!("actor-{}", i % 5),
-                format!("Proposal {}", i),
-                format!("Description for proposal {}", i),
-                false,
-            ).unwrap();
-            ledger.cast_vote(
-                format!("vote-{}", i),
-                prop_id.clone(),
-                format!("voter-{}", i % 10),
-                0.85,
-                true,
-            ).unwrap();
+            ledger
+                .create_proposal(
+                    prop_id.clone(),
+                    format!("actor-{}", i % 5),
+                    format!("Proposal {}", i),
+                    format!("Description for proposal {}", i),
+                    false,
+                )
+                .unwrap();
+            ledger
+                .cast_vote(
+                    format!("vote-{}", i),
+                    prop_id.clone(),
+                    format!("voter-{}", i % 10),
+                    0.85,
+                    true,
+                )
+                .unwrap();
             if i % 3 == 0 {
                 ledger.execute_proposal(&prop_id).ok();
             }
         }
         let elapsed_ms = start.elapsed().as_millis();
         println!("bench_dao_ledger_v5: {}ms (50 proposals)", elapsed_ms);
-        assert!(elapsed_ms <= 350, "dao_ledger exceeds 350ms for 50 proposals");
+        assert!(
+            elapsed_ms <= 350,
+            "dao_ledger exceeds 350ms for 50 proposals"
+        );
     }
 
     // =====================================================================
@@ -182,14 +216,18 @@ mod bench {
         for i in 0..100 {
             let session_id = format!("session-{}", i);
             let proposal_id = format!("prop-{}", i);
-            gov.create_session(session_id.clone(), proposal_id, false, now_ms).ok();
+            gov.create_session(session_id.clone(), proposal_id, false, now_ms)
+                .ok();
             gov.validate_off_chain(&session_id, now_ms).ok();
             gov.register_on_chain(&session_id, now_ms).ok();
             gov.execute(&session_id, now_ms).ok();
         }
         let elapsed_ms = start.elapsed().as_millis();
         println!("bench_hybrid_governance: {}ms (100 sessions)", elapsed_ms);
-        assert!(elapsed_ms <= 500, "hybrid_governance exceeds 500ms for 100 sessions");
+        assert!(
+            elapsed_ms <= 500,
+            "hybrid_governance exceeds 500ms for 100 sessions"
+        );
     }
 
     // =====================================================================
@@ -206,19 +244,27 @@ mod bench {
 
         let start = Instant::now();
         for i in 0..200 {
-            audit.append_entry(
-                format!("entry-{}", i),
-                AuditCategory::Governance,
-                AuditSeverity::Info,
-                format!("actor-{}", i % 10),
-                format!("Action {}", i),
-                now_ms + i as u64,
-            ).unwrap();
+            audit
+                .append_entry(
+                    format!("entry-{}", i),
+                    AuditCategory::Governance,
+                    AuditSeverity::Info,
+                    format!("actor-{}", i % 10),
+                    format!("Action {}", i),
+                    now_ms + i as u64,
+                )
+                .unwrap();
         }
         audit.verify_chain().ok();
         let elapsed_ms = start.elapsed().as_millis();
-        println!("bench_audit_trail_v2: {}ms (200 entries + verify)", elapsed_ms);
-        assert!(elapsed_ms <= 300, "audit_trail exceeds 300ms for 200 entries");
+        println!(
+            "bench_audit_trail_v2: {}ms (200 entries + verify)",
+            elapsed_ms
+        );
+        assert!(
+            elapsed_ms <= 300,
+            "audit_trail exceeds 300ms for 200 entries"
+        );
     }
 
     // =====================================================================
@@ -242,7 +288,8 @@ mod bench {
                 ProofPriority::High,
                 1024,
                 now_ms + i as u64,
-            ).unwrap();
+            )
+            .unwrap();
         }
         zkp.process_proofs(now_ms + 10);
         let elapsed_ms = start.elapsed().as_millis();
@@ -264,11 +311,16 @@ mod bench {
         for i in 0..50 {
             zkp.submit_proof(
                 format!("proof-{}", i),
-                if i % 2 == 0 { "fed-1".to_string() } else { "fed-2".to_string() },
+                if i % 2 == 0 {
+                    "fed-1".to_string()
+                } else {
+                    "fed-2".to_string()
+                },
                 ProofPriority::Normal,
                 512,
                 now_ms + i as u64,
-            ).unwrap();
+            )
+            .unwrap();
         }
         zkp.process_proofs(now_ms + 50);
         let elapsed_ms = start.elapsed().as_millis();
@@ -291,16 +343,23 @@ mod bench {
         // Fine-tuning
         let mut ft = FineTuningV5::new(FineTuningV5Config::default());
         ft.register_node("node-1".to_string(), 0.95, 0.9).unwrap();
-        ft.register_model("model-1".to_string(), "node-1".to_string(), 64).unwrap();
+        ft.register_model("model-1".to_string(), "node-1".to_string(), 64)
+            .unwrap();
         let mut gradients = HashMap::new();
         gradients.insert("model-1".to_string(), vec![0.01f32; 64]);
-        for _ in 0..3 { ft.execute_round(gradients.clone()).unwrap(); }
+        for _ in 0..3 {
+            ft.execute_round(gradients.clone()).unwrap();
+        }
 
         // Pools
         let mut pools = CrossChainPoolsV4::new(PoolV4Config::default());
         pools.create_pool("pool-1".to_string()).unwrap();
-        pools.add_chain_slot("pool-1", "chain-1".to_string(), 5000.0, 0.9).unwrap();
-        for _ in 0..10 { pools.allocate("pool-1", 100.0).ok(); }
+        pools
+            .add_chain_slot("pool-1", "chain-1".to_string(), 5000.0, 0.9)
+            .unwrap();
+        for _ in 0..10 {
+            pools.allocate("pool-1", 100.0).ok();
+        }
 
         // Router
         let mut router = DynamicRouter::new(RouterConfig::default());
@@ -315,20 +374,37 @@ mod bench {
             ..DaoLedgerV5Config::default()
         };
         let mut ledger = DaoLedgerV5::new(dao_config);
-        ledger.create_proposal(
-            "prop-1".to_string(),
-            "system".to_string(),
-            "Deploy".to_string(),
-            "Deploy v1.5.0 changes".to_string(),
-            false,
-        ).unwrap();
-        ledger.cast_vote("vote-1".to_string(), "prop-1".to_string(), "voter-1".to_string(), 0.95, true).unwrap();
+        ledger
+            .create_proposal(
+                "prop-1".to_string(),
+                "system".to_string(),
+                "Deploy".to_string(),
+                "Deploy v1.5.0 changes".to_string(),
+                false,
+            )
+            .unwrap();
+        ledger
+            .cast_vote(
+                "vote-1".to_string(),
+                "prop-1".to_string(),
+                "voter-1".to_string(),
+                0.95,
+                true,
+            )
+            .unwrap();
         ledger.execute_proposal("prop-1").unwrap();
 
         // ZKP
         let mut zkp = AsyncZKPV9::new(ZKPV9Config::default());
         zkp.register_federation("fed-1".to_string(), 0.9).unwrap();
-        zkp.submit_proof("proof-1".to_string(), "fed-1".to_string(), ProofPriority::High, 512, now_ms).unwrap();
+        zkp.submit_proof(
+            "proof-1".to_string(),
+            "fed-1".to_string(),
+            ProofPriority::High,
+            512,
+            now_ms,
+        )
+        .unwrap();
         zkp.process_proofs(now_ms + 1);
 
         let elapsed_ms = start.elapsed().as_millis();

@@ -108,7 +108,11 @@ impl HealthReport {
             checks,
             uptime_seconds,
             timestamp_ms: duration.as_millis() as u64,
-            summary: HealthSummary { total, passed, failed },
+            summary: HealthSummary {
+                total,
+                passed,
+                failed,
+            },
         }
     }
 
@@ -172,11 +176,7 @@ impl HealthManager {
             "uptime".to_string(),
             Arc::new(|| {
                 // Siempre pasa si el proceso está corriendo
-                HealthCheckResult::ok(
-                    "uptime".to_string(),
-                    "Process is running".to_string(),
-                    0.1,
-                )
+                HealthCheckResult::ok("uptime".to_string(), "Process is running".to_string(), 0.1)
             }),
         );
 
@@ -198,11 +198,7 @@ impl HealthManager {
             "disk".to_string(),
             Arc::new(|| {
                 // Placeholder - verificar espacio disponible
-                HealthCheckResult::ok(
-                    "disk".to_string(),
-                    "Disk space sufficient".to_string(),
-                    0.3,
-                )
+                HealthCheckResult::ok("disk".to_string(), "Disk space sufficient".to_string(), 0.3)
             }),
         );
     }
@@ -273,7 +269,8 @@ impl HealthManager {
     ) -> Arc<HealthCheckFn> {
         Arc::new(move || {
             let start = Instant::now();
-            match std::panic::catch_unwind(std::panic::AssertUnwindSafe(&check_fn)) { // CLEANUP: redundant closure
+            match std::panic::catch_unwind(std::panic::AssertUnwindSafe(&check_fn)) {
+                // CLEANUP: redundant closure
                 Ok(Ok(())) => HealthCheckResult::ok(
                     "feedback_store".to_string(),
                     format!("Database OK at {}", db_path),
@@ -310,7 +307,10 @@ impl HealthManager {
             } else {
                 HealthCheckResult::fail(
                     "p2p_connections".to_string(),
-                    format!("Only {} peers connected (min: {})", current_peers, min_peers),
+                    format!(
+                        "Only {} peers connected (min: {})",
+                        current_peers, min_peers
+                    ),
                     start.elapsed().as_secs_f64() * 1000.0,
                 )
             }

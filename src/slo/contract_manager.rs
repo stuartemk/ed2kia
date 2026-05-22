@@ -317,13 +317,17 @@ impl SLAContract {
     /// Serialize contract to JSON bytes.
     /// Note: Returns error since contract contains Instant fields that cannot be serialized.
     pub fn serialize(&self) -> Result<Vec<u8>, ContractError> {
-        Err(ContractError::Serialization("Contract contains Instant fields that cannot be serialized".into()))
+        Err(ContractError::Serialization(
+            "Contract contains Instant fields that cannot be serialized".into(),
+        ))
     }
 
     /// Deserialize contract from JSON bytes.
     /// Note: Returns error since contract contains Instant fields that cannot be deserialized.
     pub fn deserialize(_bytes: &[u8]) -> Result<Self, ContractError> {
-        Err(ContractError::Serialization("Deserialization requires custom Instant handling".into()))
+        Err(ContractError::Serialization(
+            "Deserialization requires custom Instant handling".into(),
+        ))
     }
 }
 
@@ -410,12 +414,10 @@ impl ContractManager {
     }
 
     /// Register a new SLA contract.
-    pub fn register_contract(
-        &mut self,
-        contract: SLAContract,
-    ) -> Result<String, ContractError> {
+    pub fn register_contract(&mut self, contract: SLAContract) -> Result<String, ContractError> {
         let id = contract.id.clone();
-        contract.verify_integrity()
+        contract
+            .verify_integrity()
             .then_some(())
             .ok_or_else(|| ContractError::InvalidContract("Integrity check failed".into()))?;
 
@@ -748,7 +750,13 @@ mod tests {
         )
     }
 
-    fn make_clause(id: &str, clause_type: ClauseType, metric: &str, threshold: f64, amount: f64) -> ContractClause {
+    fn make_clause(
+        id: &str,
+        clause_type: ClauseType,
+        metric: &str,
+        threshold: f64,
+        amount: f64,
+    ) -> ContractClause {
         ContractClause::new(
             id.to_string(),
             clause_type.clone(),
@@ -769,7 +777,13 @@ mod tests {
             Duration::from_secs(3600),
             Duration::from_secs(300),
             vec![make_metric("sae_latency", 50.0)],
-            vec![make_clause("c1", ClauseType::Penalty, "sae_latency", 50.0, 100.0)],
+            vec![make_clause(
+                "c1",
+                ClauseType::Penalty,
+                "sae_latency",
+                50.0,
+                100.0,
+            )],
             3,
         )
         .unwrap()
@@ -818,18 +832,20 @@ mod tests {
     #[test]
     fn test_validate_contract_compliant() {
         let mut manager = ContractManager::new();
-        manager.create_contract(
-            "c1".into(),
-            "Test".into(),
-            "Desc".into(),
-            "p1".into(),
-            "co1".into(),
-            Duration::from_secs(3600),
-            Duration::from_secs(300),
-            vec![make_metric("sae_latency", 50.0)],
-            vec![],
-            3,
-        ).unwrap();
+        manager
+            .create_contract(
+                "c1".into(),
+                "Test".into(),
+                "Desc".into(),
+                "p1".into(),
+                "co1".into(),
+                Duration::from_secs(3600),
+                Duration::from_secs(300),
+                vec![make_metric("sae_latency", 50.0)],
+                vec![],
+                3,
+            )
+            .unwrap();
 
         let mut metrics = HashMap::new();
         metrics.insert("sae_latency".into(), 30.0);
@@ -841,18 +857,26 @@ mod tests {
     #[test]
     fn test_validate_contract_violation() {
         let mut manager = ContractManager::new();
-        manager.create_contract(
-            "c1".into(),
-            "Test".into(),
-            "Desc".into(),
-            "p1".into(),
-            "co1".into(),
-            Duration::from_secs(3600),
-            Duration::from_secs(300),
-            vec![make_metric("sae_latency", 50.0)],
-            vec![make_clause("penalty", ClauseType::Penalty, "sae_latency", 50.0, 100.0)],
-            3,
-        ).unwrap();
+        manager
+            .create_contract(
+                "c1".into(),
+                "Test".into(),
+                "Desc".into(),
+                "p1".into(),
+                "co1".into(),
+                Duration::from_secs(3600),
+                Duration::from_secs(300),
+                vec![make_metric("sae_latency", 50.0)],
+                vec![make_clause(
+                    "penalty",
+                    ClauseType::Penalty,
+                    "sae_latency",
+                    50.0,
+                    100.0,
+                )],
+                3,
+            )
+            .unwrap();
 
         let mut metrics = HashMap::new();
         // Value 110 exceeds max (target*2=100), triggering violation
@@ -866,18 +890,26 @@ mod tests {
     #[test]
     fn test_penalty_clause_triggered() {
         let mut manager = ContractManager::new();
-        manager.create_contract(
-            "c1".into(),
-            "Test".into(),
-            "Desc".into(),
-            "p1".into(),
-            "co1".into(),
-            Duration::from_secs(3600),
-            Duration::from_secs(300),
-            vec![make_metric("error_rate", 5.0)],
-            vec![make_clause("pen", ClauseType::Penalty, "error_rate", 5.0, 50.0)],
-            3,
-        ).unwrap();
+        manager
+            .create_contract(
+                "c1".into(),
+                "Test".into(),
+                "Desc".into(),
+                "p1".into(),
+                "co1".into(),
+                Duration::from_secs(3600),
+                Duration::from_secs(300),
+                vec![make_metric("error_rate", 5.0)],
+                vec![make_clause(
+                    "pen",
+                    ClauseType::Penalty,
+                    "error_rate",
+                    5.0,
+                    50.0,
+                )],
+                3,
+            )
+            .unwrap();
 
         let mut metrics = HashMap::new();
         metrics.insert("error_rate".into(), 8.0);
@@ -889,18 +921,26 @@ mod tests {
     #[test]
     fn test_reward_clause_triggered() {
         let mut manager = ContractManager::new();
-        manager.create_contract(
-            "c1".into(),
-            "Test".into(),
-            "Desc".into(),
-            "p1".into(),
-            "co1".into(),
-            Duration::from_secs(3600),
-            Duration::from_secs(300),
-            vec![make_metric("uptime", 99.9)],
-            vec![make_clause("rew", ClauseType::Reward, "uptime", 99.9, 200.0)],
-            3,
-        ).unwrap();
+        manager
+            .create_contract(
+                "c1".into(),
+                "Test".into(),
+                "Desc".into(),
+                "p1".into(),
+                "co1".into(),
+                Duration::from_secs(3600),
+                Duration::from_secs(300),
+                vec![make_metric("uptime", 99.9)],
+                vec![make_clause(
+                    "rew",
+                    ClauseType::Reward,
+                    "uptime",
+                    99.9,
+                    200.0,
+                )],
+                3,
+            )
+            .unwrap();
 
         let mut metrics = HashMap::new();
         // Reward triggers when value <= threshold (99.9)
@@ -913,18 +953,20 @@ mod tests {
     #[test]
     fn test_contract_expiration() {
         let mut manager = ContractManager::new();
-        manager.create_contract(
-            "c1".into(),
-            "Test".into(),
-            "Desc".into(),
-            "p1".into(),
-            "co1".into(),
-            Duration::from_secs(0), // Already expired
-            Duration::from_secs(0),
-            vec![make_metric("latency", 50.0)],
-            vec![],
-            3,
-        ).unwrap();
+        manager
+            .create_contract(
+                "c1".into(),
+                "Test".into(),
+                "Desc".into(),
+                "p1".into(),
+                "co1".into(),
+                Duration::from_secs(0), // Already expired
+                Duration::from_secs(0),
+                vec![make_metric("latency", 50.0)],
+                vec![],
+                3,
+            )
+            .unwrap();
 
         let expired = manager.check_expired_contracts();
         assert_eq!(expired, 1);
@@ -933,18 +975,20 @@ mod tests {
     #[test]
     fn test_terminate_contract() {
         let mut manager = ContractManager::new();
-        manager.create_contract(
-            "c1".into(),
-            "Test".into(),
-            "Desc".into(),
-            "p1".into(),
-            "co1".into(),
-            Duration::from_secs(3600),
-            Duration::from_secs(300),
-            vec![make_metric("latency", 50.0)],
-            vec![],
-            3,
-        ).unwrap();
+        manager
+            .create_contract(
+                "c1".into(),
+                "Test".into(),
+                "Desc".into(),
+                "p1".into(),
+                "co1".into(),
+                Duration::from_secs(3600),
+                Duration::from_secs(300),
+                vec![make_metric("latency", 50.0)],
+                vec![],
+                3,
+            )
+            .unwrap();
 
         assert!(manager.terminate_contract("c1").is_ok());
         assert_eq!(
@@ -956,18 +1000,20 @@ mod tests {
     #[test]
     fn test_fulfill_contract() {
         let mut manager = ContractManager::new();
-        manager.create_contract(
-            "c1".into(),
-            "Test".into(),
-            "Desc".into(),
-            "p1".into(),
-            "co1".into(),
-            Duration::from_secs(3600),
-            Duration::from_secs(300),
-            vec![make_metric("latency", 50.0)],
-            vec![],
-            3,
-        ).unwrap();
+        manager
+            .create_contract(
+                "c1".into(),
+                "Test".into(),
+                "Desc".into(),
+                "p1".into(),
+                "co1".into(),
+                Duration::from_secs(3600),
+                Duration::from_secs(300),
+                vec![make_metric("latency", 50.0)],
+                vec![],
+                3,
+            )
+            .unwrap();
 
         assert!(manager.fulfill_contract("c1").is_ok());
         assert_eq!(
@@ -979,16 +1025,34 @@ mod tests {
     #[test]
     fn test_get_active_contracts() {
         let mut manager = ContractManager::new();
-        manager.create_contract(
-            "c1".into(), "T".into(), "D".into(), "p".into(), "c".into(),
-            Duration::from_secs(3600), Duration::from_secs(300),
-            vec![make_metric("m1", 50.0)], vec![], 3,
-        ).unwrap();
-        manager.create_contract(
-            "c2".into(), "T".into(), "D".into(), "p".into(), "c".into(),
-            Duration::from_secs(3600), Duration::from_secs(300),
-            vec![make_metric("m1", 50.0)], vec![], 3,
-        ).unwrap();
+        manager
+            .create_contract(
+                "c1".into(),
+                "T".into(),
+                "D".into(),
+                "p".into(),
+                "c".into(),
+                Duration::from_secs(3600),
+                Duration::from_secs(300),
+                vec![make_metric("m1", 50.0)],
+                vec![],
+                3,
+            )
+            .unwrap();
+        manager
+            .create_contract(
+                "c2".into(),
+                "T".into(),
+                "D".into(),
+                "p".into(),
+                "c".into(),
+                Duration::from_secs(3600),
+                Duration::from_secs(300),
+                vec![make_metric("m1", 50.0)],
+                vec![],
+                3,
+            )
+            .unwrap();
 
         manager.terminate_contract("c2").unwrap();
         let active = manager.get_active_contracts();
@@ -998,16 +1062,34 @@ mod tests {
     #[test]
     fn test_get_contracts_by_provider() {
         let mut manager = ContractManager::new();
-        manager.create_contract(
-            "c1".into(), "T".into(), "D".into(), "prov_a".into(), "c".into(),
-            Duration::from_secs(3600), Duration::from_secs(300),
-            vec![make_metric("m1", 50.0)], vec![], 3,
-        ).unwrap();
-        manager.create_contract(
-            "c2".into(), "T".into(), "D".into(), "prov_b".into(), "c".into(),
-            Duration::from_secs(3600), Duration::from_secs(300),
-            vec![make_metric("m1", 50.0)], vec![], 3,
-        ).unwrap();
+        manager
+            .create_contract(
+                "c1".into(),
+                "T".into(),
+                "D".into(),
+                "prov_a".into(),
+                "c".into(),
+                Duration::from_secs(3600),
+                Duration::from_secs(300),
+                vec![make_metric("m1", 50.0)],
+                vec![],
+                3,
+            )
+            .unwrap();
+        manager
+            .create_contract(
+                "c2".into(),
+                "T".into(),
+                "D".into(),
+                "prov_b".into(),
+                "c".into(),
+                Duration::from_secs(3600),
+                Duration::from_secs(300),
+                vec![make_metric("m1", 50.0)],
+                vec![],
+                3,
+            )
+            .unwrap();
 
         let prov_a = manager.get_contracts_by_provider("prov_a");
         assert_eq!(prov_a.len(), 1);
@@ -1016,11 +1098,20 @@ mod tests {
     #[test]
     fn test_stats_tracking() {
         let mut manager = ContractManager::new();
-        manager.create_contract(
-            "c1".into(), "T".into(), "D".into(), "p".into(), "c".into(),
-            Duration::from_secs(3600), Duration::from_secs(300),
-            vec![make_metric("m1", 50.0)], vec![], 3,
-        ).unwrap();
+        manager
+            .create_contract(
+                "c1".into(),
+                "T".into(),
+                "D".into(),
+                "p".into(),
+                "c".into(),
+                Duration::from_secs(3600),
+                Duration::from_secs(300),
+                vec![make_metric("m1", 50.0)],
+                vec![],
+                3,
+            )
+            .unwrap();
 
         let stats = manager.get_stats();
         assert_eq!(stats.total_contracts, 1);
@@ -1030,11 +1121,20 @@ mod tests {
     #[test]
     fn test_remove_contract() {
         let mut manager = ContractManager::new();
-        manager.create_contract(
-            "c1".into(), "T".into(), "D".into(), "p".into(), "c".into(),
-            Duration::from_secs(3600), Duration::from_secs(300),
-            vec![make_metric("m1", 50.0)], vec![], 3,
-        ).unwrap();
+        manager
+            .create_contract(
+                "c1".into(),
+                "T".into(),
+                "D".into(),
+                "p".into(),
+                "c".into(),
+                Duration::from_secs(3600),
+                Duration::from_secs(300),
+                vec![make_metric("m1", 50.0)],
+                vec![],
+                3,
+            )
+            .unwrap();
 
         assert!(manager.remove_contract("c1").is_ok());
         assert_eq!(manager.get_stats().total_contracts, 0);
@@ -1049,11 +1149,20 @@ mod tests {
     #[test]
     fn test_reset() {
         let mut manager = ContractManager::new();
-        manager.create_contract(
-            "c1".into(), "T".into(), "D".into(), "p".into(), "c".into(),
-            Duration::from_secs(3600), Duration::from_secs(300),
-            vec![make_metric("m1", 50.0)], vec![], 3,
-        ).unwrap();
+        manager
+            .create_contract(
+                "c1".into(),
+                "T".into(),
+                "D".into(),
+                "p".into(),
+                "c".into(),
+                Duration::from_secs(3600),
+                Duration::from_secs(300),
+                vec![make_metric("m1", 50.0)],
+                vec![],
+                3,
+            )
+            .unwrap();
 
         manager.reset();
         assert_eq!(manager.get_stats().total_contracts, 0);
@@ -1101,11 +1210,20 @@ mod tests {
     #[test]
     fn test_validate_terminated_contract() {
         let mut manager = ContractManager::new();
-        manager.create_contract(
-            "c1".into(), "T".into(), "D".into(), "p".into(), "c".into(),
-            Duration::from_secs(3600), Duration::from_secs(300),
-            vec![make_metric("m1", 50.0)], vec![], 3,
-        ).unwrap();
+        manager
+            .create_contract(
+                "c1".into(),
+                "T".into(),
+                "D".into(),
+                "p".into(),
+                "c".into(),
+                Duration::from_secs(3600),
+                Duration::from_secs(300),
+                vec![make_metric("m1", 50.0)],
+                vec![],
+                3,
+            )
+            .unwrap();
         manager.terminate_contract("c1").unwrap();
 
         let metrics = HashMap::new();
@@ -1115,11 +1233,20 @@ mod tests {
     #[test]
     fn test_max_violations_reached() {
         let mut manager = ContractManager::new();
-        manager.create_contract(
-            "c1".into(), "T".into(), "D".into(), "p".into(), "c".into(),
-            Duration::from_secs(3600), Duration::from_secs(300),
-            vec![make_metric("latency", 50.0)], vec![], 2,
-        ).unwrap();
+        manager
+            .create_contract(
+                "c1".into(),
+                "T".into(),
+                "D".into(),
+                "p".into(),
+                "c".into(),
+                Duration::from_secs(3600),
+                Duration::from_secs(300),
+                vec![make_metric("latency", 50.0)],
+                vec![],
+                2,
+            )
+            .unwrap();
 
         let mut metrics = HashMap::new();
         // Value 110 exceeds max (target*2=100), triggering violation
@@ -1127,18 +1254,29 @@ mod tests {
 
         // First violation
         manager.validate_contract("c1", &metrics).unwrap();
-        assert_eq!(manager.get_contract("c1").unwrap().status, ContractStatus::ViolationGrace);
+        assert_eq!(
+            manager.get_contract("c1").unwrap().status,
+            ContractStatus::ViolationGrace
+        );
 
         // Second violation (reaches max)
         manager.validate_contract("c1", &metrics).unwrap();
-        assert_eq!(manager.get_contract("c1").unwrap().status, ContractStatus::Violated);
+        assert_eq!(
+            manager.get_contract("c1").unwrap().status,
+            ContractStatus::Violated
+        );
     }
 
     #[test]
     fn test_invalid_contract_no_metrics() {
         let result = SLAContract::new(
-            "bad".into(), "T".into(), "D".into(), "p".into(), "c".into(),
-            Duration::from_secs(3600), Duration::from_secs(300),
+            "bad".into(),
+            "T".into(),
+            "D".into(),
+            "p".into(),
+            "c".into(),
+            Duration::from_secs(3600),
+            Duration::from_secs(300),
             vec![], // No metrics
             vec![],
             3,

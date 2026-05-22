@@ -269,10 +269,8 @@ impl FeatureBatchHash {
         batch_id: String,
         serialized_features: Vec<Vec<u8>>,
     ) -> Result<Self> {
-        let feature_hashes: Vec<String> = serialized_features
-            .iter()
-            .map(|f| hash_bytes(f))
-            .collect();
+        let feature_hashes: Vec<String> =
+            serialized_features.iter().map(|f| hash_bytes(f)).collect();
 
         // Construir Merkle tree
         let tree = MerkleTree::from_data(serialized_features)
@@ -341,11 +339,8 @@ mod tests {
     #[test]
     fn test_feature_batch_hash() {
         let features = vec![vec![1u8, 2], vec![3u8, 4], vec![5u8, 6]];
-        let batch = FeatureBatchHash::from_serialized_features(
-            "test-batch".to_string(),
-            features,
-        )
-        .unwrap();
+        let batch =
+            FeatureBatchHash::from_serialized_features("test-batch".to_string(), features).unwrap();
         assert_eq!(batch.feature_count, 3);
         assert!(!batch.merkle_root.is_empty());
     }

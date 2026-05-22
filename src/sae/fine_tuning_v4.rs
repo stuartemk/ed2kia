@@ -41,7 +41,12 @@ mod internal {
                 Self::CheckpointFailed(msg) => write!(f, "Checkpoint failed: {}", msg),
                 Self::GradientMismatch(msg) => write!(f, "Gradient mismatch: {}", msg),
                 Self::UptimeBelowThreshold { node_id, uptime } => {
-                    write!(f, "Node {} uptime {:.1}% below threshold", node_id, uptime * 100.0)
+                    write!(
+                        f,
+                        "Node {} uptime {:.1}% below threshold",
+                        node_id,
+                        uptime * 100.0
+                    )
                 }
                 Self::AlignmentFailed(msg) => write!(f, "Cross-model alignment failed: {}", msg),
                 Self::ModelNotFound(id) => write!(f, "Model not found: {}", id),
@@ -208,8 +213,12 @@ mod internal {
     impl FineTuningV4Stats {
         pub fn record_sync(&mut self, time_ms: u64, alignment: f64, compressed: usize) {
             self.total_syncs += 1;
-            self.avg_sync_time_ms = self.avg_sync_time_ms * (self.total_syncs as f64 - 1.0) / self.total_syncs as f64 + time_ms as f64 / self.total_syncs as f64;
-            self.avg_alignment_score = self.avg_alignment_score * (self.total_syncs as f64 - 1.0) / self.total_syncs as f64 + alignment / self.total_syncs as f64;
+            self.avg_sync_time_ms = self.avg_sync_time_ms * (self.total_syncs as f64 - 1.0)
+                / self.total_syncs as f64
+                + time_ms as f64 / self.total_syncs as f64;
+            self.avg_alignment_score = self.avg_alignment_score * (self.total_syncs as f64 - 1.0)
+                / self.total_syncs as f64
+                + alignment / self.total_syncs as f64;
             self.total_compressed_bytes += compressed;
         }
 
@@ -248,29 +257,56 @@ mod internal {
         }
 
         /// Register a model for fine-tuning.
-        pub fn register_model(&mut self, model_id: String, node_id: String, gradient_dim: usize) -> Result<(), FineTuningV4Error> {
+        pub fn register_model(
+            &mut self,
+            model_id: String,
+            node_id: String,
+            gradient_dim: usize,
+        ) -> Result<(), FineTuningV4Error> {
             if self.models.len() >= self.config.max_models {
-                return Err(FineTuningV4Error::InvalidConfig(format!("Max models {} reached", self.config.max_models)));
+                return Err(FineTuningV4Error::InvalidConfig(format!(
+                    "Max models {} reached",
+                    self.config.max_models
+                )));
             }
             if !self.nodes.contains_key(&node_id) {
                 return Err(FineTuningV4Error::NodeUnavailable(node_id));
             }
-            self.models.insert(model_id.clone(), ModelProfileV4::new(model_id, node_id, gradient_dim));
+            self.models.insert(
+                model_id.clone(),
+                ModelProfileV4::new(model_id, node_id, gradient_dim),
+            );
             Ok(())
         }
 
         /// Register a compute node.
-        pub fn register_node(&mut self, node_id: String, uptime: f64, reputation: f64) -> Result<(), FineTuningV4Error> {
+        pub fn register_node(
+            &mut self,
+            node_id: String,
+            uptime: f64,
+            reputation: f64,
+        ) -> Result<(), FineTuningV4Error> {
             if !(0.0..=1.0).contains(&uptime) {
-                return Err(FineTuningV4Error::InvalidConfig("Uptime must be between 0.0 and 1.0".to_string()));
+                return Err(FineTuningV4Error::InvalidConfig(
+                    "Uptime must be between 0.0 and 1.0".to_string(),
+                ));
             }
-            self.nodes.insert(node_id.clone(), NodeEntryV4::new(node_id, uptime, reputation));
+            self.nodes.insert(
+                node_id.clone(),
+                NodeEntryV4::new(node_id, uptime, reputation),
+            );
             Ok(())
         }
 
         /// Update node uptime.
-        pub fn update_node_uptime(&mut self, node_id: &str, uptime: f64) -> Result<(), FineTuningV4Error> {
-            let node = self.nodes.get_mut(node_id)
+        pub fn update_node_uptime(
+            &mut self,
+            node_id: &str,
+            uptime: f64,
+        ) -> Result<(), FineTuningV4Error> {
+            let node = self
+                .nodes
+                .get_mut(node_id)
                 .ok_or(FineTuningV4Error::NodeUnavailable(node_id.to_string()))?;
             node.uptime = uptime;
             Ok(())
@@ -278,13 +314,17 @@ mod internal {
 
         /// Select best node for training based on reputation, uptime, and credits.
         pub fn select_best_node(&self) -> Option<&NodeEntryV4> {
-            self.nodes.values()
+            self.nodes
+                .values()
                 .filter(|n| n.is_active && n.meets_uptime(self.config.min_node_uptime))
                 .max_by_key(|a| (a.selection_score() * 10000.0) as u64)
         }
 
         /// Execute a training round with gradient sync.
-        pub fn execute_round(&mut self, gradients: HashMap<String, Vec<f32>>) -> Result<TrainingRoundResult, FineTuningV4Error> {
+        pub fn execute_round(
+            &mut self,
+            gradients: HashMap<String, Vec<f32>>,
+        ) -> Result<TrainingRoundResult, FineTuningV4Error> {
             self.current_round += 1;
             let start_ms = current_timestamp_ms();
 
@@ -295,20 +335,26 @@ mod internal {
 
             for (model_id, grads) in &gradients {
                 let node_id = {
-                    let profile = self.models.get(model_id)
+                    let profile = self
+                        .models
+                        .get(model_id)
                         .ok_or(FineTuningV4Error::ModelNotFound(model_id.clone()))?;
                     profile.node_id.clone()
                 };
 
                 // Check node uptime
-                let node = self.nodes.get(&node_id)
+                let node = self
+                    .nodes
+                    .get(&node_id)
                     .ok_or(FineTuningV4Error::NodeUnavailable(node_id.clone()))?;
 
                 if !node.meets_uptime(self.config.min_node_uptime) {
                     // Trigger fallback to reserve node
                     fallback_triggered = true;
                     self.stats.total_fallbacks += 1;
-                    let reserve_node_id = self.select_reserve_node(&node_id).map(|r| r.node_id.clone());
+                    let reserve_node_id = self
+                        .select_reserve_node(&node_id)
+                        .map(|r| r.node_id.clone());
                     if let Some(new_node_id) = reserve_node_id {
                         if let Some(profile) = self.models.get_mut(model_id) {
                             profile.node_id = new_node_id;
@@ -317,34 +363,34 @@ mod internal {
                 }
 
                 if let Some(profile) = self.models.get_mut(model_id) {
+                    // Compute gradient norm
+                    let norm = compute_norm(grads);
+                    profile.last_gradient_norm = norm;
+                    profile.rounds_trained += 1;
+                    total_norm += norm;
+                    models_trained += 1;
 
-                // Compute gradient norm
-                let norm = compute_norm(grads);
-                profile.last_gradient_norm = norm;
-                profile.rounds_trained += 1;
-                total_norm += norm;
-                models_trained += 1;
+                    // Compress if enabled
+                    let compressed_size = if self.config.lz4_compression {
+                        simulate_lz4_compress(grads, self.config.compression_ratio)
+                    } else {
+                        grads.len() * 4
+                    };
 
-                // Compress if enabled
-                let compressed_size = if self.config.lz4_compression {
-                    simulate_lz4_compress(grads, self.config.compression_ratio)
-                } else {
-                    grads.len() * 4
-                };
+                    // Record sync
+                    let sync_time = current_timestamp_ms() - start_ms;
+                    self.sync_history.push_back(GradientSyncRecord {
+                        round: self.current_round,
+                        model_id: model_id.clone(),
+                        gradient_norm: norm,
+                        compressed_size,
+                        sync_time_ms: sync_time,
+                        alignment_score: profile.alignment_score,
+                        timestamp_ms: current_timestamp_ms(),
+                    });
 
-                // Record sync
-                let sync_time = current_timestamp_ms() - start_ms;
-                self.sync_history.push_back(GradientSyncRecord {
-                    round: self.current_round,
-                    model_id: model_id.clone(),
-                    gradient_norm: norm,
-                    compressed_size,
-                    sync_time_ms: sync_time,
-                    alignment_score: profile.alignment_score,
-                    timestamp_ms: current_timestamp_ms(),
-                });
-
-                self.stats.record_sync(sync_time, profile.alignment_score, compressed_size);
+                    self.stats
+                        .record_sync(sync_time, profile.alignment_score, compressed_size);
                 }
             }
 
@@ -357,13 +403,23 @@ mod internal {
             let total_time = current_timestamp_ms() - start_ms;
 
             // Checkpoint if interval reached
-            let checkpoint_created = self.current_round.is_multiple_of(self.config.checkpoint_interval);
+            let checkpoint_created = self
+                .current_round
+                .is_multiple_of(self.config.checkpoint_interval);
             if checkpoint_created {
                 self.stats.total_checkpoints += 1;
             }
 
-            let avg_alignment = if models_trained > 0 { total_alignment / models_trained as f64 } else { 1.0 };
-            let avg_norm = if models_trained > 0 { total_norm / models_trained as f64 } else { 0.0 };
+            let avg_alignment = if models_trained > 0 {
+                total_alignment / models_trained as f64
+            } else {
+                1.0
+            };
+            let avg_norm = if models_trained > 0 {
+                total_norm / models_trained as f64
+            } else {
+                0.0
+            };
 
             Ok(TrainingRoundResult {
                 round: self.current_round,
@@ -378,7 +434,8 @@ mod internal {
 
         /// Select a reserve node as fallback.
         fn select_reserve_node(&self, exclude_id: &str) -> Option<&NodeEntryV4> {
-            self.nodes.values()
+            self.nodes
+                .values()
                 .filter(|n| n.node_id != exclude_id && n.is_active)
                 .max_by_key(|a| (a.reputation * 10000.0) as u64)
         }
@@ -422,7 +479,6 @@ mod internal {
             .unwrap_or_default()
             .as_millis() as u64
     }
-
 }
 
 #[cfg(feature = "v1.4-sprint3")]
@@ -434,7 +490,9 @@ mod tests {
     use std::collections::HashMap;
 
     fn make_gradients(dim: usize, seed: u64) -> Vec<f32> {
-        (0..dim).map(|i| (i + seed as usize) as f32 * 0.01).collect()
+        (0..dim)
+            .map(|i| (i + seed as usize) as f32 * 0.01)
+            .collect()
     }
 
     #[test]
@@ -457,7 +515,9 @@ mod tests {
     #[test]
     fn test_register_node() {
         let mut engine = FineTuningV4::with_defaults();
-        engine.register_node("node-1".to_string(), 0.99, 0.95).unwrap();
+        engine
+            .register_node("node-1".to_string(), 0.99, 0.95)
+            .unwrap();
         assert!(engine.select_best_node().is_some());
     }
 
@@ -470,22 +530,30 @@ mod tests {
     #[test]
     fn test_update_node_uptime() {
         let mut engine = FineTuningV4::with_defaults();
-        engine.register_node("node-1".to_string(), 0.99, 0.95).unwrap();
+        engine
+            .register_node("node-1".to_string(), 0.99, 0.95)
+            .unwrap();
         engine.update_node_uptime("node-1", 0.90).unwrap();
     }
 
     #[test]
     fn test_register_model() {
         let mut engine = FineTuningV4::with_defaults();
-        engine.register_node("node-1".to_string(), 0.99, 0.95).unwrap();
-        engine.register_model("model-1".to_string(), "node-1".to_string(), 128).unwrap();
+        engine
+            .register_node("node-1".to_string(), 0.99, 0.95)
+            .unwrap();
+        engine
+            .register_model("model-1".to_string(), "node-1".to_string(), 128)
+            .unwrap();
         assert!(engine.get_model("model-1").is_some());
     }
 
     #[test]
     fn test_register_model_node_not_found() {
         let mut engine = FineTuningV4::with_defaults();
-        assert!(engine.register_model("m".to_string(), "missing".to_string(), 128).is_err());
+        assert!(engine
+            .register_model("m".to_string(), "missing".to_string(), 128)
+            .is_err());
     }
 
     #[test]
@@ -495,16 +563,24 @@ mod tests {
         engine.register_node("n1".to_string(), 0.99, 0.95).unwrap();
         engine.register_node("n2".to_string(), 0.99, 0.95).unwrap();
         engine.register_node("n3".to_string(), 0.99, 0.95).unwrap();
-        engine.register_model("m1".to_string(), "n1".to_string(), 64).unwrap();
-        engine.register_model("m2".to_string(), "n2".to_string(), 64).unwrap();
-        assert!(engine.register_model("m3".to_string(), "n3".to_string(), 64).is_err());
+        engine
+            .register_model("m1".to_string(), "n1".to_string(), 64)
+            .unwrap();
+        engine
+            .register_model("m2".to_string(), "n2".to_string(), 64)
+            .unwrap();
+        assert!(engine
+            .register_model("m3".to_string(), "n3".to_string(), 64)
+            .is_err());
     }
 
     #[test]
     fn test_select_best_node() {
         let mut engine = FineTuningV4::with_defaults();
         engine.register_node("low".to_string(), 0.90, 0.5).unwrap();
-        engine.register_node("high".to_string(), 0.99, 0.95).unwrap();
+        engine
+            .register_node("high".to_string(), 0.99, 0.95)
+            .unwrap();
         let best = engine.select_best_node().unwrap();
         assert_eq!(best.node_id, "high");
     }
@@ -512,8 +588,12 @@ mod tests {
     #[test]
     fn test_execute_round_basic() {
         let mut engine = FineTuningV4::with_defaults();
-        engine.register_node("node-1".to_string(), 0.99, 0.95).unwrap();
-        engine.register_model("model-1".to_string(), "node-1".to_string(), 64).unwrap();
+        engine
+            .register_node("node-1".to_string(), 0.99, 0.95)
+            .unwrap();
+        engine
+            .register_model("model-1".to_string(), "node-1".to_string(), 64)
+            .unwrap();
 
         let mut grads = HashMap::new();
         grads.insert("model-1".to_string(), make_gradients(64, 1));
@@ -528,8 +608,12 @@ mod tests {
     fn test_execute_round_multiple_models() {
         let mut engine = FineTuningV4::with_defaults();
         for i in 0..3 {
-            engine.register_node(format!("node-{}", i), 0.99, 0.95).unwrap();
-            engine.register_model(format!("model-{}", i), format!("node-{}", i), 64).unwrap();
+            engine
+                .register_node(format!("node-{}", i), 0.99, 0.95)
+                .unwrap();
+            engine
+                .register_model(format!("model-{}", i), format!("node-{}", i), 64)
+                .unwrap();
         }
 
         let mut grads = HashMap::new();
@@ -544,9 +628,15 @@ mod tests {
     #[test]
     fn test_fallback_on_low_uptime() {
         let mut engine = FineTuningV4::with_defaults();
-        engine.register_node("primary".to_string(), 0.90, 0.95).unwrap();
-        engine.register_node("reserve".to_string(), 0.99, 0.90).unwrap();
-        engine.register_model("model-1".to_string(), "primary".to_string(), 64).unwrap();
+        engine
+            .register_node("primary".to_string(), 0.90, 0.95)
+            .unwrap();
+        engine
+            .register_node("reserve".to_string(), 0.99, 0.90)
+            .unwrap();
+        engine
+            .register_model("model-1".to_string(), "primary".to_string(), 64)
+            .unwrap();
 
         let mut grads = HashMap::new();
         grads.insert("model-1".to_string(), make_gradients(64, 1));
@@ -560,8 +650,12 @@ mod tests {
     fn test_checkpoint_interval() {
         let mut engine = FineTuningV4::with_defaults();
         engine.config.checkpoint_interval = 5;
-        engine.register_node("node-1".to_string(), 0.99, 0.95).unwrap();
-        engine.register_model("model-1".to_string(), "node-1".to_string(), 32).unwrap();
+        engine
+            .register_node("node-1".to_string(), 0.99, 0.95)
+            .unwrap();
+        engine
+            .register_model("model-1".to_string(), "node-1".to_string(), 32)
+            .unwrap();
 
         for _ in 0..5 {
             let mut grads = HashMap::new();
@@ -578,8 +672,12 @@ mod tests {
     fn test_sync_history_limit() {
         let mut engine = FineTuningV4::with_defaults();
         engine.config.max_gradient_history = 10;
-        engine.register_node("node-1".to_string(), 0.99, 0.95).unwrap();
-        engine.register_model("model-1".to_string(), "node-1".to_string(), 32).unwrap();
+        engine
+            .register_node("node-1".to_string(), 0.99, 0.95)
+            .unwrap();
+        engine
+            .register_model("model-1".to_string(), "node-1".to_string(), 32)
+            .unwrap();
 
         for i in 0..20 {
             let mut grads = HashMap::new();
@@ -592,8 +690,12 @@ mod tests {
     #[test]
     fn test_stats_tracking() {
         let mut engine = FineTuningV4::with_defaults();
-        engine.register_node("node-1".to_string(), 0.99, 0.95).unwrap();
-        engine.register_model("model-1".to_string(), "node-1".to_string(), 32).unwrap();
+        engine
+            .register_node("node-1".to_string(), 0.99, 0.95)
+            .unwrap();
+        engine
+            .register_model("model-1".to_string(), "node-1".to_string(), 32)
+            .unwrap();
 
         let mut grads = HashMap::new();
         grads.insert("model-1".to_string(), make_gradients(32, 1));
@@ -606,8 +708,12 @@ mod tests {
     #[test]
     fn test_reset_stats() {
         let mut engine = FineTuningV4::with_defaults();
-        engine.register_node("node-1".to_string(), 0.99, 0.95).unwrap();
-        engine.register_model("model-1".to_string(), "node-1".to_string(), 32).unwrap();
+        engine
+            .register_node("node-1".to_string(), 0.99, 0.95)
+            .unwrap();
+        engine
+            .register_model("model-1".to_string(), "node-1".to_string(), 32)
+            .unwrap();
 
         let mut grads = HashMap::new();
         grads.insert("model-1".to_string(), make_gradients(32, 1));
@@ -673,8 +779,12 @@ mod tests {
         let mut engine = FineTuningV4::with_defaults();
         engine.config.lz4_compression = true;
         engine.config.compression_ratio = 4.0;
-        engine.register_node("node-1".to_string(), 0.99, 0.95).unwrap();
-        engine.register_model("model-1".to_string(), "node-1".to_string(), 64).unwrap();
+        engine
+            .register_node("node-1".to_string(), 0.99, 0.95)
+            .unwrap();
+        engine
+            .register_model("model-1".to_string(), "node-1".to_string(), 64)
+            .unwrap();
 
         let mut grads = HashMap::new();
         grads.insert("model-1".to_string(), make_gradients(64, 1));
@@ -694,8 +804,12 @@ mod tests {
     #[test]
     fn test_multiple_rounds_increment() {
         let mut engine = FineTuningV4::with_defaults();
-        engine.register_node("node-1".to_string(), 0.99, 0.95).unwrap();
-        engine.register_model("model-1".to_string(), "node-1".to_string(), 32).unwrap();
+        engine
+            .register_node("node-1".to_string(), 0.99, 0.95)
+            .unwrap();
+        engine
+            .register_model("model-1".to_string(), "node-1".to_string(), 32)
+            .unwrap();
 
         for i in 0..5 {
             let mut grads = HashMap::new();

@@ -190,7 +190,8 @@ impl MeritScorer {
 
         // Ensure profile exists
         if !self.profiles.contains_key(&node_id) {
-            self.profiles.insert(node_id.clone(), MeritProfile::new(node_id.clone()));
+            self.profiles
+                .insert(node_id.clone(), MeritProfile::new(node_id.clone()));
             self.stats.total_nodes += 1;
         }
 
@@ -199,18 +200,10 @@ impl MeritScorer {
             ContributionKind::Code | ContributionKind::Documentation => {
                 value * self.config.contribution_weight
             }
-            ContributionKind::ComputeWork => {
-                value * self.config.compute_weight
-            }
-            ContributionKind::GovernanceVote => {
-                value * self.config.governance_weight
-            }
-            ContributionKind::Review => {
-                value * self.config.review_weight
-            }
-            ContributionKind::BugReport => {
-                value * self.config.contribution_weight * 0.5
-            }
+            ContributionKind::ComputeWork => value * self.config.compute_weight,
+            ContributionKind::GovernanceVote => value * self.config.governance_weight,
+            ContributionKind::Review => value * self.config.review_weight,
+            ContributionKind::BugReport => value * self.config.contribution_weight * 0.5,
         };
 
         let profile = self.profiles.get_mut(&node_id).unwrap();
@@ -218,7 +211,9 @@ impl MeritScorer {
         profile.last_update_ms = now;
 
         match &kind {
-            ContributionKind::Code | ContributionKind::Documentation | ContributionKind::BugReport => {
+            ContributionKind::Code
+            | ContributionKind::Documentation
+            | ContributionKind::BugReport => {
                 profile.contribution_score += weighted;
             }
             ContributionKind::ComputeWork => {
@@ -261,12 +256,12 @@ impl MeritScorer {
             profile.compute_score *= decay;
             profile.governance_score *= decay;
             profile.review_score *= decay;
-            profile.total_score =
-                (profile.contribution_score + profile.compute_score
-                    + profile.governance_score
-                    + profile.review_score)
-                    .min(self.config.max_score)
-                    .max(self.config.min_score);
+            profile.total_score = (profile.contribution_score
+                + profile.compute_score
+                + profile.governance_score
+                + profile.review_score)
+                .min(self.config.max_score)
+                .max(self.config.min_score);
         }
         self.stats.last_decay_ms = now;
         self.update_avg_score();
@@ -278,7 +273,11 @@ impl MeritScorer {
 
     pub fn get_ranking(&self) -> Vec<&MeritProfile> {
         let mut profiles: Vec<_> = self.profiles.values().collect();
-        profiles.sort_by(|a, b| b.total_score.partial_cmp(&a.total_score).unwrap_or(std::cmp::Ordering::Equal));
+        profiles.sort_by(|a, b| {
+            b.total_score
+                .partial_cmp(&a.total_score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         profiles
     }
 

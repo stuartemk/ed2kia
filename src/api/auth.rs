@@ -8,20 +8,20 @@
 //! This module is gated behind `#[cfg(feature = "phase6-sprint2")]`.
 
 #[cfg(feature = "phase6-sprint2")]
-use ed25519_dalek::{Verifier, Signature, VerifyingKey};
+use axum::body::Body;
 #[cfg(feature = "phase6-sprint2")]
 use axum::extract::Request;
 #[cfg(feature = "phase6-sprint2")]
 use axum::http::StatusCode;
 #[cfg(feature = "phase6-sprint2")]
-use axum::body::Body;
-#[cfg(feature = "phase6-sprint2")]
 use axum::middleware::Next;
 #[cfg(feature = "phase6-sprint2")]
 use axum::response::Response;
 #[cfg(feature = "phase6-sprint2")]
-use tracing::{info, warn, debug};
+use ed25519_dalek::{Signature, Verifier, VerifyingKey};
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "phase6-sprint2")]
+use tracing::{debug, info, warn};
 
 // ---------------------------------------------------------------------------
 // Public types (always available for serialization)
@@ -97,8 +97,11 @@ pub struct AuthValidator {
 impl AuthValidator {
     /// Crear nuevo validador con configuración
     pub fn new(config: AuthConfig) -> Self {
-        info!("AuthValidator created: require_signature={}, authorized_keys={}",
-            config.require_signature, config.authorized_keys.len());
+        info!(
+            "AuthValidator created: require_signature={}, authorized_keys={}",
+            config.require_signature,
+            config.authorized_keys.len()
+        );
         Self {
             config,
             key_cache: std::collections::HashMap::new(),
@@ -111,31 +114,35 @@ impl AuthValidator {
     }
 
     /// Registrar key pública autorizada
-    pub fn add_authorized_key(&mut self, node_id: String, public_key_hex: String) -> Result<(), AuthError> {
-        let public_key_bytes = hex::decode(&public_key_hex)
-            .map_err(|e| AuthError {
-                error_type: "invalid_hex".to_string(),
-                message: format!("Failed to decode public key hex: {}", e),
-            })?;
+    pub fn add_authorized_key(
+        &mut self,
+        node_id: String,
+        public_key_hex: String,
+    ) -> Result<(), AuthError> {
+        let public_key_bytes = hex::decode(&public_key_hex).map_err(|e| AuthError {
+            error_type: "invalid_hex".to_string(),
+            message: format!("Failed to decode public key hex: {}", e),
+        })?;
 
         if public_key_bytes.len() != 32 {
             return Err(AuthError {
                 error_type: "invalid_key_length".to_string(),
-                message: format!("Public key must be 32 bytes, got {}", public_key_bytes.len()),
+                message: format!(
+                    "Public key must be 32 bytes, got {}",
+                    public_key_bytes.len()
+                ),
             });
         }
 
-        let public_key_array: [u8; 32] = public_key_bytes.try_into()
-            .map_err(|_| AuthError {
-                error_type: "invalid_key_length".to_string(),
-                message: "Public key must be exactly 32 bytes".to_string(),
-            })?;
+        let public_key_array: [u8; 32] = public_key_bytes.try_into().map_err(|_| AuthError {
+            error_type: "invalid_key_length".to_string(),
+            message: "Public key must be exactly 32 bytes".to_string(),
+        })?;
 
-        let verifying_key = VerifyingKey::from_bytes(&public_key_array)
-            .map_err(|e| AuthError {
-                error_type: "invalid_public_key".to_string(),
-                message: format!("Failed to create verifying key: {}", e),
-            })?;
+        let verifying_key = VerifyingKey::from_bytes(&public_key_array).map_err(|e| AuthError {
+            error_type: "invalid_public_key".to_string(),
+            message: format!("Failed to create verifying key: {}", e),
+        })?;
 
         self.key_cache.insert(node_id.clone(), verifying_key);
         self.config.authorized_keys.push(public_key_hex);
@@ -174,7 +181,10 @@ impl AuthValidator {
                 valid: false,
                 node_id: node_id.to_string(),
                 timestamp,
-                error: Some(format!("Signature must be 64 bytes, got {}", signature_bytes.len())),
+                error: Some(format!(
+                    "Signature must be 64 bytes, got {}",
+                    signature_bytes.len()
+                )),
             };
         }
 
@@ -242,17 +252,23 @@ impl AuthValidator {
         let path = parts.uri.path().to_string();
 
         // Extract headers from parts
-        let node_id = parts.headers.get("X-Node-ID")
+        let node_id = parts
+            .headers
+            .get("X-Node-ID")
             .and_then(|id| id.to_str().ok())
             .map(|s| s.to_string())
             .ok_or(StatusCode::UNAUTHORIZED)?;
 
-        let signature = parts.headers.get("X-Node-Signature")
+        let signature = parts
+            .headers
+            .get("X-Node-Signature")
             .and_then(|sig| sig.to_str().ok())
             .map(|s| s.to_string())
             .ok_or(StatusCode::UNAUTHORIZED)?;
 
-        let _timestamp: Option<u64> = parts.headers.get("X-Timestamp")
+        let _timestamp: Option<u64> = parts
+            .headers
+            .get("X-Timestamp")
             .and_then(|ts| ts.to_str().ok())
             .and_then(|s| s.parse::<u64>().ok());
 
@@ -262,7 +278,12 @@ impl AuthValidator {
             .map(|b| b.to_vec())
             .unwrap_or_default();
 
-        let message = format!("{}:{}:{}", method, path, String::from_utf8_lossy(&body_bytes));
+        let message = format!(
+            "{}:{}:{}",
+            method,
+            path,
+            String::from_utf8_lossy(&body_bytes)
+        );
 
         // Validate signature
         let result = self.validate_signature(&node_id, message.as_bytes(), &signature);
@@ -372,7 +393,8 @@ mod tests {
         #[test]
         fn test_add_invalid_hex() {
             let mut validator = AuthValidator::default_validator();
-            let result = validator.add_authorized_key("bad_node".to_string(), "not_hex!".to_string());
+            let result =
+                validator.add_authorized_key("bad_node".to_string(), "not_hex!".to_string());
             assert!(result.is_err());
             assert!(result.unwrap_err().error_type == "invalid_hex");
         }
@@ -385,7 +407,9 @@ mod tests {
             let signing_key = SigningKey::from_bytes(&[0u8; 32]);
             let public_key = signing_key.verifying_key();
             let public_key_hex = hex::encode(public_key.to_bytes());
-            validator.add_authorized_key("test_node".to_string(), public_key_hex).unwrap();
+            validator
+                .add_authorized_key("test_node".to_string(), public_key_hex)
+                .unwrap();
 
             // Sign a message
             let message = b"test message";
@@ -405,7 +429,9 @@ mod tests {
             let signing_key = SigningKey::from_bytes(&[0u8; 32]);
             let public_key = signing_key.verifying_key();
             let public_key_hex = hex::encode(public_key.to_bytes());
-            validator.add_authorized_key("test_node".to_string(), public_key_hex).unwrap();
+            validator
+                .add_authorized_key("test_node".to_string(), public_key_hex)
+                .unwrap();
 
             // Use wrong signature
             let wrong_signature = SigningKey::from_bytes(&[1u8; 32]).sign(b"wrong");
@@ -438,7 +464,9 @@ mod tests {
             let signing_key = SigningKey::from_bytes(&[0u8; 32]);
             let public_key = signing_key.verifying_key();
             let public_key_hex = hex::encode(public_key.to_bytes());
-            validator.add_authorized_key("node1".to_string(), public_key_hex).unwrap();
+            validator
+                .add_authorized_key("node1".to_string(), public_key_hex)
+                .unwrap();
 
             assert_eq!(validator.authorized_key_count(), 1);
             validator.clear_cache();

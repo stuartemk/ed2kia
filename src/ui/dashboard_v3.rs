@@ -252,11 +252,7 @@ impl DashboardV3State {
         let throughput = self.get_metric_value(&MetricV3::NetworkThroughput, 0.0);
         let error_rate = self.get_metric_value(&MetricV3::NetworkErrorRate, 0.0);
 
-        let unacknowledged_alerts = self
-            .alerts
-            .iter()
-            .filter(|a| !a.acknowledged)
-            .count();
+        let unacknowledged_alerts = self.alerts.iter().filter(|a| !a.acknowledged).count();
 
         Ok(DashboardV3Snapshot {
             timestamp_ms: current_timestamp_ms(),
@@ -292,16 +288,17 @@ impl DashboardV3State {
     pub fn clear_old_alerts(&mut self, max_age_ms: u64) -> usize {
         let now = current_timestamp_ms();
         let before = self.alerts.len();
-        self.alerts.retain(|a| now.saturating_sub(a.timestamp_ms) <= max_age_ms);
+        self.alerts
+            .retain(|a| now.saturating_sub(a.timestamp_ms) <= max_age_ms);
         before - self.alerts.len()
     }
 
     fn aggregate_cross_chain(&self) -> CrossChainSummary {
         CrossChainSummary {
-            active_proposals: self
-                .get_metric_value(&MetricV3::CrossChainActiveProposals, 0.0) as usize,
-            validators_online: self
-                .get_metric_value(&MetricV3::CrossChainValidatorsOnline, 0.0) as usize,
+            active_proposals: self.get_metric_value(&MetricV3::CrossChainActiveProposals, 0.0)
+                as usize,
+            validators_online: self.get_metric_value(&MetricV3::CrossChainValidatorsOnline, 0.0)
+                as usize,
             avg_confirmation_time_ms: self
                 .get_metric_value(&MetricV3::CrossChainAvgConfirmationTime, 0.0),
             bridge_tps: self.get_metric_value(&MetricV3::CrossChainBridgeTps, 0.0),
@@ -310,13 +307,10 @@ impl DashboardV3State {
 
     fn aggregate_dao(&self) -> DaoSummary {
         DaoSummary {
-            active_proposals: self
-                .get_metric_value(&MetricV3::DaoActiveProposals, 0.0) as usize,
-            voter_participation_rate: self
-                .get_metric_value(&MetricV3::DaoVoterParticipation, 0.0),
+            active_proposals: self.get_metric_value(&MetricV3::DaoActiveProposals, 0.0) as usize,
+            voter_participation_rate: self.get_metric_value(&MetricV3::DaoVoterParticipation, 0.0),
             quorum_rate: self.get_metric_value(&MetricV3::DaoQuorumRate, 0.0),
-            execution_pending: self
-                .get_metric_value(&MetricV3::DaoExecutionPending, 0.0) as usize,
+            execution_pending: self.get_metric_value(&MetricV3::DaoExecutionPending, 0.0) as usize,
         }
     }
 
@@ -325,18 +319,16 @@ impl DashboardV3State {
             epoch_progress: self.get_metric_value(&MetricV3::TrainingEpochProgress, 0.0),
             current_loss: self.get_metric_value(&MetricV3::TrainingLoss, 0.0),
             gradient_norm: self.get_metric_value(&MetricV3::TrainingGradientNorm, 0.0),
-            nodes_active: self
-                .get_metric_value(&MetricV3::TrainingNodesActive, 0.0) as usize,
+            nodes_active: self.get_metric_value(&MetricV3::TrainingNodesActive, 0.0) as usize,
         }
     }
 
     fn aggregate_slo(&self) -> SloSummary {
         SloSummary {
             compliance_rate: self.get_metric_value(&MetricV3::SloComplianceRate, 1.0),
-            predictive_breaches: self
-                .get_metric_value(&MetricV3::SloPredictiveBreaches, 0.0) as usize,
-            warning_count: self
-                .get_metric_value(&MetricV3::SloWarningCount, 0.0) as usize,
+            predictive_breaches: self.get_metric_value(&MetricV3::SloPredictiveBreaches, 0.0)
+                as usize,
+            warning_count: self.get_metric_value(&MetricV3::SloWarningCount, 0.0) as usize,
         }
     }
 
@@ -394,13 +386,7 @@ impl DashboardV3State {
         }
     }
 
-    fn create_alert(
-        &mut self,
-        metric: MetricV3,
-        value: f64,
-        threshold: f64,
-        message: String,
-    ) {
+    fn create_alert(&mut self, metric: MetricV3, value: f64, threshold: f64, message: String) {
         self.alert_counter += 1;
         let alert = DashboardAlert {
             alert_id: format!("alert-{}", self.alert_counter),
@@ -543,11 +529,7 @@ mod tests {
         };
         let mut dashboard = DashboardV3State::with_config(config);
         for i in 0..10 {
-            dashboard.record_metric(
-                MetricV3::TrainingLoss,
-                i as f64,
-                None,
-            );
+            dashboard.record_metric(MetricV3::TrainingLoss, i as f64, None);
         }
         assert_eq!(dashboard.metrics.len(), 5);
     }

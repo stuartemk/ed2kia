@@ -150,10 +150,7 @@ impl SaeSimulator {
     /// Deserializa payload desde bytes.
     pub fn deserialize(&self, data: &[u8]) -> Result<SaePayload, SaeSimError> {
         if data.len() < 18 {
-            return Err(SaeSimError::InvalidDimensions {
-                rows: 0,
-                cols: 0,
-            });
+            return Err(SaeSimError::InvalidDimensions { rows: 0, cols: 0 });
         }
         let mut pos = 0;
         // Node ID
@@ -218,7 +215,7 @@ mod tests {
     #[test]
     fn test_simulator_invalid_dims() {
         match SaeSimulator::new(0, 256) {
-            Err(SaeSimError::InvalidDimensions { .. }) => {},
+            Err(SaeSimError::InvalidDimensions { .. }) => {}
             other => panic!("Expected InvalidDimensions, got {:?}", other),
         }
     }
@@ -282,7 +279,7 @@ mod tests {
     fn test_deserialize_too_short() {
         let sim = SaeSimulator::default();
         match sim.deserialize(&[0, 1, 2]) {
-            Err(SaeSimError::InvalidDimensions { .. }) => {},
+            Err(SaeSimError::InvalidDimensions { .. }) => {}
             other => panic!("Expected InvalidDimensions, got {:?}", other),
         }
     }
@@ -305,7 +302,11 @@ mod tests {
         let sim = SaeSimulator::default();
         let payload = sim.generate_symbiotic("alpha").unwrap();
         let mean: f32 = payload.gradient.iter().sum::<f32>() / payload.gradient.len() as f32;
-        assert!(mean > 0.0, "Symbiotic mean should be positive, got {}", mean);
+        assert!(
+            mean > 0.0,
+            "Symbiotic mean should be positive, got {}",
+            mean
+        );
     }
 
     #[test]

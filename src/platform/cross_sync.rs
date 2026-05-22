@@ -12,8 +12,8 @@
 //!
 //! Apache 2.0 + Ethical Use Clause
 
-use std::collections::{BTreeMap, BinaryHeap, HashMap};
 use std::cmp::Ordering;
+use std::collections::{BTreeMap, BinaryHeap, HashMap};
 use std::time::Instant;
 
 // ─── Errors ───
@@ -33,7 +33,9 @@ impl std::fmt::Display for SyncError {
         match self {
             SyncError::QueueFull { max_size } => write!(f, "Sync queue full (max {})", max_size),
             SyncError::SerializationError(msg) => write!(f, "Serialization error: {}", msg),
-            SyncError::ConflictResolutionFailed(msg) => write!(f, "Conflict resolution failed: {}", msg),
+            SyncError::ConflictResolutionFailed(msg) => {
+                write!(f, "Conflict resolution failed: {}", msg)
+            }
             SyncError::MemoryLimitExceeded { limit_mb, used_mb } => {
                 write!(f, "Memory limit exceeded: {}MB / {}MB", used_mb, limit_mb)
             }
@@ -397,11 +399,7 @@ impl CrossSyncEngine {
         result.new_version.merge(&remote.version);
 
         // Sort by priority (SCT > BFT > CRDT > Telemetry)
-        merged_entries.sort_by(|a, b| {
-            a.payload_type
-                .priority()
-                .cmp(&b.payload_type.priority())
-        });
+        merged_entries.sort_by(|a, b| a.payload_type.priority().cmp(&b.payload_type.priority()));
 
         result.duration_ms = start.elapsed().as_millis() as u64;
         result.success = true;
@@ -466,8 +464,12 @@ mod tests {
     #[test]
     fn test_enqueue_and_drain() {
         let mut engine = CrossSyncEngine::with_defaults();
-        engine.enqueue(make_entry("sct_1", PayloadType::SCT, 100)).unwrap();
-        engine.enqueue(make_entry("tel_1", PayloadType::Telemetry, 100)).unwrap();
+        engine
+            .enqueue(make_entry("sct_1", PayloadType::SCT, 100))
+            .unwrap();
+        engine
+            .enqueue(make_entry("tel_1", PayloadType::Telemetry, 100))
+            .unwrap();
         assert_eq!(engine.queue_size(), 2);
 
         let pending = engine.drain_pending(10);
@@ -482,8 +484,12 @@ mod tests {
             max_queue_size: 2,
             ..CrossSyncConfig::default()
         });
-        engine.enqueue(make_entry("1", PayloadType::SCT, 1)).unwrap();
-        engine.enqueue(make_entry("2", PayloadType::SCT, 2)).unwrap();
+        engine
+            .enqueue(make_entry("1", PayloadType::SCT, 1))
+            .unwrap();
+        engine
+            .enqueue(make_entry("2", PayloadType::SCT, 2))
+            .unwrap();
         let result = engine.enqueue(make_entry("3", PayloadType::SCT, 3));
         assert!(result.is_err());
     }
@@ -583,7 +589,8 @@ mod tests {
         assert_eq!(engine.estimate_memory_mb(), 0);
 
         for i in 0..100 {
-            engine.enqueue(make_entry(&format!("e_{}", i), PayloadType::SCT, i as u64))
+            engine
+                .enqueue(make_entry(&format!("e_{}", i), PayloadType::SCT, i as u64))
                 .ok();
         }
         // Should still be well under 64MB
@@ -635,7 +642,9 @@ mod tests {
     #[test]
     fn test_engine_reset() {
         let mut engine = CrossSyncEngine::with_defaults();
-        engine.enqueue(make_entry("1", PayloadType::SCT, 1)).unwrap();
+        engine
+            .enqueue(make_entry("1", PayloadType::SCT, 1))
+            .unwrap();
         engine.reset();
         assert_eq!(engine.queue_size(), 0);
     }

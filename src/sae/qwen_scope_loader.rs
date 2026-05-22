@@ -203,15 +203,15 @@ impl QwenScopeLoader {
     pub fn load(&self) -> Result<QwenScopeWeights, QwenLoaderError> {
         let path = Path::new(&self.config.file_path);
         if !path.exists() {
-            return Err(QwenLoaderError::FileNotFound(
-                self.config.file_path.clone(),
-            ));
+            return Err(QwenLoaderError::FileNotFound(self.config.file_path.clone()));
         }
 
         let device = self.resolve_device();
 
         // Leer archivo .safetensors para verificar existencia
-        let _data = std::fs::read(path).map_err(|e| QwenLoaderError::FileNotFound(format!("{}: {}", self.config.file_path, e)))?;
+        let _data = std::fs::read(path).map_err(|e| {
+            QwenLoaderError::FileNotFound(format!("{}: {}", self.config.file_path, e))
+        })?;
 
         // MIGRATION: safetensors::load removed in 0.3, use candle_core safetensors loading directly
         // Por ahora, crear placeholder tensors (file loading en Phase 2)
@@ -223,10 +223,9 @@ impl QwenScopeLoader {
             .map_err(QwenLoaderError::TensorOp)?;
         let w_dec = Tensor::zeros((d_model, d_sae), DType::F32, &device)
             .map_err(QwenLoaderError::TensorOp)?;
-        let b_enc = Tensor::zeros(d_sae, DType::F32, &device)
-            .map_err(QwenLoaderError::TensorOp)?;
-        let b_dec = Tensor::zeros(d_model, DType::F32, &device)
-            .map_err(QwenLoaderError::TensorOp)?;
+        let b_enc = Tensor::zeros(d_sae, DType::F32, &device).map_err(QwenLoaderError::TensorOp)?;
+        let b_dec =
+            Tensor::zeros(d_model, DType::F32, &device).map_err(QwenLoaderError::TensorOp)?;
 
         let metadata = HashMap::from([
             ("source".to_string(), self.config.file_path.clone()),
@@ -257,10 +256,9 @@ impl QwenScopeLoader {
             .map_err(QwenLoaderError::TensorOp)?;
         let w_dec = Tensor::zeros((d_model, d_sae), DType::F32, &device)
             .map_err(QwenLoaderError::TensorOp)?;
-        let b_enc = Tensor::zeros(d_sae, DType::F32, &device)
-            .map_err(QwenLoaderError::TensorOp)?;
-        let b_dec = Tensor::zeros(d_model, DType::F32, &device)
-            .map_err(QwenLoaderError::TensorOp)?;
+        let b_enc = Tensor::zeros(d_sae, DType::F32, &device).map_err(QwenLoaderError::TensorOp)?;
+        let b_dec =
+            Tensor::zeros(d_model, DType::F32, &device).map_err(QwenLoaderError::TensorOp)?;
 
         Ok(QwenScopeWeights {
             w_enc,
@@ -292,10 +290,7 @@ impl QwenScopeLoader {
         for shard in w_enc_sharded.shards.iter() {
             let size_mb = shard.estimate_size_mb();
             if size_mb > max_mb {
-                return Err(QwenLoaderError::ChunkSizeExceeded {
-                    size_mb,
-                    max_mb,
-                });
+                return Err(QwenLoaderError::ChunkSizeExceeded { size_mb, max_mb });
             }
         }
         sharded.push(w_enc_sharded);

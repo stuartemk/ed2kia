@@ -161,10 +161,10 @@ impl RateLimiter {
     /// Check if a request from `node_id` is allowed.
     /// Returns `true` if the token bucket has available tokens.
     pub fn allow(&mut self, node_id: &str, current_ms: u64) -> bool {
-        let entry = self.buckets.entry(node_id.to_string()).or_insert((
-            self.max_tokens as f64,
-            current_ms,
-        ));
+        let entry = self
+            .buckets
+            .entry(node_id.to_string())
+            .or_insert((self.max_tokens as f64, current_ms));
 
         let (tokens, last_refill) = entry;
         let elapsed = (current_ms - *last_refill) as f64 / 1000.0;
@@ -392,11 +392,8 @@ impl ExplorerState {
     /// Add a steering signal
     pub fn add_steering_signal(&mut self, signal: SteeringSignalRecord) -> &SteeringSignalRecord {
         let id = signal.signal_id.clone();
-        self.steering_signals
-            .insert(id.clone(), signal);
-        self.steering_signals
-            .get(&id)
-            .unwrap()
+        self.steering_signals.insert(id.clone(), signal);
+        self.steering_signals.get(&id).unwrap()
     }
 }
 
@@ -536,7 +533,10 @@ mod tests {
         let validator = Ed25519ProofValidator::new();
         let result = validator.validate("", "node1", 1_700_000_000_000, 1_700_000_000_000);
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), ExplorerError::InvalidEd25519Proof));
+        assert!(matches!(
+            result.unwrap_err(),
+            ExplorerError::InvalidEd25519Proof
+        ));
     }
 
     #[test]

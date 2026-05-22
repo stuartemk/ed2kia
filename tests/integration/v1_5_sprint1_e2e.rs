@@ -20,32 +20,38 @@
 
 #[cfg(feature = "v1.5-sprint1")]
 mod e2e {
-    use std::time::Instant;
     use std::collections::HashMap;
+    use std::time::Instant;
 
     // LP-118: SAE Fine-Tuning v5
     use ed2kia::sae::fine_tuning_v5::{FineTuningV5, FineTuningV5Config};
 
     // LP-119: Cross-Chain Pools v4 & Dynamic Routing
+    use ed2kia::pools_v4::capacity_orchestrator::{CapacityOrchestrator, OrchestratorConfig};
     use ed2kia::pools_v4::cross_chain_pools_v4::{CrossChainPoolsV4, PoolV4Config};
     use ed2kia::pools_v4::dynamic_router::{DynamicRouter, RouterConfig};
-    use ed2kia::pools_v4::capacity_orchestrator::{CapacityOrchestrator, OrchestratorConfig};
 
     // LP-120: DAO Ledger v5 & Hybrid Governance
+    use ed2kia::governance_v5::audit_trail_v2::{
+        AuditCategory, AuditSeverity, AuditTrailConfig, AuditTrailV2,
+    };
     use ed2kia::governance_v5::dao_ledger_v5::{DaoLedgerV5, DaoLedgerV5Config, ProposalStatus};
     use ed2kia::governance_v5::hybrid_governance::{HybridGovernance, HybridGovernanceConfig};
-    use ed2kia::governance_v5::audit_trail_v2::{AuditTrailV2, AuditTrailConfig, AuditCategory, AuditSeverity};
 
     // LP-121: Async ZKP v9
-    use ed2kia::zkp_v9::async_zkp_v9::{AsyncZKPV9, ZKPV9Config, ProofPriority};
+    use ed2kia::zkp_v9::async_zkp_v9::{AsyncZKPV9, ProofPriority, ZKPV9Config};
 
     // ─── LP-118: Fine-Tuning v5 ───
 
     #[test]
     fn test_e2e_finetune_v5_round_with_convergence() {
         let mut engine = FineTuningV5::new(FineTuningV5Config::default());
-        engine.register_node("node-1".to_string(), 0.95, 0.9).unwrap();
-        engine.register_model("model-1".to_string(), "node-1".to_string(), 128).unwrap();
+        engine
+            .register_node("node-1".to_string(), 0.95, 0.9)
+            .unwrap();
+        engine
+            .register_model("model-1".to_string(), "node-1".to_string(), 128)
+            .unwrap();
 
         let mut grads = HashMap::new();
         grads.insert("model-1".to_string(), vec![0.1f32; 128]);
@@ -58,7 +64,11 @@ mod e2e {
 
         let stats = &engine.stats;
         assert_eq!(stats.total_rounds, 5);
-        assert!(elapsed_ms < 500, "finetune_sync_ms: {} exceeds 500ms", elapsed_ms);
+        assert!(
+            elapsed_ms < 500,
+            "finetune_sync_ms: {} exceeds 500ms",
+            elapsed_ms
+        );
     }
 
     // ─── LP-119: Cross-Chain Pools v4 ───
@@ -67,7 +77,9 @@ mod e2e {
     fn test_e2e_pool_v4_allocation_with_prediction() {
         let mut pools = CrossChainPoolsV4::new(PoolV4Config::default());
         pools.create_pool("pool-1".to_string()).unwrap();
-        pools.add_chain_slot("pool-1", "chain-1".to_string(), 1000.0, 0.9).unwrap();
+        pools
+            .add_chain_slot("pool-1", "chain-1".to_string(), 1000.0, 0.9)
+            .unwrap();
 
         let start = Instant::now();
         pools.allocate("pool-1", 500.0).unwrap();
@@ -75,7 +87,11 @@ mod e2e {
 
         let prediction = pools.predict_demand("pool-1").unwrap();
         assert!(prediction >= 0.0);
-        assert!(elapsed_ms < 100, "pool_routing_ms: {} exceeds 100ms", elapsed_ms);
+        assert!(
+            elapsed_ms < 100,
+            "pool_routing_ms: {} exceeds 100ms",
+            elapsed_ms
+        );
     }
 
     // ─── LP-119: Dynamic Router v4 ───
@@ -110,7 +126,11 @@ mod e2e {
         let elapsed_ms = start.elapsed().as_millis();
 
         assert!(!decision.target_pool.is_empty());
-        assert!(elapsed_ms < 50, "orchestrator_ms: {} exceeds 50ms", elapsed_ms);
+        assert!(
+            elapsed_ms < 50,
+            "orchestrator_ms: {} exceeds 50ms",
+            elapsed_ms
+        );
     }
 
     // ─── LP-120: DAO Ledger v5 ───
@@ -127,36 +147,44 @@ mod e2e {
         let start = Instant::now();
 
         // Create proposal (5 args: id, author, title, description, critical)
-        ledger.create_proposal(
-            "prop-1".to_string(),
-            "actor-1".to_string(),
-            "Upgrade system".to_string(),
-            "System upgrade proposal".to_string(),
-            false,
-        ).unwrap();
+        ledger
+            .create_proposal(
+                "prop-1".to_string(),
+                "actor-1".to_string(),
+                "Upgrade system".to_string(),
+                "System upgrade proposal".to_string(),
+                false,
+            )
+            .unwrap();
 
         // Cast votes (5 args: vote_id, proposal_id, voter_id, weight, value)
-        ledger.cast_vote(
-            "vote-1".to_string(),
-            "prop-1".to_string(),
-            "voter-1".to_string(),
-            0.9,
-            true,
-        ).unwrap();
-        ledger.cast_vote(
-            "vote-2".to_string(),
-            "prop-1".to_string(),
-            "voter-2".to_string(),
-            0.85,
-            true,
-        ).unwrap();
-        ledger.cast_vote(
-            "vote-3".to_string(),
-            "prop-1".to_string(),
-            "voter-3".to_string(),
-            0.8,
-            false,
-        ).unwrap();
+        ledger
+            .cast_vote(
+                "vote-1".to_string(),
+                "prop-1".to_string(),
+                "voter-1".to_string(),
+                0.9,
+                true,
+            )
+            .unwrap();
+        ledger
+            .cast_vote(
+                "vote-2".to_string(),
+                "prop-1".to_string(),
+                "voter-2".to_string(),
+                0.85,
+                true,
+            )
+            .unwrap();
+        ledger
+            .cast_vote(
+                "vote-3".to_string(),
+                "prop-1".to_string(),
+                "voter-3".to_string(),
+                0.8,
+                false,
+            )
+            .unwrap();
 
         // Execute proposal
         ledger.execute_proposal("prop-1").unwrap();
@@ -165,7 +193,11 @@ mod e2e {
 
         let proposal = ledger.get_proposal("prop-1").unwrap();
         assert_eq!(proposal.status, ProposalStatus::Executed);
-        assert!(elapsed_ms < 100, "dao_ledger_ms: {} exceeds 100ms", elapsed_ms);
+        assert!(
+            elapsed_ms < 100,
+            "dao_ledger_ms: {} exceeds 100ms",
+            elapsed_ms
+        );
     }
 
     // ─── LP-120: Hybrid Governance ───
@@ -187,7 +219,8 @@ mod e2e {
             "prop-1".to_string(),
             false, // not critical
             now,
-        ).unwrap();
+        )
+        .unwrap();
 
         // Validate off-chain
         gov.validate_off_chain("session-1", now + 100).unwrap();
@@ -200,7 +233,11 @@ mod e2e {
 
         let elapsed_ms = start.elapsed().as_millis();
 
-        assert!(elapsed_ms < 50, "hybrid_gov_ms: {} exceeds 50ms", elapsed_ms);
+        assert!(
+            elapsed_ms < 50,
+            "hybrid_gov_ms: {} exceeds 50ms",
+            elapsed_ms
+        );
     }
 
     // ─── LP-120: Audit Trail v2 ───
@@ -211,30 +248,36 @@ mod e2e {
 
         let now = 1_000_000;
 
-        audit.append_entry(
-            "entry-1".to_string(),
-            AuditCategory::Governance,
-            AuditSeverity::Info,
-            "actor-1".to_string(),
-            "Proposal created".to_string(),
-            now,
-        ).unwrap();
-        audit.append_entry(
-            "entry-2".to_string(),
-            AuditCategory::Governance,
-            AuditSeverity::Info,
-            "actor-2".to_string(),
-            "Vote cast".to_string(),
-            now + 100,
-        ).unwrap();
-        audit.append_entry(
-            "entry-3".to_string(),
-            AuditCategory::Governance,
-            AuditSeverity::Info,
-            "actor-1".to_string(),
-            "Proposal executed".to_string(),
-            now + 200,
-        ).unwrap();
+        audit
+            .append_entry(
+                "entry-1".to_string(),
+                AuditCategory::Governance,
+                AuditSeverity::Info,
+                "actor-1".to_string(),
+                "Proposal created".to_string(),
+                now,
+            )
+            .unwrap();
+        audit
+            .append_entry(
+                "entry-2".to_string(),
+                AuditCategory::Governance,
+                AuditSeverity::Info,
+                "actor-2".to_string(),
+                "Vote cast".to_string(),
+                now + 100,
+            )
+            .unwrap();
+        audit
+            .append_entry(
+                "entry-3".to_string(),
+                AuditCategory::Governance,
+                AuditSeverity::Info,
+                "actor-1".to_string(),
+                "Proposal executed".to_string(),
+                now + 200,
+            )
+            .unwrap();
 
         assert!(audit.verify_chain().is_ok());
         assert_eq!(audit.metrics().total_entries, 3);
@@ -256,7 +299,8 @@ mod e2e {
             ProofPriority::High,
             1024,
             now,
-        ).unwrap();
+        )
+        .unwrap();
 
         let processed = zkp.process_proofs(now + 100);
         assert!(!processed.is_empty());
@@ -265,7 +309,11 @@ mod e2e {
         assert!(verified);
 
         let elapsed_ms = start.elapsed().as_millis();
-        assert!(elapsed_ms < 700, "zkp_proof_ms: {} exceeds 700ms", elapsed_ms);
+        assert!(
+            elapsed_ms < 700,
+            "zkp_proof_ms: {} exceeds 700ms",
+            elapsed_ms
+        );
     }
 
     // ─── LP-121: Multi-Path Relay ───
@@ -284,14 +332,18 @@ mod e2e {
             ProofPriority::Critical,
             2048,
             now,
-        ).unwrap();
+        )
+        .unwrap();
 
         let processed = zkp.process_proofs(now + 100);
         assert!(!processed.is_empty());
 
         let _proof = zkp.get_proof("proof-1").unwrap();
         let fed = zkp.get_federation("fed-1").unwrap();
-        assert!(fed.relay_paths.len() >= 2, "Expected multi-path relay configured");
+        assert!(
+            fed.relay_paths.len() >= 2,
+            "Expected multi-path relay configured"
+        );
     }
 
     // ─── Full Pipeline: Fine-tune → Pool → Router → DAO → ZKP ───
@@ -303,7 +355,8 @@ mod e2e {
         // 1. Fine-tuning v5
         let mut ft = FineTuningV5::new(FineTuningV5Config::default());
         ft.register_node("node-1".to_string(), 0.95, 0.9).unwrap();
-        ft.register_model("model-1".to_string(), "node-1".to_string(), 64).unwrap();
+        ft.register_model("model-1".to_string(), "node-1".to_string(), 64)
+            .unwrap();
         let mut grads = HashMap::new();
         grads.insert("model-1".to_string(), vec![0.1f32; 64]);
         ft.execute_round(grads).unwrap();
@@ -311,7 +364,9 @@ mod e2e {
         // 2. Pool allocation
         let mut pools = CrossChainPoolsV4::new(PoolV4Config::default());
         pools.create_pool("pool-1".to_string()).unwrap();
-        pools.add_chain_slot("pool-1", "chain-1".to_string(), 1000.0, 0.9).unwrap();
+        pools
+            .add_chain_slot("pool-1", "chain-1".to_string(), 1000.0, 0.9)
+            .unwrap();
         pools.allocate("pool-1", 300.0).unwrap();
 
         // 3. Dynamic routing
@@ -328,20 +383,24 @@ mod e2e {
             ..DaoLedgerV5Config::default()
         };
         let mut ledger = DaoLedgerV5::new(dao_config);
-        ledger.create_proposal(
-            "prop-1".to_string(),
-            "system".to_string(),
-            format!("Deploy model to {}", decision.target_id),
-            "Deployment proposal".to_string(),
-            false,
-        ).unwrap();
-        ledger.cast_vote(
-            "vote-1".to_string(),
-            "prop-1".to_string(),
-            "voter-1".to_string(),
-            0.95,
-            true,
-        ).unwrap();
+        ledger
+            .create_proposal(
+                "prop-1".to_string(),
+                "system".to_string(),
+                format!("Deploy model to {}", decision.target_id),
+                "Deployment proposal".to_string(),
+                false,
+            )
+            .unwrap();
+        ledger
+            .cast_vote(
+                "vote-1".to_string(),
+                "prop-1".to_string(),
+                "voter-1".to_string(),
+                0.95,
+                true,
+            )
+            .unwrap();
         ledger.execute_proposal("prop-1").unwrap();
 
         // 5. ZKP verification
@@ -354,11 +413,16 @@ mod e2e {
             ProofPriority::High,
             512,
             now,
-        ).unwrap();
+        )
+        .unwrap();
         zkp.process_proofs(now + 100);
 
         let elapsed_ms = start.elapsed().as_millis();
-        assert!(elapsed_ms < 2000, "full_pipeline_ms: {} exceeds 2000ms", elapsed_ms);
+        assert!(
+            elapsed_ms < 2000,
+            "full_pipeline_ms: {} exceeds 2000ms",
+            elapsed_ms
+        );
     }
 
     // ─── Cross-Module Metrics Aggregation ───
@@ -368,7 +432,8 @@ mod e2e {
         // Fine-tuning metrics
         let mut ft = FineTuningV5::new(FineTuningV5Config::default());
         ft.register_node("node-1".to_string(), 0.95, 0.9).unwrap();
-        ft.register_model("m-1".to_string(), "node-1".to_string(), 64).unwrap();
+        ft.register_model("m-1".to_string(), "node-1".to_string(), 64)
+            .unwrap();
         let mut grads = HashMap::new();
         grads.insert("m-1".to_string(), vec![0.1f32; 64]);
         ft.execute_round(grads).unwrap();
@@ -377,7 +442,9 @@ mod e2e {
         // Pool metrics
         let mut pools = CrossChainPoolsV4::new(PoolV4Config::default());
         pools.create_pool("p-1".to_string()).unwrap();
-        pools.add_chain_slot("p-1", "c-1".to_string(), 500.0, 0.85).unwrap();
+        pools
+            .add_chain_slot("p-1", "c-1".to_string(), 500.0, 0.85)
+            .unwrap();
         pools.allocate("p-1", 200.0).unwrap();
         let pool_stats = &pools.stats;
 
@@ -388,13 +455,15 @@ mod e2e {
             ..DaoLedgerV5Config::default()
         };
         let mut ledger = DaoLedgerV5::new(config);
-        ledger.create_proposal(
-            "prop-1".to_string(),
-            "actor".to_string(),
-            "test".to_string(),
-            "Test proposal".to_string(),
-            false,
-        ).unwrap();
+        ledger
+            .create_proposal(
+                "prop-1".to_string(),
+                "actor".to_string(),
+                "test".to_string(),
+                "Test proposal".to_string(),
+                false,
+            )
+            .unwrap();
         let dao_metrics = &ledger.metrics;
 
         // ZKP metrics
@@ -407,7 +476,8 @@ mod e2e {
             ProofPriority::Normal,
             256,
             now,
-        ).unwrap();
+        )
+        .unwrap();
         zkp.process_proofs(now + 100);
         let zkp_metrics = zkp.metrics();
 
@@ -434,7 +504,8 @@ mod e2e {
                 ProofPriority::Normal,
                 512,
                 now + i as u64,
-            ).ok(); // May fail when budget exceeded
+            )
+            .ok(); // May fail when budget exceeded
         }
         let submit_ms = start.elapsed().as_millis();
 
@@ -443,8 +514,16 @@ mod e2e {
         let process_ms = start.elapsed().as_millis();
 
         assert!(!processed.is_empty());
-        assert!(submit_ms < 2000, "submit_100_proofs_ms: {} exceeds 2s", submit_ms);
-        assert!(process_ms < 3000, "process_100_proofs_ms: {} exceeds 3s", process_ms);
+        assert!(
+            submit_ms < 2000,
+            "submit_100_proofs_ms: {} exceeds 2s",
+            submit_ms
+        );
+        assert!(
+            process_ms < 3000,
+            "process_100_proofs_ms: {} exceeds 3s",
+            process_ms
+        );
     }
 
     // ─── Stress Test: Concurrent Pool Allocations ───
@@ -453,18 +532,26 @@ mod e2e {
     fn test_e2e_stress_pool_concurrent_allocations() {
         let mut pools = CrossChainPoolsV4::new(PoolV4Config::default());
         pools.create_pool("pool-1".to_string()).unwrap();
-        pools.add_chain_slot("pool-1", "chain-1".to_string(), 10000.0, 0.9).unwrap();
+        pools
+            .add_chain_slot("pool-1", "chain-1".to_string(), 10000.0, 0.9)
+            .unwrap();
 
         let start = Instant::now();
         for i in 0..50 {
             pools.allocate("pool-1", 100.0).ok(); // May fail when capacity exhausted
             if i % 10 == 0 {
-                pools.update_load("pool-1", "chain-1", (i as f64) * 2.0).ok();
+                pools
+                    .update_load("pool-1", "chain-1", (i as f64) * 2.0)
+                    .ok();
             }
         }
         let elapsed_ms = start.elapsed().as_millis();
 
-        assert!(elapsed_ms < 1000, "concurrent_alloc_ms: {} exceeds 1s", elapsed_ms);
+        assert!(
+            elapsed_ms < 1000,
+            "concurrent_alloc_ms: {} exceeds 1s",
+            elapsed_ms
+        );
     }
 
     // ─── Integration: DAO + Audit Trail ───
@@ -482,49 +569,59 @@ mod e2e {
         let now = 1_000_000;
 
         // Create proposal and audit
-        ledger.create_proposal(
-            "prop-1".to_string(),
-            "actor-1".to_string(),
-            "Critical update".to_string(),
-            "Critical system update".to_string(),
-            false,
-        ).unwrap();
-        audit.append_entry(
-            "audit-1".to_string(),
-            AuditCategory::Governance,
-            AuditSeverity::Info,
-            "actor-1".to_string(),
-            "Proposal created".to_string(),
-            now,
-        ).unwrap();
+        ledger
+            .create_proposal(
+                "prop-1".to_string(),
+                "actor-1".to_string(),
+                "Critical update".to_string(),
+                "Critical system update".to_string(),
+                false,
+            )
+            .unwrap();
+        audit
+            .append_entry(
+                "audit-1".to_string(),
+                AuditCategory::Governance,
+                AuditSeverity::Info,
+                "actor-1".to_string(),
+                "Proposal created".to_string(),
+                now,
+            )
+            .unwrap();
 
         // Vote and audit
-        ledger.cast_vote(
-            "vote-1".to_string(),
-            "prop-1".to_string(),
-            "voter-1".to_string(),
-            0.9,
-            true,
-        ).unwrap();
-        audit.append_entry(
-            "audit-2".to_string(),
-            AuditCategory::Governance,
-            AuditSeverity::Info,
-            "voter-1".to_string(),
-            "Vote cast: yes".to_string(),
-            now + 100,
-        ).unwrap();
+        ledger
+            .cast_vote(
+                "vote-1".to_string(),
+                "prop-1".to_string(),
+                "voter-1".to_string(),
+                0.9,
+                true,
+            )
+            .unwrap();
+        audit
+            .append_entry(
+                "audit-2".to_string(),
+                AuditCategory::Governance,
+                AuditSeverity::Info,
+                "voter-1".to_string(),
+                "Vote cast: yes".to_string(),
+                now + 100,
+            )
+            .unwrap();
 
         // Execute and audit
         ledger.execute_proposal("prop-1").unwrap();
-        audit.append_entry(
-            "audit-3".to_string(),
-            AuditCategory::Governance,
-            AuditSeverity::Info,
-            "system".to_string(),
-            "Proposal executed".to_string(),
-            now + 200,
-        ).unwrap();
+        audit
+            .append_entry(
+                "audit-3".to_string(),
+                AuditCategory::Governance,
+                AuditSeverity::Info,
+                "system".to_string(),
+                "Proposal executed".to_string(),
+                now + 200,
+            )
+            .unwrap();
 
         // Verify both chains
         assert!(ledger.verify_chain());
@@ -539,7 +636,9 @@ mod e2e {
         // Pool
         let mut pools = CrossChainPoolsV4::new(PoolV4Config::default());
         pools.create_pool("pool-1".to_string()).unwrap();
-        pools.add_chain_slot("pool-1", "chain-1".to_string(), 2000.0, 0.9).unwrap();
+        pools
+            .add_chain_slot("pool-1", "chain-1".to_string(), 2000.0, 0.9)
+            .unwrap();
 
         // Router
         let mut router = DynamicRouter::new(RouterConfig::default());

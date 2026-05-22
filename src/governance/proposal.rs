@@ -143,8 +143,9 @@ impl<'de> Deserialize<'de> for Proposal {
         let wire = ProposalWire::deserialize(deserializer)?;
         let author_bytes = hex::decode(&wire.author_hex)
             .map_err(|e| serde::de::Error::custom(format!("Invalid author_hex: {}", e)))?;
-        let author_arr: [u8; 32] = author_bytes.try_into()
-            .map_err(|_| serde::de::Error::custom("Invalid author_hex length: expected 32 bytes"))?;
+        let author_arr: [u8; 32] = author_bytes.try_into().map_err(|_| {
+            serde::de::Error::custom("Invalid author_hex length: expected 32 bytes")
+        })?;
         let author = VerifyingKey::from_bytes(&author_arr)
             .map_err(|e| serde::de::Error::custom(format!("Invalid VerifyingKey: {}", e)))?;
         let sig_bytes = hex::decode(&wire.signature_hex)
@@ -213,12 +214,7 @@ impl Proposal {
 
     /// Verificar firma de la propuesta
     pub fn verify_signature(&self) -> Result<(), ProposalError> {
-        let content_hash = Self::compute_hash(
-            &self.id,
-            &self.title,
-            &self.payload,
-            self.timestamp,
-        );
+        let content_hash = Self::compute_hash(&self.id, &self.title, &self.payload, self.timestamp);
 
         self.author
             .verify_strict(&content_hash, &self.signature)
@@ -296,7 +292,6 @@ impl Proposal {
     pub fn from_json(json: &str) -> Result<Self, ProposalError> {
         serde_json::from_str(json).map_err(|e| ProposalError::InvalidFormat(e.to_string()))
     }
-
 }
 
 /// Gestor de propuestas
@@ -314,10 +309,7 @@ impl ProposalManager {
     }
 
     /// Registrar nueva propuesta
-    pub fn submit(
-        &mut self,
-        proposal: Proposal,
-    ) -> Result<Uuid, ProposalError> {
+    pub fn submit(&mut self, proposal: Proposal) -> Result<Uuid, ProposalError> {
         // Verificar firma
         proposal.verify_signature()?;
 

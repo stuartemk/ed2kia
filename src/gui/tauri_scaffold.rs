@@ -53,7 +53,7 @@ mod internal {
                 GuiError::NotImplemented(msg) => write!(f, "Not implemented: {}", msg),
             }
         }
-        }
+    }
 
     /// Backend command types
     #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -65,7 +65,11 @@ mod internal {
         /// Get neural steer config
         GetSteerConfig,
         /// Apply neural steer config
-        ApplySteerConfig { empathy: f32, creativity: f32, safety: f32 },
+        ApplySteerConfig {
+            empathy: f32,
+            creativity: f32,
+            safety: f32,
+        },
         /// Get network status
         GetNetworkStatus,
         /// Get system metrics
@@ -84,11 +88,19 @@ mod internal {
 
     impl GuiResponse {
         pub fn ok(data: String) -> Self {
-            Self { success: true, data: Some(data), error: None }
+            Self {
+                success: true,
+                data: Some(data),
+                error: None,
+            }
         }
 
         pub fn error(msg: String) -> Self {
-            Self { success: false, data: None, error: Some(msg) }
+            Self {
+                success: false,
+                data: None,
+                error: Some(msg),
+            }
         }
     }
 
@@ -107,7 +119,10 @@ mod internal {
         }
 
         pub fn get(&self, key: &str) -> Result<String, GuiError> {
-            self.state.get(key).cloned().ok_or(GuiError::KeyNotFound(key.to_string()))
+            self.state
+                .get(key)
+                .cloned()
+                .ok_or(GuiError::KeyNotFound(key.to_string()))
         }
 
         pub fn set(&mut self, key: String, value: String) -> Result<(), GuiError> {
@@ -121,18 +136,14 @@ mod internal {
         pub fn handle_command(&mut self, command: GuiCommand) -> GuiResponse {
             self.command_log.push(command.clone());
             match command {
-                GuiCommand::GetState { key } => {
-                    match self.get(&key) {
-                        Ok(value) => GuiResponse::ok(value),
-                        Err(e) => GuiResponse::error(e.to_string()),
-                    }
-                }
-                GuiCommand::SetState { key, value } => {
-                    match self.set(key, value) {
-                        Ok(()) => GuiResponse::ok("State updated".to_string()),
-                        Err(e) => GuiResponse::error(e.to_string()),
-                    }
-                }
+                GuiCommand::GetState { key } => match self.get(&key) {
+                    Ok(value) => GuiResponse::ok(value),
+                    Err(e) => GuiResponse::error(e.to_string()),
+                },
+                GuiCommand::SetState { key, value } => match self.set(key, value) {
+                    Ok(()) => GuiResponse::ok("State updated".to_string()),
+                    Err(e) => GuiResponse::error(e.to_string()),
+                },
                 GuiCommand::GetSteerConfig => {
                     // Integration with neural_steer_ui
                     let config = serde_json::json!({
@@ -143,16 +154,26 @@ mod internal {
                     });
                     GuiResponse::ok(config.to_string())
                 }
-                GuiCommand::ApplySteerConfig { empathy, creativity, safety } => {
+                GuiCommand::ApplySteerConfig {
+                    empathy,
+                    creativity,
+                    safety,
+                } => {
                     // Validate bounds
                     if !(0.0..=1.0).contains(&empathy) {
-                        return GuiResponse::error("Empathy must be between 0.0 and 1.0".to_string());
+                        return GuiResponse::error(
+                            "Empathy must be between 0.0 and 1.0".to_string(),
+                        );
                     }
                     if !(0.0..=1.0).contains(&creativity) {
-                        return GuiResponse::error("Creativity must be between 0.0 and 1.0".to_string());
+                        return GuiResponse::error(
+                            "Creativity must be between 0.0 and 1.0".to_string(),
+                        );
                     }
                     if !(0.0..=1.0).contains(&safety) {
-                        return GuiResponse::error("Safety must be between 0.0 and 1.0".to_string());
+                        return GuiResponse::error(
+                            "Safety must be between 0.0 and 1.0".to_string(),
+                        );
                     }
                     let config = serde_json::json!({
                         "empathy": empathy,
@@ -221,20 +242,28 @@ mod internal {
         #[test]
         fn test_state_key_not_found() {
             let state = TauriState::new();
-            assert_eq!(state.get("missing"), Err(GuiError::KeyNotFound("missing".to_string())));
+            assert_eq!(
+                state.get("missing"),
+                Err(GuiError::KeyNotFound("missing".to_string()))
+            );
         }
 
         #[test]
         fn test_state_empty_key_rejected() {
             let mut state = TauriState::new();
-            assert_eq!(state.set("".to_string(), "value".to_string()), Err(GuiError::InvalidValue("Key cannot be empty".to_string())));
+            assert_eq!(
+                state.set("".to_string(), "value".to_string()),
+                Err(GuiError::InvalidValue("Key cannot be empty".to_string()))
+            );
         }
 
         #[test]
         fn test_command_get_state() {
             let mut state = TauriState::new();
             state.set("test".to_string(), "data".to_string()).unwrap();
-            let resp = state.handle_command(GuiCommand::GetState { key: "test".to_string() });
+            let resp = state.handle_command(GuiCommand::GetState {
+                key: "test".to_string(),
+            });
             assert!(resp.success);
             assert_eq!(resp.data.unwrap(), "data");
         }
@@ -293,7 +322,9 @@ mod internal {
         #[test]
         fn test_command_get_metrics() {
             let mut state = TauriState::new();
-            state.handle_command(GuiCommand::GetState { key: "x".to_string() });
+            state.handle_command(GuiCommand::GetState {
+                key: "x".to_string(),
+            });
             let resp = state.handle_command(GuiCommand::GetMetrics);
             assert!(resp.success);
             assert!(resp.data.as_ref().unwrap().contains("2"));
@@ -349,7 +380,9 @@ mod internal {
             assert!(resp.success);
 
             // Get state
-            let resp = state.handle_command(GuiCommand::GetState { key: "user".to_string() });
+            let resp = state.handle_command(GuiCommand::GetState {
+                key: "user".to_string(),
+            });
             assert_eq!(resp.data.unwrap(), "alice");
 
             // Apply steer config

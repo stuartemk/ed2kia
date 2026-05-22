@@ -37,8 +37,15 @@ impl std::fmt::Display for ProposalError {
             ProposalError::VotingNotOpen(id) => {
                 write!(f, "Voting not open: {}", id)
             }
-            ProposalError::InsufficientWeight { available, required } => {
-                write!(f, "Insufficient voting weight: available={}, required={}", available, required)
+            ProposalError::InsufficientWeight {
+                available,
+                required,
+            } => {
+                write!(
+                    f,
+                    "Insufficient voting weight: available={}, required={}",
+                    available, required
+                )
             }
             ProposalError::AlreadyVoted(id) => {
                 write!(f, "Already voted: {}", id)
@@ -259,7 +266,8 @@ impl ProposalTracker {
 
     /// Update a node's voting weight.
     pub fn update_voter_weight(&mut self, node_id: &str, weight: f64) {
-        self.voting_weights.insert(node_id.to_string(), weight.clamp(0.0, 1.0));
+        self.voting_weights
+            .insert(node_id.to_string(), weight.clamp(0.0, 1.0));
     }
 
     /// Create a new proposal.
@@ -276,11 +284,13 @@ impl ProposalTracker {
         }
 
         // Check proposer weight
-        let weight = self.voting_weights.get(proposer_id)
-            .ok_or(ProposalError::InsufficientWeight {
-                available: 0.0,
-                required: self.config.min_proposer_weight,
-            })?;
+        let weight =
+            self.voting_weights
+                .get(proposer_id)
+                .ok_or(ProposalError::InsufficientWeight {
+                    available: 0.0,
+                    required: self.config.min_proposer_weight,
+                })?;
 
         if *weight < self.config.min_proposer_weight {
             return Err(ProposalError::InsufficientWeight {
@@ -307,13 +317,16 @@ impl ProposalTracker {
 
     /// Open voting for a proposal (Draft -> Voting).
     pub fn open_voting(&mut self, proposal_id: &str) -> Result<(), ProposalError> {
-        let proposal = self.proposals.get_mut(proposal_id)
+        let proposal = self
+            .proposals
+            .get_mut(proposal_id)
             .ok_or(ProposalError::ProposalNotFound(proposal_id.to_string()))?;
 
         if proposal.state != ProposalState::Draft {
-            return Err(ProposalError::InvalidStateTransition(
-                format!("Expected Draft, got {}", proposal.state),
-            ));
+            return Err(ProposalError::InvalidStateTransition(format!(
+                "Expected Draft, got {}",
+                proposal.state
+            )));
         }
 
         let now = current_timestamp_ms();
@@ -332,7 +345,9 @@ impl ProposalTracker {
         voter_id: &str,
         vote_yes: bool,
     ) -> Result<ProposalVote, ProposalError> {
-        let proposal = self.proposals.get_mut(proposal_id)
+        let proposal = self
+            .proposals
+            .get_mut(proposal_id)
             .ok_or(ProposalError::ProposalNotFound(proposal_id.to_string()))?;
 
         // Check voting is open
@@ -354,11 +369,13 @@ impl ProposalTracker {
         }
 
         // Get voter weight
-        let weight = self.voting_weights.get(voter_id)
-            .ok_or(ProposalError::InsufficientWeight {
-                available: 0.0,
-                required: 0.01,
-            })?;
+        let weight =
+            self.voting_weights
+                .get(voter_id)
+                .ok_or(ProposalError::InsufficientWeight {
+                    available: 0.0,
+                    required: 0.01,
+                })?;
 
         // Record vote
         let vote = ProposalVote::new(voter_id.to_string(), vote_yes, *weight);
@@ -375,13 +392,16 @@ impl ProposalTracker {
 
     /// Tally votes and resolve proposal.
     pub fn tally_proposal(&mut self, proposal_id: &str) -> Result<ProposalState, ProposalError> {
-        let proposal = self.proposals.get_mut(proposal_id)
+        let proposal = self
+            .proposals
+            .get_mut(proposal_id)
             .ok_or(ProposalError::ProposalNotFound(proposal_id.to_string()))?;
 
         if proposal.state != ProposalState::Voting {
-            return Err(ProposalError::InvalidStateTransition(
-                format!("Expected Voting, got {}", proposal.state),
-            ));
+            return Err(ProposalError::InvalidStateTransition(format!(
+                "Expected Voting, got {}",
+                proposal.state
+            )));
         }
 
         let total_weight = proposal.total_weight_cast();
@@ -410,13 +430,16 @@ impl ProposalTracker {
 
     /// Mark a passed proposal as executed.
     pub fn execute_proposal(&mut self, proposal_id: &str) -> Result<(), ProposalError> {
-        let proposal = self.proposals.get_mut(proposal_id)
+        let proposal = self
+            .proposals
+            .get_mut(proposal_id)
             .ok_or(ProposalError::ProposalNotFound(proposal_id.to_string()))?;
 
         if proposal.state != ProposalState::Passed {
-            return Err(ProposalError::InvalidStateTransition(
-                format!("Expected Passed, got {}", proposal.state),
-            ));
+            return Err(ProposalError::InvalidStateTransition(format!(
+                "Expected Passed, got {}",
+                proposal.state
+            )));
         }
 
         proposal.state = ProposalState::Executed;
@@ -430,7 +453,8 @@ impl ProposalTracker {
 
     /// Get all proposals in a given state.
     pub fn get_proposals_by_state(&self, state: &ProposalState) -> Vec<&Proposal> {
-        self.proposals.values()
+        self.proposals
+            .values()
             .filter(|p| &p.state == state)
             .collect()
     }
@@ -503,12 +527,14 @@ mod tests {
     fn test_create_proposal() {
         let mut tracker = ProposalTracker::with_defaults();
         tracker.register_voter("node1".to_string(), 0.5);
-        let proposal = tracker.create_proposal(
-            "p1".to_string(),
-            "Test Proposal".to_string(),
-            "Description".to_string(),
-            "node1",
-        ).unwrap();
+        let proposal = tracker
+            .create_proposal(
+                "p1".to_string(),
+                "Test Proposal".to_string(),
+                "Description".to_string(),
+                "node1",
+            )
+            .unwrap();
         assert_eq!(proposal.proposal_id, "p1");
         assert_eq!(proposal.state, ProposalState::Draft);
     }
@@ -523,7 +549,7 @@ mod tests {
             "Desc".to_string(),
             "node1",
         ) {
-            Err(ProposalError::InsufficientWeight { .. }) => {},
+            Err(ProposalError::InsufficientWeight { .. }) => {}
             _ => panic!("Expected InsufficientWeight"),
         }
     }
@@ -532,12 +558,14 @@ mod tests {
     fn test_duplicate_proposal() {
         let mut tracker = ProposalTracker::with_defaults();
         tracker.register_voter("node1".to_string(), 0.5);
-        tracker.create_proposal(
-            "p1".to_string(),
-            "Test".to_string(),
-            "Desc".to_string(),
-            "node1",
-        ).unwrap();
+        tracker
+            .create_proposal(
+                "p1".to_string(),
+                "Test".to_string(),
+                "Desc".to_string(),
+                "node1",
+            )
+            .unwrap();
         match tracker.create_proposal(
             "p1".to_string(),
             "Test2".to_string(),
@@ -553,12 +581,14 @@ mod tests {
     fn test_open_voting() {
         let mut tracker = ProposalTracker::with_defaults();
         tracker.register_voter("node1".to_string(), 0.5);
-        tracker.create_proposal(
-            "p1".to_string(),
-            "Test".to_string(),
-            "Desc".to_string(),
-            "node1",
-        ).unwrap();
+        tracker
+            .create_proposal(
+                "p1".to_string(),
+                "Test".to_string(),
+                "Desc".to_string(),
+                "node1",
+            )
+            .unwrap();
         assert!(tracker.open_voting("p1").is_ok());
         assert!(tracker.get_proposal("p1").unwrap().is_voting_open());
     }
@@ -568,12 +598,14 @@ mod tests {
         let mut tracker = ProposalTracker::with_defaults();
         tracker.register_voter("node1".to_string(), 0.5);
         tracker.register_voter("node2".to_string(), 0.3);
-        tracker.create_proposal(
-            "p1".to_string(),
-            "Test".to_string(),
-            "Desc".to_string(),
-            "node1",
-        ).unwrap();
+        tracker
+            .create_proposal(
+                "p1".to_string(),
+                "Test".to_string(),
+                "Desc".to_string(),
+                "node1",
+            )
+            .unwrap();
         tracker.open_voting("p1").unwrap();
         let vote = tracker.cast_vote("p1", "node2", true).unwrap();
         assert!(vote.vote_yes);
@@ -585,12 +617,14 @@ mod tests {
         let mut tracker = ProposalTracker::with_defaults();
         tracker.register_voter("node1".to_string(), 0.5);
         tracker.register_voter("node2".to_string(), 0.3);
-        tracker.create_proposal(
-            "p1".to_string(),
-            "Test".to_string(),
-            "Desc".to_string(),
-            "node1",
-        ).unwrap();
+        tracker
+            .create_proposal(
+                "p1".to_string(),
+                "Test".to_string(),
+                "Desc".to_string(),
+                "node1",
+            )
+            .unwrap();
         tracker.open_voting("p1").unwrap();
         tracker.cast_vote("p1", "node2", true).unwrap();
         match tracker.cast_vote("p1", "node2", false) {
@@ -604,12 +638,14 @@ mod tests {
         let mut tracker = ProposalTracker::with_defaults();
         tracker.register_voter("node1".to_string(), 0.6);
         tracker.register_voter("node2".to_string(), 0.4);
-        tracker.create_proposal(
-            "p1".to_string(),
-            "Test".to_string(),
-            "Desc".to_string(),
-            "node1",
-        ).unwrap();
+        tracker
+            .create_proposal(
+                "p1".to_string(),
+                "Test".to_string(),
+                "Desc".to_string(),
+                "node1",
+            )
+            .unwrap();
         tracker.open_voting("p1").unwrap();
         tracker.cast_vote("p1", "node1", true).unwrap();
         tracker.cast_vote("p1", "node2", true).unwrap();
@@ -622,12 +658,14 @@ mod tests {
         let mut tracker = ProposalTracker::with_defaults();
         tracker.register_voter("node1".to_string(), 0.3);
         tracker.register_voter("node2".to_string(), 0.6);
-        tracker.create_proposal(
-            "p1".to_string(),
-            "Test".to_string(),
-            "Desc".to_string(),
-            "node2",
-        ).unwrap();
+        tracker
+            .create_proposal(
+                "p1".to_string(),
+                "Test".to_string(),
+                "Desc".to_string(),
+                "node2",
+            )
+            .unwrap();
         tracker.open_voting("p1").unwrap();
         tracker.cast_vote("p1", "node1", true).unwrap();
         tracker.cast_vote("p1", "node2", false).unwrap();
@@ -641,18 +679,23 @@ mod tests {
         let mut tracker = ProposalTracker::with_defaults();
         tracker.register_voter("node1".to_string(), 0.6);
         tracker.register_voter("node2".to_string(), 0.4);
-        tracker.create_proposal(
-            "p1".to_string(),
-            "Test".to_string(),
-            "Desc".to_string(),
-            "node1",
-        ).unwrap();
+        tracker
+            .create_proposal(
+                "p1".to_string(),
+                "Test".to_string(),
+                "Desc".to_string(),
+                "node1",
+            )
+            .unwrap();
         tracker.open_voting("p1").unwrap();
         tracker.cast_vote("p1", "node1", true).unwrap();
         tracker.cast_vote("p1", "node2", true).unwrap();
         tracker.tally_proposal("p1").unwrap();
         assert!(tracker.execute_proposal("p1").is_ok());
-        assert_eq!(tracker.get_proposal("p1").unwrap().state, ProposalState::Executed);
+        assert_eq!(
+            tracker.get_proposal("p1").unwrap().state,
+            ProposalState::Executed
+        );
     }
 
     #[test]
@@ -660,12 +703,14 @@ mod tests {
         let mut tracker = ProposalTracker::with_defaults();
         tracker.register_voter("node1".to_string(), 0.6);
         tracker.register_voter("node2".to_string(), 0.4);
-        tracker.create_proposal(
-            "p1".to_string(),
-            "Test".to_string(),
-            "Desc".to_string(),
-            "node1",
-        ).unwrap();
+        tracker
+            .create_proposal(
+                "p1".to_string(),
+                "Test".to_string(),
+                "Desc".to_string(),
+                "node1",
+            )
+            .unwrap();
         tracker.open_voting("p1").unwrap();
         tracker.cast_vote("p1", "node1", true).unwrap();
         tracker.cast_vote("p1", "node2", true).unwrap();
@@ -680,12 +725,14 @@ mod tests {
     fn test_get_proposals_by_state() {
         let mut tracker = ProposalTracker::with_defaults();
         tracker.register_voter("node1".to_string(), 0.6);
-        tracker.create_proposal(
-            "p1".to_string(),
-            "Test".to_string(),
-            "Desc".to_string(),
-            "node1",
-        ).unwrap();
+        tracker
+            .create_proposal(
+                "p1".to_string(),
+                "Test".to_string(),
+                "Desc".to_string(),
+                "node1",
+            )
+            .unwrap();
         let drafts = tracker.get_proposals_by_state(&ProposalState::Draft);
         assert_eq!(drafts.len(), 1);
     }
@@ -736,7 +783,9 @@ mod tests {
         let mut tracker = ProposalTracker::with_defaults();
         tracker.register_voter("n1".to_string(), 0.6);
         tracker.register_voter("n2".to_string(), 0.4);
-        tracker.create_proposal("p1".to_string(), "T".to_string(), "D".to_string(), "n1").unwrap();
+        tracker
+            .create_proposal("p1".to_string(), "T".to_string(), "D".to_string(), "n1")
+            .unwrap();
         tracker.open_voting("p1").unwrap();
         tracker.cast_vote("p1", "n1", true).unwrap();
         tracker.cast_vote("p1", "n2", false).unwrap();

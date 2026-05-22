@@ -419,8 +419,10 @@ impl GradientSyncV3 {
 
     /// Registers a node for synchronization.
     pub fn register_node(&mut self, node_id: &str) {
-        self.node_status
-            .insert(node_id.to_string(), NodeSyncStatus::new(node_id.to_string()));
+        self.node_status.insert(
+            node_id.to_string(),
+            NodeSyncStatus::new(node_id.to_string()),
+        );
     }
 
     /// Unregisters a node.
@@ -447,10 +449,7 @@ impl GradientSyncV3 {
             return Err(GradientSyncV3Error::NodeNotFound(source_node.clone()));
         }
 
-        let batch_id = format!(
-            "batch_{}_{}",
-            source_node, self.next_sequence
-        );
+        let batch_id = format!("batch_{}_{}", source_node, self.next_sequence);
         self.next_sequence += 1;
 
         let batch = GradientBatch::new(
@@ -485,9 +484,10 @@ impl GradientSyncV3 {
         target_node: &str,
     ) -> Result<(), GradientSyncV3Error> {
         // Check batch exists
-        let _batch = self.batches.get(batch_id).ok_or_else(|| {
-            GradientSyncV3Error::BatchNotFound(batch_id.to_string())
-        })?;
+        let _batch = self
+            .batches
+            .get(batch_id)
+            .ok_or_else(|| GradientSyncV3Error::BatchNotFound(batch_id.to_string()))?;
 
         // Check target node exists
         if !self.node_status.contains_key(target_node) {
@@ -497,9 +497,10 @@ impl GradientSyncV3 {
         // Check for partition
         if let Some(status) = self.node_status.get(target_node) {
             if status.partitioned {
-                return Err(GradientSyncV3Error::PartitionDetected(
-                    format!("Node {} is in a partition", target_node),
-                ));
+                return Err(GradientSyncV3Error::PartitionDetected(format!(
+                    "Node {} is in a partition",
+                    target_node
+                )));
             }
         }
 
@@ -523,9 +524,10 @@ impl GradientSyncV3 {
 
     /// Checks quorum for a batch.
     pub fn check_quorum(&self, batch_id: &str) -> Result<bool, GradientSyncV3Error> {
-        let batch = self.batches.get(batch_id).ok_or_else(|| {
-            GradientSyncV3Error::BatchNotFound(batch_id.to_string())
-        })?;
+        let batch = self
+            .batches
+            .get(batch_id)
+            .ok_or_else(|| GradientSyncV3Error::BatchNotFound(batch_id.to_string()))?;
 
         let total_nodes = self.node_status.len().max(1);
         let required = (total_nodes as f64 * self.config.quorum_percentage) as usize;
@@ -559,10 +561,7 @@ impl GradientSyncV3 {
 
         // Create partition for disconnected nodes
         if !disconnected_nodes.is_empty() {
-            let partition_id = format!(
-                "partition_{}",
-                current_timestamp_ms()
-            );
+            let partition_id = format!("partition_{}", current_timestamp_ms());
             let mut partition = PartitionInfo::new(partition_id, disconnected_nodes.clone());
 
             // Mark affected batches
@@ -595,14 +594,20 @@ impl GradientSyncV3 {
         partition_id: &str,
     ) -> Result<ReconciliationResult, GradientSyncV3Error> {
         // Extract partition data before mutable borrow
-        let partition_data = self.partitions.iter().find(|p| p.partition_id == partition_id).map(|p| {
-            (p.nodes.clone(), p.affected_batches.clone())
-        });
+        let partition_data = self
+            .partitions
+            .iter()
+            .find(|p| p.partition_id == partition_id)
+            .map(|p| (p.nodes.clone(), p.affected_batches.clone()));
 
         match partition_data {
             Some((nodes, affected_batches)) => {
                 // Mark partition as resolved
-                if let Some(partition) = self.partitions.iter_mut().find(|p| p.partition_id == partition_id) {
+                if let Some(partition) = self
+                    .partitions
+                    .iter_mut()
+                    .find(|p| p.partition_id == partition_id)
+                {
                     partition.resolve();
                 }
                 self.stats.total_partitions_resolved += 1;
@@ -620,9 +625,10 @@ impl GradientSyncV3 {
                 self.stats.total_reconciliations += 1;
                 Ok(result)
             }
-            None => Err(GradientSyncV3Error::PartitionDetected(
-                format!("Partition {} not found", partition_id),
-            )),
+            None => Err(GradientSyncV3Error::PartitionDetected(format!(
+                "Partition {} not found",
+                partition_id
+            ))),
         }
     }
 
@@ -737,10 +743,7 @@ impl GradientSyncV3 {
     fn reconcile_with_data(&self, affected_batches: &[String]) -> ReconciliationResult {
         let start_ms = current_timestamp_ms();
 
-        let reconciliation_id = format!(
-            "recon_{}",
-            current_timestamp_ms()
-        );
+        let reconciliation_id = format!("recon_{}", current_timestamp_ms());
 
         let mut reconciled = 0;
         let conflicted = 0;
@@ -956,8 +959,10 @@ mod tests {
         sync.register_node("node_1");
 
         // Create similar batches
-        sync.create_batch("node_1".to_string(), make_gradients(10)).unwrap();
-        sync.create_batch("node_1".to_string(), make_gradients(10)).unwrap();
+        sync.create_batch("node_1".to_string(), make_gradients(10))
+            .unwrap();
+        sync.create_batch("node_1".to_string(), make_gradients(10))
+            .unwrap();
 
         let result = sync.detect_divergence();
         assert!(!result.diverged);
@@ -969,7 +974,8 @@ mod tests {
         sync.register_node("node_1");
 
         // Create very different batches
-        sync.create_batch("node_1".to_string(), make_gradients(10)).unwrap();
+        sync.create_batch("node_1".to_string(), make_gradients(10))
+            .unwrap();
         sync.create_batch(
             "node_1".to_string(),
             (0..10).map(|i| (100 - i) as f64 * 0.1).collect(),
@@ -1030,7 +1036,8 @@ mod tests {
     fn test_reset_stats() {
         let mut sync = GradientSyncV3::new();
         sync.register_node("node_1");
-        sync.create_batch("node_1".to_string(), make_gradients(10)).unwrap();
+        sync.create_batch("node_1".to_string(), make_gradients(10))
+            .unwrap();
         sync.reset_stats();
         let stats = sync.get_stats();
         assert_eq!(stats.total_batches_created, 0);

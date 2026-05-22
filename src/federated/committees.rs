@@ -24,7 +24,10 @@ impl fmt::Display for CommitteeError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             CommitteeError::EmptyPool => write!(f, "Pool de nodos vacío"),
-            CommitteeError::CommitteeTooSmall { requested, available } => {
+            CommitteeError::CommitteeTooSmall {
+                requested,
+                available,
+            } => {
                 write!(
                     f,
                     "Comité demasiado pequeño: solicitado {}, disponible {}",
@@ -66,7 +69,12 @@ impl NodeEntry {
 /// Trait para selección de comités. Implementaciones: por reputación o VRF.
 pub trait CommitteeSelector {
     /// Seleccionar `count` nodos del pool activo.
-    fn select(&self, pool: &[NodeEntry], count: usize, seed: u64) -> Result<Vec<String>, CommitteeError>;
+    fn select(
+        &self,
+        pool: &[NodeEntry],
+        count: usize,
+        seed: u64,
+    ) -> Result<Vec<String>, CommitteeError>;
 }
 
 // ─── ReputationSelector ───
@@ -88,7 +96,12 @@ impl Default for ReputationSelector {
 }
 
 impl CommitteeSelector for ReputationSelector {
-    fn select(&self, pool: &[NodeEntry], count: usize, _seed: u64) -> Result<Vec<String>, CommitteeError> {
+    fn select(
+        &self,
+        pool: &[NodeEntry],
+        count: usize,
+        _seed: u64,
+    ) -> Result<Vec<String>, CommitteeError> {
         let active: Vec<&NodeEntry> = pool.iter().filter(|n| n.active).collect();
         if active.is_empty() {
             return Err(CommitteeError::EmptyPool);
@@ -103,7 +116,11 @@ impl CommitteeSelector for ReputationSelector {
         // Sort descending by reputation para top-N selección
         let mut sorted = active;
         sorted.sort_by(|a, b| b.reputation.total_cmp(&a.reputation));
-        let selected: Vec<String> = sorted.into_iter().take(count).map(|n| n.node_id.clone()).collect();
+        let selected: Vec<String> = sorted
+            .into_iter()
+            .take(count)
+            .map(|n| n.node_id.clone())
+            .collect();
         Ok(selected)
     }
 }
@@ -128,7 +145,12 @@ impl Default for VrfSelector {
 }
 
 impl CommitteeSelector for VrfSelector {
-    fn select(&self, pool: &[NodeEntry], count: usize, seed: u64) -> Result<Vec<String>, CommitteeError> {
+    fn select(
+        &self,
+        pool: &[NodeEntry],
+        count: usize,
+        seed: u64,
+    ) -> Result<Vec<String>, CommitteeError> {
         let active: Vec<&NodeEntry> = pool.iter().filter(|n| n.active).collect();
         if active.is_empty() {
             return Err(CommitteeError::EmptyPool);
@@ -174,7 +196,9 @@ impl VrfSelector {
     fn hash_node(&self, node_id: &str, seed: u64) -> u64 {
         let mut hash: u64 = seed;
         for byte in node_id.bytes() {
-            hash = hash.wrapping_mul(6364136223846793005).wrapping_add(byte as u64);
+            hash = hash
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(byte as u64);
         }
         hash
     }
@@ -302,7 +326,10 @@ mod tests {
         let pool = make_pool(3);
         let selector = ReputationSelector::new();
         match selector.select(&pool, 5, 0) {
-            Err(CommitteeError::CommitteeTooSmall { requested, available }) => {
+            Err(CommitteeError::CommitteeTooSmall {
+                requested,
+                available,
+            }) => {
                 assert_eq!(requested, 5);
                 assert_eq!(available, 3);
             }
@@ -344,10 +371,7 @@ mod tests {
     #[test]
     fn test_local_aggregator_weighted() {
         let agg = LocalAggregator::new("group-1".into(), 10);
-        let gradients = vec![
-            (vec![1.0, 2.0, 3.0], 1.0),
-            (vec![2.0, 4.0, 6.0], 1.0),
-        ];
+        let gradients = vec![(vec![1.0, 2.0, 3.0], 1.0), (vec![2.0, 4.0, 6.0], 1.0)];
         let result = agg.aggregate(&gradients).unwrap();
         assert_eq!(result, vec![1.5, 3.0, 4.5]);
     }

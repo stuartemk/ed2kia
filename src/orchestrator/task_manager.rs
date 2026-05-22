@@ -124,17 +124,11 @@ impl TaskManager {
             let peers_to_dispatch: Vec<String> = {
                 #[cfg(feature = "v2.1-task-redundancy")]
                 {
-                    self.idle_peers.keys()
-                        .cloned()
-                        .take(factor)
-                        .collect()
+                    self.idle_peers.keys().cloned().take(factor).collect()
                 }
                 #[cfg(not(feature = "v2.1-task-redundancy"))]
                 {
-                    self.idle_peers.keys()
-                        .cloned()
-                        .take(1)
-                        .collect()
+                    self.idle_peers.keys().cloned().take(1).collect()
                 }
             };
 
@@ -148,7 +142,8 @@ impl TaskManager {
 
             // Use the first peer as the primary for in_flight tracking
             let primary_peer = peers_to_dispatch[0].clone();
-            self.in_flight.insert(task.task_id, (dispatch_time, primary_peer));
+            self.in_flight
+                .insert(task.task_id, (dispatch_time, primary_peer));
 
             for peer_id in peers_to_dispatch {
                 self.idle_peers.remove(&peer_id);

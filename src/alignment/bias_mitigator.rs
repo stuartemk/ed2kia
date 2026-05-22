@@ -44,8 +44,7 @@ pub enum BiasMitigatorError {
 // ---------------------------------------------------------------------------
 
 /// Type of bias detected.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[derive(Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Hash)]
 pub enum BiasType {
     /// Skew bias — distribution is asymmetric.
     Skew,
@@ -372,11 +371,15 @@ impl BiasMitigator {
             .push_back(entry.score);
 
         // Track source influence
-        let influence = self.source_influence.entry(entry.source_id.clone()).or_insert(0.0);
+        let influence = self
+            .source_influence
+            .entry(entry.source_id.clone())
+            .or_insert(0.0);
         *influence = entry.confidence.max(*influence);
 
         // Track temporal window
-        self.temporal_windows.push_back((entry.timestamp_ms, entry.score));
+        self.temporal_windows
+            .push_back((entry.timestamp_ms, entry.score));
 
         // Enforce window limits
         self.enforce_limits();
@@ -491,7 +494,8 @@ impl BiasMitigator {
             self.stats.total_mitigations += 1;
         }
         for detection in &result.detections {
-            *self.stats
+            *self
+                .stats
                 .detections_by_type
                 .entry(detection.bias_type.clone())
                 .or_insert(0) += 1;
@@ -562,10 +566,12 @@ impl BiasMitigator {
         }
 
         let mean: f64 = scores.iter().sum::<f64>() / scores.len() as f64;
-        let variance: f64 = scores.iter().map(|s| (s - mean).powi(2)).sum::<f64>() / scores.len() as f64;
+        let variance: f64 =
+            scores.iter().map(|s| (s - mean).powi(2)).sum::<f64>() / scores.len() as f64;
         let std_dev = variance.sqrt().max(1e-10);
 
-        let cubed: f64 = scores.iter().map(|s| (s - mean).powi(3)).sum::<f64>() / scores.len() as f64;
+        let cubed: f64 =
+            scores.iter().map(|s| (s - mean).powi(3)).sum::<f64>() / scores.len() as f64;
         let skew = (cubed / std_dev.powi(3)).abs();
 
         skew.min(1.0)
@@ -636,14 +642,19 @@ impl BiasMitigator {
 
     /// Computes quality score based on current state.
     fn compute_quality(&self) -> f64 {
-        let scores: Vec<f64> = self.score_buffer.iter().map(|e| e.score * e.weight).collect();
+        let scores: Vec<f64> = self
+            .score_buffer
+            .iter()
+            .map(|e| e.score * e.weight)
+            .collect();
         if scores.is_empty() {
             return 1.0;
         }
 
         // Quality is based on diversity and balance
         let mean: f64 = scores.iter().sum::<f64>() / scores.len() as f64;
-        let variance: f64 = scores.iter().map(|s| (s - mean).powi(2)).sum::<f64>() / scores.len() as f64;
+        let variance: f64 =
+            scores.iter().map(|s| (s - mean).powi(2)).sum::<f64>() / scores.len() as f64;
 
         // Ideal variance is moderate (not too concentrated, not too scattered)
         let ideal_variance = 0.1;
@@ -712,7 +723,8 @@ impl BiasMitigator {
             return;
         }
         let sources_to_filter: Vec<String> = detection.affected_sources.clone();
-        self.score_buffer.retain(|e| !sources_to_filter.contains(&e.source_id));
+        self.score_buffer
+            .retain(|e| !sources_to_filter.contains(&e.source_id));
     }
 
     /// Enforces window size limits.
@@ -801,7 +813,9 @@ mod tests {
     #[test]
     fn test_record_score_simple() {
         let mut mitigator = BiasMitigator::new();
-        mitigator.record_score_simple("src-1".to_string(), 0.5, 0.95).unwrap();
+        mitigator
+            .record_score_simple("src-1".to_string(), 0.5, 0.95)
+            .unwrap();
         assert_eq!(mitigator.buffered_score_count(), 1);
     }
 
@@ -818,7 +832,9 @@ mod tests {
     fn test_analyze_insufficient_data() {
         let mut mitigator = BiasMitigator::new();
         for i in 0..5 {
-            mitigator.record_score(make_entry(&format!("src-{}", i), 0.5)).unwrap();
+            mitigator
+                .record_score(make_entry(&format!("src-{}", i), 0.5))
+                .unwrap();
         }
         let result = mitigator.analyze();
         assert!(result.is_err());
@@ -850,7 +866,9 @@ mod tests {
         let mut mitigator = BiasMitigator::new();
         // Add highly skewed scores
         for i in 0..20 {
-            mitigator.record_score(make_entry(&format!("src-{}", i % 5), 1.0)).unwrap();
+            mitigator
+                .record_score(make_entry(&format!("src-{}", i % 5), 1.0))
+                .unwrap();
         }
         let result = mitigator.analyze().unwrap();
         // All same scores = high concentration
@@ -867,10 +885,14 @@ mod tests {
         let mut mitigator = BiasMitigator::with_config(config);
         // One source dominates
         for i in 0..15 {
-            mitigator.record_score(make_entry("dominant-src", 0.5)).unwrap();
+            mitigator
+                .record_score(make_entry("dominant-src", 0.5))
+                .unwrap();
         }
         for i in 0..5 {
-            mitigator.record_score(make_entry(&format!("other-{}", i), 0.5)).unwrap();
+            mitigator
+                .record_score(make_entry(&format!("other-{}", i), 0.5))
+                .unwrap();
         }
         let result = mitigator.analyze().unwrap();
         let has_dominance = result
@@ -922,10 +944,7 @@ mod tests {
         }
         mitigator.analyze().unwrap();
         // Check that weights were adjusted
-        let has_adjusted = mitigator
-            .score_buffer
-            .iter()
-            .any(|e| e.weight < 1.0);
+        let has_adjusted = mitigator.score_buffer.iter().any(|e| e.weight < 1.0);
         // May or may not adjust depending on detection
         let _ = has_adjusted;
     }
@@ -1024,10 +1043,7 @@ mod tests {
     #[test]
     fn test_bias_type_display() {
         assert_eq!(format!("{}", BiasType::Skew), "SKEW");
-        assert_eq!(
-            format!("{}", BiasType::SourceDominance),
-            "SOURCE_DOMINANCE"
-        );
+        assert_eq!(format!("{}", BiasType::SourceDominance), "SOURCE_DOMINANCE");
         assert_eq!(format!("{}", BiasType::TemporalDrift), "TEMPORAL_DRIFT");
     }
 

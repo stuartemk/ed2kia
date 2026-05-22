@@ -191,7 +191,12 @@ pub struct ScalingDecisionV3 {
 }
 
 impl ScalingDecisionV3 {
-    pub fn new(decision_type: ScalingDecisionType, target: String, reason: String, confidence: f64) -> Self {
+    pub fn new(
+        decision_type: ScalingDecisionType,
+        target: String,
+        reason: String,
+        confidence: f64,
+    ) -> Self {
         Self {
             decision_type,
             target,
@@ -352,7 +357,10 @@ impl FederationScalingV3 {
 
     /// Removes a node from the federation.
     pub fn unregister_node(&mut self, node_id: &str) -> Result<(), ScalingV3Error> {
-        let node = self.nodes.get(node_id).ok_or(ScalingV3Error::NodeNotFound(node_id.to_string()))?;
+        let node = self
+            .nodes
+            .get(node_id)
+            .ok_or(ScalingV3Error::NodeNotFound(node_id.to_string()))?;
         let capacity = node.compute_capacity;
 
         // Remove from assigned shards
@@ -366,8 +374,16 @@ impl FederationScalingV3 {
     }
 
     /// Updates node heartbeat and metrics.
-    pub fn update_node(&mut self, node_id: &str, load_factor: f64, latency_ms: f64) -> Result<(), ScalingV3Error> {
-        let node = self.nodes.get_mut(node_id).ok_or(ScalingV3Error::NodeNotFound(node_id.to_string()))?;
+    pub fn update_node(
+        &mut self,
+        node_id: &str,
+        load_factor: f64,
+        latency_ms: f64,
+    ) -> Result<(), ScalingV3Error> {
+        let node = self
+            .nodes
+            .get_mut(node_id)
+            .ok_or(ScalingV3Error::NodeNotFound(node_id.to_string()))?;
         node.heartbeat();
         node.load_factor = load_factor.clamp(0.0, 1.0);
         node.avg_latency_ms = latency_ms;
@@ -375,8 +391,15 @@ impl FederationScalingV3 {
     }
 
     /// Updates node reputation.
-    pub fn update_reputation(&mut self, node_id: &str, reputation: f64) -> Result<(), ScalingV3Error> {
-        let node = self.nodes.get_mut(node_id).ok_or(ScalingV3Error::NodeNotFound(node_id.to_string()))?;
+    pub fn update_reputation(
+        &mut self,
+        node_id: &str,
+        reputation: f64,
+    ) -> Result<(), ScalingV3Error> {
+        let node = self
+            .nodes
+            .get_mut(node_id)
+            .ok_or(ScalingV3Error::NodeNotFound(node_id.to_string()))?;
         node.reputation = reputation.clamp(0.0, 1.0);
         Ok(())
     }
@@ -387,7 +410,9 @@ impl FederationScalingV3 {
         let mut decisions = Vec::new();
 
         // Remove stale nodes
-        let stale_nodes: Vec<String> = self.nodes.values()
+        let stale_nodes: Vec<String> = self
+            .nodes
+            .values()
             .filter(|n| n.is_stale(self.config.max_stale_ms))
             .map(|n| n.node_id.clone())
             .collect();
@@ -407,13 +432,16 @@ impl FederationScalingV3 {
 
         // Check if we need to add shards
         if federation_load > self.config.scale_up_threshold
-            && self.shards.len() < self.config.max_shards {
+            && self.shards.len() < self.config.max_shards
+        {
             let decision = self.create_shard();
             decisions.push(decision);
         }
 
         // Check if we need to remove empty shards
-        let empty_shards: Vec<String> = self.shards.iter()
+        let empty_shards: Vec<String> = self
+            .shards
+            .iter()
             .filter(|(_, s)| s.nodes.is_empty())
             .map(|(id, _)| id.clone())
             .collect();
@@ -434,7 +462,10 @@ impl FederationScalingV3 {
                 decisions.push(ScalingDecisionV3::new(
                     ScalingDecisionType::Rebalance,
                     shard_id.clone(),
-                    format!("Load {:.2} exceeds threshold {:.2}", shard.load_factor, self.config.rebalance_threshold),
+                    format!(
+                        "Load {:.2} exceeds threshold {:.2}",
+                        shard.load_factor, self.config.rebalance_threshold
+                    ),
                     0.8,
                 ));
             }
@@ -445,7 +476,10 @@ impl FederationScalingV3 {
             decisions.push(ScalingDecisionV3::new(
                 ScalingDecisionType::ScaleDown,
                 "federation".to_string(),
-                format!("Load {:.3} below threshold {:.2}", federation_load, self.config.scale_down_threshold),
+                format!(
+                    "Load {:.3} below threshold {:.2}",
+                    federation_load, self.config.scale_down_threshold
+                ),
                 0.7,
             ));
         }
@@ -464,7 +498,8 @@ impl FederationScalingV3 {
         let elapsed_ms = start.elapsed().as_micros() as f64 / 1000.0;
         self.stats.total_decisions += decisions.len();
         let alpha = 0.1;
-        self.stats.avg_decision_ms = alpha * elapsed_ms + (1.0 - alpha) * self.stats.avg_decision_ms;
+        self.stats.avg_decision_ms =
+            alpha * elapsed_ms + (1.0 - alpha) * self.stats.avg_decision_ms;
         self.stats.active_shards = self.shards.len();
 
         for decision in &decisions {
@@ -482,20 +517,32 @@ impl FederationScalingV3 {
             self.decision_history.pop_front();
         }
 
-        info!("FederationScalingV3: evaluation complete (decisions={}, load={:.3})", decisions.len(), federation_load);
+        info!(
+            "FederationScalingV3: evaluation complete (decisions={}, load={:.3})",
+            decisions.len(),
+            federation_load
+        );
         decisions
     }
 
     /// Assigns a node to the best shard.
     pub fn assign_node_to_shard(&mut self, node_id: &str) -> Result<String, ScalingV3Error> {
         // Extract node capacity before mutable borrows
-        let node_capacity = self.nodes.get(node_id)
+        let node_capacity = self
+            .nodes
+            .get(node_id)
             .ok_or(ScalingV3Error::NodeNotFound(node_id.to_string()))?
             .compute_capacity;
 
         // Find shard with lowest load
-        let best_shard = self.shards.iter()
-            .min_by(|(_, a), (_, b)| a.load_factor.partial_cmp(&b.load_factor).unwrap_or(std::cmp::Ordering::Equal))
+        let best_shard = self
+            .shards
+            .iter()
+            .min_by(|(_, a), (_, b)| {
+                a.load_factor
+                    .partial_cmp(&b.load_factor)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
             .map(|(id, _)| id.clone());
 
         match best_shard {
@@ -525,9 +572,14 @@ impl FederationScalingV3 {
 
     /// Gets the best node for a workload.
     pub fn select_best_node(&self, min_available: f64) -> Option<&NodeCapabilityV3> {
-        self.nodes.values()
+        self.nodes
+            .values()
             .filter(|n| n.can_accept_work(min_available))
-            .max_by(|a, b| a.scaling_score().partial_cmp(&b.scaling_score()).unwrap_or(std::cmp::Ordering::Equal))
+            .max_by(|a, b| {
+                a.scaling_score()
+                    .partial_cmp(&b.scaling_score())
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
     }
 
     /// Computes federation-wide load factor.
@@ -543,12 +595,16 @@ impl FederationScalingV3 {
     fn create_shard(&mut self) -> ScalingDecisionV3 {
         let shard_id = format!("shard-{}", self.next_shard_seq);
         self.next_shard_seq += 1;
-        self.shards.insert(shard_id.clone(), ShardConfigV3::new(shard_id.clone()));
+        self.shards
+            .insert(shard_id.clone(), ShardConfigV3::new(shard_id.clone()));
         self.stats.total_shards_created += 1;
         ScalingDecisionV3::new(
             ScalingDecisionType::AddShard,
             shard_id,
-            format!("Federation load {:.3} exceeds threshold {:.2}", self.stats.federation_load_factor, self.config.scale_up_threshold),
+            format!(
+                "Federation load {:.3} exceeds threshold {:.2}",
+                self.stats.federation_load_factor, self.config.scale_up_threshold
+            ),
             0.9,
         )
     }
@@ -685,7 +741,9 @@ mod tests {
         scaling.update_node("node-1", 0.8, 10.0).unwrap();
 
         let decisions = scaling.evaluate();
-        let has_add_shard = decisions.iter().any(|d| d.decision_type == ScalingDecisionType::AddShard);
+        let has_add_shard = decisions
+            .iter()
+            .any(|d| d.decision_type == ScalingDecisionType::AddShard);
         assert!(has_add_shard);
     }
 
@@ -874,7 +932,10 @@ mod tests {
 
     #[test]
     fn test_threshold_not_met_error() {
-        let err = ScalingV3Error::ThresholdNotMet { current: 0.3, threshold: 0.5 };
+        let err = ScalingV3Error::ThresholdNotMet {
+            current: 0.3,
+            threshold: 0.5,
+        };
         assert!(format!("{}", err).contains("0.3"));
     }
 

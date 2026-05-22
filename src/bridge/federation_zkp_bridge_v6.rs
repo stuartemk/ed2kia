@@ -57,9 +57,16 @@ mod internal {
                 Self::BridgeFull => write!(f, "Bridge capacity exceeded"),
                 Self::RoutingFailed(msg) => write!(f, "Routing failed: {}", msg),
                 Self::MerkleMismatch { expected, actual } => {
-                    write!(f, "Merkle mismatch: expected={}, actual={}", expected, actual)
+                    write!(
+                        f,
+                        "Merkle mismatch: expected={}, actual={}",
+                        expected, actual
+                    )
                 }
-                Self::ProofTimeout { elapsed_ms, limit_ms } => {
+                Self::ProofTimeout {
+                    elapsed_ms,
+                    limit_ms,
+                } => {
                     write!(f, "Proof timeout: {}ms > {}ms", elapsed_ms, limit_ms)
                 }
                 Self::CredibilityTooLow { value, min } => {
@@ -186,12 +193,7 @@ mod internal {
         }
 
         /// Update credibility based on verification result.
-        pub fn update_credibility(
-            &mut self,
-            success: bool,
-            decay: f64,
-            boost: f64,
-        ) {
+        pub fn update_credibility(&mut self, success: bool, decay: f64, boost: f64) {
             if success {
                 self.credibility = (self.credibility + boost).min(1.0);
             } else {
@@ -201,8 +203,8 @@ mod internal {
 
         /// Apply time-based credibility decay.
         pub fn apply_time_decay(&mut self, current_ms: u64, factor: f64) {
-            let elapsed_hours = (current_ms.saturating_sub(self.last_update_ms)) as f64
-                / 3_600_000.0;
+            let elapsed_hours =
+                (current_ms.saturating_sub(self.last_update_ms)) as f64 / 3_600_000.0;
             let decay = 1.0 - (factor * elapsed_hours).min(1.0);
             self.credibility *= decay.max(0.0);
             self.last_update_ms = current_ms;
@@ -296,8 +298,7 @@ mod internal {
         pub fn mark_verified(&mut self, current_ms: u64) {
             self.verified = true;
             self.verified_at_ms = Some(current_ms);
-            self.verification_time_ms = current_ms
-                .saturating_sub(self.created_at_ms);
+            self.verification_time_ms = current_ms.saturating_sub(self.created_at_ms);
         }
 
         /// Mark proof as failed.
@@ -362,9 +363,9 @@ mod internal {
                 self.fallback_count += 1;
             }
             let total = self.proofs_verified + self.proofs_failed;
-            self.avg_verification_ms =
-                self.avg_verification_ms * (total as f64 - 1.0) / total as f64
-                    + time_ms as f64 / total as f64;
+            self.avg_verification_ms = self.avg_verification_ms * (total as f64 - 1.0)
+                / total as f64
+                + time_ms as f64 / total as f64;
             self.last_verification_ms = time_ms as f64;
         }
 
@@ -420,10 +421,14 @@ mod internal {
                 return Err(FederationZKPBridgeV6Error::BridgeFull);
             }
             if self.federations.contains_key(&federation_id) {
-                return Err(FederationZKPBridgeV6Error::FederationNotFound(federation_id));
+                return Err(FederationZKPBridgeV6Error::FederationNotFound(
+                    federation_id,
+                ));
             }
-            self.federations
-                .insert(federation_id, FederationNodeV6::new("".to_string(), credibility, capacity));
+            self.federations.insert(
+                federation_id,
+                FederationNodeV6::new("".to_string(), credibility, capacity),
+            );
             Ok(())
         }
 
@@ -447,7 +452,11 @@ mod internal {
                 ));
             }
 
-            let active_count: usize = self.proofs.values().filter(|p| !p.verified && !p.failed).count();
+            let active_count: usize = self
+                .proofs
+                .values()
+                .filter(|p| !p.verified && !p.failed)
+                .count();
             if active_count >= self.config.max_proofs_in_flight {
                 return Err(FederationZKPBridgeV6Error::BridgeFull);
             }
@@ -480,9 +489,10 @@ mod internal {
             proof_id: &str,
             current_ms: u64,
         ) -> Result<bool, FederationZKPBridgeV6Error> {
-            let proof = self.proofs.get(proof_id).ok_or_else(|| {
-                FederationZKPBridgeV6Error::ProofNotFound(proof_id.to_string())
-            })?;
+            let proof = self
+                .proofs
+                .get(proof_id)
+                .ok_or_else(|| FederationZKPBridgeV6Error::ProofNotFound(proof_id.to_string()))?;
 
             if proof.is_expired(current_ms, self.config.proof_ttl_ms) {
                 return Err(FederationZKPBridgeV6Error::ProofTimeout {
@@ -527,20 +537,14 @@ mod internal {
                 fed.update_latency(verification_time_ms as f64, 0.1);
             }
 
-            self.stats.record_verification(
-                success,
-                verification_time_ms,
-                proof_mut.fallback_used,
-            );
+            self.stats
+                .record_verification(success, verification_time_ms, proof_mut.fallback_used);
             self.proofs.insert(proof_id.to_string(), proof_mut);
             Ok(success)
         }
 
         /// Select best federation for proof routing.
-        pub fn select_best_federation(
-            &self,
-            exclude: Option<&str>,
-        ) -> Option<String> {
+        pub fn select_best_federation(&self, exclude: Option<&str>) -> Option<String> {
             let mut best_id: Option<String> = None;
             let mut best_score = f64::NEG_INFINITY;
 
@@ -569,13 +573,16 @@ mod internal {
             proof_id: &str,
             _current_ms: u64,
         ) -> Result<String, FederationZKPBridgeV6Error> {
-            let proof = self.proofs.get(proof_id).ok_or_else(|| {
-                FederationZKPBridgeV6Error::ProofNotFound(proof_id.to_string())
-            })?;
+            let proof = self
+                .proofs
+                .get(proof_id)
+                .ok_or_else(|| FederationZKPBridgeV6Error::ProofNotFound(proof_id.to_string()))?;
 
-            let best = self.select_best_federation(Some(&proof.target_federation)).ok_or_else(|| {
-                FederationZKPBridgeV6Error::RoutingFailed("No suitable federation".to_string())
-            })?;
+            let best = self
+                .select_best_federation(Some(&proof.target_federation))
+                .ok_or_else(|| {
+                    FederationZKPBridgeV6Error::RoutingFailed("No suitable federation".to_string())
+                })?;
 
             let mut proof_mut = proof.clone();
             proof_mut.target_federation = best.clone();
@@ -601,7 +608,8 @@ mod internal {
         /// Clean up expired proofs.
         pub fn cleanup_expired(&mut self, current_ms: u64) -> usize {
             let before = self.proofs.len();
-            self.proofs.retain(|_, p| !p.is_expired(current_ms, self.config.proof_ttl_ms));
+            self.proofs
+                .retain(|_, p| !p.is_expired(current_ms, self.config.proof_ttl_ms));
             before.saturating_sub(self.proofs.len())
         }
 
@@ -677,15 +685,22 @@ mod internal {
         #[test]
         fn test_register_federation() {
             let mut bridge = FederationZKPBridgeV6::default();
-            assert!(bridge.register_federation("fed1".to_string(), 0.9, 100.0).is_ok());
+            assert!(bridge
+                .register_federation("fed1".to_string(), 0.9, 100.0)
+                .is_ok());
             assert_eq!(bridge.federations.len(), 1);
         }
 
         #[test]
         fn test_register_federation_duplicate() {
             let mut bridge = FederationZKPBridgeV6::default();
-            bridge.register_federation("fed1".to_string(), 0.9, 100.0).unwrap();
-            match bridge.register_federation("fed1".to_string(), 0.8, 80.0).unwrap_err() {
+            bridge
+                .register_federation("fed1".to_string(), 0.9, 100.0)
+                .unwrap();
+            match bridge
+                .register_federation("fed1".to_string(), 0.8, 80.0)
+                .unwrap_err()
+            {
                 FederationZKPBridgeV6Error::FederationNotFound(id) => assert_eq!(id, "fed1"),
                 e => panic!("Wrong error: {:?}", e),
             }
@@ -696,9 +711,16 @@ mod internal {
             let mut config = make_config();
             config.max_federations = 2;
             let mut bridge = FederationZKPBridgeV6::new(config);
-            bridge.register_federation("fed1".to_string(), 0.9, 100.0).unwrap();
-            bridge.register_federation("fed2".to_string(), 0.8, 80.0).unwrap();
-            match bridge.register_federation("fed3".to_string(), 0.7, 60.0).unwrap_err() {
+            bridge
+                .register_federation("fed1".to_string(), 0.9, 100.0)
+                .unwrap();
+            bridge
+                .register_federation("fed2".to_string(), 0.8, 80.0)
+                .unwrap();
+            match bridge
+                .register_federation("fed3".to_string(), 0.7, 60.0)
+                .unwrap_err()
+            {
                 FederationZKPBridgeV6Error::BridgeFull => {}
                 e => panic!("Wrong error: {:?}", e),
             }
@@ -707,8 +729,12 @@ mod internal {
         #[test]
         fn test_submit_proof() {
             let mut bridge = FederationZKPBridgeV6::default();
-            bridge.register_federation("src".to_string(), 0.9, 100.0).unwrap();
-            bridge.register_federation("dst".to_string(), 0.8, 80.0).unwrap();
+            bridge
+                .register_federation("src".to_string(), 0.9, 100.0)
+                .unwrap();
+            bridge
+                .register_federation("dst".to_string(), 0.8, 80.0)
+                .unwrap();
             let proof = bridge.submit_proof(
                 "p1".to_string(),
                 "src".to_string(),
@@ -723,14 +749,19 @@ mod internal {
         #[test]
         fn test_submit_proof_source_not_found() {
             let mut bridge = FederationZKPBridgeV6::default();
-            bridge.register_federation("dst".to_string(), 0.8, 80.0).unwrap();
-            match bridge.submit_proof(
-                "p1".to_string(),
-                "unknown".to_string(),
-                "dst".to_string(),
-                "hash".to_string(),
-                1000,
-            ).unwrap_err() {
+            bridge
+                .register_federation("dst".to_string(), 0.8, 80.0)
+                .unwrap();
+            match bridge
+                .submit_proof(
+                    "p1".to_string(),
+                    "unknown".to_string(),
+                    "dst".to_string(),
+                    "hash".to_string(),
+                    1000,
+                )
+                .unwrap_err()
+            {
                 FederationZKPBridgeV6Error::FederationNotFound(id) => assert_eq!(id, "unknown"),
                 e => panic!("Wrong error: {:?}", e),
             }
@@ -739,15 +770,22 @@ mod internal {
         #[test]
         fn test_submit_proof_credibility_too_low() {
             let mut bridge = FederationZKPBridgeV6::default();
-            bridge.register_federation("src".to_string(), 0.9, 100.0).unwrap();
-            bridge.register_federation("dst".to_string(), 0.3, 80.0).unwrap();
-            match bridge.submit_proof(
-                "p1".to_string(),
-                "src".to_string(),
-                "dst".to_string(),
-                "hash".to_string(),
-                1000,
-            ).unwrap_err() {
+            bridge
+                .register_federation("src".to_string(), 0.9, 100.0)
+                .unwrap();
+            bridge
+                .register_federation("dst".to_string(), 0.3, 80.0)
+                .unwrap();
+            match bridge
+                .submit_proof(
+                    "p1".to_string(),
+                    "src".to_string(),
+                    "dst".to_string(),
+                    "hash".to_string(),
+                    1000,
+                )
+                .unwrap_err()
+            {
                 FederationZKPBridgeV6Error::CredibilityTooLow { .. } => {}
                 e => panic!("Wrong error: {:?}", e),
             }
@@ -756,9 +794,21 @@ mod internal {
         #[test]
         fn test_verify_proof() {
             let mut bridge = FederationZKPBridgeV6::default();
-            bridge.register_federation("src".to_string(), 0.9, 100.0).unwrap();
-            bridge.register_federation("dst".to_string(), 0.8, 80.0).unwrap();
-            bridge.submit_proof("p1".to_string(), "src".to_string(), "dst".to_string(), "hash".to_string(), 1000).unwrap();
+            bridge
+                .register_federation("src".to_string(), 0.9, 100.0)
+                .unwrap();
+            bridge
+                .register_federation("dst".to_string(), 0.8, 80.0)
+                .unwrap();
+            bridge
+                .submit_proof(
+                    "p1".to_string(),
+                    "src".to_string(),
+                    "dst".to_string(),
+                    "hash".to_string(),
+                    1000,
+                )
+                .unwrap();
             let result = bridge.verify_proof("p1", 1500);
             assert!(result.unwrap());
         }
@@ -775,9 +825,21 @@ mod internal {
         #[test]
         fn test_verify_proof_expired() {
             let mut bridge = FederationZKPBridgeV6::default();
-            bridge.register_federation("src".to_string(), 0.9, 100.0).unwrap();
-            bridge.register_federation("dst".to_string(), 0.8, 80.0).unwrap();
-            bridge.submit_proof("p1".to_string(), "src".to_string(), "dst".to_string(), "hash".to_string(), 1000).unwrap();
+            bridge
+                .register_federation("src".to_string(), 0.9, 100.0)
+                .unwrap();
+            bridge
+                .register_federation("dst".to_string(), 0.8, 80.0)
+                .unwrap();
+            bridge
+                .submit_proof(
+                    "p1".to_string(),
+                    "src".to_string(),
+                    "dst".to_string(),
+                    "hash".to_string(),
+                    1000,
+                )
+                .unwrap();
             match bridge.verify_proof("p1", 200_000).unwrap_err() {
                 FederationZKPBridgeV6Error::ProofTimeout { .. } => {}
                 e => panic!("Wrong error: {:?}", e),
@@ -789,9 +851,21 @@ mod internal {
             let mut config = make_config();
             config.fallback_timeout_ms = 100;
             let mut bridge = FederationZKPBridgeV6::new(config);
-            bridge.register_federation("src".to_string(), 0.9, 100.0).unwrap();
-            bridge.register_federation("dst".to_string(), 0.8, 80.0).unwrap();
-            bridge.submit_proof("p1".to_string(), "src".to_string(), "dst".to_string(), "hash".to_string(), 1000).unwrap();
+            bridge
+                .register_federation("src".to_string(), 0.9, 100.0)
+                .unwrap();
+            bridge
+                .register_federation("dst".to_string(), 0.8, 80.0)
+                .unwrap();
+            bridge
+                .submit_proof(
+                    "p1".to_string(),
+                    "src".to_string(),
+                    "dst".to_string(),
+                    "hash".to_string(),
+                    1000,
+                )
+                .unwrap();
             bridge.verify_proof("p1", 2000).unwrap();
             let proof = bridge.get_proof("p1").unwrap();
             assert!(proof.fallback_used);
@@ -800,8 +874,12 @@ mod internal {
         #[test]
         fn test_select_best_federation() {
             let mut bridge = FederationZKPBridgeV6::default();
-            bridge.register_federation("fed1".to_string(), 0.9, 100.0).unwrap();
-            bridge.register_federation("fed2".to_string(), 0.7, 80.0).unwrap();
+            bridge
+                .register_federation("fed1".to_string(), 0.9, 100.0)
+                .unwrap();
+            bridge
+                .register_federation("fed2".to_string(), 0.7, 80.0)
+                .unwrap();
             let best = bridge.select_best_federation(None);
             assert_eq!(best, Some("fed1".to_string()));
         }
@@ -809,8 +887,12 @@ mod internal {
         #[test]
         fn test_select_best_federation_excluded() {
             let mut bridge = FederationZKPBridgeV6::default();
-            bridge.register_federation("fed1".to_string(), 0.9, 100.0).unwrap();
-            bridge.register_federation("fed2".to_string(), 0.7, 80.0).unwrap();
+            bridge
+                .register_federation("fed1".to_string(), 0.9, 100.0)
+                .unwrap();
+            bridge
+                .register_federation("fed2".to_string(), 0.7, 80.0)
+                .unwrap();
             let best = bridge.select_best_federation(Some("fed1"));
             assert_eq!(best, Some("fed2".to_string()));
         }
@@ -818,10 +900,24 @@ mod internal {
         #[test]
         fn test_route_proof() {
             let mut bridge = FederationZKPBridgeV6::default();
-            bridge.register_federation("src".to_string(), 0.9, 100.0).unwrap();
-            bridge.register_federation("dst".to_string(), 0.8, 80.0).unwrap();
-            bridge.register_federation("alt".to_string(), 0.85, 90.0).unwrap();
-            bridge.submit_proof("p1".to_string(), "src".to_string(), "dst".to_string(), "hash".to_string(), 1000).unwrap();
+            bridge
+                .register_federation("src".to_string(), 0.9, 100.0)
+                .unwrap();
+            bridge
+                .register_federation("dst".to_string(), 0.8, 80.0)
+                .unwrap();
+            bridge
+                .register_federation("alt".to_string(), 0.85, 90.0)
+                .unwrap();
+            bridge
+                .submit_proof(
+                    "p1".to_string(),
+                    "src".to_string(),
+                    "dst".to_string(),
+                    "hash".to_string(),
+                    1000,
+                )
+                .unwrap();
             let routed = bridge.route_proof("p1", 1000);
             assert!(routed.is_ok());
         }
@@ -829,10 +925,30 @@ mod internal {
         #[test]
         fn test_cleanup_expired() {
             let mut bridge = FederationZKPBridgeV6::default();
-            bridge.register_federation("src".to_string(), 0.9, 100.0).unwrap();
-            bridge.register_federation("dst".to_string(), 0.8, 80.0).unwrap();
-            bridge.submit_proof("p1".to_string(), "src".to_string(), "dst".to_string(), "hash".to_string(), 1000).unwrap();
-            bridge.submit_proof("p2".to_string(), "src".to_string(), "dst".to_string(), "hash2".to_string(), 1000).unwrap();
+            bridge
+                .register_federation("src".to_string(), 0.9, 100.0)
+                .unwrap();
+            bridge
+                .register_federation("dst".to_string(), 0.8, 80.0)
+                .unwrap();
+            bridge
+                .submit_proof(
+                    "p1".to_string(),
+                    "src".to_string(),
+                    "dst".to_string(),
+                    "hash".to_string(),
+                    1000,
+                )
+                .unwrap();
+            bridge
+                .submit_proof(
+                    "p2".to_string(),
+                    "src".to_string(),
+                    "dst".to_string(),
+                    "hash2".to_string(),
+                    1000,
+                )
+                .unwrap();
             let cleaned = bridge.cleanup_expired(200_000);
             assert_eq!(cleaned, 2);
             assert_eq!(bridge.proofs.len(), 0);
@@ -841,7 +957,9 @@ mod internal {
         #[test]
         fn test_time_decay() {
             let mut bridge = FederationZKPBridgeV6::default();
-            bridge.register_federation("fed1".to_string(), 0.9, 100.0).unwrap();
+            bridge
+                .register_federation("fed1".to_string(), 0.9, 100.0)
+                .unwrap();
             let fed_before = bridge.get_federation("fed1").unwrap().credibility;
             bridge.apply_time_decay(3_600_000); // 1 hour later
             let fed_after = bridge.get_federation("fed1").unwrap().credibility;
@@ -897,10 +1015,30 @@ mod internal {
         #[test]
         fn test_nonce_increment() {
             let mut bridge = FederationZKPBridgeV6::default();
-            bridge.register_federation("src".to_string(), 0.9, 100.0).unwrap();
-            bridge.register_federation("dst".to_string(), 0.8, 80.0).unwrap();
-            bridge.submit_proof("p1".to_string(), "src".to_string(), "dst".to_string(), "h1".to_string(), 1000).unwrap();
-            bridge.submit_proof("p2".to_string(), "src".to_string(), "dst".to_string(), "h2".to_string(), 1000).unwrap();
+            bridge
+                .register_federation("src".to_string(), 0.9, 100.0)
+                .unwrap();
+            bridge
+                .register_federation("dst".to_string(), 0.8, 80.0)
+                .unwrap();
+            bridge
+                .submit_proof(
+                    "p1".to_string(),
+                    "src".to_string(),
+                    "dst".to_string(),
+                    "h1".to_string(),
+                    1000,
+                )
+                .unwrap();
+            bridge
+                .submit_proof(
+                    "p2".to_string(),
+                    "src".to_string(),
+                    "dst".to_string(),
+                    "h2".to_string(),
+                    1000,
+                )
+                .unwrap();
             let p1 = bridge.get_proof("p1").unwrap();
             let p2 = bridge.get_proof("p2").unwrap();
             assert!(p2.nonce > p1.nonce);
@@ -923,9 +1061,21 @@ mod internal {
         #[test]
         fn test_full_lifecycle() {
             let mut bridge = FederationZKPBridgeV6::default();
-            bridge.register_federation("src".to_string(), 0.9, 100.0).unwrap();
-            bridge.register_federation("dst".to_string(), 0.8, 80.0).unwrap();
-            bridge.submit_proof("p1".to_string(), "src".to_string(), "dst".to_string(), "hash".to_string(), 1000).unwrap();
+            bridge
+                .register_federation("src".to_string(), 0.9, 100.0)
+                .unwrap();
+            bridge
+                .register_federation("dst".to_string(), 0.8, 80.0)
+                .unwrap();
+            bridge
+                .submit_proof(
+                    "p1".to_string(),
+                    "src".to_string(),
+                    "dst".to_string(),
+                    "hash".to_string(),
+                    1000,
+                )
+                .unwrap();
             assert!(bridge.verify_proof("p1", 1500).unwrap());
             let proof = bridge.get_proof("p1").unwrap();
             assert!(proof.verified);
@@ -969,10 +1119,31 @@ mod internal {
             let mut config = make_config();
             config.max_proofs_in_flight = 1;
             let mut bridge = FederationZKPBridgeV6::new(config);
-            bridge.register_federation("src".to_string(), 0.9, 100.0).unwrap();
-            bridge.register_federation("dst".to_string(), 0.8, 80.0).unwrap();
-            bridge.submit_proof("p1".to_string(), "src".to_string(), "dst".to_string(), "h1".to_string(), 1000).unwrap();
-            match bridge.submit_proof("p2".to_string(), "src".to_string(), "dst".to_string(), "h2".to_string(), 1000).unwrap_err() {
+            bridge
+                .register_federation("src".to_string(), 0.9, 100.0)
+                .unwrap();
+            bridge
+                .register_federation("dst".to_string(), 0.8, 80.0)
+                .unwrap();
+            bridge
+                .submit_proof(
+                    "p1".to_string(),
+                    "src".to_string(),
+                    "dst".to_string(),
+                    "h1".to_string(),
+                    1000,
+                )
+                .unwrap();
+            match bridge
+                .submit_proof(
+                    "p2".to_string(),
+                    "src".to_string(),
+                    "dst".to_string(),
+                    "h2".to_string(),
+                    1000,
+                )
+                .unwrap_err()
+            {
                 FederationZKPBridgeV6Error::BridgeFull => {}
                 e => panic!("Wrong error: {:?}", e),
             }

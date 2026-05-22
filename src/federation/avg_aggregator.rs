@@ -182,7 +182,8 @@ impl FedAvgAggregator {
 
     /// Perform FedAvg aggregation for a given layer.
     pub fn aggregate(&self, layer_id: u32) -> Result<AggregationResult> {
-        let updates = self.pending_updates
+        let updates = self
+            .pending_updates
             .get(&layer_id)
             .ok_or_else(|| anyhow::anyhow!("No updates for layer {}", layer_id))?;
 
@@ -260,12 +261,14 @@ impl FedAvgAggregator {
         let distances = self.compute_distance_matrix(updates)?;
 
         // Compute Krum scores
-        let mut scores: Vec<(usize, f64)> = (0..n).map(|i| {
-            let mut dists = distances[i].clone();
-            dists.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-            let score: f64 = dists[1..select_count.min(dists.len())].iter().sum();
-            (i, score)
-        }).collect();
+        let mut scores: Vec<(usize, f64)> = (0..n)
+            .map(|i| {
+                let mut dists = distances[i].clone();
+                dists.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+                let score: f64 = dists[1..select_count.min(dists.len())].iter().sum();
+                (i, score)
+            })
+            .collect();
 
         scores.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
 
@@ -302,7 +305,8 @@ impl FedAvgAggregator {
             for j in (i + 1)..n {
                 let mut sum_sq = 0.0f64;
                 for k in 0..dim {
-                    let diff = updates[i].weight_deltas[k] as f64 - updates[j].weight_deltas[k] as f64;
+                    let diff =
+                        updates[i].weight_deltas[k] as f64 - updates[j].weight_deltas[k] as f64;
                     sum_sq += diff * diff;
                 }
                 let dist = sum_sq.sqrt();
@@ -322,10 +326,7 @@ impl FedAvgAggregator {
         }
 
         let dim = updates[indices[0]].dimension();
-        let total_samples: usize = indices
-            .iter()
-            .map(|&i| updates[i].num_samples)
-            .sum();
+        let total_samples: usize = indices.iter().map(|&i| updates[i].num_samples).sum();
 
         if total_samples == 0 {
             return Err(anyhow::anyhow!("Zero total samples"));
@@ -340,7 +341,11 @@ impl FedAvgAggregator {
             }
         }
 
-        debug!("FedAvg completed: dim={}, participants={}", dim, indices.len());
+        debug!(
+            "FedAvg completed: dim={}, participants={}",
+            dim,
+            indices.len()
+        );
         Ok(aggregated.iter().map(|&x| x as f32).collect())
     }
 

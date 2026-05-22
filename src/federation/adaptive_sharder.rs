@@ -227,7 +227,10 @@ pub enum BalanceAction {
     /// Merge underloaded shards.
     MergeShards(Vec<String>),
     /// Migrate shard to a less loaded node.
-    MigrateShard { shard_id: String, target_node: String },
+    MigrateShard {
+        shard_id: String,
+        target_node: String,
+    },
     /// No action needed.
     NoOp,
 }
@@ -242,11 +245,7 @@ impl std::fmt::Display for BalanceAction {
             BalanceAction::MigrateShard {
                 shard_id,
                 target_node,
-            } => write!(
-                f,
-                "MigrateShard({}, {})",
-                shard_id, target_node
-            ),
+            } => write!(f, "MigrateShard({}, {})", shard_id, target_node),
             BalanceAction::NoOp => write!(f, "NoOp"),
         }
     }
@@ -428,9 +427,10 @@ impl AdaptiveSharder {
 
     /// Removes a shard.
     pub fn remove_shard(&mut self, shard_id: &str) -> Result<ShardPartition, AdaptiveSharderError> {
-        let shard = self.shards.remove(shard_id).ok_or_else(|| {
-            AdaptiveSharderError::ShardNotFound(shard_id.to_string())
-        })?;
+        let shard = self
+            .shards
+            .remove(shard_id)
+            .ok_or_else(|| AdaptiveSharderError::ShardNotFound(shard_id.to_string()))?;
 
         self.stats.total_shards_removed += 1;
         self.stats.active_shards = self.shards.len();
@@ -487,7 +487,8 @@ impl AdaptiveSharder {
         }
 
         // Check for underloaded shards that can be merged
-        let underloaded: Vec<String> = self.shards
+        let underloaded: Vec<String> = self
+            .shards
             .values()
             .filter(|s| s.is_underloaded(self.config.merge_threshold))
             .map(|s| s.shard_id.clone())
@@ -545,11 +546,7 @@ impl AdaptiveSharder {
         target_node: String,
     ) -> Result<MigrationEntry, AdaptiveSharderError> {
         // Check concurrent migration limit
-        let active_migrations: usize = self
-            .migrations
-            .iter()
-            .filter(|m| !m.is_complete())
-            .count();
+        let active_migrations: usize = self.migrations.iter().filter(|m| !m.is_complete()).count();
 
         if active_migrations >= self.config.max_concurrent_migrations {
             return Err(AdaptiveSharderError::MigrationFailed(
@@ -557,9 +554,10 @@ impl AdaptiveSharder {
             ));
         }
 
-        let shard = self.shards.get(shard_id).ok_or_else(|| {
-            AdaptiveSharderError::ShardNotFound(shard_id.to_string())
-        })?;
+        let shard = self
+            .shards
+            .get(shard_id)
+            .ok_or_else(|| AdaptiveSharderError::ShardNotFound(shard_id.to_string()))?;
 
         let migration_id = format!("mig_{}_{}", shard_id, current_timestamp_ms());
         let mut migration = MigrationEntry::new(
@@ -582,7 +580,10 @@ impl AdaptiveSharder {
     }
 
     /// Completes a migration.
-    pub fn complete_migration(&mut self, migration_id: &str) -> Result<MigrationEntry, AdaptiveSharderError> {
+    pub fn complete_migration(
+        &mut self,
+        migration_id: &str,
+    ) -> Result<MigrationEntry, AdaptiveSharderError> {
         let mut migration_opt: Option<MigrationEntry> = None;
 
         for i in 0..self.migrations.len() {
@@ -593,10 +594,7 @@ impl AdaptiveSharder {
         }
 
         let migration = migration_opt.ok_or_else(|| {
-            AdaptiveSharderError::MigrationFailed(format!(
-                "Migration {} not found",
-                migration_id
-            ))
+            AdaptiveSharderError::MigrationFailed(format!("Migration {} not found", migration_id))
         })?;
 
         // Update shard state back to active
@@ -611,8 +609,7 @@ impl AdaptiveSharder {
         // Calculate migration time
         if let Some(completed) = migration.completed_at_ms {
             let elapsed = completed.saturating_sub(migration.started_at_ms) as f64;
-            self.stats.avg_migration_time_ms =
-                (self.stats.avg_migration_time_ms + elapsed) / 2.0;
+            self.stats.avg_migration_time_ms = (self.stats.avg_migration_time_ms + elapsed) / 2.0;
         }
 
         Ok(migration)
@@ -851,7 +848,9 @@ mod tests {
         }
         sharder.register_node("node_1", 0.3);
 
-        let migration = sharder.start_migration("shard_0", "node_1".to_string()).unwrap();
+        let migration = sharder
+            .start_migration("shard_0", "node_1".to_string())
+            .unwrap();
         let completed = sharder.complete_migration(&migration.migration_id).unwrap();
         assert_eq!(completed.shard_id, "shard_0");
         assert_eq!(sharder.stats.total_migrations, 1);
@@ -865,7 +864,9 @@ mod tests {
         }
         sharder.register_node("node_1", 0.3);
 
-        sharder.start_migration("shard_0", "node_1".to_string()).unwrap();
+        sharder
+            .start_migration("shard_0", "node_1".to_string())
+            .unwrap();
         let active = sharder.get_active_migrations();
         assert_eq!(active.len(), 1);
     }
@@ -1021,7 +1022,9 @@ mod tests {
         sharder.register_node("node_1", 0.3);
 
         // First migration should succeed
-        assert!(sharder.start_migration("shard_0", "node_1".to_string()).is_ok());
+        assert!(sharder
+            .start_migration("shard_0", "node_1".to_string())
+            .is_ok());
 
         // Second migration should fail
         let result = sharder.start_migration("shard_1", "node_1".to_string());

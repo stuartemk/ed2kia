@@ -421,13 +421,14 @@ mod tests {
         let mut a_clone = a.clone();
         let mut b_clone = b.clone();
 
+        // a.merge(&b) and b_clone.merge(&a_clone) should yield same result
         a.merge(&b);
-        a_clone.merge(&b_clone);
+        b_clone.merge(&a_clone);
 
-        // Both should have same peers and scores after merge.
-        assert_eq!(a.peer_count(), b.peer_count());
-        assert!((a.get_score("peer1") - b.get_score("peer1")).abs() < f64::EPSILON);
-        assert!((a.get_score("peer2") - b.get_score("peer2")).abs() < f64::EPSILON);
+        // Both should have same peers and scores after commutative merge.
+        assert_eq!(a.peer_count(), b_clone.peer_count());
+        assert!((a.get_score("peer1") - b_clone.get_score("peer1")).abs() < f64::EPSILON);
+        assert!((a.get_score("peer2") - b_clone.get_score("peer2")).abs() < f64::EPSILON);
     }
 
     #[test]

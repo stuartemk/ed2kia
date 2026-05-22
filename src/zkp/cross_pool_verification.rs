@@ -23,9 +23,9 @@
 //!
 //! Apache License 2.0 + Ethical Use Clause
 
-use std::collections::{HashMap, VecDeque, BTreeSet};
-use std::hash::{Hash, Hasher};
 use std::collections::hash_map::DefaultHasher;
+use std::collections::{BTreeSet, HashMap, VecDeque};
+use std::hash::{Hash, Hasher};
 
 // ─── Errors ────────────────────────────────────────────────────────────────────
 
@@ -55,11 +55,25 @@ impl std::fmt::Display for CrossPoolError {
         match self {
             Self::PoolNotRegistered(id) => write!(f, "Pool not registered: {}", id),
             Self::ProofNotFound(id) => write!(f, "Proof not found: {}", id),
-            Self::ConsensusFailed { yes_weight, threshold } => {
-                write!(f, "Consensus failed: weight={:.3} < threshold={:.3}", yes_weight, threshold)
+            Self::ConsensusFailed {
+                yes_weight,
+                threshold,
+            } => {
+                write!(
+                    f,
+                    "Consensus failed: weight={:.3} < threshold={:.3}",
+                    yes_weight, threshold
+                )
             }
-            Self::InsufficientPools { available, required } => {
-                write!(f, "Insufficient pools: {} available, {} required", available, required)
+            Self::InsufficientPools {
+                available,
+                required,
+            } => {
+                write!(
+                    f,
+                    "Insufficient pools: {} available, {} required",
+                    available, required
+                )
             }
             Self::VoteAlreadyCast(pool_id) => write!(f, "Vote already cast by pool: {}", pool_id),
             Self::SessionExpired(id) => write!(f, "Verification session expired: {}", id),
@@ -377,7 +391,9 @@ impl CrossPoolVerifier {
     /// Register a pool verifier.
     pub fn register_pool(&mut self, pool: PoolVerifier) -> Result<(), CrossPoolError> {
         if self.pools.len() >= 128 {
-            return Err(CrossPoolError::PoolNotRegistered("Max pools reached".to_string()));
+            return Err(CrossPoolError::PoolNotRegistered(
+                "Max pools reached".to_string(),
+            ));
         }
         let id = pool.pool_id.clone();
         self.pools.insert(id, pool);
@@ -385,25 +401,43 @@ impl CrossPoolVerifier {
     }
 
     /// Update pool reputation.
-    pub fn update_pool_reputation(&mut self, pool_id: &str, reputation: f64) -> Result<(), CrossPoolError> {
-        let pool = self.pools.get_mut(pool_id)
+    pub fn update_pool_reputation(
+        &mut self,
+        pool_id: &str,
+        reputation: f64,
+    ) -> Result<(), CrossPoolError> {
+        let pool = self
+            .pools
+            .get_mut(pool_id)
             .ok_or_else(|| CrossPoolError::PoolNotRegistered(pool_id.to_string()))?;
         pool.reputation = reputation.clamp(0.0, 1.0);
         Ok(())
     }
 
     /// Update pool latency.
-    pub fn update_pool_latency(&mut self, pool_id: &str, latency_ms: f64) -> Result<(), CrossPoolError> {
-        let pool = self.pools.get_mut(pool_id)
+    pub fn update_pool_latency(
+        &mut self,
+        pool_id: &str,
+        latency_ms: f64,
+    ) -> Result<(), CrossPoolError> {
+        let pool = self
+            .pools
+            .get_mut(pool_id)
             .ok_or_else(|| CrossPoolError::PoolNotRegistered(pool_id.to_string()))?;
         pool.avg_latency_ms = latency_ms;
         Ok(())
     }
 
     /// Create a new verification session.
-    pub fn create_session(&mut self, session_id: String, proof_id: String) -> Result<(), CrossPoolError> {
+    pub fn create_session(
+        &mut self,
+        session_id: String,
+        proof_id: String,
+    ) -> Result<(), CrossPoolError> {
         if self.sessions.contains_key(&session_id) {
-            return Err(CrossPoolError::ChallengeMismatch("Session exists".to_string()));
+            return Err(CrossPoolError::ChallengeMismatch(
+                "Session exists".to_string(),
+            ));
         }
         let challenge = if self.config.challenge_enabled {
             Some(generate_challenge_nonce(self.config.challenge_nonce_bytes))
@@ -417,9 +451,16 @@ impl CrossPoolVerifier {
     }
 
     /// Submit a vote from a pool.
-    pub fn submit_vote(&mut self, session_id: &str, pool_id: &str, valid: bool) -> Result<Vote, CrossPoolError> {
+    pub fn submit_vote(
+        &mut self,
+        session_id: &str,
+        pool_id: &str,
+        valid: bool,
+    ) -> Result<Vote, CrossPoolError> {
         // Check session exists and not expired
-        let session = self.sessions.get(session_id)
+        let session = self
+            .sessions
+            .get(session_id)
             .ok_or_else(|| CrossPoolError::SessionExpired(session_id.to_string()))?;
         if session.is_expired(self.config.session_ttl_ms) {
             return Err(CrossPoolError::SessionExpired(session_id.to_string()));
@@ -429,10 +470,15 @@ impl CrossPoolVerifier {
             return Err(CrossPoolError::VoteAlreadyCast(pool_id.to_string()));
         }
         // Get pool verifier
-        let pool = self.pools.get(pool_id)
+        let pool = self
+            .pools
+            .get(pool_id)
             .ok_or_else(|| CrossPoolError::PoolNotRegistered(pool_id.to_string()))?;
         if !pool.active {
-            return Err(CrossPoolError::PoolNotRegistered(format!("Pool {} inactive", pool_id)));
+            return Err(CrossPoolError::PoolNotRegistered(format!(
+                "Pool {} inactive",
+                pool_id
+            )));
         }
         // Calculate vote weight
         let weight = pool.vote_weight(self.config.reputation_weight, self.config.latency_weight);
@@ -477,7 +523,9 @@ impl CrossPoolVerifier {
 
     /// Clean up expired sessions.
     pub fn cleanup_expired(&mut self) -> usize {
-        let expired: Vec<String> = self.sessions.iter()
+        let expired: Vec<String> = self
+            .sessions
+            .iter()
             .filter(|(_, s)| s.is_expired(self.config.session_ttl_ms) && !s.consensus_reached)
             .map(|(id, _)| id.clone())
             .collect();
@@ -526,7 +574,9 @@ impl CrossPoolVerifier {
 
     fn complete_session(&mut self, session_id: &str) -> Result<(), CrossPoolError> {
         let session = self.sessions.get(session_id).unwrap().clone();
-        let time_ms = session.completed_ms.unwrap_or(current_timestamp_ms())
+        let time_ms = session
+            .completed_ms
+            .unwrap_or(current_timestamp_ms())
             .saturating_sub(session.created_ms);
         // Compute Merkle root of votes
         let merkle_root = compute_vote_merkle_root(&session.votes);
@@ -608,13 +658,16 @@ fn compute_vote_merkle_root(votes: &[Vote]) -> String {
     if votes.is_empty() {
         return "0000000000000000".to_string();
     }
-    let leaves: Vec<String> = votes.iter().map(|v| {
-        let mut hasher = DefaultHasher::new();
-        v.pool_id.hash(&mut hasher);
-        v.valid.hash(&mut hasher);
-        v.weight.to_bits().hash(&mut hasher);
-        format!("{:016x}", hasher.finish())
-    }).collect();
+    let leaves: Vec<String> = votes
+        .iter()
+        .map(|v| {
+            let mut hasher = DefaultHasher::new();
+            v.pool_id.hash(&mut hasher);
+            v.valid.hash(&mut hasher);
+            v.weight.to_bits().hash(&mut hasher);
+            format!("{:016x}", hasher.finish())
+        })
+        .collect();
     compute_merkle_root(&leaves)
 }
 
@@ -637,7 +690,10 @@ fn compute_merkle_root(leaves: &[String]) -> String {
         }
         current = next;
     }
-    current.into_iter().next().unwrap_or_else(|| "0000000000000000".to_string())
+    current
+        .into_iter()
+        .next()
+        .unwrap_or_else(|| "0000000000000000".to_string())
 }
 
 fn current_timestamp_ms() -> u64 {
@@ -690,22 +746,31 @@ mod tests {
     #[test]
     fn test_create_session() {
         let mut verifier = CrossPoolVerifier::default();
-        assert_eq!(verifier.create_session("s1".to_string(), "proof1".to_string()), Ok(()));
+        assert_eq!(
+            verifier.create_session("s1".to_string(), "proof1".to_string()),
+            Ok(())
+        );
         assert!(verifier.sessions.contains_key("s1"));
     }
 
     #[test]
     fn test_create_session_duplicate() {
         let mut verifier = CrossPoolVerifier::default();
-        verifier.create_session("s1".to_string(), "proof1".to_string()).unwrap();
-        assert!(verifier.create_session("s1".to_string(), "proof2".to_string()).is_err());
+        verifier
+            .create_session("s1".to_string(), "proof1".to_string())
+            .unwrap();
+        assert!(verifier
+            .create_session("s1".to_string(), "proof2".to_string())
+            .is_err());
     }
 
     #[test]
     fn test_submit_vote() {
         let mut verifier = CrossPoolVerifier::default();
         verifier.register_pool(make_pool("p1", 0.9)).unwrap();
-        verifier.create_session("s1".to_string(), "proof1".to_string()).unwrap();
+        verifier
+            .create_session("s1".to_string(), "proof1".to_string())
+            .unwrap();
         let vote = verifier.submit_vote("s1", "p1", true).unwrap();
         assert!(vote.valid);
         assert!(vote.weight > 0.0);
@@ -715,7 +780,9 @@ mod tests {
     fn test_vote_already_cast() {
         let mut verifier = CrossPoolVerifier::default();
         verifier.register_pool(make_pool("p1", 0.9)).unwrap();
-        verifier.create_session("s1".to_string(), "proof1".to_string()).unwrap();
+        verifier
+            .create_session("s1".to_string(), "proof1".to_string())
+            .unwrap();
         verifier.submit_vote("s1", "p1", true).unwrap();
         assert!(matches!(
             verifier.submit_vote("s1", "p1", false),
@@ -729,9 +796,13 @@ mod tests {
         verifier.config.min_quorum_pools = 3;
         verifier.config.consensus_threshold = 0.6;
         for i in 1..=4 {
-            verifier.register_pool(make_pool(&format!("p{}", i), 0.9)).unwrap();
+            verifier
+                .register_pool(make_pool(&format!("p{}", i), 0.9))
+                .unwrap();
         }
-        verifier.create_session("s1".to_string(), "proof1".to_string()).unwrap();
+        verifier
+            .create_session("s1".to_string(), "proof1".to_string())
+            .unwrap();
         verifier.submit_vote("s1", "p1", true).unwrap();
         verifier.submit_vote("s1", "p2", true).unwrap();
         verifier.submit_vote("s1", "p3", true).unwrap();
@@ -746,9 +817,13 @@ mod tests {
         verifier.config.min_quorum_pools = 3;
         verifier.config.consensus_threshold = 0.6;
         for i in 1..=4 {
-            verifier.register_pool(make_pool(&format!("p{}", i), 0.9)).unwrap();
+            verifier
+                .register_pool(make_pool(&format!("p{}", i), 0.9))
+                .unwrap();
         }
-        verifier.create_session("s1".to_string(), "proof1".to_string()).unwrap();
+        verifier
+            .create_session("s1".to_string(), "proof1".to_string())
+            .unwrap();
         verifier.submit_vote("s1", "p1", false).unwrap();
         verifier.submit_vote("s1", "p2", false).unwrap();
         verifier.submit_vote("s1", "p3", false).unwrap();
@@ -762,9 +837,13 @@ mod tests {
         let mut verifier = CrossPoolVerifier::default();
         verifier.config.min_quorum_pools = 5;
         for i in 1..=3 {
-            verifier.register_pool(make_pool(&format!("p{}", i), 0.9)).unwrap();
+            verifier
+                .register_pool(make_pool(&format!("p{}", i), 0.9))
+                .unwrap();
         }
-        verifier.create_session("s1".to_string(), "proof1".to_string()).unwrap();
+        verifier
+            .create_session("s1".to_string(), "proof1".to_string())
+            .unwrap();
         verifier.submit_vote("s1", "p1", true).unwrap();
         verifier.submit_vote("s1", "p2", true).unwrap();
         verifier.submit_vote("s1", "p3", true).unwrap();
@@ -825,7 +904,9 @@ mod tests {
     fn test_session_expired() {
         let mut verifier = CrossPoolVerifier::default();
         verifier.config.session_ttl_ms = 1;
-        verifier.create_session("s1".to_string(), "proof1".to_string()).unwrap();
+        verifier
+            .create_session("s1".to_string(), "proof1".to_string())
+            .unwrap();
         std::thread::sleep(std::time::Duration::from_millis(10));
         assert!(matches!(
             verifier.submit_vote("s1", "p1", true),
@@ -837,8 +918,12 @@ mod tests {
     fn test_cleanup_expired() {
         let mut verifier = CrossPoolVerifier::default();
         verifier.config.session_ttl_ms = 1;
-        verifier.create_session("s1".to_string(), "proof1".to_string()).unwrap();
-        verifier.create_session("s2".to_string(), "proof2".to_string()).unwrap();
+        verifier
+            .create_session("s1".to_string(), "proof1".to_string())
+            .unwrap();
+        verifier
+            .create_session("s2".to_string(), "proof2".to_string())
+            .unwrap();
         std::thread::sleep(std::time::Duration::from_millis(10));
         let count = verifier.cleanup_expired();
         assert_eq!(count, 2);
@@ -850,9 +935,13 @@ mod tests {
         verifier.config.min_quorum_pools = 3;
         verifier.config.consensus_threshold = 0.6;
         for i in 1..=4 {
-            verifier.register_pool(make_pool(&format!("p{}", i), 0.9)).unwrap();
+            verifier
+                .register_pool(make_pool(&format!("p{}", i), 0.9))
+                .unwrap();
         }
-        verifier.create_session("s1".to_string(), "proof1".to_string()).unwrap();
+        verifier
+            .create_session("s1".to_string(), "proof1".to_string())
+            .unwrap();
         verifier.submit_vote("s1", "p1", true).unwrap();
         verifier.submit_vote("s1", "p2", true).unwrap();
         verifier.submit_vote("s1", "p3", true).unwrap();
@@ -896,7 +985,9 @@ mod tests {
         let mut verifier = CrossPoolVerifier::default();
         verifier.config.challenge_enabled = true;
         verifier.register_pool(make_pool("p1", 0.9)).unwrap();
-        verifier.create_session("s1".to_string(), "proof1".to_string()).unwrap();
+        verifier
+            .create_session("s1".to_string(), "proof1".to_string())
+            .unwrap();
         let vote = verifier.submit_vote("s1", "p1", true).unwrap();
         assert!(vote.challenge_response.is_some());
     }
@@ -906,7 +997,9 @@ mod tests {
         let mut verifier = CrossPoolVerifier::default();
         verifier.config.challenge_enabled = false;
         verifier.register_pool(make_pool("p1", 0.9)).unwrap();
-        verifier.create_session("s1".to_string(), "proof1".to_string()).unwrap();
+        verifier
+            .create_session("s1".to_string(), "proof1".to_string())
+            .unwrap();
         let vote = verifier.submit_vote("s1", "p1", true).unwrap();
         assert!(vote.challenge_response.is_none());
     }
@@ -925,7 +1018,9 @@ mod tests {
         let mut pool = make_pool("p1", 0.9);
         pool.active = false;
         verifier.register_pool(pool).unwrap();
-        verifier.create_session("s1".to_string(), "proof1".to_string()).unwrap();
+        verifier
+            .create_session("s1".to_string(), "proof1".to_string())
+            .unwrap();
         assert!(verifier.submit_vote("s1", "p1", true).is_err());
     }
 
@@ -943,9 +1038,13 @@ mod tests {
         verifier.config.min_quorum_pools = 3;
         verifier.config.consensus_threshold = 0.6;
         for i in 1..=4 {
-            verifier.register_pool(make_pool(&format!("p{}", i), 0.9)).unwrap();
+            verifier
+                .register_pool(make_pool(&format!("p{}", i), 0.9))
+                .unwrap();
         }
-        verifier.create_session("s1".to_string(), "proof1".to_string()).unwrap();
+        verifier
+            .create_session("s1".to_string(), "proof1".to_string())
+            .unwrap();
         verifier.submit_vote("s1", "p1", true).unwrap();
         verifier.submit_vote("s1", "p2", true).unwrap();
         verifier.submit_vote("s1", "p3", true).unwrap();
@@ -963,7 +1062,9 @@ mod tests {
         verifier.register_pool(make_pool("p1", 0.9)).unwrap();
         for i in 0..4 {
             let sid = format!("s{}", i);
-            verifier.create_session(sid.clone(), format!("proof{}", i)).unwrap();
+            verifier
+                .create_session(sid.clone(), format!("proof{}", i))
+                .unwrap();
             verifier.submit_vote(&sid, "p1", true).unwrap();
         }
         assert!(verifier.get_history().len() <= 2);
@@ -976,7 +1077,9 @@ mod tests {
         verifier.config.consensus_threshold = 0.7;
         verifier.config.threshold_step = 0.05;
         for i in 1..=5 {
-            verifier.register_pool(make_pool(&format!("p{}", i), 0.9)).unwrap();
+            verifier
+                .register_pool(make_pool(&format!("p{}", i), 0.9))
+                .unwrap();
         }
         let threshold = verifier.current_threshold();
         assert!(threshold < 0.7);
@@ -993,7 +1096,9 @@ mod tests {
     fn test_session_vote_count() {
         let mut session = VerificationSession::new("s1".to_string(), "proof1".to_string(), None);
         assert_eq!(session.vote_count(), 0);
-        session.votes.push(Vote::new("p1".to_string(), true, 0.9, 50));
+        session
+            .votes
+            .push(Vote::new("p1".to_string(), true, 0.9, 50));
         assert_eq!(session.vote_count(), 1);
     }
 
@@ -1048,7 +1153,9 @@ mod tests {
         verifier.register_pool(make_pool("high_rep", 1.0)).unwrap();
         verifier.register_pool(make_pool("mid_rep", 0.5)).unwrap();
         verifier.register_pool(make_pool("low_rep", 0.1)).unwrap();
-        verifier.create_session("s1".to_string(), "proof1".to_string()).unwrap();
+        verifier
+            .create_session("s1".to_string(), "proof1".to_string())
+            .unwrap();
         // High rep says yes, others say no
         verifier.submit_vote("s1", "high_rep", true).unwrap();
         verifier.submit_vote("s1", "mid_rep", false).unwrap();

@@ -273,8 +273,7 @@ mod internal {
     // ---------------------------------------------------------------------------
 
     /// Statistics for federation scaling v5.
-    #[derive(Debug, Clone)]
-    #[derive(Default)]
+    #[derive(Debug, Clone, Default)]
     pub struct ScalingV5Stats {
         /// Total nodes registered.
         pub total_nodes: usize,
@@ -291,7 +290,6 @@ mod internal {
         /// Cross-model syncs.
         pub cross_model_syncs: usize,
     }
-
 
     impl ScalingV5Stats {
         /// Record a successful assignment.
@@ -372,14 +370,11 @@ mod internal {
         }
 
         /// Update node load.
-        pub fn update_node_load(
-            &mut self,
-            node_id: &str,
-            load: f64,
-        ) -> Result<(), ScalingV5Error> {
-            let node = self.nodes.get_mut(node_id).ok_or_else(|| {
-                ScalingV5Error::NodeNotFound(node_id.to_string())
-            })?;
+        pub fn update_node_load(&mut self, node_id: &str, load: f64) -> Result<(), ScalingV5Error> {
+            let node = self
+                .nodes
+                .get_mut(node_id)
+                .ok_or_else(|| ScalingV5Error::NodeNotFound(node_id.to_string()))?;
             node.update_load(load, self.config.ema_alpha);
             Ok(())
         }
@@ -390,9 +385,10 @@ mod internal {
             node_id: &str,
             latency_ms: f64,
         ) -> Result<(), ScalingV5Error> {
-            let node = self.nodes.get_mut(node_id).ok_or_else(|| {
-                ScalingV5Error::NodeNotFound(node_id.to_string())
-            })?;
+            let node = self
+                .nodes
+                .get_mut(node_id)
+                .ok_or_else(|| ScalingV5Error::NodeNotFound(node_id.to_string()))?;
             node.record_latency(latency_ms, 64);
             Ok(())
         }
@@ -404,7 +400,8 @@ mod internal {
                     "Maximum shards reached".to_string(),
                 ));
             }
-            self.shards.insert(shard_id.clone(), ShardEntryV5::new(shard_id));
+            self.shards
+                .insert(shard_id.clone(), ShardEntryV5::new(shard_id));
             self.stats.total_shards = self.shards.len();
             Ok(())
         }
@@ -427,10 +424,14 @@ mod internal {
             }
 
             // Find best available node
-            let best_node = self.nodes.values()
+            let best_node = self
+                .nodes
+                .values()
                 .filter(|n| n.meets_reputation(self.config.min_reputation))
                 .max_by(|a, b| {
-                    a.shard_score(&self.config).partial_cmp(&b.shard_score(&self.config)).unwrap()
+                    a.shard_score(&self.config)
+                        .partial_cmp(&b.shard_score(&self.config))
+                        .unwrap()
                 });
 
             match best_node {
@@ -454,9 +455,10 @@ mod internal {
 
         /// Predict load for a node using EMA.
         pub fn predict_load(&self, node_id: &str, horizon: usize) -> Result<f64, ScalingV5Error> {
-            let node = self.nodes.get(node_id).ok_or_else(|| {
-                ScalingV5Error::NodeNotFound(node_id.to_string())
-            })?;
+            let node = self
+                .nodes
+                .get(node_id)
+                .ok_or_else(|| ScalingV5Error::NodeNotFound(node_id.to_string()))?;
             // Simple EMA extrapolation
             let current = node.ema_load;
             let predicted = current * (1.0 + 0.05 * horizon as f64);
@@ -465,18 +467,14 @@ mod internal {
 
         /// Check if scaling up is needed.
         pub fn should_scale_up(&self) -> bool {
-            let avg_load: f64 = self.nodes.values()
-                .map(|n| n.ema_load)
-                .sum::<f64>()
+            let avg_load: f64 = self.nodes.values().map(|n| n.ema_load).sum::<f64>()
                 / self.nodes.len().max(1) as f64;
             avg_load >= self.config.scale_up_threshold
         }
 
         /// Check if scaling down is needed.
         pub fn should_scale_down(&self) -> bool {
-            let avg_load: f64 = self.nodes.values()
-                .map(|n| n.ema_load)
-                .sum::<f64>()
+            let avg_load: f64 = self.nodes.values().map(|n| n.ema_load).sum::<f64>()
                 / self.nodes.len().max(1) as f64;
             avg_load <= self.config.scale_down_threshold
         }
@@ -547,7 +545,9 @@ mod internal {
         #[test]
         fn test_register_node() {
             let mut engine = ScalingV5::default();
-            engine.register_node("node-1".to_string(), 1000.0, 0.9).unwrap();
+            engine
+                .register_node("node-1".to_string(), 1000.0, 0.9)
+                .unwrap();
             assert_eq!(engine.node_count(), 1);
         }
 
@@ -568,7 +568,9 @@ mod internal {
         #[test]
         fn test_update_node_load() {
             let mut engine = ScalingV5::default();
-            engine.register_node("node-1".to_string(), 1000.0, 0.9).unwrap();
+            engine
+                .register_node("node-1".to_string(), 1000.0, 0.9)
+                .unwrap();
             engine.update_node_load("node-1", 0.5).unwrap();
             let node = engine.nodes.get("node-1").unwrap();
             assert!((node.load - 0.5).abs() < 0.001);
@@ -577,7 +579,9 @@ mod internal {
         #[test]
         fn test_record_node_latency() {
             let mut engine = ScalingV5::default();
-            engine.register_node("node-1".to_string(), 1000.0, 0.9).unwrap();
+            engine
+                .register_node("node-1".to_string(), 1000.0, 0.9)
+                .unwrap();
             engine.record_node_latency("node-1", 50.0).unwrap();
             let node = engine.nodes.get("node-1").unwrap();
             assert!((node.avg_latency() - 50.0).abs() < 0.001);
@@ -593,7 +597,9 @@ mod internal {
         #[test]
         fn test_assign_node_to_shard() {
             let mut engine = ScalingV5::default();
-            engine.register_node("node-1".to_string(), 1000.0, 0.9).unwrap();
+            engine
+                .register_node("node-1".to_string(), 1000.0, 0.9)
+                .unwrap();
             engine.create_shard("shard-1".to_string()).unwrap();
             let result = engine.assign_node_to_shard("shard-1").unwrap();
             assert_eq!(result, Some("node-1".to_string()));
@@ -602,7 +608,9 @@ mod internal {
         #[test]
         fn test_assign_node_reputation_filter() {
             let mut engine = ScalingV5::default();
-            engine.register_node("node-low".to_string(), 1000.0, 0.3).unwrap();
+            engine
+                .register_node("node-low".to_string(), 1000.0, 0.3)
+                .unwrap();
             engine.create_shard("shard-1".to_string()).unwrap();
             let result = engine.assign_node_to_shard("shard-1").unwrap();
             assert_eq!(result, None);
@@ -611,7 +619,9 @@ mod internal {
         #[test]
         fn test_predict_load() {
             let mut engine = ScalingV5::default();
-            engine.register_node("node-1".to_string(), 1000.0, 0.9).unwrap();
+            engine
+                .register_node("node-1".to_string(), 1000.0, 0.9)
+                .unwrap();
             engine.update_node_load("node-1", 0.5).unwrap();
             let predicted = engine.predict_load("node-1", 5).unwrap();
             assert!(predicted > 0.5);
@@ -621,7 +631,9 @@ mod internal {
         #[test]
         fn test_should_scale_up() {
             let mut engine = ScalingV5::default();
-            engine.register_node("node-1".to_string(), 1000.0, 0.9).unwrap();
+            engine
+                .register_node("node-1".to_string(), 1000.0, 0.9)
+                .unwrap();
             engine.update_node_load("node-1", 0.9).unwrap();
             assert!(engine.should_scale_up());
         }
@@ -629,7 +641,9 @@ mod internal {
         #[test]
         fn test_should_scale_down() {
             let mut engine = ScalingV5::default();
-            engine.register_node("node-1".to_string(), 1000.0, 0.9).unwrap();
+            engine
+                .register_node("node-1".to_string(), 1000.0, 0.9)
+                .unwrap();
             engine.update_node_load("node-1", 0.1).unwrap();
             assert!(engine.should_scale_down());
         }
@@ -637,7 +651,9 @@ mod internal {
         #[test]
         fn test_stats_recording() {
             let mut engine = ScalingV5::default();
-            engine.register_node("node-1".to_string(), 1000.0, 0.9).unwrap();
+            engine
+                .register_node("node-1".to_string(), 1000.0, 0.9)
+                .unwrap();
             engine.create_shard("shard-1".to_string()).unwrap();
             engine.assign_node_to_shard("shard-1").unwrap();
             assert_eq!(engine.stats().assignments_success, 1);
@@ -646,7 +662,9 @@ mod internal {
         #[test]
         fn test_stats_reset() {
             let mut engine = ScalingV5::default();
-            engine.register_node("node-1".to_string(), 1000.0, 0.9).unwrap();
+            engine
+                .register_node("node-1".to_string(), 1000.0, 0.9)
+                .unwrap();
             engine.create_shard("shard-1".to_string()).unwrap();
             engine.assign_node_to_shard("shard-1").unwrap();
             engine.stats_mut().reset();
@@ -685,8 +703,12 @@ mod internal {
         #[test]
         fn test_multiple_nodes_shard_selection() {
             let mut engine = ScalingV5::default();
-            engine.register_node("high-rep".to_string(), 1000.0, 0.95).unwrap();
-            engine.register_node("low-rep".to_string(), 1000.0, 0.60).unwrap();
+            engine
+                .register_node("high-rep".to_string(), 1000.0, 0.95)
+                .unwrap();
+            engine
+                .register_node("low-rep".to_string(), 1000.0, 0.60)
+                .unwrap();
             engine.create_shard("shard-1".to_string()).unwrap();
             let result = engine.assign_node_to_shard("shard-1").unwrap();
             assert_eq!(result, Some("high-rep".to_string()));

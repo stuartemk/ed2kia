@@ -8,11 +8,11 @@
 //! This module is gated behind `#[cfg(feature = "phase6-sprint2")]`.
 
 #[cfg(feature = "phase6-sprint2")]
-use candle_core::{Device, Tensor, DType};
-#[cfg(feature = "phase6-sprint2")]
 use anyhow::Context;
+#[cfg(feature = "phase6-sprint2")]
+use candle_core::{DType, Device, Tensor};
 use serde::{Deserialize, Serialize};
-use tracing::{info, warn, debug};
+use tracing::{debug, info, warn};
 
 // ---------------------------------------------------------------------------
 // Public types (always available for serialization)
@@ -98,8 +98,10 @@ pub struct OnnxAdapter {
 impl OnnxAdapter {
     /// Crear nuevo adaptador con configuración
     pub fn new(config: OnnxAdapterConfig) -> Self {
-        info!("OnnxAdapter created: model_path={}, target_dim={}",
-            config.model_path, config.target_dim);
+        info!(
+            "OnnxAdapter created: model_path={}, target_dim={}",
+            config.model_path, config.target_dim
+        );
         Self {
             config,
             model_cache: std::collections::HashMap::new(),
@@ -139,8 +141,11 @@ impl OnnxAdapter {
         // Cache the result
         self.model_cache.insert(path.clone(), tensor.clone());
 
-        info!("Model loaded and cached: {} → shape={:?}",
-            path, tensor.shape().dims());
+        info!(
+            "Model loaded and cached: {} → shape={:?}",
+            path,
+            tensor.shape().dims()
+        );
 
         Ok(tensor)
     }
@@ -166,7 +171,8 @@ impl OnnxAdapter {
             model.get(layer_index).context("Layer extraction")
         } else {
             Ok(model.clone())
-        }.map_err(|e| OnnxError {
+        }
+        .map_err(|e| OnnxError {
             model_path: self.config.model_path.clone(),
             reason: format!("Failed to extract layer {}: {}", layer_index, e),
         })?;
@@ -175,10 +181,7 @@ impl OnnxAdapter {
     }
 
     /// Convertir tensor a f32 y validar contra QwenScopeSchema
-    pub fn convert_to_qwen_scope(
-        &self,
-        tensor: &Tensor,
-    ) -> Result<Tensor, OnnxError> {
+    pub fn convert_to_qwen_scope(&self, tensor: &Tensor) -> Result<Tensor, OnnxError> {
         // Convert to f32 if needed
         let f32_tensor = if tensor.dtype() != DType::F32 {
             tensor.to_dtype(DType::F32).map_err(|e| OnnxError {
@@ -190,9 +193,7 @@ impl OnnxAdapter {
         };
 
         // Validate dimensions
-        let hidden_dim = f32_tensor.shape().dims().last()
-            .copied()
-            .unwrap_or(0);
+        let hidden_dim = f32_tensor.shape().dims().last().copied().unwrap_or(0);
 
         if hidden_dim == 0 {
             return Err(OnnxError {
@@ -262,14 +263,17 @@ impl OnnxAdapter {
     // ------------------------------------------------------------------
 
     fn _load_onnx(&self, path: &str) -> Result<Tensor, anyhow::Error> {
-        use std::path::Path;
         use std::fs;
+        use std::path::Path;
 
         let path_obj = Path::new(path);
 
         if !path_obj.exists() {
             // Return a placeholder tensor for testing
-            warn!("Model file not found: {}. Returning placeholder tensor.", path);
+            warn!(
+                "Model file not found: {}. Returning placeholder tensor.",
+                path
+            );
             return self._create_placeholder(path);
         }
 
@@ -317,7 +321,7 @@ impl OnnxAdapter {
     }
 
     fn _compute_model_hash(&self) -> String {
-        use sha2::{Sha256, Digest};
+        use sha2::{Digest, Sha256};
 
         let mut hasher = Sha256::new();
         hasher.update(self.config.model_path.as_bytes());
@@ -409,8 +413,11 @@ mod tests {
         fn test_optimize_graph_disabled() {
             let adapter = OnnxAdapter::with_model_path("/tmp/test.onnx".to_string());
             let tensor = candle_core::Tensor::from_vec(
-                vec![0.0f32; 3584], (1, 3584), &candle_core::Device::Cpu
-            ).unwrap();
+                vec![0.0f32; 3584],
+                (1, 3584),
+                &candle_core::Device::Cpu,
+            )
+            .unwrap();
             let result = adapter.optimize_graph(&tensor);
             assert!(result.is_err());
             assert!(result.unwrap_err().reason.contains("disabled"));
@@ -419,7 +426,9 @@ mod tests {
         #[test]
         fn test_extract_hidden_states_low_rank() {
             let adapter = OnnxAdapter::with_model_path("/tmp/test.onnx".to_string());
-            let scalar = candle_core::Tensor::zeros((), candle_core::DType::F32, &candle_core::Device::Cpu).unwrap();
+            let scalar =
+                candle_core::Tensor::zeros((), candle_core::DType::F32, &candle_core::Device::Cpu)
+                    .unwrap();
             let result = adapter.extract_hidden_states(&scalar, 0);
             assert!(result.is_err());
             assert!(result.unwrap_err().reason.contains("rank"));
@@ -429,8 +438,11 @@ mod tests {
         fn test_convert_to_qwen_scope() {
             let adapter = OnnxAdapter::with_model_path("/tmp/test.onnx".to_string());
             let tensor = candle_core::Tensor::from_vec(
-                vec![1.0f32; 3584], (1, 3584), &candle_core::Device::Cpu
-            ).unwrap();
+                vec![1.0f32; 3584],
+                (1, 3584),
+                &candle_core::Device::Cpu,
+            )
+            .unwrap();
             let result = adapter.convert_to_qwen_scope(&tensor).unwrap();
             assert_eq!(result.dtype(), candle_core::DType::F32);
         }
@@ -439,8 +451,11 @@ mod tests {
         fn test_conversion_result_generation() {
             let adapter = OnnxAdapter::with_model_path("/tmp/test.onnx".to_string());
             let tensor = candle_core::Tensor::from_vec(
-                vec![0.0f32; 3584], (1, 3584), &candle_core::Device::Cpu
-            ).unwrap();
+                vec![0.0f32; 3584],
+                (1, 3584),
+                &candle_core::Device::Cpu,
+            )
+            .unwrap();
             let result = adapter.generate_conversion_result(&tensor, 5);
             assert_eq!(result.hidden_dim, 3584);
             assert_eq!(result.layers_processed, 5);

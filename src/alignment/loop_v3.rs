@@ -83,7 +83,13 @@ pub struct FeedbackEntryV3 {
 
 impl FeedbackEntryV3 {
     /// Creates a new feedback entry with ZKP proof.
-    pub fn new(source_id: String, feedback_type: FeedbackTypeV3, score: f64, confidence: f64, layer_id: String) -> Self {
+    pub fn new(
+        source_id: String,
+        feedback_type: FeedbackTypeV3,
+        score: f64,
+        confidence: f64,
+        layer_id: String,
+    ) -> Self {
         let proof_hash = compute_feedback_proof(&source_id, score, confidence);
         Self {
             source_id,
@@ -124,7 +130,13 @@ pub struct SteeringSignalV3 {
 
 impl SteeringSignalV3 {
     /// Creates a new steering signal.
-    pub fn new(signal_id: String, layer_id: String, adjustment: f64, confidence: f64, bias_score: f64) -> Self {
+    pub fn new(
+        signal_id: String,
+        layer_id: String,
+        adjustment: f64,
+        confidence: f64,
+        bias_score: f64,
+    ) -> Self {
         let zkp_proof = compute_steering_proof(&signal_id, &layer_id, adjustment);
         Self {
             signal_id,
@@ -299,7 +311,10 @@ impl AlignmentLoopV3 {
             }
         }
 
-        info!("AlignmentV3: submitted feedback from {} (score={:.3})", feedback.source_id, feedback.score);
+        info!(
+            "AlignmentV3: submitted feedback from {} (score={:.3})",
+            feedback.source_id, feedback.score
+        );
         Ok(())
     }
 
@@ -328,7 +343,10 @@ impl AlignmentLoopV3 {
                     // Check bias threshold
                     if bias_score > self.config.max_bias_score {
                         self.stats.bias_detections += 1;
-                        warn!("AlignmentV3: bias detected in {} (score={:.3})", layer_id, bias_score);
+                        warn!(
+                            "AlignmentV3: bias detected in {} (score={:.3})",
+                            layer_id, bias_score
+                        );
                     }
                     max_bias = max_bias.max(bias_score);
 
@@ -364,7 +382,8 @@ impl AlignmentLoopV3 {
             0.0
         };
 
-        let fallback = max_bias > self.config.max_bias_score || avg_confidence < self.config.min_confidence;
+        let fallback =
+            max_bias > self.config.max_bias_score || avg_confidence < self.config.min_confidence;
         if fallback {
             self.stats.fallback_count += 1;
         }
@@ -383,13 +402,17 @@ impl AlignmentLoopV3 {
         self.stats.total_cycles += 1;
         self.stats.total_signals += result.signals.len();
         let alpha = 0.1;
-        self.stats.avg_alignment_score = alpha * result.alignment_score + (1.0 - alpha) * self.stats.avg_alignment_score;
-        self.stats.avg_confidence = alpha * result.confidence + (1.0 - alpha) * self.stats.avg_confidence;
+        self.stats.avg_alignment_score =
+            alpha * result.alignment_score + (1.0 - alpha) * self.stats.avg_alignment_score;
+        self.stats.avg_confidence =
+            alpha * result.confidence + (1.0 - alpha) * self.stats.avg_confidence;
 
         self.signals.extend(result.signals.clone());
 
-        info!("AlignmentV3: cycle {} complete (alignment={:.3}, bias={:.3}, fallback={})",
-            result.cycle, result.alignment_score, result.bias_score, result.fallback_to_static);
+        info!(
+            "AlignmentV3: cycle {} complete (alignment={:.3}, bias={:.3}, fallback={})",
+            result.cycle, result.alignment_score, result.bias_score, result.fallback_to_static
+        );
 
         Ok(result)
     }
@@ -421,7 +444,8 @@ impl AlignmentLoopV3 {
             return 0.5;
         }
         let mean: f64 = scores.iter().sum::<f64>() / scores.len() as f64;
-        let variance: f64 = scores.iter().map(|s| (s - mean).powi(2)).sum::<f64>() / scores.len() as f64;
+        let variance: f64 =
+            scores.iter().map(|s| (s - mean).powi(2)).sum::<f64>() / scores.len() as f64;
         let std_dev = variance.sqrt();
 
         // Lower variance = higher confidence
@@ -437,9 +461,11 @@ impl AlignmentLoopV3 {
 
         // Check for skew (bias indicator)
         let skew: f64 = if scores.len() >= 3 {
-            let variance: f64 = scores.iter().map(|s| (s - mean).powi(2)).sum::<f64>() / scores.len() as f64;
+            let variance: f64 =
+                scores.iter().map(|s| (s - mean).powi(2)).sum::<f64>() / scores.len() as f64;
             let std_dev = variance.sqrt().max(1e-10);
-            let cubed: f64 = scores.iter().map(|s| (s - mean).powi(3)).sum::<f64>() / scores.len() as f64;
+            let cubed: f64 =
+                scores.iter().map(|s| (s - mean).powi(3)).sum::<f64>() / scores.len() as f64;
             (cubed / std_dev.powi(3)).abs()
         } else {
             0.0
@@ -554,7 +580,9 @@ mod tests {
         let mut loop_v3 = AlignmentLoopV3::with_config(config);
         for i in 0..10 {
             let score = 0.5 + (i as f64 * 0.05);
-            loop_v3.submit_feedback(make_feedback(&format!("u{}", i), score, "layer_0")).unwrap();
+            loop_v3
+                .submit_feedback(make_feedback(&format!("u{}", i), score, "layer_0"))
+                .unwrap();
         }
 
         let result = loop_v3.run_cycle().unwrap();
@@ -575,7 +603,9 @@ mod tests {
         let mut loop_v3 = AlignmentLoopV3::new();
         // Submit highly skewed feedback
         for i in 0..20 {
-            loop_v3.submit_feedback(make_feedback(&format!("u{}", i), 1.0, "layer_0")).unwrap();
+            loop_v3
+                .submit_feedback(make_feedback(&format!("u{}", i), 1.0, "layer_0"))
+                .unwrap();
         }
 
         let result = loop_v3.run_cycle().unwrap();
@@ -590,7 +620,9 @@ mod tests {
         };
         let mut loop_v3 = AlignmentLoopV3::with_config(config);
         for i in 0..20 {
-            loop_v3.submit_feedback(make_feedback(&format!("u{}", i), 1.0, "layer_0")).unwrap();
+            loop_v3
+                .submit_feedback(make_feedback(&format!("u{}", i), 1.0, "layer_0"))
+                .unwrap();
         }
 
         let result = loop_v3.run_cycle().unwrap();
@@ -620,7 +652,9 @@ mod tests {
     fn test_stats_tracking() {
         let mut loop_v3 = AlignmentLoopV3::new();
         for i in 0..5 {
-            loop_v3.submit_feedback(make_feedback(&format!("u{}", i), 0.7, "layer_0")).unwrap();
+            loop_v3
+                .submit_feedback(make_feedback(&format!("u{}", i), 0.7, "layer_0"))
+                .unwrap();
         }
         loop_v3.run_cycle().unwrap();
 
@@ -632,7 +666,9 @@ mod tests {
     #[test]
     fn test_clear_feedback() {
         let mut loop_v3 = AlignmentLoopV3::new();
-        loop_v3.submit_feedback(make_feedback("u1", 0.8, "layer_0")).unwrap();
+        loop_v3
+            .submit_feedback(make_feedback("u1", 0.8, "layer_0"))
+            .unwrap();
         loop_v3.clear_feedback();
         assert_eq!(loop_v3.pending_feedback_count(), 0);
     }
@@ -645,7 +681,9 @@ mod tests {
         };
         let mut loop_v3 = AlignmentLoopV3::with_config(config);
         for i in 0..10 {
-            loop_v3.submit_feedback(make_feedback(&format!("u{}", i), 0.5, "layer_0")).unwrap();
+            loop_v3
+                .submit_feedback(make_feedback(&format!("u{}", i), 0.5, "layer_0"))
+                .unwrap();
         }
         assert_eq!(loop_v3.pending_feedback_count(), 5);
     }
@@ -654,7 +692,9 @@ mod tests {
     fn test_get_recent_signals() {
         let mut loop_v3 = AlignmentLoopV3::new();
         for i in 0..5 {
-            loop_v3.submit_feedback(make_feedback(&format!("u{}", i), 0.7, "layer_0")).unwrap();
+            loop_v3
+                .submit_feedback(make_feedback(&format!("u{}", i), 0.7, "layer_0"))
+                .unwrap();
         }
         loop_v3.run_cycle().unwrap();
 
@@ -668,7 +708,9 @@ mod tests {
         for cycle in 0..3 {
             for i in 0..5 {
                 let score = 0.5 + (cycle as f64 * 0.1);
-                loop_v3.submit_feedback(make_feedback(&format!("u{}", i), score, "layer_0")).unwrap();
+                loop_v3
+                    .submit_feedback(make_feedback(&format!("u{}", i), score, "layer_0"))
+                    .unwrap();
             }
             loop_v3.run_cycle().unwrap();
         }
@@ -720,15 +762,21 @@ mod tests {
     fn test_score_clamping() {
         let mut loop_v3 = AlignmentLoopV3::new();
         let feedback = FeedbackEntryV3::new(
-            "u1".to_string(), FeedbackTypeV3::HumanPreference,
-            2.0, 0.95, "layer_0".to_string(),
+            "u1".to_string(),
+            FeedbackTypeV3::HumanPreference,
+            2.0,
+            0.95,
+            "layer_0".to_string(),
         );
         assert_eq!(feedback.score, 1.0); // Clamped
     }
 
     #[test]
     fn test_error_display() {
-        let err = AlignmentV3Error::BiasThresholdExceeded { score: 0.2, threshold: 0.15 };
+        let err = AlignmentV3Error::BiasThresholdExceeded {
+            score: 0.2,
+            threshold: 0.15,
+        };
         let msg = format!("{}", err);
         assert!(msg.contains("0.2"));
     }

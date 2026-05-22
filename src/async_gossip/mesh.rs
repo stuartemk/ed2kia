@@ -198,20 +198,16 @@ impl MeshConfig {
             ));
         }
         if self.mesh_min > self.mesh_size {
-            return Err(GossipMeshError::InvalidParameter(
-                format!(
-                    "mesh_min ({}) cannot exceed mesh_size ({})",
-                    self.mesh_min, self.mesh_size
-                ),
-            ));
+            return Err(GossipMeshError::InvalidParameter(format!(
+                "mesh_min ({}) cannot exceed mesh_size ({})",
+                self.mesh_min, self.mesh_size
+            )));
         }
         if self.mesh_size > self.mesh_max {
-            return Err(GossipMeshError::InvalidParameter(
-                format!(
-                    "mesh_size ({}) cannot exceed mesh_max ({})",
-                    self.mesh_size, self.mesh_max
-                ),
-            ));
+            return Err(GossipMeshError::InvalidParameter(format!(
+                "mesh_size ({}) cannot exceed mesh_max ({})",
+                self.mesh_size, self.mesh_max
+            )));
         }
         if self.heartbeat_interval_ms == 0 {
             return Err(GossipMeshError::InvalidParameter(
@@ -472,12 +468,14 @@ impl GossipMesh {
 
         // Deduplicación
         if self.seen_messages.contains_key(&msg.message_id) {
-            return Err(GossipMeshError::MessageIdCollision(
-                format!("Duplicate message_id: {}", msg.message_id),
-            ));
+            return Err(GossipMeshError::MessageIdCollision(format!(
+                "Duplicate message_id: {}",
+                msg.message_id
+            )));
         }
 
-        self.seen_messages.insert(msg.message_id.clone(), Instant::now());
+        self.seen_messages
+            .insert(msg.message_id.clone(), Instant::now());
         self.pending_messages.push(msg.clone());
         Ok(msg)
     }
@@ -494,7 +492,8 @@ impl GossipMesh {
             return false;
         }
 
-        self.seen_messages.insert(msg.message_id.clone(), Instant::now());
+        self.seen_messages
+            .insert(msg.message_id.clone(), Instant::now());
         self.pending_messages.push(msg);
         true
     }

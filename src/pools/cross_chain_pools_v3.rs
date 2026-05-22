@@ -9,8 +9,8 @@
 //!
 //! Protected with `#[cfg(feature = "v1.4-sprint2")]`.
 
-use std::collections::HashMap;
 use std::cmp::Ordering;
+use std::collections::HashMap;
 
 // ─── Errors ───────────────────────────────────────────────────────────────────
 
@@ -38,8 +38,15 @@ impl std::fmt::Display for PoolV3Error {
         match self {
             Self::PoolNotFound(id) => write!(f, "Pool not found: {}", id),
             Self::ShardNotFound(id) => write!(f, "Shard not found: {}", id),
-            Self::InsufficientCapacity { available, required } => {
-                write!(f, "Insufficient capacity: available={}, required={}", available, required)
+            Self::InsufficientCapacity {
+                available,
+                required,
+            } => {
+                write!(
+                    f,
+                    "Insufficient capacity: available={}, required={}",
+                    available, required
+                )
             }
             Self::NegotiationFailed(msg) => write!(f, "Negotiation failed: {}", msg),
             Self::PoolFull(id) => write!(f, "Pool full: {}", id),
@@ -327,7 +334,12 @@ impl CrossChainPoolsV3 {
     }
 
     /// Register a new pool.
-    pub fn register_pool(&mut self, pool_id: String, chain_id: String, capacity: f64) -> Result<(), PoolV3Error> {
+    pub fn register_pool(
+        &mut self,
+        pool_id: String,
+        chain_id: String,
+        capacity: f64,
+    ) -> Result<(), PoolV3Error> {
         if self.pools.len() >= self.config.max_pools {
             return Err(PoolV3Error::PoolFull(pool_id));
         }
@@ -362,7 +374,11 @@ impl CrossChainPoolsV3 {
         if !self.pools.contains_key(&pool_id) {
             return Err(PoolV3Error::PoolNotFound(pool_id));
         }
-        let pool_shards: usize = self.shards.values().filter(|s| s.pool_id == pool_id).count();
+        let pool_shards: usize = self
+            .shards
+            .values()
+            .filter(|s| s.pool_id == pool_id)
+            .count();
         if pool_shards >= self.config.max_shards_per_pool {
             return Err(PoolV3Error::PoolFull(pool_id));
         }
@@ -412,7 +428,9 @@ impl CrossChainPoolsV3 {
         credits: f64,
         ttl_ms: u64,
     ) -> Result<Allocation, PoolV3Error> {
-        let pool = self.pools.get(source_pool)
+        let pool = self
+            .pools
+            .get(source_pool)
             .ok_or_else(|| PoolV3Error::PoolNotFound(source_pool.to_string()))?;
 
         if pool.available_credits < credits {
@@ -445,7 +463,10 @@ impl CrossChainPoolsV3 {
 
     /// Release an allocation, returning credits to the pool.
     pub fn release_allocation(&mut self, allocation_id: &str) -> Result<(), PoolV3Error> {
-        let idx = self.allocations.iter().position(|a| a.allocation_id == allocation_id)
+        let idx = self
+            .allocations
+            .iter()
+            .position(|a| a.allocation_id == allocation_id)
             .ok_or_else(|| PoolV3Error::NegotiationFailed("Allocation not found".to_string()))?;
 
         let allocation = self.allocations.remove(idx);
@@ -460,7 +481,8 @@ impl CrossChainPoolsV3 {
     /// Clean up expired allocations.
     pub fn cleanup_expired(&mut self) -> usize {
         let before = self.allocations.len();
-        self.allocations.retain(|a| !a.is_expired(self.current_time_ms));
+        self.allocations
+            .retain(|a| !a.is_expired(self.current_time_ms));
         let removed = before - self.allocations.len();
         if removed > 0 {
             // Return credits for expired allocations
@@ -475,7 +497,9 @@ impl CrossChainPoolsV3 {
         if reputation < 0.0 || reputation > 1.0 {
             return Err(PoolV3Error::InvalidReputation(reputation));
         }
-        let pool = self.pools.get_mut(pool_id)
+        let pool = self
+            .pools
+            .get_mut(pool_id)
             .ok_or_else(|| PoolV3Error::PoolNotFound(pool_id.to_string()))?;
         pool.reputation = reputation;
         self.update_stats();
@@ -484,7 +508,9 @@ impl CrossChainPoolsV3 {
 
     /// Update pool latency.
     pub fn update_latency(&mut self, pool_id: &str, latency_ms: f64) -> Result<(), PoolV3Error> {
-        let pool = self.pools.get_mut(pool_id)
+        let pool = self
+            .pools
+            .get_mut(pool_id)
             .ok_or_else(|| PoolV3Error::PoolNotFound(pool_id.to_string()))?;
         // Exponential moving average
         pool.avg_latency_ms = pool.avg_latency_ms * 0.7 + latency_ms * 0.3;
@@ -499,7 +525,9 @@ impl CrossChainPoolsV3 {
 
     /// Get all pools sorted by matching score.
     pub fn ranked_pools(&self) -> Vec<(&PoolEntry, f64)> {
-        let mut scored: Vec<(&PoolEntry, f64)> = self.pools.values()
+        let mut scored: Vec<(&PoolEntry, f64)> = self
+            .pools
+            .values()
             .map(|p| (p, p.matching_score(&self.config)))
             .collect();
         scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
@@ -531,8 +559,10 @@ impl CrossChainPoolsV3 {
 
         let pool_count = self.pools.len() as f64;
         if pool_count > 0.0 {
-            self.stats.avg_reputation = self.pools.values().map(|p| p.reputation).sum::<f64>() / pool_count;
-            self.stats.avg_latency_ms = self.pools.values().map(|p| p.avg_latency_ms).sum::<f64>() / pool_count;
+            self.stats.avg_reputation =
+                self.pools.values().map(|p| p.reputation).sum::<f64>() / pool_count;
+            self.stats.avg_latency_ms =
+                self.pools.values().map(|p| p.avg_latency_ms).sum::<f64>() / pool_count;
         }
     }
 }
@@ -566,14 +596,18 @@ mod tests {
     #[test]
     fn test_register_pool() {
         let mut engine = CrossChainPoolsV3::default();
-        engine.register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0).unwrap();
+        engine
+            .register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0)
+            .unwrap();
         assert_eq!(engine.stats().total_pools, 1);
     }
 
     #[test]
     fn test_register_duplicate_pool() {
         let mut engine = CrossChainPoolsV3::default();
-        engine.register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0).unwrap();
+        engine
+            .register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0)
+            .unwrap();
         // Duplicate returns error (pool exists)
         let result = engine.register_pool("pool-1".to_string(), "chain-1".to_string(), 500.0);
         assert!(result.is_err());
@@ -582,7 +616,9 @@ mod tests {
     #[test]
     fn test_remove_pool() {
         let mut engine = CrossChainPoolsV3::default();
-        engine.register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0).unwrap();
+        engine
+            .register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0)
+            .unwrap();
         engine.remove_pool("pool-1").unwrap();
         assert_eq!(engine.stats().total_pools, 0);
     }
@@ -596,23 +632,41 @@ mod tests {
     #[test]
     fn test_register_shard() {
         let mut engine = CrossChainPoolsV3::default();
-        engine.register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0).unwrap();
-        engine.register_shard("shard-1".to_string(), "pool-1".to_string(), 100.0, "sae".to_string()).unwrap();
+        engine
+            .register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0)
+            .unwrap();
+        engine
+            .register_shard(
+                "shard-1".to_string(),
+                "pool-1".to_string(),
+                100.0,
+                "sae".to_string(),
+            )
+            .unwrap();
         assert_eq!(engine.stats().total_shards, 1);
     }
 
     #[test]
     fn test_register_shard_no_pool() {
         let mut engine = CrossChainPoolsV3::default();
-        let result = engine.register_shard("shard-1".to_string(), "nonexistent".to_string(), 100.0, "sae".to_string());
+        let result = engine.register_shard(
+            "shard-1".to_string(),
+            "nonexistent".to_string(),
+            100.0,
+            "sae".to_string(),
+        );
         assert!(result.is_err());
     }
 
     #[test]
     fn test_find_best_pool() {
         let mut engine = CrossChainPoolsV3::default();
-        engine.register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0).unwrap();
-        engine.register_pool("pool-2".to_string(), "chain-2".to_string(), 500.0).unwrap();
+        engine
+            .register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0)
+            .unwrap();
+        engine
+            .register_pool("pool-2".to_string(), "chain-2".to_string(), 500.0)
+            .unwrap();
         engine.update_reputation("pool-1", 0.9).unwrap();
         engine.update_reputation("pool-2", 0.3).unwrap();
 
@@ -624,7 +678,9 @@ mod tests {
     #[test]
     fn test_find_best_pool_insufficient_credits() {
         let mut engine = CrossChainPoolsV3::default();
-        engine.register_pool("pool-1".to_string(), "chain-1".to_string(), 100.0).unwrap();
+        engine
+            .register_pool("pool-1".to_string(), "chain-1".to_string(), 100.0)
+            .unwrap();
         let best = engine.find_best_pool(1000.0);
         assert!(best.is_none());
     }
@@ -632,8 +688,12 @@ mod tests {
     #[test]
     fn test_allocate() {
         let mut engine = CrossChainPoolsV3::default();
-        engine.register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0).unwrap();
-        let alloc = engine.allocate("pool-1", "target".to_string(), 100.0, 60000).unwrap();
+        engine
+            .register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0)
+            .unwrap();
+        let alloc = engine
+            .allocate("pool-1", "target".to_string(), 100.0, 60000)
+            .unwrap();
         assert_eq!(alloc.credits, 100.0);
         assert_eq!(engine.stats().total_allocations, 1);
     }
@@ -641,16 +701,25 @@ mod tests {
     #[test]
     fn test_allocate_insufficient() {
         let mut engine = CrossChainPoolsV3::default();
-        engine.register_pool("pool-1".to_string(), "chain-1".to_string(), 100.0).unwrap();
+        engine
+            .register_pool("pool-1".to_string(), "chain-1".to_string(), 100.0)
+            .unwrap();
         let result = engine.allocate("pool-1", "target".to_string(), 1000.0, 60000);
-        assert!(matches!(result, Err(PoolV3Error::InsufficientCapacity { .. })));
+        assert!(matches!(
+            result,
+            Err(PoolV3Error::InsufficientCapacity { .. })
+        ));
     }
 
     #[test]
     fn test_release_allocation() {
         let mut engine = CrossChainPoolsV3::default();
-        engine.register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0).unwrap();
-        let alloc = engine.allocate("pool-1", "target".to_string(), 100.0, 60000).unwrap();
+        engine
+            .register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0)
+            .unwrap();
+        let alloc = engine
+            .allocate("pool-1", "target".to_string(), 100.0, 60000)
+            .unwrap();
         engine.release_allocation(&alloc.allocation_id).unwrap();
         assert_eq!(engine.stats().total_allocations, 0);
     }
@@ -658,8 +727,12 @@ mod tests {
     #[test]
     fn test_cleanup_expired() {
         let mut engine = CrossChainPoolsV3::default();
-        engine.register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0).unwrap();
-        engine.allocate("pool-1", "target".to_string(), 100.0, 1000).unwrap();
+        engine
+            .register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0)
+            .unwrap();
+        engine
+            .allocate("pool-1", "target".to_string(), 100.0, 1000)
+            .unwrap();
         engine.advance_time(2000);
         let cleaned = engine.cleanup_expired();
         assert_eq!(cleaned, 1);
@@ -668,7 +741,9 @@ mod tests {
     #[test]
     fn test_update_reputation() {
         let mut engine = CrossChainPoolsV3::default();
-        engine.register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0).unwrap();
+        engine
+            .register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0)
+            .unwrap();
         engine.update_reputation("pool-1", 0.95).unwrap();
         let pool = engine.get_pool("pool-1").unwrap();
         assert_eq!(pool.reputation, 0.95);
@@ -677,7 +752,9 @@ mod tests {
     #[test]
     fn test_invalid_reputation() {
         let mut engine = CrossChainPoolsV3::default();
-        engine.register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0).unwrap();
+        engine
+            .register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0)
+            .unwrap();
         assert!(engine.update_reputation("pool-1", 1.5).is_err());
         assert!(engine.update_reputation("pool-1", -0.1).is_err());
     }
@@ -685,7 +762,9 @@ mod tests {
     #[test]
     fn test_update_latency() {
         let mut engine = CrossChainPoolsV3::default();
-        engine.register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0).unwrap();
+        engine
+            .register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0)
+            .unwrap();
         engine.update_latency("pool-1", 100.0).unwrap();
         let pool = engine.get_pool("pool-1").unwrap();
         assert!(pool.avg_latency_ms > 0.0);
@@ -694,8 +773,12 @@ mod tests {
     #[test]
     fn test_ranked_pools() {
         let mut engine = CrossChainPoolsV3::default();
-        engine.register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0).unwrap();
-        engine.register_pool("pool-2".to_string(), "chain-2".to_string(), 1000.0).unwrap();
+        engine
+            .register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0)
+            .unwrap();
+        engine
+            .register_pool("pool-2".to_string(), "chain-2".to_string(), 1000.0)
+            .unwrap();
         engine.update_reputation("pool-1", 0.9).unwrap();
         engine.update_reputation("pool-2", 0.5).unwrap();
 
@@ -719,7 +802,14 @@ mod tests {
 
     #[test]
     fn test_allocation_expiration() {
-        let alloc = Allocation::new("a1".to_string(), "src".to_string(), "tgt".to_string(), 100.0, 5000, 10000);
+        let alloc = Allocation::new(
+            "a1".to_string(),
+            "src".to_string(),
+            "tgt".to_string(),
+            100.0,
+            5000,
+            10000,
+        );
         assert!(!alloc.is_expired(12000));
         assert!(alloc.is_expired(16000));
     }
@@ -751,8 +841,12 @@ mod tests {
         let mut config = PoolV3Config::default();
         config.max_pools = 1;
         let mut engine = CrossChainPoolsV3::new(config);
-        engine.register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0).unwrap();
-        assert!(engine.register_pool("pool-2".to_string(), "chain-2".to_string(), 1000.0).is_err());
+        engine
+            .register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0)
+            .unwrap();
+        assert!(engine
+            .register_pool("pool-2".to_string(), "chain-2".to_string(), 1000.0)
+            .is_err());
     }
 
     #[test]
@@ -760,9 +854,25 @@ mod tests {
         let mut config = PoolV3Config::default();
         config.max_shards_per_pool = 1;
         let mut engine = CrossChainPoolsV3::new(config);
-        engine.register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0).unwrap();
-        engine.register_shard("shard-1".to_string(), "pool-1".to_string(), 100.0, "sae".to_string()).unwrap();
-        assert!(engine.register_shard("shard-2".to_string(), "pool-1".to_string(), 100.0, "sae".to_string()).is_err());
+        engine
+            .register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0)
+            .unwrap();
+        engine
+            .register_shard(
+                "shard-1".to_string(),
+                "pool-1".to_string(),
+                100.0,
+                "sae".to_string(),
+            )
+            .unwrap();
+        assert!(engine
+            .register_shard(
+                "shard-2".to_string(),
+                "pool-1".to_string(),
+                100.0,
+                "sae".to_string()
+            )
+            .is_err());
     }
 
     #[test]
@@ -774,7 +884,9 @@ mod tests {
     #[test]
     fn test_get_pool() {
         let mut engine = CrossChainPoolsV3::default();
-        engine.register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0).unwrap();
+        engine
+            .register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0)
+            .unwrap();
         assert!(engine.get_pool("pool-1").is_some());
         assert!(engine.get_pool("nonexistent").is_none());
     }
@@ -795,16 +907,24 @@ mod tests {
     #[test]
     fn test_multiple_allocations() {
         let mut engine = CrossChainPoolsV3::default();
-        engine.register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0).unwrap();
-        engine.allocate("pool-1", "t1".to_string(), 200.0, 60000).unwrap();
-        engine.allocate("pool-1", "t2".to_string(), 300.0, 60000).unwrap();
+        engine
+            .register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0)
+            .unwrap();
+        engine
+            .allocate("pool-1", "t1".to_string(), 200.0, 60000)
+            .unwrap();
+        engine
+            .allocate("pool-1", "t2".to_string(), 300.0, 60000)
+            .unwrap();
         assert_eq!(engine.stats().total_allocations, 2);
     }
 
     #[test]
     fn test_reputation_filtering() {
         let mut engine = CrossChainPoolsV3::default();
-        engine.register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0).unwrap();
+        engine
+            .register_pool("pool-1".to_string(), "chain-1".to_string(), 1000.0)
+            .unwrap();
         engine.update_reputation("pool-1", 0.05).unwrap(); // Below default min 0.1
         let best = engine.find_best_pool(100.0);
         assert!(best.is_none());

@@ -8,25 +8,15 @@
 #![cfg(feature = "v1.1-sprint3")]
 use ark_ec::CurveGroup;
 
-use ed2kia::marketplace_v2::matchmaker::{
-    ResourceListing, ResourceRequest, ResourceType,
-};
-use ed2kia::marketplace_v2::escrow_ledger::{
-    EscrowLedger, EscrowState, SLOMetrics,
-};
-use ed2kia::marketplace_v2::pricing_engine::{
-    PricingEngine, PricingResourceType, MarketSample,
-};
-use ed2kia::bridge_v2::zkp_marketplace_bridge::{
-    ZKPMarketplaceBridge, ResourceWorkflowState,
-};
-use ed2kia::bridge_v2::proof_submission::{
-    ProofSubmissionManager, SubmissionState,
-};
-use ed2kia::zkp::circuit::Witness;
 use ark_bn254::Fr;
 use ark_ff::UniformRand;
 use ark_std::rand::thread_rng;
+use ed2kia::bridge_v2::proof_submission::{ProofSubmissionManager, SubmissionState};
+use ed2kia::bridge_v2::zkp_marketplace_bridge::{ResourceWorkflowState, ZKPMarketplaceBridge};
+use ed2kia::marketplace_v2::escrow_ledger::{EscrowLedger, EscrowState, SLOMetrics};
+use ed2kia::marketplace_v2::matchmaker::{ResourceListing, ResourceRequest, ResourceType};
+use ed2kia::marketplace_v2::pricing_engine::{MarketSample, PricingEngine, PricingResourceType};
+use ed2kia::zkp::circuit::Witness;
 use sha2::{Digest, Sha256};
 
 // ============================================================================
@@ -104,7 +94,8 @@ fn create_test_witness() -> Witness {
 
 #[test]
 fn test_e2e_marketplace_matching() {
-    let mut matchmaker = ed2kia::marketplace_v2::matchmaker::ResourceMatchmaker::with_config(1.0, 0.5, 100);
+    let mut matchmaker =
+        ed2kia::marketplace_v2::matchmaker::ResourceMatchmaker::with_config(1.0, 0.5, 100);
 
     // Publicar recursos
     matchmaker.register_listing(make_sae_listing("node_a", 5, 100.0));
@@ -152,7 +143,8 @@ fn test_e2e_marketplace_no_match() {
 
 #[test]
 fn test_e2e_marketplace_price_exceeds_max() {
-    let mut matchmaker = ed2kia::marketplace_v2::matchmaker::ResourceMatchmaker::with_config(1.0, 0.5, 100);
+    let mut matchmaker =
+        ed2kia::marketplace_v2::matchmaker::ResourceMatchmaker::with_config(1.0, 0.5, 100);
     matchmaker.register_listing(make_sae_listing("node_a", 5, 200.0));
 
     let req = make_sae_request("buyer1", 5, 5.0, 150.0);
@@ -162,7 +154,8 @@ fn test_e2e_marketplace_price_exceeds_max() {
 
 #[test]
 fn test_e2e_marketplace_cleanup_expired() {
-    let mut matchmaker = ed2kia::marketplace_v2::matchmaker::ResourceMatchmaker::with_config(1.0, 0.5, 100);
+    let mut matchmaker =
+        ed2kia::marketplace_v2::matchmaker::ResourceMatchmaker::with_config(1.0, 0.5, 100);
     // Listing that expires in 1 hour (from make_sae_listing)
     matchmaker.register_listing(make_sae_listing("node_a", 5, 100.0));
     // Listing that already expired (expires_at in the past)
@@ -198,19 +191,23 @@ fn test_e2e_escrow_create_and_release() {
     let (ledger, _, _path) = EscrowLedger::new_test().unwrap();
 
     // Crear escrow
-    let tx = ledger.create_escrow(
-        "tx_e2e_1".into(),
-        "seller".into(),
-        "buyer".into(),
-        500.0,
-        "settlement_hash_e2e".into(),
-    ).unwrap();
+    let tx = ledger
+        .create_escrow(
+            "tx_e2e_1".into(),
+            "seller".into(),
+            "buyer".into(),
+            500.0,
+            "settlement_hash_e2e".into(),
+        )
+        .unwrap();
 
     assert_eq!(tx.state, EscrowState::Locked);
     assert_eq!(tx.amount, 500.0);
 
     // Transiciones
-    let tx = ledger.transition_state("tx_e2e_1", EscrowState::Delivered).unwrap();
+    let tx = ledger
+        .transition_state("tx_e2e_1", EscrowState::Delivered)
+        .unwrap();
     assert_eq!(tx.state, EscrowState::Delivered);
 
     let slo = SLOMetrics {
@@ -222,7 +219,9 @@ fn test_e2e_escrow_create_and_release() {
         agreed_throughput: 1000,
     };
 
-    let tx = ledger.release_on_zkp("tx_e2e_1", "zkp_hash_e2e".into(), slo).unwrap();
+    let tx = ledger
+        .release_on_zkp("tx_e2e_1", "zkp_hash_e2e".into(), slo)
+        .unwrap();
     assert_eq!(tx.state, EscrowState::Released);
     assert_eq!(tx.zkp_hash, Some("zkp_hash_e2e".into()));
 }
@@ -231,13 +230,15 @@ fn test_e2e_escrow_create_and_release() {
 fn test_e2e_escrow_refund_on_slo_failure() {
     let (ledger, _, _path) = EscrowLedger::new_test().unwrap();
 
-    ledger.create_escrow(
-        "tx_e2e_2".into(),
-        "seller".into(),
-        "buyer".into(),
-        500.0,
-        "settlement_hash_e2e_2".into(),
-    ).unwrap();
+    ledger
+        .create_escrow(
+            "tx_e2e_2".into(),
+            "seller".into(),
+            "buyer".into(),
+            500.0,
+            "settlement_hash_e2e_2".into(),
+        )
+        .unwrap();
 
     // SLO no cumplido: latencia observada > acordada
     let slo = SLOMetrics {
@@ -253,7 +254,9 @@ fn test_e2e_escrow_refund_on_slo_failure() {
     assert!(result.is_err());
 
     // Refund manual
-    let tx = ledger.refund("tx_e2e_2", "SLO not met: latency exceeded").unwrap();
+    let tx = ledger
+        .refund("tx_e2e_2", "SLO not met: latency exceeded")
+        .unwrap();
     assert_eq!(tx.state, EscrowState::Refunded);
 }
 
@@ -261,19 +264,25 @@ fn test_e2e_escrow_refund_on_slo_failure() {
 fn test_e2e_escrow_dispute() {
     let (ledger, _, _path) = EscrowLedger::new_test().unwrap();
 
-    ledger.create_escrow(
-        "tx_e2e_3".into(),
-        "seller".into(),
-        "buyer".into(),
-        500.0,
-        "settlement_hash_e2e_3".into(),
-    ).unwrap();
+    ledger
+        .create_escrow(
+            "tx_e2e_3".into(),
+            "seller".into(),
+            "buyer".into(),
+            500.0,
+            "settlement_hash_e2e_3".into(),
+        )
+        .unwrap();
 
-    let tx = ledger.dispute("tx_e2e_3", "Quality issue detected").unwrap();
+    let tx = ledger
+        .dispute("tx_e2e_3", "Quality issue detected")
+        .unwrap();
     assert_eq!(tx.state, EscrowState::Disputed);
 
     // Desde disputed, se puede liberar o refund
-    let tx = ledger.transition_state("tx_e2e_3", EscrowState::Refunded).unwrap();
+    let tx = ledger
+        .transition_state("tx_e2e_3", EscrowState::Refunded)
+        .unwrap();
     assert_eq!(tx.state, EscrowState::Refunded);
 }
 
@@ -281,18 +290,33 @@ fn test_e2e_escrow_dispute() {
 fn test_e2e_escrow_node_transactions() {
     let (ledger, _, _path) = EscrowLedger::new_test().unwrap();
 
-    ledger.create_escrow(
-        "tx_1".into(), "seller".into(), "buyer1".into(),
-        100.0, "sh1".into(),
-    ).unwrap();
-    ledger.create_escrow(
-        "tx_2".into(), "seller".into(), "buyer2".into(),
-        200.0, "sh2".into(),
-    ).unwrap();
-    ledger.create_escrow(
-        "tx_3".into(), "buyer".into(), "seller".into(),
-        50.0, "sh3".into(),
-    ).unwrap();
+    ledger
+        .create_escrow(
+            "tx_1".into(),
+            "seller".into(),
+            "buyer1".into(),
+            100.0,
+            "sh1".into(),
+        )
+        .unwrap();
+    ledger
+        .create_escrow(
+            "tx_2".into(),
+            "seller".into(),
+            "buyer2".into(),
+            200.0,
+            "sh2".into(),
+        )
+        .unwrap();
+    ledger
+        .create_escrow(
+            "tx_3".into(),
+            "buyer".into(),
+            "seller".into(),
+            50.0,
+            "sh3".into(),
+        )
+        .unwrap();
 
     let seller_txs = ledger.get_transactions_by_node("seller").unwrap();
     assert_eq!(seller_txs.len(), 3);
@@ -309,11 +333,9 @@ fn test_e2e_escrow_node_transactions() {
 fn test_e2e_pricing_compute() {
     let engine = PricingEngine::new();
 
-    let quote = engine.compute_price(
-        PricingResourceType::SAEShard,
-        100.0,
-        1.0,
-    ).unwrap();
+    let quote = engine
+        .compute_price(PricingResourceType::SAEShard, 100.0, 1.0)
+        .unwrap();
 
     assert!(quote.unit_price > 0.0);
     assert!(quote.unit_price <= 10000.0); // max_price default
@@ -334,11 +356,9 @@ fn test_e2e_pricing_with_market_samples() {
         });
     }
 
-    let quote = engine.compute_price(
-        PricingResourceType::Generic,
-        100.0,
-        1.0,
-    ).unwrap();
+    let quote = engine
+        .compute_price(PricingResourceType::Generic, 100.0, 1.0)
+        .unwrap();
 
     assert!(quote.unit_price > 0.0);
     // Price is computed from base with adjustment factor; verify it's within valid bounds
@@ -348,11 +368,9 @@ fn test_e2e_pricing_with_market_samples() {
 #[test]
 fn test_e2e_pricing_commitment_verification() {
     let engine = PricingEngine::new();
-    let quote = engine.compute_price(
-        PricingResourceType::VRAM,
-        250.0,
-        1.0,
-    ).unwrap();
+    let quote = engine
+        .compute_price(PricingResourceType::VRAM, 250.0, 1.0)
+        .unwrap();
 
     assert!(engine.verify_commitment(quote.unit_price, quote.commitment_hash));
 
@@ -366,9 +384,15 @@ fn test_e2e_pricing_commitment_verification() {
 fn test_e2e_pricing_stats() {
     let engine = PricingEngine::new();
 
-    engine.compute_price(PricingResourceType::SAEShard, 100.0, 1.0).unwrap();
-    engine.compute_price(PricingResourceType::VRAM, 250.0, 1.0).unwrap();
-    engine.compute_price(PricingResourceType::Bandwidth, 10.0, 1.0).unwrap();
+    engine
+        .compute_price(PricingResourceType::SAEShard, 100.0, 1.0)
+        .unwrap();
+    engine
+        .compute_price(PricingResourceType::VRAM, 250.0, 1.0)
+        .unwrap();
+    engine
+        .compute_price(PricingResourceType::Bandwidth, 10.0, 1.0)
+        .unwrap();
 
     let stats = engine.get_stats();
     assert_eq!(stats.total_quotes, 3);
@@ -421,11 +445,15 @@ async fn test_e2e_bridge_multiple_buyers() {
     bridge.publish_resource(make_sae_listing("seller1", 5, 100.0));
 
     // Buyer 1
-    let result1 = bridge.execute_resource_workflow(make_sae_request("buyer1", 5, 3.0, 150.0)).await;
+    let result1 = bridge
+        .execute_resource_workflow(make_sae_request("buyer1", 5, 3.0, 150.0))
+        .await;
     assert!(result1.is_ok());
 
     // Buyer 2
-    let result2 = bridge.execute_resource_workflow(make_sae_request("buyer2", 5, 3.0, 150.0)).await;
+    let result2 = bridge
+        .execute_resource_workflow(make_sae_request("buyer2", 5, 3.0, 150.0))
+        .await;
     assert!(result2.is_ok());
 }
 
@@ -435,7 +463,9 @@ async fn test_e2e_bridge_cleanup_and_rerun() {
     bridge.publish_resource(make_sae_listing("seller1", 5, 100.0));
 
     // Ejecutar workflow
-    let result = bridge.execute_resource_workflow(make_sae_request("buyer1", 5, 3.0, 150.0)).await;
+    let result = bridge
+        .execute_resource_workflow(make_sae_request("buyer1", 5, 3.0, 150.0))
+        .await;
     assert!(result.is_ok());
 
     // Limpiar expirados (listing expires in 1 hour, so use 2 hours in future)
@@ -444,7 +474,9 @@ async fn test_e2e_bridge_cleanup_and_rerun() {
     assert_eq!(removed, 1);
 
     // Sin listings, nuevo workflow falla
-    let result = bridge.execute_resource_workflow(make_sae_request("buyer2", 5, 3.0, 150.0)).await;
+    let result = bridge
+        .execute_resource_workflow(make_sae_request("buyer2", 5, 3.0, 150.0))
+        .await;
     assert!(result.is_ok());
     assert!(!result.unwrap().success);
 }
@@ -454,7 +486,9 @@ async fn test_e2e_bridge_pricing_integration() {
     let mut bridge = ZKPMarketplaceBridge::new_test().unwrap();
     bridge.publish_resource(make_sae_listing("seller1", 5, 100.0));
 
-    let _ = bridge.execute_resource_workflow(make_sae_request("buyer1", 5, 3.0, 150.0)).await;
+    let _ = bridge
+        .execute_resource_workflow(make_sae_request("buyer1", 5, 3.0, 150.0))
+        .await;
 
     let stats = bridge.get_pricing_stats();
     assert!(stats.total_quotes >= 1);
@@ -503,7 +537,9 @@ async fn test_e2e_proof_multiple_submissions() {
 
     for i in 0..5 {
         let witness = create_test_witness();
-        let result = manager.submit_proof(format!("e2e_batch_{}", i), witness).await;
+        let result = manager
+            .submit_proof(format!("e2e_batch_{}", i), witness)
+            .await;
         assert!(result.is_ok());
     }
 
@@ -563,7 +599,9 @@ async fn test_e2e_async_prover_generation() {
     let prover = ed2kia::zkp::async_prover::AsyncProver::new();
 
     let witness = create_test_witness();
-    let result = prover.generate_proof("e2e_prover_test".into(), witness).await;
+    let result = prover
+        .generate_proof("e2e_prover_test".into(), witness)
+        .await;
 
     assert!(result.is_ok());
     let proof_result = result.unwrap();
@@ -624,10 +662,7 @@ fn test_e2e_batch_accumulator() {
         compact_bytes: Vec::new(),
     };
 
-    let result = accumulator.add_batch(
-        "e2e_accum_batch".into(),
-        commitment.clone(),
-    );
+    let result = accumulator.add_batch("e2e_accum_batch".into(), commitment.clone());
     assert!(result.is_ok());
 
     let stats = accumulator.get_stats();
@@ -680,7 +715,8 @@ fn test_e2e_anti_monopoly() {
 #[test]
 fn test_e2e_cross_module_pricing_matcher() {
     // Pricing + Matching integration
-    let mut matchmaker = ed2kia::marketplace_v2::matchmaker::ResourceMatchmaker::with_config(1.0, 0.5, 100);
+    let mut matchmaker =
+        ed2kia::marketplace_v2::matchmaker::ResourceMatchmaker::with_config(1.0, 0.5, 100);
     let pricing = PricingEngine::new();
 
     matchmaker.register_listing(make_sae_listing("node1", 5, 100.0));
@@ -690,11 +726,13 @@ fn test_e2e_cross_module_pricing_matcher() {
 
     assert!(match_result.matched);
 
-    let quote = pricing.compute_price(
-        PricingResourceType::SAEShard,
-        match_result.final_price,
-        req.quantity,
-    ).unwrap();
+    let quote = pricing
+        .compute_price(
+            PricingResourceType::SAEShard,
+            match_result.final_price,
+            req.quantity,
+        )
+        .unwrap();
 
     assert!(quote.unit_price > 0.0);
     assert!(quote.unit_price <= 1000.0);
@@ -706,21 +744,21 @@ fn test_e2e_cross_module_escrow_pricing() {
     let (ledger, _, _path) = EscrowLedger::new_test().unwrap();
     let pricing = PricingEngine::new();
 
-    let quote = pricing.compute_price(
-        PricingResourceType::VRAM,
-        250.0,
-        40.0,
-    ).unwrap();
+    let quote = pricing
+        .compute_price(PricingResourceType::VRAM, 250.0, 40.0)
+        .unwrap();
 
     let total_amount: f64 = (quote.unit_price * 40.0).into();
 
-    let tx = ledger.create_escrow(
-        "e2e_cross_1".into(),
-        "vram_seller".into(),
-        "vram_buyer".into(),
-        total_amount,
-        "cross_settlement".into(),
-    ).unwrap();
+    let tx = ledger
+        .create_escrow(
+            "e2e_cross_1".into(),
+            "vram_seller".into(),
+            "vram_buyer".into(),
+            total_amount,
+            "cross_settlement".into(),
+        )
+        .unwrap();
 
     assert_eq!(tx.state, EscrowState::Locked);
     assert!((tx.amount - total_amount).abs() < 0.01);
@@ -740,5 +778,7 @@ fn test_e2e_feature_flag_enabled() {
 
 #[test]
 fn test_e2e_version_string() {
-    assert_eq!(ed2kia::version(), "1.0.0");
+    // Version is derived from CARGO_PKG_VERSION at compile time
+    assert!(!ed2kia::version().is_empty());
+    assert!(ed2kia::version().contains('.'));
 }

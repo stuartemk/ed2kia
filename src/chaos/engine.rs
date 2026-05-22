@@ -50,10 +50,16 @@ pub enum ChaosError {
 impl fmt::Display for ChaosError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ChaosError::ModeNotEnabled => write!(f, "Chaos mode not enabled. Use --chaos-mode flag."),
-            ChaosError::DurationExceeded(d) => write!(f, "Duration {:?} exceeds maximum allowed", d),
+            ChaosError::ModeNotEnabled => {
+                write!(f, "Chaos mode not enabled. Use --chaos-mode flag.")
+            }
+            ChaosError::DurationExceeded(d) => {
+                write!(f, "Duration {:?} exceeds maximum allowed", d)
+            }
             ChaosError::InjectionFailed(msg) => write!(f, "Fault injection failed: {}", msg),
-            ChaosError::ScenarioAlreadyActive(name) => write!(f, "Scenario '{}' already active", name),
+            ChaosError::ScenarioAlreadyActive(name) => {
+                write!(f, "Scenario '{}' already active", name)
+            }
             ChaosError::NoActiveScenario => write!(f, "No active scenario to rollback"),
             ChaosError::Timeout => write!(f, "Timeout waiting for scenario completion"),
         }
@@ -259,7 +265,11 @@ pub struct ChaosEngine {
 #[derive(Debug)]
 enum ChaosCommand {
     /// Activate a scenario.
-    Activate(ChaosScenario, Duration, mpsc::Sender<Result<(), ChaosError>>),
+    Activate(
+        ChaosScenario,
+        Duration,
+        mpsc::Sender<Result<(), ChaosError>>,
+    ),
     /// Rollback current scenario.
     Rollback(mpsc::Sender<Result<(), ChaosError>>),
     /// Get current status.
@@ -272,10 +282,7 @@ enum ChaosCommand {
 #[derive(Debug, Clone)]
 pub enum ChaosEvent {
     /// Scenario activated.
-    ScenarioActivated {
-        name: String,
-        duration: Duration,
-    },
+    ScenarioActivated { name: String, duration: Duration },
     /// Fault injected.
     FaultInjected {
         scenario: String,
@@ -283,14 +290,9 @@ pub enum ChaosEvent {
         timestamp: Instant,
     },
     /// Scenario rolled back.
-    ScenarioRolledBack {
-        name: String,
-        reason: String,
-    },
+    ScenarioRolledBack { name: String, reason: String },
     /// Scenario expired.
-    ScenarioExpired {
-        name: String,
-    },
+    ScenarioExpired { name: String },
     /// Engine shutdown.
     EngineShutdown,
 }
@@ -301,7 +303,11 @@ impl fmt::Display for ChaosEvent {
             ChaosEvent::ScenarioActivated { name, .. } => {
                 write!(f, "Scenario '{}' activated", name)
             }
-            ChaosEvent::FaultInjected { scenario, fault_type, .. } => {
+            ChaosEvent::FaultInjected {
+                scenario,
+                fault_type,
+                ..
+            } => {
                 write!(f, "Fault '{}' injected in '{}'", fault_type, scenario)
             }
             ChaosEvent::ScenarioRolledBack { name, reason, .. } => {
@@ -536,20 +542,40 @@ impl ChaosEngine {
 
             // Inject faults based on scenario type.
             match &scenario {
-                ChaosScenario::WasmNodeFailure { node_id, failure_rate } => {
+                ChaosScenario::WasmNodeFailure {
+                    node_id,
+                    failure_rate,
+                } => {
                     Self::inject_wasm_failure(node_id, *failure_rate, &event_tx, verbose).await;
                 }
                 ChaosScenario::NetworkPartition { .. } => {
                     Self::inject_network_partition(&scenario, &event_tx, verbose).await;
                 }
-                ChaosScenario::ArtificialLatency { target, latency_ms, jitter_ms } => {
+                ChaosScenario::ArtificialLatency {
+                    target,
+                    latency_ms,
+                    jitter_ms,
+                } => {
                     Self::inject_latency(target, *latency_ms, *jitter_ms, &event_tx, verbose).await;
                 }
-                ChaosScenario::MaliciousVotes { attacker_id, malicious_rate } => {
-                    Self::inject_malicious_votes(attacker_id, *malicious_rate, &event_tx, verbose).await;
+                ChaosScenario::MaliciousVotes {
+                    attacker_id,
+                    malicious_rate,
+                } => {
+                    Self::inject_malicious_votes(attacker_id, *malicious_rate, &event_tx, verbose)
+                        .await;
                 }
-                ChaosScenario::TaskQueueSaturation { target_capacity, flood_rate } => {
-                    Self::inject_queue_saturation(*target_capacity, *flood_rate, &event_tx, verbose).await;
+                ChaosScenario::TaskQueueSaturation {
+                    target_capacity,
+                    flood_rate,
+                } => {
+                    Self::inject_queue_saturation(
+                        *target_capacity,
+                        *flood_rate,
+                        &event_tx,
+                        verbose,
+                    )
+                    .await;
                 }
             }
         }
@@ -572,9 +598,7 @@ impl ChaosEngine {
             if verbose {
                 debug!(
                     node = node_id,
-                    failure_rate,
-                    roll,
-                    "Chaos: WASM node failure triggered"
+                    failure_rate, roll, "Chaos: WASM node failure triggered"
                 );
             }
 
@@ -648,9 +672,7 @@ impl ChaosEngine {
             if verbose {
                 debug!(
                     attacker = attacker_id,
-                    malicious_rate,
-                    roll,
-                    "Chaos: Malicious vote injected"
+                    malicious_rate, roll, "Chaos: Malicious vote injected"
                 );
             }
 
@@ -672,8 +694,7 @@ impl ChaosEngine {
         if verbose {
             debug!(
                 target_capacity,
-                flood_rate,
-                "Chaos: Task queue saturation active"
+                flood_rate, "Chaos: Task queue saturation active"
             );
         }
 
@@ -695,7 +716,11 @@ impl ChaosEngine {
         duration: Duration,
     ) -> Result<(), ChaosError> {
         let (tx, mut rx) = mpsc::channel(1);
-        if self.tx.send(ChaosCommand::Activate(scenario, duration, tx)).is_err() {
+        if self
+            .tx
+            .send(ChaosCommand::Activate(scenario, duration, tx))
+            .is_err()
+        {
             return Err(ChaosError::InjectionFailed(
                 "Background loop not running".to_string(),
             ));
@@ -867,7 +892,7 @@ mod tests {
         // Wait for scenario to expire.
         sleep(Duration::from_millis(200)).await;
 
-    //   Graceful shutdown.
+        //   Graceful shutdown.
         engine.shutdown().await;
     }
 

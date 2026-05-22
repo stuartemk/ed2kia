@@ -103,10 +103,7 @@ impl QloraPayload {
     /// # Returns
     /// Payload comprimido listo para distribución P2P.
     #[cfg(feature = "v2.1-qlora-gguf")]
-    pub fn compress(
-        adapter_id: String,
-        data: &[u8],
-    ) -> Result<Self, QloraPayloadError> {
+    pub fn compress(adapter_id: String, data: &[u8]) -> Result<Self, QloraPayloadError> {
         let original_size = data.len();
 
         // Validate size before compression
@@ -128,10 +125,7 @@ impl QloraPayload {
 
     /// Comprime datos crudos (versión sin feature gate para testing).
     #[cfg(not(feature = "v2.1-qlora-gguf"))]
-    pub fn compress(
-        adapter_id: String,
-        data: &[u8],
-    ) -> Result<Self, QloraPayloadError> {
+    pub fn compress(adapter_id: String, data: &[u8]) -> Result<Self, QloraPayloadError> {
         let original_size = data.len();
 
         if original_size > MAX_PAYLOAD_BYTES {
@@ -267,8 +261,8 @@ impl QloraPayload {
         ]) as usize;
         offset += 4;
 
-        let base_model_sha256 =
-            String::from_utf8(data[offset..offset + sha256_len].to_vec()).map_err(|e| {
+        let base_model_sha256 = String::from_utf8(data[offset..offset + sha256_len].to_vec())
+            .map_err(|e| {
                 QloraPayloadError::CorruptedData(format!("Invalid sha256 UTF-8: {}", e))
             })?;
         offset += sha256_len;
@@ -421,7 +415,10 @@ mod tests {
         let data = vec![0u8; 1000];
         let payload = QloraPayload::compress("test".into(), &data).expect("compress");
         let ratio = payload.compression_ratio();
-        assert!(ratio > 1.0, "Compression ratio should be > 1 for compressible data");
+        assert!(
+            ratio > 1.0,
+            "Compression ratio should be > 1 for compressible data"
+        );
     }
 
     #[test]

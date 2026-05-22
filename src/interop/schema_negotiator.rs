@@ -33,7 +33,9 @@ mod internal {
     impl std::fmt::Display for SchemaError {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             match self {
-                SchemaError::VersionNotSupported(v) => write!(f, "Schema version {} not supported", v),
+                SchemaError::VersionNotSupported(v) => {
+                    write!(f, "Schema version {} not supported", v)
+                }
                 SchemaError::FieldIncompatible(field) => write!(f, "Field {} incompatible", field),
                 SchemaError::NegotiationFailed(msg) => write!(f, "Negotiation failed: {}", msg),
                 SchemaError::SchemaNotFound(name) => write!(f, "Schema {} not found", name),
@@ -323,7 +325,10 @@ mod internal {
         #[test]
         fn test_schema_not_found() {
             let mut negotiator = SchemaNegotiator::default();
-            match negotiator.negotiate("unknown", 1, "also_unknown", 1).unwrap_err() {
+            match negotiator
+                .negotiate("unknown", 1, "also_unknown", 1)
+                .unwrap_err()
+            {
                 SchemaError::SchemaNotFound(name) => assert_eq!(name, "unknown"),
                 e => panic!("Expected SchemaNotFound, got {:?}", e),
             }

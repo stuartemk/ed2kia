@@ -16,12 +16,12 @@
 #[cfg(feature = "v1.2-sprint2")]
 mod e2e {
     // LP-54: Cross-Chain Consensus
-    use ed2kia::federation::cross_chain_consensus::{
-        ChainProof, ConsensusConfig, ConsensusProposal, CrossChainConsensus,
-        ProofType, Validator, VoteDirection,
-    };
     use ed2kia::federation::bridge_validator::{
         BridgeConfig, BridgeTransaction, BridgeValidator, LockProof,
+    };
+    use ed2kia::federation::cross_chain_consensus::{
+        ChainProof, ConsensusConfig, ConsensusProposal, CrossChainConsensus, ProofType, Validator,
+        VoteDirection,
     };
 
     // LP-55: DAO Governance v3
@@ -32,18 +32,18 @@ mod e2e {
         HybridVotingConfig, HybridVotingEngine, VotingChannel,
     };
     use ed2kia::governance::proposal_executor::{
-        ExecutorConfig, ExecutableProposal, ProposalExecutor, ProposalPriority,
+        ExecutableProposal, ExecutorConfig, ProposalExecutor, ProposalPriority,
     };
 
     // LP-56: Distributed Fine-Tuning
-    use ed2kia::sae::distributed_finetune::{
-        AggregationMethod, DistributedConfig, DistributedFineTuning, GradientBatch,
-    };
     use ed2kia::sae::checkpoint_manager::{
         CheckpointConfig, CheckpointManager, CheckpointType, RetentionPolicy,
     };
+    use ed2kia::sae::distributed_finetune::{
+        AggregationMethod, DistributedConfig, DistributedFineTuning, GradientBatch,
+    };
     use ed2kia::sae::fault_tolerance::{
-        FaultToleranceConfig, FaultToleranceManager, FailureType, NodeHealth,
+        FailureType, FaultToleranceConfig, FaultToleranceManager, NodeHealth,
     };
 
     use std::time::Duration;
@@ -195,12 +195,30 @@ mod e2e {
         dao.start_voting("prop-1").unwrap();
 
         // Cast votes
-        dao.cast_vote("prop-1", "m1", DaoVoteDirection::For, VoteType::OnChain, None)
-            .unwrap();
-        dao.cast_vote("prop-1", "m2", DaoVoteDirection::For, VoteType::OnChain, None)
-            .unwrap();
-        dao.cast_vote("prop-1", "m3", DaoVoteDirection::Against, VoteType::OnChain, None)
-            .unwrap();
+        dao.cast_vote(
+            "prop-1",
+            "m1",
+            DaoVoteDirection::For,
+            VoteType::OnChain,
+            None,
+        )
+        .unwrap();
+        dao.cast_vote(
+            "prop-1",
+            "m2",
+            DaoVoteDirection::For,
+            VoteType::OnChain,
+            None,
+        )
+        .unwrap();
+        dao.cast_vote(
+            "prop-1",
+            "m3",
+            DaoVoteDirection::Against,
+            VoteType::OnChain,
+            None,
+        )
+        .unwrap();
 
         // Verify proposal exists
         let prop = dao.get_proposal("prop-1").unwrap();
@@ -286,15 +304,9 @@ mod e2e {
         let mut engine = DistributedFineTuning::new(config);
 
         // Register nodes
-        engine
-            .register_node("node-1".into(), 1.0, 64)
-            .unwrap();
-        engine
-            .register_node("node-2".into(), 1.5, 64)
-            .unwrap();
-        engine
-            .register_node("node-3".into(), 0.8, 64)
-            .unwrap();
+        engine.register_node("node-1".into(), 1.0, 64).unwrap();
+        engine.register_node("node-2".into(), 1.5, 64).unwrap();
+        engine.register_node("node-3".into(), 0.8, 64).unwrap();
 
         // Start training
         assert!(engine.start_training().is_ok());
@@ -305,13 +317,8 @@ mod e2e {
 
             for node in &["node-1", "node-2", "node-3"] {
                 let gradients = vec![0.1 * epoch as f32; 64];
-                let batch = GradientBatch::new(
-                    node.to_string(),
-                    epoch,
-                    0,
-                    gradients,
-                    1.0 / epoch as f32,
-                );
+                let batch =
+                    GradientBatch::new(node.to_string(), epoch, 0, gradients, 1.0 / epoch as f32);
                 engine.submit_gradient(batch).unwrap();
             }
 
@@ -492,13 +499,26 @@ mod e2e {
             "Execute after consensus".into(),
             VoteType::OnChain,
             false,
-        )).unwrap();
+        ))
+        .unwrap();
         dao.start_voting("dao-1").unwrap();
 
-        dao.cast_vote("dao-1", "m1", DaoVoteDirection::For, VoteType::OnChain, None)
-            .unwrap();
-        dao.cast_vote("dao-1", "m2", DaoVoteDirection::For, VoteType::OnChain, None)
-            .unwrap();
+        dao.cast_vote(
+            "dao-1",
+            "m1",
+            DaoVoteDirection::For,
+            VoteType::OnChain,
+            None,
+        )
+        .unwrap();
+        dao.cast_vote(
+            "dao-1",
+            "m2",
+            DaoVoteDirection::For,
+            VoteType::OnChain,
+            None,
+        )
+        .unwrap();
 
         let prop = dao.get_proposal("dao-1").unwrap();
         assert_eq!(prop.title, "Execute cross-chain proposal");

@@ -209,7 +209,13 @@ impl LedgerEntryV4 {
 
     /// Verify entry hash integrity.
     pub fn verify_hash(&self) -> bool {
-        let expected = compute_hash(&self.entry_id, self.sequence, &self.payload, &self.previous_hash, self.timestamp_ms);
+        let expected = compute_hash(
+            &self.entry_id,
+            self.sequence,
+            &self.payload,
+            &self.previous_hash,
+            self.timestamp_ms,
+        );
         self.hash == expected
     }
 
@@ -235,7 +241,12 @@ pub struct MerkleProof {
 }
 
 impl MerkleProof {
-    pub fn new(entry_id: String, root_hash: String, proof_path: Vec<String>, position: u64) -> Self {
+    pub fn new(
+        entry_id: String,
+        root_hash: String,
+        proof_path: Vec<String>,
+        position: u64,
+    ) -> Self {
         Self {
             entry_id,
             root_hash,
@@ -408,9 +419,10 @@ impl DaoLedgerV4 {
             0.0
         };
 
-        let entry = self.entries.get_mut(entry_id).ok_or_else(|| {
-            DaoLedgerV4Error::EntryNotFound(entry_id.to_string())
-        })?;
+        let entry = self
+            .entries
+            .get_mut(entry_id)
+            .ok_or_else(|| DaoLedgerV4Error::EntryNotFound(entry_id.to_string()))?;
 
         entry.validator_count = validator_count;
         entry.quorum_ratio = ratio;
@@ -437,7 +449,8 @@ impl DaoLedgerV4 {
             return String::new();
         }
 
-        let leaves: Vec<String> = self.sequence_order
+        let leaves: Vec<String> = self
+            .sequence_order
             .iter()
             .filter_map(|id| self.entries.get(id).map(|e| e.hash.clone()))
             .collect();
@@ -448,18 +461,22 @@ impl DaoLedgerV4 {
     /// Generate Merkle proof for an entry.
     pub fn generate_merkle_proof(&self, entry_id: &str) -> Result<MerkleProof, DaoLedgerV4Error> {
         if !self.config.merkle_proofs_enabled {
-            return Err(DaoLedgerV4Error::InvalidConfig("Merkle proofs disabled".to_string()));
+            return Err(DaoLedgerV4Error::InvalidConfig(
+                "Merkle proofs disabled".to_string(),
+            ));
         }
 
-        let entry = self.entries.get(entry_id).ok_or_else(|| {
-            DaoLedgerV4Error::EntryNotFound(entry_id.to_string())
-        })?;
+        let entry = self
+            .entries
+            .get(entry_id)
+            .ok_or_else(|| DaoLedgerV4Error::EntryNotFound(entry_id.to_string()))?;
 
         let root = self.compute_merkle_root();
         let position = entry.sequence - 1;
 
         // Simplified proof path (in production, build actual tree path)
-        let proof_path = self.sequence_order
+        let proof_path = self
+            .sequence_order
             .iter()
             .filter_map(|id| {
                 if id != entry_id {
@@ -484,9 +501,10 @@ impl DaoLedgerV4 {
     /// Verify the entire chain integrity.
     pub fn verify_chain(&self) -> Result<(), DaoLedgerV4Error> {
         for id in &self.sequence_order {
-            let entry = self.entries.get(id).ok_or_else(|| {
-                DaoLedgerV4Error::EntryNotFound(id.clone())
-            })?;
+            let entry = self
+                .entries
+                .get(id)
+                .ok_or_else(|| DaoLedgerV4Error::EntryNotFound(id.clone()))?;
 
             if !entry.verify_hash() {
                 return Err(DaoLedgerV4Error::HashMismatch(id.clone()));
@@ -545,11 +563,14 @@ impl DaoLedgerV4 {
 
     /// Set transaction hash for on-chain execution.
     pub fn set_tx_hash(&mut self, entry_id: &str, tx_hash: String) -> Result<(), DaoLedgerV4Error> {
-        let entry = self.entries.get_mut(entry_id).ok_or_else(|| {
-            DaoLedgerV4Error::EntryNotFound(entry_id.to_string())
-        })?;
+        let entry = self
+            .entries
+            .get_mut(entry_id)
+            .ok_or_else(|| DaoLedgerV4Error::EntryNotFound(entry_id.to_string()))?;
 
-        if entry.execution_type != ExecutionType::OnChain && entry.execution_type != ExecutionType::Hybrid {
+        if entry.execution_type != ExecutionType::OnChain
+            && entry.execution_type != ExecutionType::Hybrid
+        {
             return Err(DaoLedgerV4Error::ExecutionMismatch);
         }
 
@@ -614,8 +635,17 @@ impl Default for DaoLedgerV4 {
 
 // ─── Hash Utilities ──────────────────────────────────────────────────────────
 
-fn compute_hash(entry_id: &str, sequence: u64, payload: &str, previous_hash: &str, timestamp_ms: u64) -> String {
-    let data = format!("{}:{}:{}:{}:{}", entry_id, sequence, payload, previous_hash, timestamp_ms);
+fn compute_hash(
+    entry_id: &str,
+    sequence: u64,
+    payload: &str,
+    previous_hash: &str,
+    timestamp_ms: u64,
+) -> String {
+    let data = format!(
+        "{}:{}:{}:{}:{}",
+        entry_id, sequence, payload, previous_hash, timestamp_ms
+    );
     compute_single_hash(&data)
 }
 
@@ -687,13 +717,15 @@ mod tests {
     #[test]
     fn test_duplicate_entry() {
         let mut ledger = DaoLedgerV4::default_config();
-        ledger.record_event(
-            "e1".to_string(),
-            DaoEventV4::ProposalCreated,
-            "actor-1".to_string(),
-            "payload".to_string(),
-            ExecutionType::OnChain,
-        ).unwrap();
+        ledger
+            .record_event(
+                "e1".to_string(),
+                DaoEventV4::ProposalCreated,
+                "actor-1".to_string(),
+                "payload".to_string(),
+                ExecutionType::OnChain,
+            )
+            .unwrap();
         let result = ledger.record_event(
             "e1".to_string(),
             DaoEventV4::VoteCast,
@@ -707,13 +739,15 @@ mod tests {
     #[test]
     fn test_hash_verification() {
         let mut ledger = DaoLedgerV4::default_config();
-        ledger.record_event(
-            "e1".to_string(),
-            DaoEventV4::ProposalCreated,
-            "actor-1".to_string(),
-            "payload".to_string(),
-            ExecutionType::OnChain,
-        ).unwrap();
+        ledger
+            .record_event(
+                "e1".to_string(),
+                DaoEventV4::ProposalCreated,
+                "actor-1".to_string(),
+                "payload".to_string(),
+                ExecutionType::OnChain,
+            )
+            .unwrap();
         let entry = ledger.get_entry("e1").unwrap();
         assert!(entry.verify_hash());
     }
@@ -722,13 +756,15 @@ mod tests {
     fn test_chain_verification() {
         let mut ledger = DaoLedgerV4::default_config();
         for i in 1..=5 {
-            ledger.record_event(
-                format!("e{}", i),
-                DaoEventV4::ProposalCreated,
-                "actor-1".to_string(),
-                format!("payload {}", i),
-                ExecutionType::OnChain,
-            ).unwrap();
+            ledger
+                .record_event(
+                    format!("e{}", i),
+                    DaoEventV4::ProposalCreated,
+                    "actor-1".to_string(),
+                    format!("payload {}", i),
+                    ExecutionType::OnChain,
+                )
+                .unwrap();
         }
         assert!(ledger.verify_chain().is_ok());
     }
@@ -736,8 +772,24 @@ mod tests {
     #[test]
     fn test_chain_linking() {
         let mut ledger = DaoLedgerV4::default_config();
-        ledger.record_event("e1".to_string(), DaoEventV4::ProposalCreated, "a".to_string(), "p".to_string(), ExecutionType::OnChain).unwrap();
-        ledger.record_event("e2".to_string(), DaoEventV4::VoteCast, "a".to_string(), "p".to_string(), ExecutionType::OnChain).unwrap();
+        ledger
+            .record_event(
+                "e1".to_string(),
+                DaoEventV4::ProposalCreated,
+                "a".to_string(),
+                "p".to_string(),
+                ExecutionType::OnChain,
+            )
+            .unwrap();
+        ledger
+            .record_event(
+                "e2".to_string(),
+                DaoEventV4::VoteCast,
+                "a".to_string(),
+                "p".to_string(),
+                ExecutionType::OnChain,
+            )
+            .unwrap();
         let e1 = ledger.get_entry("e1").unwrap();
         let e2 = ledger.get_entry("e2").unwrap();
         assert_eq!(e1.previous_hash, "genesis");
@@ -747,7 +799,15 @@ mod tests {
     #[test]
     fn test_quorum_validation() {
         let mut ledger = DaoLedgerV4::default_config();
-        ledger.record_event("e1".to_string(), DaoEventV4::ProposalCreated, "a".to_string(), "p".to_string(), ExecutionType::OnChain).unwrap();
+        ledger
+            .record_event(
+                "e1".to_string(),
+                DaoEventV4::ProposalCreated,
+                "a".to_string(),
+                "p".to_string(),
+                ExecutionType::OnChain,
+            )
+            .unwrap();
         let result = ledger.validate_quorum("e1", 7, 10);
         assert!(result.is_ok());
     }
@@ -755,7 +815,15 @@ mod tests {
     #[test]
     fn test_quorum_not_reached() {
         let mut ledger = DaoLedgerV4::default_config();
-        ledger.record_event("e1".to_string(), DaoEventV4::ProposalCreated, "a".to_string(), "p".to_string(), ExecutionType::OnChain).unwrap();
+        ledger
+            .record_event(
+                "e1".to_string(),
+                DaoEventV4::ProposalCreated,
+                "a".to_string(),
+                "p".to_string(),
+                ExecutionType::OnChain,
+            )
+            .unwrap();
         let result = ledger.validate_quorum("e1", 3, 10);
         assert!(result.is_err());
     }
@@ -764,7 +832,15 @@ mod tests {
     fn test_merkle_root() {
         let mut ledger = DaoLedgerV4::default_config();
         for i in 1..=5 {
-            ledger.record_event(format!("e{}", i), DaoEventV4::ProposalCreated, "a".to_string(), "p".to_string(), ExecutionType::OnChain).unwrap();
+            ledger
+                .record_event(
+                    format!("e{}", i),
+                    DaoEventV4::ProposalCreated,
+                    "a".to_string(),
+                    "p".to_string(),
+                    ExecutionType::OnChain,
+                )
+                .unwrap();
         }
         let root = ledger.compute_merkle_root();
         assert!(!root.is_empty());
@@ -773,8 +849,24 @@ mod tests {
     #[test]
     fn test_get_entries_by_type() {
         let mut ledger = DaoLedgerV4::default_config();
-        ledger.record_event("e1".to_string(), DaoEventV4::ProposalCreated, "a".to_string(), "p".to_string(), ExecutionType::OnChain).unwrap();
-        ledger.record_event("e2".to_string(), DaoEventV4::VoteCast, "a".to_string(), "p".to_string(), ExecutionType::OffChain).unwrap();
+        ledger
+            .record_event(
+                "e1".to_string(),
+                DaoEventV4::ProposalCreated,
+                "a".to_string(),
+                "p".to_string(),
+                ExecutionType::OnChain,
+            )
+            .unwrap();
+        ledger
+            .record_event(
+                "e2".to_string(),
+                DaoEventV4::VoteCast,
+                "a".to_string(),
+                "p".to_string(),
+                ExecutionType::OffChain,
+            )
+            .unwrap();
         let proposals = ledger.get_entries_by_type(&DaoEventV4::ProposalCreated);
         assert_eq!(proposals.len(), 1);
     }
@@ -782,8 +874,24 @@ mod tests {
     #[test]
     fn test_get_entries_by_actor() {
         let mut ledger = DaoLedgerV4::default_config();
-        ledger.record_event("e1".to_string(), DaoEventV4::ProposalCreated, "actor-1".to_string(), "p".to_string(), ExecutionType::OnChain).unwrap();
-        ledger.record_event("e2".to_string(), DaoEventV4::VoteCast, "actor-2".to_string(), "p".to_string(), ExecutionType::OnChain).unwrap();
+        ledger
+            .record_event(
+                "e1".to_string(),
+                DaoEventV4::ProposalCreated,
+                "actor-1".to_string(),
+                "p".to_string(),
+                ExecutionType::OnChain,
+            )
+            .unwrap();
+        ledger
+            .record_event(
+                "e2".to_string(),
+                DaoEventV4::VoteCast,
+                "actor-2".to_string(),
+                "p".to_string(),
+                ExecutionType::OnChain,
+            )
+            .unwrap();
         let entries = ledger.get_entries_by_actor("actor-1");
         assert_eq!(entries.len(), 1);
     }
@@ -791,8 +899,24 @@ mod tests {
     #[test]
     fn test_get_entries_by_execution() {
         let mut ledger = DaoLedgerV4::default_config();
-        ledger.record_event("e1".to_string(), DaoEventV4::ProposalCreated, "a".to_string(), "p".to_string(), ExecutionType::OnChain).unwrap();
-        ledger.record_event("e2".to_string(), DaoEventV4::VoteCast, "a".to_string(), "p".to_string(), ExecutionType::OffChain).unwrap();
+        ledger
+            .record_event(
+                "e1".to_string(),
+                DaoEventV4::ProposalCreated,
+                "a".to_string(),
+                "p".to_string(),
+                ExecutionType::OnChain,
+            )
+            .unwrap();
+        ledger
+            .record_event(
+                "e2".to_string(),
+                DaoEventV4::VoteCast,
+                "a".to_string(),
+                "p".to_string(),
+                ExecutionType::OffChain,
+            )
+            .unwrap();
         let on_chain = ledger.get_entries_by_execution(&ExecutionType::OnChain);
         assert_eq!(on_chain.len(), 1);
     }
@@ -800,7 +924,15 @@ mod tests {
     #[test]
     fn test_set_tx_hash() {
         let mut ledger = DaoLedgerV4::default_config();
-        ledger.record_event("e1".to_string(), DaoEventV4::ProposalCreated, "a".to_string(), "p".to_string(), ExecutionType::OnChain).unwrap();
+        ledger
+            .record_event(
+                "e1".to_string(),
+                DaoEventV4::ProposalCreated,
+                "a".to_string(),
+                "p".to_string(),
+                ExecutionType::OnChain,
+            )
+            .unwrap();
         assert!(ledger.set_tx_hash("e1", "0xabc".to_string()).is_ok());
         assert!(ledger.get_entry("e1").unwrap().tx_hash.is_some());
     }
@@ -808,16 +940,48 @@ mod tests {
     #[test]
     fn test_set_tx_hash_mismatch() {
         let mut ledger = DaoLedgerV4::default_config();
-        ledger.record_event("e1".to_string(), DaoEventV4::ProposalCreated, "a".to_string(), "p".to_string(), ExecutionType::OffChain).unwrap();
+        ledger
+            .record_event(
+                "e1".to_string(),
+                DaoEventV4::ProposalCreated,
+                "a".to_string(),
+                "p".to_string(),
+                ExecutionType::OffChain,
+            )
+            .unwrap();
         assert!(ledger.set_tx_hash("e1", "0xabc".to_string()).is_err());
     }
 
     #[test]
     fn test_stats_tracking() {
         let mut ledger = DaoLedgerV4::default_config();
-        ledger.record_event("e1".to_string(), DaoEventV4::ProposalCreated, "a".to_string(), "p".to_string(), ExecutionType::OnChain).unwrap();
-        ledger.record_event("e2".to_string(), DaoEventV4::VoteCast, "a".to_string(), "p".to_string(), ExecutionType::OffChain).unwrap();
-        ledger.record_event("e3".to_string(), DaoEventV4::ProposalExecuted, "a".to_string(), "p".to_string(), ExecutionType::Hybrid).unwrap();
+        ledger
+            .record_event(
+                "e1".to_string(),
+                DaoEventV4::ProposalCreated,
+                "a".to_string(),
+                "p".to_string(),
+                ExecutionType::OnChain,
+            )
+            .unwrap();
+        ledger
+            .record_event(
+                "e2".to_string(),
+                DaoEventV4::VoteCast,
+                "a".to_string(),
+                "p".to_string(),
+                ExecutionType::OffChain,
+            )
+            .unwrap();
+        ledger
+            .record_event(
+                "e3".to_string(),
+                DaoEventV4::ProposalExecuted,
+                "a".to_string(),
+                "p".to_string(),
+                ExecutionType::Hybrid,
+            )
+            .unwrap();
         let stats = ledger.stats();
         assert_eq!(stats.on_chain_count, 1);
         assert_eq!(stats.off_chain_count, 1);
@@ -828,7 +992,15 @@ mod tests {
     fn test_get_recent_entries() {
         let mut ledger = DaoLedgerV4::default_config();
         for i in 1..=5 {
-            ledger.record_event(format!("e{}", i), DaoEventV4::ProposalCreated, "a".to_string(), "p".to_string(), ExecutionType::OnChain).unwrap();
+            ledger
+                .record_event(
+                    format!("e{}", i),
+                    DaoEventV4::ProposalCreated,
+                    "a".to_string(),
+                    "p".to_string(),
+                    ExecutionType::OnChain,
+                )
+                .unwrap();
         }
         let recent = ledger.get_recent_entries(3);
         assert_eq!(recent.len(), 3);
@@ -837,7 +1009,15 @@ mod tests {
     #[test]
     fn test_get_entry_by_sequence() {
         let mut ledger = DaoLedgerV4::default_config();
-        ledger.record_event("e1".to_string(), DaoEventV4::ProposalCreated, "a".to_string(), "p".to_string(), ExecutionType::OnChain).unwrap();
+        ledger
+            .record_event(
+                "e1".to_string(),
+                DaoEventV4::ProposalCreated,
+                "a".to_string(),
+                "p".to_string(),
+                ExecutionType::OnChain,
+            )
+            .unwrap();
         let entry = ledger.get_entry_by_sequence(1);
         assert!(entry.is_some());
     }
@@ -845,7 +1025,15 @@ mod tests {
     #[test]
     fn test_reset_stats() {
         let mut ledger = DaoLedgerV4::default_config();
-        ledger.record_event("e1".to_string(), DaoEventV4::ProposalCreated, "a".to_string(), "p".to_string(), ExecutionType::OnChain).unwrap();
+        ledger
+            .record_event(
+                "e1".to_string(),
+                DaoEventV4::ProposalCreated,
+                "a".to_string(),
+                "p".to_string(),
+                ExecutionType::OnChain,
+            )
+            .unwrap();
         ledger.reset_stats();
         assert_eq!(ledger.stats().quorum_validations, 0);
     }
@@ -855,9 +1043,33 @@ mod tests {
         let mut config = DaoLedgerV4Config::default();
         config.max_entries = 2;
         let mut ledger = DaoLedgerV4::new(config);
-        ledger.record_event("e1".to_string(), DaoEventV4::ProposalCreated, "a".to_string(), "p".to_string(), ExecutionType::OnChain).unwrap();
-        ledger.record_event("e2".to_string(), DaoEventV4::ProposalCreated, "a".to_string(), "p".to_string(), ExecutionType::OnChain).unwrap();
-        assert!(ledger.record_event("e3".to_string(), DaoEventV4::ProposalCreated, "a".to_string(), "p".to_string(), ExecutionType::OnChain).is_err());
+        ledger
+            .record_event(
+                "e1".to_string(),
+                DaoEventV4::ProposalCreated,
+                "a".to_string(),
+                "p".to_string(),
+                ExecutionType::OnChain,
+            )
+            .unwrap();
+        ledger
+            .record_event(
+                "e2".to_string(),
+                DaoEventV4::ProposalCreated,
+                "a".to_string(),
+                "p".to_string(),
+                ExecutionType::OnChain,
+            )
+            .unwrap();
+        assert!(ledger
+            .record_event(
+                "e3".to_string(),
+                DaoEventV4::ProposalCreated,
+                "a".to_string(),
+                "p".to_string(),
+                ExecutionType::OnChain
+            )
+            .is_err());
     }
 
     #[test]
@@ -865,7 +1077,13 @@ mod tests {
         let mut config = DaoLedgerV4Config::default();
         config.max_payload_bytes = 10;
         let mut ledger = DaoLedgerV4::new(config);
-        let result = ledger.record_event("e1".to_string(), DaoEventV4::ProposalCreated, "a".to_string(), "very long payload".to_string(), ExecutionType::OnChain);
+        let result = ledger.record_event(
+            "e1".to_string(),
+            DaoEventV4::ProposalCreated,
+            "a".to_string(),
+            "very long payload".to_string(),
+            ExecutionType::OnChain,
+        );
         assert!(result.is_err());
     }
 
@@ -873,7 +1091,15 @@ mod tests {
     fn test_merkle_proof_generation() {
         let mut ledger = DaoLedgerV4::default_config();
         for i in 1..=5 {
-            ledger.record_event(format!("e{}", i), DaoEventV4::ProposalCreated, "a".to_string(), "p".to_string(), ExecutionType::OnChain).unwrap();
+            ledger
+                .record_event(
+                    format!("e{}", i),
+                    DaoEventV4::ProposalCreated,
+                    "a".to_string(),
+                    "p".to_string(),
+                    ExecutionType::OnChain,
+                )
+                .unwrap();
         }
         let proof = ledger.generate_merkle_proof("e1");
         assert!(proof.is_ok());
@@ -884,14 +1110,30 @@ mod tests {
         let mut config = DaoLedgerV4Config::default();
         config.merkle_proofs_enabled = false;
         let mut ledger = DaoLedgerV4::new(config);
-        ledger.record_event("e1".to_string(), DaoEventV4::ProposalCreated, "a".to_string(), "p".to_string(), ExecutionType::OnChain).unwrap();
+        ledger
+            .record_event(
+                "e1".to_string(),
+                DaoEventV4::ProposalCreated,
+                "a".to_string(),
+                "p".to_string(),
+                ExecutionType::OnChain,
+            )
+            .unwrap();
         assert!(ledger.generate_merkle_proof("e1").is_err());
     }
 
     #[test]
     fn test_quorum_min_validators() {
         let mut ledger = DaoLedgerV4::default_config();
-        ledger.record_event("e1".to_string(), DaoEventV4::ProposalCreated, "a".to_string(), "p".to_string(), ExecutionType::OnChain).unwrap();
+        ledger
+            .record_event(
+                "e1".to_string(),
+                DaoEventV4::ProposalCreated,
+                "a".to_string(),
+                "p".to_string(),
+                ExecutionType::OnChain,
+            )
+            .unwrap();
         let result = ledger.validate_quorum("e1", 2, 2);
         assert!(result.is_err());
     }
@@ -899,7 +1141,15 @@ mod tests {
     #[test]
     fn test_entry_has_quorum() {
         let mut ledger = DaoLedgerV4::default_config();
-        ledger.record_event("e1".to_string(), DaoEventV4::ProposalCreated, "a".to_string(), "p".to_string(), ExecutionType::OnChain).unwrap();
+        ledger
+            .record_event(
+                "e1".to_string(),
+                DaoEventV4::ProposalCreated,
+                "a".to_string(),
+                "p".to_string(),
+                ExecutionType::OnChain,
+            )
+            .unwrap();
         ledger.validate_quorum("e1", 8, 10).unwrap();
         let entry = ledger.get_entry("e1").unwrap();
         assert!(entry.has_quorum(0.66));
@@ -909,7 +1159,10 @@ mod tests {
     fn test_event_type_display() {
         assert_eq!(DaoEventV4::ProposalCreated.to_string(), "ProposalCreated");
         assert_eq!(DaoEventV4::VoteCast.to_string(), "VoteCast");
-        assert_eq!(DaoEventV4::Custom("test".to_string()).to_string(), "Custom(test)");
+        assert_eq!(
+            DaoEventV4::Custom("test".to_string()).to_string(),
+            "Custom(test)"
+        );
     }
 
     #[test]

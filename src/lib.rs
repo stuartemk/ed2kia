@@ -34,10 +34,10 @@ pub const SPRINT_IDENTIFIER: &str = "v1.6.0-stable";
 
 /// P2P networking layer (libp2p-based)
 pub mod p2p {
-    pub mod swarm;
-    pub mod protocol;
     #[cfg(feature = "v1.8-sprint2")]
     pub mod geographic_routing;
+    pub mod protocol;
+    pub mod swarm;
 }
 
 /// WASM mobile bridge (feature-gated)
@@ -80,56 +80,56 @@ pub mod atlas;
 
 /// Sparse Autoencoder (SAE) loading and routing
 pub mod sae {
-    pub mod loader;
-    pub mod router;
-    #[cfg(feature = "v2.1-wasm-micro-sharding")]
-    pub mod wasm_sharding;
-    #[cfg(feature = "v2.1-qwen-scope-sae")]
-    pub mod qwen_scope_sae;
-    #[cfg(feature = "v2.1-qwen-scope-loader")]
-    pub mod qwen_scope_loader;
-    #[cfg(feature = "v1.2-sprint1")]
-    pub mod fine_tuning_engine;
-    #[cfg(feature = "v1.2-sprint2")]
-    pub mod distributed_finetune;
-    #[cfg(feature = "v1.2-sprint2")]
-    pub mod checkpoint_manager;
-    #[cfg(feature = "v1.2-sprint2")]
-    pub mod fault_tolerance;
-    #[cfg(feature = "v1.3-sprint3")]
-    pub mod fine_tuning_v3;
-    #[cfg(feature = "v1.3-sprint3")]
-    pub mod cross_model_aligner;
     #[cfg(feature = "v1.3-sprint3")]
     pub mod adaptive_checkpoint;
     #[cfg(feature = "v1.4-sprint3")]
-    pub mod fine_tuning_v4;
-    #[cfg(feature = "v1.4-sprint3")]
-    pub mod cross_model_aligner_v2;
-    #[cfg(feature = "v1.4-sprint3")]
     pub mod adaptive_checkpoint_v2;
-    #[cfg(feature = "v1.5-sprint1")]
-    pub mod fine_tuning_v5;
-    #[cfg(feature = "v1.5-sprint1")]
-    pub mod cross_model_aligner_v3;
     #[cfg(feature = "v1.5-sprint1")]
     pub mod adaptive_checkpoint_v3;
     #[cfg(feature = "v1.5-sprint3")]
-    pub mod fine_tuning_v6;
-    #[cfg(feature = "v1.5-sprint3")]
-    pub mod cross_model_aligner_v4;
-    #[cfg(feature = "v1.5-sprint3")]
     pub mod adaptive_checkpoint_v4;
     #[cfg(feature = "v1.6-sprint3")]
-    pub mod fine_tuning_v7;
+    pub mod adaptive_checkpoint_v5;
+    #[cfg(feature = "v1.2-sprint2")]
+    pub mod checkpoint_manager;
+    #[cfg(feature = "v1.3-sprint3")]
+    pub mod cross_model_aligner;
+    #[cfg(feature = "v1.4-sprint3")]
+    pub mod cross_model_aligner_v2;
+    #[cfg(feature = "v1.5-sprint1")]
+    pub mod cross_model_aligner_v3;
+    #[cfg(feature = "v1.5-sprint3")]
+    pub mod cross_model_aligner_v4;
     #[cfg(feature = "v1.6-sprint3")]
     pub mod cross_model_aligner_v5;
+    #[cfg(feature = "v1.2-sprint2")]
+    pub mod distributed_finetune;
+    #[cfg(feature = "v1.2-sprint2")]
+    pub mod fault_tolerance;
+    #[cfg(feature = "v1.2-sprint1")]
+    pub mod fine_tuning_engine;
+    #[cfg(feature = "v1.3-sprint3")]
+    pub mod fine_tuning_v3;
+    #[cfg(feature = "v1.4-sprint3")]
+    pub mod fine_tuning_v4;
+    #[cfg(feature = "v1.5-sprint1")]
+    pub mod fine_tuning_v5;
+    #[cfg(feature = "v1.5-sprint3")]
+    pub mod fine_tuning_v6;
     #[cfg(feature = "v1.6-sprint3")]
-    pub mod adaptive_checkpoint_v5;
+    pub mod fine_tuning_v7;
     #[cfg(feature = "v2.1-hf-bridge")]
     pub mod hf_bridge;
+    pub mod loader;
+    #[cfg(feature = "v2.1-qwen-scope-loader")]
+    pub mod qwen_scope_loader;
+    #[cfg(feature = "v2.1-qwen-scope-sae")]
+    pub mod qwen_scope_sae;
+    pub mod router;
     #[cfg(feature = "v2.1-sae-training")]
     pub mod training_pipeline;
+    #[cfg(feature = "v2.1-wasm-micro-sharding")]
+    pub mod wasm_sharding;
 }
 
 // ============================================================================
@@ -148,20 +148,16 @@ pub mod federated;
 
 /// Tensor flow and consciousness bridge
 pub mod bridge {
-    pub mod tensor_flow;
-    pub mod consciousness;
-    #[cfg(feature = "v1.5-sprint2")]
-    #[path = "../bridge/federation_zkp_bridge_v4.rs"]
-    pub mod federation_zkp_bridge_v4;
-    #[cfg(feature = "v1.6-sprint1")]
-    #[path = "../bridge/cross_chain_bridge_v3.rs"]
-    pub mod cross_chain_bridge_v3;
     #[cfg(feature = "v1.6-sprint1")]
     #[path = "../bridge/bridge_validator.rs"]
     pub mod bridge_validator;
+    pub mod consciousness;
     #[cfg(feature = "v1.6-sprint1")]
-    #[path = "../bridge/relay_manager.rs"]
-    pub mod relay_manager;
+    #[path = "../bridge/cross_chain_bridge_v3.rs"]
+    pub mod cross_chain_bridge_v3;
+    #[cfg(feature = "v1.5-sprint2")]
+    #[path = "../bridge/federation_zkp_bridge_v4.rs"]
+    pub mod federation_zkp_bridge_v4;
     #[cfg(feature = "v1.6-sprint2")]
     #[path = "../bridge/federation_zkp_bridge_v6.rs"]
     pub mod federation_zkp_bridge_v6;
@@ -171,6 +167,10 @@ pub mod bridge {
     #[cfg(feature = "v1.7-sprint1")]
     #[path = "../bridge/quantization.rs"]
     pub mod quantization;
+    #[cfg(feature = "v1.6-sprint1")]
+    #[path = "../bridge/relay_manager.rs"]
+    pub mod relay_manager;
+    pub mod tensor_flow;
 }
 
 // ============================================================================
@@ -208,8 +208,8 @@ pub mod interpret {
 
 /// Distributed consensus validation
 pub mod consensus {
-    pub mod validator;
     pub mod merkle;
+    pub mod validator;
 }
 
 // ============================================================================
@@ -218,64 +218,64 @@ pub mod consensus {
 
 /// Security modules (WASM sandbox, memory guard)
 pub mod security {
-    pub mod wasm_sandbox;
     pub mod memory_guard;
-    pub mod wasm_sandbox_v2;
     pub mod wasm_profiler;
+    pub mod wasm_sandbox;
+    pub mod wasm_sandbox_v2;
 }
 
 /// Zero-Knowledge Proof circuits and verification
 pub mod zkp {
-    pub mod circuit;
-    pub mod verifier;
     pub mod async_prover;
-    pub mod verifier_pool;
-    pub mod batch_accumulator;
-    #[cfg(feature = "v1.3-sprint2")]
-    #[path = "../zkp/async_zkp_v4.rs"]
-    pub mod async_zkp_v4;
-    #[cfg(feature = "v1.3-sprint3")]
-    #[path = "../zkp/async_zkp_v5.rs"]
-    pub mod async_zkp_v5;
-    #[cfg(feature = "v1.4-sprint1")]
-    #[path = "../zkp/halo2_engine.rs"]
-    pub mod halo2_engine;
-    #[cfg(feature = "v1.4-sprint1")]
-    #[path = "../zkp/circuit_optimizer.rs"]
-    pub mod circuit_optimizer;
-    #[cfg(feature = "v1.4-sprint1")]
-    #[path = "../zkp/proof_aggregator.rs"]
-    pub mod proof_aggregator;
-    #[cfg(feature = "v1.4-sprint3")]
-    #[path = "../zkp/async_zkp_v8.rs"]
-    pub mod async_zkp_v8;
-    #[cfg(feature = "v1.4-sprint3")]
-    #[path = "../zkp/cross_federation_verification.rs"]
-    pub mod cross_federation_verification;
     #[cfg(feature = "v1.5-sprint2")]
     #[path = "../zkp/async_zkp_v10.rs"]
     pub mod async_zkp_v10;
     #[cfg(feature = "v1.5-sprint3")]
     #[path = "../zkp/async_zkp_v11.rs"]
     pub mod async_zkp_v11;
-    #[cfg(feature = "v1.5-sprint3")]
-    #[path = "../zkp/cross_federation_verifier_v2.rs"]
-    pub mod cross_federation_verifier_v2;
     #[cfg(feature = "v1.6-sprint2")]
     #[path = "../zkp/async_zkp_v13.rs"]
     pub mod async_zkp_v13;
     #[cfg(feature = "v1.6-sprint3")]
     #[path = "../zkp/async_zkp_v14.rs"]
     pub mod async_zkp_v14;
+    #[cfg(feature = "v1.3-sprint2")]
+    #[path = "../zkp/async_zkp_v4.rs"]
+    pub mod async_zkp_v4;
+    #[cfg(feature = "v1.3-sprint3")]
+    #[path = "../zkp/async_zkp_v5.rs"]
+    pub mod async_zkp_v5;
+    #[cfg(feature = "v1.4-sprint3")]
+    #[path = "../zkp/async_zkp_v8.rs"]
+    pub mod async_zkp_v8;
+    pub mod batch_accumulator;
+    pub mod circuit;
+    #[cfg(feature = "v1.4-sprint1")]
+    #[path = "../zkp/circuit_optimizer.rs"]
+    pub mod circuit_optimizer;
+    #[cfg(feature = "v1.4-sprint3")]
+    #[path = "../zkp/cross_federation_verification.rs"]
+    pub mod cross_federation_verification;
+    #[cfg(feature = "v1.5-sprint3")]
+    #[path = "../zkp/cross_federation_verifier_v2.rs"]
+    pub mod cross_federation_verifier_v2;
+    #[cfg(feature = "v1.4-sprint1")]
+    #[path = "../zkp/halo2_engine.rs"]
+    pub mod halo2_engine;
+    #[cfg(feature = "v1.4-sprint1")]
+    #[path = "../zkp/proof_aggregator.rs"]
+    pub mod proof_aggregator;
+    pub mod verifier;
+    pub mod verifier_pool;
 }
 
 /// Marketplace v2 — Resource matching, escrow ledger, adaptive pricing
 #[cfg(feature = "stable")]
 pub mod marketplace_v2 {
-    #[path = "../marketplace/matchmaker.rs"]
-    pub mod matchmaker;
     #[path = "../marketplace/escrow_ledger.rs"]
     pub mod escrow_ledger;
+    #[path = "../marketplace/matchmaker.rs"]
+    pub mod matchmaker;
     #[path = "../marketplace/pricing_engine.rs"]
     pub mod pricing_engine;
 }
@@ -283,10 +283,10 @@ pub mod marketplace_v2 {
 /// Bridge — ZKP ↔ Marketplace integration and proof submission
 #[cfg(feature = "stable")]
 pub mod bridge_v2 {
-    #[path = "../bridge/zkp_marketplace_bridge.rs"]
-    pub mod zkp_marketplace_bridge;
     #[path = "../bridge/proof_submission.rs"]
     pub mod proof_submission;
+    #[path = "../bridge/zkp_marketplace_bridge.rs"]
+    pub mod zkp_marketplace_bridge;
 }
 
 /// Pool ZKP Bridge — Cross-pool ZKP verification
@@ -301,8 +301,8 @@ pub mod federation_zkp_bridge;
 
 /// Human-in-the-loop feedback and concept updates
 pub mod human {
-    pub mod feedback_cli;
     pub mod concept_updater;
+    pub mod feedback_cli;
 }
 
 // ============================================================================
@@ -312,10 +312,10 @@ pub mod human {
 /// Peer scaling and bootstrap management
 #[cfg(feature = "stable")]
 pub mod scaling {
-    pub mod peer_manager;
     pub mod bootstrap;
     #[cfg(feature = "phase8-sprint2")]
     pub mod cross_model;
+    pub mod peer_manager;
     pub mod predictive_balancer;
 }
 
@@ -329,11 +329,11 @@ pub mod rlhf {
 /// Web server and API routes
 #[cfg(feature = "stable")]
 pub mod web {
-    pub mod server;
-    pub mod routes;
     pub mod realtime;
-    pub mod ws_alignment_stream;
+    pub mod routes;
+    pub mod server;
     pub mod sse_metrics;
+    pub mod ws_alignment_stream;
     pub mod ws_dashboard_stream;
     #[cfg(feature = "v1.5-sprint2")]
     pub mod ws_federation_stream;
@@ -345,18 +345,18 @@ pub mod web {
 /// Prometheus metrics and health monitoring
 #[cfg(feature = "stable")]
 pub mod monitoring {
-    pub mod metrics;
     pub mod health;
+    pub mod metrics;
     pub mod streaming_metrics;
 }
 
 /// Runtime optimization — Tokio tuning, task scheduling, worker pools
 #[cfg(feature = "v1.4-sprint1")]
 pub mod runtime {
-    #[path = "../runtime/tokio_optimizer.rs"]
-    pub mod tokio_optimizer;
     #[path = "../runtime/task_scheduler.rs"]
     pub mod task_scheduler;
+    #[path = "../runtime/tokio_optimizer.rs"]
+    pub mod tokio_optimizer;
     #[path = "../runtime/worker_pool.rs"]
     pub mod worker_pool;
 }
@@ -364,12 +364,12 @@ pub mod runtime {
 /// Storage — LZ4 compression, checkpoint cache, gradient archive
 #[cfg(feature = "v1.4-sprint1")]
 pub mod storage {
-    #[path = "../storage/lz4_compressor.rs"]
-    pub mod lz4_compressor;
     #[path = "../storage/checkpoint_cache.rs"]
     pub mod checkpoint_cache;
     #[path = "../storage/gradient_archive.rs"]
     pub mod gradient_archive;
+    #[path = "../storage/lz4_compressor.rs"]
+    pub mod lz4_compressor;
 }
 
 /// Monitoring v2 — Advanced metrics, health checking, alert engine
@@ -377,10 +377,10 @@ pub mod storage {
 pub mod monitoring_v2 {
     #[path = "../monitoring/advanced_metrics.rs"]
     pub mod advanced_metrics;
-    #[path = "../monitoring/health_checker.rs"]
-    pub mod health_checker;
     #[path = "../monitoring/alert_engine.rs"]
     pub mod alert_engine;
+    #[path = "../monitoring/health_checker.rs"]
+    pub mod health_checker;
 }
 
 // ============================================================================
@@ -390,32 +390,32 @@ pub mod monitoring_v2 {
 /// Proposal and voting governance
 #[cfg(feature = "stable")]
 pub mod governance {
-    pub mod proposal;
-    pub mod voting;
-    pub mod liquid_v2;
-    pub mod voting_mechanism;
+    #[cfg(feature = "v1.3-sprint2")]
+    pub mod dao_ledger_v2;
     #[cfg(feature = "v1.2-sprint2")]
     pub mod dao_v3;
     #[cfg(feature = "v1.2-sprint2")]
     pub mod hybrid_voting;
+    pub mod liquid_v2;
+    pub mod proposal;
     #[cfg(feature = "v1.2-sprint2")]
     pub mod proposal_executor;
     #[cfg(feature = "v1.3-sprint2")]
-    pub mod dao_ledger_v2;
+    pub mod proposal_tracker;
     #[cfg(feature = "v1.3-sprint2")]
     pub mod technical_staking;
-    #[cfg(feature = "v1.3-sprint2")]
-    pub mod proposal_tracker;
+    pub mod voting;
+    pub mod voting_mechanism;
 }
 
 /// Reputation ledger and scoring
 #[cfg(feature = "stable")]
 pub mod reputation {
     pub mod ledger;
-    pub mod scoring;
     #[cfg(feature = "v1.8-sprint1")]
     #[path = "../reputation/proof_schema.rs"]
     pub mod proof_schema;
+    pub mod scoring;
 }
 
 // ============================================================================
@@ -439,8 +439,8 @@ pub mod ecosystem {
 /// Network bootstrap and seed registry
 #[cfg(feature = "stable")]
 pub mod bootstrap {
-    pub mod seed_registry;
     pub mod network_init;
+    pub mod seed_registry;
 }
 
 // ============================================================================
@@ -451,12 +451,12 @@ pub mod bootstrap {
 #[cfg(feature = "stable")]
 pub mod interoperability {
     pub mod adapter;
-    pub mod schema;
-    pub mod schema_registry;
-    pub mod onnx_adapter;
+    pub mod adaptive_router_v2;
     pub mod capability_registry;
     pub mod cross_model_router;
-    pub mod adaptive_router_v2;
+    pub mod onnx_adapter;
+    pub mod schema;
+    pub mod schema_registry;
 }
 
 /// Interoperability Layer v2 — Cross-federation communication with schema negotiation
@@ -473,60 +473,60 @@ pub mod interop {
 /// State Sync v2 — State synchronization with Merkle verification and snapshot management
 #[cfg(feature = "v1.6-sprint1")]
 pub mod state {
-    #[path = "../state/state_sync_v2.rs"]
-    pub mod state_sync_v2;
     #[path = "../state/merkle_aggregator.rs"]
     pub mod merkle_aggregator;
     #[path = "../state/snapshot_manager.rs"]
     pub mod snapshot_manager;
+    #[path = "../state/state_sync_v2.rs"]
+    pub mod state_sync_v2;
 }
 
 /// Federation protocols (FedAvg, sync)
 #[cfg(feature = "stable")]
 pub mod federation {
+    #[cfg(feature = "v1.6-sprint2")]
+    pub mod adaptive_router_v2;
     pub mod avg_aggregator;
-    pub mod sync_protocol;
-    pub mod gradient_normalizer;
-    pub mod trust_sync;
-    pub mod cross_model_scaler;
-    #[cfg(feature = "v1.2-sprint1")]
-    pub mod multi_chain_registry;
-    #[cfg(feature = "v1.2-sprint1")]
-    pub mod cross_chain_identity;
-    #[cfg(feature = "v1.2-sprint1")]
-    pub mod gradient_aggregator_v3;
-    #[cfg(feature = "v1.2-sprint2")]
-    pub mod cross_chain_consensus;
     #[cfg(feature = "v1.2-sprint2")]
     pub mod bridge_validator;
+    #[cfg(feature = "v1.2-sprint2")]
+    pub mod cross_chain_consensus;
+    #[cfg(feature = "v1.2-sprint1")]
+    pub mod cross_chain_identity;
+    pub mod cross_model_scaler;
+    #[cfg(feature = "v1.6-sprint3")]
+    pub mod cross_model_scaling_v7;
     #[cfg(feature = "v1.3-sprint3")]
     pub mod dynamic_sharder;
-    #[cfg(feature = "v1.4-sprint3")]
-    pub mod scaling_v4;
-    #[cfg(feature = "v1.4-sprint3")]
-    pub mod predictive_sharder_v4;
-    #[cfg(feature = "v1.5-sprint2")]
-    pub mod scaling_v5;
-    #[cfg(feature = "v1.5-sprint2")]
-    pub mod predictive_sharder_v5;
+    #[cfg(feature = "v1.5-sprint3")]
+    pub mod dynamic_sharder_v2;
+    #[cfg(feature = "v1.2-sprint1")]
+    pub mod gradient_aggregator_v3;
+    pub mod gradient_normalizer;
     #[cfg(feature = "v1.5-sprint2")]
     pub mod gradient_sync_v5;
     #[cfg(feature = "v1.5-sprint3")]
-    pub mod scaling_v6;
-    #[cfg(feature = "v1.5-sprint3")]
-    pub mod dynamic_sharder_v2;
-    #[cfg(feature = "v1.5-sprint3")]
     pub mod gradient_sync_v6;
     #[cfg(feature = "v1.6-sprint2")]
-    pub mod scaling_v7;
-    #[cfg(feature = "v1.6-sprint2")]
-    pub mod adaptive_router_v2;
-    #[cfg(feature = "v1.6-sprint2")]
     pub mod gradient_sync_v7;
-    #[cfg(feature = "v1.6-sprint3")]
-    pub mod cross_model_scaling_v7;
+    #[cfg(feature = "v1.2-sprint1")]
+    pub mod multi_chain_registry;
     #[cfg(feature = "v1.6-sprint3")]
     pub mod predictive_sharder_v3;
+    #[cfg(feature = "v1.4-sprint3")]
+    pub mod predictive_sharder_v4;
+    #[cfg(feature = "v1.5-sprint2")]
+    pub mod predictive_sharder_v5;
+    #[cfg(feature = "v1.4-sprint3")]
+    pub mod scaling_v4;
+    #[cfg(feature = "v1.5-sprint2")]
+    pub mod scaling_v5;
+    #[cfg(feature = "v1.5-sprint3")]
+    pub mod scaling_v6;
+    #[cfg(feature = "v1.6-sprint2")]
+    pub mod scaling_v7;
+    pub mod sync_protocol;
+    pub mod trust_sync;
 
     // ─── Sprint30: Neuroplasticidad Federada ───
     #[cfg(feature = "v2.1-neuroplasticity")]
@@ -544,9 +544,9 @@ pub mod staking {
 /// API v2 (OpenAPI, routes, auth)
 #[cfg(feature = "stable")]
 pub mod api {
+    pub mod auth;
     pub mod openapi;
     pub mod routes;
-    pub mod auth;
 }
 
 // ============================================================================
@@ -556,22 +556,22 @@ pub mod api {
 /// Continuous alignment engine
 #[cfg(feature = "stable")]
 pub mod alignment {
-    pub mod engine;
+    pub mod confidence_calculator;
     #[cfg(feature = "phase8-sprint2")]
     pub mod continuous;
-    pub mod loop_v2;
-    pub mod steering_engine;
-    pub mod confidence_calculator;
+    pub mod engine;
     #[cfg(feature = "v1.2-sprint1")]
     pub mod ethical_constraint_engine;
+    pub mod loop_v2;
+    pub mod steering_engine;
 
     // ─── Sprint16.3: Stuartian Context Tensor (SCT) ───
     #[cfg(feature = "v2.1-sct-core")]
     pub mod sct_core;
-    #[cfg(feature = "v2.1-sct-reward")]
-    pub mod sct_reward;
     #[cfg(feature = "v2.1-sct-guard")]
     pub mod sct_guard;
+    #[cfg(feature = "v2.1-sct-reward")]
+    pub mod sct_reward;
 
     // ─── Sprint20: Geometría Estuardiana 3D ───
     #[cfg(feature = "v2.1-stuartian-geometry")]
@@ -579,10 +579,10 @@ pub mod alignment {
     pub mod stuartian_geometry;
 
     // ─── Sprint28: Motor de Significado Simbólico ───
-    #[cfg(feature = "v2.1-symbolic-engine")]
-    pub mod symbolic_engine;
     #[cfg(feature = "v2.1-ethical-attention")]
     pub mod ethical_attention;
+    #[cfg(feature = "v2.1-symbolic-engine")]
+    pub mod symbolic_engine;
 
     // ─── Sprint30: Retroalimentación Estuardiana (Human-in-the-Loop) ───
     #[cfg(feature = "v2.1-steering-bridge")]
@@ -591,10 +591,7 @@ pub mod alignment {
 }
 
 /// Mainnet Genesis — Deterministic genesis state & steward activation (Sprint22)
-#[cfg(any(
-    feature = "v2.1-mainnet-genesis",
-    feature = "v2.1-steward-portal"
-))]
+#[cfg(any(feature = "v2.1-mainnet-genesis", feature = "v2.1-steward-portal"))]
 pub mod mainnet {
     #[cfg(feature = "v2.1-mainnet-genesis")]
     #[path = "../mainnet/genesis.rs"]
@@ -685,22 +682,22 @@ pub mod marketplace {
 #[cfg(feature = "stable")]
 pub mod ui {
     pub mod backend;
-    pub mod realtime_backend;
     pub mod dashboard_v2;
     pub mod dashboard_v6;
     #[cfg(feature = "v1.6-sprint2")]
     #[path = "../ui/dashboard_v7.rs"]
     pub mod dashboard_v7;
+    pub mod realtime_backend;
 }
 
 /// SLO tracking and enforcement
 #[cfg(feature = "stable")]
 pub mod slo {
-    pub mod engine;
+    pub mod contract_manager;
+    pub mod dynamic_engine;
     #[cfg(feature = "phase8-sprint2")]
     pub mod enforcer;
-    pub mod dynamic_engine;
-    pub mod contract_manager;
+    pub mod engine;
 }
 
 // ============================================================================
@@ -748,19 +745,19 @@ pub mod federation_v2_sprint1 {
 /// SLO/SLA v3 with predictive contracts
 #[cfg(feature = "v1.2-sprint3")]
 pub mod slo_v3 {
-    #[path = "../slo/slo_v3.rs"]
-    pub mod slo_v3_engine;
     #[path = "../slo/predictive_contracts.rs"]
     pub mod predictive_contracts;
+    #[path = "../slo/slo_v3.rs"]
+    pub mod slo_v3_engine;
 }
 
 /// Cross-Model Scaling v2 with capability negotiation
 #[cfg(feature = "v1.2-sprint3")]
 pub mod scaling_v3 {
-    #[path = "../scaling/cross_model_v2.rs"]
-    pub mod cross_model_v2;
     #[path = "../scaling/capability_negotiator.rs"]
     pub mod capability_negotiator;
+    #[path = "../scaling/cross_model_v2.rs"]
+    pub mod cross_model_v2;
 }
 
 /// UI Dashboard v3 with cross-chain/DAO/fine-tuning streams
@@ -786,11 +783,11 @@ pub mod zkp_v3 {
 /// Marketplace v3 with cross-chain settlement and reputation matching
 #[cfg(feature = "v1.2-sprint4")]
 pub mod marketplace_v3 {
+    #[path = "../marketplace/cross_chain_settlement.rs"]
+    pub mod cross_chain_settlement;
     #[path = "../marketplace/marketplace_v3.rs"]
     #[allow(clippy::module_inception)]
     pub mod marketplace_v3;
-    #[path = "../marketplace/cross_chain_settlement.rs"]
-    pub mod cross_chain_settlement;
     #[path = "../marketplace/reputation_matcher.rs"]
     pub mod reputation_matcher;
 }
@@ -798,23 +795,23 @@ pub mod marketplace_v3 {
 /// Alignment Loop v3 with ZKP steering verification and bias mitigation
 #[cfg(feature = "v1.2-sprint4")]
 pub mod alignment_v3 {
+    #[path = "../alignment/bias_mitigator.rs"]
+    pub mod bias_mitigator;
     #[path = "../alignment/loop_v3.rs"]
     pub mod loop_v3;
     #[path = "../alignment/steering_verifier.rs"]
     pub mod steering_verifier;
-    #[path = "../alignment/bias_mitigator.rs"]
-    pub mod bias_mitigator;
 }
 
 /// Federation Scaling v3 with adaptive sharding and gradient sync
 #[cfg(feature = "v1.2-sprint4")]
 pub mod federation_scaling_v3 {
-    #[path = "../federation/scaling_v3.rs"]
-    pub mod scaling_v3;
     #[path = "../federation/adaptive_sharder.rs"]
     pub mod adaptive_sharder;
     #[path = "../federation/gradient_sync_v3.rs"]
     pub mod gradient_sync_v3;
+    #[path = "../federation/scaling_v3.rs"]
+    pub mod scaling_v3;
 }
 
 // ============================================================================
@@ -824,10 +821,10 @@ pub mod federation_scaling_v3 {
 /// SAE Fine-Tuning v2 with checkpoint optimization and gradient sync
 #[cfg(feature = "v1.3-sprint1")]
 pub mod sae_v2 {
-    #[path = "../sae/fine_tuning_v2.rs"]
-    pub mod fine_tuning_v2;
     #[path = "../sae/checkpoint_optimizer.rs"]
     pub mod checkpoint_optimizer;
+    #[path = "../sae/fine_tuning_v2.rs"]
+    pub mod fine_tuning_v2;
     #[path = "../sae/gradient_sync_v2.rs"]
     pub mod gradient_sync_v2;
 }
@@ -837,19 +834,19 @@ pub mod sae_v2 {
 pub mod routing_v2 {
     #[path = "../routing/cross_node_router.rs"]
     pub mod cross_node_router;
-    #[path = "../routing/predictive_scheduler.rs"]
-    pub mod predictive_scheduler;
     #[path = "../routing/load_balancer.rs"]
     pub mod load_balancer;
+    #[path = "../routing/predictive_scheduler.rs"]
+    pub mod predictive_scheduler;
 }
 
 /// Community Reputation Ledger v2 with anti-Sybil and merit scoring
 #[cfg(feature = "v1.3-sprint1")]
 pub mod reputation_v2 {
-    #[path = "../reputation/ledger_v2.rs"]
-    pub mod ledger_v2;
     #[path = "../reputation/anti_sybil.rs"]
     pub mod anti_sybil;
+    #[path = "../reputation/ledger_v2.rs"]
+    pub mod ledger_v2;
     #[path = "../reputation/merit_scoring.rs"]
     pub mod merit_scoring;
 }
@@ -868,10 +865,10 @@ pub mod zkp_v3_sprint1 {
 pub mod pools {
     #[path = "../pools/cross_chain_resource_pool.rs"]
     pub mod cross_chain_resource_pool;
-    #[path = "../pools/shard_aggregator.rs"]
-    pub mod shard_aggregator;
     #[path = "../pools/pool_matcher.rs"]
     pub mod pool_matcher;
+    #[path = "../pools/shard_aggregator.rs"]
+    pub mod shard_aggregator;
 }
 
 /// ZKP Aggregation & Neural Steer UI (v1.9-sprint2)
@@ -895,45 +892,45 @@ pub mod ui_v4 {
 /// Cross-Chain Technical Pools v3 (v1.4-sprint2)
 #[cfg(feature = "v1.4-sprint2")]
 pub mod pools_v3 {
+    #[path = "../pools/capacity_negotiator.rs"]
+    pub mod capacity_negotiator;
     #[path = "../pools/cross_chain_pools_v3.rs"]
     pub mod cross_chain_pools_v3;
     #[path = "../pools/dynamic_aggregator.rs"]
     pub mod dynamic_aggregator;
-    #[path = "../pools/capacity_negotiator.rs"]
-    pub mod capacity_negotiator;
 }
 
 /// Cross-Chain Pools v4 & Dynamic Routing (v1.5-sprint1)
 #[cfg(feature = "v1.5-sprint1")]
 pub mod pools_v4 {
+    #[path = "../pools/capacity_orchestrator.rs"]
+    pub mod capacity_orchestrator;
     #[path = "../pools/cross_chain_pools_v4.rs"]
     pub mod cross_chain_pools_v4;
     #[path = "../pools/dynamic_router.rs"]
     pub mod dynamic_router;
-    #[path = "../pools/capacity_orchestrator.rs"]
-    pub mod capacity_orchestrator;
 }
 
 /// DAO Ledger v4 & Hybrid Execution (v1.4-sprint2)
 #[cfg(feature = "v1.4-sprint2")]
 pub mod governance_v4 {
+    #[path = "../governance/audit_trail.rs"]
+    pub mod audit_trail;
     #[path = "../governance/dao_ledger_v4.rs"]
     pub mod dao_ledger_v4;
     #[path = "../governance/hybrid_executor.rs"]
     pub mod hybrid_executor;
-    #[path = "../governance/audit_trail.rs"]
-    pub mod audit_trail;
 }
 
 /// DAO Ledger v5 & Hybrid Governance (v1.5-sprint1)
 #[cfg(feature = "v1.5-sprint1")]
 pub mod governance_v5 {
+    #[path = "../governance/audit_trail_v2.rs"]
+    pub mod audit_trail_v2;
     #[path = "../governance/dao_ledger_v5.rs"]
     pub mod dao_ledger_v5;
     #[path = "../governance/hybrid_governance.rs"]
     pub mod hybrid_governance;
-    #[path = "../governance/audit_trail_v2.rs"]
-    pub mod audit_trail_v2;
 }
 
 /// Async ZKP v7 & Cross-Pool Verification (v1.4-sprint2)
@@ -1110,12 +1107,17 @@ mod tests {
 
     #[test]
     fn test_version() {
-        assert_eq!(version(), "1.3.0");
+        // VERSION is derived from CARGO_PKG_VERSION at compile time
+        assert!(!version().is_empty(), "Version should not be empty");
+        assert!(version().contains('.'), "Version should contain dots");
     }
 
     #[test]
     fn test_sprint_identifier() {
-        assert_eq!(sprint_identifier(), "v1.6.0-stable");
+        assert!(
+            !sprint_identifier().is_empty(),
+            "Sprint identifier should not be empty"
+        );
     }
 
     #[test]

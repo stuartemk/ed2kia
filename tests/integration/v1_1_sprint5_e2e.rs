@@ -7,10 +7,12 @@
 
 #![cfg(feature = "v1.1-sprint5")]
 
-use ed2kia::ui::dashboard_v2::{DashboardState, DashboardConfig, DashboardMetric};
-use ed2kia::web::ws_dashboard_stream::{WsDashboardStream, WsDashboardConfig, DashboardCategory};
 use ed2kia::interoperability::adaptive_router_v2::{AdaptiveRouter, AdaptiveRouterConfig};
-use ed2kia::scaling::predictive_balancer::{PredictiveBalancer, PredictiveBalancerConfig, TrendDirection};
+use ed2kia::scaling::predictive_balancer::{
+    PredictiveBalancer, PredictiveBalancerConfig, TrendDirection,
+};
+use ed2kia::ui::dashboard_v2::{DashboardConfig, DashboardMetric, DashboardState};
+use ed2kia::web::ws_dashboard_stream::{DashboardCategory, WsDashboardConfig, WsDashboardStream};
 
 // ============================================================================
 // Test: Dashboard v2 E2E
@@ -27,9 +29,21 @@ fn test_e2e_dashboard_full_workflow() {
 
     // Record metrics
     dashboard.record_metric(DashboardMetric::SystemCpuUsage, 0.45, Some("node-1".into()));
-    dashboard.record_metric(DashboardMetric::SystemMemoryUsage, 0.60, Some("node-1".into()));
-    dashboard.record_metric(DashboardMetric::AlignmentConfidence, 0.92, Some("node-2".into()));
-    dashboard.record_metric(DashboardMetric::FederationTrustScore, 0.85, Some("node-3".into()));
+    dashboard.record_metric(
+        DashboardMetric::SystemMemoryUsage,
+        0.60,
+        Some("node-1".into()),
+    );
+    dashboard.record_metric(
+        DashboardMetric::AlignmentConfidence,
+        0.92,
+        Some("node-2".into()),
+    );
+    dashboard.record_metric(
+        DashboardMetric::FederationTrustScore,
+        0.85,
+        Some("node-3".into()),
+    );
 
     // Generate snapshot
     let snapshot = dashboard.get_snapshot().unwrap();
@@ -67,11 +81,7 @@ fn test_e2e_dashboard_metric_history() {
     let mut dashboard = DashboardState::new();
 
     for i in 0..10 {
-        dashboard.record_metric(
-            DashboardMetric::SystemThroughput,
-            (i as f64) * 100.0,
-            None,
-        );
+        dashboard.record_metric(DashboardMetric::SystemThroughput, (i as f64) * 100.0, None);
     }
 
     let history = dashboard.get_metric_history(&DashboardMetric::SystemThroughput);
@@ -95,7 +105,9 @@ fn test_e2e_ws_dashboard_create_and_broadcast() {
     assert!(auth_result.is_ok());
 
     // Subscribe
-    stream.subscribe("conn-1", vec![DashboardCategory::All]).unwrap();
+    stream
+        .subscribe("conn-1", vec![DashboardCategory::All])
+        .unwrap();
 
     // Broadcast snapshot
     let results = stream.broadcast_snapshot(serde_json::json!({"test": true}));
@@ -110,8 +122,12 @@ fn test_e2e_ws_dashboard_rate_limiting() {
     };
     let mut stream = WsDashboardStream::with_config(config);
 
-    stream.create_connection("conn-1".into(), "client-1".into()).unwrap();
-    stream.authenticate_connection("conn-1", "sig_test").unwrap();
+    stream
+        .create_connection("conn-1".into(), "client-1".into())
+        .unwrap();
+    stream
+        .authenticate_connection("conn-1", "sig_test")
+        .unwrap();
 
     // First broadcast should succeed
     let results = stream.broadcast_snapshot(serde_json::json!({"msg": 1}));
@@ -126,15 +142,17 @@ fn test_e2e_ws_dashboard_rate_limiting() {
 fn test_e2e_ws_dashboard_alert_broadcast() {
     let mut stream = WsDashboardStream::new();
 
-    stream.create_connection("conn-1".into(), "client-1".into()).unwrap();
-    stream.authenticate_connection("conn-1", "sig_test").unwrap();
-    stream.subscribe("conn-1", vec![DashboardCategory::System]).unwrap();
+    stream
+        .create_connection("conn-1".into(), "client-1".into())
+        .unwrap();
+    stream
+        .authenticate_connection("conn-1", "sig_test")
+        .unwrap();
+    stream
+        .subscribe("conn-1", vec![DashboardCategory::System])
+        .unwrap();
 
-    stream.broadcast_alert(
-        "alert-1".into(),
-        "critical".into(),
-        "CPU usage high".into(),
-    );
+    stream.broadcast_alert("alert-1".into(), "critical".into(), "CPU usage high".into());
     // broadcast_alert returns (), alert was broadcast successfully
 }
 
@@ -209,7 +227,7 @@ fn test_e2e_predictive_balancer_full_workflow() {
     for i in 0..30 {
         let _ = balancer.record_load(
             "node-1",
-            50.0 + (i as f64) * 2.0,  // Increasing latency
+            50.0 + (i as f64) * 2.0,   // Increasing latency
             1000.0 - (i as f64) * 5.0, // Decreasing throughput
             5.0 + (i as f64) * 0.5,    // Increasing queue
         );
@@ -241,7 +259,9 @@ fn test_e2e_predictive_balancer_best_node_selection() {
         let _ = balancer.record_load("node-2", 200.0, 500.0, 15.0);
     }
 
-    let best = balancer.get_best_node(&vec!["node-1".into(), "node-2".into()]).unwrap();
+    let best = balancer
+        .get_best_node(&vec!["node-1".into(), "node-2".into()])
+        .unwrap();
     assert_eq!(best.as_deref(), Some("node-1"));
 }
 
@@ -276,8 +296,12 @@ fn test_e2e_full_pipeline_dashboard_to_stream() {
     assert!(!snapshot.metrics.is_empty());
 
     // Setup stream
-    stream.create_connection("conn-1".into(), "dashboard-client".into()).unwrap();
-    stream.authenticate_connection("conn-1", "sig_test").unwrap();
+    stream
+        .create_connection("conn-1".into(), "dashboard-client".into())
+        .unwrap();
+    stream
+        .authenticate_connection("conn-1", "sig_test")
+        .unwrap();
 
     // Broadcast dashboard snapshot via stream
     let snapshot_json = serde_json::to_value(&snapshot).unwrap();
@@ -305,7 +329,9 @@ fn test_e2e_full_pipeline_router_to_dashboard() {
     );
 
     let snapshot = dashboard.get_snapshot().unwrap();
-    assert!(snapshot.metrics.contains_key(&DashboardMetric::SystemNetworkLatency));
+    assert!(snapshot
+        .metrics
+        .contains_key(&DashboardMetric::SystemNetworkLatency));
 }
 
 #[test]
@@ -323,7 +349,9 @@ fn test_e2e_full_pipeline_balancer_to_router() {
     }
 
     // Get best node from balancer
-    let best = balancer.get_best_node(&vec!["node-1".into(), "node-2".into()]).unwrap();
+    let best = balancer
+        .get_best_node(&vec!["node-1".into(), "node-2".into()])
+        .unwrap();
     assert_eq!(best.as_deref(), Some("node-1"));
 
     // Register nodes in router

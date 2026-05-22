@@ -9,11 +9,17 @@
 #![cfg(feature = "v1.3-sprint3")]
 
 mod stress {
+    use ed2kia::federation_scaling_v3::scaling_v3::{
+        FederationScalingV3, NodeCapabilityV3, ScalingV3Config,
+    };
+    use ed2kia::federation_zkp_bridge::{
+        FederationProof, FederationZKPBridge, FederationZKPConfig,
+    };
+    use ed2kia::sae::cross_model_aligner::{AlignerConfig, CrossModelAligner};
     use ed2kia::sae::fine_tuning_v3::{FineTuningV3, FineTuningV3Config};
-    use ed2kia::sae::cross_model_aligner::{CrossModelAligner, AlignerConfig};
-    use ed2kia::federation_scaling_v3::scaling_v3::{FederationScalingV3, ScalingV3Config, NodeCapabilityV3};
-    use ed2kia::zkp::async_zkp_v5::{AsyncZKPV5, ZKPV5Config, ZKPStatement, CircuitType, PoolContext};
-    use ed2kia::federation_zkp_bridge::{FederationZKPBridge, FederationZKPConfig, FederationProof};
+    use ed2kia::zkp::async_zkp_v5::{
+        AsyncZKPV5, CircuitType, PoolContext, ZKPStatement, ZKPV5Config,
+    };
     use std::time::Instant;
 
     // ========================================================================
@@ -39,7 +45,9 @@ mod stress {
         for i in 0..20 {
             engine.register_node(format!("node-{}", i), 0.9, 0.85);
         }
-        engine.register_model("model-stress".into(), "node-0".into(), 128).unwrap();
+        engine
+            .register_model("model-stress".into(), "node-0".into(), 128)
+            .unwrap();
 
         let start = Instant::now();
         for i in 0..200 {
@@ -73,7 +81,9 @@ mod stress {
         };
         let mut engine = FineTuningV3::new(config);
         engine.register_node("node-0".into(), 0.95, 0.9);
-        engine.register_model("model-ckpt".into(), "node-0".into(), 64).unwrap();
+        engine
+            .register_model("model-ckpt".into(), "node-0".into(), 64)
+            .unwrap();
 
         let start = Instant::now();
         for _ in 0..100 {
@@ -237,14 +247,20 @@ mod stress {
             ..ZKPV5Config::default()
         };
         let mut engine = AsyncZKPV5::new(config);
-        engine.register_pool(PoolContext::new("pool-stress".into(), 10_000.0, 0.95)).unwrap();
+        engine
+            .register_pool(PoolContext::new("pool-stress".into(), 10_000.0, 0.95))
+            .unwrap();
         engine.start_batch("stress-batch".into()).unwrap();
 
         let start = Instant::now();
         for i in 0..300 {
             let stmt = ZKPStatement {
                 statement_id: format!("stmt-{}", i),
-                public_inputs: vec![(i % 256) as u8, ((i + 1) % 256) as u8, ((i + 2) % 256) as u8],
+                public_inputs: vec![
+                    (i % 256) as u8,
+                    ((i + 1) % 256) as u8,
+                    ((i + 2) % 256) as u8,
+                ],
                 private_inputs_hash: format!("hash-{}", i),
                 circuit_type: match i % 4 {
                     0 => CircuitType::Membership,
@@ -281,7 +297,9 @@ mod stress {
             ..ZKPV5Config::default()
         };
         let mut engine = AsyncZKPV5::new(config);
-        engine.register_pool(PoolContext::new("pool-batch".into(), 50_000.0, 0.9)).unwrap();
+        engine
+            .register_pool(PoolContext::new("pool-batch".into(), 50_000.0, 0.9))
+            .unwrap();
 
         let start = Instant::now();
         for b in 0..100 {
@@ -348,10 +366,7 @@ mod stress {
         let elapsed = start.elapsed();
 
         assert_eq!(batch.proofs.len(), 200);
-        println!(
-            "  ZKP v5 cross-pool 50 pools: {:.2}ms",
-            elapsed.as_millis()
-        );
+        println!("  ZKP v5 cross-pool 50 pools: {:.2}ms", elapsed.as_millis());
     }
 
     // ========================================================================
@@ -374,7 +389,9 @@ mod stress {
         let mut bridge = FederationZKPBridge::new(config);
 
         for i in 0..10 {
-            bridge.register_shard(format!("shard-{}", i), 1000.0, 0.9).unwrap();
+            bridge
+                .register_shard(format!("shard-{}", i), 1000.0, 0.9)
+                .unwrap();
         }
 
         let start = Instant::now();
@@ -418,7 +435,9 @@ mod stress {
 
         for i in 0..5 {
             // Each shard needs enough resources: 100 proofs * 5.0 cost = 500.0
-            bridge.register_shard(format!("shard-{}", i), 1_000.0, 0.9).unwrap();
+            bridge
+                .register_shard(format!("shard-{}", i), 1_000.0, 0.9)
+                .unwrap();
         }
 
         let start = Instant::now();
@@ -430,8 +449,12 @@ mod stress {
                 format!("hash-{}", i),
             );
             let _ = bridge.submit_proof(proof);
-            bridge.submit_vote(&format!("proof-{}", i), "shard-1", true).unwrap();
-            bridge.submit_vote(&format!("proof-{}", i), "shard-2", true).unwrap();
+            bridge
+                .submit_vote(&format!("proof-{}", i), "shard-1", true)
+                .unwrap();
+            bridge
+                .submit_vote(&format!("proof-{}", i), "shard-2", true)
+                .unwrap();
             let _ = bridge.check_consensus(&format!("proof-{}", i));
             let _ = bridge.complete_verification(&format!("proof-{}", i), true);
         }
@@ -462,7 +485,9 @@ mod stress {
         let mut bridge = FederationZKPBridge::new(config);
 
         for i in 0..5 {
-            bridge.register_shard(format!("shard-{}", i), 500.0, 0.9).unwrap();
+            bridge
+                .register_shard(format!("shard-{}", i), 500.0, 0.9)
+                .unwrap();
         }
 
         let start = Instant::now();
@@ -490,7 +515,8 @@ mod stress {
         // 1. SAE Fine-Tuning: 50 rounds
         let mut sae = FineTuningV3::default();
         sae.register_node("sae-node".into(), 0.95, 0.9);
-        sae.register_model("model-p".into(), "sae-node".into(), 64).unwrap();
+        sae.register_model("model-p".into(), "sae-node".into(), 64)
+            .unwrap();
         for i in 0..50 {
             let grads: Vec<f32> = (0..64).map(|j| ((i + j) % 20) as f32 * 0.1).collect();
             let _ = sae.train_step(&grads);
@@ -508,7 +534,8 @@ mod stress {
 
         // 3. ZKP v5: 100 statements
         let mut zkp = AsyncZKPV5::with_defaults();
-        zkp.register_pool(PoolContext::new("pool-p".into(), 5000.0, 0.9)).unwrap();
+        zkp.register_pool(PoolContext::new("pool-p".into(), 5000.0, 0.9))
+            .unwrap();
         zkp.start_batch("pipeline".into()).unwrap();
         for i in 0..100 {
             let stmt = ZKPStatement {
@@ -527,8 +554,12 @@ mod stress {
 
         // 4. Federation Bridge: 50 proofs with consensus
         let mut bridge = FederationZKPBridge::default();
-        bridge.register_shard("shard-a".into(), 500.0, 0.95).unwrap();
-        bridge.register_shard("shard-b".into(), 300.0, 0.88).unwrap();
+        bridge
+            .register_shard("shard-a".into(), 500.0, 0.95)
+            .unwrap();
+        bridge
+            .register_shard("shard-b".into(), 300.0, 0.88)
+            .unwrap();
         for i in 0..50 {
             let proof = FederationProof::new(
                 format!("bp-{}", i),
@@ -537,7 +568,9 @@ mod stress {
                 format!("hash-{}", i),
             );
             let _ = bridge.submit_proof(proof);
-            bridge.submit_vote(&format!("bp-{}", i), "shard-b", true).unwrap();
+            bridge
+                .submit_vote(&format!("bp-{}", i), "shard-b", true)
+                .unwrap();
             let _ = bridge.check_consensus(&format!("bp-{}", i));
         }
 

@@ -162,7 +162,10 @@ impl ResourceMarketplace {
     /// Returns the best (lowest-price) listing that satisfies quantity and
     /// max_price constraints.  Does **not** settle — call [`settle_trade`]
     /// afterwards.
-    pub fn match_request(&self, request: &ResourceRequest) -> Result<ResourceListing, MarketplaceError> {
+    pub fn match_request(
+        &self,
+        request: &ResourceRequest,
+    ) -> Result<ResourceListing, MarketplaceError> {
         let listings = self
             .listings
             .get(&request.resource_type)
@@ -197,21 +200,17 @@ impl ResourceMarketplace {
             .ok_or_else(|| MarketplaceError::NodeNotFound(requester_id.into()))?;
 
         if req_info.trust_score < self.min_trust_threshold {
-            return Ok(MarketResult::rejected(
-                &format!(
-                    "Requester trust below threshold: {:.3} < {:.3}",
-                    req_info.trust_score, self.min_trust_threshold
-                ),
-            ));
+            return Ok(MarketResult::rejected(&format!(
+                "Requester trust below threshold: {:.3} < {:.3}",
+                req_info.trust_score, self.min_trust_threshold
+            )));
         }
 
         if req_info.credits < self.min_credit_threshold {
-            return Ok(MarketResult::rejected(
-                &format!(
-                    "Requester credits insufficient: {:.1} < {:.1}",
-                    req_info.credits, self.min_credit_threshold
-                ),
-            ));
+            return Ok(MarketResult::rejected(&format!(
+                "Requester credits insufficient: {:.1} < {:.1}",
+                req_info.credits, self.min_credit_threshold
+            )));
         }
 
         // Verify provider
@@ -221,20 +220,17 @@ impl ResourceMarketplace {
             .ok_or_else(|| MarketplaceError::NodeNotFound(provider_id.into()))?;
 
         if prov_info.trust_score < self.min_trust_threshold {
-            return Ok(MarketResult::rejected(
-                &format!(
-                    "Provider trust below threshold: {:.3} < {:.3}",
-                    prov_info.trust_score, self.min_trust_threshold
-                ),
-            ));
+            return Ok(MarketResult::rejected(&format!(
+                "Provider trust below threshold: {:.3} < {:.3}",
+                prov_info.trust_score, self.min_trust_threshold
+            )));
         }
 
         // Compute dynamic price
         let price = self.compute_dynamic_price(base_price, prov_info.trust_score);
 
         // Generate settlement hash
-        let settlement_hash =
-            Self::generate_settlement_hash(requester_id, provider_id, price);
+        let settlement_hash = Self::generate_settlement_hash(requester_id, provider_id, price);
 
         info!(
             requester = %requester_id,

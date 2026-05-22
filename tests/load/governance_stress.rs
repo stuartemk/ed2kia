@@ -7,10 +7,10 @@
 mod stress {
     use ed2kia::governance::liquid_v2::*;
     use ed2kia::governance::voting_mechanism::*;
-    use ed2kia::slo::dynamic_engine::*;
-    use ed2kia::slo::contract_manager::*;
-    use ed2kia::web::realtime::*;
     use ed2kia::monitoring::streaming_metrics::*;
+    use ed2kia::slo::contract_manager::*;
+    use ed2kia::slo::dynamic_engine::*;
+    use ed2kia::web::realtime::*;
 
     // ========================================================================
     // Governance v2 Stress Tests
@@ -32,7 +32,8 @@ mod stress {
                 ip_prefix: format!("10.0.{}", i % 255),
                 voting_history: vec![],
                 reputation_score: 0.8 + (i as f64 % 20.0) / 100.0,
-            }).expect("register node");
+            })
+            .expect("register node");
         }
 
         let stats = gov.get_stats();
@@ -40,12 +41,14 @@ mod stress {
 
         // Create 10 proposals
         for i in 0..10 {
-            let _proposal = gov.create_proposal(
-                &format!("Proposal {}", i),
-                "Stress test proposal",
-                &format!("node-{}", i % 100),
-                false,
-            ).expect("create proposal");
+            let _proposal = gov
+                .create_proposal(
+                    &format!("Proposal {}", i),
+                    "Stress test proposal",
+                    &format!("node-{}", i % 100),
+                    false,
+                )
+                .expect("create proposal");
         }
 
         assert_eq!(gov.get_stats().total_proposals, 10);
@@ -67,16 +70,14 @@ mod stress {
                 ip_prefix: format!("10.0.{}", i),
                 voting_history: vec![],
                 reputation_score: 0.95,
-            }).expect("register node");
+            })
+            .expect("register node");
         }
 
         // Create proposal
-        let _proposal = gov.create_proposal(
-            "Stress Proposal",
-            "Mass voting test",
-            "node-0",
-            false,
-        ).expect("create proposal");
+        let _proposal = gov
+            .create_proposal("Stress Proposal", "Mass voting test", "node-0", false)
+            .expect("create proposal");
 
         // All nodes vote
         for i in 0..50 {
@@ -103,7 +104,8 @@ mod stress {
                 ip_prefix: format!("10.0.{}", i),
                 voting_history: vec![],
                 reputation_score: 0.95,
-            }).expect("register node");
+            })
+            .expect("register node");
         }
 
         // Create delegation chain
@@ -117,12 +119,9 @@ mod stress {
         }
 
         // Create proposal and vote with delegated weight
-        let _proposal = gov.create_proposal(
-            "Delegation Test",
-            "Test delegation chain",
-            "node-0",
-            false,
-        ).expect("create proposal");
+        let _proposal = gov
+            .create_proposal("Delegation Test", "Test delegation chain", "node-0", false)
+            .expect("create proposal");
 
         let _ = gov.cast_vote("node-0", "prop-1", true);
     }
@@ -151,12 +150,8 @@ mod stress {
             } else {
                 VoteDirection::Abstain
             };
-            let _ = mechanism.submit_vote(
-                &voter_id,
-                &proposal_id,
-                direction,
-                &format!("sig-{}", i),
-            );
+            let _ =
+                mechanism.submit_vote(&voter_id, &proposal_id, direction, &format!("sig-{}", i));
         }
 
         let stats = mechanism.get_stats();
@@ -282,7 +277,8 @@ mod stress {
                 vec![metric],
                 vec![],
                 3,
-            ).expect("create contract");
+            )
+            .expect("create contract");
             let _ = manager.register_contract(contract);
         }
 
@@ -292,7 +288,11 @@ mod stress {
         // Validate all
         let mut metrics = std::collections::HashMap::new();
         metrics.insert("uptime".to_string(), 99.95);
-        let results: Vec<ValidationResult> = manager.validate_all(&metrics).into_iter().filter_map(|r| r.ok()).collect();
+        let results: Vec<ValidationResult> = manager
+            .validate_all(&metrics)
+            .into_iter()
+            .filter_map(|r| r.ok())
+            .collect();
         assert_eq!(results.len(), 50);
     }
 
@@ -344,10 +344,7 @@ mod stress {
         };
         let mut backend = TelemetryBackend::with_config(config);
 
-        let _ = backend.create_session(
-            "high-rate".to_string(),
-            vec![TelemetryEventType::Metrics],
-        );
+        let _ = backend.create_session("high-rate".to_string(), vec![TelemetryEventType::Metrics]);
 
         // Publish 200 events rapidly
         for i in 0..200 {
@@ -406,11 +403,7 @@ mod stress {
                 let mut labels = std::collections::HashMap::new();
                 labels.insert("method".to_string(), method.to_string());
                 labels.insert("status".to_string(), status.to_string());
-                collector.record(
-                    "http_requests".to_string(),
-                    100.0,
-                    labels,
-                );
+                collector.record("http_requests".to_string(), 100.0, labels);
             }
         }
 
@@ -441,7 +434,8 @@ mod stress {
                 ip_prefix: format!("10.0.{}", i),
                 voting_history: vec![],
                 reputation_score: 0.95,
-            }).expect("register node");
+            })
+            .expect("register node");
         }
 
         // Setup SLO

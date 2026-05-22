@@ -185,9 +185,10 @@ impl PredictiveScheduler {
     }
 
     pub fn predict_load(&mut self, node_id: &str) -> Result<LoadPrediction, SchedulerError> {
-        let history = self.histories.get(node_id).ok_or_else(|| {
-            SchedulerError::NodeNotFound(node_id.to_string())
-        })?;
+        let history = self
+            .histories
+            .get(node_id)
+            .ok_or_else(|| SchedulerError::NodeNotFound(node_id.to_string()))?;
 
         if history.load_samples.len() < self.config.min_history_points {
             return Err(SchedulerError::InsufficientHistory);
@@ -204,10 +205,10 @@ impl PredictiveScheduler {
         };
 
         self.stats.total_predictions += 1;
-        self.stats.avg_prediction_confidence =
-            (self.stats.avg_prediction_confidence * (self.stats.total_predictions - 1) as f64
-                + confidence)
-                / self.stats.total_predictions as f64;
+        self.stats.avg_prediction_confidence = (self.stats.avg_prediction_confidence
+            * (self.stats.total_predictions - 1) as f64
+            + confidence)
+            / self.stats.total_predictions as f64;
 
         Ok(LoadPrediction {
             node_id: node_id.to_string(),

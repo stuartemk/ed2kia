@@ -390,8 +390,7 @@ impl WsAlignmentStream {
 
         // Guardar token de reconexión
         if let Some(token) = &connection.reconnect_token {
-            self.reconnect_tokens
-                .insert(token.clone(), Instant::now());
+            self.reconnect_tokens.insert(token.clone(), Instant::now());
         }
 
         self.connections.insert(connection_id.clone(), connection);
@@ -447,10 +446,7 @@ impl WsAlignmentStream {
     }
 
     /// Cerrar conexión.
-    pub fn close_connection(
-        &mut self,
-        connection_id: &str,
-    ) -> Result<(), WsAlignmentError> {
+    pub fn close_connection(&mut self, connection_id: &str) -> Result<(), WsAlignmentError> {
         match self.connections.remove(connection_id) {
             Some(_) => {
                 info!("Conexión cerrada: {}", connection_id);
@@ -617,8 +613,7 @@ impl WsAlignmentStream {
             let mut sorted: Vec<f64> = self.latency_samples.iter().cloned().collect();
             sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
             let p95_idx = ((sorted.len() as f64) * 0.95) as usize;
-            self.stats.p95_latency_ms =
-                *sorted.get(p95_idx.min(sorted.len() - 1)).unwrap_or(&0.0);
+            self.stats.p95_latency_ms = *sorted.get(p95_idx.min(sorted.len() - 1)).unwrap_or(&0.0);
         }
     }
 }
@@ -686,7 +681,9 @@ mod tests {
     fn test_create_duplicate_connection() {
         let mut stream = WsAlignmentStream::new();
         let types = vec![AlignmentSignalType::Feedback];
-        stream.create_connection("c1".to_string(), types.clone()).unwrap();
+        stream
+            .create_connection("c1".to_string(), types.clone())
+            .unwrap();
         let result = stream.create_connection("c1".to_string(), types);
         assert!(result.is_err());
     }
@@ -700,7 +697,9 @@ mod tests {
         let mut stream = WsAlignmentStream::with_config(config);
         let types = vec![AlignmentSignalType::Feedback];
 
-        stream.create_connection("c1".to_string(), types.clone()).unwrap();
+        stream
+            .create_connection("c1".to_string(), types.clone())
+            .unwrap();
         let result = stream.create_connection("c2".to_string(), types);
         assert!(result.is_err());
     }
@@ -905,16 +904,10 @@ mod tests {
     fn test_multiple_connections_different_subscriptions() {
         let mut stream = WsAlignmentStream::new();
         stream
-            .create_connection(
-                "c1".to_string(),
-                vec![AlignmentSignalType::Feedback],
-            )
+            .create_connection("c1".to_string(), vec![AlignmentSignalType::Feedback])
             .unwrap();
         stream
-            .create_connection(
-                "c2".to_string(),
-                vec![AlignmentSignalType::Steering],
-            )
+            .create_connection("c2".to_string(), vec![AlignmentSignalType::Steering])
             .unwrap();
 
         let result = stream.emit_signal(

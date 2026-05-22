@@ -26,11 +26,25 @@ impl std::fmt::Display for StakingError {
             StakingError::NodeNotFound(id) => {
                 write!(f, "Node not found: {}", id)
             }
-            StakingError::InsufficientReputation { available, required } => {
-                write!(f, "Insufficient reputation: available={}, required={}", available, required)
+            StakingError::InsufficientReputation {
+                available,
+                required,
+            } => {
+                write!(
+                    f,
+                    "Insufficient reputation: available={}, required={}",
+                    available, required
+                )
             }
-            StakingError::InsufficientCredits { available, required } => {
-                write!(f, "Insufficient credits: available={}, required={}", available, required)
+            StakingError::InsufficientCredits {
+                available,
+                required,
+            } => {
+                write!(
+                    f,
+                    "Insufficient credits: available={}, required={}",
+                    available, required
+                )
             }
             StakingError::AlreadyStaked(id) => {
                 write!(f, "Node already staked: {}", id)
@@ -203,8 +217,14 @@ impl TechnicalStaking {
     }
 
     /// Update node reputation.
-    pub fn update_reputation(&mut self, node_id: &str, reputation: f64) -> Result<(), StakingError> {
-        let profile = self.profiles.get_mut(node_id)
+    pub fn update_reputation(
+        &mut self,
+        node_id: &str,
+        reputation: f64,
+    ) -> Result<(), StakingError> {
+        let profile = self
+            .profiles
+            .get_mut(node_id)
             .ok_or(StakingError::NodeNotFound(node_id.to_string()))?;
         profile.reputation = reputation.clamp(0.0, 1.0);
         Ok(())
@@ -212,7 +232,9 @@ impl TechnicalStaking {
 
     /// Update node available credits.
     pub fn update_credits(&mut self, node_id: &str, credits: f64) -> Result<(), StakingError> {
-        let profile = self.profiles.get_mut(node_id)
+        let profile = self
+            .profiles
+            .get_mut(node_id)
             .ok_or(StakingError::NodeNotFound(node_id.to_string()))?;
         profile.available_credits = credits.max(0.0);
         Ok(())
@@ -230,7 +252,9 @@ impl TechnicalStaking {
             return Err(StakingError::AlreadyStaked(node_id.to_string()));
         }
 
-        let profile = self.profiles.get(node_id)
+        let profile = self
+            .profiles
+            .get(node_id)
             .ok_or(StakingError::NodeNotFound(node_id.to_string()))?;
 
         // Check minimum reputation
@@ -290,7 +314,9 @@ impl TechnicalStaking {
 
     /// Withdraw a stake (release reputation and credits).
     pub fn withdraw_stake(&mut self, node_id: &str) -> Result<StakeRecord, StakingError> {
-        let stake = self.stakes.remove(node_id)
+        let stake = self
+            .stakes
+            .remove(node_id)
             .ok_or(StakingError::NotStaked(node_id.to_string()))?;
 
         // Update profile
@@ -342,7 +368,9 @@ impl TechnicalStaking {
 
     /// Record node activity (resets decay for this epoch).
     pub fn record_activity(&mut self, node_id: &str) -> Result<(), StakingError> {
-        let stake = self.stakes.get_mut(node_id)
+        let stake = self
+            .stakes
+            .get_mut(node_id)
             .ok_or(StakingError::NotStaked(node_id.to_string()))?;
         stake.last_active_epoch = self.stats.current_epoch + 1;
         stake.epochs_active += 1;
@@ -413,7 +441,7 @@ mod tests {
         let mut staking = TechnicalStaking::with_defaults();
         staking.register_node("node1".to_string(), 0.1, 50.0);
         match staking.place_stake("node1", 0.5, 20.0) {
-            Err(StakingError::InsufficientReputation { .. }) => {},
+            Err(StakingError::InsufficientReputation { .. }) => {}
             _ => panic!("Expected InsufficientReputation"),
         }
     }
@@ -423,7 +451,7 @@ mod tests {
         let mut staking = TechnicalStaking::with_defaults();
         staking.register_node("node1".to_string(), 0.8, 10.0);
         match staking.place_stake("node1", 0.5, 50.0) {
-            Err(StakingError::InsufficientCredits { .. }) => {},
+            Err(StakingError::InsufficientCredits { .. }) => {}
             _ => panic!("Expected InsufficientCredits"),
         }
     }
@@ -505,7 +533,10 @@ mod tests {
         let mut staking = TechnicalStaking::with_defaults();
         staking.register_node("node1".to_string(), 0.8, 50.0);
         staking.update_credits("node1", 100.0).unwrap();
-        assert_eq!(staking.get_profile("node1").unwrap().available_credits, 100.0);
+        assert_eq!(
+            staking.get_profile("node1").unwrap().available_credits,
+            100.0
+        );
     }
 
     #[test]

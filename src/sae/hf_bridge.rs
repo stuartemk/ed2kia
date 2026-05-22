@@ -52,10 +52,26 @@ pub struct HfFileMeta {
 /// Progress events emitted during streaming download.
 #[derive(Debug, Clone)]
 pub enum HfProgress {
-    Started { file: String, total_bytes: u64 },
-    Chunk { file: String, bytes_so_far: u64, total_bytes: u64, chunk_ms: u64 },
-    Completed { file: String, total_bytes: u64, total_ms: u64, sha256: String },
-    Failed { file: String, error: String },
+    Started {
+        file: String,
+        total_bytes: u64,
+    },
+    Chunk {
+        file: String,
+        bytes_so_far: u64,
+        total_bytes: u64,
+        chunk_ms: u64,
+    },
+    Completed {
+        file: String,
+        total_bytes: u64,
+        total_ms: u64,
+        sha256: String,
+    },
+    Failed {
+        file: String,
+        error: String,
+    },
 }
 
 /// Streaming download result with verification.
@@ -120,7 +136,9 @@ impl HfBridge {
     /// Build the download URL for a file in a HuggingFace repo.
     fn build_url(&self, repo_id: &str, filename: &str) -> Result<String, HfBridgeError> {
         if repo_id.is_empty() {
-            return Err(HfBridgeError::InvalidRepoId("repo_id cannot be empty".into()));
+            return Err(HfBridgeError::InvalidRepoId(
+                "repo_id cannot be empty".into(),
+            ));
         }
         if !repo_id.contains('/') {
             return Err(HfBridgeError::InvalidRepoId(

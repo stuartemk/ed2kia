@@ -10,11 +10,15 @@ mod e2e {
     use ed2kia::sae::fine_tuning_v7::{FineTuningV7, FineTuningV7Config};
 
     // LP-151: Cross-Model Federation Scaling v7 (behind v1.6-sprint3)
-    use ed2kia::federation::cross_model_scaling_v7::{CrossModelScalingV7, CrossModelScalingV7Config};
+    use ed2kia::federation::cross_model_scaling_v7::{
+        CrossModelScalingV7, CrossModelScalingV7Config,
+    };
 
     // LP-152: Async ZKP v14 & Bridge v7
-    use ed2kia::zkp::async_zkp_v14::{AsyncZKPV14, ZKPV14Config, ProofPriority};
-    use ed2kia::bridge::federation_zkp_bridge_v7::{FederationZKPBridgeV7, FederationZKPBridgeV7Config};
+    use ed2kia::bridge::federation_zkp_bridge_v7::{
+        FederationZKPBridgeV7, FederationZKPBridgeV7Config,
+    };
+    use ed2kia::zkp::async_zkp_v14::{AsyncZKPV14, ProofPriority, ZKPV14Config};
 
     fn current_ms() -> u64 {
         std::time::SystemTime::now()
@@ -38,12 +42,20 @@ mod e2e {
         });
 
         // Register nodes
-        engine.register_node("n1".to_string(), 0.99, 0.95, 200.0).unwrap();
-        engine.register_node("n2".to_string(), 0.97, 0.90, 150.0).unwrap();
+        engine
+            .register_node("n1".to_string(), 0.99, 0.95, 200.0)
+            .unwrap();
+        engine
+            .register_node("n2".to_string(), 0.97, 0.90, 150.0)
+            .unwrap();
 
         // Register models
-        engine.register_model("m1".to_string(), "n1".to_string(), 768).unwrap();
-        engine.register_model("m2".to_string(), "n2".to_string(), 768).unwrap();
+        engine
+            .register_model("m1".to_string(), "n1".to_string(), 768)
+            .unwrap();
+        engine
+            .register_model("m2".to_string(), "n2".to_string(), 768)
+            .unwrap();
 
         // Execute training rounds
         let start = Instant::now();
@@ -67,12 +79,18 @@ mod e2e {
             ..FineTuningV7Config::default()
         });
 
-        engine.register_node("n1".to_string(), 0.99, 0.95, 200.0).unwrap();
-        engine.register_model("m1".to_string(), "n1".to_string(), 768).unwrap();
+        engine
+            .register_node("n1".to_string(), 0.99, 0.95, 200.0)
+            .unwrap();
+        engine
+            .register_model("m1".to_string(), "n1".to_string(), 768)
+            .unwrap();
 
         // Execute rounds with checkpoints
         for _round in 0..8 {
-            let _ = engine.execute_round("m1".to_string(), 0.5, 1.0, 100).unwrap();
+            let _ = engine
+                .execute_round("m1".to_string(), 0.5, 1.0, 100)
+                .unwrap();
         }
 
         // Verify checkpoints exist
@@ -93,21 +111,35 @@ mod e2e {
             ..FineTuningV7Config::default()
         });
 
-        engine.register_node("n1".to_string(), 0.99, 0.95, 200.0).unwrap();
-        engine.register_node("n2".to_string(), 0.97, 0.90, 150.0).unwrap();
-        engine.register_model("m1".to_string(), "n1".to_string(), 768).unwrap();
-        engine.register_model("m2".to_string(), "n2".to_string(), 768).unwrap();
+        engine
+            .register_node("n1".to_string(), 0.99, 0.95, 200.0)
+            .unwrap();
+        engine
+            .register_node("n2".to_string(), 0.97, 0.90, 150.0)
+            .unwrap();
+        engine
+            .register_model("m1".to_string(), "n1".to_string(), 768)
+            .unwrap();
+        engine
+            .register_model("m2".to_string(), "n2".to_string(), 768)
+            .unwrap();
 
         // Train both models
         for _ in 0..5 {
-            let r1 = engine.execute_round("m1".to_string(), 0.5, 1.0, 100).unwrap();
-            let r2 = engine.execute_round("m2".to_string(), 0.5, 1.0, 100).unwrap();
+            let r1 = engine
+                .execute_round("m1".to_string(), 0.5, 1.0, 100)
+                .unwrap();
+            let r2 = engine
+                .execute_round("m2".to_string(), 0.5, 1.0, 100)
+                .unwrap();
             assert!(r1.alignment_score > 0.0);
             assert!(r2.alignment_score > 0.0);
         }
 
         // Both models should have completed rounds
-        assert!(engine.get_checkpoint(10, "m1").is_none() || engine.get_checkpoint(10, "m1").is_some());
+        assert!(
+            engine.get_checkpoint(10, "m1").is_none() || engine.get_checkpoint(10, "m1").is_some()
+        );
     }
 
     // === LP-151: Cross-Model Federation Scaling v7 E2E ===
@@ -131,8 +163,12 @@ mod e2e {
         }
 
         // Register shards
-        engine.register_shard("shard_a".to_string(), "model_a".to_string()).unwrap();
-        engine.register_shard("shard_b".to_string(), "model_b".to_string()).unwrap();
+        engine
+            .register_shard("shard_a".to_string(), "model_a".to_string())
+            .unwrap();
+        engine
+            .register_shard("shard_b".to_string(), "model_b".to_string())
+            .unwrap();
 
         // Assign nodes to shards
         for i in 0..10 {
@@ -162,12 +198,16 @@ mod e2e {
         engine
             .register_node("node_1".to_string(), "model_a".to_string(), 100.0)
             .unwrap();
-        engine.register_shard("shard_1".to_string(), "model_a".to_string()).unwrap();
+        engine
+            .register_shard("shard_1".to_string(), "model_a".to_string())
+            .unwrap();
         engine.assign_node_to_shard("node_1", "shard_1").unwrap();
 
         // Simulate load changes
         for i in 0..10 {
-            engine.update_node_load("node_1", 0.3 + i as f64 * 0.05).unwrap();
+            engine
+                .update_node_load("node_1", 0.3 + i as f64 * 0.05)
+                .unwrap();
         }
 
         // Predict load via node entry
@@ -189,7 +229,9 @@ mod e2e {
         engine
             .register_node("node_2".to_string(), "model_b".to_string(), 100.0)
             .unwrap();
-        engine.register_shard("shard_1".to_string(), "model_a".to_string()).unwrap();
+        engine
+            .register_shard("shard_1".to_string(), "model_a".to_string())
+            .unwrap();
 
         // Assign node_1 to shard_1 (same model - OK)
         engine.assign_node_to_shard("node_1", "shard_1").unwrap();
@@ -211,8 +253,12 @@ mod e2e {
         });
 
         let now = current_ms();
-        engine.register_federation("fed_a".to_string(), 0.95).unwrap();
-        engine.register_federation("fed_b".to_string(), 0.90).unwrap();
+        engine
+            .register_federation("fed_a".to_string(), 0.95)
+            .unwrap();
+        engine
+            .register_federation("fed_b".to_string(), 0.90)
+            .unwrap();
 
         // Submit proofs
         for i in 0..8 {
@@ -245,9 +291,15 @@ mod e2e {
         let mut engine = AsyncZKPV14::default();
 
         let now = current_ms();
-        engine.register_federation("fed_a".to_string(), 0.95).unwrap();
-        engine.register_federation("fed_b".to_string(), 0.90).unwrap();
-        engine.register_federation("fed_c".to_string(), 0.85).unwrap();
+        engine
+            .register_federation("fed_a".to_string(), 0.95)
+            .unwrap();
+        engine
+            .register_federation("fed_b".to_string(), 0.90)
+            .unwrap();
+        engine
+            .register_federation("fed_c".to_string(), 0.85)
+            .unwrap();
 
         // Submit proofs from multiple federations
         for i in 0..5 {
@@ -286,8 +338,17 @@ mod e2e {
         let mut engine = AsyncZKPV14::default();
 
         let now = current_ms();
-        engine.register_federation("fed1".to_string(), 0.95).unwrap();
-        engine.submit_proof("p1".to_string(), ProofPriority::Critical, now, "fed1".to_string()).unwrap();
+        engine
+            .register_federation("fed1".to_string(), 0.95)
+            .unwrap();
+        engine
+            .submit_proof(
+                "p1".to_string(),
+                ProofPriority::Critical,
+                now,
+                "fed1".to_string(),
+            )
+            .unwrap();
 
         let batch_id = engine.create_batch(now);
         engine.assign_proof_to_batch(&batch_id).unwrap();
@@ -307,7 +368,7 @@ mod e2e {
     #[test]
     fn test_e2e_bridge_v7_cross_model_verification() {
         let mut bridge = FederationZKPBridgeV7::new(FederationZKPBridgeV7Config {
-        max_federations: 20,
+            max_federations: 20,
             max_proofs_in_flight: 256,
             min_credibility: 0.5,
             proof_ttl_ms: 30000,
@@ -315,9 +376,15 @@ mod e2e {
         });
 
         let now = current_ms();
-        bridge.register_federation("fed_a".to_string(), 0.95, 100.0).unwrap();
-        bridge.register_federation("fed_b".to_string(), 0.90, 80.0).unwrap();
-        bridge.register_federation("fed_c".to_string(), 0.85, 60.0).unwrap();
+        bridge
+            .register_federation("fed_a".to_string(), 0.95, 100.0)
+            .unwrap();
+        bridge
+            .register_federation("fed_b".to_string(), 0.90, 80.0)
+            .unwrap();
+        bridge
+            .register_federation("fed_c".to_string(), 0.85, 60.0)
+            .unwrap();
 
         // Submit proof from A to B - returns Result<(), Error>
         bridge
@@ -342,9 +409,15 @@ mod e2e {
     fn test_e2e_bridge_v7_adaptive_routing() {
         let mut bridge = FederationZKPBridgeV7::default();
 
-        bridge.register_federation("fast_fed".to_string(), 0.95, 200.0).unwrap();
-        bridge.register_federation("slow_fed".to_string(), 0.90, 50.0).unwrap();
-        bridge.register_federation("low_cred".to_string(), 0.40, 100.0).unwrap();
+        bridge
+            .register_federation("fast_fed".to_string(), 0.95, 200.0)
+            .unwrap();
+        bridge
+            .register_federation("slow_fed".to_string(), 0.90, 50.0)
+            .unwrap();
+        bridge
+            .register_federation("low_cred".to_string(), 0.40, 100.0)
+            .unwrap();
 
         // Select best federation (should prefer fast_fed: high credibility + high capacity)
         let best = bridge.select_best_federation(None);
@@ -375,7 +448,9 @@ mod e2e {
         });
 
         let now = current_ms();
-        bridge.register_federation("fed1".to_string(), 0.95, 100.0).unwrap();
+        bridge
+            .register_federation("fed1".to_string(), 0.95, 100.0)
+            .unwrap();
 
         bridge
             .submit_proof(
@@ -401,11 +476,20 @@ mod e2e {
         let now = current_ms();
 
         // Setup ZKP engine
-        zkp.register_federation("zkp_fed".to_string(), 0.95).unwrap();
-        zkp.submit_proof("zkp_p1".to_string(), ProofPriority::Normal, now, "zkp_fed".to_string()).unwrap();
+        zkp.register_federation("zkp_fed".to_string(), 0.95)
+            .unwrap();
+        zkp.submit_proof(
+            "zkp_p1".to_string(),
+            ProofPriority::Normal,
+            now,
+            "zkp_fed".to_string(),
+        )
+        .unwrap();
 
         // Setup bridge
-        bridge.register_federation("zkp_fed".to_string(), 0.95, 100.0).unwrap();
+        bridge
+            .register_federation("zkp_fed".to_string(), 0.95, 100.0)
+            .unwrap();
 
         // Generate proof in ZKP
         let batch_id = zkp.create_batch(now);
@@ -442,17 +526,30 @@ mod e2e {
             gradient_sync_timeout_ms: 200,
             ..FineTuningV7Config::default()
         });
-        tuner.register_node("train_node".to_string(), 0.99, 0.95, 200.0).unwrap();
-        tuner.register_model("model_1".to_string(), "train_node".to_string(), 768).unwrap();
+        tuner
+            .register_node("train_node".to_string(), 0.99, 0.95, 200.0)
+            .unwrap();
+        tuner
+            .register_model("model_1".to_string(), "train_node".to_string(), 768)
+            .unwrap();
 
         for round in 0..5 {
-            let _ = tuner.execute_round("model_1".to_string(), 0.5 * (0.9_f64).powi(round), 1.0, 100).unwrap();
+            let _ = tuner
+                .execute_round("model_1".to_string(), 0.5 * (0.9_f64).powi(round), 1.0, 100)
+                .unwrap();
         }
 
         // ZKP proof generation
         let mut zkp = AsyncZKPV14::default();
-        zkp.register_federation("training_fed".to_string(), 0.95).unwrap();
-        zkp.submit_proof("training_proof".to_string(), ProofPriority::Critical, now, "training_fed".to_string()).unwrap();
+        zkp.register_federation("training_fed".to_string(), 0.95)
+            .unwrap();
+        zkp.submit_proof(
+            "training_proof".to_string(),
+            ProofPriority::Critical,
+            now,
+            "training_fed".to_string(),
+        )
+        .unwrap();
 
         let batch_id = zkp.create_batch(now);
         zkp.assign_proof_to_batch(&batch_id).unwrap();
@@ -460,7 +557,9 @@ mod e2e {
 
         // Bridge verification
         let mut bridge = FederationZKPBridgeV7::default();
-        bridge.register_federation("training_fed".to_string(), 0.95, 100.0).unwrap();
+        bridge
+            .register_federation("training_fed".to_string(), 0.95, 100.0)
+            .unwrap();
 
         bridge
             .submit_proof(
@@ -477,8 +576,12 @@ mod e2e {
 
         // Scaling validation
         let mut scaler = CrossModelScalingV7::default();
-        scaler.register_node("node_1".to_string(), "model_1".to_string(), 200.0).unwrap();
-        scaler.register_shard("shard_1".to_string(), "model_1".to_string()).unwrap();
+        scaler
+            .register_node("node_1".to_string(), "model_1".to_string(), 200.0)
+            .unwrap();
+        scaler
+            .register_shard("shard_1".to_string(), "model_1".to_string())
+            .unwrap();
         scaler.assign_node_to_shard("node_1", "shard_1").unwrap();
 
         // Verify ZKP proof

@@ -8,8 +8,8 @@
 //! Feature-gated behind `cfg(feature = "v1.9-sprint2")`.
 
 mod internal {
-    use std::fmt;
     use std::collections::HashMap;
+    use std::fmt;
 
     // ============================================================================
     // Errors
@@ -39,7 +39,9 @@ mod internal {
                 AggregationError::BatchEmpty => write!(f, "batch empty (no proofs to aggregate)"),
                 AggregationError::DuplicateProof => write!(f, "proof already in batch (duplicate)"),
                 AggregationError::BatchSizeExceeded => write!(f, "batch size exceeded maximum"),
-                AggregationError::VerificationFailed => write!(f, "verification failed for aggregated batch"),
+                AggregationError::VerificationFailed => {
+                    write!(f, "verification failed for aggregated batch")
+                }
                 AggregationError::CommitmentMismatch => write!(f, "commitment hash mismatch"),
             }
         }
@@ -555,7 +557,9 @@ mod internal {
         #[test]
         fn test_aggregator_add_proof_unknown_batch() {
             let mut agg = ProofAggregator::new(10, 5);
-            let err = agg.add_proof_to_batch("unknown", "p1".to_string()).unwrap_err();
+            let err = agg
+                .add_proof_to_batch("unknown", "p1".to_string())
+                .unwrap_err();
             assert_eq!(err, AggregationError::BatchEmpty);
         }
 

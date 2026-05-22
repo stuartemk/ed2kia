@@ -15,28 +15,20 @@
 #[cfg(feature = "v1.2-sprint3")]
 mod e2e {
     // LP-59: SLO/SLA v3 & Predictive Contracts
-    use ed2kia::slo_v3::slo_v3_engine::{
-        SLOv3Config, SLOv3Engine, SLOv3Status,
-    };
     use ed2kia::slo_v3::predictive_contracts::{
         ContractManager, ContractPart, PredictiveContractConfig,
     };
+    use ed2kia::slo_v3::slo_v3_engine::{SLOv3Config, SLOv3Engine, SLOv3Status};
 
     // LP-60: Cross-Model Scaling v2
+    use ed2kia::scaling_v3::capability_negotiator::{CapabilityNegotiator, NodeCapabilityProfile};
     use ed2kia::scaling_v3::cross_model_v2::{CrossModelScalerV2, NodeProfileV2};
-    use ed2kia::scaling_v3::capability_negotiator::{
-        CapabilityNegotiator, NodeCapabilityProfile,
-    };
 
     // LP-61: UI Dashboard v3
-    use ed2kia::ui_v3::dashboard_v3::{
-        DashboardV3State, MetricV3,
-    };
+    use ed2kia::ui_v3::dashboard_v3::{DashboardV3State, MetricV3};
 
     // LP-62: Async ZKP v2
-    use ed2kia::zkp_v3::async_zkp_v2::{
-        AsyncZkpV2, AsyncZkpV2Config, ProofTypeV2, WitnessV2,
-    };
+    use ed2kia::zkp_v3::async_zkp_v2::{AsyncZkpV2, AsyncZkpV2Config, ProofTypeV2, WitnessV2};
     use ed2kia::zkp_v3::cross_chain_proof_optimizer::{
         CrossChainProof, CrossChainProofOptimizer, ProofOptimizerConfig,
     };
@@ -68,10 +60,7 @@ mod e2e {
         let result = engine.evaluate("latency_p99").unwrap();
         assert!(result.current_value > 0.0);
         // Status depends on trend prediction
-        assert!(
-            result.status == SLOv3Status::Compliant
-                || result.status == SLOv3Status::Warning
-        );
+        assert!(result.status == SLOv3Status::Compliant || result.status == SLOv3Status::Warning);
 
         // Prediction should exist with enough data
         assert!(result.prediction.is_some());
@@ -182,7 +171,11 @@ mod e2e {
             duration_seconds: 86400,
             min_prediction_points: 3,
         };
-        let parts = vec![ContractPart::new("p1".to_string(), "provider".to_string(), 1.0)];
+        let parts = vec![ContractPart::new(
+            "p1".to_string(),
+            "provider".to_string(),
+            1.0,
+        )];
         manager.register_contract(config, parts);
 
         // Record breaching metrics
@@ -214,18 +207,14 @@ mod e2e {
         scaler.register_node(node_b);
 
         // Route request requiring text-gen
-        let decision = scaler
-            .route_request(&["text-gen".to_string()])
-            .unwrap();
+        let decision = scaler.route_request(&["text-gen".to_string()]).unwrap();
         assert!(!decision.target_node.is_empty());
 
         // Update load on selected node
         scaler.update_load(&decision.target_node, 80).unwrap();
 
         // Next request should prefer lower load node
-        let decision2 = scaler
-            .route_request(&["text-gen".to_string()])
-            .unwrap();
+        let decision2 = scaler.route_request(&["text-gen".to_string()]).unwrap();
         assert!(!decision2.target_node.is_empty());
     }
 
@@ -254,15 +243,11 @@ mod e2e {
         negotiator.register_node(profile_b);
 
         // Negotiate for vision capability
-        let result = negotiator
-            .negotiate(&["vision".to_string()])
-            .unwrap();
+        let result = negotiator.negotiate(&["vision".to_string()]).unwrap();
         assert_eq!(result.selected_node, "node-a");
 
         // Negotiate for text (both qualify, returns best)
-        let result = negotiator
-            .negotiate(&["text".to_string()])
-            .unwrap();
+        let result = negotiator.negotiate(&["text".to_string()]).unwrap();
         assert!(!result.selected_node.is_empty());
     }
 
@@ -507,9 +492,7 @@ mod e2e {
         node.add_capability("low-latency".to_string());
         scaler.register_node(node);
 
-        let route = scaler
-            .route_request(&["low-latency".to_string()])
-            .unwrap();
+        let route = scaler.route_request(&["low-latency".to_string()]).unwrap();
         assert!(!route.target_node.is_empty());
 
         // 3. Dashboard: Record metrics

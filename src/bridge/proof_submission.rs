@@ -7,10 +7,10 @@
 //! Feature-gated: `#[cfg(feature = "v1.1-sprint3")]`
 
 use crate::zkp::async_prover::{AsyncProver, ProofResult};
-use crate::zkp::circuit::Witness;
 use crate::zkp::batch_accumulator::BatchAccumulator;
+use crate::zkp::circuit::Witness;
 use crate::zkp::circuit::{BatchCommitment, ZKPProof};
-use crate::zkp::verifier_pool::{VerifierPool, PoolVerificationResult};
+use crate::zkp::verifier_pool::{PoolVerificationResult, VerifierPool};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -136,7 +136,12 @@ impl SubmissionResult {
         }
     }
 
-    pub fn failed(proof_id: String, state: SubmissionState, reason: String, total_time_ms: f64) -> Self {
+    pub fn failed(
+        proof_id: String,
+        state: SubmissionState,
+        reason: String,
+        total_time_ms: f64,
+    ) -> Self {
         Self {
             proof_id,
             state,
@@ -278,7 +283,8 @@ impl ProofSubmissionManager {
 
     /// Registra un nodo verificador.
     pub fn register_verifier(&mut self, node_id: String, success_rate: f32, latency_ms: u64) {
-        self.verifier_nodes.push(MockVerifierNode::new(&node_id, success_rate, latency_ms));
+        self.verifier_nodes
+            .push(MockVerifierNode::new(&node_id, success_rate, latency_ms));
         info!(node = %node_id, success_rate = %success_rate, "Verifier node registered");
     }
 
@@ -289,7 +295,11 @@ impl ProofSubmissionManager {
         witness: Witness,
     ) -> Result<SubmissionResult, SubmissionError> {
         let start = Instant::now();
-        let proof_id = format!("proof_{}_{}", batch_id, chrono::Utc::now().timestamp_millis());
+        let proof_id = format!(
+            "proof_{}_{}",
+            batch_id,
+            chrono::Utc::now().timestamp_millis()
+        );
 
         info!(proof_id = %proof_id, batch_id = %batch_id, "Proof submission started");
 
@@ -319,7 +329,10 @@ impl ProofSubmissionManager {
         if !verification_success {
             // Intentar fallback
             if self.config.enable_fallback {
-                return Ok(SubmissionResult::fallback(proof_id.clone(), start.elapsed().as_secs_f64() * 1000.0));
+                return Ok(SubmissionResult::fallback(
+                    proof_id.clone(),
+                    start.elapsed().as_secs_f64() * 1000.0,
+                ));
             }
             return Ok(SubmissionResult::failed(
                 proof_id,
@@ -330,11 +343,13 @@ impl ProofSubmissionManager {
         }
 
         // Paso 3: Acumular batch con proof
-        self.accumulator.add_batch_with_proof(
-            batch_id.clone(),
-            proof_result.commitment.clone(),
-            proof_result.proof.clone(),
-        ).map_err(|e| SubmissionError::Verifier(format!("Accumulator error: {}", e)))?;
+        self.accumulator
+            .add_batch_with_proof(
+                batch_id.clone(),
+                proof_result.commitment.clone(),
+                proof_result.proof.clone(),
+            )
+            .map_err(|e| SubmissionError::Verifier(format!("Accumulator error: {}", e)))?;
 
         // Paso 4: Simular verificación por nodos
         let verified_count = self.simulate_node_verification(&proof_result.proof.challenge)?;
@@ -365,7 +380,11 @@ impl ProofSubmissionManager {
                 start.elapsed().as_secs_f64() * 1000.0,
             ))
         } else {
-            self.update_stats(false, verified_count, start.elapsed().as_secs_f64() * 1000.0);
+            self.update_stats(
+                false,
+                verified_count,
+                start.elapsed().as_secs_f64() * 1000.0,
+            );
 
             warn!(
                 proof_id = %proof_id,
@@ -377,7 +396,10 @@ impl ProofSubmissionManager {
             Ok(SubmissionResult::failed(
                 proof_id,
                 SubmissionState::ConsensusRejected,
-                format!("Quorum not met: {} < {}", verified_count, self.config.min_verifiers_for_quorum),
+                format!(
+                    "Quorum not met: {} < {}",
+                    verified_count, self.config.min_verifiers_for_quorum
+                ),
                 start.elapsed().as_secs_f64() * 1000.0,
             ))
         }
@@ -390,14 +412,20 @@ impl ProofSubmissionManager {
         witness: Witness,
     ) -> Result<ProofResult, SubmissionError> {
         let timeout = Duration::from_millis(self.config.proof_timeout_ms);
-        let result = tokio::time::timeout(timeout, self.prover.generate_proof(batch_id.into(), witness)).await;
+        let result = tokio::time::timeout(
+            timeout,
+            self.prover.generate_proof(batch_id.into(), witness),
+        )
+        .await;
 
         match result {
             Ok(Ok(pr)) => Ok(pr),
             Ok(Err(e)) => Err(SubmissionError::Prover(e.to_string())),
             Err(_) => {
                 warn!(timeout_ms = %self.config.proof_timeout_ms, "Proof generation timed out");
-                Err(SubmissionError::Timeout(self.config.proof_timeout_ms / 1000))
+                Err(SubmissionError::Timeout(
+                    self.config.proof_timeout_ms / 1000,
+                ))
             }
         }
     }
@@ -408,7 +436,8 @@ impl ProofSubmissionManager {
         proof: &ZKPProof,
         commitment: &BatchCommitment,
     ) -> Result<PoolVerificationResult, SubmissionError> {
-        self.verifier_pool.verify(proof.clone(), commitment.clone())
+        self.verifier_pool
+            .verify(proof.clone(), commitment.clone())
             .map_err(|e| SubmissionError::Verifier(e.to_string()))
     }
 
@@ -430,7 +459,11 @@ impl ProofSubmissionManager {
     }
 
     /// Registra la prueba en consenso (simulado).
-    fn register_in_consensus(&self, proof_id: &str, proof: &ZKPProof) -> Result<(), SubmissionError> {
+    fn register_in_consensus(
+        &self,
+        proof_id: &str,
+        proof: &ZKPProof,
+    ) -> Result<(), SubmissionError> {
         // Simular registro: hash del proof como hash de consenso
         let consensus_hash = hex::encode(proof.challenge);
         debug!(proof_id = %proof_id, consensus_hash = %consensus_hash, "Proof registered in consensus");
@@ -460,7 +493,8 @@ impl ProofSubmissionManager {
 
         // Promedios ponderados
         let total = stats.total_submitted as f64;
-        stats.avg_submission_time_ms = (stats.avg_submission_time_ms * (total - 1.0) + time_ms) / total;
+        stats.avg_submission_time_ms =
+            (stats.avg_submission_time_ms * (total - 1.0) + time_ms) / total;
         stats.avg_verifiers = (stats.avg_verifiers * (total - 1.0) + verified_by as f64) / total;
     }
 
@@ -479,8 +513,8 @@ impl Default for ProofSubmissionManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ark_ec::CurveGroup;
     use ark_bn254::Fr;
+    use ark_ec::CurveGroup;
     use ark_ec::Group;
     use ark_ff::UniformRand;
     use ark_std::rand::thread_rng;
@@ -515,10 +549,12 @@ mod tests {
         assert!(result.is_ok());
         let submission = result.unwrap();
         // Accept any terminal state (ConsensusRegistered, FallbackActivated, Verified, or Submitted)
-        assert!(submission.state == SubmissionState::ConsensusRegistered
-            || submission.state == SubmissionState::FallbackActivated
-            || submission.state == SubmissionState::Verified
-            || submission.state == SubmissionState::Submitted);
+        assert!(
+            submission.state == SubmissionState::ConsensusRegistered
+                || submission.state == SubmissionState::FallbackActivated
+                || submission.state == SubmissionState::Verified
+                || submission.state == SubmissionState::Submitted
+        );
     }
 
     #[tokio::test]

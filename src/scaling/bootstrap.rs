@@ -194,7 +194,9 @@ impl BootstrapManager {
                 Protocol::Ip4(std::net::Ipv4Addr::new(127, 0, 0, 1)),
                 Protocol::Tcp(port),
                 Protocol::P2p(peer_id),
-            ].into_iter().collect();
+            ]
+            .into_iter()
+            .collect();
             let node = BootstrapNode::new(address, BootstrapSource::Hardcoded);
             nodes.insert(node.peer_id, node);
         }
@@ -215,10 +217,7 @@ impl BootstrapManager {
         for addr_str in addresses {
             if let Ok(address) = addr_str.parse::<Multiaddr>() {
                 let node = BootstrapNode::new(address, BootstrapSource::Config);
-                manager
-                    .nodes
-                    .write()
-                    .insert(node.peer_id, node);
+                manager.nodes.write().insert(node.peer_id, node);
             }
         }
 
@@ -236,7 +235,11 @@ impl BootstrapManager {
     }
 
     /// Agrega nodo bootstrap desde string address
-    pub fn add_bootstrap_node(&self, address_str: &str, source: BootstrapSource) -> Result<(), String> {
+    pub fn add_bootstrap_node(
+        &self,
+        address_str: &str,
+        source: BootstrapSource,
+    ) -> Result<(), String> {
         let address = address_str
             .parse::<Multiaddr>()
             .map_err(|e| format!("Invalid multiaddr: {}", e))?;
@@ -329,9 +332,18 @@ impl BootstrapManager {
     pub fn stats(&self) -> BootstrapStats {
         let nodes = self.nodes.read();
         let total = nodes.len();
-        let active = nodes.values().filter(|n| n.status == BootstrapStatus::Active).count();
-        let inactive = nodes.values().filter(|n| n.status == BootstrapStatus::Inactive).count();
-        let unknown = nodes.values().filter(|n| n.status == BootstrapStatus::Unknown).count();
+        let active = nodes
+            .values()
+            .filter(|n| n.status == BootstrapStatus::Active)
+            .count();
+        let inactive = nodes
+            .values()
+            .filter(|n| n.status == BootstrapStatus::Inactive)
+            .count();
+        let unknown = nodes
+            .values()
+            .filter(|n| n.status == BootstrapStatus::Unknown)
+            .count();
 
         BootstrapStats {
             total,

@@ -28,7 +28,11 @@ mod internal {
         /// Connection not found.
         ConnectionNotFound(String),
         /// Rate limit exceeded.
-        RateLimitExceeded { current: usize, max: usize, conn: String },
+        RateLimitExceeded {
+            current: usize,
+            max: usize,
+            conn: String,
+        },
         /// Authentication failed.
         AuthFailed(String),
         /// Duplicate connection.
@@ -46,7 +50,11 @@ mod internal {
             match self {
                 Self::ConnectionNotFound(id) => write!(f, "Connection not found: {}", id),
                 Self::RateLimitExceeded { current, max, conn } => {
-                    write!(f, "Rate limit exceeded: {}/{} msg/s for {}", current, max, conn)
+                    write!(
+                        f,
+                        "Rate limit exceeded: {}/{} msg/s for {}",
+                        current, max, conn
+                    )
                 }
                 Self::AuthFailed(msg) => write!(f, "Auth failed: {}", msg),
                 Self::ConnectionAlreadyExists(id) => write!(f, "Connection exists: {}", id),
@@ -93,18 +101,44 @@ mod internal {
     #[derive(Debug, Clone)]
     pub enum WsMessage {
         // Client → Server
-        Auth { client_id: String, signature: String, timestamp_ms: u64 },
-        Subscribe { categories: Vec<StreamCategory> },
-        Ping { timestamp_ms: u64 },
-        Reconnect { client_id: String, last_sequence: u64 },
+        Auth {
+            client_id: String,
+            signature: String,
+            timestamp_ms: u64,
+        },
+        Subscribe {
+            categories: Vec<StreamCategory>,
+        },
+        Ping {
+            timestamp_ms: u64,
+        },
+        Reconnect {
+            client_id: String,
+            last_sequence: u64,
+        },
         // Server → Client
-        AuthOk { connection_id: String, token: String },
-        AuthError { reason: String },
-        Subscribed { categories: Vec<StreamCategory> },
-        Pong { timestamp_ms: u64 },
-        Catchup { events: Vec<StreamEvent> },
-        Event { event: StreamEvent },
-        Error { message: String },
+        AuthOk {
+            connection_id: String,
+            token: String,
+        },
+        AuthError {
+            reason: String,
+        },
+        Subscribed {
+            categories: Vec<StreamCategory>,
+        },
+        Pong {
+            timestamp_ms: u64,
+        },
+        Catchup {
+            events: Vec<StreamEvent>,
+        },
+        Event {
+            event: StreamEvent,
+        },
+        Error {
+            message: String,
+        },
     }
 
     // ---------------------------------------------------------------------------
@@ -286,14 +320,14 @@ mod internal {
             // Simple signature validation (placeholder)
             if signature.is_empty() {
                 self.stats.auth_failures += 1;
-                return Err(WsFederationV2Error::AuthFailed("Empty signature".to_string()));
+                return Err(WsFederationV2Error::AuthFailed(
+                    "Empty signature".to_string(),
+                ));
             }
 
             let connection_id = format!("conn_{}_{}", client_id, current_ms);
             if self.connections.contains_key(&connection_id) {
-                return Err(WsFederationV2Error::ConnectionAlreadyExists(
-                    connection_id,
-                ));
+                return Err(WsFederationV2Error::ConnectionAlreadyExists(connection_id));
             }
 
             let mut conn = WsConnection::new(connection_id.clone(), current_ms);
@@ -422,10 +456,7 @@ mod internal {
         }
 
         /// Get catchup events for reconnection.
-        pub fn get_catchup(
-            &self,
-            last_sequence: u64,
-        ) -> Vec<&StreamEvent> {
+        pub fn get_catchup(&self, last_sequence: u64) -> Vec<&StreamEvent> {
             self.event_buffer
                 .iter()
                 .filter(|e| e.sequence() > last_sequence)
@@ -517,7 +548,9 @@ mod internal {
         fn test_authenticate_max_reached() {
             let mut stream = WsFederationStreamV2::new();
             stream.max_connections = 1;
-            stream.authenticate("c1".to_string(), "s1".to_string(), 1000).unwrap();
+            stream
+                .authenticate("c1".to_string(), "s1".to_string(), 1000)
+                .unwrap();
             let id = stream.authenticate("c2".to_string(), "s2".to_string(), 1001);
             assert!(id.is_err());
         }
@@ -525,7 +558,9 @@ mod internal {
         #[test]
         fn test_subscribe() {
             let mut stream = WsFederationStreamV2::new();
-            let conn_id = stream.authenticate("c1".to_string(), "s1".to_string(), 1000).unwrap();
+            let conn_id = stream
+                .authenticate("c1".to_string(), "s1".to_string(), 1000)
+                .unwrap();
             assert!(stream
                 .subscribe(&conn_id, vec![StreamCategory::Scaling])
                 .is_ok());
@@ -563,14 +598,21 @@ mod internal {
         #[test]
         fn test_publish_alert() {
             let mut stream = WsFederationStreamV2::new();
-            stream.publish_alert(1000, "warning".to_string(), "scaling".to_string(), "High load".to_string());
+            stream.publish_alert(
+                1000,
+                "warning".to_string(),
+                "scaling".to_string(),
+                "High load".to_string(),
+            );
             assert_eq!(stream.stats.events_published, 1);
         }
 
         #[test]
         fn test_handle_ping() {
             let mut stream = WsFederationStreamV2::new();
-            let conn_id = stream.authenticate("c1".to_string(), "s1".to_string(), 1000).unwrap();
+            let conn_id = stream
+                .authenticate("c1".to_string(), "s1".to_string(), 1000)
+                .unwrap();
             let result = stream.handle_ping(&conn_id, 2000);
             assert!(result.is_ok());
         }
@@ -588,7 +630,9 @@ mod internal {
         fn test_cleanup_stale() {
             let mut stream = WsFederationStreamV2::new();
             stream.stale_timeout_ms = 5000;
-            let conn_id = stream.authenticate("c1".to_string(), "s1".to_string(), 1000).unwrap();
+            let conn_id = stream
+                .authenticate("c1".to_string(), "s1".to_string(), 1000)
+                .unwrap();
             assert_eq!(stream.connections.len(), 1);
             let cleaned = stream.cleanup_stale(10000);
             assert_eq!(cleaned, 1);
@@ -598,8 +642,12 @@ mod internal {
         fn test_rate_limiting() {
             let mut stream = WsFederationStreamV2::new();
             stream.max_rate = 2;
-            let conn_id = stream.authenticate("c1".to_string(), "s1".to_string(), 1000).unwrap();
-            stream.subscribe(&conn_id, vec![StreamCategory::All]).unwrap();
+            let conn_id = stream
+                .authenticate("c1".to_string(), "s1".to_string(), 1000)
+                .unwrap();
+            stream
+                .subscribe(&conn_id, vec![StreamCategory::All])
+                .unwrap();
             stream.publish_scaling(1000, 50, 10, 0.99, 0.7, 0.92);
             stream.publish_scaling(1001, 50, 10, 0.99, 0.7, 0.92);
             stream.publish_scaling(1002, 50, 10, 0.99, 0.7, 0.92);
@@ -664,8 +712,12 @@ mod internal {
         #[test]
         fn test_broadcast_filtered() {
             let mut stream = WsFederationStreamV2::new();
-            let conn_id = stream.authenticate("c1".to_string(), "s1".to_string(), 1000).unwrap();
-            stream.subscribe(&conn_id, vec![StreamCategory::Scaling]).unwrap();
+            let conn_id = stream
+                .authenticate("c1".to_string(), "s1".to_string(), 1000)
+                .unwrap();
+            stream
+                .subscribe(&conn_id, vec![StreamCategory::Scaling])
+                .unwrap();
             stream.publish_zkp(1000, 100, 95, 5, 0.1, 10.0);
             // ZKP event should not be delivered to scaling-only subscriber
             assert_eq!(stream.stats.messages_delivered, 0);
@@ -674,8 +726,12 @@ mod internal {
         #[test]
         fn test_full_lifecycle() {
             let mut stream = WsFederationStreamV2::new();
-            let conn_id = stream.authenticate("client1".to_string(), "sig1".to_string(), 1000).unwrap();
-            stream.subscribe(&conn_id, vec![StreamCategory::All]).unwrap();
+            let conn_id = stream
+                .authenticate("client1".to_string(), "sig1".to_string(), 1000)
+                .unwrap();
+            stream
+                .subscribe(&conn_id, vec![StreamCategory::All])
+                .unwrap();
             stream.publish_scaling(2000, 50, 10, 0.99, 0.7, 0.92);
             stream.handle_ping(&conn_id, 3000).unwrap();
             assert_eq!(stream.stats.events_published, 1);

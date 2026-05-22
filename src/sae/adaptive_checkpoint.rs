@@ -77,7 +77,13 @@ pub struct DeltaCheckpoint {
 }
 
 impl DeltaCheckpoint {
-    pub fn new(id: String, round: u64, shard_id: usize, data: Vec<f32>, parent_id: Option<String>) -> Self {
+    pub fn new(
+        id: String,
+        round: u64,
+        shard_id: usize,
+        data: Vec<f32>,
+        parent_id: Option<String>,
+    ) -> Self {
         let compressed_size = simulate_lz4(&data);
         let checksum = compute_checksum(&data);
         Self {
@@ -144,7 +150,9 @@ impl AdaptiveCheckpoint {
         data: Vec<f32>,
     ) -> Result<DeltaCheckpoint, CheckpointError> {
         if self.checkpoints.len() >= self.config.max_checkpoints {
-            return Err(CheckpointError::MaxCheckpointsExceeded(self.config.max_checkpoints));
+            return Err(CheckpointError::MaxCheckpointsExceeded(
+                self.config.max_checkpoints,
+            ));
         }
 
         let id = format!("ckpt-{}", round);
@@ -174,7 +182,11 @@ impl AdaptiveCheckpoint {
         self.stats.total_compressed_bytes += checkpoint.compressed_size;
 
         // Periodic merge
-        if self.stats.total_checkpoints.is_multiple_of(self.config.merge_interval) {
+        if self
+            .stats
+            .total_checkpoints
+            .is_multiple_of(self.config.merge_interval)
+        {
             self.merge_deltas()?;
         }
 
@@ -227,7 +239,11 @@ impl AdaptiveCheckpoint {
         if self.stats.total_checkpoints == 0 {
             return;
         }
-        let ratios: Vec<f64> = self.checkpoints.iter().map(|c| c.compression_ratio()).collect();
+        let ratios: Vec<f64> = self
+            .checkpoints
+            .iter()
+            .map(|c| c.compression_ratio())
+            .collect();
         self.stats.avg_compression_ratio = ratios.iter().sum::<f64>() / ratios.len() as f64;
     }
 
@@ -310,7 +326,10 @@ mod tests {
         let _ = engine.save_checkpoint(2, vec![0.1; 32]);
         let _ = engine.save_checkpoint(3, vec![0.1; 32]);
         let result = engine.save_checkpoint(4, vec![0.1; 32]);
-        assert!(matches!(result, Err(CheckpointError::MaxCheckpointsExceeded(3))));
+        assert!(matches!(
+            result,
+            Err(CheckpointError::MaxCheckpointsExceeded(3))
+        ));
     }
 
     #[test]

@@ -8,8 +8,8 @@
 
 use ark_bn254::{Fr, G1Affine, G1Projective};
 use ark_ec::CurveGroup;
+use ark_ff::{PrimeField, UniformRand};
 use ark_serialize::CanonicalSerialize;
-use ark_ff::{UniformRand, PrimeField};
 use ark_std::rand::thread_rng;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -253,14 +253,10 @@ impl PricingEngine {
 
         // Actualizar estadísticas
         self.quote_count.fetch_add(1, Ordering::Relaxed);
-        self.total_adjustment.fetch_add(
-            (adjustment * 1000.0) as u64,
-            Ordering::Relaxed,
-        );
-        self.total_price_sum.fetch_add(
-            (unit_price * 1000.0) as u64,
-            Ordering::Relaxed,
-        );
+        self.total_adjustment
+            .fetch_add((adjustment * 1000.0) as u64, Ordering::Relaxed);
+        self.total_price_sum
+            .fetch_add((unit_price * 1000.0) as u64, Ordering::Relaxed);
 
         debug!(
             resource_type = %resource_type_str,
@@ -408,11 +404,9 @@ mod tests {
     #[test]
     fn test_compute_price_basic() {
         let engine = PricingEngine::new();
-        let quote = engine.compute_price(
-            PricingResourceType::SAEShard,
-            100.0,
-            1.0,
-        ).unwrap();
+        let quote = engine
+            .compute_price(PricingResourceType::SAEShard, 100.0, 1.0)
+            .unwrap();
 
         assert!(quote.unit_price > 0.0);
         assert!(quote.unit_price <= engine.config.max_price);
@@ -423,11 +417,9 @@ mod tests {
     fn test_compute_price_respects_min() {
         let engine = PricingEngine::new();
         // Base price bajo debería ser elevado al mínimo
-        let quote = engine.compute_price(
-            PricingResourceType::SAEShard,
-            10.0,
-            1.0,
-        ).unwrap();
+        let quote = engine
+            .compute_price(PricingResourceType::SAEShard, 10.0, 1.0)
+            .unwrap();
 
         assert!(quote.unit_price >= engine.config.sae_base_price);
     }
@@ -435,11 +427,9 @@ mod tests {
     #[test]
     fn test_verify_commitment() {
         let engine = PricingEngine::new();
-        let quote = engine.compute_price(
-            PricingResourceType::VRAM,
-            250.0,
-            1.0,
-        ).unwrap();
+        let quote = engine
+            .compute_price(PricingResourceType::VRAM, 250.0, 1.0)
+            .unwrap();
 
         assert!(engine.verify_commitment(quote.unit_price, quote.commitment_hash));
     }
@@ -447,11 +437,9 @@ mod tests {
     #[test]
     fn test_verify_wrong_commitment() {
         let engine = PricingEngine::new();
-        let quote = engine.compute_price(
-            PricingResourceType::VRAM,
-            250.0,
-            1.0,
-        ).unwrap();
+        let quote = engine
+            .compute_price(PricingResourceType::VRAM, 250.0, 1.0)
+            .unwrap();
 
         let mut wrong_hash = quote.commitment_hash;
         wrong_hash[0] ^= 0xFF; // Corromper hash
@@ -472,11 +460,9 @@ mod tests {
             });
         }
 
-        let quote = engine.compute_price(
-            PricingResourceType::Generic,
-            100.0,
-            1.0,
-        ).unwrap();
+        let quote = engine
+            .compute_price(PricingResourceType::Generic, 100.0, 1.0)
+            .unwrap();
 
         // Con alta demanda, el ajuste debería ser > 1.0
         assert!(quote.unit_price > 0.0);
@@ -491,8 +477,12 @@ mod tests {
         assert_eq!(stats.total_quotes, 0);
 
         // Generar quotes
-        engine.compute_price(PricingResourceType::SAEShard, 100.0, 1.0).unwrap();
-        engine.compute_price(PricingResourceType::VRAM, 250.0, 1.0).unwrap();
+        engine
+            .compute_price(PricingResourceType::SAEShard, 100.0, 1.0)
+            .unwrap();
+        engine
+            .compute_price(PricingResourceType::VRAM, 250.0, 1.0)
+            .unwrap();
 
         let stats = engine.get_stats();
         assert_eq!(stats.total_quotes, 2);
@@ -538,9 +528,15 @@ mod tests {
     fn test_resource_type_pricing() {
         let engine = PricingEngine::new();
 
-        let sae_quote = engine.compute_price(PricingResourceType::SAEShard, 50.0, 1.0).unwrap();
-        let vram_quote = engine.compute_price(PricingResourceType::VRAM, 100.0, 1.0).unwrap();
-        let bw_quote = engine.compute_price(PricingResourceType::Bandwidth, 5.0, 1.0).unwrap();
+        let sae_quote = engine
+            .compute_price(PricingResourceType::SAEShard, 50.0, 1.0)
+            .unwrap();
+        let vram_quote = engine
+            .compute_price(PricingResourceType::VRAM, 100.0, 1.0)
+            .unwrap();
+        let bw_quote = engine
+            .compute_price(PricingResourceType::Bandwidth, 5.0, 1.0)
+            .unwrap();
 
         // VRAM debería ser más caro que bandwidth
         assert!(vram_quote.unit_price > bw_quote.unit_price);

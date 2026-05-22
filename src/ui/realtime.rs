@@ -80,7 +80,12 @@ pub struct WsResult {
 }
 
 impl WsResult {
-    pub fn new(session_id: String, messages_sent: usize, rate_limited: bool, active_sessions: usize) -> Self {
+    pub fn new(
+        session_id: String,
+        messages_sent: usize,
+        rate_limited: bool,
+        active_sessions: usize,
+    ) -> Self {
         Self {
             session_id,
             messages_sent,
@@ -158,15 +163,14 @@ impl RealtimeUIBackend {
     }
 
     /// Upgrade HTTP connection to WebSocket.
-    pub fn upgrade_to_ws(
-        &self,
-        ws: WebSocketUpgrade,
-    ) -> impl IntoResponse {
+    pub fn upgrade_to_ws(&self, ws: WebSocketUpgrade) -> impl IntoResponse {
         let sessions = Arc::clone(&self.sessions);
         let event_buffer = Arc::clone(&self.event_buffer);
         let rate_limit = self.rate_limit_per_sec;
         let max_age = self.max_session_age_secs;
-        ws.on_upgrade(move |socket| Self::handle_ws_connection(socket, sessions, event_buffer, rate_limit, max_age))
+        ws.on_upgrade(move |socket| {
+            Self::handle_ws_connection(socket, sessions, event_buffer, rate_limit, max_age)
+        })
     }
 
     /// Handle a WebSocket connection lifecycle (free function for static lifetime).
@@ -294,7 +298,9 @@ impl RealtimeUIBackend {
 
     /// Generate a sync state snapshot for a session.
     pub fn sync_state(&self, session_id: String) -> Result<serde_json::Value, RealtimeError> {
-        let session = self.sessions.get(&session_id)
+        let session = self
+            .sessions
+            .get(&session_id)
             .ok_or_else(|| RealtimeError::SessionNotFound(session_id.clone()))?;
 
         let state = serde_json::json!({
@@ -310,7 +316,9 @@ impl RealtimeUIBackend {
 
     /// Apply rate limiting check for a session. Returns result with rate_limited flag.
     pub fn rate_limit_session(&self, session_id: String) -> Result<WsResult, RealtimeError> {
-        let mut session = self.sessions.get_mut(&session_id)
+        let mut session = self
+            .sessions
+            .get_mut(&session_id)
             .ok_or_else(|| RealtimeError::SessionNotFound(session_id.clone()))?;
 
         let allowed = session.check_rate_limit();
@@ -529,7 +537,10 @@ mod tests {
 
     #[test]
     fn test_realtime_error_rate_limit() {
-        let err = RealtimeError::RateLimitExceeded { current: 60, max: 50 };
+        let err = RealtimeError::RateLimitExceeded {
+            current: 60,
+            max: 50,
+        };
         assert!(err.to_string().contains("60"));
     }
 }

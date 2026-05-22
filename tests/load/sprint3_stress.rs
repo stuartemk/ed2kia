@@ -4,9 +4,9 @@
 
 #[cfg(feature = "v1.5-sprint3")]
 mod stress {
-    use ed2kia::federation::scaling_v6::ScalingV6;
     use ed2kia::federation::dynamic_sharder_v2::DynamicSharderV2;
     use ed2kia::federation::gradient_sync_v6::{GradientSyncV6, GradientSyncV6Config};
+    use ed2kia::federation::scaling_v6::ScalingV6;
     use ed2kia::zkp::async_zkp_v11::{AsyncZKPV11, ProofPriority};
     use ed2kia::zkp::cross_federation_verifier_v2::{CrossFederationVerifierV2, Vote};
 
@@ -72,7 +72,9 @@ mod stress {
             max_dimension: 10000,
             ..GradientSyncV6Config::default()
         });
-        engine.register_model("large_model".to_string(), 10000).unwrap();
+        engine
+            .register_model("large_model".to_string(), 10000)
+            .unwrap();
 
         for _ in 0..50 {
             let grads: Vec<f32> = (0..10000).map(|i| i as f32).collect();
@@ -92,7 +94,8 @@ mod stress {
         let current = current_ms();
         for i in 0..500 {
             let id = format!("proof_{}", i);
-            let _ = engine.submit_proof(id, "fed1".to_string(), ProofPriority::Normal, 1.0, current);
+            let _ =
+                engine.submit_proof(id, "fed1".to_string(), ProofPriority::Normal, 1.0, current);
         }
 
         assert_eq!(engine.proof_count(), 500);
@@ -203,6 +206,9 @@ mod stress {
 mod stress {
     #[test]
     pub fn test_sprint3_disabled() {
-        assert!(true, "Sprint 3 stress tests require --features v1.5-sprint3");
+        assert!(
+            true,
+            "Sprint 3 stress tests require --features v1.5-sprint3"
+        );
     }
 }

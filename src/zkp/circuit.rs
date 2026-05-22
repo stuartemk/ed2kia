@@ -71,7 +71,8 @@ pub struct Witness {
 impl ZKPCircuit {
     /// Crea un nuevo circuito ZKP con generadores determinísticos
     pub fn new(num_generators: Option<usize>) -> Self {
-        let num_generators = num_generators.unwrap_or(COMMITMENT_DIMENSION)
+        let num_generators = num_generators
+            .unwrap_or(COMMITMENT_DIMENSION)
             .min(MAX_FEATURES_PER_BATCH);
 
         // Genera generadores determinísticos desde hash de constantes
@@ -115,13 +116,20 @@ impl ZKPCircuit {
     }
 
     /// Genera un compromiso Pedersen para un batch de features
-    pub fn create_commitment(&self, feature_values: &[f64], batch_id: &str) -> Result<BatchCommitment, ZKPError> {
+    pub fn create_commitment(
+        &self,
+        feature_values: &[f64],
+        batch_id: &str,
+    ) -> Result<BatchCommitment, ZKPError> {
         if feature_values.is_empty() {
             return Err(ZKPError::EmptyBatch);
         }
 
         if feature_values.len() > MAX_FEATURES_PER_BATCH {
-            return Err(ZKPError::BatchTooLarge(feature_values.len(), MAX_FEATURES_PER_BATCH));
+            return Err(ZKPError::BatchTooLarge(
+                feature_values.len(),
+                MAX_FEATURES_PER_BATCH,
+            ));
         }
 
         // Convierte valores f64 a field elements de BN254
@@ -162,11 +170,7 @@ impl ZKPCircuit {
     }
 
     /// Calcula el compromiso Pedersen
-    fn compute_pedersen_commitment(
-        &self,
-        values: &[Fr],
-        blinding_factors: &[Fr],
-    ) -> G1Affine {
+    fn compute_pedersen_commitment(&self, values: &[Fr], blinding_factors: &[Fr]) -> G1Affine {
         let mut commitment = G1Projective::zero();
 
         // Σ(v_i * G_i)
@@ -229,10 +233,8 @@ impl ZKPCircuit {
     /// Genera una prueba ZKP simplificada (Fiat-Shamir heuristic)
     pub fn generate_proof(&self, witness: &Witness, batch_id: &str) -> ZKPProof {
         // Componente A: compromiso con valores del witness
-        let commitment = self.compute_pedersen_commitment(
-            &witness.feature_values,
-            &witness.blinding_factors,
-        );
+        let commitment =
+            self.compute_pedersen_commitment(&witness.feature_values, &witness.blinding_factors);
         let a = commitment;
 
         // Componente B: challenges derivados del witness
@@ -258,7 +260,13 @@ impl ZKPCircuit {
     }
 
     /// Calcula challenge para Fiat-Shamir
-    fn compute_challenge(&self, a: &G1Affine, b: &[G1Affine], c: &G1Affine, batch_id: &str) -> [u8; 32] {
+    fn compute_challenge(
+        &self,
+        a: &G1Affine,
+        b: &[G1Affine],
+        c: &G1Affine,
+        batch_id: &str,
+    ) -> [u8; 32] {
         let mut hasher = Sha256::new();
         hasher.update(batch_id.as_bytes());
 
@@ -280,9 +288,21 @@ impl ZKPCircuit {
     }
 
     /// Verifica una prueba ZKP
-    pub fn verify_proof(&self, proof: &ZKPProof, commitment: &BatchCommitment) -> Result<bool, ZKPError> {
+    pub fn verify_proof(
+        &self,
+        proof: &ZKPProof,
+        commitment: &BatchCommitment,
+    ) -> Result<bool, ZKPError> {
         // Verifica que el batch_id coincide
-        if proof.batch_id != format!("batch-{}", commitment.batch_hash[..8].iter().map(|b| format!("{:x}", b)).collect::<String>()) {
+        if proof.batch_id
+            != format!(
+                "batch-{}",
+                commitment.batch_hash[..8]
+                    .iter()
+                    .map(|b| format!("{:x}", b))
+                    .collect::<String>()
+            )
+        {
             warn!("Batch ID mismatch in ZKP verification");
         }
 
@@ -293,7 +313,10 @@ impl ZKPCircuit {
         let is_valid = self.verify_structural_integrity(proof, commitment);
 
         if is_valid {
-            info!("ZKP proof verified: batch={}, features={}", proof.batch_id, proof.feature_count);
+            info!(
+                "ZKP proof verified: batch={}, features={}",
+                proof.batch_id, proof.feature_count
+            );
         } else {
             warn!("ZKP proof verification failed: batch={}", proof.batch_id);
         }
@@ -316,7 +339,8 @@ impl ZKPCircuit {
         }
 
         // Verifica que el challenge es consistente
-        let recomputed_challenge = self.compute_challenge(&proof.a, &proof.b, &proof.c, &proof.batch_id);
+        let recomputed_challenge =
+            self.compute_challenge(&proof.a, &proof.b, &proof.c, &proof.batch_id);
         if recomputed_challenge != proof.challenge {
             return false;
         }

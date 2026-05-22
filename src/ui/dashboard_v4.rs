@@ -349,11 +349,7 @@ impl DashboardV4State {
         let throughput = self.get_metric_value(&MetricV4::NetworkThroughput, 0.0);
         let error_rate = self.get_metric_value(&MetricV4::NetworkErrorRate, 0.0);
 
-        let unacknowledged = self
-            .alerts
-            .iter()
-            .filter(|a| !a.acknowledged)
-            .count();
+        let unacknowledged = self.alerts.iter().filter(|a| !a.acknowledged).count();
 
         Ok(DashboardV4Snapshot {
             timestamp_ms: current_timestamp_ms(),
@@ -388,13 +384,17 @@ impl DashboardV4State {
     pub fn clear_old_alerts(&mut self, max_age_ms: u64) -> usize {
         let now = current_timestamp_ms();
         let before = self.alerts.len();
-        self.alerts.retain(|a| now.saturating_sub(a.timestamp_ms) < max_age_ms);
+        self.alerts
+            .retain(|a| now.saturating_sub(a.timestamp_ms) < max_age_ms);
         before - self.alerts.len()
     }
 
     /// Obtiene métricas por tipo
     pub fn get_metric_values(&self, metric: &MetricV4) -> Vec<&MetricValueV4> {
-        self.metrics.iter().filter(|m| &m.metric == metric).collect()
+        self.metrics
+            .iter()
+            .filter(|m| &m.metric == metric)
+            .collect()
     }
 
     /// Obtiene la última métrica por tipo
@@ -449,8 +449,7 @@ impl DashboardV4State {
             self.get_metric_value(&MetricV4::PoolAllocationsActive, 0.0) as usize;
         summary.avg_latency_ms = self.get_metric_value(&MetricV4::PoolAvgLatencyMs, 0.0);
         summary.reputation_avg = self.get_metric_value(&MetricV4::PoolReputationAvg, 0.0);
-        summary.credit_decay_rate =
-            self.get_metric_value(&MetricV4::PoolCreditDecayRate, 0.0);
+        summary.credit_decay_rate = self.get_metric_value(&MetricV4::PoolCreditDecayRate, 0.0);
         summary
     }
 
@@ -460,10 +459,8 @@ impl DashboardV4State {
             self.get_metric_value(&MetricV4::ZkpStatementsQueued, 0.0) as usize;
         summary.batches_generated =
             self.get_metric_value(&MetricV4::ZkpBatchesGenerated, 0.0) as usize;
-        summary.verification_rate =
-            self.get_metric_value(&MetricV4::ZkpVerificationRate, 0.0);
-        summary.avg_proof_time_ms =
-            self.get_metric_value(&MetricV4::ZkpAvgProofTimeMs, 0.0);
+        summary.verification_rate = self.get_metric_value(&MetricV4::ZkpVerificationRate, 0.0);
+        summary.avg_proof_time_ms = self.get_metric_value(&MetricV4::ZkpAvgProofTimeMs, 0.0);
         summary.cross_pool_verifications =
             self.get_metric_value(&MetricV4::ZkpCrossPoolVerifications, 0.0) as usize;
         summary.fallback_rate = self.get_metric_value(&MetricV4::ZkpFallbackRate, 0.0);
@@ -474,15 +471,12 @@ impl DashboardV4State {
         let mut summary = DaoLedgerSummary::new();
         summary.active_proposals =
             self.get_metric_value(&MetricV4::DaoActiveProposals, 0.0) as usize;
-        summary.voter_participation =
-            self.get_metric_value(&MetricV4::DaoVoterParticipation, 0.0);
+        summary.voter_participation = self.get_metric_value(&MetricV4::DaoVoterParticipation, 0.0);
         summary.quorum_rate = self.get_metric_value(&MetricV4::DaoQuorumRate, 0.0);
-        summary.staking_active =
-            self.get_metric_value(&MetricV4::DaoStakingActive, 0.0) as usize;
+        summary.staking_active = self.get_metric_value(&MetricV4::DaoStakingActive, 0.0) as usize;
         summary.staking_total_credits =
             self.get_metric_value(&MetricV4::DaoStakingTotalCredits, 0.0);
-        summary.epoch_current =
-            self.get_metric_value(&MetricV4::DaoEpochCurrent, 0.0) as u64;
+        summary.epoch_current = self.get_metric_value(&MetricV4::DaoEpochCurrent, 0.0) as u64;
         summary
     }
 
@@ -791,7 +785,10 @@ mod tests {
         state.record_metric(MetricV4::PoolActiveShards, 5.0, None);
         state.record_metric(MetricV4::PoolActiveShards, 8.0, None);
 
-        assert_eq!(state.get_latest_metric(&MetricV4::PoolActiveShards), Some(8.0));
+        assert_eq!(
+            state.get_latest_metric(&MetricV4::PoolActiveShards),
+            Some(8.0)
+        );
         assert_eq!(
             state.get_latest_metric(&MetricV4::ZkpStatementsQueued),
             None

@@ -37,7 +37,10 @@ mod internal {
                     write!(f, "async_steering: context window too small for correction")
                 }
                 AsyncSteeringError::SignalOutOfBounds => {
-                    write!(f, "async_steering: signal magnitude exceeds [-1.0, 1.0] bounds")
+                    write!(
+                        f,
+                        "async_steering: signal magnitude exceeds [-1.0, 1.0] bounds"
+                    )
                 }
                 AsyncSteeringError::Backpressure => {
                     write!(f, "async_steering: backpressure")
@@ -79,7 +82,12 @@ mod internal {
         ///
         /// # Errors
         /// * `AsyncSteeringError::SignalOutOfBounds` if value outside [-1.0, 1.0]
-        pub fn new(value: f32, delay_ms: u64, source: String, seq: u64) -> Result<Self, AsyncSteeringError> {
+        pub fn new(
+            value: f32,
+            delay_ms: u64,
+            source: String,
+            seq: u64,
+        ) -> Result<Self, AsyncSteeringError> {
             if value < -1.0 || value > 1.0 {
                 return Err(AsyncSteeringError::SignalOutOfBounds);
             }
@@ -298,7 +306,12 @@ mod internal {
 
     impl RetryConfig {
         /// Create a new retry configuration.
-        pub fn new(initial_delay_ms: u64, multiplier: f64, max_delay_ms: u64, max_retries: u32) -> Self {
+        pub fn new(
+            initial_delay_ms: u64,
+            multiplier: f64,
+            max_delay_ms: u64,
+            max_retries: u32,
+        ) -> Self {
             Self {
                 initial_delay_ms,
                 multiplier,
@@ -558,9 +571,15 @@ mod internal {
 
         #[test]
         fn test_error_display() {
-            assert!(AsyncSteeringError::ChannelClosed.to_string().contains("channel"));
-            assert!(AsyncSteeringError::WindowTooSmall.to_string().contains("window"));
-            assert!(AsyncSteeringError::SignalOutOfBounds.to_string().contains("signal"));
+            assert!(AsyncSteeringError::ChannelClosed
+                .to_string()
+                .contains("channel"));
+            assert!(AsyncSteeringError::WindowTooSmall
+                .to_string()
+                .contains("window"));
+            assert!(AsyncSteeringError::SignalOutOfBounds
+                .to_string()
+                .contains("signal"));
         }
 
         #[test]
@@ -644,7 +663,9 @@ mod internal {
 
         #[test]
         fn test_backpressure_display() {
-            assert!(AsyncSteeringError::Backpressure.to_string().contains("backpressure"));
+            assert!(AsyncSteeringError::Backpressure
+                .to_string()
+                .contains("backpressure"));
         }
 
         #[test]
@@ -658,4 +679,3 @@ pub use internal::{
     apply_late_correction, AsyncSteeringChannelMock, AsyncSteeringError, RetryConfig, RetryState,
     SteeringMetrics, SteeringSignal,
 };
-

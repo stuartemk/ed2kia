@@ -154,220 +154,265 @@ impl OpenApiSpec {
         let mut paths = Paths::default();
 
         // Health & Status
-        paths.endpoints.insert("/api/v2/health".to_string(), PathItem {
-            get: Some(Operation {
-                summary: "Health check".to_string(),
-                description: "Verifica el estado de salud del nodo ed2kIA.".to_string(),
-                operation_id: "getHealth".to_string(),
-                tags: Some(vec!["system".to_string()]),
-                parameters: None,
-                request_body: None,
-                responses: Responses {
-                    codes: std::collections::HashMap::from_iter([
-                        ("200".to_string(), Response {
-                            description: "Node is healthy".to_string(),
-                            content: Some(std::collections::HashMap::from_iter([
-                                ("application/json".to_string(), MediaType {
-                                    schema: SchemaRef {
-                                        r#type: Some("object".to_string()),
-                                        ..Default::default()
+        paths.endpoints.insert(
+            "/api/v2/health".to_string(),
+            PathItem {
+                get: Some(Operation {
+                    summary: "Health check".to_string(),
+                    description: "Verifica el estado de salud del nodo ed2kIA.".to_string(),
+                    operation_id: "getHealth".to_string(),
+                    tags: Some(vec!["system".to_string()]),
+                    parameters: None,
+                    request_body: None,
+                    responses: Responses {
+                        codes: std::collections::HashMap::from_iter([(
+                            "200".to_string(),
+                            Response {
+                                description: "Node is healthy".to_string(),
+                                content: Some(std::collections::HashMap::from_iter([(
+                                    "application/json".to_string(),
+                                    MediaType {
+                                        schema: SchemaRef {
+                                            r#type: Some("object".to_string()),
+                                            ..Default::default()
+                                        },
                                     },
-                                }),
-                            ])),
-                        }),
-                    ]),
-                },
-            }),
-            ..Default::default()
-        });
+                                )])),
+                            },
+                        )]),
+                    },
+                }),
+                ..Default::default()
+            },
+        );
 
         // Network Status
-        paths.endpoints.insert("/api/v2/network".to_string(), PathItem {
-            get: Some(Operation {
-                summary: "Network status".to_string(),
-                description: "Obtiene información del estado de la red P2P.".to_string(),
-                operation_id: "getNetworkStatus".to_string(),
-                tags: Some(vec!["network".to_string()]),
-                parameters: None,
-                request_body: None,
-                responses: Responses {
-                    codes: std::collections::HashMap::from_iter([
-                        ("200".to_string(), Response {
-                            description: "Network status retrieved".to_string(),
-                            content: Some(std::collections::HashMap::from_iter([
-                                ("application/json".to_string(), MediaType {
-                                    schema: SchemaRef {
-                                        r#ref: Some("#/components/schemas/NetworkStatus".to_string()),
-                                        ..Default::default()
+        paths.endpoints.insert(
+            "/api/v2/network".to_string(),
+            PathItem {
+                get: Some(Operation {
+                    summary: "Network status".to_string(),
+                    description: "Obtiene información del estado de la red P2P.".to_string(),
+                    operation_id: "getNetworkStatus".to_string(),
+                    tags: Some(vec!["network".to_string()]),
+                    parameters: None,
+                    request_body: None,
+                    responses: Responses {
+                        codes: std::collections::HashMap::from_iter([(
+                            "200".to_string(),
+                            Response {
+                                description: "Network status retrieved".to_string(),
+                                content: Some(std::collections::HashMap::from_iter([(
+                                    "application/json".to_string(),
+                                    MediaType {
+                                        schema: SchemaRef {
+                                            r#ref: Some(
+                                                "#/components/schemas/NetworkStatus".to_string(),
+                                            ),
+                                            ..Default::default()
+                                        },
                                     },
-                                }),
-                            ])),
-                        }),
-                    ]),
-                },
-            }),
-            ..Default::default()
-        });
+                                )])),
+                            },
+                        )]),
+                    },
+                }),
+                ..Default::default()
+            },
+        );
 
         // SAE Analysis
-        paths.endpoints.insert("/api/v2/sae/analyze".to_string(), PathItem {
-            post: Some(Operation {
-                summary: "Analyze hidden state".to_string(),
-                description: "Envía un hidden state para análisis SAE distribuido.".to_string(),
-                operation_id: "analyzeHiddenState".to_string(),
-                tags: Some(vec!["sae".to_string()]),
-                parameters: None,
-                request_body: Some(RequestBody {
-                    description: "Hidden state data".to_string(),
-                    required: true,
-                    content: std::collections::HashMap::from_iter([
-                        ("application/json".to_string(), MediaType {
-                            schema: SchemaRef {
-                                r#ref: Some("#/components/schemas/HiddenStateInput".to_string()),
-                                ..Default::default()
+        paths.endpoints.insert(
+            "/api/v2/sae/analyze".to_string(),
+            PathItem {
+                post: Some(Operation {
+                    summary: "Analyze hidden state".to_string(),
+                    description: "Envía un hidden state para análisis SAE distribuido.".to_string(),
+                    operation_id: "analyzeHiddenState".to_string(),
+                    tags: Some(vec!["sae".to_string()]),
+                    parameters: None,
+                    request_body: Some(RequestBody {
+                        description: "Hidden state data".to_string(),
+                        required: true,
+                        content: std::collections::HashMap::from_iter([(
+                            "application/json".to_string(),
+                            MediaType {
+                                schema: SchemaRef {
+                                    r#ref: Some(
+                                        "#/components/schemas/HiddenStateInput".to_string(),
+                                    ),
+                                    ..Default::default()
+                                },
                             },
-                        }),
-                    ]),
+                        )]),
+                    }),
+                    responses: Responses {
+                        codes: std::collections::HashMap::from_iter([
+                            (
+                                "200".to_string(),
+                                Response {
+                                    description: "Analysis complete".to_string(),
+                                    content: Some(std::collections::HashMap::from_iter([(
+                                        "application/json".to_string(),
+                                        MediaType {
+                                            schema: SchemaRef {
+                                                r#ref: Some(
+                                                    "#/components/schemas/AnalysisResult"
+                                                        .to_string(),
+                                                ),
+                                                ..Default::default()
+                                            },
+                                        },
+                                    )])),
+                                },
+                            ),
+                            (
+                                "400".to_string(),
+                                Response {
+                                    description: "Invalid input".to_string(),
+                                    content: None,
+                                },
+                            ),
+                        ]),
+                    },
                 }),
-                responses: Responses {
-                    codes: std::collections::HashMap::from_iter([
-                        ("200".to_string(), Response {
-                            description: "Analysis complete".to_string(),
-                            content: Some(std::collections::HashMap::from_iter([
-                                ("application/json".to_string(), MediaType {
-                                    schema: SchemaRef {
-                                        r#ref: Some("#/components/schemas/AnalysisResult".to_string()),
-                                        ..Default::default()
-                                    },
-                                }),
-                            ])),
-                        }),
-                        ("400".to_string(), Response {
-                            description: "Invalid input".to_string(),
-                            content: None,
-                        }),
-                    ]),
-                },
-            }),
-            ..Default::default()
-        });
+                ..Default::default()
+            },
+        );
 
         // Federation
-        paths.endpoints.insert("/api/v2/federation/rounds".to_string(), PathItem {
-            get: Some(Operation {
-                summary: "List federation rounds".to_string(),
-                description: "Lista los rounds de federación activos y completados.".to_string(),
-                operation_id: "listFederationRounds".to_string(),
-                tags: Some(vec!["federation".to_string()]),
-                parameters: None,
-                request_body: None,
-                responses: Responses {
-                    codes: std::collections::HashMap::from_iter([
-                        ("200".to_string(), Response {
-                            description: "Rounds list".to_string(),
-                            content: None,
-                        }),
-                    ]),
-                },
-            }),
-            post: Some(Operation {
-                summary: "Start federation round".to_string(),
-                description: "Inicia un nuevo round de entrenamiento federado.".to_string(),
-                operation_id: "startFederationRound".to_string(),
-                tags: Some(vec!["federation".to_string()]),
-                parameters: None,
-                request_body: Some(RequestBody {
-                    description: "Round configuration".to_string(),
-                    required: true,
-                    content: std::collections::HashMap::from_iter([
-                        ("application/json".to_string(), MediaType {
-                            schema: SchemaRef {
-                                r#ref: Some("#/components/schemas/RoundConfig".to_string()),
-                                ..Default::default()
+        paths.endpoints.insert(
+            "/api/v2/federation/rounds".to_string(),
+            PathItem {
+                get: Some(Operation {
+                    summary: "List federation rounds".to_string(),
+                    description: "Lista los rounds de federación activos y completados."
+                        .to_string(),
+                    operation_id: "listFederationRounds".to_string(),
+                    tags: Some(vec!["federation".to_string()]),
+                    parameters: None,
+                    request_body: None,
+                    responses: Responses {
+                        codes: std::collections::HashMap::from_iter([(
+                            "200".to_string(),
+                            Response {
+                                description: "Rounds list".to_string(),
+                                content: None,
                             },
-                        }),
-                    ]),
+                        )]),
+                    },
                 }),
-                responses: Responses {
-                    codes: std::collections::HashMap::from_iter([
-                        ("201".to_string(), Response {
-                            description: "Round started".to_string(),
-                            content: None,
-                        }),
-                    ]),
-                },
-            }),
-            ..Default::default()
-        });
+                post: Some(Operation {
+                    summary: "Start federation round".to_string(),
+                    description: "Inicia un nuevo round de entrenamiento federado.".to_string(),
+                    operation_id: "startFederationRound".to_string(),
+                    tags: Some(vec!["federation".to_string()]),
+                    parameters: None,
+                    request_body: Some(RequestBody {
+                        description: "Round configuration".to_string(),
+                        required: true,
+                        content: std::collections::HashMap::from_iter([(
+                            "application/json".to_string(),
+                            MediaType {
+                                schema: SchemaRef {
+                                    r#ref: Some("#/components/schemas/RoundConfig".to_string()),
+                                    ..Default::default()
+                                },
+                            },
+                        )]),
+                    }),
+                    responses: Responses {
+                        codes: std::collections::HashMap::from_iter([(
+                            "201".to_string(),
+                            Response {
+                                description: "Round started".to_string(),
+                                content: None,
+                            },
+                        )]),
+                    },
+                }),
+                ..Default::default()
+            },
+        );
 
         // Staking
-        paths.endpoints.insert("/api/v2/staking/registry".to_string(), PathItem {
-            get: Some(Operation {
-                summary: "Staking registry".to_string(),
-                description: "Obtiene el registro de nodos con staking activo.".to_string(),
-                operation_id: "getStakingRegistry".to_string(),
-                tags: Some(vec!["staking".to_string()]),
-                parameters: None,
-                request_body: None,
-                responses: Responses {
-                    codes: std::collections::HashMap::from_iter([
-                        ("200".to_string(), Response {
-                            description: "Registry data".to_string(),
-                            content: None,
-                        }),
-                    ]),
-                },
-            }),
-            ..Default::default()
-        });
+        paths.endpoints.insert(
+            "/api/v2/staking/registry".to_string(),
+            PathItem {
+                get: Some(Operation {
+                    summary: "Staking registry".to_string(),
+                    description: "Obtiene el registro de nodos con staking activo.".to_string(),
+                    operation_id: "getStakingRegistry".to_string(),
+                    tags: Some(vec!["staking".to_string()]),
+                    parameters: None,
+                    request_body: None,
+                    responses: Responses {
+                        codes: std::collections::HashMap::from_iter([(
+                            "200".to_string(),
+                            Response {
+                                description: "Registry data".to_string(),
+                                content: None,
+                            },
+                        )]),
+                    },
+                }),
+                ..Default::default()
+            },
+        );
 
         // Governance
-        paths.endpoints.insert("/api/v2/governance/proposals".to_string(), PathItem {
-            get: Some(Operation {
-                summary: "List proposals".to_string(),
-                description: "Lista las propuestas de gobernanza activas.".to_string(),
-                operation_id: "listProposals".to_string(),
-                tags: Some(vec!["governance".to_string()]),
-                parameters: None,
-                request_body: None,
-                responses: Responses {
-                    codes: std::collections::HashMap::from_iter([
-                        ("200".to_string(), Response {
-                            description: "Proposals list".to_string(),
-                            content: None,
-                        }),
-                    ]),
-                },
-            }),
-            post: Some(Operation {
-                summary: "Submit proposal".to_string(),
-                description: "Envía una nueva propuesta de gobernanza.".to_string(),
-                operation_id: "submitProposal".to_string(),
-                tags: Some(vec!["governance".to_string()]),
-                parameters: None,
-                request_body: Some(RequestBody {
-                    description: "Proposal data".to_string(),
-                    required: true,
-                    content: std::collections::HashMap::from_iter([
-                        ("application/json".to_string(), MediaType {
-                            schema: SchemaRef {
-                                r#ref: Some("#/components/schemas/Proposal".to_string()),
-                                ..Default::default()
+        paths.endpoints.insert(
+            "/api/v2/governance/proposals".to_string(),
+            PathItem {
+                get: Some(Operation {
+                    summary: "List proposals".to_string(),
+                    description: "Lista las propuestas de gobernanza activas.".to_string(),
+                    operation_id: "listProposals".to_string(),
+                    tags: Some(vec!["governance".to_string()]),
+                    parameters: None,
+                    request_body: None,
+                    responses: Responses {
+                        codes: std::collections::HashMap::from_iter([(
+                            "200".to_string(),
+                            Response {
+                                description: "Proposals list".to_string(),
+                                content: None,
                             },
-                        }),
-                    ]),
+                        )]),
+                    },
                 }),
-                responses: Responses {
-                    codes: std::collections::HashMap::from_iter([
-                        ("201".to_string(), Response {
-                            description: "Proposal created".to_string(),
-                            content: None,
-                        }),
-                    ]),
-                },
-            }),
-            ..Default::default()
-        });
+                post: Some(Operation {
+                    summary: "Submit proposal".to_string(),
+                    description: "Envía una nueva propuesta de gobernanza.".to_string(),
+                    operation_id: "submitProposal".to_string(),
+                    tags: Some(vec!["governance".to_string()]),
+                    parameters: None,
+                    request_body: Some(RequestBody {
+                        description: "Proposal data".to_string(),
+                        required: true,
+                        content: std::collections::HashMap::from_iter([(
+                            "application/json".to_string(),
+                            MediaType {
+                                schema: SchemaRef {
+                                    r#ref: Some("#/components/schemas/Proposal".to_string()),
+                                    ..Default::default()
+                                },
+                            },
+                        )]),
+                    }),
+                    responses: Responses {
+                        codes: std::collections::HashMap::from_iter([(
+                            "201".to_string(),
+                            Response {
+                                description: "Proposal created".to_string(),
+                                content: None,
+                            },
+                        )]),
+                    },
+                }),
+                ..Default::default()
+            },
+        );
 
         paths
     }
@@ -375,30 +420,45 @@ impl OpenApiSpec {
     fn generate_components() -> Components {
         let mut schemas = std::collections::HashMap::new();
 
-        schemas.insert("NetworkStatus".to_string(), SchemaRef {
-            r#type: Some("object".to_string()),
-            ..Default::default()
-        });
+        schemas.insert(
+            "NetworkStatus".to_string(),
+            SchemaRef {
+                r#type: Some("object".to_string()),
+                ..Default::default()
+            },
+        );
 
-        schemas.insert("HiddenStateInput".to_string(), SchemaRef {
-            r#type: Some("object".to_string()),
-            ..Default::default()
-        });
+        schemas.insert(
+            "HiddenStateInput".to_string(),
+            SchemaRef {
+                r#type: Some("object".to_string()),
+                ..Default::default()
+            },
+        );
 
-        schemas.insert("AnalysisResult".to_string(), SchemaRef {
-            r#type: Some("object".to_string()),
-            ..Default::default()
-        });
+        schemas.insert(
+            "AnalysisResult".to_string(),
+            SchemaRef {
+                r#type: Some("object".to_string()),
+                ..Default::default()
+            },
+        );
 
-        schemas.insert("RoundConfig".to_string(), SchemaRef {
-            r#type: Some("object".to_string()),
-            ..Default::default()
-        });
+        schemas.insert(
+            "RoundConfig".to_string(),
+            SchemaRef {
+                r#type: Some("object".to_string()),
+                ..Default::default()
+            },
+        );
 
-        schemas.insert("Proposal".to_string(), SchemaRef {
-            r#type: Some("object".to_string()),
-            ..Default::default()
-        });
+        schemas.insert(
+            "Proposal".to_string(),
+            SchemaRef {
+                r#type: Some("object".to_string()),
+                ..Default::default()
+            },
+        );
 
         Components {
             schemas: Some(schemas),
@@ -442,9 +502,18 @@ mod tests {
         assert!(spec.paths.endpoints.contains_key("/api/v2/health"));
         assert!(spec.paths.endpoints.contains_key("/api/v2/network"));
         assert!(spec.paths.endpoints.contains_key("/api/v2/sae/analyze"));
-        assert!(spec.paths.endpoints.contains_key("/api/v2/federation/rounds"));
-        assert!(spec.paths.endpoints.contains_key("/api/v2/staking/registry"));
-        assert!(spec.paths.endpoints.contains_key("/api/v2/governance/proposals"));
+        assert!(spec
+            .paths
+            .endpoints
+            .contains_key("/api/v2/federation/rounds"));
+        assert!(spec
+            .paths
+            .endpoints
+            .contains_key("/api/v2/staking/registry"));
+        assert!(spec
+            .paths
+            .endpoints
+            .contains_key("/api/v2/governance/proposals"));
     }
 
     #[test]

@@ -32,7 +32,11 @@ impl std::fmt::Display for AggregationError {
             AggregationError::InvalidSignature(id) => write!(f, "Firma inválida para nodo: {}", id),
             AggregationError::NodeNotRegistered(id) => write!(f, "Nodo no registrado: {}", id),
             AggregationError::GradientDimensionMismatch { expected, got } => {
-                write!(f, "Dimensión de gradiente: esperado {}, obtenido {}", expected, got)
+                write!(
+                    f,
+                    "Dimensión de gradiente: esperado {}, obtenido {}",
+                    expected, got
+                )
             }
             AggregationError::DivergenceThresholdExceeded(val) => {
                 write!(f, "Umbral de divergencia excedido: {:.4}", val)
@@ -541,16 +545,8 @@ mod tests {
 
     #[test]
     fn test_aggregation_result_new() {
-        let result = AggregationResult::new(
-            vec![0.5, 0.3, 0.1],
-            3,
-            1,
-            1.0,
-            1e-5,
-            2.5,
-            1000,
-            Vec::new(),
-        );
+        let result =
+            AggregationResult::new(vec![0.5, 0.3, 0.1], 3, 1, 1.0, 1e-5, 2.5, 1000, Vec::new());
         assert_eq!(result.participant_count, 3);
         assert_eq!(result.epoch, 1);
         assert_eq!(result.epsilon, 1.0);
@@ -569,7 +565,11 @@ mod tests {
     fn test_gaussian_noise_mean() {
         let noise = generate_gaussian_noise(10000, 0.0, 1.0);
         let mean: f64 = noise.iter().sum::<f64>() / noise.len() as f64;
-        assert!(mean.abs() < 0.1, "Media del ruido debería estar cerca de 0, obtenido {}", mean);
+        assert!(
+            mean.abs() < 0.1,
+            "Media del ruido debería estar cerca de 0, obtenido {}",
+            mean
+        );
     }
 
     #[test]

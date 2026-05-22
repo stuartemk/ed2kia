@@ -92,7 +92,11 @@ pub fn apply_stuartian_mask_with_penalty(
     // Step 2: Convert bool mask to f32 and apply penalty magnitude
     let mask = z_negative
         .to_dtype(DType::F32)?
-        .broadcast_mul(&Tensor::full(penalty, sct_z_vectors.shape(), sct_z_vectors.device())?)?;
+        .broadcast_mul(&Tensor::full(
+            penalty,
+            sct_z_vectors.shape(),
+            sct_z_vectors.device(),
+        )?)?;
 
     // Step 3: Broadcast mask to attention score shape and add
     // The mask shape needs to align with the key dimension (last dim of scores)
@@ -141,7 +145,11 @@ pub fn apply_multi_head_ethical_mask(
     let z_negative = sct_z_vectors.lt(&zero)?;
     let mask = z_negative
         .to_dtype(DType::F32)?
-        .broadcast_mul(&Tensor::full(penalty, sct_z_vectors.shape(), sct_z_vectors.device())?)?;
+        .broadcast_mul(&Tensor::full(
+            penalty,
+            sct_z_vectors.shape(),
+            sct_z_vectors.device(),
+        )?)?;
 
     // Broadcast: mask [heads, seq_k] or [batch, heads, seq_k] → [batch, heads, seq_q, seq_k]
     let masked = attention_scores
@@ -176,7 +184,10 @@ mod tests {
             .unwrap()
             .to_scalar::<f32>()
             .unwrap();
-        assert!(diff < 1e-6, "Positive Z should not modify scores, diff={diff}");
+        assert!(
+            diff < 1e-6,
+            "Positive Z should not modify scores, diff={diff}"
+        );
     }
 
     #[test]
@@ -255,7 +266,10 @@ mod tests {
 
         // Negative Z → near-zero attention
         let decay = attention_decay_factor(-0.5);
-        assert!(decay < 0.001, "Negative Z should have near-zero decay, got {decay}");
+        assert!(
+            decay < 0.001,
+            "Negative Z should have near-zero decay, got {decay}"
+        );
     }
 
     #[test]
@@ -264,8 +278,7 @@ mod tests {
 
         // [batch=1, heads=2, seq_q=1, seq_k=3]
         let scores_data: Vec<f32> = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
-        let scores =
-            Tensor::from_vec(scores_data, (1, 2, 1, 3), &device).unwrap();
+        let scores = Tensor::from_vec(scores_data, (1, 2, 1, 3), &device).unwrap();
 
         // [heads=2, seq_k=3] — head 0: token 1 is bad, head 1: token 2 is bad
         let z_data: Vec<f32> = vec![0.5, -0.3, 0.2, 0.4, 0.6, -0.8];

@@ -167,7 +167,12 @@ mod internal {
             let reputation_factor = self.reputation;
             let uptime_factor = self.uptime;
             let delegation_penalty = 1.0 / (1.0 + self.delegation_depth as f64 * 0.1);
-            (capacity_score * latency_penalty * reputation_factor * uptime_factor * delegation_penalty).min(1.0)
+            (capacity_score
+                * latency_penalty
+                * reputation_factor
+                * uptime_factor
+                * delegation_penalty)
+                .min(1.0)
         }
 
         /// Checks if node can accept more work.
@@ -339,8 +344,9 @@ mod internal {
     impl ScalingV4Stats {
         pub fn record_prediction_error(&mut self, error: f64) {
             let n = self.prediction_samples + 1;
-            self.avg_prediction_error =
-                self.avg_prediction_error * (self.prediction_samples as f64 / n as f64) + error / n as f64;
+            self.avg_prediction_error = self.avg_prediction_error
+                * (self.prediction_samples as f64 / n as f64)
+                + error / n as f64;
             self.prediction_samples = n;
         }
 
@@ -380,9 +386,15 @@ mod internal {
         }
 
         /// Register a node in the federation.
-        pub fn register_node(&mut self, node_id: String, compute_capacity: f64) -> Result<(), ScalingV4Error> {
+        pub fn register_node(
+            &mut self,
+            node_id: String,
+            compute_capacity: f64,
+        ) -> Result<(), ScalingV4Error> {
             if compute_capacity <= 0.0 {
-                return Err(ScalingV4Error::InvalidCapacity("Capacity must be positive".to_string()));
+                return Err(ScalingV4Error::InvalidCapacity(
+                    "Capacity must be positive".to_string(),
+                ));
             }
             let node = NodeCapabilityV4::new(node_id.clone(), compute_capacity);
             self.nodes.insert(node_id, node);
@@ -392,17 +404,27 @@ mod internal {
 
         /// Update node load with EMA smoothing.
         pub fn update_node_load(&mut self, node_id: &str, load: f64) -> Result<(), ScalingV4Error> {
-            let node = self.nodes.get_mut(node_id).ok_or(ScalingV4Error::NodeNotFound(node_id.to_string()))?;
+            let node = self
+                .nodes
+                .get_mut(node_id)
+                .ok_or(ScalingV4Error::NodeNotFound(node_id.to_string()))?;
             node.update_load(load, self.config.ema_alpha);
             Ok(())
         }
 
         /// Update node delegation depth.
-        pub fn update_delegation_depth(&mut self, node_id: &str, depth: usize) -> Result<(), ScalingV4Error> {
+        pub fn update_delegation_depth(
+            &mut self,
+            node_id: &str,
+            depth: usize,
+        ) -> Result<(), ScalingV4Error> {
             if depth > self.config.max_delegation_depth {
                 return Err(ScalingV4Error::DelegationQuotaExceeded);
             }
-            let node = self.nodes.get_mut(node_id).ok_or(ScalingV4Error::NodeNotFound(node_id.to_string()))?;
+            let node = self
+                .nodes
+                .get_mut(node_id)
+                .ok_or(ScalingV4Error::NodeNotFound(node_id.to_string()))?;
             node.delegation_depth = depth;
             Ok(())
         }
@@ -410,7 +432,9 @@ mod internal {
         /// Create a new shard.
         pub fn create_shard(&mut self, shard_id: String) -> Result<(), ScalingV4Error> {
             if self.shards.len() >= self.config.max_shards {
-                return Err(ScalingV4Error::ShardAssignmentFailed("Max shards reached".to_string()));
+                return Err(ScalingV4Error::ShardAssignmentFailed(
+                    "Max shards reached".to_string(),
+                ));
             }
             let shard = ShardConfigV4::new(shard_id.clone());
             self.shards.insert(shard_id, shard);
@@ -420,9 +444,23 @@ mod internal {
         }
 
         /// Assign a node to a shard.
-        pub fn assign_node_to_shard(&mut self, node_id: &str, shard_id: &str) -> Result<(), ScalingV4Error> {
-            let capacity = self.nodes.get(node_id).ok_or(ScalingV4Error::NodeNotFound(node_id.to_string()))?.compute_capacity;
-            let shard = self.shards.get_mut(shard_id).ok_or(ScalingV4Error::ShardAssignmentFailed(format!("Shard {} not found", shard_id)))?;
+        pub fn assign_node_to_shard(
+            &mut self,
+            node_id: &str,
+            shard_id: &str,
+        ) -> Result<(), ScalingV4Error> {
+            let capacity = self
+                .nodes
+                .get(node_id)
+                .ok_or(ScalingV4Error::NodeNotFound(node_id.to_string()))?
+                .compute_capacity;
+            let shard =
+                self.shards
+                    .get_mut(shard_id)
+                    .ok_or(ScalingV4Error::ShardAssignmentFailed(format!(
+                        "Shard {} not found",
+                        shard_id
+                    )))?;
             shard.add_node(node_id.to_string(), capacity);
             if let Some(node) = self.nodes.get_mut(node_id) {
                 node.assigned_shards.push(shard_id.to_string());
@@ -436,7 +474,8 @@ mod internal {
             let now = current_timestamp_ms();
 
             // Check rebalance cooldown
-            let cooldown_ok = now.saturating_sub(self.last_rebalance_ms) >= self.config.rebalance_cooldown_ms;
+            let cooldown_ok =
+                now.saturating_sub(self.last_rebalance_ms) >= self.config.rebalance_cooldown_ms;
 
             // Evaluate each shard
             for (shard_id, shard) in &self.shards {
@@ -449,7 +488,10 @@ mod internal {
                     decisions.push(ScalingDecisionV4::new(
                         ScalingDecisionType::Rebalance,
                         shard_id.clone(),
-                        format!("Load {:.2} exceeds threshold {:.2}", shard.load_factor, self.config.scale_up_threshold),
+                        format!(
+                            "Load {:.2} exceeds threshold {:.2}",
+                            shard.load_factor, self.config.scale_up_threshold
+                        ),
                         0.9,
                         predicted,
                     ));
@@ -461,7 +503,10 @@ mod internal {
                     decisions.push(ScalingDecisionV4::new(
                         ScalingDecisionType::ProactiveRebalance,
                         shard_id.clone(),
-                        format!("Predicted load {:.2} exceeds proactive threshold {:.2}", predicted, self.config.proactive_threshold),
+                        format!(
+                            "Predicted load {:.2} exceeds proactive threshold {:.2}",
+                            predicted, self.config.proactive_threshold
+                        ),
                         0.7,
                         predicted,
                     ));
@@ -469,11 +514,16 @@ mod internal {
                 }
 
                 // Scale down
-                if shard.load_factor < self.config.scale_down_threshold && shard.nodes.len() > self.config.min_nodes_per_shard {
+                if shard.load_factor < self.config.scale_down_threshold
+                    && shard.nodes.len() > self.config.min_nodes_per_shard
+                {
                     decisions.push(ScalingDecisionV4::new(
                         ScalingDecisionType::ScaleDown,
                         shard_id.clone(),
-                        format!("Load {:.2} below threshold {:.2}", shard.load_factor, self.config.scale_down_threshold),
+                        format!(
+                            "Load {:.2} below threshold {:.2}",
+                            shard.load_factor, self.config.scale_down_threshold
+                        ),
                         0.8,
                         predicted,
                     ));
@@ -486,7 +536,9 @@ mod internal {
 
             // Check federation-wide load
             let fed_load = self.compute_federation_load();
-            if fed_load > self.config.scale_up_threshold && self.shards.len() < self.config.max_shards {
+            if fed_load > self.config.scale_up_threshold
+                && self.shards.len() < self.config.max_shards
+            {
                 decisions.push(ScalingDecisionV4::new(
                     ScalingDecisionType::AddShard,
                     "federation".to_string(),
@@ -529,11 +581,18 @@ mod internal {
             if shard.nodes.is_empty() {
                 return 0.0;
             }
-            let total_predicted: f64 = shard.nodes.iter().map(|nid| {
-                self.nodes.get(nid)
-                    .map(|n| n.predict_load(self.config.prediction_horizon, self.config.ema_alpha))
-                    .unwrap_or(0.0)
-            }).sum();
+            let total_predicted: f64 = shard
+                .nodes
+                .iter()
+                .map(|nid| {
+                    self.nodes
+                        .get(nid)
+                        .map(|n| {
+                            n.predict_load(self.config.prediction_horizon, self.config.ema_alpha)
+                        })
+                        .unwrap_or(0.0)
+                })
+                .sum();
             total_predicted / shard.nodes.len() as f64
         }
 
@@ -548,7 +607,9 @@ mod internal {
 
         /// Get best node for delegation.
         pub fn select_best_node(&self) -> Option<&NodeCapabilityV4> {
-            self.nodes.values().max_by_key(|a| (a.scaling_score() * 1000.0) as i64)
+            self.nodes
+                .values()
+                .max_by_key(|a| (a.scaling_score() * 1000.0) as i64)
         }
 
         /// Get stats reference.
@@ -783,7 +844,10 @@ mod tests {
     fn test_delegation_quota_exceeded() {
         let mut engine = FederationScalingV4::with_defaults();
         engine.register_node("node1".to_string(), 100.0).unwrap();
-        assert_eq!(engine.update_delegation_depth("node1", 10), Err(ScalingV4Error::DelegationQuotaExceeded));
+        assert_eq!(
+            engine.update_delegation_depth("node1", 10),
+            Err(ScalingV4Error::DelegationQuotaExceeded)
+        );
     }
 
     #[test]
@@ -849,7 +913,10 @@ mod tests {
     #[test]
     fn test_decision_type_display() {
         assert_eq!(format!("{}", ScalingDecisionType::AddShard), "AddShard");
-        assert_eq!(format!("{}", ScalingDecisionType::ProactiveRebalance), "ProactiveRebalance");
+        assert_eq!(
+            format!("{}", ScalingDecisionType::ProactiveRebalance),
+            "ProactiveRebalance"
+        );
         assert_eq!(format!("{}", ScalingDecisionType::Delegate), "Delegate");
     }
 

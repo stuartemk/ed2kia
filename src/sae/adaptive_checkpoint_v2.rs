@@ -148,7 +148,13 @@ mod internal {
     }
 
     impl CheckpointV2Stats {
-        pub fn record_checkpoint(&mut self, is_delta: bool, compressed: usize, ratio: f64, depth: usize) {
+        pub fn record_checkpoint(
+            &mut self,
+            is_delta: bool,
+            compressed: usize,
+            ratio: f64,
+            depth: usize,
+        ) {
             self.total_checkpoints += 1;
             if is_delta {
                 self.total_deltas += 1;
@@ -207,27 +213,36 @@ mod internal {
             let shard_id = round as usize % self.config.shard_count;
 
             // Determine if delta or full
-            let (parent_id, delta_depth) = if self.config.delta_enabled && !self.checkpoints.is_empty() {
-                let last = self.checkpoints.back().unwrap();
-                let depth = last.delta_depth + 1;
-                if depth > self.config.max_delta_depth {
-                    // Fallback to full checkpoint
-                    if self.config.auto_fallback {
-                        self.stats.total_fallbacks += 1;
-                        (None, 0)
+            let (parent_id, delta_depth) =
+                if self.config.delta_enabled && !self.checkpoints.is_empty() {
+                    let last = self.checkpoints.back().unwrap();
+                    let depth = last.delta_depth + 1;
+                    if depth > self.config.max_delta_depth {
+                        // Fallback to full checkpoint
+                        if self.config.auto_fallback {
+                            self.stats.total_fallbacks += 1;
+                            (None, 0)
+                        } else {
+                            return Err(CheckpointV2Error::FallbackTriggered(format!(
+                                "Delta depth {} exceeds max {}",
+                                depth, self.config.max_delta_depth
+                            )));
+                        }
                     } else {
-                        return Err(CheckpointV2Error::FallbackTriggered(
-                            format!("Delta depth {} exceeds max {}", depth, self.config.max_delta_depth),
-                        ));
+                        (Some(last.id.clone()), depth)
                     }
                 } else {
-                    (Some(last.id.clone()), depth)
-                }
-            } else {
-                (None, 0)
-            };
+                    (None, 0)
+                };
 
-            let checkpoint = DeltaCheckpointV2::new(id.clone(), round, shard_id, data, parent_id.clone(), delta_depth);
+            let checkpoint = DeltaCheckpointV2::new(
+                id.clone(),
+                round,
+                shard_id,
+                data,
+                parent_id.clone(),
+                delta_depth,
+            );
 
             // Verify checksum
             if !checkpoint.verify_checksum() {
@@ -236,7 +251,10 @@ mod internal {
 
             // Index
             self.id_index.insert(id.clone(), self.checkpoints.len());
-            self.shard_index.entry(shard_id).or_default().push(id.clone());
+            self.shard_index
+                .entry(shard_id)
+                .or_default()
+                .push(id.clone());
 
             // Store
             self.checkpoints.push_back(checkpoint.clone());
@@ -250,7 +268,12 @@ mod internal {
             );
 
             // Check if merge needed
-            if self.stats.total_deltas.is_multiple_of(self.config.merge_interval) && self.stats.total_deltas > 0 {
+            if self
+                .stats
+                .total_deltas
+                .is_multiple_of(self.config.merge_interval)
+                && self.stats.total_deltas > 0
+            {
                 self.merge_deltas().ok();
             }
 
@@ -264,7 +287,11 @@ mod internal {
 
         /// Get checkpoints by shard.
         pub fn get_shard_checkpoints(&self, shard_id: usize) -> Vec<&DeltaCheckpointV2> {
-            let ids = self.shard_index.get(&shard_id).map(|v| v.as_slice()).unwrap_or(&[]);
+            let ids = self
+                .shard_index
+                .get(&shard_id)
+                .map(|v| v.as_slice())
+                .unwrap_or(&[]);
             ids.iter()
                 .filter_map(|id| self.get_checkpoint(id))
                 .collect()
@@ -301,7 +328,9 @@ mod internal {
                 }
                 Ok(())
             } else {
-                Err(CheckpointV2Error::MergeFailed("No checkpoints to evict".to_string()))
+                Err(CheckpointV2Error::MergeFailed(
+                    "No checkpoints to evict".to_string(),
+                ))
             }
         }
 
@@ -343,7 +372,6 @@ mod internal {
             .unwrap_or_default()
             .as_millis() as u64
     }
-
 }
 
 #[cfg(feature = "v1.4-sprint3")]
@@ -354,7 +382,9 @@ mod tests {
     use super::*;
 
     fn make_data(len: usize, seed: u64) -> Vec<f32> {
-        (0..len).map(|i| (i + seed as usize) as f32 * 0.01).collect()
+        (0..len)
+            .map(|i| (i + seed as usize) as f32 * 0.01)
+            .collect()
     }
 
     #[test]
@@ -453,8 +483,8 @@ mod tests {
         let result = engine.save_checkpoint(4, make_data(32, 4));
 
         match result {
-            Err(CheckpointV2Error::FallbackTriggered(_)) => {},
-            Ok(_) => {}, // May succeed if depth reset
+            Err(CheckpointV2Error::FallbackTriggered(_)) => {}
+            Ok(_) => {} // May succeed if depth reset
             Err(e) => panic!("Unexpected error: {}", e),
         }
     }
@@ -538,7 +568,14 @@ mod tests {
 
     #[test]
     fn test_checkpoint_delta_new() {
-        let ckpt = DeltaCheckpointV2::new("id".to_string(), 2, 0, vec![1.0, 2.0], Some("parent".to_string()), 1);
+        let ckpt = DeltaCheckpointV2::new(
+            "id".to_string(),
+            2,
+            0,
+            vec![1.0, 2.0],
+            Some("parent".to_string()),
+            1,
+        );
         assert!(ckpt.is_delta);
         assert_eq!(ckpt.delta_depth, 1);
     }

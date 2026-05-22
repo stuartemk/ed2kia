@@ -180,7 +180,9 @@ mod internal {
 
         pub fn add_node(&mut self, node: NodeCRD) -> Result<(), K8sError> {
             if node.spec.replicas < 0 {
-                return Err(K8sError::InvalidSchema("Replicas cannot be negative".to_string()));
+                return Err(K8sError::InvalidSchema(
+                    "Replicas cannot be negative".to_string(),
+                ));
             }
             if node.spec.image.is_empty() {
                 return Err(K8sError::InvalidSchema("Image cannot be empty".to_string()));
@@ -201,13 +203,19 @@ mod internal {
 
         pub fn add_steering_config(&mut self, config: SteeringConfigCRD) -> Result<(), K8sError> {
             if config.spec.empathy < 0.0 || config.spec.empathy > 1.0 {
-                return Err(K8sError::InvalidSchema("Empathy must be 0.0-1.0".to_string()));
+                return Err(K8sError::InvalidSchema(
+                    "Empathy must be 0.0-1.0".to_string(),
+                ));
             }
             if config.spec.creativity < 0.0 || config.spec.creativity > 1.0 {
-                return Err(K8sError::InvalidSchema("Creativity must be 0.0-1.0".to_string()));
+                return Err(K8sError::InvalidSchema(
+                    "Creativity must be 0.0-1.0".to_string(),
+                ));
             }
             if config.spec.safety < 0.0 || config.spec.safety > 1.0 {
-                return Err(K8sError::InvalidSchema("Safety must be 0.0-1.0".to_string()));
+                return Err(K8sError::InvalidSchema(
+                    "Safety must be 0.0-1.0".to_string(),
+                ));
             }
             let key = format!("{}/{}", config.metadata.namespace, config.metadata.name);
             self.steering_configs.insert(key, config);
@@ -224,7 +232,10 @@ mod internal {
                     resource_name: key.clone(),
                     resource_kind: "Node".to_string(),
                     success: true,
-                    message: format!("Reconciled {} with {} replicas", node.metadata.name, node.spec.replicas),
+                    message: format!(
+                        "Reconciled {} with {} replicas",
+                        node.metadata.name, node.spec.replicas
+                    ),
                 };
                 results.push(result);
             }
@@ -246,7 +257,10 @@ mod internal {
                     resource_name: key.clone(),
                     resource_kind: "SteeringConfig".to_string(),
                     success: true,
-                    message: format!("Applied steering to {} nodes", config.spec.target_nodes.len()),
+                    message: format!(
+                        "Applied steering to {} nodes",
+                        config.spec.target_nodes.len()
+                    ),
                 };
                 results.push(result);
             }
@@ -335,7 +349,12 @@ mod internal {
                 },
                 status: None,
             };
-            assert_eq!(op.add_node(node), Err(K8sError::InvalidSchema("Replicas cannot be negative".to_string())));
+            assert_eq!(
+                op.add_node(node),
+                Err(K8sError::InvalidSchema(
+                    "Replicas cannot be negative".to_string()
+                ))
+            );
         }
 
         #[test]
@@ -354,7 +373,10 @@ mod internal {
                 },
                 status: None,
             };
-            assert_eq!(op.add_node(node), Err(K8sError::InvalidSchema("Image cannot be empty".to_string())));
+            assert_eq!(
+                op.add_node(node),
+                Err(K8sError::InvalidSchema("Image cannot be empty".to_string()))
+            );
         }
 
         #[test]
@@ -391,7 +413,10 @@ mod internal {
                 },
                 status: None,
             };
-            assert_eq!(op.add_lease(lease), Err(K8sError::InvalidSchema("Duration must be > 0".to_string())));
+            assert_eq!(
+                op.add_lease(lease),
+                Err(K8sError::InvalidSchema("Duration must be > 0".to_string()))
+            );
         }
 
         #[test]
@@ -428,7 +453,12 @@ mod internal {
                 },
                 status: None,
             };
-            assert_eq!(op.add_steering_config(config), Err(K8sError::InvalidSchema("Empathy must be 0.0-1.0".to_string())));
+            assert_eq!(
+                op.add_steering_config(config),
+                Err(K8sError::InvalidSchema(
+                    "Empathy must be 0.0-1.0".to_string()
+                ))
+            );
         }
 
         #[test]
@@ -454,7 +484,8 @@ mod internal {
                     port: 8080,
                 },
                 status: None,
-            }).unwrap();
+            })
+            .unwrap();
 
             op.add_lease(LeaseCRD {
                 api_version: "ed2kia.io/v1".to_string(),
@@ -467,7 +498,8 @@ mod internal {
                     holder_identity: "node1".to_string(),
                 },
                 status: None,
-            }).unwrap();
+            })
+            .unwrap();
 
             let results = op.reconcile_all();
             assert_eq!(results.len(), 2);
@@ -533,7 +565,8 @@ mod internal {
                     port: 8080,
                 },
                 status: None,
-            }).unwrap();
+            })
+            .unwrap();
 
             op.add_steering_config(SteeringConfigCRD {
                 api_version: "ed2kia.io/v1".to_string(),
@@ -546,7 +579,8 @@ mod internal {
                     target_nodes: vec!["node1".to_string()],
                 },
                 status: None,
-            }).unwrap();
+            })
+            .unwrap();
 
             // Reconcile
             let results = op.reconcile_all();

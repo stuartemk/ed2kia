@@ -104,7 +104,10 @@ impl FeedbackStore {
     /// Returns true if the submission is allowed.
     fn is_allowed(&self, node_id: &str) -> bool {
         let mut limits = self.rate_limits.write();
-        let now_ms = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as u64;
+        let now_ms = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as u64;
         let window_ms = self.window_duration.as_millis() as u64;
 
         let entry = limits.entry(node_id.to_string()).or_insert((now_ms, 0));
@@ -328,10 +331,7 @@ async fn token_handler(
             token: word,
             top_features: top
                 .into_iter()
-                .map(|(feature_id, weight)| FeatureEntry {
-                    feature_id,
-                    weight,
-                })
+                .map(|(feature_id, weight)| FeatureEntry { feature_id, weight })
                 .collect(),
             node_count: state.graph.node_count(),
             edge_count: state.graph.edge_count(),

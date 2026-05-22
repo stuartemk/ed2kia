@@ -7,15 +7,21 @@
 
 #![cfg(feature = "v1.1-sprint4")]
 
-use ed2kia::alignment::loop_v2::{AlignmentLoopV2, FeedbackEntryV2, LoopV2Config};
-use ed2kia::alignment::steering_engine::{SteeringEngine, SteeringConfig, SteeringSignal};
 use ed2kia::alignment::confidence_calculator::{ConfidenceCalculator, ConfidenceConfig};
-use ed2kia::federation::gradient_normalizer::{GradientNormalizer, NormalizerConfig, NodeCapacity, GradientBatch};
-use ed2kia::federation::trust_sync::{TrustSyncEngine, TrustSyncConfig, TrustNodeRecord, NodeStatus};
-use ed2kia::federation::cross_model_scaler::{CrossModelScaler, ScalerConfig, ModelInfo, NodeGradientUpdate};
-use ed2kia::ui::realtime_backend::{RealtimeBackend, BackendConfig, BackendEventType};
-use ed2kia::web::ws_alignment_stream::{WsAlignmentStream, WsAlignmentConfig, AlignmentSignalType};
-use ed2kia::web::sse_metrics::{SseMetricsStream, SseMetricsConfig, MetricCategory, MetricPoint};
+use ed2kia::alignment::loop_v2::{AlignmentLoopV2, FeedbackEntryV2, LoopV2Config};
+use ed2kia::alignment::steering_engine::{SteeringConfig, SteeringEngine, SteeringSignal};
+use ed2kia::federation::cross_model_scaler::{
+    CrossModelScaler, ModelInfo, NodeGradientUpdate, ScalerConfig,
+};
+use ed2kia::federation::gradient_normalizer::{
+    GradientBatch, GradientNormalizer, NodeCapacity, NormalizerConfig,
+};
+use ed2kia::federation::trust_sync::{
+    NodeStatus, TrustNodeRecord, TrustSyncConfig, TrustSyncEngine,
+};
+use ed2kia::ui::realtime_backend::{BackendConfig, BackendEventType, RealtimeBackend};
+use ed2kia::web::sse_metrics::{MetricCategory, MetricPoint, SseMetricsConfig, SseMetricsStream};
+use ed2kia::web::ws_alignment_stream::{AlignmentSignalType, WsAlignmentConfig, WsAlignmentStream};
 
 // ============================================================================
 // Helpers
@@ -78,7 +84,12 @@ fn make_model_info(model_id: &str, dim: usize) -> ModelInfo {
     }
 }
 
-fn make_gradient_update(node_id: &str, model_id: &str, dim: usize, round: u64) -> NodeGradientUpdate {
+fn make_gradient_update(
+    node_id: &str,
+    model_id: &str,
+    dim: usize,
+    round: u64,
+) -> NodeGradientUpdate {
     let gradients: Vec<f32> = (0..dim).map(|i| (i as f32) * 0.001).collect();
     NodeGradientUpdate {
         node_id: node_id.to_string(),
@@ -129,7 +140,9 @@ fn test_e2e_alignment_loop_steering_application() {
     let mut loop_v2 = AlignmentLoopV2::new();
 
     // Ingestar feedback
-    loop_v2.ingest_feedback(make_feedback("layer_1", 0, 0.3, 0.9)).unwrap();
+    loop_v2
+        .ingest_feedback(make_feedback("layer_1", 0, 0.3, 0.9))
+        .unwrap();
 
     // Generar señal de steering
     let signal = loop_v2.generate_steering_signal("layer_1").unwrap();
@@ -145,7 +158,9 @@ fn test_e2e_alignment_loop_steering_application() {
 fn test_e2e_alignment_loop_rollback() {
     let mut loop_v2 = AlignmentLoopV2::new();
 
-    loop_v2.ingest_feedback(make_feedback("layer_1", 0, 0.5, 0.8)).unwrap();
+    loop_v2
+        .ingest_feedback(make_feedback("layer_1", 0, 0.5, 0.8))
+        .unwrap();
     let activations: Vec<f32> = vec![0.5; 5];
     loop_v2.run_cycle("layer_1", &activations).unwrap();
 
@@ -168,8 +183,12 @@ fn test_e2e_steering_engine_queue_and_apply() {
     let mut engine = SteeringEngine::with_config(config);
 
     // Encolar señales
-    engine.queue_signal(make_steering_signal("layer_1", 0.9)).unwrap();
-    engine.queue_signal(make_steering_signal("layer_2", 0.8)).unwrap();
+    engine
+        .queue_signal(make_steering_signal("layer_1", 0.9))
+        .unwrap();
+    engine
+        .queue_signal(make_steering_signal("layer_2", 0.8))
+        .unwrap();
 
     // Aplicar siguiente
     let activations: Vec<f32> = vec![0.5; 3];
@@ -182,8 +201,12 @@ fn test_e2e_steering_engine_queue_and_apply() {
 fn test_e2e_steering_engine_apply_all() {
     let mut engine = SteeringEngine::new();
 
-    engine.queue_signal(make_steering_signal("layer_1", 0.9)).unwrap();
-    engine.queue_signal(make_steering_signal("layer_2", 0.85)).unwrap();
+    engine
+        .queue_signal(make_steering_signal("layer_1", 0.9))
+        .unwrap();
+    engine
+        .queue_signal(make_steering_signal("layer_2", 0.85))
+        .unwrap();
 
     let activations: Vec<f32> = vec![0.5; 3];
     let results = engine.apply_all(&activations).unwrap();
@@ -226,8 +249,14 @@ fn test_e2e_confidence_calculator_full_workflow() {
     assert_eq!(weights.len(), 3);
 
     // Verificar que annotator_1 tiene mayor peso tras éxito
-    let w1 = weights.iter().find(|w| w.annotator_id == "annotator_1").unwrap();
-    let w2 = weights.iter().find(|w| w.annotator_id == "annotator_2").unwrap();
+    let w1 = weights
+        .iter()
+        .find(|w| w.annotator_id == "annotator_1")
+        .unwrap();
+    let w2 = weights
+        .iter()
+        .find(|w| w.annotator_id == "annotator_2")
+        .unwrap();
     assert!(w1.weight > w2.weight);
 }
 
@@ -279,8 +308,12 @@ fn test_e2e_gradient_normalizer_full_pipeline() {
     let mut normalizer = GradientNormalizer::with_config(config);
 
     // Registrar nodos
-    normalizer.register_node(make_node_capacity("node1")).unwrap();
-    normalizer.register_node(make_node_capacity("node2")).unwrap();
+    normalizer
+        .register_node(make_node_capacity("node1"))
+        .unwrap();
+    normalizer
+        .register_node(make_node_capacity("node2"))
+        .unwrap();
 
     // Normalizar gradientes
     let batch1 = make_gradient_batch("node1", 128, 1);
@@ -299,7 +332,9 @@ fn test_e2e_gradient_normalizer_full_pipeline() {
 #[test]
 fn test_e2e_gradient_normalizer_batch() {
     let mut normalizer = GradientNormalizer::new();
-    normalizer.register_node(make_node_capacity("node1")).unwrap();
+    normalizer
+        .register_node(make_node_capacity("node1"))
+        .unwrap();
 
     let batches = vec![
         make_gradient_batch("node1", 32, 1),
@@ -314,7 +349,9 @@ fn test_e2e_gradient_normalizer_batch() {
 #[test]
 fn test_e2e_gradient_outlier_detection() {
     let mut normalizer = GradientNormalizer::new();
-    normalizer.register_node(make_node_capacity("node1")).unwrap();
+    normalizer
+        .register_node(make_node_capacity("node1"))
+        .unwrap();
 
     // Normalizar varios gradientes para establecer stats globales
     for i in 0..10 {
@@ -345,9 +382,15 @@ fn test_e2e_trust_sync_full_workflow() {
     let mut engine = TrustSyncEngine::with_config(config);
 
     // Registrar nodos
-    engine.register_node(make_trust_record("node1", "net_a")).unwrap();
-    engine.register_node(make_trust_record("node2", "net_a")).unwrap();
-    engine.register_node(make_trust_record("node3", "net_b")).unwrap();
+    engine
+        .register_node(make_trust_record("node1", "net_a"))
+        .unwrap();
+    engine
+        .register_node(make_trust_record("node2", "net_a"))
+        .unwrap();
+    engine
+        .register_node(make_trust_record("node3", "net_b"))
+        .unwrap();
 
     // Actualizar confianza
     engine.update_trust("node1", true).unwrap();
@@ -383,8 +426,12 @@ fn test_e2e_trust_sync_sybil_detection() {
 #[test]
 fn test_e2e_trust_sync_decay_and_propagation() {
     let mut engine = TrustSyncEngine::new();
-    engine.register_node(make_trust_record("node1", "net_a")).unwrap();
-    engine.register_node(make_trust_record("node2", "net_a")).unwrap();
+    engine
+        .register_node(make_trust_record("node1", "net_a"))
+        .unwrap();
+    engine
+        .register_node(make_trust_record("node2", "net_a"))
+        .unwrap();
 
     // Dar alta confianza
     engine.update_trust("node1", true).unwrap();
@@ -412,12 +459,20 @@ fn test_e2e_cross_model_scaler_heterogeneous_sync() {
     scaler.register_model(make_model_info("model_b", 64));
 
     // Registrar nodos
-    scaler.register_node("node1".to_string(), "model_a".to_string(), 0.9).unwrap();
-    scaler.register_node("node2".to_string(), "model_b".to_string(), 0.85).unwrap();
+    scaler
+        .register_node("node1".to_string(), "model_a".to_string(), 0.9)
+        .unwrap();
+    scaler
+        .register_node("node2".to_string(), "model_b".to_string(), 0.85)
+        .unwrap();
 
     // Recibir updates
-    scaler.receive_update(make_gradient_update("node1", "model_a", 128, 1)).unwrap();
-    scaler.receive_update(make_gradient_update("node2", "model_b", 64, 1)).unwrap();
+    scaler
+        .receive_update(make_gradient_update("node1", "model_a", 128, 1))
+        .unwrap();
+    scaler
+        .receive_update(make_gradient_update("node2", "model_b", 64, 1))
+        .unwrap();
 
     // Sincronizar
     let result = scaler.sync().unwrap();
@@ -433,8 +488,12 @@ fn test_e2e_cross_model_scaler_divergence_detection() {
     let mut scaler = CrossModelScaler::with_config(config);
 
     scaler.register_model(make_model_info("model_a", 32));
-    scaler.register_node("node1".to_string(), "model_a".to_string(), 0.9).unwrap();
-    scaler.register_node("node2".to_string(), "model_a".to_string(), 0.9).unwrap();
+    scaler
+        .register_node("node1".to_string(), "model_a".to_string(), 0.9)
+        .unwrap();
+    scaler
+        .register_node("node2".to_string(), "model_a".to_string(), 0.9)
+        .unwrap();
 
     // Updates muy diferentes
     let update1 = make_gradient_update("node1", "model_a", 32, 1);
@@ -472,10 +531,7 @@ fn test_e2e_realtime_backend_publish_and_subscribe() {
 
     // Crear sesiones con diferentes suscripciones
     backend
-        .create_session(
-            "s1".to_string(),
-            vec![BackendEventType::AlignmentFeedback],
-        )
+        .create_session("s1".to_string(), vec![BackendEventType::AlignmentFeedback])
         .unwrap();
     backend
         .create_session(
@@ -505,10 +561,7 @@ fn test_e2e_realtime_backend_publish_and_subscribe() {
 fn test_e2e_realtime_backend_catchup() {
     let mut backend = RealtimeBackend::new();
     backend
-        .create_session(
-            "s1".to_string(),
-            vec![BackendEventType::AlignmentFeedback],
-        )
+        .create_session("s1".to_string(), vec![BackendEventType::AlignmentFeedback])
         .unwrap();
 
     // Publicar eventos
@@ -594,10 +647,7 @@ fn test_e2e_sse_metrics_multi_category() {
         )
         .unwrap();
     stream
-        .create_session(
-            "s2".to_string(),
-            vec![MetricCategory::Federation],
-        )
+        .create_session("s2".to_string(), vec![MetricCategory::Federation])
         .unwrap();
 
     // Publicar métricas de alignment
@@ -645,11 +695,13 @@ fn test_e2e_sse_metrics_reconnect() {
     }
 
     // Reconectar desde secuencia 3
-    let session = stream.reconnect_with_last_event(
-        "s1".to_string(),
-        "metric-alignment-1234567890-3".to_string(),
-        vec![MetricCategory::Alignment],
-    ).unwrap();
+    let session = stream
+        .reconnect_with_last_event(
+            "s1".to_string(),
+            "metric-alignment-1234567890-3".to_string(),
+            vec![MetricCategory::Alignment],
+        )
+        .unwrap();
     assert_eq!(session.last_sequence_seen, 3);
 
     let catchup = stream.get_catchup_events("s1", 3);
@@ -673,7 +725,9 @@ fn test_e2e_alignment_to_stream_integration() {
         .unwrap();
 
     // Alignment Loop ingesta feedback
-    loop_v2.ingest_feedback(make_feedback("layer_1", 0, 0.4, 0.9)).unwrap();
+    loop_v2
+        .ingest_feedback(make_feedback("layer_1", 0, 0.4, 0.9))
+        .unwrap();
 
     // Ejecutar ciclo
     let activations: Vec<f32> = vec![0.5; 5];
@@ -705,7 +759,9 @@ fn test_e2e_federation_to_backend_integration() {
         )
         .unwrap();
 
-    normalizer.register_node(make_node_capacity("node1")).unwrap();
+    normalizer
+        .register_node(make_node_capacity("node1"))
+        .unwrap();
     let batch = make_gradient_batch("node1", 64, 1);
     let normalized = normalizer.normalize(batch).unwrap();
 
@@ -735,7 +791,9 @@ fn test_e2e_trust_to_metrics_integration() {
         )
         .unwrap();
 
-    trust_engine.register_node(make_trust_record("node1", "net_a")).unwrap();
+    trust_engine
+        .register_node(make_trust_record("node1", "net_a"))
+        .unwrap();
     trust_engine.update_trust("node1", true).unwrap();
     trust_engine.apply_zkp_boost("node1").unwrap();
 
@@ -776,10 +834,14 @@ fn test_e2e_full_pipeline_alignment_federation_streaming() {
         .unwrap();
 
     scaler.register_model(make_model_info("main_model", 64));
-    scaler.register_node("node1".to_string(), "main_model".to_string(), 0.9).unwrap();
+    scaler
+        .register_node("node1".to_string(), "main_model".to_string(), 0.9)
+        .unwrap();
 
     // Alignment phase
-    loop_v2.ingest_feedback(make_feedback("layer_1", 0, 0.5, 0.8)).unwrap();
+    loop_v2
+        .ingest_feedback(make_feedback("layer_1", 0, 0.5, 0.8))
+        .unwrap();
     let activations: Vec<f32> = vec![0.5; 5];
     let alignment_result = loop_v2.run_cycle("layer_1", &activations).unwrap();
 
@@ -794,7 +856,9 @@ fn test_e2e_full_pipeline_alignment_federation_streaming() {
     );
 
     // Federation phase
-    scaler.receive_update(make_gradient_update("node1", "main_model", 64, 1)).unwrap();
+    scaler
+        .receive_update(make_gradient_update("node1", "main_model", 64, 1))
+        .unwrap();
     let sync_result = scaler.sync().unwrap();
 
     // Emitir federation result

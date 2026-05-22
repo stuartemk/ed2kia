@@ -14,24 +14,20 @@
 #[cfg(feature = "v1.3-sprint3")]
 mod e2e {
     // LP-86: SAE Fine-Tuning v3
-    use ed2kia::sae::fine_tuning_v3::{
-        FineTuningV3, FineTuningV3Config,
-    };
-    use ed2kia::sae::cross_model_aligner::{
-        CrossModelAligner, AlignerConfig,
-    };
+    use ed2kia::sae::cross_model_aligner::{AlignerConfig, CrossModelAligner};
+    use ed2kia::sae::fine_tuning_v3::{FineTuningV3, FineTuningV3Config};
 
     // LP-87: Federation Scaling v3
     use ed2kia::federation_scaling_v3::scaling_v3::{
-        FederationScalingV3, ScalingV3Config, NodeCapabilityV3, ScalingDecisionType,
+        FederationScalingV3, NodeCapabilityV3, ScalingDecisionType, ScalingV3Config,
     };
 
     // LP-88: Async ZKP v5
-    use ed2kia::zkp::async_zkp_v5::{
-        AsyncZKPV5, ZKPV5Config, ZKPStatement, CircuitType, PoolContext, BatchStatus,
-    };
     use ed2kia::federation_zkp_bridge::{
-        FederationZKPBridge, FederationZKPConfig, FederationProof,
+        FederationProof, FederationZKPBridge, FederationZKPConfig,
+    };
+    use ed2kia::zkp::async_zkp_v5::{
+        AsyncZKPV5, BatchStatus, CircuitType, PoolContext, ZKPStatement, ZKPV5Config,
     };
 
     // ========================================================================
@@ -60,11 +56,9 @@ mod e2e {
         engine.register_reserve("reserve-1".into(), 0.80, 0.75);
 
         // Register model
-        engine.register_model(
-            "model-alpha".into(),
-            "node-1".into(),
-            128,
-        ).unwrap();
+        engine
+            .register_model("model-alpha".into(), "node-1".into(), 128)
+            .unwrap();
 
         // Train step — returns aligned gradients
         let gradients: Vec<f32> = (0..128).map(|i| (i % 10) as f32 * 0.1).collect();
@@ -117,13 +111,7 @@ mod e2e {
 
         // Register nodes
         for i in 0..5 {
-            let node = NodeCapabilityV3::new(
-                format!("node-{}", i),
-                100.0,
-                16.0,
-                80.0,
-                1000.0,
-            );
+            let node = NodeCapabilityV3::new(format!("node-{}", i), 100.0, 16.0, 80.0, 1000.0);
             scaling.register_node(node);
         }
 
@@ -146,20 +134,17 @@ mod e2e {
 
         // Register high-load nodes to trigger scale-up
         for i in 0..5 {
-            let node = NodeCapabilityV3::new(
-                format!("node-{}", i),
-                100.0,
-                16.0,
-                80.0,
-                1000.0,
-            );
+            let node = NodeCapabilityV3::new(format!("node-{}", i), 100.0, 16.0, 80.0, 1000.0);
             scaling.register_node(node);
-            scaling.update_node(&format!("node-{}", i), 0.9, 100.0).unwrap();
+            scaling
+                .update_node(&format!("node-{}", i), 0.9, 100.0)
+                .unwrap();
         }
 
         let decisions = scaling.evaluate();
         // Should trigger scale-up due to high load
-        let add_shard: Vec<_> = decisions.iter()
+        let add_shard: Vec<_> = decisions
+            .iter()
             .filter(|d| matches!(d.decision_type, ScalingDecisionType::AddShard))
             .collect();
         assert!(!add_shard.is_empty());
@@ -197,7 +182,11 @@ mod e2e {
                 public_inputs: vec![i, i + 1, i + 2],
                 private_inputs_hash: format!("hash-{}", i),
                 circuit_type: CircuitType::Membership,
-                source_pool: if i % 2 == 0 { "pool-alpha".into() } else { "pool-beta".into() },
+                source_pool: if i % 2 == 0 {
+                    "pool-alpha".into()
+                } else {
+                    "pool-beta".into()
+                },
                 priority: 10,
                 complexity_score: 0.5,
             };
@@ -230,7 +219,9 @@ mod e2e {
             ..ZKPV5Config::default()
         };
         let mut engine = AsyncZKPV5::new(config);
-        engine.register_pool(PoolContext::new("pool1".into(), 500.0, 0.9)).unwrap();
+        engine
+            .register_pool(PoolContext::new("pool1".into(), 500.0, 0.9))
+            .unwrap();
         engine.start_batch("batch-fallback".into()).unwrap();
 
         // Submit baseline statements
@@ -263,7 +254,10 @@ mod e2e {
         let batch = engine.generate_batch_proofs().unwrap();
 
         let fallback_count = batch.proofs.iter().filter(|p| p.used_fallback).count();
-        assert!(fallback_count > 0, "Fallback should be triggered for high complexity");
+        assert!(
+            fallback_count > 0,
+            "Fallback should be triggered for high complexity"
+        );
 
         let sampled_count = batch.proofs.iter().filter(|p| p.is_vrf_sample).count();
         assert!(sampled_count > 0, "VRF sampling should be active");
@@ -289,9 +283,15 @@ mod e2e {
         let mut bridge = FederationZKPBridge::new(config);
 
         // Register shards
-        bridge.register_shard("shard-1".into(), 500.0, 0.95).unwrap();
-        bridge.register_shard("shard-2".into(), 300.0, 0.88).unwrap();
-        bridge.register_shard("shard-3".into(), 400.0, 0.92).unwrap();
+        bridge
+            .register_shard("shard-1".into(), 500.0, 0.95)
+            .unwrap();
+        bridge
+            .register_shard("shard-2".into(), 300.0, 0.88)
+            .unwrap();
+        bridge
+            .register_shard("shard-3".into(), 400.0, 0.92)
+            .unwrap();
 
         // Submit proof
         let proof = FederationProof::new(
@@ -332,15 +332,25 @@ mod e2e {
             resource_cost_per_proof: 10.0,
         };
         let mut bridge = FederationZKPBridge::new(config);
-        bridge.register_shard("shard-a".into(), 500.0, 0.95).unwrap();
-        bridge.register_shard("shard-b".into(), 300.0, 0.88).unwrap();
-        bridge.register_shard("shard-c".into(), 400.0, 0.92).unwrap();
+        bridge
+            .register_shard("shard-a".into(), 500.0, 0.95)
+            .unwrap();
+        bridge
+            .register_shard("shard-b".into(), 300.0, 0.88)
+            .unwrap();
+        bridge
+            .register_shard("shard-c".into(), 400.0, 0.92)
+            .unwrap();
 
         // Sync Merkle root between two shards
-        bridge.sync_merkle_root("shard-a", "shard-b", "merkle-root-abc123".into()).unwrap();
+        bridge
+            .sync_merkle_root("shard-a", "shard-b", "merkle-root-abc123".into())
+            .unwrap();
 
         // Broadcast to all shards
-        let count = bridge.broadcast_merkle_root("shard-a", "merkle-root-xyz".into()).unwrap();
+        let count = bridge
+            .broadcast_merkle_root("shard-a", "merkle-root-xyz".into())
+            .unwrap();
         assert_eq!(count, 2); // shard-b and shard-c
 
         let stats = bridge.get_stats();
@@ -356,7 +366,8 @@ mod e2e {
         // 1. SAE Fine-Tuning: Train model
         let mut sae = FineTuningV3::default();
         sae.register_node("sae-node".into(), 0.95, 0.9);
-        sae.register_model("model-x".into(), "sae-node".into(), 64).unwrap();
+        sae.register_model("model-x".into(), "sae-node".into(), 64)
+            .unwrap();
         let grads: Vec<f32> = (0..64).map(|i| i as f32 * 0.1).collect();
         let aligned = sae.train_step(&grads).unwrap();
         assert_eq!(aligned.len(), 64);
@@ -370,7 +381,8 @@ mod e2e {
 
         // 3. ZKP v5: Generate proofs
         let mut zkp = AsyncZKPV5::with_defaults();
-        zkp.register_pool(PoolContext::new("zkp-pool".into(), 500.0, 0.9)).unwrap();
+        zkp.register_pool(PoolContext::new("zkp-pool".into(), 500.0, 0.9))
+            .unwrap();
         zkp.start_batch("pipeline-batch".into()).unwrap();
         for i in 0..10 {
             let stmt = ZKPStatement {
@@ -401,8 +413,12 @@ mod e2e {
             resource_cost_per_proof: 10.0,
         };
         let mut bridge = FederationZKPBridge::new(config);
-        bridge.register_shard("shard-x".into(), 500.0, 0.95).unwrap();
-        bridge.register_shard("shard-y".into(), 300.0, 0.88).unwrap();
+        bridge
+            .register_shard("shard-x".into(), 500.0, 0.95)
+            .unwrap();
+        bridge
+            .register_shard("shard-y".into(), 300.0, 0.88)
+            .unwrap();
         let proof = FederationProof::new(
             "bridge-proof".into(),
             "shard-x".into(),

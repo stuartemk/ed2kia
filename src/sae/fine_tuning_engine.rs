@@ -185,7 +185,11 @@ pub struct TrainingCheckpoint {
 }
 
 impl TrainingCheckpoint {
-    pub fn new(state: TrainingState, metrics: Vec<TrainingMetric>, config: FineTuningConfig) -> Self {
+    pub fn new(
+        state: TrainingState,
+        metrics: Vec<TrainingMetric>,
+        config: FineTuningConfig,
+    ) -> Self {
         Self {
             state,
             metrics,
@@ -290,13 +294,7 @@ impl FineTuningEngine {
         }
 
         // Check if loss has stabilized below threshold
-        let recent_losses: Vec<f32> = self
-            .metrics
-            .iter()
-            .rev()
-            .take(10)
-            .map(|m| m.loss)
-            .collect();
+        let recent_losses: Vec<f32> = self.metrics.iter().rev().take(10).map(|m| m.loss).collect();
 
         if recent_losses.len() < 2 {
             return false;
@@ -331,7 +329,11 @@ impl FineTuningEngine {
 
     /// Create a checkpoint of current training state
     pub fn create_checkpoint(&self) -> TrainingCheckpoint {
-        TrainingCheckpoint::new(self.state.clone(), self.metrics.clone(), self.config.clone())
+        TrainingCheckpoint::new(
+            self.state.clone(),
+            self.metrics.clone(),
+            self.config.clone(),
+        )
     }
 
     /// Restore training from a checkpoint
@@ -443,8 +445,8 @@ mod tests {
 
     #[test]
     fn test_step_decay_learning_rate() {
-        let config = FineTuningConfig::new(0.01, 32, 10)
-            .with_schedule(LearningRateSchedule::StepDecay {
+        let config =
+            FineTuningConfig::new(0.01, 32, 10).with_schedule(LearningRateSchedule::StepDecay {
                 step_size: 10,
                 decay_factor: 0.1,
             });
@@ -455,8 +457,7 @@ mod tests {
 
     #[test]
     fn test_convergence_check() {
-        let config = FineTuningConfig::new(0.001, 32, 10)
-            .with_convergence_threshold(0.0001);
+        let config = FineTuningConfig::new(0.001, 32, 10).with_convergence_threshold(0.0001);
         let mut engine = FineTuningEngine::new(config);
         engine.start_epoch().unwrap();
         for _ in 0..20 {
@@ -467,8 +468,7 @@ mod tests {
 
     #[test]
     fn test_no_convergence_with_high_variance() {
-        let config = FineTuningConfig::new(0.001, 32, 10)
-            .with_convergence_threshold(0.0001);
+        let config = FineTuningConfig::new(0.001, 32, 10).with_convergence_threshold(0.0001);
         let mut engine = FineTuningEngine::new(config);
         engine.start_epoch().unwrap();
         for i in 0..20 {

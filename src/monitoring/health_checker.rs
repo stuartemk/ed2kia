@@ -57,7 +57,13 @@ pub struct CheckResult {
 }
 
 impl CheckResult {
-    pub fn new(check_name: String, status: HealthStatus, message: String, latency_ms: f64, timestamp_ms: u64) -> Self {
+    pub fn new(
+        check_name: String,
+        status: HealthStatus,
+        message: String,
+        latency_ms: f64,
+        timestamp_ms: u64,
+    ) -> Self {
         Self {
             check_name,
             status,
@@ -306,9 +312,7 @@ impl HealthChecker {
 
     /// Get the current status of a check.
     pub fn get_status(&self, check_name: &str) -> Option<HealthStatus> {
-        self.checks
-            .get(check_name)
-            .map(|s| s.current_status)
+        self.checks.get(check_name).map(|s| s.current_status)
     }
 
     /// Get the last result of a check.
@@ -455,7 +459,9 @@ mod tests {
             ..Default::default()
         };
         checker.register_check(check).unwrap();
-        checker.record_check("api", HealthStatus::Healthy, "OK".to_string(), 5.0).unwrap();
+        checker
+            .record_check("api", HealthStatus::Healthy, "OK".to_string(), 5.0)
+            .unwrap();
         assert_eq!(checker.get_status("api"), Some(HealthStatus::Healthy));
     }
 
@@ -468,11 +474,17 @@ mod tests {
             ..Default::default()
         };
         checker.register_check(check).unwrap();
-        checker.record_check("api", HealthStatus::Unhealthy, "err".to_string(), 500.0).unwrap();
+        checker
+            .record_check("api", HealthStatus::Unhealthy, "err".to_string(), 500.0)
+            .unwrap();
         assert_eq!(checker.get_status("api"), Some(HealthStatus::Unknown));
-        checker.record_check("api", HealthStatus::Unhealthy, "err".to_string(), 500.0).unwrap();
+        checker
+            .record_check("api", HealthStatus::Unhealthy, "err".to_string(), 500.0)
+            .unwrap();
         assert_eq!(checker.get_status("api"), Some(HealthStatus::Unknown));
-        checker.record_check("api", HealthStatus::Unhealthy, "err".to_string(), 500.0).unwrap();
+        checker
+            .record_check("api", HealthStatus::Unhealthy, "err".to_string(), 500.0)
+            .unwrap();
         assert_eq!(checker.get_status("api"), Some(HealthStatus::Unhealthy));
     }
 
@@ -486,11 +498,17 @@ mod tests {
             ..Default::default()
         };
         checker.register_check(check).unwrap();
-        checker.record_check("api", HealthStatus::Unhealthy, "err".to_string(), 500.0).unwrap();
+        checker
+            .record_check("api", HealthStatus::Unhealthy, "err".to_string(), 500.0)
+            .unwrap();
         assert_eq!(checker.get_status("api"), Some(HealthStatus::Unhealthy));
-        checker.record_check("api", HealthStatus::Healthy, "ok".to_string(), 5.0).unwrap();
+        checker
+            .record_check("api", HealthStatus::Healthy, "ok".to_string(), 5.0)
+            .unwrap();
         assert_eq!(checker.get_status("api"), Some(HealthStatus::Unhealthy));
-        checker.record_check("api", HealthStatus::Healthy, "ok".to_string(), 5.0).unwrap();
+        checker
+            .record_check("api", HealthStatus::Healthy, "ok".to_string(), 5.0)
+            .unwrap();
         assert_eq!(checker.get_status("api"), Some(HealthStatus::Healthy));
     }
 
@@ -510,8 +528,12 @@ mod tests {
         };
         checker.register_check(check1).unwrap();
         checker.register_check(check2).unwrap();
-        checker.record_check("a", HealthStatus::Healthy, "ok".to_string(), 5.0).unwrap();
-        checker.record_check("b", HealthStatus::Unhealthy, "err".to_string(), 500.0).unwrap();
+        checker
+            .record_check("a", HealthStatus::Healthy, "ok".to_string(), 5.0)
+            .unwrap();
+        checker
+            .record_check("b", HealthStatus::Unhealthy, "err".to_string(), 500.0)
+            .unwrap();
         let report = checker.generate_report();
         assert_eq!(report.overall_status, HealthStatus::Unhealthy);
         assert_eq!(report.healthy_count, 1);
@@ -537,8 +559,12 @@ mod tests {
         checker.register_check(check).unwrap();
         let sla = SLATarget::new("api".to_string(), 0.99, 3600_000);
         checker.register_sla(sla);
-        checker.record_check("api", HealthStatus::Healthy, "ok".to_string(), 5.0).unwrap();
-        checker.record_check("api", HealthStatus::Healthy, "ok".to_string(), 5.0).unwrap();
+        checker
+            .record_check("api", HealthStatus::Healthy, "ok".to_string(), 5.0)
+            .unwrap();
+        checker
+            .record_check("api", HealthStatus::Healthy, "ok".to_string(), 5.0)
+            .unwrap();
         checker.update_sla_compliance();
         assert!(checker.get_sla("api").unwrap().compliant);
     }
@@ -553,7 +579,9 @@ mod tests {
         checker.register_check(check).unwrap();
         let sla = SLATarget::new("api".to_string(), 0.99, 3600_000);
         checker.register_sla(sla);
-        checker.record_check("api", HealthStatus::Unhealthy, "err".to_string(), 500.0).unwrap();
+        checker
+            .record_check("api", HealthStatus::Unhealthy, "err".to_string(), 500.0)
+            .unwrap();
         checker.update_sla_compliance();
         assert!(!checker.get_sla("api").unwrap().compliant);
     }
@@ -606,10 +634,12 @@ mod tests {
             ..Default::default()
         };
         let mut checker = HealthChecker::new(config);
-        checker.register_check(CheckConfig {
-            name: "a".to_string(),
-            ..Default::default()
-        }).unwrap();
+        checker
+            .register_check(CheckConfig {
+                name: "a".to_string(),
+                ..Default::default()
+            })
+            .unwrap();
         let result = checker.register_check(CheckConfig {
             name: "b".to_string(),
             ..Default::default()
@@ -633,7 +663,9 @@ mod tests {
             ..Default::default()
         };
         checker.register_check(check).unwrap();
-        checker.record_check("api", HealthStatus::Healthy, "OK".to_string(), 5.0).unwrap();
+        checker
+            .record_check("api", HealthStatus::Healthy, "OK".to_string(), 5.0)
+            .unwrap();
         let result = checker.get_last_result("api").unwrap();
         assert_eq!(result.message, "OK");
     }
@@ -666,7 +698,9 @@ mod tests {
             ..Default::default()
         };
         checker.register_check(check).unwrap();
-        checker.record_check("api", HealthStatus::Degraded, "slow".to_string(), 500.0).unwrap();
+        checker
+            .record_check("api", HealthStatus::Degraded, "slow".to_string(), 500.0)
+            .unwrap();
         assert_eq!(checker.get_status("api"), Some(HealthStatus::Degraded));
     }
 

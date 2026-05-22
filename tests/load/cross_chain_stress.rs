@@ -17,20 +17,26 @@ mod stress {
     use std::time::Instant;
 
     // LP-54
+    use ed2kia::federation::bridge_validator::{BridgeTransaction, BridgeValidator};
     use ed2kia::federation::cross_chain_consensus::{
         ChainProof, ConsensusProposal, CrossChainConsensus, ProofType, Validator, VoteDirection,
     };
-    use ed2kia::federation::bridge_validator::{BridgeTransaction, BridgeValidator};
 
     // LP-55
-    use ed2kia::governance::dao_v3::{DaoConfig, DaoGovernanceV3, DaoMember, DaoProposal, DaoVoteDirection, VoteType};
+    use ed2kia::governance::dao_v3::{
+        DaoConfig, DaoGovernanceV3, DaoMember, DaoProposal, DaoVoteDirection, VoteType,
+    };
     use ed2kia::governance::hybrid_voting::{HybridVotingEngine, VotingChannel};
-    use ed2kia::governance::proposal_executor::{ExecutableProposal, ProposalExecutor, ProposalPriority};
+    use ed2kia::governance::proposal_executor::{
+        ExecutableProposal, ProposalExecutor, ProposalPriority,
+    };
 
     // LP-56
     use ed2kia::sae::checkpoint_manager::{CheckpointManager, CheckpointType};
-    use ed2kia::sae::distributed_finetune::{DistributedConfig, DistributedFineTuning, GradientBatch};
-    use ed2kia::sae::fault_tolerance::{FaultToleranceManager, FailureType};
+    use ed2kia::sae::distributed_finetune::{
+        DistributedConfig, DistributedFineTuning, GradientBatch,
+    };
+    use ed2kia::sae::fault_tolerance::{FailureType, FaultToleranceManager};
 
     fn bench_ms(name: &str, f: impl FnOnce()) -> f64 {
         let start = Instant::now();
@@ -147,11 +153,7 @@ mod stress {
             let mut dao = DaoGovernanceV3::with_config(config);
 
             for i in 0..10 {
-                dao.register_member(DaoMember::new(
-                    format!("m-{}", i),
-                    1000,
-                    0.9,
-                ));
+                dao.register_member(DaoMember::new(format!("m-{}", i), 1000, 0.9));
             }
 
             for i in 0..100 {
@@ -292,13 +294,7 @@ mod stress {
 
             // Base checkpoint
             manager
-                .create_checkpoint(
-                    "base".into(),
-                    CheckpointType::Full,
-                    1,
-                    vec![1.0; 64],
-                    0.5,
-                )
+                .create_checkpoint("base".into(), CheckpointType::Full, 1, vec![1.0; 64], 0.5)
                 .unwrap();
 
             // Build incremental chain
@@ -336,7 +332,8 @@ mod stress {
                 if i % 5 == 0 {
                     // 20% failure rate
                     for _ in 0..3 {
-                        let _ = manager.record_node_failure(&format!("n-{}", i), FailureType::Timeout);
+                        let _ =
+                            manager.record_node_failure(&format!("n-{}", i), FailureType::Timeout);
                     }
                 } else {
                     let _ = manager.record_node_success(&format!("n-{}", i));
@@ -414,13 +411,8 @@ mod stress {
             for epoch in 1..=20 {
                 let _ = train.start_epoch();
                 for i in 0..10 {
-                    let batch = GradientBatch::new(
-                        format!("t-{}", i),
-                        epoch,
-                        0,
-                        vec![0.01; 64],
-                        0.5,
-                    );
+                    let batch =
+                        GradientBatch::new(format!("t-{}", i), epoch, 0, vec![0.01; 64], 0.5);
                     let _ = train.submit_gradient(batch);
                     let _ = ft.record_node_success(&format!("t-{}", i));
                 }

@@ -22,34 +22,22 @@ mod e2e {
     };
 
     // LP-82: DAO Operational Ledger v2
-    use ed2kia::governance::dao_ledger_v2::{
-        DaoLedgerV2, DaoLedgerConfig, DaoEventType,
-    };
-    use ed2kia::governance::technical_staking::{
-        TechnicalStaking, StakingConfig,
-    };
-    use ed2kia::governance::proposal_tracker::{
-        ProposalTracker, ProposalConfig, ProposalState,
-    };
+    use ed2kia::governance::dao_ledger_v2::{DaoEventType, DaoLedgerConfig, DaoLedgerV2};
+    use ed2kia::governance::proposal_tracker::{ProposalConfig, ProposalState, ProposalTracker};
+    use ed2kia::governance::technical_staking::{StakingConfig, TechnicalStaking};
 
     // LP-83: Async ZKP v4
+    use ed2kia::pool_zkp_bridge::{BridgeProof, PoolZKPBridge, PoolZKPConfig};
     use ed2kia::zkp::async_zkp_v4::{
-        AsyncZKPV4, ZKPV4Config, ZKPStatement, CircuitType, PoolContext,
-    };
-    use ed2kia::pool_zkp_bridge::{
-        PoolZKPBridge, PoolZKPConfig, BridgeProof,
+        AsyncZKPV4, CircuitType, PoolContext, ZKPStatement, ZKPV4Config,
     };
 
     // LP-84: Dashboard v4 & Streams
-    use ed2kia::ui_v4::dashboard_v4::{
-        DashboardV4State, DashboardV4Config, MetricV4,
-    };
+    use ed2kia::ui_v4::dashboard_v4::{DashboardV4Config, DashboardV4State, MetricV4};
     use ed2kia::ui_v4::pool_stream_engine::{
-        PoolStreamEngine, StreamEngineConfig, StreamCategory, PoolStreamEvent,
+        PoolStreamEngine, PoolStreamEvent, StreamCategory, StreamEngineConfig,
     };
-    use ed2kia::ws_pool_stream::{
-        WsPoolStream, WsPoolConfig, PoolCategory,
-    };
+    use ed2kia::ws_pool_stream::{PoolCategory, WsPoolConfig, WsPoolStream};
 
     // ========================================================================
     // LP-81: Cross-Chain Resource Pool E2E
@@ -66,9 +54,27 @@ mod e2e {
         let mut pool = CrossChainResourcePool::new(config);
 
         // Register shards
-        pool.register_shard(ShardEntry::new("shard-1".into(), ResourceType::ComputeCredit, 500.0, 0.95)).unwrap();
-        pool.register_shard(ShardEntry::new("shard-2".into(), ResourceType::ComputeCredit, 300.0, 0.85)).unwrap();
-        pool.register_shard(ShardEntry::new("shard-3".into(), ResourceType::Storage, 1000.0, 0.90)).unwrap();
+        pool.register_shard(ShardEntry::new(
+            "shard-1".into(),
+            ResourceType::ComputeCredit,
+            500.0,
+            0.95,
+        ))
+        .unwrap();
+        pool.register_shard(ShardEntry::new(
+            "shard-2".into(),
+            ResourceType::ComputeCredit,
+            300.0,
+            0.85,
+        ))
+        .unwrap();
+        pool.register_shard(ShardEntry::new(
+            "shard-3".into(),
+            ResourceType::Storage,
+            1000.0,
+            0.90,
+        ))
+        .unwrap();
 
         assert_eq!(pool.available_credits(&ResourceType::ComputeCredit), 800.0);
 
@@ -97,9 +103,27 @@ mod e2e {
     #[test]
     fn test_e2e_pool_multi_resource() {
         let mut pool = CrossChainResourcePool::default();
-        pool.register_shard(ShardEntry::new("s1".into(), ResourceType::ComputeCredit, 100.0, 0.9)).unwrap();
-        pool.register_shard(ShardEntry::new("s2".into(), ResourceType::Storage, 200.0, 0.8)).unwrap();
-        pool.register_shard(ShardEntry::new("s3".into(), ResourceType::SaeShard, 150.0, 0.85)).unwrap();
+        pool.register_shard(ShardEntry::new(
+            "s1".into(),
+            ResourceType::ComputeCredit,
+            100.0,
+            0.9,
+        ))
+        .unwrap();
+        pool.register_shard(ShardEntry::new(
+            "s2".into(),
+            ResourceType::Storage,
+            200.0,
+            0.8,
+        ))
+        .unwrap();
+        pool.register_shard(ShardEntry::new(
+            "s3".into(),
+            ResourceType::SaeShard,
+            150.0,
+            0.85,
+        ))
+        .unwrap();
 
         assert_eq!(pool.available_credits(&ResourceType::ComputeCredit), 100.0);
         assert_eq!(pool.available_credits(&ResourceType::Storage), 200.0);
@@ -123,23 +147,27 @@ mod e2e {
         let mut ledger = DaoLedgerV2::new(config);
 
         // Record operational events
-        let e1 = ledger.record_event(
-            "e1".into(),
-            DaoEventType::ResourceAllocated,
-            "node-1".into(),
-            "shard-1".into(),
-            "allocated 200 credits".into(),
-        ).unwrap();
+        let e1 = ledger
+            .record_event(
+                "e1".into(),
+                DaoEventType::ResourceAllocated,
+                "node-1".into(),
+                "shard-1".into(),
+                "allocated 200 credits".into(),
+            )
+            .unwrap();
         assert_eq!(e1.entry_id, "e1");
         assert_eq!(e1.sequence, 1);
 
-        let e2 = ledger.record_event(
-            "e2".into(),
-            DaoEventType::ShardRegistered,
-            "node-2".into(),
-            "shard-2".into(),
-            "registered new shard".into(),
-        ).unwrap();
+        let e2 = ledger
+            .record_event(
+                "e2".into(),
+                DaoEventType::ShardRegistered,
+                "node-2".into(),
+                "shard-2".into(),
+                "registered new shard".into(),
+            )
+            .unwrap();
         assert_eq!(e2.entry_id, "e2");
         assert_eq!(e2.sequence, 2);
 
@@ -209,12 +237,14 @@ mod e2e {
         tracker.register_voter("voter-3".into(), 0.15);
 
         // Create proposal
-        let proposal = tracker.create_proposal(
-            "p1".into(),
-            "Add new shard".into(),
-            "Register shard-4 for compute".into(),
-            "proposer",
-        ).unwrap();
+        let proposal = tracker
+            .create_proposal(
+                "p1".into(),
+                "Add new shard".into(),
+                "Register shard-4 for compute".into(),
+                "proposer",
+            )
+            .unwrap();
         assert_eq!(proposal.state, ProposalState::Draft);
 
         // Open voting
@@ -258,8 +288,10 @@ mod e2e {
         let mut zkp = AsyncZKPV4::new(config);
 
         // Register pools
-        zkp.register_pool(PoolContext::new("pool-1".into(), 500.0, 0.95)).unwrap();
-        zkp.register_pool(PoolContext::new("pool-2".into(), 300.0, 0.85)).unwrap();
+        zkp.register_pool(PoolContext::new("pool-1".into(), 500.0, 0.95))
+            .unwrap();
+        zkp.register_pool(PoolContext::new("pool-2".into(), 300.0, 0.85))
+            .unwrap();
 
         // Submit statements
         for i in 0..5 {
@@ -324,8 +356,12 @@ mod e2e {
         assert_eq!(bridge.active_proof_count(), 1);
 
         // Submit verification votes
-        bridge.submit_vote("proof-1", "pool-b".into(), true).unwrap();
-        bridge.submit_vote("proof-1", "pool-c".into(), true).unwrap();
+        bridge
+            .submit_vote("proof-1", "pool-b".into(), true)
+            .unwrap();
+        bridge
+            .submit_vote("proof-1", "pool-c".into(), true)
+            .unwrap();
 
         // Check consensus
         let result = bridge.check_consensus("proof-1").unwrap();
@@ -388,10 +424,12 @@ mod e2e {
         let mut engine = PoolStreamEngine::with_config(config);
 
         // Create session
-        let session = engine.create_session(
-            "sess-1".into(),
-            vec![StreamCategory::Pool, StreamCategory::Zkp],
-        ).unwrap();
+        let session = engine
+            .create_session(
+                "sess-1".into(),
+                vec![StreamCategory::Pool, StreamCategory::Zkp],
+            )
+            .unwrap();
         assert_eq!(session.session_id, "sess-1");
 
         // Publish events
@@ -424,7 +462,9 @@ mod e2e {
         let mut stream = WsPoolStream::with_config(config);
 
         // Authenticate
-        let auth_result = stream.authenticate("ws-client".into(), "sig-1".into()).unwrap();
+        let auth_result = stream
+            .authenticate("ws-client".into(), "sig-1".into())
+            .unwrap();
         assert!(!auth_result.connection_id.is_empty());
 
         // Subscribe
@@ -455,7 +495,13 @@ mod e2e {
     fn test_e2e_cross_module_pipeline() {
         // 1. Resource Pool: allocate compute
         let mut pool = CrossChainResourcePool::default();
-        pool.register_shard(ShardEntry::new("shard-1".into(), ResourceType::ComputeCredit, 500.0, 0.95)).unwrap();
+        pool.register_shard(ShardEntry::new(
+            "shard-1".into(),
+            ResourceType::ComputeCredit,
+            500.0,
+            0.95,
+        ))
+        .unwrap();
         let request = PoolRequest {
             request_id: "pipe-req".into(),
             node_id: "node-1".into(),
@@ -479,14 +525,16 @@ mod e2e {
             "node-1".into(),
             "shard-1".into(),
             format!("allocated {} credits", alloc.total_credits),
-        ).unwrap();
+        )
+        .unwrap();
         dao.record_event(
             "dao-e2".into(),
             DaoEventType::GovernanceAction,
             "node-2".into(),
             "shard-1".into(),
             "approved allocation".into(),
-        ).unwrap();
+        )
+        .unwrap();
         dao.verify_chain().unwrap();
         assert_eq!(dao.entry_count(), 2);
 
@@ -502,7 +550,8 @@ mod e2e {
             min_pool_credits: 50.0,
         };
         let mut zkp = AsyncZKPV4::new(zkp_config);
-        zkp.register_pool(PoolContext::new("pool-1".into(), 500.0, 0.95)).unwrap();
+        zkp.register_pool(PoolContext::new("pool-1".into(), 500.0, 0.95))
+            .unwrap();
 
         let stmt = ZKPStatement {
             statement_id: "alloc-proof".into(),
@@ -521,7 +570,11 @@ mod e2e {
         // 4. Dashboard: record metrics from pipeline
         let mut dashboard = DashboardV4State::default();
         dashboard.record_metric(MetricV4::PoolActiveShards, 1.0, Some("pipeline".into()));
-        dashboard.record_metric(MetricV4::PoolAllocationsActive, 1.0, Some("pipeline".into()));
+        dashboard.record_metric(
+            MetricV4::PoolAllocationsActive,
+            1.0,
+            Some("pipeline".into()),
+        );
         dashboard.record_metric(MetricV4::ZkpBatchesGenerated, 1.0, Some("pipeline".into()));
         dashboard.record_metric(MetricV4::DaoActiveProposals, 1.0, Some("pipeline".into()));
         let snapshot = dashboard.get_snapshot().unwrap();
@@ -531,10 +584,9 @@ mod e2e {
 
         // 5. Stream: broadcast pipeline events
         let mut engine = PoolStreamEngine::default();
-        engine.create_session(
-            "pipe-session".into(),
-            vec![StreamCategory::All],
-        ).unwrap();
+        engine
+            .create_session("pipe-session".into(), vec![StreamCategory::All])
+            .unwrap();
         let result = engine.publish_event(
             PoolStreamEvent::PoolAllocationCreated,
             serde_json::json!({"request_id": alloc.request_id, "credits": alloc.total_credits}),

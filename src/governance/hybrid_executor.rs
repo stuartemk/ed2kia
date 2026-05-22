@@ -50,7 +50,9 @@ impl std::fmt::Display for HybridExecutorError {
             HybridExecutorError::AlreadyCompleted(id) => write!(f, "Already completed: {}", id),
             HybridExecutorError::OnChainFailed(msg) => write!(f, "On-chain failed: {}", msg),
             HybridExecutorError::OffChainFailed(msg) => write!(f, "Off-chain failed: {}", msg),
-            HybridExecutorError::MaxRetriesExceeded(id) => write!(f, "Max retries exceeded: {}", id),
+            HybridExecutorError::MaxRetriesExceeded(id) => {
+                write!(f, "Max retries exceeded: {}", id)
+            }
             HybridExecutorError::InvalidConfig(msg) => write!(f, "Invalid config: {}", msg),
             HybridExecutorError::QueueFull => write!(f, "Execution queue full"),
             HybridExecutorError::TimeoutExceeded => write!(f, "Timeout exceeded"),
@@ -331,12 +333,15 @@ impl HybridExecutor {
 
     /// Start on-chain execution.
     pub fn start_on_chain(&mut self, execution_id: &str) -> Result<(), HybridExecutorError> {
-        let record = self.executions.get_mut(execution_id).ok_or_else(|| {
-            HybridExecutorError::ExecutionNotFound(execution_id.to_string())
-        })?;
+        let record = self
+            .executions
+            .get_mut(execution_id)
+            .ok_or_else(|| HybridExecutorError::ExecutionNotFound(execution_id.to_string()))?;
 
         if record.is_terminal() {
-            return Err(HybridExecutorError::AlreadyCompleted(execution_id.to_string()));
+            return Err(HybridExecutorError::AlreadyCompleted(
+                execution_id.to_string(),
+            ));
         }
 
         record.state = ExecutionState::ExecutingOnChain;
@@ -348,12 +353,15 @@ impl HybridExecutor {
 
     /// Start off-chain execution.
     pub fn start_off_chain(&mut self, execution_id: &str) -> Result<(), HybridExecutorError> {
-        let record = self.executions.get_mut(execution_id).ok_or_else(|| {
-            HybridExecutorError::ExecutionNotFound(execution_id.to_string())
-        })?;
+        let record = self
+            .executions
+            .get_mut(execution_id)
+            .ok_or_else(|| HybridExecutorError::ExecutionNotFound(execution_id.to_string()))?;
 
         if record.is_terminal() {
-            return Err(HybridExecutorError::AlreadyCompleted(execution_id.to_string()));
+            return Err(HybridExecutorError::AlreadyCompleted(
+                execution_id.to_string(),
+            ));
         }
 
         record.state = ExecutionState::ExecutingOffChain;
@@ -370,12 +378,15 @@ impl HybridExecutor {
         tx_hash: Option<String>,
         off_chain_result: Option<String>,
     ) -> Result<(), HybridExecutorError> {
-        let record = self.executions.get(execution_id).ok_or_else(|| {
-            HybridExecutorError::ExecutionNotFound(execution_id.to_string())
-        })?;
+        let record = self
+            .executions
+            .get(execution_id)
+            .ok_or_else(|| HybridExecutorError::ExecutionNotFound(execution_id.to_string()))?;
 
         if record.is_terminal() {
-            return Err(HybridExecutorError::AlreadyCompleted(execution_id.to_string()));
+            return Err(HybridExecutorError::AlreadyCompleted(
+                execution_id.to_string(),
+            ));
         }
 
         let record = self.executions.get_mut(execution_id).unwrap();
@@ -402,12 +413,15 @@ impl HybridExecutor {
         execution_id: &str,
         error: String,
     ) -> Result<(), HybridExecutorError> {
-        let record = self.executions.get_mut(execution_id).ok_or_else(|| {
-            HybridExecutorError::ExecutionNotFound(execution_id.to_string())
-        })?;
+        let record = self
+            .executions
+            .get_mut(execution_id)
+            .ok_or_else(|| HybridExecutorError::ExecutionNotFound(execution_id.to_string()))?;
 
         if record.is_terminal() {
-            return Err(HybridExecutorError::AlreadyCompleted(execution_id.to_string()));
+            return Err(HybridExecutorError::AlreadyCompleted(
+                execution_id.to_string(),
+            ));
         }
 
         record.error = Some(error);
@@ -435,15 +449,20 @@ impl HybridExecutor {
     /// Trigger fallback from on-chain to off-chain (or vice versa).
     pub fn trigger_fallback(&mut self, execution_id: &str) -> Result<(), HybridExecutorError> {
         if !self.config.auto_fallback {
-            return Err(HybridExecutorError::InvalidConfig("Fallback disabled".to_string()));
+            return Err(HybridExecutorError::InvalidConfig(
+                "Fallback disabled".to_string(),
+            ));
         }
 
-        let record = self.executions.get_mut(execution_id).ok_or_else(|| {
-            HybridExecutorError::ExecutionNotFound(execution_id.to_string())
-        })?;
+        let record = self
+            .executions
+            .get_mut(execution_id)
+            .ok_or_else(|| HybridExecutorError::ExecutionNotFound(execution_id.to_string()))?;
 
         if record.is_terminal() {
-            return Err(HybridExecutorError::AlreadyCompleted(execution_id.to_string()));
+            return Err(HybridExecutorError::AlreadyCompleted(
+                execution_id.to_string(),
+            ));
         }
 
         // Switch execution path
@@ -502,7 +521,9 @@ impl HybridExecutor {
     pub fn check_timeouts(&mut self) -> usize {
         let mut timed_out = 0;
         self.executions.iter_mut().for_each(|(_, record)| {
-            if !record.is_terminal() && record.is_timed_out(self.config.execution_timeout_ms, self.current_time_ms) {
+            if !record.is_terminal()
+                && record.is_timed_out(self.config.execution_timeout_ms, self.current_time_ms)
+            {
                 record.state = ExecutionState::TimedOut;
                 record.error = Some("Timeout exceeded".to_string());
                 record.completed_ms = Some(self.current_time_ms);
@@ -579,35 +600,57 @@ mod tests {
     #[test]
     fn test_start_on_chain() {
         let mut exec = HybridExecutor::default_config();
-        let id = exec.create_execution("e1".to_string(), ExecutionPath::PreferOnChain).unwrap();
+        let id = exec
+            .create_execution("e1".to_string(), ExecutionPath::PreferOnChain)
+            .unwrap();
         assert!(exec.start_on_chain(&id).is_ok());
-        assert_eq!(exec.get_execution(&id).unwrap().state, ExecutionState::ExecutingOnChain);
+        assert_eq!(
+            exec.get_execution(&id).unwrap().state,
+            ExecutionState::ExecutingOnChain
+        );
     }
 
     #[test]
     fn test_start_off_chain() {
         let mut exec = HybridExecutor::default_config();
-        let id = exec.create_execution("e1".to_string(), ExecutionPath::PreferOffChain).unwrap();
+        let id = exec
+            .create_execution("e1".to_string(), ExecutionPath::PreferOffChain)
+            .unwrap();
         assert!(exec.start_off_chain(&id).is_ok());
-        assert_eq!(exec.get_execution(&id).unwrap().state, ExecutionState::ExecutingOffChain);
+        assert_eq!(
+            exec.get_execution(&id).unwrap().state,
+            ExecutionState::ExecutingOffChain
+        );
     }
 
     #[test]
     fn test_complete_execution() {
         let mut exec = HybridExecutor::default_config();
-        let id = exec.create_execution("e1".to_string(), ExecutionPath::PreferOnChain).unwrap();
+        let id = exec
+            .create_execution("e1".to_string(), ExecutionPath::PreferOnChain)
+            .unwrap();
         exec.start_on_chain(&id).unwrap();
-        assert!(exec.complete_execution(&id, Some("0xabc".to_string()), None).is_ok());
-        assert_eq!(exec.get_execution(&id).unwrap().state, ExecutionState::Completed);
+        assert!(exec
+            .complete_execution(&id, Some("0xabc".to_string()), None)
+            .is_ok());
+        assert_eq!(
+            exec.get_execution(&id).unwrap().state,
+            ExecutionState::Completed
+        );
     }
 
     #[test]
     fn test_fail_execution_retry() {
         let mut exec = HybridExecutor::default_config();
-        let id = exec.create_execution("e1".to_string(), ExecutionPath::PreferOnChain).unwrap();
+        let id = exec
+            .create_execution("e1".to_string(), ExecutionPath::PreferOnChain)
+            .unwrap();
         exec.start_on_chain(&id).unwrap();
         assert!(exec.fail_execution(&id, "error".to_string()).is_ok());
-        assert_eq!(exec.get_execution(&id).unwrap().state, ExecutionState::Pending);
+        assert_eq!(
+            exec.get_execution(&id).unwrap().state,
+            ExecutionState::Pending
+        );
         assert_eq!(exec.get_execution(&id).unwrap().retry_count, 1);
     }
 
@@ -616,21 +659,31 @@ mod tests {
         let mut config = HybridExecutorConfig::default();
         config.max_retries = 1;
         let mut exec = HybridExecutor::new(config);
-        let id = exec.create_execution("e1".to_string(), ExecutionPath::PreferOnChain).unwrap();
+        let id = exec
+            .create_execution("e1".to_string(), ExecutionPath::PreferOnChain)
+            .unwrap();
         exec.start_on_chain(&id).unwrap();
         exec.fail_execution(&id, "error".to_string()).unwrap();
         exec.start_on_chain(&id).unwrap();
         exec.fail_execution(&id, "error".to_string()).unwrap();
-        assert_eq!(exec.get_execution(&id).unwrap().state, ExecutionState::Failed);
+        assert_eq!(
+            exec.get_execution(&id).unwrap().state,
+            ExecutionState::Failed
+        );
     }
 
     #[test]
     fn test_trigger_fallback() {
         let mut exec = HybridExecutor::default_config();
-        let id = exec.create_execution("e1".to_string(), ExecutionPath::PreferOnChain).unwrap();
+        let id = exec
+            .create_execution("e1".to_string(), ExecutionPath::PreferOnChain)
+            .unwrap();
         exec.start_on_chain(&id).unwrap();
         assert!(exec.trigger_fallback(&id).is_ok());
-        assert_eq!(exec.get_execution(&id).unwrap().state, ExecutionState::ExecutingOffChain);
+        assert_eq!(
+            exec.get_execution(&id).unwrap().state,
+            ExecutionState::ExecutingOffChain
+        );
     }
 
     #[test]
@@ -638,7 +691,9 @@ mod tests {
         let mut config = HybridExecutorConfig::default();
         config.auto_fallback = false;
         let mut exec = HybridExecutor::new(config);
-        let id = exec.create_execution("e1".to_string(), ExecutionPath::PreferOnChain).unwrap();
+        let id = exec
+            .create_execution("e1".to_string(), ExecutionPath::PreferOnChain)
+            .unwrap();
         exec.start_on_chain(&id).unwrap();
         assert!(exec.trigger_fallback(&id).is_err());
     }
@@ -646,7 +701,9 @@ mod tests {
     #[test]
     fn test_timeout_detection() {
         let mut exec = HybridExecutor::default_config();
-        let id = exec.create_execution("e1".to_string(), ExecutionPath::PreferOnChain).unwrap();
+        let id = exec
+            .create_execution("e1".to_string(), ExecutionPath::PreferOnChain)
+            .unwrap();
         exec.start_on_chain(&id).unwrap();
         exec.advance_time(60000);
         let timed = exec.check_timeouts();
@@ -658,23 +715,30 @@ mod tests {
         let mut config = HybridExecutorConfig::default();
         config.max_pending = 1;
         let mut exec = HybridExecutor::new(config);
-        exec.create_execution("e1".to_string(), ExecutionPath::PreferOnChain).unwrap();
-        assert!(exec.create_execution("e2".to_string(), ExecutionPath::PreferOnChain).is_err());
+        exec.create_execution("e1".to_string(), ExecutionPath::PreferOnChain)
+            .unwrap();
+        assert!(exec
+            .create_execution("e2".to_string(), ExecutionPath::PreferOnChain)
+            .is_err());
     }
 
     #[test]
     fn test_pending_executions() {
         let mut exec = HybridExecutor::default_config();
-        exec.create_execution("e1".to_string(), ExecutionPath::PreferOnChain).unwrap();
-        exec.create_execution("e2".to_string(), ExecutionPath::PreferOffChain).unwrap();
+        exec.create_execution("e1".to_string(), ExecutionPath::PreferOnChain)
+            .unwrap();
+        exec.create_execution("e2".to_string(), ExecutionPath::PreferOffChain)
+            .unwrap();
         assert_eq!(exec.pending_executions().len(), 2);
     }
 
     #[test]
     fn test_get_by_source() {
         let mut exec = HybridExecutor::default_config();
-        exec.create_execution("e1".to_string(), ExecutionPath::PreferOnChain).unwrap();
-        exec.create_execution("e1".to_string(), ExecutionPath::PreferOffChain).unwrap();
+        exec.create_execution("e1".to_string(), ExecutionPath::PreferOnChain)
+            .unwrap();
+        exec.create_execution("e1".to_string(), ExecutionPath::PreferOffChain)
+            .unwrap();
         let results = exec.get_by_source("e1");
         assert_eq!(results.len(), 2);
     }
@@ -684,7 +748,9 @@ mod tests {
         let mut config = HybridExecutorConfig::default();
         config.max_retries = 0;
         let mut exec = HybridExecutor::new(config);
-        let id = exec.create_execution("e1".to_string(), ExecutionPath::PreferOnChain).unwrap();
+        let id = exec
+            .create_execution("e1".to_string(), ExecutionPath::PreferOnChain)
+            .unwrap();
         exec.start_on_chain(&id).unwrap();
         exec.fail_execution(&id, "error".to_string()).unwrap();
         assert_eq!(exec.failed_executions().len(), 1);
@@ -693,9 +759,12 @@ mod tests {
     #[test]
     fn test_stats_tracking() {
         let mut exec = HybridExecutor::default_config();
-        let id = exec.create_execution("e1".to_string(), ExecutionPath::PreferOnChain).unwrap();
+        let id = exec
+            .create_execution("e1".to_string(), ExecutionPath::PreferOnChain)
+            .unwrap();
         exec.start_on_chain(&id).unwrap();
-        exec.complete_execution(&id, Some("0x".to_string()), None).unwrap();
+        exec.complete_execution(&id, Some("0x".to_string()), None)
+            .unwrap();
         let stats = exec.stats();
         assert_eq!(stats.total_completed, 1);
         assert_eq!(stats.on_chain_executions, 1);
@@ -710,7 +779,12 @@ mod tests {
 
     #[test]
     fn test_execution_terminal() {
-        let record = ExecutionRecord::new("e1".to_string(), "s1".to_string(), ExecutionPath::PreferOnChain, 1000);
+        let record = ExecutionRecord::new(
+            "e1".to_string(),
+            "s1".to_string(),
+            ExecutionPath::PreferOnChain,
+            1000,
+        );
         assert!(!record.is_terminal());
         let mut completed = record.clone();
         completed.state = ExecutionState::Completed;
@@ -719,14 +793,24 @@ mod tests {
 
     #[test]
     fn test_execution_timeout() {
-        let record = ExecutionRecord::new("e1".to_string(), "s1".to_string(), ExecutionPath::PreferOnChain, 1000);
+        let record = ExecutionRecord::new(
+            "e1".to_string(),
+            "s1".to_string(),
+            ExecutionPath::PreferOnChain,
+            1000,
+        );
         assert!(!record.is_timed_out(5000, 4000));
         assert!(record.is_timed_out(5000, 7000));
     }
 
     #[test]
     fn test_retries_exhausted() {
-        let mut record = ExecutionRecord::new("e1".to_string(), "s1".to_string(), ExecutionPath::PreferOnChain, 1000);
+        let mut record = ExecutionRecord::new(
+            "e1".to_string(),
+            "s1".to_string(),
+            ExecutionPath::PreferOnChain,
+            1000,
+        );
         record.retry_count = 3;
         assert!(record.retries_exhausted(3));
         assert!(!record.retries_exhausted(5));
@@ -776,7 +860,9 @@ mod tests {
     #[test]
     fn test_already_completed_error() {
         let mut exec = HybridExecutor::default_config();
-        let id = exec.create_execution("e1".to_string(), ExecutionPath::PreferOnChain).unwrap();
+        let id = exec
+            .create_execution("e1".to_string(), ExecutionPath::PreferOnChain)
+            .unwrap();
         exec.start_on_chain(&id).unwrap();
         exec.complete_execution(&id, None, None).unwrap();
         assert!(exec.start_on_chain(&id).is_err());
@@ -785,7 +871,9 @@ mod tests {
     #[test]
     fn test_backoff_calculation() {
         let mut exec = HybridExecutor::default_config();
-        let id = exec.create_execution("e1".to_string(), ExecutionPath::PreferOnChain).unwrap();
+        let id = exec
+            .create_execution("e1".to_string(), ExecutionPath::PreferOnChain)
+            .unwrap();
         exec.start_on_chain(&id).unwrap();
         exec.fail_execution(&id, "err".to_string()).unwrap();
         let record = exec.get_execution(&id).unwrap();
@@ -795,7 +883,9 @@ mod tests {
     #[test]
     fn test_avg_execution_time() {
         let mut exec = HybridExecutor::default_config();
-        let id = exec.create_execution("e1".to_string(), ExecutionPath::PreferOnChain).unwrap();
+        let id = exec
+            .create_execution("e1".to_string(), ExecutionPath::PreferOnChain)
+            .unwrap();
         exec.advance_time(1000);
         exec.complete_execution(&id, None, None).unwrap();
         assert!(exec.stats().avg_execution_time_ms > 0.0);

@@ -25,7 +25,10 @@ impl std::fmt::Display for ZKPV3Error {
             Self::ProofGenerationFailed(msg) => write!(f, "Proof generation failed: {}", msg),
             Self::VerificationFailed(msg) => write!(f, "Verification failed: {}", msg),
             Self::BatchFull => write!(f, "Batch capacity reached"),
-            Self::TimeoutExceeded { limit_ms, actual_ms } => {
+            Self::TimeoutExceeded {
+                limit_ms,
+                actual_ms,
+            } => {
                 write!(f, "Timeout: {}ms > {}ms limit", actual_ms, limit_ms)
             }
             Self::CircuitError(msg) => write!(f, "Circuit error: {}", msg),
@@ -207,20 +210,19 @@ impl AsyncZKPV3 {
         self.current_batch = Some(ProofBatch::new(batch_id));
     }
 
-    pub fn add_to_batch(
-        &mut self,
-        statement: ZKPStatement,
-    ) -> Result<(), ZKPV3Error> {
-        let batch = self.current_batch.as_mut().ok_or_else(|| {
-            ZKPV3Error::CircuitError("No active batch".to_string())
-        })?;
+    pub fn add_to_batch(&mut self, statement: ZKPStatement) -> Result<(), ZKPV3Error> {
+        let batch = self
+            .current_batch
+            .as_mut()
+            .ok_or_else(|| ZKPV3Error::CircuitError("No active batch".to_string()))?;
         batch.add_statement(statement)
     }
 
     pub fn generate_batch_proofs(&mut self) -> Result<ProofBatch, ZKPV3Error> {
-        let mut batch = self.current_batch.take().ok_or_else(|| {
-            ZKPV3Error::CircuitError("No active batch".to_string())
-        })?;
+        let mut batch = self
+            .current_batch
+            .take()
+            .ok_or_else(|| ZKPV3Error::CircuitError("No active batch".to_string()))?;
 
         let start = current_timestamp_ms();
 
@@ -242,14 +244,15 @@ impl AsyncZKPV3 {
 
             let is_fallback = proof.used_fallback;
             // Cache proof
-            self.proof_cache.insert(proof.proof_id.clone(), proof.clone());
+            self.proof_cache
+                .insert(proof.proof_id.clone(), proof.clone());
             batch.proofs.push(proof);
 
             self.stats.total_proofs += 1;
-            self.stats.avg_generation_ms =
-                (self.stats.avg_generation_ms * (self.stats.total_proofs - 1) as f64
-                    + gen_time as f64)
-                    / self.stats.total_proofs as f64;
+            self.stats.avg_generation_ms = (self.stats.avg_generation_ms
+                * (self.stats.total_proofs - 1) as f64
+                + gen_time as f64)
+                / self.stats.total_proofs as f64;
             if is_fallback {
                 self.stats.fallback_count += 1;
             }
@@ -280,10 +283,10 @@ impl AsyncZKPV3 {
         if valid {
             self.stats.verifications_passed += 1;
         }
-        self.stats.avg_verification_ms =
-            (self.stats.avg_verification_ms * (self.stats.total_verifications - 1) as f64
-                + verification_time as f64)
-                / self.stats.total_verifications as f64;
+        self.stats.avg_verification_ms = (self.stats.avg_verification_ms
+            * (self.stats.total_verifications - 1) as f64
+            + verification_time as f64)
+            / self.stats.total_verifications as f64;
 
         VerificationResult {
             proof_id: proof.proof_id.clone(),
@@ -292,10 +295,7 @@ impl AsyncZKPV3 {
         }
     }
 
-    pub fn verify_batch(
-        &mut self,
-        batch: &ProofBatch,
-    ) -> Vec<VerificationResult> {
+    pub fn verify_batch(&mut self, batch: &ProofBatch) -> Vec<VerificationResult> {
         batch
             .proofs
             .iter()
@@ -316,10 +316,7 @@ impl AsyncZKPV3 {
         &self.config
     }
 
-    fn generate_proof(
-        &self,
-        statement: &ZKPStatement,
-    ) -> Result<(Vec<u8>, bool), ZKPV3Error> {
+    fn generate_proof(&self, statement: &ZKPStatement) -> Result<(Vec<u8>, bool), ZKPV3Error> {
         let start = current_timestamp_ms();
 
         // Simulated proof generation
@@ -334,13 +331,14 @@ impl AsyncZKPV3 {
         }
 
         let gen_time = current_timestamp_ms() - start;
-        let used_fallback = if gen_time > self.config.proof_timeout_ms && self.config.fallback_enabled {
-            // Fallback to Merkle+VRF
-            proof_data.extend_from_slice(b"fallback-vrf");
-            true
-        } else {
-            false
-        };
+        let used_fallback =
+            if gen_time > self.config.proof_timeout_ms && self.config.fallback_enabled {
+                // Fallback to Merkle+VRF
+                proof_data.extend_from_slice(b"fallback-vrf");
+                true
+            } else {
+                false
+            };
 
         Ok((proof_data, used_fallback))
     }
@@ -456,7 +454,9 @@ mod tests {
         let mut engine = AsyncZKPV3::with_defaults();
         engine.start_batch("batch-1".to_string());
         for i in 0..128 {
-            engine.add_to_batch(make_statement(&format!("s{}", i))).unwrap();
+            engine
+                .add_to_batch(make_statement(&format!("s{}", i)))
+                .unwrap();
         }
         assert!(engine.add_to_batch(make_statement("overflow")).is_err());
     }

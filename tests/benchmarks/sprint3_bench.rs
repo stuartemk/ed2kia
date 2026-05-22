@@ -9,19 +9,21 @@
 #![cfg(feature = "v1.1-sprint3")]
 
 use ark_bn254::{Fr, G1Affine, G1Projective};
-use ark_ec::{Group, CurveGroup};
+use ark_ec::{CurveGroup, Group};
 use ark_ff::UniformRand;
 use ark_std::rand::thread_rng;
 use ark_std::rand::Rng;
+use ed2kia::bridge_v2::proof_submission::ProofSubmissionManager;
+use ed2kia::bridge_v2::zkp_marketplace_bridge::ZKPMarketplaceBridge;
+use ed2kia::marketplace_v2::escrow_ledger::{EscrowLedger, EscrowState, SLOMetrics};
+use ed2kia::marketplace_v2::matchmaker::{
+    ResourceListing, ResourceMatchmaker, ResourceRequest, ResourceType,
+};
+use ed2kia::marketplace_v2::pricing_engine::{MarketSample, PricingEngine, PricingResourceType};
 use ed2kia::zkp::async_prover::AsyncProver;
 use ed2kia::zkp::batch_accumulator::BatchAccumulator;
-use ed2kia::zkp::circuit::{BatchCommitment, ZKPProof, Witness};
+use ed2kia::zkp::circuit::{BatchCommitment, Witness, ZKPProof};
 use ed2kia::zkp::verifier_pool::VerifierPool;
-use ed2kia::marketplace_v2::matchmaker::{ResourceMatchmaker, ResourceRequest, ResourceListing, ResourceType};
-use ed2kia::marketplace_v2::escrow_ledger::{EscrowLedger, EscrowState, SLOMetrics};
-use ed2kia::marketplace_v2::pricing_engine::{PricingEngine, PricingResourceType, MarketSample};
-use ed2kia::bridge_v2::zkp_marketplace_bridge::ZKPMarketplaceBridge;
-use ed2kia::bridge_v2::proof_submission::ProofSubmissionManager;
 use sha2::{Digest, Sha256};
 use std::time::Instant;
 
@@ -102,7 +104,10 @@ fn bench_zkp_prover_single() {
 
     match result {
         Ok(pr) => {
-            println!("  ZKP Prover (single, 64 features): {} ms", pr.generation_time_ms);
+            println!(
+                "  ZKP Prover (single, 64 features): {} ms",
+                pr.generation_time_ms
+            );
             println!("  Wall time: {} ms", elapsed.as_secs_f64() * 1000.0);
         }
         Err(e) => {
@@ -114,11 +119,13 @@ fn bench_zkp_prover_single() {
 
 fn bench_zkp_prover_batch() {
     let prover = AsyncProver::new();
-    let witnesses: Vec<Witness> = (0..16).map(|i| {
-        let mut w = create_witness_n(32);
-        w.batch_hash = Sha256::digest(format!("bench_batch_{}", i)).into();
-        w
-    }).collect();
+    let witnesses: Vec<Witness> = (0..16)
+        .map(|i| {
+            let mut w = create_witness_n(32);
+            w.batch_hash = Sha256::digest(format!("bench_batch_{}", i)).into();
+            w
+        })
+        .collect();
 
     let start = Instant::now();
     let rt = tokio::runtime::Runtime::new().unwrap();
@@ -188,9 +195,8 @@ fn bench_verifier_pool_single() {
 
 fn bench_verifier_pool_stress() {
     let pool = VerifierPool::new();
-    let items: Vec<(ZKPProof, BatchCommitment)> = (0..20)
-        .map(|_| create_proof_for_verification())
-        .collect();
+    let items: Vec<(ZKPProof, BatchCommitment)> =
+        (0..20).map(|_| create_proof_for_verification()).collect();
 
     let start = Instant::now();
     let mut results = Vec::new();
@@ -284,8 +290,7 @@ fn bench_matchmaker_single() {
         Ok(mr) => {
             println!(
                 "  Matchmaker (single, 10 listings): {} ms, matched={}",
-                mr.match_time_ms,
-                mr.matched
+                mr.match_time_ms, mr.matched
             );
         }
         Err(e) => {
@@ -298,7 +303,10 @@ fn bench_matchmaker_single() {
 fn bench_matchmaker_large() {
     let mut mm = ResourceMatchmaker::new();
     for i in 0..100 {
-        mm.register_listing(make_sae_listing(&format!("node_{}", i), 50.0 + (i as f32 % 200.0)));
+        mm.register_listing(make_sae_listing(
+            &format!("node_{}", i),
+            50.0 + (i as f32 % 200.0),
+        ));
     }
 
     let req = ResourceRequest {
@@ -321,8 +329,7 @@ fn bench_matchmaker_large() {
         Ok(mr) => {
             println!(
                 "  Matchmaker (large, 100 listings): {} ms, matched={}",
-                mr.match_time_ms,
-                mr.matched
+                mr.match_time_ms, mr.matched
             );
         }
         Err(e) => {
@@ -461,17 +468,19 @@ fn bench_bridge_workflow() {
     let result = rt.block_on(async {
         let mut bridge = ZKPMarketplaceBridge::new_test().unwrap();
         bridge.publish_resource(make_sae_listing("seller1", 100.0));
-        bridge.execute_resource_workflow(ResourceRequest {
-            requester_id: "buyer1".into(),
-            resource_type: ResourceType::SAEShard {
-                model_id: "scope-v2".into(),
-                layer: 5,
-            },
-            quantity: 5.0,
-            max_price: 150.0,
-            max_latency_ms: 100,
-            min_availability: 0.95,
-        }).await
+        bridge
+            .execute_resource_workflow(ResourceRequest {
+                requester_id: "buyer1".into(),
+                resource_type: ResourceType::SAEShard {
+                    model_id: "scope-v2".into(),
+                    layer: 5,
+                },
+                quantity: 5.0,
+                max_price: 150.0,
+                max_latency_ms: 100,
+                min_availability: 0.95,
+            })
+            .await
     });
     let elapsed = start.elapsed();
 
@@ -502,24 +511,29 @@ fn bench_bridge_multiple_workflows() {
 
         let mut results = Vec::new();
         for i in 0..5 {
-            let r = bridge.execute_resource_workflow(ResourceRequest {
-                requester_id: format!("buyer_{}", i),
-                resource_type: ResourceType::SAEShard {
-                    model_id: "scope-v2".into(),
-                    layer: 5,
-                },
-                quantity: 3.0,
-                max_price: 150.0,
-                max_latency_ms: 100,
-                min_availability: 0.95,
-            }).await;
+            let r = bridge
+                .execute_resource_workflow(ResourceRequest {
+                    requester_id: format!("buyer_{}", i),
+                    resource_type: ResourceType::SAEShard {
+                        model_id: "scope-v2".into(),
+                        layer: 5,
+                    },
+                    quantity: 3.0,
+                    max_price: 150.0,
+                    max_latency_ms: 100,
+                    min_availability: 0.95,
+                })
+                .await;
             results.push(r);
         }
         results
     });
     let elapsed = start.elapsed();
 
-    let success = results.iter().filter(|r| r.as_ref().map(|w| w.success).unwrap_or(false)).count();
+    let success = results
+        .iter()
+        .filter(|r| r.as_ref().map(|w| w.success).unwrap_or(false))
+        .count();
     println!(
         "  Bridge E2E (5 workflows): {} ms total, {} success",
         elapsed.as_secs_f64() * 1000.0,
@@ -539,7 +553,9 @@ fn bench_proof_submission() {
         let mut manager = ProofSubmissionManager::new();
         manager.register_verifier("v1".into(), 0.95, 10);
         manager.register_verifier("v2".into(), 0.90, 15);
-        manager.submit_proof("bench_submit".into(), create_witness_n(64)).await
+        manager
+            .submit_proof("bench_submit".into(), create_witness_n(64))
+            .await
     });
     let elapsed = start.elapsed();
 

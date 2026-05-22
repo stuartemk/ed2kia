@@ -215,7 +215,10 @@ impl AsyncZKPFederation {
         self.stats.total_batches += 1;
         self.update_avg_batch_size(proof_count);
 
-        self.audit(&format!("batch_created: {} ({} proofs)", batch_id, proof_count));
+        self.audit(&format!(
+            "batch_created: {} ({} proofs)",
+            batch_id, proof_count
+        ));
         Ok(batch)
     }
 
@@ -235,18 +238,24 @@ impl AsyncZKPFederation {
         let proof_hash = compute_sha256(proof_data.as_bytes());
 
         let result = ZKPResult::verified(proof_hash.clone(), 1);
-        self.verified_proofs.insert(delta.delta_id.clone(), result.clone());
+        self.verified_proofs
+            .insert(delta.delta_id.clone(), result.clone());
 
         self.audit(&format!("light_proof_generated: {}", delta.delta_id));
         Ok(result)
     }
 
     /// Verify a proof asynchronously.
-    pub fn verify_async(&mut self, batch_id: String, proof_hash: String) -> Result<ZKPResult, ZKPError> {
+    pub fn verify_async(
+        &mut self,
+        batch_id: String,
+        proof_hash: String,
+    ) -> Result<ZKPResult, ZKPError> {
         // Extract batch info to avoid holding immutable borrow
         let (batch_proof_hash, batch_size) = {
-            let batch = self.find_batch(&batch_id)
-                .ok_or_else(|| ZKPError::VerificationFailed(format!("batch {} not found", batch_id)))?;
+            let batch = self.find_batch(&batch_id).ok_or_else(|| {
+                ZKPError::VerificationFailed(format!("batch {} not found", batch_id))
+            })?;
             (batch.proof_hash.clone(), batch.proofs.len())
         };
 
@@ -264,7 +273,8 @@ impl AsyncZKPFederation {
             ZKPResult::failed(proof_hash.clone(), batch_size)
         };
 
-        self.verified_proofs.insert(batch_id.clone(), result.clone());
+        self.verified_proofs
+            .insert(batch_id.clone(), result.clone());
         self.stats.total_verifications += 1;
 
         // Remove from pending if verified
@@ -273,7 +283,10 @@ impl AsyncZKPFederation {
             self.stats.pending_proofs = self.stats.pending_proofs.saturating_sub(batch_size);
         }
 
-        self.audit(&format!("verify_async: {} (verified={})", batch_id, verified));
+        self.audit(&format!(
+            "verify_async: {} (verified={})",
+            batch_id, verified
+        ));
         Ok(result)
     }
 
@@ -292,7 +305,8 @@ impl AsyncZKPFederation {
         let proof_hash = compute_sha256(delta.data_hash.as_bytes());
         let result = ZKPResult::fallback(proof_hash.clone(), 1);
 
-        self.verified_proofs.insert(delta.delta_id.clone(), result.clone());
+        self.verified_proofs
+            .insert(delta.delta_id.clone(), result.clone());
         self.audit(&format!("merkle_fallback: {}", delta.delta_id));
         Ok(result)
     }
@@ -325,7 +339,8 @@ impl AsyncZKPFederation {
     }
 
     fn audit(&mut self, message: &str) {
-        self.audit_log.push_back(format!("[{}] {}", current_timestamp_ms(), message));
+        self.audit_log
+            .push_back(format!("[{}] {}", current_timestamp_ms(), message));
         if self.audit_log.len() > 256 {
             self.audit_log.pop_front();
         }

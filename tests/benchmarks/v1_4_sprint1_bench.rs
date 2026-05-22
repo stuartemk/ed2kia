@@ -8,25 +8,34 @@ mod bench {
     use std::time::Instant;
 
     // LP-98
-    use ed2kia::zkp::halo2_engine::{Halo2Engine, Halo2EngineConfig, HashBackend};
+    use ed2kia::zkp::async_zkp_v5::{CircuitType, ZKPProof, ZKPStatement};
     use ed2kia::zkp::circuit_optimizer::{CircuitOptimizer, CircuitOptimizerConfig};
-    use ed2kia::zkp::proof_aggregator::{ProofAggregator, AggregatorConfig};
-    use ed2kia::zkp::async_zkp_v5::{ZKPStatement, ZKPProof, CircuitType};
+    use ed2kia::zkp::halo2_engine::{Halo2Engine, Halo2EngineConfig, HashBackend};
+    use ed2kia::zkp::proof_aggregator::{AggregatorConfig, ProofAggregator};
 
     // LP-99
+    use ed2kia::runtime::task_scheduler::{
+        ScheduledTask, SchedulerConfig, TaskPriority, TaskScheduler,
+    };
     use ed2kia::runtime::tokio_optimizer::{TokioOptimizer, TokioOptimizerConfig};
-    use ed2kia::runtime::task_scheduler::{TaskScheduler, SchedulerConfig, TaskPriority, ScheduledTask};
-    use ed2kia::runtime::worker_pool::{WorkerPool, WorkerPoolConfig, LoadBalanceStrategy};
+    use ed2kia::runtime::worker_pool::{LoadBalanceStrategy, WorkerPool, WorkerPoolConfig};
 
     // LP-100
+    use ed2kia::storage::checkpoint_cache::{
+        CheckpointCache, CheckpointCacheConfig, EvictionPolicy,
+    };
+    use ed2kia::storage::gradient_archive::{ArchiveConfig, GradientArchive};
     use ed2kia::storage::lz4_compressor::{LZ4Compressor, LZ4Config};
-    use ed2kia::storage::checkpoint_cache::{CheckpointCache, CheckpointCacheConfig, EvictionPolicy};
-    use ed2kia::storage::gradient_archive::{GradientArchive, ArchiveConfig};
 
     // LP-101
     use ed2kia::monitoring_v2::advanced_metrics::{AdvancedMetrics, AdvancedMetricsConfig};
-    use ed2kia::monitoring_v2::health_checker::{HealthChecker, HealthCheckerConfig, CheckConfig, HealthStatus};
-    use ed2kia::monitoring_v2::alert_engine::{AlertEngine, AlertEngineConfig, AlertRule, AlertOperator, AlertSeverity, NotificationChannel};
+    use ed2kia::monitoring_v2::alert_engine::{
+        AlertEngine, AlertEngineConfig, AlertOperator, AlertRule, AlertSeverity,
+        NotificationChannel,
+    };
+    use ed2kia::monitoring_v2::health_checker::{
+        CheckConfig, HealthChecker, HealthCheckerConfig, HealthStatus,
+    };
 
     use std::time::Duration;
 
@@ -76,7 +85,11 @@ mod bench {
             engine.generate_proof(&stmt).ok();
         }
         let elapsed = start.elapsed();
-        println!("LP-98: 100 proof generations in {:?} ({:.2} ms/proof)", elapsed, elapsed.as_secs_f64() * 1000.0 / 100.0);
+        println!(
+            "LP-98: 100 proof generations in {:?} ({:.2} ms/proof)",
+            elapsed,
+            elapsed.as_secs_f64() * 1000.0 / 100.0
+        );
     }
 
     pub fn bench_halo2_verification_100() {
@@ -91,7 +104,11 @@ mod bench {
             engine.verify_proof(&proof, &stmt).ok();
         }
         let elapsed = start.elapsed();
-        println!("LP-98: 100 verifications in {:?} ({:.2} ms/verify)", elapsed, elapsed.as_secs_f64() * 1000.0 / 100.0);
+        println!(
+            "LP-98: 100 verifications in {:?} ({:.2} ms/verify)",
+            elapsed,
+            elapsed.as_secs_f64() * 1000.0 / 100.0
+        );
     }
 
     pub fn bench_circuit_optimizer_1000() {
@@ -104,7 +121,11 @@ mod bench {
             optimizer.record_result(&circuit, 50.0, 10.0, true);
         }
         let elapsed = start.elapsed();
-        println!("LP-98: 1000 circuit selections in {:?} ({:.2} us/select)", elapsed, elapsed.as_secs_f64() * 1_000_000.0 / 1000.0);
+        println!(
+            "LP-98: 1000 circuit selections in {:?} ({:.2} us/select)",
+            elapsed,
+            elapsed.as_secs_f64() * 1_000_000.0 / 1000.0
+        );
     }
 
     pub fn bench_proof_aggregation_100() {
@@ -141,7 +162,11 @@ mod bench {
             optimizer.adapt();
         }
         let elapsed = start.elapsed();
-        println!("LP-99: 1000 adaptation cycles in {:?} ({:.2} us/cycle)", elapsed, elapsed.as_secs_f64() * 1_000_000.0 / 1000.0);
+        println!(
+            "LP-99: 1000 adaptation cycles in {:?} ({:.2} us/cycle)",
+            elapsed,
+            elapsed.as_secs_f64() * 1_000_000.0 / 1000.0
+        );
     }
 
     pub fn bench_task_scheduler_10000() {
@@ -161,7 +186,11 @@ mod bench {
             }
         }
         let elapsed = start.elapsed();
-        println!("LP-99: 10000 task operations in {:?} ({:.2} us/op)", elapsed, elapsed.as_secs_f64() * 1_000_000.0 / 10000.0);
+        println!(
+            "LP-99: 10000 task operations in {:?} ({:.2} us/op)",
+            elapsed,
+            elapsed.as_secs_f64() * 1_000_000.0 / 10000.0
+        );
     }
 
     pub fn bench_worker_pool_10000() {
@@ -187,7 +216,11 @@ mod bench {
             pool.complete_task(&format!("w{}", i % 4), 50.0).ok();
         }
         let elapsed = start.elapsed();
-        println!("LP-99: 10000 worker pool ops in {:?} ({:.2} us/op)", elapsed, elapsed.as_secs_f64() * 1_000_000.0 / 10000.0);
+        println!(
+            "LP-99: 10000 worker pool ops in {:?} ({:.2} us/op)",
+            elapsed,
+            elapsed.as_secs_f64() * 1_000_000.0 / 10000.0
+        );
     }
 
     // =====================================================================
@@ -202,7 +235,10 @@ mod bench {
         let compressed = compressor.compress(&data, "bench-1mb").unwrap();
         let elapsed = start.elapsed();
         let ratio = data.len() as f64 / compressed.compressed_data.len() as f64;
-        println!("LP-100: Compress 1MB in {:?} (ratio: {:.2}x)", elapsed, ratio);
+        println!(
+            "LP-100: Compress 1MB in {:?} (ratio: {:.2}x)",
+            elapsed, ratio
+        );
 
         let start = Instant::now();
         compressor.decompress(&compressed).unwrap();
@@ -223,11 +259,22 @@ mod bench {
 
         let start = Instant::now();
         for i in 0..10000 {
-            cache.store(format!("key-{}", i), 1, "model-1".to_string(), vec![1u8, 2u8, 3u8]).ok();
+            cache
+                .store(
+                    format!("key-{}", i),
+                    1,
+                    "model-1".to_string(),
+                    vec![1u8, 2u8, 3u8],
+                )
+                .ok();
             cache.get(&format!("key-{}", i % 1000)).ok();
         }
         let elapsed = start.elapsed();
-        println!("LP-100: 10000 cache ops in {:?} ({:.2} us/op)", elapsed, elapsed.as_secs_f64() * 1_000_000.0 / 10000.0);
+        println!(
+            "LP-100: 10000 cache ops in {:?} ({:.2} us/op)",
+            elapsed,
+            elapsed.as_secs_f64() * 1_000_000.0 / 10000.0
+        );
     }
 
     pub fn bench_gradient_archive_1000() {
@@ -242,10 +289,21 @@ mod bench {
         let start = Instant::now();
         for i in 0..1000 {
             let gradients = vec![1.0 * (i as f32); 100];
-            archive.store(format!("v-{}", i), format!("model-{}", i % 10), i as u64, gradients).ok();
+            archive
+                .store(
+                    format!("v-{}", i),
+                    format!("model-{}", i % 10),
+                    i as u64,
+                    gradients,
+                )
+                .ok();
         }
         let elapsed = start.elapsed();
-        println!("LP-100: 1000 gradient stores in {:?} ({:.2} us/store)", elapsed, elapsed.as_secs_f64() * 1_000_000.0 / 1000.0);
+        println!(
+            "LP-100: 1000 gradient stores in {:?} ({:.2} us/store)",
+            elapsed,
+            elapsed.as_secs_f64() * 1_000_000.0 / 1000.0
+        );
     }
 
     // =====================================================================
@@ -254,9 +312,19 @@ mod bench {
 
     pub fn bench_metrics_10000() {
         let mut metrics = AdvancedMetrics::new(AdvancedMetricsConfig::default());
-        metrics.register_counter("bench_counter".to_string(), "Benchmark".to_string()).ok();
-        metrics.register_gauge("bench_gauge".to_string(), "Benchmark".to_string()).ok();
-        metrics.register_histogram("bench_histogram".to_string(), "Benchmark".to_string(), Some(vec![10.0, 25.0, 50.0, 100.0])).ok();
+        metrics
+            .register_counter("bench_counter".to_string(), "Benchmark".to_string())
+            .ok();
+        metrics
+            .register_gauge("bench_gauge".to_string(), "Benchmark".to_string())
+            .ok();
+        metrics
+            .register_histogram(
+                "bench_histogram".to_string(),
+                "Benchmark".to_string(),
+                Some(vec![10.0, 25.0, 50.0, 100.0]),
+            )
+            .ok();
 
         let start = Instant::now();
         for i in 0..10000 {
@@ -265,7 +333,11 @@ mod bench {
             metrics.histogram_observe("bench_histogram", i as f64).ok();
         }
         let elapsed = start.elapsed();
-        println!("LP-101: 10000 metric ops in {:?} ({:.2} us/op)", elapsed, elapsed.as_secs_f64() * 1_000_000.0 / 10000.0);
+        println!(
+            "LP-101: 10000 metric ops in {:?} ({:.2} us/op)",
+            elapsed,
+            elapsed.as_secs_f64() * 1_000_000.0 / 10000.0
+        );
     }
 
     pub fn bench_health_checker_10000() {
@@ -286,10 +358,21 @@ mod bench {
 
         let start = Instant::now();
         for i in 0..10000 {
-            checker.record_check(&format!("check-{}", i % 100), HealthStatus::Healthy, "ok".to_string(), 1.0).ok();
+            checker
+                .record_check(
+                    &format!("check-{}", i % 100),
+                    HealthStatus::Healthy,
+                    "ok".to_string(),
+                    1.0,
+                )
+                .ok();
         }
         let elapsed = start.elapsed();
-        println!("LP-101: 10000 health checks in {:?} ({:.2} us/check)", elapsed, elapsed.as_secs_f64() * 1_000_000.0 / 10000.0);
+        println!(
+            "LP-101: 10000 health checks in {:?} ({:.2} us/check)",
+            elapsed,
+            elapsed.as_secs_f64() * 1_000_000.0 / 10000.0
+        );
     }
 
     pub fn bench_alert_engine_10000() {
@@ -313,7 +396,11 @@ mod bench {
             engine.evaluate(&format!("metric-{}", i % 10), (i % 100) as f64);
         }
         let elapsed = start.elapsed();
-        println!("LP-101: 10000 alert evaluations in {:?} ({:.2} us/eval)", elapsed, elapsed.as_secs_f64() * 1_000_000.0 / 10000.0);
+        println!(
+            "LP-101: 10000 alert evaluations in {:?} ({:.2} us/eval)",
+            elapsed,
+            elapsed.as_secs_f64() * 1_000_000.0 / 10000.0
+        );
     }
 
     // =====================================================================

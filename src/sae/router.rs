@@ -85,8 +85,7 @@ impl LayerLease {
 
     /// Tiempo restante hasta expiración
     pub fn time_remaining(&self) -> Duration {
-        self.expires_at
-            .saturating_duration_since(Instant::now())
+        self.expires_at.saturating_duration_since(Instant::now())
     }
 }
 
@@ -188,7 +187,9 @@ impl PartialEq for NodeScore {
 
 impl Ord for NodeScore {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.total_score.partial_cmp(&other.total_score).unwrap_or(std::cmp::Ordering::Equal)
+        self.total_score
+            .partial_cmp(&other.total_score)
+            .unwrap_or(std::cmp::Ordering::Equal)
     }
 }
 
@@ -208,10 +209,7 @@ pub enum LayerState {
     /// Capa no asignada
     Unassigned,
     /// Capa asignada a un nodo con lease activo
-    Assigned {
-        peer_id: String,
-        lease: LayerLease,
-    },
+    Assigned { peer_id: String, lease: LayerLease },
     /// Capa en proceso de reasignación
     Reassigning,
 }
@@ -256,10 +254,8 @@ impl LayerRouter {
 
     /// Configurar duración default de leases
     pub fn with_lease_duration(mut self, duration: Duration) -> Self {
-        self.default_lease_duration = duration.clamp(
-            Duration::from_secs(300),
-            Duration::from_secs(600),
-        );
+        self.default_lease_duration =
+            duration.clamp(Duration::from_secs(300), Duration::from_secs(600));
         self
     }
 
@@ -279,11 +275,7 @@ impl LayerRouter {
             request.requester_id, request.layers, request.duration_secs
         );
 
-        let duration = Duration::from_secs(
-            request
-                .duration_secs
-                .min(MAX_LEASE_DURATION.as_secs()),
-        );
+        let duration = Duration::from_secs(request.duration_secs.min(MAX_LEASE_DURATION.as_secs()));
 
         let mut assigned_layers = Vec::new();
         let mut denial_reasons = Vec::new();
@@ -304,17 +296,16 @@ impl LayerRouter {
 
                     if score.total_score >= MIN_ASSIGNMENT_SCORE {
                         // Aprovar lease
-                        let lease = LayerLease::new(
-                            layer_id,
-                            request.requester_id.clone(),
-                            duration,
-                        );
+                        let lease =
+                            LayerLease::new(layer_id, request.requester_id.clone(), duration);
 
-                        self.layer_states
-                            .insert(layer_id, LayerState::Assigned {
+                        self.layer_states.insert(
+                            layer_id,
+                            LayerState::Assigned {
                                 peer_id: request.requester_id.clone(),
                                 lease: lease.clone(),
-                            });
+                            },
+                        );
 
                         self.peer_leases
                             .entry(request.requester_id.clone())
@@ -347,10 +338,8 @@ impl LayerRouter {
                         );
                         assigned_layers.push(layer_id);
                     } else {
-                        denial_reasons.push(format!(
-                            "Layer {} ya asignada a {}",
-                            layer_id, peer_id
-                        ));
+                        denial_reasons
+                            .push(format!("Layer {} ya asignada a {}", layer_id, peer_id));
                     }
                 }
                 Some(LayerState::Reassigning) => {
@@ -423,18 +412,12 @@ impl LayerRouter {
 
     /// Reasignar capas de un peer que se desconectó
     pub fn reassign_peer_layers(&mut self, peer_id: &str) -> Vec<u32> {
-        info!(
-            "Reasignando capas de peer desconectado: {}",
-            peer_id
-        );
+        info!("Reasignando capas de peer desconectado: {}", peer_id);
 
         let mut layers_to_reassign = Vec::new();
 
         for (layer_id, state) in &mut self.layer_states {
-            if let LayerState::Assigned {
-                peer_id: owner, ..
-            } = state
-            {
+            if let LayerState::Assigned { peer_id: owner, .. } = state {
                 if owner == peer_id {
                     *state = LayerState::Reassigning;
                     layers_to_reassign.push(*layer_id);
@@ -444,8 +427,7 @@ impl LayerRouter {
 
         // Marcar como unassigned para nueva asignación
         for layer_id in &layers_to_reassign {
-            self.layer_states
-                .insert(*layer_id, LayerState::Unassigned);
+            self.layer_states.insert(*layer_id, LayerState::Unassigned);
         }
 
         // TODO: Phase 2 - Iniciar proceso de reasignación automática
@@ -499,7 +481,10 @@ impl LayerRouter {
             let mut score = NodeScore::calculate(resources, memory_req);
             score.peer_id = peer_id.clone();
 
-            if best_score.as_ref().is_none_or(|b| score.total_score > b.total_score) {
+            if best_score
+                .as_ref()
+                .is_none_or(|b| score.total_score > b.total_score)
+            {
                 best_score = Some(score);
             }
         }
@@ -527,11 +512,7 @@ impl LayerRouter {
             unassigned,
             reassigning,
             active_peers: self.peer_resources.len(),
-            total_leases: self
-                .peer_leases
-                .values()
-                .map(|v| v.len())
-                .sum(),
+            total_leases: self.peer_leases.values().map(|v| v.len()).sum(),
         }
     }
 }

@@ -14,8 +14,8 @@
 
 #[cfg(feature = "v1.5-sprint1")]
 mod internal {
-    use std::collections::{HashMap, BinaryHeap};
     use std::cmp::Ordering;
+    use std::collections::{BinaryHeap, HashMap};
 
     // ---------------------------------------------------------------------------
     // Errors
@@ -49,18 +49,28 @@ mod internal {
     impl std::fmt::Display for ZKPV9Error {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             match self {
-                ZKPV9Error::ProofGenerationFailed(msg) => write!(f, "Proof generation failed: {}", msg),
+                ZKPV9Error::ProofGenerationFailed(msg) => {
+                    write!(f, "Proof generation failed: {}", msg)
+                }
                 ZKPV9Error::VerificationFailed(msg) => write!(f, "Verification failed: {}", msg),
                 ZKPV9Error::FederationNotFound(id) => write!(f, "Federation {} not found", id),
                 ZKPV9Error::CredibilityTooLow { score, threshold } => {
-                    write!(f, "Credibility {:.3} below threshold {:.3}", score, threshold)
+                    write!(
+                        f,
+                        "Credibility {:.3} below threshold {:.3}",
+                        score, threshold
+                    )
                 }
                 ZKPV9Error::BudgetExceeded { budget, used } => {
                     write!(f, "Budget {:.1} exceeded (used: {:.1})", budget, used)
                 }
                 ZKPV9Error::ProofExpired(id) => write!(f, "Proof {} expired", id),
-                ZKPV9Error::RelayPathUnavailable(msg) => write!(f, "Relay path unavailable: {}", msg),
-                ZKPV9Error::BatchAggregationFailed(msg) => write!(f, "Batch aggregation failed: {}", msg),
+                ZKPV9Error::RelayPathUnavailable(msg) => {
+                    write!(f, "Relay path unavailable: {}", msg)
+                }
+                ZKPV9Error::BatchAggregationFailed(msg) => {
+                    write!(f, "Batch aggregation failed: {}", msg)
+                }
                 ZKPV9Error::PathDiversityInsufficient { paths, required } => {
                     write!(f, "Path diversity insufficient: {} < {}", paths, required)
                 }
@@ -258,7 +268,11 @@ mod internal {
             self.priority
                 .weight()
                 .cmp(&other.priority.weight())
-                .then_with(|| self.credibility.partial_cmp(&other.credibility).unwrap_or(Ordering::Equal))
+                .then_with(|| {
+                    self.credibility
+                        .partial_cmp(&other.credibility)
+                        .unwrap_or(Ordering::Equal)
+                })
         }
     }
 
@@ -359,7 +373,8 @@ mod internal {
     impl BatchEntryV9 {
         pub fn new(batch_id: String, proofs: &[ProofEntryV9], created_at_ms: u64) -> Self {
             let proof_ids: Vec<String> = proofs.iter().map(|p| p.proof_id.clone()).collect();
-            let federation_ids: Vec<String> = proofs.iter().map(|p| p.federation_id.clone()).collect();
+            let federation_ids: Vec<String> =
+                proofs.iter().map(|p| p.federation_id.clone()).collect();
             let total_size: usize = proofs.iter().map(|p| p.size_bytes).sum();
             let avg_credibility = if proofs.is_empty() {
                 0.0
@@ -607,7 +622,8 @@ mod internal {
             }
 
             // Process in batches if adaptive batching enabled
-            if self.config.adaptive_batching && batch_candidates.len() >= self.config.min_batch_size {
+            if self.config.adaptive_batching && batch_candidates.len() >= self.config.min_batch_size
+            {
                 let batch_id = format!("batch-{}", self.next_batch_id);
                 self.next_batch_id += 1;
 
@@ -635,8 +651,10 @@ mod internal {
                     }
                 }
 
-                self.metrics
-                    .record_proof(true, current_ms.saturating_sub(batch_candidates[0].created_at_ms));
+                self.metrics.record_proof(
+                    true,
+                    current_ms.saturating_sub(batch_candidates[0].created_at_ms),
+                );
             } else {
                 // Process individually
                 for proof in batch_candidates {
@@ -821,9 +839,7 @@ mod internal {
         #[test]
         fn test_register_federation() {
             let mut engine = AsyncZKPV9::default();
-            assert!(engine
-                .register_federation("fed1".to_string(), 0.9)
-                .is_ok());
+            assert!(engine.register_federation("fed1".to_string(), 0.9).is_ok());
             assert_eq!(engine.active_federation_count(), 1);
         }
 
@@ -841,12 +857,12 @@ mod internal {
             let mut engine = AsyncZKPV9::default();
             engine.register_federation("fed1".to_string(), 0.9).unwrap();
             for i in 0..5 {
-                engine
-                    .add_relay_path("fed1", format!("path{}", i))
-                    .unwrap();
+                engine.add_relay_path("fed1", format!("path{}", i)).unwrap();
             }
             // Should silently succeed but not add more
-            engine.add_relay_path("fed1", "path_extra".to_string()).unwrap();
+            engine
+                .add_relay_path("fed1", "path_extra".to_string())
+                .unwrap();
             let node = engine.get_federation("fed1").unwrap();
             assert_eq!(node.relay_paths.len(), 5);
         }
@@ -901,8 +917,24 @@ mod internal {
             let mut engine = AsyncZKPV9::default();
             engine.register_federation("fed1".to_string(), 0.9).unwrap();
             let time = current_ms();
-            engine.submit_proof("p1".to_string(), "fed1".to_string(), ProofPriority::High, 1024, time).unwrap();
-            engine.submit_proof("p2".to_string(), "fed1".to_string(), ProofPriority::Normal, 512, time).unwrap();
+            engine
+                .submit_proof(
+                    "p1".to_string(),
+                    "fed1".to_string(),
+                    ProofPriority::High,
+                    1024,
+                    time,
+                )
+                .unwrap();
+            engine
+                .submit_proof(
+                    "p2".to_string(),
+                    "fed1".to_string(),
+                    ProofPriority::Normal,
+                    512,
+                    time,
+                )
+                .unwrap();
             let processed = engine.process_proofs(time + 1000);
             assert!(!processed.is_empty());
         }
@@ -932,7 +964,15 @@ mod internal {
             let mut engine = AsyncZKPV9::default();
             engine.register_federation("fed1".to_string(), 0.9).unwrap();
             let time = current_ms();
-            engine.submit_proof("p1".to_string(), "fed1".to_string(), ProofPriority::Normal, 1024, time).unwrap();
+            engine
+                .submit_proof(
+                    "p1".to_string(),
+                    "fed1".to_string(),
+                    ProofPriority::Normal,
+                    1024,
+                    time,
+                )
+                .unwrap();
             let result = engine.verify_proof("p1", time + 100);
             assert!(result.is_ok());
             assert!(result.unwrap());
@@ -951,7 +991,15 @@ mod internal {
             engine.config.proof_ttl_ms = 1000;
             engine.register_federation("fed1".to_string(), 0.9).unwrap();
             let time = current_ms();
-            engine.submit_proof("p1".to_string(), "fed1".to_string(), ProofPriority::Normal, 1024, time).unwrap();
+            engine
+                .submit_proof(
+                    "p1".to_string(),
+                    "fed1".to_string(),
+                    ProofPriority::Normal,
+                    1024,
+                    time,
+                )
+                .unwrap();
             let cleaned = engine.cleanup_expired(time + 2000);
             assert_eq!(cleaned, 1);
         }
@@ -1011,8 +1059,24 @@ mod internal {
         #[test]
         fn test_batch_entry_creation() {
             let proofs = vec![
-                ProofEntryV9::new("p1".to_string(), "fed1".to_string(), ProofPriority::High, 1024, 0.9, current_ms(), 300_000),
-                ProofEntryV9::new("p2".to_string(), "fed1".to_string(), ProofPriority::Normal, 512, 0.8, current_ms(), 300_000),
+                ProofEntryV9::new(
+                    "p1".to_string(),
+                    "fed1".to_string(),
+                    ProofPriority::High,
+                    1024,
+                    0.9,
+                    current_ms(),
+                    300_000,
+                ),
+                ProofEntryV9::new(
+                    "p2".to_string(),
+                    "fed1".to_string(),
+                    ProofPriority::Normal,
+                    512,
+                    0.8,
+                    current_ms(),
+                    300_000,
+                ),
             ];
             let batch = BatchEntryV9::new("b1".to_string(), &proofs, current_ms());
             assert_eq!(batch.proof_ids.len(), 2);
@@ -1071,9 +1135,23 @@ mod internal {
             engine.register_federation("fed1".to_string(), 0.9).unwrap();
             let time = current_ms();
             // First proof should succeed (1024 bytes = 1.0 KB)
-            engine.submit_proof("p1".to_string(), "fed1".to_string(), ProofPriority::Normal, 1024, time).unwrap();
+            engine
+                .submit_proof(
+                    "p1".to_string(),
+                    "fed1".to_string(),
+                    ProofPriority::Normal,
+                    1024,
+                    time,
+                )
+                .unwrap();
             // Second should fail budget
-            let result = engine.submit_proof("p2".to_string(), "fed1".to_string(), ProofPriority::Normal, 1024, time);
+            let result = engine.submit_proof(
+                "p2".to_string(),
+                "fed1".to_string(),
+                ProofPriority::Normal,
+                1024,
+                time,
+            );
             assert!(matches!(result, Err(ZKPV9Error::BudgetExceeded { .. })));
         }
 
@@ -1084,7 +1162,15 @@ mod internal {
             engine.add_relay_path("fed1", "path1".to_string()).unwrap();
             engine.add_relay_path("fed1", "path2".to_string()).unwrap();
             let time = current_ms();
-            engine.submit_proof("p1".to_string(), "fed1".to_string(), ProofPriority::Normal, 1024, time).unwrap();
+            engine
+                .submit_proof(
+                    "p1".to_string(),
+                    "fed1".to_string(),
+                    ProofPriority::Normal,
+                    1024,
+                    time,
+                )
+                .unwrap();
             engine.process_proofs(time + 100);
             let proof = engine.get_proof("p1").unwrap();
             assert_eq!(proof.relay_paths.len(), 2);
@@ -1110,7 +1196,15 @@ mod internal {
             let mut engine = AsyncZKPV9::default();
             engine.register_federation("fed1".to_string(), 0.9).unwrap();
             let time = current_ms();
-            engine.submit_proof("p1".to_string(), "fed1".to_string(), ProofPriority::Normal, 1024, time).unwrap();
+            engine
+                .submit_proof(
+                    "p1".to_string(),
+                    "fed1".to_string(),
+                    ProofPriority::Normal,
+                    1024,
+                    time,
+                )
+                .unwrap();
             assert!(engine.get_proof("p1").is_some());
             assert!(engine.get_proof("nonexistent").is_none());
         }
@@ -1122,7 +1216,13 @@ mod internal {
             let time = current_ms();
             for i in 0..4 {
                 engine
-                    .submit_proof(format!("p{}", i), "fed1".to_string(), ProofPriority::Normal, 1024, time)
+                    .submit_proof(
+                        format!("p{}", i),
+                        "fed1".to_string(),
+                        ProofPriority::Normal,
+                        1024,
+                        time,
+                    )
                     .unwrap();
             }
             engine.process_proofs(time + 100);
@@ -1134,7 +1234,15 @@ mod internal {
             let mut engine = AsyncZKPV9::default();
             engine.register_federation("fed1".to_string(), 0.9).unwrap();
             let time = current_ms();
-            engine.submit_proof("p1".to_string(), "fed1".to_string(), ProofPriority::Normal, 1024, time).unwrap();
+            engine
+                .submit_proof(
+                    "p1".to_string(),
+                    "fed1".to_string(),
+                    ProofPriority::Normal,
+                    1024,
+                    time,
+                )
+                .unwrap();
             engine.process_proofs(time + 100);
             engine.reset_metrics();
             assert_eq!(engine.metrics().total_proofs, 0);
@@ -1149,9 +1257,31 @@ mod internal {
             let mut engine = AsyncZKPV9::new(config);
             engine.register_federation("fed1".to_string(), 0.9).unwrap();
             let time = current_ms();
-            engine.submit_proof("p1".to_string(), "fed1".to_string(), ProofPriority::Normal, 1024, time).unwrap();
-            engine.submit_proof("p2".to_string(), "fed1".to_string(), ProofPriority::Normal, 1024, time).unwrap();
-            let result = engine.submit_proof("p3".to_string(), "fed1".to_string(), ProofPriority::Normal, 1024, time);
+            engine
+                .submit_proof(
+                    "p1".to_string(),
+                    "fed1".to_string(),
+                    ProofPriority::Normal,
+                    1024,
+                    time,
+                )
+                .unwrap();
+            engine
+                .submit_proof(
+                    "p2".to_string(),
+                    "fed1".to_string(),
+                    ProofPriority::Normal,
+                    1024,
+                    time,
+                )
+                .unwrap();
+            let result = engine.submit_proof(
+                "p3".to_string(),
+                "fed1".to_string(),
+                ProofPriority::Normal,
+                1024,
+                time,
+            );
             assert!(matches!(result, Err(ZKPV9Error::ProofGenerationFailed(_))));
         }
 
@@ -1160,7 +1290,15 @@ mod internal {
             let mut engine = AsyncZKPV9::default();
             engine.register_federation("fed1".to_string(), 0.9).unwrap();
             let time = current_ms();
-            engine.submit_proof("p1".to_string(), "fed1".to_string(), ProofPriority::Normal, 1024, time).unwrap();
+            engine
+                .submit_proof(
+                    "p1".to_string(),
+                    "fed1".to_string(),
+                    ProofPriority::Normal,
+                    1024,
+                    time,
+                )
+                .unwrap();
             let processed = engine.process_proofs(time + 100);
             assert_eq!(processed.len(), 1);
             assert_eq!(engine.metrics().total_batches, 0);
@@ -1177,7 +1315,13 @@ mod internal {
             let time = current_ms();
             for i in 0..8 {
                 engine
-                    .submit_proof(format!("p{}", i), "fed1".to_string(), ProofPriority::Normal, 1024, time)
+                    .submit_proof(
+                        format!("p{}", i),
+                        "fed1".to_string(),
+                        ProofPriority::Normal,
+                        1024,
+                        time,
+                    )
                     .unwrap();
             }
             engine.process_proofs(time + 100);
@@ -1195,7 +1339,15 @@ mod internal {
             engine.add_relay_path("fed1", "path1".to_string()).unwrap();
             engine.add_relay_path("fed1", "path2".to_string()).unwrap();
             let time = current_ms();
-            engine.submit_proof("p1".to_string(), "fed1".to_string(), ProofPriority::Normal, 1024, time).unwrap();
+            engine
+                .submit_proof(
+                    "p1".to_string(),
+                    "fed1".to_string(),
+                    ProofPriority::Normal,
+                    1024,
+                    time,
+                )
+                .unwrap();
             engine.process_proofs(time + 100);
             let proof = engine.get_proof("p1").unwrap();
             assert!(proof.relay_paths.is_empty());
@@ -1208,7 +1360,15 @@ mod internal {
             // Only 1 path, but min is 2
             engine.add_relay_path("fed1", "path1".to_string()).unwrap();
             let time = current_ms();
-            engine.submit_proof("p1".to_string(), "fed1".to_string(), ProofPriority::Normal, 1024, time).unwrap();
+            engine
+                .submit_proof(
+                    "p1".to_string(),
+                    "fed1".to_string(),
+                    ProofPriority::Normal,
+                    1024,
+                    time,
+                )
+                .unwrap();
             engine.process_proofs(time + 100);
             let proof = engine.get_proof("p1").unwrap();
             // Should have no relay paths set since diversity insufficient

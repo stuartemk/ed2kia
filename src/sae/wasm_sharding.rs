@@ -119,11 +119,7 @@ impl TensorShard {
     pub fn to_tensor(&self, device: &Device) -> Result<Tensor, WasmShardError> {
         let tensor: Tensor = match self.shape.len() {
             1 => Tensor::from_vec(self.data.clone(), self.shape[0], device)?,
-            2 => Tensor::from_slice(
-                &self.data,
-                (self.shape[0], self.shape[1]),
-                device,
-            )?,
+            2 => Tensor::from_slice(&self.data, (self.shape[0], self.shape[1]), device)?,
             3 => Tensor::from_slice(
                 &self.data,
                 (self.shape[0], self.shape[1], self.shape[2]),
@@ -163,7 +159,10 @@ impl ShardedTensor {
     pub fn get_shard(&self, index: usize) -> Result<&TensorShard, WasmShardError> {
         match self.shards.get(index) {
             Some(shard) => Ok(shard),
-            None => Err(WasmShardError::ShardIndexOutOfRange(index, self.shards.len())),
+            None => Err(WasmShardError::ShardIndexOutOfRange(
+                index,
+                self.shards.len(),
+            )),
         }
     }
 
@@ -330,7 +329,9 @@ pub fn reconstruct_tensor(
     device: &Device,
 ) -> Result<Tensor, WasmShardError> {
     if sharded.shards.is_empty() {
-        return Err(WasmShardError::InvalidShape("No shards to reconstruct".to_string()));
+        return Err(WasmShardError::InvalidShape(
+            "No shards to reconstruct".to_string(),
+        ));
     }
 
     // Sort shards by index.
@@ -524,7 +525,12 @@ mod tests {
         let sharded = shard_tensor_for_wasm(&tensor).unwrap();
         let reconstructed = reconstruct_tensor(&sharded, &device).unwrap();
 
-        let reconstructed_dims: Vec<usize> = reconstructed.shape().dims().iter().map(|d| *d as usize).collect();
+        let reconstructed_dims: Vec<usize> = reconstructed
+            .shape()
+            .dims()
+            .iter()
+            .map(|d| *d as usize)
+            .collect();
         assert_eq!(reconstructed_dims, vec![100]);
     }
 

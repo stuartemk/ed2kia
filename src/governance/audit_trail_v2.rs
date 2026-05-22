@@ -131,8 +131,7 @@ mod internal {
     }
 
     /// Single audit log entry with cryptographic linking.
-    #[derive(Debug, Clone)]
-    #[derive(PartialEq)]
+    #[derive(Debug, Clone, PartialEq)]
     pub struct AuditEntry {
         /// Unique entry identifier.
         pub entry_id: String,
@@ -159,8 +158,7 @@ mod internal {
     }
 
     /// Metrics for audit trail operations.
-    #[derive(Debug, Clone)]
-    #[derive(Default)]
+    #[derive(Debug, Clone, Default)]
     pub struct AuditMetrics {
         /// Total entries recorded.
         pub total_entries: usize,
@@ -177,7 +175,6 @@ mod internal {
         /// Current chain length.
         pub chain_length: usize,
     }
-
 
     impl AuditMetrics {
         /// Record a new entry in the metrics.
@@ -357,11 +354,7 @@ mod internal {
 
         /// Get the most recent entries up to a count.
         pub fn get_recent_entries(&self, count: usize) -> Vec<&AuditEntry> {
-            self.entries
-                .iter()
-                .rev()
-                .take(count)
-                .collect()
+            self.entries.iter().rev().take(count).collect()
         }
 
         /// Add metadata to an existing entry.
@@ -371,10 +364,7 @@ mod internal {
             key: String,
             value: String,
         ) -> Result<(), AuditError> {
-            let idx = *self
-                .index
-                .get(entry_id)
-                .ok_or(AuditError::EntryNotFound)?;
+            let idx = *self.index.get(entry_id).ok_or(AuditError::EntryNotFound)?;
             let entry = self.entries.get_mut(idx).ok_or(AuditError::EntryNotFound)?;
             entry.metadata.insert(key, value);
             Ok(())

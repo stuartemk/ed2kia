@@ -43,14 +43,19 @@ mod internal {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             match self {
                 InteropV2Error::FederationNotFound(id) => write!(f, "Federation {} not found", id),
-                InteropV2Error::NoRouteAvailable { source, destination } => {
+                InteropV2Error::NoRouteAvailable {
+                    source,
+                    destination,
+                } => {
                     write!(f, "No route from {} to {}", source, destination)
                 }
                 InteropV2Error::MaxHopsExceeded { hops, max } => {
                     write!(f, "Route exceeds max hops: {} > {}", hops, max)
                 }
                 InteropV2Error::InteropFull => write!(f, "Interop capacity exceeded"),
-                InteropV2Error::InvalidHealth(h) => write!(f, "Health value {} out of range [0,1]", h),
+                InteropV2Error::InvalidHealth(h) => {
+                    write!(f, "Health value {} out of range [0,1]", h)
+                }
                 InteropV2Error::SchemaNegotiationFailed(msg) => {
                     write!(f, "Schema negotiation failed: {}", msg)
                 }
@@ -254,7 +259,11 @@ mod internal {
         }
 
         /// Add a connection between two federations.
-        pub fn add_connection(&mut self, fed_id: &str, peer_id: &str) -> Result<(), InteropV2Error> {
+        pub fn add_connection(
+            &mut self,
+            fed_id: &str,
+            peer_id: &str,
+        ) -> Result<(), InteropV2Error> {
             // Validate both federations exist first
             if !self.federations.contains_key(fed_id) {
                 return Err(InteropV2Error::FederationNotFound(fed_id.to_string()));
@@ -323,9 +332,13 @@ mod internal {
         }
 
         /// Route a message through the interop layer.
-        pub fn route_message(&mut self, message: InteropMessage) -> Result<RouteResult, InteropV2Error> {
+        pub fn route_message(
+            &mut self,
+            message: InteropMessage,
+        ) -> Result<RouteResult, InteropV2Error> {
             // Discover path
-            let path = self.discover_path(&message.source, &message.destination)
+            let path = self
+                .discover_path(&message.source, &message.destination)
                 .ok_or_else(|| InteropV2Error::NoRouteAvailable {
                     source: message.source.clone(),
                     destination: message.destination.clone(),
@@ -423,15 +436,22 @@ mod internal {
         #[test]
         fn test_register_federation() {
             let mut interop = InteropLayerV2::default();
-            assert!(interop.register_federation("fed_a".to_string(), vec!["ep1".to_string()]).is_ok());
+            assert!(interop
+                .register_federation("fed_a".to_string(), vec!["ep1".to_string()])
+                .is_ok());
             assert_eq!(interop.federation_count(), 1);
         }
 
         #[test]
         fn test_register_federation_duplicate() {
             let mut interop = InteropLayerV2::default();
-            interop.register_federation("fed_a".to_string(), vec!["ep1".to_string()]).unwrap();
-            match interop.register_federation("fed_a".to_string(), vec!["ep2".to_string()]).unwrap_err() {
+            interop
+                .register_federation("fed_a".to_string(), vec!["ep1".to_string()])
+                .unwrap();
+            match interop
+                .register_federation("fed_a".to_string(), vec!["ep2".to_string()])
+                .unwrap_err()
+            {
                 InteropV2Error::FederationNotFound(id) => assert_eq!(id, "fed_a"),
                 e => panic!("Expected FederationNotFound, got {:?}", e),
             }
@@ -440,16 +460,24 @@ mod internal {
         #[test]
         fn test_add_connection() {
             let mut interop = InteropLayerV2::default();
-            interop.register_federation("a".to_string(), vec!["ep1".to_string()]).unwrap();
-            interop.register_federation("b".to_string(), vec!["ep2".to_string()]).unwrap();
+            interop
+                .register_federation("a".to_string(), vec!["ep1".to_string()])
+                .unwrap();
+            interop
+                .register_federation("b".to_string(), vec!["ep2".to_string()])
+                .unwrap();
             assert!(interop.add_connection("a", "b").is_ok());
         }
 
         #[test]
         fn test_discover_path_direct() {
             let mut interop = InteropLayerV2::default();
-            interop.register_federation("a".to_string(), vec!["ep1".to_string()]).unwrap();
-            interop.register_federation("b".to_string(), vec!["ep2".to_string()]).unwrap();
+            interop
+                .register_federation("a".to_string(), vec!["ep1".to_string()])
+                .unwrap();
+            interop
+                .register_federation("b".to_string(), vec!["ep2".to_string()])
+                .unwrap();
             interop.add_connection("a", "b").unwrap();
             let path = interop.discover_path("a", "b");
             assert_eq!(path, Some(vec!["a".to_string(), "b".to_string()]));
@@ -458,20 +486,33 @@ mod internal {
         #[test]
         fn test_discover_path_multi_hop() {
             let mut interop = InteropLayerV2::default();
-            interop.register_federation("a".to_string(), vec!["ep1".to_string()]).unwrap();
-            interop.register_federation("b".to_string(), vec!["ep2".to_string()]).unwrap();
-            interop.register_federation("c".to_string(), vec!["ep3".to_string()]).unwrap();
+            interop
+                .register_federation("a".to_string(), vec!["ep1".to_string()])
+                .unwrap();
+            interop
+                .register_federation("b".to_string(), vec!["ep2".to_string()])
+                .unwrap();
+            interop
+                .register_federation("c".to_string(), vec!["ep3".to_string()])
+                .unwrap();
             interop.add_connection("a", "b").unwrap();
             interop.add_connection("b", "c").unwrap();
             let path = interop.discover_path("a", "c");
-            assert_eq!(path, Some(vec!["a".to_string(), "b".to_string(), "c".to_string()]));
+            assert_eq!(
+                path,
+                Some(vec!["a".to_string(), "b".to_string(), "c".to_string()])
+            );
         }
 
         #[test]
         fn test_discover_path_not_found() {
             let mut interop = InteropLayerV2::default();
-            interop.register_federation("a".to_string(), vec!["ep1".to_string()]).unwrap();
-            interop.register_federation("b".to_string(), vec!["ep2".to_string()]).unwrap();
+            interop
+                .register_federation("a".to_string(), vec!["ep1".to_string()])
+                .unwrap();
+            interop
+                .register_federation("b".to_string(), vec!["ep2".to_string()])
+                .unwrap();
             let path = interop.discover_path("a", "b");
             assert!(path.is_none());
         }
@@ -479,8 +520,12 @@ mod internal {
         #[test]
         fn test_route_message() {
             let mut interop = InteropLayerV2::default();
-            interop.register_federation("a".to_string(), vec!["ep1".to_string()]).unwrap();
-            interop.register_federation("b".to_string(), vec!["ep2".to_string()]).unwrap();
+            interop
+                .register_federation("a".to_string(), vec!["ep1".to_string()])
+                .unwrap();
+            interop
+                .register_federation("b".to_string(), vec!["ep2".to_string()])
+                .unwrap();
             interop.add_connection("a", "b").unwrap();
             let msg = InteropMessage {
                 message_id: "msg_1".to_string(),
@@ -497,14 +542,18 @@ mod internal {
         #[test]
         fn test_update_health() {
             let mut interop = InteropLayerV2::default();
-            interop.register_federation("a".to_string(), vec!["ep1".to_string()]).unwrap();
+            interop
+                .register_federation("a".to_string(), vec!["ep1".to_string()])
+                .unwrap();
             assert!(interop.update_federation_health("a", 0.7).is_ok());
         }
 
         #[test]
         fn test_update_health_invalid() {
             let mut interop = InteropLayerV2::default();
-            interop.register_federation("a".to_string(), vec!["ep1".to_string()]).unwrap();
+            interop
+                .register_federation("a".to_string(), vec!["ep1".to_string()])
+                .unwrap();
             match interop.update_federation_health("a", 1.5).unwrap_err() {
                 InteropV2Error::InvalidHealth(h) => assert_eq!(h, 1.5),
                 e => panic!("Expected InvalidHealth, got {:?}", e),
@@ -524,8 +573,12 @@ mod internal {
         #[test]
         fn test_stats_recording() {
             let mut interop = InteropLayerV2::default();
-            interop.register_federation("a".to_string(), vec!["ep1".to_string()]).unwrap();
-            interop.register_federation("b".to_string(), vec!["ep2".to_string()]).unwrap();
+            interop
+                .register_federation("a".to_string(), vec!["ep1".to_string()])
+                .unwrap();
+            interop
+                .register_federation("b".to_string(), vec!["ep2".to_string()])
+                .unwrap();
             interop.add_connection("a", "b").unwrap();
             let msg = InteropMessage {
                 message_id: "msg_1".to_string(),
@@ -544,8 +597,12 @@ mod internal {
         #[test]
         fn test_reset_stats() {
             let mut interop = InteropLayerV2::default();
-            interop.register_federation("a".to_string(), vec!["ep1".to_string()]).unwrap();
-            interop.register_federation("b".to_string(), vec!["ep2".to_string()]).unwrap();
+            interop
+                .register_federation("a".to_string(), vec!["ep1".to_string()])
+                .unwrap();
+            interop
+                .register_federation("b".to_string(), vec!["ep2".to_string()])
+                .unwrap();
             interop.add_connection("a", "b").unwrap();
             let msg = InteropMessage {
                 message_id: "msg_1".to_string(),

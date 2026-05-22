@@ -71,7 +71,12 @@ pub struct BridgeProof {
 }
 
 impl BridgeProof {
-    pub fn new(proof_id: String, source_shard: String, target_shard: String, proof_hash: String) -> Self {
+    pub fn new(
+        proof_id: String,
+        source_shard: String,
+        target_shard: String,
+        proof_hash: String,
+    ) -> Self {
         Self {
             proof_id,
             source_shard,
@@ -174,20 +179,22 @@ impl ZKPFederationBridge {
             .insert(shard_id.clone(), ShardInfo::new(shard_id));
     }
 
-    pub fn add_node_to_shard(&mut self, shard_id: &str, node_id: String) -> Result<(), BridgeError> {
-        let shard = self.shards.get_mut(shard_id).ok_or_else(|| {
-            BridgeError::ShardNotFound(shard_id.to_string())
-        })?;
+    pub fn add_node_to_shard(
+        &mut self,
+        shard_id: &str,
+        node_id: String,
+    ) -> Result<(), BridgeError> {
+        let shard = self
+            .shards
+            .get_mut(shard_id)
+            .ok_or_else(|| BridgeError::ShardNotFound(shard_id.to_string()))?;
         shard.nodes.push(node_id);
         Ok(())
     }
 
     pub fn relay_proof(&mut self, proof: BridgeProof) -> Result<(), BridgeError> {
         if proof.relay_hops > self.config.max_relay_hops {
-            return Err(BridgeError::ConsensusFailed {
-                yes: 0,
-                no: 0,
-            });
+            return Err(BridgeError::ConsensusFailed { yes: 0, no: 0 });
         }
 
         // Verify source and target shards exist
@@ -204,10 +211,10 @@ impl ZKPFederationBridge {
         self.proofs.insert(relayed.proof_id.clone(), relayed);
 
         self.stats.total_proofs_relayed += 1;
-        self.stats.avg_relay_hops =
-            (self.stats.avg_relay_hops * (self.stats.total_proofs_relayed - 1) as f64
-                + hops as f64)
-                / self.stats.total_proofs_relayed as f64;
+        self.stats.avg_relay_hops = (self.stats.avg_relay_hops
+            * (self.stats.total_proofs_relayed - 1) as f64
+            + hops as f64)
+            / self.stats.total_proofs_relayed as f64;
 
         Ok(())
     }
@@ -220,9 +227,10 @@ impl ZKPFederationBridge {
     }
 
     pub fn reach_consensus(&mut self, proof_id: &str) -> Result<bool, BridgeError> {
-        let votes = self.votes.get(proof_id).ok_or_else(|| {
-            BridgeError::ProofNotFound(proof_id.to_string())
-        })?;
+        let votes = self
+            .votes
+            .get(proof_id)
+            .ok_or_else(|| BridgeError::ProofNotFound(proof_id.to_string()))?;
 
         let yes = votes.iter().filter(|v| v.valid).count() as u64;
         let no = votes.iter().filter(|v| !v.valid).count() as u64;
@@ -258,7 +266,8 @@ impl ZKPFederationBridge {
 
     pub fn cleanup_expired(&mut self) -> usize {
         let before = self.proofs.len();
-        self.proofs.retain(|_, p| !p.is_expired(self.config.proof_ttl_ms));
+        self.proofs
+            .retain(|_, p| !p.is_expired(self.config.proof_ttl_ms));
         before - self.proofs.len()
     }
 
@@ -317,7 +326,9 @@ mod tests {
     fn test_add_node_to_shard() {
         let mut bridge = ZKPFederationBridge::with_defaults();
         bridge.register_shard("shard-1".to_string());
-        bridge.add_node_to_shard("shard-1", "n1".to_string()).unwrap();
+        bridge
+            .add_node_to_shard("shard-1", "n1".to_string())
+            .unwrap();
         let shard = bridge.get_shard("shard-1").unwrap();
         assert_eq!(shard.nodes.len(), 1);
     }
@@ -327,7 +338,12 @@ mod tests {
         let mut bridge = ZKPFederationBridge::with_defaults();
         bridge.register_shard("src".to_string());
         bridge.register_shard("tgt".to_string());
-        let proof = BridgeProof::new("p1".to_string(), "src".to_string(), "tgt".to_string(), "hash1".to_string());
+        let proof = BridgeProof::new(
+            "p1".to_string(),
+            "src".to_string(),
+            "tgt".to_string(),
+            "hash1".to_string(),
+        );
         bridge.relay_proof(proof).unwrap();
         assert!(bridge.get_proof("p1").is_some());
     }
@@ -337,7 +353,12 @@ mod tests {
         let mut bridge = ZKPFederationBridge::with_defaults();
         bridge.register_shard("src".to_string());
         bridge.register_shard("tgt".to_string());
-        let mut proof = BridgeProof::new("p1".to_string(), "src".to_string(), "tgt".to_string(), "hash1".to_string());
+        let mut proof = BridgeProof::new(
+            "p1".to_string(),
+            "src".to_string(),
+            "tgt".to_string(),
+            "hash1".to_string(),
+        );
         proof.relay_hops = 10;
         assert!(bridge.relay_proof(proof).is_err());
     }
@@ -396,7 +417,12 @@ mod tests {
     #[test]
     fn test_proof_expiration() {
         let bridge = ZKPFederationBridge::with_defaults();
-        let mut proof = BridgeProof::new("p1".to_string(), "s".to_string(), "t".to_string(), "h".to_string());
+        let mut proof = BridgeProof::new(
+            "p1".to_string(),
+            "s".to_string(),
+            "t".to_string(),
+            "h".to_string(),
+        );
         proof.timestamp_ms = 0;
         assert!(proof.is_expired(1000));
     }
@@ -409,7 +435,12 @@ mod tests {
         });
         bridge.register_shard("src".to_string());
         bridge.register_shard("tgt".to_string());
-        let mut proof = BridgeProof::new("p1".to_string(), "src".to_string(), "tgt".to_string(), "h".to_string());
+        let mut proof = BridgeProof::new(
+            "p1".to_string(),
+            "src".to_string(),
+            "tgt".to_string(),
+            "h".to_string(),
+        );
         proof.timestamp_ms = 0;
         bridge.proofs.insert("p1".to_string(), proof);
         let cleaned = bridge.cleanup_expired();

@@ -57,7 +57,11 @@ pub struct BftConfig {
 }
 
 impl BftConfig {
-    pub fn new(outlier_sigma: f64, max_byzantine_fraction: f64, min_valid_gradients: usize) -> Result<Self, BftError> {
+    pub fn new(
+        outlier_sigma: f64,
+        max_byzantine_fraction: f64,
+        min_valid_gradients: usize,
+    ) -> Result<Self, BftError> {
         if !(0.0..1.0).contains(&max_byzantine_fraction) {
             return Err(BftError::InvalidThreshold(max_byzantine_fraction));
         }
@@ -208,13 +212,16 @@ pub fn filter_outliers(
     // MAD (Median Absolute Deviation) - robusto a outliers
     let mut mad = vec![0.0f64; dim];
     for d in 0..dim {
-        let mut abs_devs: Vec<f64> = gradients.iter().map(|g| ((g[d] - median[d]) as f64).abs()).collect();
+        let mut abs_devs: Vec<f64> = gradients
+            .iter()
+            .map(|g| ((g[d] - median[d]) as f64).abs())
+            .collect();
         abs_devs.sort_by(|a, b| a.partial_cmp(b).unwrap());
         let n = abs_devs.len();
         mad[d] = if n.is_multiple_of(2) {
-            (abs_devs[n/2-1] + abs_devs[n/2]) / 2.0
+            (abs_devs[n / 2 - 1] + abs_devs[n / 2]) / 2.0
         } else {
-            abs_devs[n/2]
+            abs_devs[n / 2]
         };
     }
 
@@ -316,10 +323,7 @@ mod tests {
 
     #[test]
     fn test_median_even_count() {
-        let grads = vec![
-            vec![1.0, 2.0],
-            vec![3.0, 4.0],
-        ];
+        let grads = vec![vec![1.0, 2.0], vec![3.0, 4.0]];
         let median = coordinate_wise_median(&grads).unwrap();
         assert!(approx_eq(median[0], 2.0));
         assert!(approx_eq(median[1], 3.0));
@@ -333,10 +337,7 @@ mod tests {
 
     #[test]
     fn test_median_dimension_mismatch() {
-        let grads = vec![
-            vec![1.0, 2.0, 3.0],
-            vec![1.0, 2.0],
-        ];
+        let grads = vec![vec![1.0, 2.0, 3.0], vec![1.0, 2.0]];
         let result = coordinate_wise_median(&grads);
         match result {
             Err(BftError::DimensionMismatch { expected, got }) => {
@@ -350,9 +351,7 @@ mod tests {
     #[test]
     fn test_bft_rejects_byzantine() {
         // 10 gradientes legítimos ~[1,2,3], 3 maliciosos ~[100,200,300]
-        let mut grads: Vec<Vec<f32>> = (0..10)
-            .map(|_| vec![1.0, 2.0, 3.0])
-            .collect();
+        let mut grads: Vec<Vec<f32>> = (0..10).map(|_| vec![1.0, 2.0, 3.0]).collect();
         grads.push(vec![100.0, 200.0, 300.0]);
         grads.push(vec![100.0, 200.0, 300.0]);
         grads.push(vec![100.0, 200.0, 300.0]);
@@ -370,9 +369,7 @@ mod tests {
     #[test]
     fn test_bft_aggregate_converges_to_truth() {
         // Simular 10 gradientes, 3 maliciosos
-        let mut grads: Vec<Vec<f32>> = (0..10)
-            .map(|_| vec![1.0, 2.0, 3.0])
-            .collect();
+        let mut grads: Vec<Vec<f32>> = (0..10).map(|_| vec![1.0, 2.0, 3.0]).collect();
         grads.push(vec![1000.0, 2000.0, 3000.0]);
         grads.push(vec![1000.0, 2000.0, 3000.0]);
         grads.push(vec![1000.0, 2000.0, 3000.0]);
@@ -419,10 +416,7 @@ mod tests {
     #[test]
     fn test_filter_all_rejected() {
         // Todos son outliers entre sí
-        let grads = vec![
-            vec![0.0, 0.0],
-            vec![1000.0, 1000.0],
-        ];
+        let grads = vec![vec![0.0, 0.0], vec![1000.0, 1000.0]];
         let config = BftConfig {
             outlier_sigma: 0.5,
             ..BftConfig::default_config()

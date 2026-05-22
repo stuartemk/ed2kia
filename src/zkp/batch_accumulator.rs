@@ -6,7 +6,7 @@
 //!
 //! Feature-gated: `#[cfg(feature = "v1.1-sprint3")]`
 
-use crate::zkp::circuit::{BatchCommitment, ZKPProof, ZKPCircuit};
+use crate::zkp::circuit::{BatchCommitment, ZKPCircuit, ZKPProof};
 use ark_bn254::{G1Affine, G1Projective};
 use ark_ec::CurveGroup;
 use ark_serialize::CanonicalSerialize;
@@ -280,8 +280,7 @@ impl BatchAccumulator {
         let mut stats = self.stats.lock();
         stats.total_accumulations += 1;
         stats.total_batches += batches.len() as u64;
-        stats.avg_accumulation_ms =
-            stats.avg_accumulation_ms * 0.9 + elapsed_ms * 0.1; // EMA
+        stats.avg_accumulation_ms = stats.avg_accumulation_ms * 0.9 + elapsed_ms * 0.1; // EMA
 
         info!(
             batches = accumulated.batch_count,
@@ -361,7 +360,9 @@ impl BatchAccumulator {
         batch_id: &str,
         accumulation: &AccumulatedProof,
     ) -> bool {
-        accumulation.included_batches.contains(&batch_id.to_string())
+        accumulation
+            .included_batches
+            .contains(&batch_id.to_string())
     }
 
     /// Verifica la integridad de una prueba acumulativa
@@ -374,7 +375,8 @@ impl BatchAccumulator {
 
         // Verificar integrity hash
         let mut hash_input = Vec::new();
-        proof.aggregated_commitment
+        proof
+            .aggregated_commitment
             .serialize_compressed(&mut hash_input)
             .expect("serialize");
         hash_input.extend_from_slice(&proof.merkle_root);
@@ -415,7 +417,10 @@ fn compute_merkle_root(items: &[String]) -> [u8; 32] {
         hashes = next;
     }
 
-    hashes.into_iter().next().unwrap_or(Sha256::digest(b"fallback").into())
+    hashes
+        .into_iter()
+        .next()
+        .unwrap_or(Sha256::digest(b"fallback").into())
 }
 
 impl Default for BatchAccumulator {
@@ -446,7 +451,9 @@ mod tests {
     fn make_commitment(batch_id: &str, feature_count: usize) -> BatchCommitment {
         let circuit = ZKPCircuit::new(None);
         let feature_values: Vec<f64> = (0..feature_count).map(|i| i as f64 * 1.1).collect();
-        circuit.create_commitment(&feature_values, batch_id).unwrap()
+        circuit
+            .create_commitment(&feature_values, batch_id)
+            .unwrap()
     }
 
     #[test]

@@ -143,7 +143,11 @@ pub struct ConstraintViolation {
 }
 
 impl ConstraintViolation {
-    pub fn new(constraint_id: String, violation_type: String, severity: ConstraintSeverity) -> Self {
+    pub fn new(
+        constraint_id: String,
+        violation_type: String,
+        severity: ConstraintSeverity,
+    ) -> Self {
         Self {
             constraint_id,
             violation_type,
@@ -179,8 +183,7 @@ impl ConstraintEngine {
     /// Remove a constraint by ID
     pub fn remove_constraint(&mut self, constraint_id: &str) -> Result<(), ConstraintError> {
         let initial_len = self.constraints.len();
-        self.constraints
-            .retain(|c| c.id != constraint_id);
+        self.constraints.retain(|c| c.id != constraint_id);
         if self.constraints.len() == initial_len {
             return Err(ConstraintError::ConstraintNotFound(
                 constraint_id.to_string(),
@@ -324,10 +327,7 @@ impl ConstraintEngine {
                 if alignment < *min_alignment {
                     return Some(ConstraintViolation::new(
                         constraint.id.clone(),
-                        format!(
-                            "Alignment {} below threshold {}",
-                            alignment, min_alignment
-                        ),
+                        format!("Alignment {} below threshold {}", alignment, min_alignment),
                         constraint.severity.clone(),
                     ));
                 }
@@ -564,10 +564,7 @@ mod tests {
     #[test]
     fn test_severity_display() {
         assert_eq!(format!("{}", ConstraintSeverity::Warning), "Warning");
-        assert_eq!(
-            format!("{}", ConstraintSeverity::Correction),
-            "Correction"
-        );
+        assert_eq!(format!("{}", ConstraintSeverity::Correction), "Correction");
         assert_eq!(format!("{}", ConstraintSeverity::Halt), "Halt");
     }
 
@@ -641,9 +638,7 @@ mod tests {
         let mut engine = ConstraintEngine::new();
         engine.add_constraint(EthicalConstraint::new(
             "align-1".to_string(),
-            ConstraintType::AlignmentThreshold {
-                min_alignment: 0.0,
-            },
+            ConstraintType::AlignmentThreshold { min_alignment: 0.0 },
             ConstraintSeverity::Warning,
         ));
         let gradient = vec![1.0, 0.5, 0.2];

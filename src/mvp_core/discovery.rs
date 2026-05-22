@@ -70,9 +70,21 @@ impl MvpDiscovery {
     pub async fn discover_peers(&mut self) -> Result<Vec<Peer>, DiscoveryError> {
         // Scaffold: return mock peers for validation
         self.peers = vec![
-            Peer::new("peer-001".to_string(), "/ip4/127.0.0.1/tcp/4001".to_string(), 0.95),
-            Peer::new("peer-002".to_string(), "/ip4/127.0.0.1/tcp/4002".to_string(), 0.87),
-            Peer::new("peer-003".to_string(), "/ip4/127.0.0.1/tcp/4003".to_string(), 0.92),
+            Peer::new(
+                "peer-001".to_string(),
+                "/ip4/127.0.0.1/tcp/4001".to_string(),
+                0.95,
+            ),
+            Peer::new(
+                "peer-002".to_string(),
+                "/ip4/127.0.0.1/tcp/4002".to_string(),
+                0.87,
+            ),
+            Peer::new(
+                "peer-003".to_string(),
+                "/ip4/127.0.0.1/tcp/4003".to_string(),
+                0.92,
+            ),
         ];
 
         if self.peers.is_empty() {
@@ -122,7 +134,11 @@ mod tests {
 
     #[test]
     fn test_peer_new() {
-        let peer = Peer::new("test".to_string(), "/ip4/127.0.0.1/tcp/4001".to_string(), 0.9);
+        let peer = Peer::new(
+            "test".to_string(),
+            "/ip4/127.0.0.1/tcp/4001".to_string(),
+            0.9,
+        );
         assert_eq!(peer.id, "test");
         assert_eq!(peer.score, 0.9);
     }

@@ -24,7 +24,11 @@ impl fmt::Display for AlignerError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::DimensionMismatch { expected, got } => {
-                write!(f, "Gradient dimension mismatch: expected {}, got {}", expected, got)
+                write!(
+                    f,
+                    "Gradient dimension mismatch: expected {}, got {}",
+                    expected, got
+                )
             }
             Self::NoModelsRegistered => write!(f, "No models registered for alignment"),
             Self::ModelNotFound(id) => write!(f, "Model not found: {}", id),
@@ -119,14 +123,16 @@ impl CrossModelAligner {
     }
 
     /// Register a model gradient profile.
-    pub fn register_model(&mut self, model_id: String, dimension: usize) -> Result<(), AlignerError> {
+    pub fn register_model(
+        &mut self,
+        model_id: String,
+        dimension: usize,
+    ) -> Result<(), AlignerError> {
         if self.profiles.len() >= self.config.max_models {
             return Err(AlignerError::NoModelsRegistered); // Reuse error for capacity
         }
-        self.profiles.insert(
-            model_id.clone(),
-            GradientProfile::new(model_id, dimension),
-        );
+        self.profiles
+            .insert(model_id.clone(), GradientProfile::new(model_id, dimension));
         Ok(())
     }
 
@@ -136,7 +142,9 @@ impl CrossModelAligner {
         model_id: &str,
         gradients: &[f32],
     ) -> Result<(), AlignerError> {
-        let profile = self.profiles.get_mut(model_id)
+        let profile = self
+            .profiles
+            .get_mut(model_id)
             .ok_or(AlignerError::ModelNotFound(model_id.to_string()))?;
 
         if gradients.len() != profile.dimension {
@@ -152,10 +160,7 @@ impl CrossModelAligner {
     }
 
     /// Align gradients across all registered models.
-    pub fn align(
-        &mut self,
-        gradients: &[f32],
-    ) -> Result<AlignmentResult, AlignerError> {
+    pub fn align(&mut self, gradients: &[f32]) -> Result<AlignmentResult, AlignerError> {
         if self.profiles.is_empty() {
             return Err(AlignerError::NoModelsRegistered);
         }
@@ -218,7 +223,10 @@ impl CrossModelAligner {
         if self.profiles.is_empty() {
             return 0.0;
         }
-        self.profiles.values().map(|p| p.alignment_score).sum::<f64>()
+        self.profiles
+            .values()
+            .map(|p| p.alignment_score)
+            .sum::<f64>()
             / self.profiles.len() as f64
     }
 
@@ -251,11 +259,19 @@ impl Default for CrossModelAligner {
 // ─── Utilities ───
 
 fn compute_norm(gradients: &[f32]) -> f64 {
-    gradients.iter().map(|g| (*g as f64) * (*g as f64)).sum::<f64>().sqrt()
+    gradients
+        .iter()
+        .map(|g| (*g as f64) * (*g as f64))
+        .sum::<f64>()
+        .sqrt()
 }
 
 fn cosine_similarity(a: &[f32], b: &[f32]) -> f64 {
-    let dot: f64 = a.iter().zip(b.iter()).map(|(x, y)| *x as f64 * *y as f64).sum();
+    let dot: f64 = a
+        .iter()
+        .zip(b.iter())
+        .map(|(x, y)| *x as f64 * *y as f64)
+        .sum();
     let norm_a = compute_norm(a);
     let norm_b = compute_norm(b);
     if norm_a == 0.0 || norm_b == 0.0 {
@@ -299,7 +315,10 @@ mod tests {
         let _ = aligner.register_model("m1".to_string(), 64);
         let grads = vec![0.1; 128];
         let result = aligner.update_profile("m1", &grads);
-        assert!(matches!(result, Err(AlignerError::DimensionMismatch { .. })));
+        assert!(matches!(
+            result,
+            Err(AlignerError::DimensionMismatch { .. })
+        ));
     }
 
     #[test]

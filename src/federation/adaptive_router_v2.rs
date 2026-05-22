@@ -233,11 +233,7 @@ mod internal {
                 entry.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
                 entry.truncate(self.config.max_routes_per_dest);
             }
-            self.stats.total_routes = self
-                .routes
-                .values()
-                .map(|v| v.len())
-                .sum();
+            self.stats.total_routes = self.routes.values().map(|v| v.len()).sum();
         }
 
         /// Register node health status.
@@ -279,10 +275,7 @@ mod internal {
             }
 
             // Weighted round-robin
-            let counter = self
-                .rr_counters
-                .entry(destination.to_string())
-                .or_insert(0);
+            let counter = self.rr_counters.entry(destination.to_string()).or_insert(0);
             *counter = (*counter + 1) % viable.len();
             Ok(viable[*counter].clone())
         }

@@ -32,7 +32,10 @@ pub enum ScalerError {
     ModelNotSupported { model_type: String },
 
     #[error("Dimension mismatch: source {source_dim} vs target {target_dim}")]
-    DimensionMismatch { source_dim: usize, target_dim: usize },
+    DimensionMismatch {
+        source_dim: usize,
+        target_dim: usize,
+    },
 
     #[error("Node not registered: {node_id}")]
     NodeNotRegistered { node_id: String },
@@ -75,7 +78,13 @@ pub struct ModelInfo {
 
 #[cfg(feature = "v1.1-sprint4")]
 impl ModelInfo {
-    pub fn new(model_type: String, embedding_dim: usize, num_layers: usize, num_params: u64, version: String) -> Self {
+    pub fn new(
+        model_type: String,
+        embedding_dim: usize,
+        num_layers: usize,
+        num_params: u64,
+        version: String,
+    ) -> Self {
         Self {
             model_type,
             embedding_dim,
@@ -112,7 +121,13 @@ pub struct NodeGradientUpdate {
 
 #[cfg(feature = "v1.1-sprint4")]
 impl NodeGradientUpdate {
-    pub fn new(node_id: String, model_info: ModelInfo, gradients: Vec<f32>, round: u64, crypto_trust: f32) -> Self {
+    pub fn new(
+        node_id: String,
+        model_info: ModelInfo,
+        gradients: Vec<f32>,
+        round: u64,
+        crypto_trust: f32,
+    ) -> Self {
         let checksum = Self::compute_checksum(&gradients);
         Self {
             node_id,
@@ -509,9 +524,9 @@ impl CrossModelScaler {
         self.stats.avg_divergence =
             (self.stats.avg_divergence * (self.stats.syncs_completed - 1) as f32 + max_divergence)
                 / self.stats.syncs_completed as f32;
-        self.stats.avg_sync_ms =
-            (self.stats.avg_sync_ms * (self.stats.syncs_completed - 1) as f64 + elapsed_ms)
-                / self.stats.syncs_completed as f64;
+        self.stats.avg_sync_ms = (self.stats.avg_sync_ms * (self.stats.syncs_completed - 1) as f64
+            + elapsed_ms)
+            / self.stats.syncs_completed as f64;
 
         info!(
             "Sync completed: round={}, nodes={}, divergence={:.4}, time={:.1}ms",
@@ -659,21 +674,39 @@ mod tests {
     #[test]
     fn test_register_node() {
         let mut scaler = CrossModelScaler::new();
-        let model = ModelInfo::new("qwen-scope".to_string(), 1024, 24, 7_000_000_000, "1.0".to_string());
+        let model = ModelInfo::new(
+            "qwen-scope".to_string(),
+            1024,
+            24,
+            7_000_000_000,
+            "1.0".to_string(),
+        );
         scaler.register_node("node-1".to_string(), model);
         assert_eq!(scaler.node_count(), 1);
     }
 
     #[test]
     fn test_model_info_creation() {
-        let model = ModelInfo::new("llama".to_string(), 4096, 32, 13_000_000_000, "2.0".to_string());
+        let model = ModelInfo::new(
+            "llama".to_string(),
+            4096,
+            32,
+            13_000_000_000,
+            "2.0".to_string(),
+        );
         assert_eq!(model.embedding_dim, 4096);
         assert_eq!(model.num_layers, 32);
     }
 
     #[test]
     fn test_gradient_update_checksum() {
-        let model = ModelInfo::new("qwen-scope".to_string(), 1024, 24, 7_000_000_000, "1.0".to_string());
+        let model = ModelInfo::new(
+            "qwen-scope".to_string(),
+            1024,
+            24,
+            7_000_000_000,
+            "1.0".to_string(),
+        );
         let update = NodeGradientUpdate::new(
             "node-1".to_string(),
             model,
@@ -686,14 +719,14 @@ mod tests {
 
     #[test]
     fn test_gradient_update_norm() {
-        let model = ModelInfo::new("qwen-scope".to_string(), 1024, 24, 7_000_000_000, "1.0".to_string());
-        let update = NodeGradientUpdate::new(
-            "node-1".to_string(),
-            model,
-            vec![3.0, 4.0],
-            1,
-            0.9,
+        let model = ModelInfo::new(
+            "qwen-scope".to_string(),
+            1024,
+            24,
+            7_000_000_000,
+            "1.0".to_string(),
         );
+        let update = NodeGradientUpdate::new("node-1".to_string(), model, vec![3.0, 4.0], 1, 0.9);
         assert!((update.l2_norm() - 5.0).abs() < 0.01);
     }
 

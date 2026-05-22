@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tracing::{debug, info, warn};
 
-use super::proof::{StakingProof, ProofVerifier, VerificationResult};
+use super::proof::{ProofVerifier, StakingProof, VerificationResult};
 
 /// Recursos comprometidos por un nodo
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -18,7 +18,8 @@ pub struct ResourceCommitment {
     /// CPU cores comprometidos
     pub cpu_cores: u32,
     /// RAM comprometida (GB)
-    pub ram_gb: f64,    /// GPU disponible (true/false)
+    pub ram_gb: f64,
+    /// GPU disponible (true/false)
     pub has_gpu: bool,
     /// Ancho de banda comprometido (Mbps)
     pub bandwidth_mbps: f64,
@@ -162,19 +163,18 @@ impl ResourceRegistry {
 
         info!(
             "Nodo registrado: {} (CPU={}, RAM={}GB, GPU={})",
-            commitment.node_id,
-            commitment.cpu_cores,
-            commitment.ram_gb,
-            commitment.has_gpu
+            commitment.node_id, commitment.cpu_cores, commitment.ram_gb, commitment.has_gpu
         );
 
-        self.commitments.insert(commitment.node_id.clone(), commitment);
+        self.commitments
+            .insert(commitment.node_id.clone(), commitment);
         Ok(())
     }
 
     /// Procesar heartbeat de nodo
     pub fn process_heartbeat(&mut self, node_id: &str) -> Result<()> {
-        let commitment = self.commitments
+        let commitment = self
+            .commitments
             .get_mut(node_id)
             .with_context(|| format!("Node {} not registered", node_id))?;
 
@@ -216,7 +216,8 @@ impl ResourceRegistry {
 
     /// Sancionar nodo (slashing)
     pub fn slash_node(&mut self, node_id: &str, reason: &str) -> Result<()> {
-        let commitment = self.commitments
+        let commitment = self
+            .commitments
             .get_mut(node_id)
             .with_context(|| format!("Node {} not registered", node_id))?;
 
@@ -229,7 +230,8 @@ impl ResourceRegistry {
 
     /// Desregistrar nodo
     pub fn unregister(&mut self, node_id: &str) -> Result<()> {
-        let commitment = self.commitments
+        let commitment = self
+            .commitments
             .get_mut(node_id)
             .with_context(|| format!("Node {} not registered", node_id))?;
 
@@ -245,7 +247,8 @@ impl ResourceRegistry {
 
     /// Obtener nodos activos ordenados por score
     pub fn get_active_nodes(&self) -> Vec<&ResourceCommitment> {
-        let mut active: Vec<_> = self.commitments
+        let mut active: Vec<_> = self
+            .commitments
             .values()
             .filter(|c| c.status == NodeStatus::Active)
             .collect();
@@ -264,9 +267,18 @@ impl ResourceRegistry {
         let all: Vec<_> = self.commitments.values().collect();
         RegistryStats {
             total_nodes: all.len(),
-            active_nodes: all.iter().filter(|c| c.status == NodeStatus::Active).count(),
-            inactive_nodes: all.iter().filter(|c| c.status == NodeStatus::Inactive).count(),
-            slashed_nodes: all.iter().filter(|c| c.status == NodeStatus::Slashed).count(),
+            active_nodes: all
+                .iter()
+                .filter(|c| c.status == NodeStatus::Active)
+                .count(),
+            inactive_nodes: all
+                .iter()
+                .filter(|c| c.status == NodeStatus::Inactive)
+                .count(),
+            slashed_nodes: all
+                .iter()
+                .filter(|c| c.status == NodeStatus::Slashed)
+                .count(),
             total_cpu_cores: all.iter().map(|c| c.cpu_cores).sum(),
             total_ram_gb: all.iter().map(|c| c.ram_gb).sum(),
             gpu_nodes: all.iter().filter(|c| c.has_gpu).count(),
@@ -302,14 +314,7 @@ mod tests {
     #[test]
     fn test_node_registration() {
         let mut registry = ResourceRegistry::with_defaults();
-        let commitment = ResourceCommitment::new(
-            "node1".to_string(),
-            8,
-            32.0,
-            true,
-            1000.0,
-            500.0,
-        );
+        let commitment = ResourceCommitment::new("node1".to_string(), 8, 32.0, true, 1000.0, 500.0);
 
         registry.register(commitment).unwrap();
         assert!(registry.get_commitment("node1").is_some());
@@ -349,7 +354,8 @@ mod tests {
     #[test]
     fn test_slash_node() {
         let mut registry = ResourceRegistry::with_defaults();
-        let commitment = ResourceCommitment::new("bad_node".to_string(), 4, 16.0, false, 100.0, 100.0);
+        let commitment =
+            ResourceCommitment::new("bad_node".to_string(), 4, 16.0, false, 100.0, 100.0);
         registry.register(commitment).unwrap();
 
         registry.slash_node("bad_node", "Invalid proofs").unwrap();
@@ -363,14 +369,8 @@ mod tests {
         let mut registry = ResourceRegistry::with_defaults();
 
         for i in 0..5 {
-            let commitment = ResourceCommitment::new(
-                format!("node{}", i),
-                4,
-                16.0,
-                i % 2 == 0,
-                100.0,
-                100.0,
-            );
+            let commitment =
+                ResourceCommitment::new(format!("node{}", i), 4, 16.0, i % 2 == 0, 100.0, 100.0);
             registry.register(commitment).unwrap();
         }
 
@@ -386,8 +386,26 @@ mod tests {
         let mut registry = ResourceRegistry::with_defaults();
 
         // Node with GPU should rank higher
-        registry.register(ResourceCommitment::new("gpu".to_string(), 4, 16.0, true, 100.0, 100.0)).unwrap();
-        registry.register(ResourceCommitment::new("cpu".to_string(), 4, 16.0, false, 100.0, 100.0)).unwrap();
+        registry
+            .register(ResourceCommitment::new(
+                "gpu".to_string(),
+                4,
+                16.0,
+                true,
+                100.0,
+                100.0,
+            ))
+            .unwrap();
+        registry
+            .register(ResourceCommitment::new(
+                "cpu".to_string(),
+                4,
+                16.0,
+                false,
+                100.0,
+                100.0,
+            ))
+            .unwrap();
 
         let active = registry.get_active_nodes();
         assert_eq!(active[0].node_id, "gpu");

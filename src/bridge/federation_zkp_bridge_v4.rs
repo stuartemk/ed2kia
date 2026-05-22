@@ -59,7 +59,11 @@ mod internal {
                     write!(f, "Routing failed: {}", msg)
                 }
                 FederationZKPBridgeV4Error::MerkleMismatch { expected, actual } => {
-                    write!(f, "Merkle mismatch: expected={}, actual={}", expected, actual)
+                    write!(
+                        f,
+                        "Merkle mismatch: expected={}, actual={}",
+                        expected, actual
+                    )
                 }
             }
         }
@@ -388,9 +392,10 @@ mod internal {
             session_id: &str,
             vote_yes: bool,
         ) -> Result<bool, FederationZKPBridgeV4Error> {
-            let session = self.sessions.get_mut(session_id).ok_or_else(|| {
-                FederationZKPBridgeV4Error::ProofNotFound(session_id.to_string())
-            })?;
+            let session = self
+                .sessions
+                .get_mut(session_id)
+                .ok_or_else(|| FederationZKPBridgeV4Error::ProofNotFound(session_id.to_string()))?;
 
             if vote_yes {
                 session.votes_yes += 1;
@@ -404,7 +409,8 @@ mod internal {
             if reached {
                 session.verified = true;
                 self.metrics.record_verification(true);
-            } else if session.votes_yes + session.votes_no >= session.target_federations.len() as u64
+            } else if session.votes_yes + session.votes_no
+                >= session.target_federations.len() as u64
             {
                 self.metrics.record_verification(false);
             }
@@ -425,9 +431,10 @@ mod internal {
 
             let mut roots = Vec::new();
             for id in session_ids {
-                let session = self.sessions.get(id).ok_or_else(|| {
-                    FederationZKPBridgeV4Error::ProofNotFound(id.to_string())
-                })?;
+                let session = self
+                    .sessions
+                    .get(id)
+                    .ok_or_else(|| FederationZKPBridgeV4Error::ProofNotFound(id.to_string()))?;
                 roots.push(session.merkle_root.clone());
             }
 
@@ -439,7 +446,8 @@ mod internal {
         /// Cleanup expired sessions.
         pub fn cleanup_expired(&mut self, current_ms: u64) -> usize {
             let before = self.sessions.len();
-            self.sessions.retain(|_, s| !s.is_expired(current_ms, self.config.proof_ttl_ms));
+            self.sessions
+                .retain(|_, s| !s.is_expired(current_ms, self.config.proof_ttl_ms));
             before - self.sessions.len()
         }
 
@@ -495,7 +503,10 @@ mod internal {
             return roots[0].clone();
         }
         let _combined = roots.join("|");
-        format!("{:x}", std::collections::hash_map::DefaultHasher::default().finish())
+        format!(
+            "{:x}",
+            std::collections::hash_map::DefaultHasher::default().finish()
+        )
     }
 
     // ---------------------------------------------------------------------------

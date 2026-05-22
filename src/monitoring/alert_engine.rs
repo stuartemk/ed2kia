@@ -403,7 +403,9 @@ impl AlertEngine {
         let timestamp_ms = current_timestamp_ms();
 
         // Collect matching rules as owned clones to avoid borrow conflicts
-        let matching_rules: Vec<AlertRule> = self.rules.iter()
+        let matching_rules: Vec<AlertRule> = self
+            .rules
+            .iter()
             .filter(|r| r.metric_name == metric_name)
             .cloned()
             .collect();
@@ -419,7 +421,11 @@ impl AlertEngine {
 
             // Check if alert already exists for this rule
             let mut need_notify = false;
-            if let Some(existing) = self.active_alerts.iter_mut().find(|a| a.rule_id == rule.id && a.is_active()) {
+            if let Some(existing) = self
+                .active_alerts
+                .iter_mut()
+                .find(|a| a.rule_id == rule.id && a.is_active())
+            {
                 // Check cooldown
                 let elapsed_seconds = (timestamp_ms - existing.last_fired_at_ms) / 1000;
                 if elapsed_seconds < rule.cooldown_seconds {
@@ -429,7 +435,9 @@ impl AlertEngine {
 
                 // Check duration for transition to firing
                 let duration_seconds = (timestamp_ms - existing.created_at_ms) / 1000;
-                if existing.state == AlertState::Pending && duration_seconds >= rule.duration_seconds {
+                if existing.state == AlertState::Pending
+                    && duration_seconds >= rule.duration_seconds
+                {
                     existing.fire(value, timestamp_ms);
                     self.stats.total_alerts_fired += 1;
                     need_notify = true;
@@ -440,10 +448,25 @@ impl AlertEngine {
             }
             // Send notifications after mutable borrow is released
             if need_notify {
-                if let Some(existing) = self.active_alerts.iter().find(|a| a.rule_id == rule.id && a.is_active()).cloned() {
-                    self.send_notifications_from_data(existing.id, existing.severity, existing.message, &rule.channels, timestamp_ms);
+                if let Some(existing) = self
+                    .active_alerts
+                    .iter()
+                    .find(|a| a.rule_id == rule.id && a.is_active())
+                    .cloned()
+                {
+                    self.send_notifications_from_data(
+                        existing.id,
+                        existing.severity,
+                        existing.message,
+                        &rule.channels,
+                        timestamp_ms,
+                    );
                 }
-            } else if !self.active_alerts.iter().any(|a| a.rule_id == rule.id && a.is_active()) {
+            } else if !self
+                .active_alerts
+                .iter()
+                .any(|a| a.rule_id == rule.id && a.is_active())
+            {
                 // Create new alert instance
                 if self.active_alerts.len() >= self.config.max_active_alerts {
                     // Suppress oldest resolved alerts to make room
@@ -488,7 +511,8 @@ impl AlertEngine {
             if alert.is_active() {
                 alert.resolve(timestamp_ms);
                 self.stats.total_alerts_resolved += 1;
-                self.stats.active_alerts = self.active_alerts.iter().filter(|a| a.is_active()).count();
+                self.stats.active_alerts =
+                    self.active_alerts.iter().filter(|a| a.is_active()).count();
                 return true;
             }
         }
@@ -497,7 +521,10 @@ impl AlertEngine {
 
     // Get active alerts
     pub fn get_active_alerts(&self) -> Vec<&AlertInstance> {
-        self.active_alerts.iter().filter(|a| a.is_active()).collect()
+        self.active_alerts
+            .iter()
+            .filter(|a| a.is_active())
+            .collect()
     }
 
     // Get alerts by severity
@@ -510,11 +537,7 @@ impl AlertEngine {
 
     // Get recent notifications
     pub fn get_recent_notifications(&self, limit: usize) -> Vec<&AlertNotification> {
-        self.notifications
-            .iter()
-            .rev()
-            .take(limit)
-            .collect()
+        self.notifications.iter().rev().take(limit).collect()
     }
 
     // Get stats snapshot
@@ -548,7 +571,11 @@ impl AlertEngine {
 
     // Internal: Resolve alerts for a rule when condition is no longer violated
     fn resolve_for_rule(&mut self, rule: &AlertRule, timestamp_ms: u64) {
-        for alert in self.active_alerts.iter_mut().filter(|a| a.rule_id == rule.id && a.is_active()) {
+        for alert in self
+            .active_alerts
+            .iter_mut()
+            .filter(|a| a.rule_id == rule.id && a.is_active())
+        {
             alert.resolve(timestamp_ms);
             self.stats.total_alerts_resolved += 1;
         }
@@ -556,7 +583,12 @@ impl AlertEngine {
     }
 
     // Internal: Send notifications for an alert
-    fn send_notifications(&mut self, alert: &AlertInstance, channels: &[NotificationChannel], timestamp_ms: u64) {
+    fn send_notifications(
+        &mut self,
+        alert: &AlertInstance,
+        channels: &[NotificationChannel],
+        timestamp_ms: u64,
+    ) {
         for channel in channels {
             let notification_id = self.generate_notification_id();
             let notification = AlertNotification::new(
@@ -599,11 +631,13 @@ impl AlertEngine {
     // Internal: Prune oldest resolved alerts to make room
     fn prune_old_alerts(&mut self) {
         // Remove oldest resolved alerts first
-        self.active_alerts.retain(|a| a.is_active() || a.state == AlertState::Pending);
+        self.active_alerts
+            .retain(|a| a.is_active() || a.state == AlertState::Pending);
 
         // If still too many, suppress oldest firing alerts
         if self.active_alerts.len() >= self.config.max_active_alerts {
-            self.active_alerts.sort_by(|a, b| a.created_at_ms.cmp(&b.created_at_ms));
+            self.active_alerts
+                .sort_by(|a, b| a.created_at_ms.cmp(&b.created_at_ms));
             let to_suppress = self.active_alerts.len() - self.config.max_active_alerts / 2;
             for i in 0..to_suppress {
                 if let Some(alert) = self.active_alerts.get_mut(i) {
@@ -823,7 +857,11 @@ mod tests {
     fn test_get_recent_notifications() {
         let mut engine = AlertEngine::default();
         let mut rule = make_rule("r1", "cpu_usage", 80.0, AlertOperator::GreaterThan);
-        rule.channels = vec![NotificationChannel::Log, NotificationChannel::Webhook, NotificationChannel::Email];
+        rule.channels = vec![
+            NotificationChannel::Log,
+            NotificationChannel::Webhook,
+            NotificationChannel::Email,
+        ];
         engine.add_rule(rule);
         engine.evaluate("cpu_usage", 90.0);
         let recent = engine.get_recent_notifications(2);

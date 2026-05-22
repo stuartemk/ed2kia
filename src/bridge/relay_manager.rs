@@ -54,11 +54,7 @@ mod internal {
                 RelayError::MessageNotFound(id) => write!(f, "Message {} not found", id),
                 RelayError::TimeoutExceeded => write!(f, "Relay timeout exceeded"),
                 RelayError::ReputationTooLow { current, min } => {
-                    write!(
-                        f,
-                        "Node reputation {:.4} below minimum {:.4}",
-                        current, min
-                    )
+                    write!(f, "Node reputation {:.4} below minimum {:.4}", current, min)
                 }
             }
         }

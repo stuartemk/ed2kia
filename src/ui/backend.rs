@@ -204,9 +204,7 @@ pub async fn get_alignment_stream() -> Sse<impl futures::Stream<Item = Result<Ev
 }
 
 /// GET /api/v3/federation/status — Federation status snapshot.
-pub async fn get_federation_status(
-    State(state): State<UiBackendState>,
-) -> impl IntoResponse {
+pub async fn get_federation_status(State(state): State<UiBackendState>) -> impl IntoResponse {
     let cache_key = "federation_status".to_string();
 
     {
@@ -236,9 +234,7 @@ pub async fn get_federation_status(
 }
 
 /// GET /api/v3/metrics/realtime — Real-time metrics JSON.
-pub async fn get_metrics_realtime(
-    State(state): State<UiBackendState>,
-) -> impl IntoResponse {
+pub async fn get_metrics_realtime(State(state): State<UiBackendState>) -> impl IntoResponse {
     let cache_key = "metrics_realtime".to_string();
 
     {
@@ -294,9 +290,18 @@ pub async fn get_health() -> impl IntoResponse {
 pub fn create_router(state: UiBackendState) -> axum::Router {
     axum::Router::new()
         .route("/api/v3/health", axum::routing::get(get_health))
-        .route("/api/v3/alignment/stream", axum::routing::get(get_alignment_stream))
-        .route("/api/v3/federation/status", axum::routing::get(get_federation_status))
-        .route("/api/v3/metrics/realtime", axum::routing::get(get_metrics_realtime))
+        .route(
+            "/api/v3/alignment/stream",
+            axum::routing::get(get_alignment_stream),
+        )
+        .route(
+            "/api/v3/federation/status",
+            axum::routing::get(get_federation_status),
+        )
+        .route(
+            "/api/v3/metrics/realtime",
+            axum::routing::get(get_metrics_realtime),
+        )
         .route("/api/v3/events", axum::routing::get(ws_events))
         .with_state(state)
 }

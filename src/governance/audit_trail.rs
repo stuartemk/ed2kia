@@ -182,7 +182,13 @@ impl AuditEntry {
         previous_hash: String,
         timestamp_ms: u64,
     ) -> Self {
-        let hash = compute_hash(&entry_id, sequence, &description, &previous_hash, timestamp_ms);
+        let hash = compute_hash(
+            &entry_id,
+            sequence,
+            &description,
+            &previous_hash,
+            timestamp_ms,
+        );
         Self {
             entry_id,
             sequence,
@@ -200,7 +206,13 @@ impl AuditEntry {
 
     /// Verify entry hash integrity.
     pub fn verify_hash(&self) -> bool {
-        let expected = compute_hash(&self.entry_id, self.sequence, &self.description, &self.previous_hash, self.timestamp_ms);
+        let expected = compute_hash(
+            &self.entry_id,
+            self.sequence,
+            &self.description,
+            &self.previous_hash,
+            self.timestamp_ms,
+        );
         self.hash == expected
     }
 }
@@ -394,9 +406,10 @@ impl AuditTrail {
         self.stats.verifications += 1;
 
         for id in &self.sequence_order {
-            let entry = self.entries.get(id).ok_or_else(|| {
-                AuditTrailError::EntryNotFound(id.clone())
-            })?;
+            let entry = self
+                .entries
+                .get(id)
+                .ok_or_else(|| AuditTrailError::EntryNotFound(id.clone()))?;
 
             if !entry.verify_hash() {
                 self.stats.tampering_detected += 1;
@@ -496,7 +509,10 @@ impl AuditTrail {
 
         // Count by severity
         for entry in &entries {
-            *report.by_severity.entry(entry.severity.clone()).or_insert(0) += 1;
+            *report
+                .by_severity
+                .entry(entry.severity.clone())
+                .or_insert(0) += 1;
         }
 
         // Count by action
@@ -586,8 +602,17 @@ impl Default for AuditTrail {
 
 // ─── Hash Utilities ──────────────────────────────────────────────────────────
 
-fn compute_hash(entry_id: &str, sequence: u64, description: &str, previous_hash: &str, timestamp_ms: u64) -> String {
-    let data = format!("{}:{}:{}:{}:{}", entry_id, sequence, description, previous_hash, timestamp_ms);
+fn compute_hash(
+    entry_id: &str,
+    sequence: u64,
+    description: &str,
+    previous_hash: &str,
+    timestamp_ms: u64,
+) -> String {
+    let data = format!(
+        "{}:{}:{}:{}:{}",
+        entry_id, sequence, description, previous_hash, timestamp_ms
+    );
     compute_single_hash(&data)
 }
 
@@ -653,7 +678,15 @@ mod tests {
     #[test]
     fn test_hash_verification() {
         let mut trail = AuditTrail::default_config();
-        trail.record(AuditAction::Proposal, Severity::Info, "a".to_string(), "t".to_string(), "desc".to_string()).unwrap();
+        trail
+            .record(
+                AuditAction::Proposal,
+                Severity::Info,
+                "a".to_string(),
+                "t".to_string(),
+                "desc".to_string(),
+            )
+            .unwrap();
         let entry = trail.get_entry("audit-1").unwrap();
         assert!(entry.verify_hash());
     }
@@ -662,7 +695,15 @@ mod tests {
     fn test_chain_verification() {
         let mut trail = AuditTrail::default_config();
         for i in 1..=5 {
-            trail.record(AuditAction::Proposal, Severity::Info, "a".to_string(), "t".to_string(), format!("desc {}", i)).unwrap();
+            trail
+                .record(
+                    AuditAction::Proposal,
+                    Severity::Info,
+                    "a".to_string(),
+                    "t".to_string(),
+                    format!("desc {}", i),
+                )
+                .unwrap();
         }
         assert!(trail.verify_chain().is_ok());
     }
@@ -670,8 +711,24 @@ mod tests {
     #[test]
     fn test_chain_linking() {
         let mut trail = AuditTrail::default_config();
-        trail.record(AuditAction::Proposal, Severity::Info, "a".to_string(), "t".to_string(), "d1".to_string()).unwrap();
-        trail.record(AuditAction::Vote, Severity::Info, "a".to_string(), "t".to_string(), "d2".to_string()).unwrap();
+        trail
+            .record(
+                AuditAction::Proposal,
+                Severity::Info,
+                "a".to_string(),
+                "t".to_string(),
+                "d1".to_string(),
+            )
+            .unwrap();
+        trail
+            .record(
+                AuditAction::Vote,
+                Severity::Info,
+                "a".to_string(),
+                "t".to_string(),
+                "d2".to_string(),
+            )
+            .unwrap();
         let e1 = trail.get_entry("audit-1").unwrap();
         let e2 = trail.get_entry("audit-2").unwrap();
         assert_eq!(e1.previous_hash, "genesis");
@@ -681,8 +738,24 @@ mod tests {
     #[test]
     fn test_get_by_action() {
         let mut trail = AuditTrail::default_config();
-        trail.record(AuditAction::Proposal, Severity::Info, "a".to_string(), "t".to_string(), "d".to_string()).unwrap();
-        trail.record(AuditAction::Vote, Severity::Info, "a".to_string(), "t".to_string(), "d".to_string()).unwrap();
+        trail
+            .record(
+                AuditAction::Proposal,
+                Severity::Info,
+                "a".to_string(),
+                "t".to_string(),
+                "d".to_string(),
+            )
+            .unwrap();
+        trail
+            .record(
+                AuditAction::Vote,
+                Severity::Info,
+                "a".to_string(),
+                "t".to_string(),
+                "d".to_string(),
+            )
+            .unwrap();
         let proposals = trail.get_by_action(&AuditAction::Proposal);
         assert_eq!(proposals.len(), 1);
     }
@@ -690,8 +763,24 @@ mod tests {
     #[test]
     fn test_get_by_severity() {
         let mut trail = AuditTrail::default_config();
-        trail.record(AuditAction::Proposal, Severity::Info, "a".to_string(), "t".to_string(), "d".to_string()).unwrap();
-        trail.record(AuditAction::Security, Severity::Critical, "a".to_string(), "t".to_string(), "d".to_string()).unwrap();
+        trail
+            .record(
+                AuditAction::Proposal,
+                Severity::Info,
+                "a".to_string(),
+                "t".to_string(),
+                "d".to_string(),
+            )
+            .unwrap();
+        trail
+            .record(
+                AuditAction::Security,
+                Severity::Critical,
+                "a".to_string(),
+                "t".to_string(),
+                "d".to_string(),
+            )
+            .unwrap();
         let critical = trail.get_by_severity(&Severity::Critical);
         assert_eq!(critical.len(), 1);
     }
@@ -699,8 +788,24 @@ mod tests {
     #[test]
     fn test_get_by_actor() {
         let mut trail = AuditTrail::default_config();
-        trail.record(AuditAction::Proposal, Severity::Info, "actor-1".to_string(), "t".to_string(), "d".to_string()).unwrap();
-        trail.record(AuditAction::Vote, Severity::Info, "actor-2".to_string(), "t".to_string(), "d".to_string()).unwrap();
+        trail
+            .record(
+                AuditAction::Proposal,
+                Severity::Info,
+                "actor-1".to_string(),
+                "t".to_string(),
+                "d".to_string(),
+            )
+            .unwrap();
+        trail
+            .record(
+                AuditAction::Vote,
+                Severity::Info,
+                "actor-2".to_string(),
+                "t".to_string(),
+                "d".to_string(),
+            )
+            .unwrap();
         let entries = trail.get_by_actor("actor-1");
         assert_eq!(entries.len(), 1);
     }
@@ -708,8 +813,24 @@ mod tests {
     #[test]
     fn test_get_by_target() {
         let mut trail = AuditTrail::default_config();
-        trail.record(AuditAction::Proposal, Severity::Info, "a".to_string(), "target-1".to_string(), "d".to_string()).unwrap();
-        trail.record(AuditAction::Vote, Severity::Info, "a".to_string(), "target-2".to_string(), "d".to_string()).unwrap();
+        trail
+            .record(
+                AuditAction::Proposal,
+                Severity::Info,
+                "a".to_string(),
+                "target-1".to_string(),
+                "d".to_string(),
+            )
+            .unwrap();
+        trail
+            .record(
+                AuditAction::Vote,
+                Severity::Info,
+                "a".to_string(),
+                "target-2".to_string(),
+                "d".to_string(),
+            )
+            .unwrap();
         let entries = trail.get_by_target("target-1");
         assert_eq!(entries.len(), 1);
     }
@@ -717,7 +838,15 @@ mod tests {
     #[test]
     fn test_get_in_range() {
         let mut trail = AuditTrail::default_config();
-        trail.record(AuditAction::Proposal, Severity::Info, "a".to_string(), "t".to_string(), "d".to_string()).unwrap();
+        trail
+            .record(
+                AuditAction::Proposal,
+                Severity::Info,
+                "a".to_string(),
+                "t".to_string(),
+                "d".to_string(),
+            )
+            .unwrap();
         let start = trail.current_time_ms - 1000;
         let end = trail.current_time_ms + 1000;
         let entries = trail.get_in_range(start, end);
@@ -728,7 +857,15 @@ mod tests {
     fn test_get_recent() {
         let mut trail = AuditTrail::default_config();
         for i in 0..5 {
-            trail.record(AuditAction::Proposal, Severity::Info, "a".to_string(), "t".to_string(), format!("d{}", i)).unwrap();
+            trail
+                .record(
+                    AuditAction::Proposal,
+                    Severity::Info,
+                    "a".to_string(),
+                    "t".to_string(),
+                    format!("d{}", i),
+                )
+                .unwrap();
         }
         let recent = trail.get_recent(3);
         assert_eq!(recent.len(), 3);
@@ -737,7 +874,15 @@ mod tests {
     #[test]
     fn test_get_by_sequence() {
         let mut trail = AuditTrail::default_config();
-        trail.record(AuditAction::Proposal, Severity::Info, "a".to_string(), "t".to_string(), "d".to_string()).unwrap();
+        trail
+            .record(
+                AuditAction::Proposal,
+                Severity::Info,
+                "a".to_string(),
+                "t".to_string(),
+                "d".to_string(),
+            )
+            .unwrap();
         let entry = trail.get_by_sequence(1);
         assert!(entry.is_some());
     }
@@ -745,8 +890,24 @@ mod tests {
     #[test]
     fn test_compliance_report() {
         let mut trail = AuditTrail::default_config();
-        trail.record(AuditAction::Proposal, Severity::Info, "a".to_string(), "t".to_string(), "d".to_string()).unwrap();
-        trail.record(AuditAction::Vote, Severity::Critical, "a".to_string(), "t".to_string(), "d".to_string()).unwrap();
+        trail
+            .record(
+                AuditAction::Proposal,
+                Severity::Info,
+                "a".to_string(),
+                "t".to_string(),
+                "d".to_string(),
+            )
+            .unwrap();
+        trail
+            .record(
+                AuditAction::Vote,
+                Severity::Critical,
+                "a".to_string(),
+                "t".to_string(),
+                "d".to_string(),
+            )
+            .unwrap();
         let report = trail.generate_compliance_report(0, trail.current_time_ms + 1000);
         assert_eq!(report.total_entries, 2);
         assert!(report.chain_intact);
@@ -757,9 +918,33 @@ mod tests {
         let mut config = AuditTrailConfig::default();
         config.max_entries = 2;
         let mut trail = AuditTrail::new(config);
-        trail.record(AuditAction::Proposal, Severity::Info, "a".to_string(), "t".to_string(), "d".to_string()).unwrap();
-        trail.record(AuditAction::Proposal, Severity::Info, "a".to_string(), "t".to_string(), "d".to_string()).unwrap();
-        assert!(trail.record(AuditAction::Proposal, Severity::Info, "a".to_string(), "t".to_string(), "d".to_string()).is_err());
+        trail
+            .record(
+                AuditAction::Proposal,
+                Severity::Info,
+                "a".to_string(),
+                "t".to_string(),
+                "d".to_string(),
+            )
+            .unwrap();
+        trail
+            .record(
+                AuditAction::Proposal,
+                Severity::Info,
+                "a".to_string(),
+                "t".to_string(),
+                "d".to_string(),
+            )
+            .unwrap();
+        assert!(trail
+            .record(
+                AuditAction::Proposal,
+                Severity::Info,
+                "a".to_string(),
+                "t".to_string(),
+                "d".to_string()
+            )
+            .is_err());
     }
 
     #[test]
@@ -767,15 +952,47 @@ mod tests {
         let mut config = AuditTrailConfig::default();
         config.max_payload_bytes = 5;
         let mut trail = AuditTrail::new(config);
-        assert!(trail.record(AuditAction::Proposal, Severity::Info, "a".to_string(), "t".to_string(), "very long description".to_string()).is_err());
+        assert!(trail
+            .record(
+                AuditAction::Proposal,
+                Severity::Info,
+                "a".to_string(),
+                "t".to_string(),
+                "very long description".to_string()
+            )
+            .is_err());
     }
 
     #[test]
     fn test_stats_tracking() {
         let mut trail = AuditTrail::default_config();
-        trail.record(AuditAction::Proposal, Severity::Info, "a".to_string(), "t".to_string(), "d".to_string()).unwrap();
-        trail.record(AuditAction::Security, Severity::Critical, "a".to_string(), "t".to_string(), "d".to_string()).unwrap();
-        trail.record(AuditAction::System, Severity::Emergency, "a".to_string(), "t".to_string(), "d".to_string()).unwrap();
+        trail
+            .record(
+                AuditAction::Proposal,
+                Severity::Info,
+                "a".to_string(),
+                "t".to_string(),
+                "d".to_string(),
+            )
+            .unwrap();
+        trail
+            .record(
+                AuditAction::Security,
+                Severity::Critical,
+                "a".to_string(),
+                "t".to_string(),
+                "d".to_string(),
+            )
+            .unwrap();
+        trail
+            .record(
+                AuditAction::System,
+                Severity::Emergency,
+                "a".to_string(),
+                "t".to_string(),
+                "d".to_string(),
+            )
+            .unwrap();
         let stats = trail.stats();
         assert_eq!(stats.info_count, 1);
         assert_eq!(stats.critical_count, 1);
@@ -785,7 +1002,15 @@ mod tests {
     #[test]
     fn test_reset_stats() {
         let mut trail = AuditTrail::default_config();
-        trail.record(AuditAction::Proposal, Severity::Info, "a".to_string(), "t".to_string(), "d".to_string()).unwrap();
+        trail
+            .record(
+                AuditAction::Proposal,
+                Severity::Info,
+                "a".to_string(),
+                "t".to_string(),
+                "d".to_string(),
+            )
+            .unwrap();
         trail.reset_stats();
         assert_eq!(trail.stats().verifications, 0);
     }
@@ -793,7 +1018,10 @@ mod tests {
     #[test]
     fn test_action_display() {
         assert_eq!(AuditAction::Proposal.to_string(), "Proposal");
-        assert_eq!(AuditAction::Custom("test".to_string()).to_string(), "Custom(test)");
+        assert_eq!(
+            AuditAction::Custom("test".to_string()).to_string(),
+            "Custom(test)"
+        );
     }
 
     #[test]
@@ -847,9 +1075,33 @@ mod tests {
     #[test]
     fn test_compliance_top_actors() {
         let mut trail = AuditTrail::default_config();
-        trail.record(AuditAction::Proposal, Severity::Info, "actor-1".to_string(), "t".to_string(), "d".to_string()).unwrap();
-        trail.record(AuditAction::Vote, Severity::Info, "actor-1".to_string(), "t".to_string(), "d".to_string()).unwrap();
-        trail.record(AuditAction::Vote, Severity::Info, "actor-2".to_string(), "t".to_string(), "d".to_string()).unwrap();
+        trail
+            .record(
+                AuditAction::Proposal,
+                Severity::Info,
+                "actor-1".to_string(),
+                "t".to_string(),
+                "d".to_string(),
+            )
+            .unwrap();
+        trail
+            .record(
+                AuditAction::Vote,
+                Severity::Info,
+                "actor-1".to_string(),
+                "t".to_string(),
+                "d".to_string(),
+            )
+            .unwrap();
+        trail
+            .record(
+                AuditAction::Vote,
+                Severity::Info,
+                "actor-2".to_string(),
+                "t".to_string(),
+                "d".to_string(),
+            )
+            .unwrap();
         let report = trail.generate_compliance_report(0, trail.current_time_ms + 1000);
         assert_eq!(report.top_actors[0].0, "actor-1");
         assert_eq!(report.top_actors[0].1, 2);
@@ -858,8 +1110,24 @@ mod tests {
     #[test]
     fn test_compliance_by_severity() {
         let mut trail = AuditTrail::default_config();
-        trail.record(AuditAction::Proposal, Severity::Info, "a".to_string(), "t".to_string(), "d".to_string()).unwrap();
-        trail.record(AuditAction::Security, Severity::Critical, "a".to_string(), "t".to_string(), "d".to_string()).unwrap();
+        trail
+            .record(
+                AuditAction::Proposal,
+                Severity::Info,
+                "a".to_string(),
+                "t".to_string(),
+                "d".to_string(),
+            )
+            .unwrap();
+        trail
+            .record(
+                AuditAction::Security,
+                Severity::Critical,
+                "a".to_string(),
+                "t".to_string(),
+                "d".to_string(),
+            )
+            .unwrap();
         let report = trail.generate_compliance_report(0, trail.current_time_ms + 1000);
         assert_eq!(*report.by_severity.get(&Severity::Info).unwrap(), 1);
         assert_eq!(*report.by_severity.get(&Severity::Critical).unwrap(), 1);

@@ -193,11 +193,12 @@ impl HfSyncManager {
             );
 
             if self.config.verify_checksums {
-                let actual_hash = self.compute_file_hash(&cache_path)
-                    .map_err(|e| SyncError::Filesystem {
-                        path: cache_path.to_string_lossy().to_string(),
-                        msg: e.to_string(),
-                    })?;
+                let actual_hash =
+                    self.compute_file_hash(&cache_path)
+                        .map_err(|e| SyncError::Filesystem {
+                            path: cache_path.to_string_lossy().to_string(),
+                            msg: e.to_string(),
+                        })?;
 
                 if let Some(expected) = expected_sha256 {
                     if actual_hash != expected {
@@ -219,11 +220,10 @@ impl HfSyncManager {
         info!(url = %url, "Starting model download");
 
         // Crear directorio cache si no existe
-        std::fs::create_dir_all(&self.config.cache_dir)
-            .map_err(|e| SyncError::Filesystem {
-                path: self.config.cache_dir.to_string_lossy().to_string(),
-                msg: e.to_string(),
-            })?;
+        std::fs::create_dir_all(&self.config.cache_dir).map_err(|e| SyncError::Filesystem {
+            path: self.config.cache_dir.to_string_lossy().to_string(),
+            msg: e.to_string(),
+        })?;
 
         // Descargar
         let response = self
@@ -238,17 +238,13 @@ impl HfSyncManager {
             })?;
 
         // Leer contenido
-        let bytes = response
-            .bytes()
-            .await
-            .map_err(SyncError::Network)?; // CLEANUP: redundant closure
+        let bytes = response.bytes().await.map_err(SyncError::Network)?; // CLEANUP: redundant closure
 
         // Escribir a disco
-        std::fs::write(&cache_path, &bytes)
-            .map_err(|e| SyncError::Filesystem {
-                path: cache_path.to_string_lossy().to_string(),
-                msg: e.to_string(),
-            })?;
+        std::fs::write(&cache_path, &bytes).map_err(|e| SyncError::Filesystem {
+            path: cache_path.to_string_lossy().to_string(),
+            msg: e.to_string(),
+        })?;
 
         info!(
             cache_path = %cache_path.display(),
@@ -258,11 +254,12 @@ impl HfSyncManager {
 
         // Verificar checksum
         if self.config.verify_checksums {
-            let actual_hash = self.compute_file_hash(&cache_path)
-                .map_err(|e| SyncError::Filesystem {
-                    path: cache_path.to_string_lossy().to_string(),
-                    msg: e.to_string(),
-                })?;
+            let actual_hash =
+                self.compute_file_hash(&cache_path)
+                    .map_err(|e| SyncError::Filesystem {
+                        path: cache_path.to_string_lossy().to_string(),
+                        msg: e.to_string(),
+                    })?;
 
             if let Some(expected) = expected_sha256 {
                 if actual_hash != expected {
@@ -320,7 +317,9 @@ impl HfSyncManager {
     fn get_cache_path(&self, repo: &str, filename: &str) -> PathBuf {
         // Normalizar repo: "owner/repo" -> "owner_repo"
         let safe_repo = repo.replace('/', "_");
-        self.config.cache_dir.join(format!("{}_{}", safe_repo, filename))
+        self.config
+            .cache_dir
+            .join(format!("{}_{}", safe_repo, filename))
     }
 
     /// Listar modelos en cache
@@ -331,8 +330,8 @@ impl HfSyncManager {
             return Ok(models);
         }
 
-        for entry in std::fs::read_dir(&self.config.cache_dir)
-            .map_err(|e| SyncError::Filesystem {
+        for entry in
+            std::fs::read_dir(&self.config.cache_dir).map_err(|e| SyncError::Filesystem {
                 path: self.config.cache_dir.to_string_lossy().to_string(),
                 msg: e.to_string(),
             })?
@@ -354,11 +353,10 @@ impl HfSyncManager {
         }
 
         let count = self.list_cached_models()?.len();
-        std::fs::remove_dir_all(&self.config.cache_dir)
-            .map_err(|e| SyncError::Filesystem {
-                path: self.config.cache_dir.to_string_lossy().to_string(),
-                msg: e.to_string(),
-            })?;
+        std::fs::remove_dir_all(&self.config.cache_dir).map_err(|e| SyncError::Filesystem {
+            path: self.config.cache_dir.to_string_lossy().to_string(),
+            msg: e.to_string(),
+        })?;
 
         info!(count, "Cache cleared");
         Ok(count)
@@ -382,20 +380,18 @@ impl HfSyncManager {
             msg: e.to_string(),
         })?;
 
-        let mut file = std::fs::File::create(output_path)
-            .map_err(|e| SyncError::Filesystem {
-                path: output_path.to_string_lossy().to_string(),
-                msg: e.to_string(),
-            })?;
+        let mut file = std::fs::File::create(output_path).map_err(|e| SyncError::Filesystem {
+            path: output_path.to_string_lossy().to_string(),
+            msg: e.to_string(),
+        })?;
 
         for entry in entries {
             let line = serde_json::to_string(entry)
                 .map_err(|e| SyncError::Serialization(e.to_string()))?;
-            writeln!(file, "{}", line)
-                .map_err(|e| SyncError::Filesystem {
-                    path: output_path.to_string_lossy().to_string(),
-                    msg: e.to_string(),
-                })?;
+            writeln!(file, "{}", line).map_err(|e| SyncError::Filesystem {
+                path: output_path.to_string_lossy().to_string(),
+                msg: e.to_string(),
+            })?;
         }
 
         info!(

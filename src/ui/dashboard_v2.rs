@@ -394,12 +394,16 @@ impl DashboardState {
     // ─── Metric Recording ─────────────────────────────────────────────────────
 
     #[cfg(feature = "v1.1-sprint5")]
-    pub fn record_metric(&mut self, metric: DashboardMetric, value: f64, _source_node: Option<String>) {
+    pub fn record_metric(
+        &mut self,
+        metric: DashboardMetric,
+        value: f64,
+        _source_node: Option<String>,
+    ) {
         let now = current_timestamp_ms();
-        let window = self
-            .windows
-            .entry(metric.clone())
-            .or_insert_with(|| SlidingWindow::new(self.config.window_ms, self.config.max_metric_history));
+        let window = self.windows.entry(metric.clone()).or_insert_with(|| {
+            SlidingWindow::new(self.config.window_ms, self.config.max_metric_history)
+        });
         window.add(now, value);
 
         // Check alert thresholds
@@ -411,43 +415,70 @@ impl DashboardState {
         let (severity, threshold) = match metric {
             DashboardMetric::SystemCpuUsage => {
                 if value > self.config.alert_threshold_cpu as f64 {
-                    (AlertSeverity::Critical, self.config.alert_threshold_cpu as f64)
+                    (
+                        AlertSeverity::Critical,
+                        self.config.alert_threshold_cpu as f64,
+                    )
                 } else if value > (self.config.alert_threshold_cpu * 0.9) as f64 {
-                    (AlertSeverity::Warning, self.config.alert_threshold_cpu as f64)
+                    (
+                        AlertSeverity::Warning,
+                        self.config.alert_threshold_cpu as f64,
+                    )
                 } else {
                     return;
                 }
             }
             DashboardMetric::SystemMemoryUsage => {
                 if value > self.config.alert_threshold_memory as f64 {
-                    (AlertSeverity::Critical, self.config.alert_threshold_memory as f64)
+                    (
+                        AlertSeverity::Critical,
+                        self.config.alert_threshold_memory as f64,
+                    )
                 } else if value > (self.config.alert_threshold_memory * 0.9) as f64 {
-                    (AlertSeverity::Warning, self.config.alert_threshold_memory as f64)
+                    (
+                        AlertSeverity::Warning,
+                        self.config.alert_threshold_memory as f64,
+                    )
                 } else {
                     return;
                 }
             }
             DashboardMetric::SystemNetworkLatency => {
                 if value > self.config.alert_threshold_latency_ms as f64 {
-                    (AlertSeverity::Warning, self.config.alert_threshold_latency_ms as f64)
+                    (
+                        AlertSeverity::Warning,
+                        self.config.alert_threshold_latency_ms as f64,
+                    )
                 } else {
                     return;
                 }
             }
             DashboardMetric::AlignmentConfidence => {
                 if value < self.config.alert_threshold_alignment as f64 {
-                    (AlertSeverity::Critical, self.config.alert_threshold_alignment as f64)
+                    (
+                        AlertSeverity::Critical,
+                        self.config.alert_threshold_alignment as f64,
+                    )
                 } else if value < (self.config.alert_threshold_alignment * 1.2) as f64 {
-                    (AlertSeverity::Warning, self.config.alert_threshold_alignment as f64)
+                    (
+                        AlertSeverity::Warning,
+                        self.config.alert_threshold_alignment as f64,
+                    )
                 } else {
                     return;
                 }
             }
             DashboardMetric::FederationTrustScore => {
                 if value < self.config.alert_threshold_trust as f64 {
-                    (AlertSeverity::Critical, self.config.alert_threshold_trust as f64)
+                    (
+                        AlertSeverity::Critical,
+                        self.config.alert_threshold_trust as f64,
+                    )
                 } else if value < (self.config.alert_threshold_trust * 1.2) as f64 {
-                    (AlertSeverity::Warning, self.config.alert_threshold_trust as f64)
+                    (
+                        AlertSeverity::Warning,
+                        self.config.alert_threshold_trust as f64,
+                    )
                 } else {
                     return;
                 }
@@ -516,12 +547,29 @@ impl DashboardState {
         }
 
         let nodes: Vec<NodeDashboardInfo> = self.nodes.values().cloned().collect();
-        let alerts: Vec<DashboardAlert> = self.alerts.iter().filter(|a| !a.acknowledged).cloned().collect();
+        let alerts: Vec<DashboardAlert> = self
+            .alerts
+            .iter()
+            .filter(|a| !a.acknowledged)
+            .cloned()
+            .collect();
 
-        let healthy = nodes.iter().filter(|n| n.status == NodeStatus::Healthy).count();
-        let degraded = nodes.iter().filter(|n| n.status == NodeStatus::Degraded).count();
-        let unhealthy = nodes.iter().filter(|n| n.status == NodeStatus::Unhealthy).count();
-        let offline = nodes.iter().filter(|n| n.status == NodeStatus::Offline).count();
+        let healthy = nodes
+            .iter()
+            .filter(|n| n.status == NodeStatus::Healthy)
+            .count();
+        let degraded = nodes
+            .iter()
+            .filter(|n| n.status == NodeStatus::Degraded)
+            .count();
+        let unhealthy = nodes
+            .iter()
+            .filter(|n| n.status == NodeStatus::Unhealthy)
+            .count();
+        let offline = nodes
+            .iter()
+            .filter(|n| n.status == NodeStatus::Offline)
+            .count();
 
         let avg_alignment = if nodes.is_empty() {
             0.0
@@ -609,7 +657,10 @@ impl Default for DashboardState {
 
 #[cfg(feature = "v1.1-sprint5")]
 fn current_timestamp_ms() -> u64 {
-    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis() as u64
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as u64
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
@@ -641,7 +692,10 @@ mod tests {
     fn test_record_metric() {
         let mut dashboard = DashboardState::new();
         dashboard.record_metric(DashboardMetric::SystemCpuUsage, 0.5, None);
-        assert_eq!(dashboard.get_metric_latest(&DashboardMetric::SystemCpuUsage), Some(0.5));
+        assert_eq!(
+            dashboard.get_metric_latest(&DashboardMetric::SystemCpuUsage),
+            Some(0.5)
+        );
     }
 
     #[cfg(feature = "v1.1-sprint5")]
@@ -682,7 +736,9 @@ mod tests {
         dashboard.record_metric(DashboardMetric::SystemCpuUsage, 0.5, None);
         let snapshot = dashboard.get_snapshot().unwrap();
         assert_eq!(snapshot.summary.total_nodes, 1);
-        assert!(snapshot.metrics.contains_key(&DashboardMetric::SystemCpuUsage));
+        assert!(snapshot
+            .metrics
+            .contains_key(&DashboardMetric::SystemCpuUsage));
     }
 
     #[cfg(feature = "v1.1-sprint5")]
@@ -775,7 +831,10 @@ mod tests {
     #[cfg(feature = "v1.1-sprint5")]
     #[test]
     fn test_metric_display() {
-        assert_eq!(DashboardMetric::SystemCpuUsage.to_string(), "system_cpu_usage");
+        assert_eq!(
+            DashboardMetric::SystemCpuUsage.to_string(),
+            "system_cpu_usage"
+        );
         assert_eq!(
             DashboardMetric::AlignmentConfidence.to_string(),
             "alignment_confidence"
@@ -832,7 +891,10 @@ mod tests {
         let mut dashboard = DashboardState::new();
         dashboard.record_metric(DashboardMetric::AlignmentConfidence, 0.3, None);
         let snapshot = dashboard.get_snapshot().unwrap();
-        assert!(snapshot.alerts.iter().any(|a| a.metric == DashboardMetric::AlignmentConfidence));
+        assert!(snapshot
+            .alerts
+            .iter()
+            .any(|a| a.metric == DashboardMetric::AlignmentConfidence));
     }
 
     #[cfg(feature = "v1.1-sprint5")]
@@ -841,7 +903,10 @@ mod tests {
         let mut dashboard = DashboardState::new();
         dashboard.record_metric(DashboardMetric::FederationTrustScore, 0.2, None);
         let snapshot = dashboard.get_snapshot().unwrap();
-        assert!(snapshot.alerts.iter().any(|a| a.metric == DashboardMetric::FederationTrustScore));
+        assert!(snapshot
+            .alerts
+            .iter()
+            .any(|a| a.metric == DashboardMetric::FederationTrustScore));
     }
 
     #[cfg(feature = "v1.1-sprint5")]

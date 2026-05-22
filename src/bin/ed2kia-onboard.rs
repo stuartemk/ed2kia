@@ -131,7 +131,10 @@ mod onboard {
             println!("  Merit tier: Novice");
             println!();
             println!("  Next steps:");
-            println!("    1. Start your node: ed2kia start --config {}", self.config_path.display());
+            println!(
+                "    1. Start your node: ed2kia start --config {}",
+                self.config_path.display()
+            );
             println!("    2. Monitor: open web/public-dashboard.html");
             println!("    3. Join the community: docs/COMMUNITY_ONBOARDING.md");
             println!();
@@ -209,7 +212,14 @@ mod onboard {
 
             let name: String = Input::new()
                 .with_prompt("Node name")
-                .default(format!("node-{}", uuid::Uuid::new_v4().as_hyphenated().chars().take(8).collect::<String>()))
+                .default(format!(
+                    "node-{}",
+                    uuid::Uuid::new_v4()
+                        .as_hyphenated()
+                        .chars()
+                        .take(8)
+                        .collect::<String>()
+                ))
                 .interact_text()
                 .map_err(|e| format!("Input failed: {}", e))?;
 
@@ -429,8 +439,11 @@ file = \"logs/ed2kia.log\"
             });
 
             let merit_path = self.config_path.with_extension("merit.json");
-            fs::write(&merit_path, serde_json::to_string_pretty(&merit_data).unwrap())
-                .map_err(|e| format!("Failed to write merit registration: {}", e))?;
+            fs::write(
+                &merit_path,
+                serde_json::to_string_pretty(&merit_data).unwrap(),
+            )
+            .map_err(|e| format!("Failed to write merit registration: {}", e))?;
 
             println!("  ✓ Merit registration saved: {}", merit_path.display());
 
@@ -481,7 +494,14 @@ file = \"logs/ed2kia.log\"
 
     pub fn generate_config(output: &str, role: &str) -> Result<(), String> {
         let wizard = Wizard {
-            node_name: format!("node-{}", uuid::Uuid::new_v4().as_hyphenated().chars().take(8).collect::<String>()),
+            node_name: format!(
+                "node-{}",
+                uuid::Uuid::new_v4()
+                    .as_hyphenated()
+                    .chars()
+                    .take(8)
+                    .collect::<String>()
+            ),
             role: role.to_string(),
             port: 3000,
             config_path: PathBuf::from(output),
@@ -500,7 +520,7 @@ file = \"logs/ed2kia.log\"
 #[cfg(feature = "v2.1-community-onboarding")]
 #[tokio::main]
 async fn main() {
-    use onboard::{OnboardCli, Commands};
+    use onboard::{Commands, OnboardCli};
 
     let cli = OnboardCli::parse();
 
@@ -519,6 +539,8 @@ async fn main() {
 #[cfg(not(feature = "v2.1-community-onboarding"))]
 fn main() {
     eprintln!("This binary requires the 'v2.1-community-onboarding' feature.");
-    eprintln!("Rebuild with: cargo build --bin ed2kia-onboard --features v2.1-community-onboarding");
+    eprintln!(
+        "Rebuild with: cargo build --bin ed2kia-onboard --features v2.1-community-onboarding"
+    );
     std::process::exit(1);
 }

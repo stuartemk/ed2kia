@@ -368,10 +368,7 @@ mod tests {
     #[test]
     fn test_consensus_all_perverse() {
         let mut runner = ConsensusRunner::default();
-        let payloads = vec![
-            make_perverse_payload("bad1"),
-            make_perverse_payload("bad2"),
-        ];
+        let payloads = vec![make_perverse_payload("bad1"), make_perverse_payload("bad2")];
         let metrics = runner.run_consensus(&payloads).unwrap();
         assert_eq!(metrics.approved_count, 0);
         assert_eq!(metrics.rejected_count, 2);

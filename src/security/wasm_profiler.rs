@@ -215,10 +215,7 @@ impl Profiler {
             profile.instructions_executed = fuel;
             // Approximate CPU cycles (rough estimate: 1 fuel ~ 10 cycles)
             profile.cpu_cycles = fuel.saturating_mul(10);
-            debug!(
-                "Session {}: fuel recorded={}",
-                session_id.0, fuel
-            );
+            debug!("Session {}: fuel recorded={}", session_id.0, fuel);
         }
     }
 
@@ -231,10 +228,7 @@ impl Profiler {
     pub fn record_time(&mut self, session_id: &SessionId, elapsed_ms: f64) {
         if let Some(profile) = self.sessions.get_mut(&session_id.0) {
             profile.wall_time_ms = elapsed_ms;
-            debug!(
-                "Session {}: wall_time={}ms",
-                session_id.0, elapsed_ms
-            );
+            debug!("Session {}: wall_time={}ms", session_id.0, elapsed_ms);
         }
     }
 
@@ -247,7 +241,8 @@ impl Profiler {
     /// * `session_id` - The identifier of the profiling session to finalize.
     pub fn finalize_session(&mut self, session_id: &SessionId) -> Option<ExecutionProfile> {
         let profile = self.sessions.remove(&session_id.0)?;
-        self.completed_profiles.insert(session_id.0.clone(), profile.clone());
+        self.completed_profiles
+            .insert(session_id.0.clone(), profile.clone());
         debug!("Session {} finalized", session_id.0);
         Some(profile)
     }
@@ -258,9 +253,7 @@ impl Profiler {
     ///
     /// * `session_id` - The identifier of the profiling session.
     pub fn get_profile(&self, session_id: &SessionId) -> Option<ExecutionProfile> {
-        self.completed_profiles
-            .get(&session_id.0)
-            .cloned()
+        self.completed_profiles.get(&session_id.0).cloned()
     }
 
     /// Check resource thresholds and return an alert if limits are exceeded.
@@ -313,10 +306,7 @@ impl Profiler {
             };
         }
 
-        let total_memory: f64 = completed
-            .values()
-            .map(|p| p.memory_bytes_peak as f64)
-            .sum();
+        let total_memory: f64 = completed.values().map(|p| p.memory_bytes_peak as f64).sum();
         let total_fuel: f64 = completed.values().map(|p| p.fuel_consumed as f64).sum();
         let total_time: f64 = completed.values().map(|p| p.wall_time_ms).sum();
 
@@ -360,13 +350,17 @@ mod tests {
         profiler.record_fuel(&session, 500);
         profiler.record_time(&session, 10.5);
 
-        let profile = profiler.finalize_session(&session).expect("session should exist");
+        let profile = profiler
+            .finalize_session(&session)
+            .expect("session should exist");
         assert_eq!(profile.memory_bytes_peak, 1024);
         assert_eq!(profile.memory_bytes_current, 1024);
         assert_eq!(profile.fuel_consumed, 500);
         assert_eq!(profile.wall_time_ms, 10.5);
 
-        let retrieved = profiler.get_profile(&session).expect("profile should exist");
+        let retrieved = profiler
+            .get_profile(&session)
+            .expect("profile should exist");
         assert_eq!(retrieved.memory_bytes_peak, 1024);
     }
 
@@ -379,7 +373,9 @@ mod tests {
         profiler.record_memory(&session, 2048);
         profiler.record_memory(&session, 1024);
 
-        let profile = profiler.finalize_session(&session).expect("session should exist");
+        let profile = profiler
+            .finalize_session(&session)
+            .expect("session should exist");
         assert_eq!(profile.memory_bytes_peak, 2048);
         assert_eq!(profile.memory_bytes_current, 1024);
     }
@@ -457,7 +453,10 @@ mod tests {
             fuel_consumed: 100_000,
         };
 
-        assert_eq!(profiler.check_thresholds(&profile), ProfilingAlert::FuelExhausted);
+        assert_eq!(
+            profiler.check_thresholds(&profile),
+            ProfilingAlert::FuelExhausted
+        );
     }
 
     #[test]

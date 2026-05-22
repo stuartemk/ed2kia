@@ -162,7 +162,7 @@ impl Default for ConsensusConfig {
             quorum_threshold: 0.30,
             approval_threshold: 0.51,
             timelock_duration: Duration::from_secs(72 * 3600), // 72h
-            max_proof_age_secs: 3600, // 1h
+            max_proof_age_secs: 3600,                          // 1h
             min_validators: 4,
             voting_duration: Duration::from_secs(24 * 3600), // 24h
         }
@@ -388,20 +388,19 @@ impl CrossChainConsensus {
 
     /// Remueve un validador
     pub fn unregister_validator(&mut self, validator_id: &str) -> Result<(), ConsensusError> {
-        let validator = self
-            .validators
-            .get(validator_id)
-            .ok_or(ConsensusError::ValidatorNotRegistered(validator_id.to_string()))?;
+        let validator =
+            self.validators
+                .get(validator_id)
+                .ok_or(ConsensusError::ValidatorNotRegistered(
+                    validator_id.to_string(),
+                ))?;
         self.total_weight = (self.total_weight - validator.get_weight()).max(0.0);
         self.validators.remove(validator_id);
         Ok(())
     }
 
     /// Crea una nueva propuesta de consenso
-    pub fn create_proposal(
-        &mut self,
-        proposal: ConsensusProposal,
-    ) -> Result<(), ConsensusError> {
+    pub fn create_proposal(&mut self, proposal: ConsensusProposal) -> Result<(), ConsensusError> {
         // Validar que las cadenas estén registradas
         if !self.chain_exists(&proposal.source_chain) {
             return Err(ConsensusError::ChainNotRegistered(
@@ -427,9 +426,10 @@ impl CrossChainConsensus {
 
     /// Inicia votación para una propuesta
     pub fn start_voting(&mut self, proposal_id: &str) -> Result<(), ConsensusError> {
-        let proposal = self.proposals.get_mut(proposal_id).ok_or(
-            ConsensusError::ProposalNotFound(proposal_id.to_string()),
-        )?;
+        let proposal = self
+            .proposals
+            .get_mut(proposal_id)
+            .ok_or(ConsensusError::ProposalNotFound(proposal_id.to_string()))?;
 
         if proposal.state != ConsensusState::Pending {
             return Err(ConsensusError::ProposalExpired);
@@ -448,10 +448,12 @@ impl CrossChainConsensus {
         rationale: Option<String>,
     ) -> Result<ValidatorVote, ConsensusError> {
         // Verificar validador
-        let validator = self
-            .validators
-            .get(validator_id)
-            .ok_or(ConsensusError::ValidatorNotRegistered(validator_id.to_string()))?;
+        let validator =
+            self.validators
+                .get(validator_id)
+                .ok_or(ConsensusError::ValidatorNotRegistered(
+                    validator_id.to_string(),
+                ))?;
 
         if !validator.active {
             return Err(ConsensusError::ValidatorNotRegistered(
@@ -460,9 +462,10 @@ impl CrossChainConsensus {
         }
 
         // Verificar propuesta
-        let proposal = self.proposals.get_mut(proposal_id).ok_or(
-            ConsensusError::ProposalNotFound(proposal_id.to_string()),
-        )?;
+        let proposal = self
+            .proposals
+            .get_mut(proposal_id)
+            .ok_or(ConsensusError::ProposalNotFound(proposal_id.to_string()))?;
 
         if proposal.state != ConsensusState::Voting
             && proposal.state != ConsensusState::QuorumReached
@@ -489,7 +492,9 @@ impl CrossChainConsensus {
             rationale,
         };
 
-        proposal.votes.insert(validator_id.to_string(), vote.clone());
+        proposal
+            .votes
+            .insert(validator_id.to_string(), vote.clone());
 
         // Verificar quórum y aprobación
         self.check_quorum_and_approval(proposal_id)?;
@@ -499,15 +504,12 @@ impl CrossChainConsensus {
 
     /// Verifica quórum y umbral de aprobación
     fn check_quorum_and_approval(&mut self, proposal_id: &str) -> Result<(), ConsensusError> {
-        let proposal = self.proposals.get(proposal_id).ok_or(
-            ConsensusError::ProposalNotFound(proposal_id.to_string()),
-        )?;
+        let proposal = self
+            .proposals
+            .get(proposal_id)
+            .ok_or(ConsensusError::ProposalNotFound(proposal_id.to_string()))?;
 
-        let active_validators: usize = self
-            .validators
-            .values()
-            .filter(|v| v.active)
-            .count();
+        let active_validators: usize = self.validators.values().filter(|v| v.active).count();
 
         let voter_count = proposal.voter_count();
 
@@ -544,9 +546,10 @@ impl CrossChainConsensus {
 
     /// Verifica si el time-lock ha expirado para propuestas críticas
     pub fn check_timelock(&mut self, proposal_id: &str) -> Result<ConsensusState, ConsensusError> {
-        let proposal = self.proposals.get(proposal_id).ok_or(
-            ConsensusError::ProposalNotFound(proposal_id.to_string()),
-        )?;
+        let proposal = self
+            .proposals
+            .get(proposal_id)
+            .ok_or(ConsensusError::ProposalNotFound(proposal_id.to_string()))?;
 
         match proposal.state {
             ConsensusState::QuorumReached => {
@@ -561,7 +564,8 @@ impl CrossChainConsensus {
                         proposal.state = ConsensusState::Ready;
                         Ok(ConsensusState::Ready)
                     } else {
-                        let remaining = self.config.timelock_duration - Duration::from_secs(elapsed);
+                        let remaining =
+                            self.config.timelock_duration - Duration::from_secs(elapsed);
                         Err(ConsensusError::TimeLockActive { remaining })
                     }
                 } else {
@@ -575,10 +579,14 @@ impl CrossChainConsensus {
     }
 
     /// Ejecuta una propuesta lista
-    pub fn execute_proposal(&mut self, proposal_id: &str) -> Result<ConsensusResult, ConsensusError> {
-        let proposal = self.proposals.get(proposal_id).ok_or(
-            ConsensusError::ProposalNotFound(proposal_id.to_string()),
-        )?;
+    pub fn execute_proposal(
+        &mut self,
+        proposal_id: &str,
+    ) -> Result<ConsensusResult, ConsensusError> {
+        let proposal = self
+            .proposals
+            .get(proposal_id)
+            .ok_or(ConsensusError::ProposalNotFound(proposal_id.to_string()))?;
 
         if proposal.state != ConsensusState::Ready {
             return Err(ConsensusError::ProposalExpired);
@@ -603,15 +611,12 @@ impl CrossChainConsensus {
 
     /// Obtiene el resultado actual de una propuesta
     pub fn get_result(&self, proposal_id: &str) -> Result<ConsensusResult, ConsensusError> {
-        let proposal = self.proposals.get(proposal_id).ok_or(
-            ConsensusError::ProposalNotFound(proposal_id.to_string()),
-        )?;
+        let proposal = self
+            .proposals
+            .get(proposal_id)
+            .ok_or(ConsensusError::ProposalNotFound(proposal_id.to_string()))?;
 
-        let active_validators: usize = self
-            .validators
-            .values()
-            .filter(|v| v.active)
-            .count();
+        let active_validators: usize = self.validators.values().filter(|v| v.active).count();
 
         let quorum_ratio = if active_validators > 0 {
             proposal.voter_count() as f64 / active_validators as f64
@@ -671,10 +676,12 @@ impl CrossChainConsensus {
 
     /// Actualiza heartbeat de un validador
     pub fn validator_heartbeat(&mut self, validator_id: &str) -> Result<(), ConsensusError> {
-        let validator = self
-            .validators
-            .get_mut(validator_id)
-            .ok_or(ConsensusError::ValidatorNotRegistered(validator_id.to_string()))?;
+        let validator =
+            self.validators
+                .get_mut(validator_id)
+                .ok_or(ConsensusError::ValidatorNotRegistered(
+                    validator_id.to_string(),
+                ))?;
         validator.heartbeat();
         Ok(())
     }
@@ -859,7 +866,8 @@ mod tests {
     fn test_quorum_reached() {
         let mut consensus = CrossChainConsensus::new();
         for i in 0..10 {
-            consensus.register_validator(make_validator(&format!("v{}", i), &["chain-a", "chain-b"]));
+            consensus
+                .register_validator(make_validator(&format!("v{}", i), &["chain-a", "chain-b"]));
         }
 
         let proposal = ConsensusProposal::new(
@@ -876,7 +884,12 @@ mod tests {
         // 4 validators vote (40% > 30% quorum)
         for i in 0..4 {
             consensus
-                .submit_vote(&format!("prop-1"), &format!("v{}", i), VoteDirection::For, None)
+                .submit_vote(
+                    &format!("prop-1"),
+                    &format!("v{}", i),
+                    VoteDirection::For,
+                    None,
+                )
                 .unwrap();
         }
 
@@ -971,10 +984,7 @@ mod tests {
 
     #[test]
     fn test_proof_type_display() {
-        assert_eq!(
-            format!("{}", ProofType::MerkleInclusion),
-            "MerkleInclusion"
-        );
+        assert_eq!(format!("{}", ProofType::MerkleInclusion), "MerkleInclusion");
     }
 
     #[test]

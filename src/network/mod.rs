@@ -17,12 +17,12 @@ pub mod region_sync;
 
 #[cfg(feature = "v2.1-cross-mesh")]
 pub use cross_mesh::{
-    CrossMeshRouter, CrossMeshError, RelayPayload, PeerLink, RouteEntry, RouterStats,
+    CrossMeshError, CrossMeshRouter, PeerLink, RelayPayload, RouteEntry, RouterStats,
     MAX_PAYLOAD_SIZE,
 };
 
 #[cfg(feature = "v2.1-region-sync")]
 pub use region_sync::{
-    RegionState, SyncResult, SyncError, SyncConfig, DeltaEntry,
-    generate_deltas, apply_deltas, resolve_conflicts, sync_region_state,
+    apply_deltas, generate_deltas, resolve_conflicts, sync_region_state, DeltaEntry, RegionState,
+    SyncConfig, SyncError, SyncResult,
 };

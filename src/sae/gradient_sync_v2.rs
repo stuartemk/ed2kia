@@ -200,10 +200,13 @@ impl GradientSyncV2 {
     }
 
     pub fn sync_round(&mut self, round: u64) -> Result<SyncResult, GradientSyncV2Error> {
-        let entries = self.pending.remove(&round).ok_or(GradientSyncV2Error::QuorumNotReached {
-            current: 0,
-            required: 1,
-        })?;
+        let entries = self
+            .pending
+            .remove(&round)
+            .ok_or(GradientSyncV2Error::QuorumNotReached {
+                current: 0,
+                required: 1,
+            })?;
 
         let total_nodes = self.nodes.len().max(1);
         let quorum_required = (total_nodes as f64 * self.config.quorum_fraction).ceil() as usize;
@@ -221,8 +224,8 @@ impl GradientSyncV2 {
         let dim = entries.first().map(|e| e.dimension()).unwrap_or(0);
         let aggregated = self.aggregate_gradients(&entries, dim);
 
-        let avg_latency: f64 = entries.iter().map(|e| e.latency_ms as f64).sum::<f64>()
-            / entries.len().max(1) as f64;
+        let avg_latency: f64 =
+            entries.iter().map(|e| e.latency_ms as f64).sum::<f64>() / entries.len().max(1) as f64;
 
         let total_orig: usize = entries.iter().map(|e| e.gradients.len()).sum();
         let total_comp: usize = entries.iter().map(|e| e.compressed.len()).sum();
@@ -236,10 +239,10 @@ impl GradientSyncV2 {
         if entries.len() >= quorum_required {
             self.stats.quorum_successes += 1;
         }
-        self.stats.avg_compression_ratio =
-            (self.stats.avg_compression_ratio * (self.stats.total_syncs - 1) as f32
-                + compression_achieved)
-                / self.stats.total_syncs as f32;
+        self.stats.avg_compression_ratio = (self.stats.avg_compression_ratio
+            * (self.stats.total_syncs - 1) as f32
+            + compression_achieved)
+            / self.stats.total_syncs as f32;
         self.stats.avg_sync_latency_ms =
             (self.stats.avg_sync_latency_ms * (self.stats.total_syncs - 1) as f64 + avg_latency)
                 / self.stats.total_syncs as f64;
@@ -302,7 +305,11 @@ fn compress(gradients: &[f32], ratio: f32) -> Vec<f32> {
     }
     // Top-k magnitude
     let mut indexed: Vec<_> = gradients.iter().enumerate().collect();
-    indexed.sort_by(|a, b| b.1.abs().partial_cmp(&a.1.abs()).unwrap_or(std::cmp::Ordering::Equal));
+    indexed.sort_by(|a, b| {
+        b.1.abs()
+            .partial_cmp(&a.1.abs())
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
     indexed.truncate(target);
     indexed.sort_by_key(|(i, _)| *i);
     indexed.into_iter().map(|(_, v)| *v).collect()
@@ -406,7 +413,10 @@ mod tests {
 
     #[test]
     fn test_error_display() {
-        let e = GradientSyncV2Error::QuorumNotReached { current: 1, required: 3 };
+        let e = GradientSyncV2Error::QuorumNotReached {
+            current: 1,
+            required: 3,
+        };
         assert!(!e.to_string().is_empty());
     }
 }

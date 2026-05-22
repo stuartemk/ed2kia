@@ -259,7 +259,9 @@ impl ReputationProof {
             self.proof_id, self.node_id, self.timestamp_ms, self.compute_hash, self.credits
         )
         .chars()
-        .fold(0u64, |acc, c| acc.wrapping_add(c as u64).wrapping_mul(31u64))
+        .fold(0u64, |acc, c| {
+            acc.wrapping_add(c as u64).wrapping_mul(31u64)
+        })
         .to_string()
     }
 }
@@ -436,13 +438,10 @@ mod tests {
         ReputationProof::new(
             "proof_001".to_string(),
             "node_001".to_string(),
-            "a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2"
-                .to_string(),
-            "b2c3b2c3b2c3b2c3b2c3b2c3b2c3b2c3b2c3b2c3b2c3b2c3b2c3b2c3b2c3b2c3"
-                .to_string(),
+            "a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2a1b2".to_string(),
+            "b2c3b2c3b2c3b2c3b2c3b2c3b2c3b2c3b2c3b2c3b2c3b2c3b2c3b2c3b2c3b2c3".to_string(),
             1_700_000_000_000,
-            "c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4"
-                .to_string(),
+            "c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4c3d4".to_string(),
             ReputationTier::Validator,
             750,
             "sae_forward".to_string(),
@@ -468,35 +467,14 @@ mod tests {
 
     #[test]
     fn test_tier_from_score() {
-        assert_eq!(
-            ReputationTier::from_score(0),
-            ReputationTier::Novice
-        );
-        assert_eq!(
-            ReputationTier::from_score(100),
-            ReputationTier::Contributor
-        );
-        assert_eq!(
-            ReputationTier::from_score(500),
-            ReputationTier::Validator
-        );
+        assert_eq!(ReputationTier::from_score(0), ReputationTier::Novice);
+        assert_eq!(ReputationTier::from_score(100), ReputationTier::Contributor);
+        assert_eq!(ReputationTier::from_score(500), ReputationTier::Validator);
         assert_eq!(ReputationTier::from_score(2000), ReputationTier::Expert);
-        assert_eq!(
-            ReputationTier::from_score(5000),
-            ReputationTier::Maintainer
-        );
-        assert_eq!(
-            ReputationTier::from_score(15000),
-            ReputationTier::Council
-        );
-        assert_eq!(
-            ReputationTier::from_score(50000),
-            ReputationTier::Guardian
-        );
-        assert_eq!(
-            ReputationTier::from_score(99999),
-            ReputationTier::Guardian
-        );
+        assert_eq!(ReputationTier::from_score(5000), ReputationTier::Maintainer);
+        assert_eq!(ReputationTier::from_score(15000), ReputationTier::Council);
+        assert_eq!(ReputationTier::from_score(50000), ReputationTier::Guardian);
+        assert_eq!(ReputationTier::from_score(99999), ReputationTier::Guardian);
     }
 
     #[test]
@@ -692,14 +670,8 @@ mod tests {
 
     #[test]
     fn test_proof_error_equality() {
-        assert_eq!(
-            ProofError::InvalidSignature,
-            ProofError::InvalidSignature
-        );
-        assert_ne!(
-            ProofError::InvalidSignature,
-            ProofError::TimestampExpired
-        );
+        assert_eq!(ProofError::InvalidSignature, ProofError::InvalidSignature);
+        assert_ne!(ProofError::InvalidSignature, ProofError::TimestampExpired);
     }
 
     // --- Batch Verification Tests ---
@@ -745,10 +717,8 @@ mod tests {
     fn test_antisybil_allowed() {
         let limiter = AntiSybilLimiter::new(5, 60_000); // 5 proofs per 60s
         let pk = "abc123";
-        let submissions: Vec<(String, u64)> = vec![
-            (pk.to_string(), 1_00_000),
-            (pk.to_string(), 1_10_000),
-        ];
+        let submissions: Vec<(String, u64)> =
+            vec![(pk.to_string(), 1_00_000), (pk.to_string(), 1_10_000)];
         assert!(limiter.is_allowed(pk, 1_20_000, &submissions));
     }
 
@@ -768,10 +738,8 @@ mod tests {
     fn test_antisybil_window_expires() {
         let limiter = AntiSybilLimiter::new(2, 60_000); // 2 proofs per 60s
         let pk = "abc123";
-        let submissions: Vec<(String, u64)> = vec![
-            (pk.to_string(), 1_00_000),
-            (pk.to_string(), 1_10_000),
-        ];
+        let submissions: Vec<(String, u64)> =
+            vec![(pk.to_string(), 1_00_000), (pk.to_string(), 1_10_000)];
         // After window expires, should be allowed again
         assert!(limiter.is_allowed(pk, 1_80_000, &submissions));
     }
@@ -779,10 +747,7 @@ mod tests {
     #[test]
     fn test_antisybil_different_key() {
         let limiter = AntiSybilLimiter::new(1, 60_000);
-        let submissions: Vec<(String, u64)> = vec![(
-            "key1".to_string(),
-            1_000_000,
-        )];
+        let submissions: Vec<(String, u64)> = vec![("key1".to_string(), 1_000_000)];
         // Different key should not be limited
         assert!(limiter.is_allowed("key2", 1_10_000, &submissions));
     }

@@ -21,7 +21,9 @@ impl std::fmt::Display for TokioOptimizerError {
         match self {
             TokioOptimizerError::InvalidConfig(msg) => write!(f, "Invalid config: {}", msg),
             TokioOptimizerError::AlreadyInitialized => write!(f, "Runtime already initialized"),
-            TokioOptimizerError::OptimizationFailed(msg) => write!(f, "Optimization failed: {}", msg),
+            TokioOptimizerError::OptimizationFailed(msg) => {
+                write!(f, "Optimization failed: {}", msg)
+            }
         }
     }
 }
@@ -139,8 +141,7 @@ impl RuntimeMetrics {
         self.active_tasks = self.active_tasks.saturating_sub(1);
         // Exponential moving average for latency
         let alpha = 0.1;
-        self.avg_task_latency_ms =
-            alpha * latency_ms + (1.0 - alpha) * self.avg_task_latency_ms;
+        self.avg_task_latency_ms = alpha * latency_ms + (1.0 - alpha) * self.avg_task_latency_ms;
     }
 
     /// Record a new task being queued.
@@ -157,8 +158,7 @@ impl RuntimeMetrics {
     /// Update queue utilization.
     pub fn update_utilization(&mut self, max_queue: usize) {
         if max_queue > 0 {
-            self.queue_utilization =
-                (self.queued_tasks as f64 / max_queue as f64).min(1.0);
+            self.queue_utilization = (self.queued_tasks as f64 / max_queue as f64).min(1.0);
         }
         self.last_measurement = Instant::now();
     }
@@ -218,8 +218,7 @@ impl TokioOptimizer {
             return None;
         }
 
-        self.metrics
-            .update_utilization(self.config.max_task_queue);
+        self.metrics.update_utilization(self.config.max_task_queue);
 
         let old_workers = self.metrics.worker_threads;
         let utilization = self.metrics.queue_utilization;
@@ -384,7 +383,9 @@ mod tests {
         let initial = optimizer.metrics().worker_threads;
         // Simulate high utilization
         optimizer.metrics.queued_tasks = optimizer.config.max_task_queue as usize;
-        optimizer.metrics.update_utilization(optimizer.config.max_task_queue);
+        optimizer
+            .metrics
+            .update_utilization(optimizer.config.max_task_queue);
         let new_workers = optimizer.adapt();
         assert!(new_workers.is_some());
         assert!(new_workers.unwrap() > initial);
@@ -397,7 +398,9 @@ mod tests {
         let initial = optimizer.metrics().worker_threads;
         // Simulate low utilization
         optimizer.metrics.queued_tasks = 0;
-        optimizer.metrics.update_utilization(optimizer.config.max_task_queue);
+        optimizer
+            .metrics
+            .update_utilization(optimizer.config.max_task_queue);
         let new_workers = optimizer.adapt();
         // May scale down if initial > min_workers
         if let Some(w) = new_workers {

@@ -195,11 +195,7 @@ impl CapabilityNegotiator {
     /// Registra una capacidad en el sistema
     pub fn register_capability(&mut self, capability: CapabilityEntry) {
         let id = capability.capability_id.clone();
-        if !self
-            .capabilities
-            .iter()
-            .any(|c| c.capability_id == id)
-        {
+        if !self.capabilities.iter().any(|c| c.capability_id == id) {
             self.capabilities.push(capability);
             info!("Capacidad registrada: {}", id);
         }
@@ -208,11 +204,7 @@ impl CapabilityNegotiator {
     /// Registra un perfil de nodo con sus capacidades
     pub fn register_node(&mut self, profile: NodeCapabilityProfile) {
         let node_id = profile.node_id.clone();
-        if !self
-            .node_profiles
-            .iter()
-            .any(|p| p.node_id == node_id)
-        {
+        if !self.node_profiles.iter().any(|p| p.node_id == node_id) {
             self.node_profiles.push(profile);
             info!("Nodo registrado con perfil de capacidades: {}", node_id);
         }
@@ -287,22 +279,17 @@ impl CapabilityNegotiator {
             .all(|c| profile.capabilities.contains(c));
 
         if !supports {
-            return Err(CapabilityError::CapabilityIncompatible(
-                format!(
-                    "Nodo {} no soporta todas las capacidades requeridas",
-                    node_id
-                ),
-            ));
+            return Err(CapabilityError::CapabilityIncompatible(format!(
+                "Nodo {} no soporta todas las capacidades requeridas",
+                node_id
+            )));
         }
 
         Ok(true)
     }
 
     /// Obtiene los candidatos disponibles para un conjunto de capacidades
-    pub fn get_candidates(
-        &self,
-        required_capabilities: &[String],
-    ) -> Vec<(String, f64)> {
+    pub fn get_candidates(&self, required_capabilities: &[String]) -> Vec<(String, f64)> {
         self.node_profiles
             .iter()
             .map(|p| {
@@ -316,7 +303,8 @@ impl CapabilityNegotiator {
     /// Elimina nodos stale
     fn remove_stale_nodes(&mut self) {
         let before = self.node_profiles.len();
-        self.node_profiles.retain(|p| !p.is_stale(self.config.max_stale_ms));
+        self.node_profiles
+            .retain(|p| !p.is_stale(self.config.max_stale_ms));
         let removed = before - self.node_profiles.len();
         if removed > 0 {
             warn!("Eliminados {} nodos stale", removed);

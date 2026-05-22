@@ -55,11 +55,7 @@ mod internal {
                     )
                 }
                 Self::UptimeBelowThreshold { node, uptime } => {
-                    write!(
-                        f,
-                        "Node {} uptime {:.2} below threshold",
-                        node, uptime
-                    )
+                    write!(f, "Node {} uptime {:.2} below threshold", node, uptime)
                 }
                 Self::AlignmentFailed(msg) => write!(f, "Alignment failed: {}", msg),
                 Self::ModelNotFound(id) => write!(f, "Model not found: {}", id),
@@ -358,15 +354,15 @@ mod internal {
     impl FineTuningV7Stats {
         pub fn record_sync(&mut self, time_ms: u64, alignment: f64, normalized: f64) {
             self.total_syncs += 1;
-            self.avg_sync_time_ms =
-                (self.avg_sync_time_ms * (self.total_syncs - 1) as f64 + time_ms as f64)
-                    / self.total_syncs as f64;
-            self.avg_alignment_score =
-                (self.avg_alignment_score * (self.total_syncs - 1) as f64 + alignment)
-                    / self.total_syncs as f64;
-            self.avg_gradient_norm =
-                (self.avg_gradient_norm * (self.total_syncs - 1) as f64 + normalized)
-                    / self.total_syncs as f64;
+            self.avg_sync_time_ms = (self.avg_sync_time_ms * (self.total_syncs - 1) as f64
+                + time_ms as f64)
+                / self.total_syncs as f64;
+            self.avg_alignment_score = (self.avg_alignment_score * (self.total_syncs - 1) as f64
+                + alignment)
+                / self.total_syncs as f64;
+            self.avg_gradient_norm = (self.avg_gradient_norm * (self.total_syncs - 1) as f64
+                + normalized)
+                / self.total_syncs as f64;
         }
 
         pub fn record_checkpoint(&mut self, incremental: bool) {
@@ -385,9 +381,8 @@ mod internal {
 
         pub fn record_lz4_compression(&mut self, ratio: f64) {
             self.lz4_compressions += 1;
-            self.avg_lz4_ratio =
-                (self.avg_lz4_ratio * (self.lz4_compressions - 1) as f64 + ratio)
-                    / self.lz4_compressions as f64;
+            self.avg_lz4_ratio = (self.avg_lz4_ratio * (self.lz4_compressions - 1) as f64 + ratio)
+                / self.lz4_compressions as f64;
         }
 
         pub fn record_convergence(&mut self) {
@@ -507,8 +502,10 @@ mod internal {
                     node_id
                 )));
             }
-            self.nodes
-                .insert(node_id.clone(), NodeEntryV7::new(node_id, uptime, reputation, capacity));
+            self.nodes.insert(
+                node_id.clone(),
+                NodeEntryV7::new(node_id, uptime, reputation, capacity),
+            );
             Ok(())
         }
 
@@ -586,7 +583,8 @@ mod internal {
                 let profile = self.models.get_mut(&model_id).unwrap();
                 profile.record_loss(simulated_loss);
                 let norm = if self.config.adaptive_normalization {
-                    profile.record_normalized_gradient(simulated_gradient_norm, self.config.ema_alpha);
+                    profile
+                        .record_normalized_gradient(simulated_gradient_norm, self.config.ema_alpha);
                     let ema = profile.ema_gradient_norm;
                     if ema > 0.0 {
                         simulated_gradient_norm / ema
@@ -627,18 +625,24 @@ mod internal {
             }
 
             // Record sync
-            self.stats.record_sync(simulated_sync_time_ms, alignment_score, normalized);
+            self.stats
+                .record_sync(simulated_sync_time_ms, alignment_score, normalized);
 
             // LZ4 compression simulation
             if self.config.compression_ratio > 1.0 {
-                let ratio = self.config.compression_ratio * (0.9 + (self.current_round as f64 % 10.0) / 100.0);
+                let ratio = self.config.compression_ratio
+                    * (0.9 + (self.current_round as f64 % 10.0) / 100.0);
                 self.stats.record_lz4_compression(ratio);
             }
 
             // Checkpoint
-            let (checkpoint_saved, checkpoint_incremental) = if self.current_round.is_multiple_of(self.config.checkpoint_interval as u64) {
+            let (checkpoint_saved, checkpoint_incremental) = if self
+                .current_round
+                .is_multiple_of(self.config.checkpoint_interval as u64)
+            {
                 let hash = compute_sha256(&format!("{}-{}", model_id, self.current_round));
-                let mut entry = CheckpointEntryV7::new(self.current_round, model_id.clone(), hash, 1024 * 1024);
+                let mut entry =
+                    CheckpointEntryV7::new(self.current_round, model_id.clone(), hash, 1024 * 1024);
 
                 // Incremental checkpoint
                 let is_incremental = if let Some(parent) = self.checkpoints.last() {
@@ -710,7 +714,8 @@ mod internal {
 
         fn save_checkpoint(&mut self, model_id: &str) -> Result<(bool, bool), FineTuningV7Error> {
             let hash = compute_sha256(&format!("{}-{}", model_id, self.current_round));
-            let mut entry = CheckpointEntryV7::new(self.current_round, model_id.to_string(), hash, 1024 * 1024);
+            let mut entry =
+                CheckpointEntryV7::new(self.current_round, model_id.to_string(), hash, 1024 * 1024);
 
             let incremental = if let Some(parent) = self.checkpoints.last() {
                 entry.mark_incremental(parent.hash.clone());
@@ -834,7 +839,10 @@ mod internal {
         #[test]
         fn test_register_node_invalid_uptime() {
             let mut engine = FineTuningV7::default();
-            match engine.register_node("n1".to_string(), 1.5, 0.8, 100.0).unwrap_err() {
+            match engine
+                .register_node("n1".to_string(), 1.5, 0.8, 100.0)
+                .unwrap_err()
+            {
                 FineTuningV7Error::InvalidConfig(msg) => assert!(msg.contains("Uptime")),
                 e => panic!("Wrong error: {:?}", e),
             }
@@ -843,7 +851,10 @@ mod internal {
         #[test]
         fn test_register_node_invalid_reputation() {
             let mut engine = FineTuningV7::default();
-            match engine.register_node("n1".to_string(), 0.9, -0.1, 100.0).unwrap_err() {
+            match engine
+                .register_node("n1".to_string(), 0.9, -0.1, 100.0)
+                .unwrap_err()
+            {
                 FineTuningV7Error::InvalidConfig(msg) => assert!(msg.contains("Reputation")),
                 e => panic!("Wrong error: {:?}", e),
             }
@@ -885,7 +896,10 @@ mod internal {
         #[test]
         fn test_register_model_node_not_found() {
             let mut engine = FineTuningV7::default();
-            match engine.register_model("m1".to_string(), "unknown".to_string(), 768).unwrap_err() {
+            match engine
+                .register_model("m1".to_string(), "unknown".to_string(), 768)
+                .unwrap_err()
+            {
                 FineTuningV7Error::NodeUnavailable(node) => assert_eq!(node, "unknown"),
                 e => panic!("Wrong error: {:?}", e),
             }
@@ -897,7 +911,10 @@ mod internal {
             engine
                 .register_node("n1".to_string(), 0.95, 0.8, 100.0)
                 .unwrap();
-            match engine.register_model("m1".to_string(), "n1".to_string(), 0).unwrap_err() {
+            match engine
+                .register_model("m1".to_string(), "n1".to_string(), 0)
+                .unwrap_err()
+            {
                 FineTuningV7Error::InvalidConfig(msg) => assert!(msg.contains("dimension")),
                 e => panic!("Wrong error: {:?}", e),
             }
@@ -925,7 +942,9 @@ mod internal {
             engine
                 .register_model("m1".to_string(), "n1".to_string(), 768)
                 .unwrap();
-            let result = engine.execute_round("m1".to_string(), 0.5, 1.0, 50).unwrap();
+            let result = engine
+                .execute_round("m1".to_string(), 0.5, 1.0, 50)
+                .unwrap();
             assert_eq!(result.round, 1);
             assert!(!result.checkpoint_saved);
         }
@@ -943,7 +962,9 @@ mod internal {
             engine
                 .register_model("m1".to_string(), "n1".to_string(), 768)
                 .unwrap();
-            engine.execute_round("m1".to_string(), 0.5, 1.0, 50).unwrap();
+            engine
+                .execute_round("m1".to_string(), 0.5, 1.0, 50)
+                .unwrap();
             assert!(engine.get_stats().lz4_compressions > 0);
         }
 
@@ -961,8 +982,12 @@ mod internal {
             engine
                 .register_model("m1".to_string(), "n1".to_string(), 768)
                 .unwrap();
-            engine.execute_round("m1".to_string(), 0.5, 2.0, 50).unwrap();
-            engine.execute_round("m1".to_string(), 0.4, 1.8, 50).unwrap();
+            engine
+                .execute_round("m1".to_string(), 0.5, 2.0, 50)
+                .unwrap();
+            engine
+                .execute_round("m1".to_string(), 0.4, 1.8, 50)
+                .unwrap();
             let profile = engine.models.get("m1").unwrap();
             assert!(profile.ema_gradient_norm > 0.0);
         }
@@ -981,7 +1006,9 @@ mod internal {
                 .register_model("m1".to_string(), "n1".to_string(), 768)
                 .unwrap();
             for i in 1..=5 {
-                let result = engine.execute_round("m1".to_string(), 0.5 - i as f64 * 0.05, 1.0, 50).unwrap();
+                let result = engine
+                    .execute_round("m1".to_string(), 0.5 - i as f64 * 0.05, 1.0, 50)
+                    .unwrap();
                 if i == 3 {
                     assert!(result.checkpoint_saved);
                 }
@@ -1005,7 +1032,9 @@ mod internal {
                 .register_model("m1".to_string(), "n1".to_string(), 768)
                 .unwrap();
             for _ in 0..10 {
-                engine.execute_round("m1".to_string(), 0.0001, 0.5, 50).unwrap();
+                engine
+                    .execute_round("m1".to_string(), 0.0001, 0.5, 50)
+                    .unwrap();
             }
             assert!(engine.get_stats().convergence_triggers > 0);
         }
@@ -1028,7 +1057,9 @@ mod internal {
                 .unwrap();
             let initial_lr = engine.get_current_lr();
             for _ in 0..10 {
-                engine.execute_round("m1".to_string(), 0.0001, 0.5, 50).unwrap();
+                engine
+                    .execute_round("m1".to_string(), 0.0001, 0.5, 50)
+                    .unwrap();
             }
             assert!(engine.get_current_lr() <= initial_lr);
         }
@@ -1048,9 +1079,15 @@ mod internal {
             engine
                 .register_model("m2".to_string(), "n2".to_string(), 768)
                 .unwrap();
-            engine.execute_round("m1".to_string(), 0.5, 1.0, 50).unwrap();
-            engine.execute_round("m2".to_string(), 0.5, 1.0, 50).unwrap();
-            let result = engine.execute_round("m1".to_string(), 0.4, 1.0, 50).unwrap();
+            engine
+                .execute_round("m1".to_string(), 0.5, 1.0, 50)
+                .unwrap();
+            engine
+                .execute_round("m2".to_string(), 0.5, 1.0, 50)
+                .unwrap();
+            let result = engine
+                .execute_round("m1".to_string(), 0.4, 1.0, 50)
+                .unwrap();
             assert!(result.alignment_score >= 0.0);
         }
 
@@ -1063,7 +1100,9 @@ mod internal {
             engine
                 .register_model("m1".to_string(), "n1".to_string(), 768)
                 .unwrap();
-            engine.execute_round("m1".to_string(), 0.5, 1.0, 50).unwrap();
+            engine
+                .execute_round("m1".to_string(), 0.5, 1.0, 50)
+                .unwrap();
             let stats = engine.get_stats();
             assert_eq!(stats.total_rounds, 1);
             assert_eq!(stats.total_syncs, 1);
@@ -1078,7 +1117,9 @@ mod internal {
             engine
                 .register_model("m1".to_string(), "n1".to_string(), 768)
                 .unwrap();
-            engine.execute_round("m1".to_string(), 0.5, 1.0, 50).unwrap();
+            engine
+                .execute_round("m1".to_string(), 0.5, 1.0, 50)
+                .unwrap();
             engine.reset_stats();
             let stats = engine.get_stats();
             assert_eq!(stats.total_rounds, 0);
@@ -1124,8 +1165,12 @@ mod internal {
             engine
                 .register_model("m1".to_string(), "n1".to_string(), 768)
                 .unwrap();
-            engine.execute_round("m1".to_string(), 0.5, 1.0, 50).unwrap();
-            engine.execute_round("m1".to_string(), 0.4, 1.0, 50).unwrap();
+            engine
+                .execute_round("m1".to_string(), 0.5, 1.0, 50)
+                .unwrap();
+            engine
+                .execute_round("m1".to_string(), 0.4, 1.0, 50)
+                .unwrap();
             assert!(engine.get_stats().integrity_validations > 0);
             assert_eq!(
                 engine.get_stats().integrity_validations,
@@ -1177,8 +1222,12 @@ mod internal {
             engine
                 .register_model("m1".to_string(), "n1".to_string(), 768)
                 .unwrap();
-            engine.execute_round("m1".to_string(), 0.5, 1.0, 50).unwrap();
-            engine.execute_round("m1".to_string(), 0.4, 1.0, 50).unwrap();
+            engine
+                .execute_round("m1".to_string(), 0.5, 1.0, 50)
+                .unwrap();
+            engine
+                .execute_round("m1".to_string(), 0.4, 1.0, 50)
+                .unwrap();
             let cp = engine.get_checkpoint(2, "m1");
             assert!(cp.is_some());
         }
@@ -1216,7 +1265,10 @@ mod internal {
             engine
                 .register_model("m1".to_string(), "n1".to_string(), 768)
                 .unwrap();
-            match engine.execute_round("m1".to_string(), 0.5, 1.0, 100).unwrap_err() {
+            match engine
+                .execute_round("m1".to_string(), 0.5, 1.0, 100)
+                .unwrap_err()
+            {
                 FineTuningV7Error::GradientSyncTimeout => {}
                 e => panic!("Wrong error: {:?}", e),
             }
@@ -1256,11 +1308,19 @@ mod internal {
                 .register_model("m1".to_string(), "n1".to_string(), 768)
                 .unwrap();
             // Round 2: first checkpoint (not incremental)
-            engine.execute_round("m1".to_string(), 0.5, 1.0, 50).unwrap();
-            engine.execute_round("m1".to_string(), 0.4, 1.0, 50).unwrap();
+            engine
+                .execute_round("m1".to_string(), 0.5, 1.0, 50)
+                .unwrap();
+            engine
+                .execute_round("m1".to_string(), 0.4, 1.0, 50)
+                .unwrap();
             // Round 4: second checkpoint (incremental)
-            engine.execute_round("m1".to_string(), 0.3, 1.0, 50).unwrap();
-            engine.execute_round("m1".to_string(), 0.2, 1.0, 50).unwrap();
+            engine
+                .execute_round("m1".to_string(), 0.3, 1.0, 50)
+                .unwrap();
+            engine
+                .execute_round("m1".to_string(), 0.2, 1.0, 50)
+                .unwrap();
             let cp = engine.get_checkpoint(4, "m1").unwrap();
             assert!(cp.incremental);
             assert!(cp.parent_hash.is_some());
@@ -1272,7 +1332,10 @@ mod internal {
             engine
                 .register_node("n1".to_string(), 0.95, 0.8, 100.0)
                 .unwrap();
-            match engine.register_node("n1".to_string(), 0.95, 0.8, 100.0).unwrap_err() {
+            match engine
+                .register_node("n1".to_string(), 0.95, 0.8, 100.0)
+                .unwrap_err()
+            {
                 FineTuningV7Error::InvalidConfig(msg) => assert!(msg.contains("already")),
                 e => panic!("Wrong error: {:?}", e),
             }
@@ -1291,7 +1354,10 @@ mod internal {
             engine
                 .register_model("m1".to_string(), "n1".to_string(), 768)
                 .unwrap();
-            match engine.register_model("m2".to_string(), "n1".to_string(), 768).unwrap_err() {
+            match engine
+                .register_model("m2".to_string(), "n1".to_string(), 768)
+                .unwrap_err()
+            {
                 FineTuningV7Error::InvalidConfig(msg) => assert!(msg.contains("Maximum")),
                 e => panic!("Wrong error: {:?}", e),
             }

@@ -368,23 +368,40 @@ impl MarketplaceV3 {
     }
 
     /// Updates node reputation.
-    pub fn update_reputation(&mut self, node_id: &str, reputation: f64) -> Result<(), MarketplaceV3Error> {
-        let node = self.nodes.get_mut(node_id).ok_or(MarketplaceV3Error::NodeNotRegistered(node_id.to_string()))?;
+    pub fn update_reputation(
+        &mut self,
+        node_id: &str,
+        reputation: f64,
+    ) -> Result<(), MarketplaceV3Error> {
+        let node = self
+            .nodes
+            .get_mut(node_id)
+            .ok_or(MarketplaceV3Error::NodeNotRegistered(node_id.to_string()))?;
         node.reputation = reputation.clamp(0.0, 1.0);
         node.last_heartbeat_ms = current_timestamp_ms();
         Ok(())
     }
 
     /// Updates node balance.
-    pub fn update_balance(&mut self, node_id: &str, balance: f64) -> Result<(), MarketplaceV3Error> {
-        let node = self.nodes.get_mut(node_id).ok_or(MarketplaceV3Error::NodeNotRegistered(node_id.to_string()))?;
+    pub fn update_balance(
+        &mut self,
+        node_id: &str,
+        balance: f64,
+    ) -> Result<(), MarketplaceV3Error> {
+        let node = self
+            .nodes
+            .get_mut(node_id)
+            .ok_or(MarketplaceV3Error::NodeNotRegistered(node_id.to_string()))?;
         node.balance = balance;
         Ok(())
     }
 
     /// Heartbeat for a node.
     pub fn heartbeat(&mut self, node_id: &str) -> Result<(), MarketplaceV3Error> {
-        let node = self.nodes.get_mut(node_id).ok_or(MarketplaceV3Error::NodeNotRegistered(node_id.to_string()))?;
+        let node = self
+            .nodes
+            .get_mut(node_id)
+            .ok_or(MarketplaceV3Error::NodeNotRegistered(node_id.to_string()))?;
         node.last_heartbeat_ms = current_timestamp_ms();
         Ok(())
     }
@@ -392,8 +409,12 @@ impl MarketplaceV3 {
     /// Lists a resource on the marketplace.
     pub fn list_resource(&mut self, listing: ListingV3) -> Result<(), MarketplaceV3Error> {
         // Validate node exists
-        let node = self.nodes.get(&listing.node_id)
-            .ok_or(MarketplaceV3Error::NodeNotRegistered(listing.node_id.clone()))?;
+        let node =
+            self.nodes
+                .get(&listing.node_id)
+                .ok_or(MarketplaceV3Error::NodeNotRegistered(
+                    listing.node_id.clone(),
+                ))?;
 
         // Check reputation
         if node.reputation < self.config.min_reputation {
@@ -403,17 +424,23 @@ impl MarketplaceV3 {
             });
         }
 
-        self.listings.insert(listing.listing_id.clone(), listing.clone());
+        self.listings
+            .insert(listing.listing_id.clone(), listing.clone());
         let node = self.nodes.get_mut(&listing.node_id).unwrap();
         node.active_listings += 1;
         self.stats.active_listings = self.listings.len();
-        info!("MarketplaceV3: listed {} on {}", listing.resource, listing.listing_id);
+        info!(
+            "MarketplaceV3: listed {} on {}",
+            listing.resource, listing.listing_id
+        );
         Ok(())
     }
 
     /// Removes a listing.
     pub fn remove_listing(&mut self, listing_id: &str) -> Result<(), MarketplaceV3Error> {
-        let listing = self.listings.remove(listing_id)
+        let listing = self
+            .listings
+            .remove(listing_id)
             .ok_or(MarketplaceV3Error::ListingNotFound(listing_id.to_string()))?;
         if let Some(node) = self.nodes.get_mut(&listing.node_id) {
             node.active_listings = node.active_listings.saturating_sub(1);
@@ -449,15 +476,20 @@ impl MarketplaceV3 {
                 Some(listing) => {
                     // Check anti-gaming
                     if self.check_anti_gaming(&listing.node_id) {
-                        warn!("MarketplaceV3: anti-gaming detected for node {}", listing.node_id);
+                        warn!(
+                            "MarketplaceV3: anti-gaming detected for node {}",
+                            listing.node_id
+                        );
                         unmatched_requests.push_back(request);
                         continue;
                     }
 
                     // Calculate reputation-adjusted price
                     let provider = self.nodes.get(&listing.node_id).unwrap();
-                    let reputation_factor = 1.0 - (self.config.max_price_adjustment * provider.reputation);
-                    let final_price = (listing.base_price * reputation_factor).min(request.max_price);
+                    let reputation_factor =
+                        1.0 - (self.config.max_price_adjustment * provider.reputation);
+                    let final_price =
+                        (listing.base_price * reputation_factor).min(request.max_price);
 
                     // Determine matched quantity
                     let matched_qty = request.quantity.min(listing.quantity);
@@ -557,7 +589,8 @@ impl MarketplaceV3 {
 
     /// Finds the best listing for a request (lowest price with sufficient reputation).
     fn find_best_listing(&self, request: &RequestV3) -> Option<&ListingV3> {
-        self.listings.values()
+        self.listings
+            .values()
             .filter(|l| {
                 l.is_valid()
                     && l.resource == request.resource
@@ -647,7 +680,10 @@ mod tests {
         ListingV3::new(
             id.to_string(),
             node.to_string(),
-            ResourceKind::VRAM { gpu_model: "A100".to_string(), vram_gb: 80.0 },
+            ResourceKind::VRAM {
+                gpu_model: "A100".to_string(),
+                vram_gb: 80.0,
+            },
             10.0,
             5.0,
             "ethereum".to_string(),
@@ -659,7 +695,10 @@ mod tests {
         RequestV3::new(
             id.to_string(),
             requester.to_string(),
-            ResourceKind::VRAM { gpu_model: "A100".to_string(), vram_gb: 80.0 },
+            ResourceKind::VRAM {
+                gpu_model: "A100".to_string(),
+                vram_gb: 80.0,
+            },
             5.0,
             10.0,
             "polygon".to_string(),
@@ -748,7 +787,10 @@ mod tests {
         let listing = ListingV3::new(
             "l1".to_string(),
             "provider".to_string(),
-            ResourceKind::VRAM { gpu_model: "A100".to_string(), vram_gb: 80.0 },
+            ResourceKind::VRAM {
+                gpu_model: "A100".to_string(),
+                vram_gb: 80.0,
+            },
             10.0,
             5.0,
             "ethereum".to_string(),
@@ -759,7 +801,10 @@ mod tests {
         let request = RequestV3::new(
             "r1".to_string(),
             "consumer".to_string(),
-            ResourceKind::VRAM { gpu_model: "A100".to_string(), vram_gb: 80.0 },
+            ResourceKind::VRAM {
+                gpu_model: "A100".to_string(),
+                vram_gb: 80.0,
+            },
             5.0,
             10.0,
             "polygon".to_string(),
@@ -791,7 +836,10 @@ mod tests {
         let listing = ListingV3::new(
             "l1".to_string(),
             "provider".to_string(),
-            ResourceKind::VRAM { gpu_model: "A100".to_string(), vram_gb: 80.0 },
+            ResourceKind::VRAM {
+                gpu_model: "A100".to_string(),
+                vram_gb: 80.0,
+            },
             10.0,
             15.0, // Price higher than max
             "ethereum".to_string(),
@@ -802,7 +850,10 @@ mod tests {
         let request = RequestV3::new(
             "r1".to_string(),
             "consumer".to_string(),
-            ResourceKind::VRAM { gpu_model: "A100".to_string(), vram_gb: 80.0 },
+            ResourceKind::VRAM {
+                gpu_model: "A100".to_string(),
+                vram_gb: 80.0,
+            },
             5.0,
             10.0, // Max price lower than listing
             "polygon".to_string(),
@@ -860,7 +911,10 @@ mod tests {
         let listing = ListingV3::new(
             "l1".to_string(),
             "p".to_string(),
-            ResourceKind::VRAM { gpu_model: "A100".to_string(), vram_gb: 80.0 },
+            ResourceKind::VRAM {
+                gpu_model: "A100".to_string(),
+                vram_gb: 80.0,
+            },
             10.0,
             5.0,
             "eth".to_string(),
@@ -871,7 +925,10 @@ mod tests {
         let request = RequestV3::new(
             "r1".to_string(),
             "c".to_string(),
-            ResourceKind::VRAM { gpu_model: "A100".to_string(), vram_gb: 80.0 },
+            ResourceKind::VRAM {
+                gpu_model: "A100".to_string(),
+                vram_gb: 80.0,
+            },
             5.0,
             10.0,
             "poly".to_string(),
@@ -887,7 +944,10 @@ mod tests {
 
     #[test]
     fn test_resource_kind_display() {
-        let kind = ResourceKind::SAEShard { model_id: "qwen".to_string(), layer: 5 };
+        let kind = ResourceKind::SAEShard {
+            model_id: "qwen".to_string(),
+            layer: 5,
+        };
         let desc = kind.description();
         assert!(desc.contains("qwen"));
         assert!(desc.contains("5"));
@@ -936,7 +996,10 @@ mod tests {
         let listing = ListingV3::new(
             "l1".to_string(),
             "p1".to_string(),
-            ResourceKind::VRAM { gpu_model: "A100".to_string(), vram_gb: 80.0 },
+            ResourceKind::VRAM {
+                gpu_model: "A100".to_string(),
+                vram_gb: 80.0,
+            },
             20.0,
             5.0,
             "eth".to_string(),
@@ -945,14 +1008,26 @@ mod tests {
         mp.list_resource(listing).unwrap();
 
         mp.submit_request(RequestV3::new(
-            "r1".to_string(), "c1".to_string(),
-            ResourceKind::VRAM { gpu_model: "A100".to_string(), vram_gb: 80.0 },
-            5.0, 10.0, "poly".to_string(),
+            "r1".to_string(),
+            "c1".to_string(),
+            ResourceKind::VRAM {
+                gpu_model: "A100".to_string(),
+                vram_gb: 80.0,
+            },
+            5.0,
+            10.0,
+            "poly".to_string(),
         ));
         mp.submit_request(RequestV3::new(
-            "r2".to_string(), "c2".to_string(),
-            ResourceKind::VRAM { gpu_model: "A100".to_string(), vram_gb: 80.0 },
-            5.0, 10.0, "poly".to_string(),
+            "r2".to_string(),
+            "c2".to_string(),
+            ResourceKind::VRAM {
+                gpu_model: "A100".to_string(),
+                vram_gb: 80.0,
+            },
+            5.0,
+            10.0,
+            "poly".to_string(),
         ));
 
         let matches = mp.match_orders();
@@ -984,16 +1059,29 @@ mod tests {
         mp.register_node("c".to_string(), 0.7, 5000.0);
 
         let listing = ListingV3::new(
-            "l1".to_string(), "p".to_string(),
-            ResourceKind::VRAM { gpu_model: "A100".to_string(), vram_gb: 80.0 },
-            10.0, 5.0, "eth".to_string(), u64::MAX,
+            "l1".to_string(),
+            "p".to_string(),
+            ResourceKind::VRAM {
+                gpu_model: "A100".to_string(),
+                vram_gb: 80.0,
+            },
+            10.0,
+            5.0,
+            "eth".to_string(),
+            u64::MAX,
         );
         mp.list_resource(listing).unwrap();
 
         mp.submit_request(RequestV3::new(
-            "r1".to_string(), "c".to_string(),
-            ResourceKind::VRAM { gpu_model: "A100".to_string(), vram_gb: 80.0 },
-            5.0, 10.0, "poly".to_string(),
+            "r1".to_string(),
+            "c".to_string(),
+            ResourceKind::VRAM {
+                gpu_model: "A100".to_string(),
+                vram_gb: 80.0,
+            },
+            5.0,
+            10.0,
+            "poly".to_string(),
         ));
         mp.match_orders();
 

@@ -539,7 +539,8 @@ mod internal {
 
         #[test]
         fn test_config_from_json() {
-            let json = r#"{"empathy":0.3,"creativity":0.5,"safety":0.6,"version":1,"updated_at_ms":1000}"#;
+            let json =
+                r#"{"empathy":0.3,"creativity":0.5,"safety":0.6,"version":1,"updated_at_ms":1000}"#;
             let config = NeuralSteerConfig::from_json(json).unwrap();
             assert!((config.empathy - 0.3).abs() < 0.01);
             assert!((config.creativity - 0.5).abs() < 0.01);
@@ -663,6 +664,6 @@ mod internal {
 }
 
 pub use internal::{
-    NeuralSteerConfig, NeuralSteeringSignal, SliderType, SteeringSignalBridge, SteeringSlider,
-    SteerUIError,
+    NeuralSteerConfig, NeuralSteeringSignal, SliderType, SteerUIError, SteeringSignalBridge,
+    SteeringSlider,
 };
