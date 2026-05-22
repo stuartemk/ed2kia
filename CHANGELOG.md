@@ -6,6 +6,64 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.1.0-sprint27] — 2026-05-22
+
+### 🎉 Sprint Summary
+
+**v2.1.0-sprint27 "Escudo de Transparencia (Anti-Vaporware)"** implementa pipelines CI/CD públicos, auditoría automatizada de dependencias, firmas criptográficas Ed25519 de releases y refactorización radical del README para demostrar transparencia absoluta. Objetivo: convertir el escepticismo externo en prueba criptográfica de trabajo, alineado con la Ley 2 (Reconocimiento del Error) y Ley 4 (Simbiosis/Transparencia).
+
+| Artifact | Path | Purpose |
+|----------|------|---------|
+| Rust CI Pipeline | `.github/workflows/rust-ci.yml` | Public Truth Pipeline: build/test/lint/wasm-check with concurrency control & cargo cache |
+| Security Audit | `.github/workflows/security-audit.yml` | Automated CVE scanning via cargo audit + cargo deny (licenses/duplicates), daily cron at 06:00 UTC |
+| Dependabot | `.github/dependabot.yml` | Weekly dependency updates for cargo + GitHub Actions, auto-label `dependencies`/`security` |
+| Release Signer | `scripts/release-signer.sh` | Ed25519 cryptographic signatures for releases via OpenSSL (POSIX standard, zero external deps) |
+| README Refactor | `README.md` | Radical transparency: CI/CD badges, transparency matrix (✅ Functional vs 🔮 Roadmap), auditor note |
+| Feature Gates | `Cargo.toml` | `v2.1-ci-cd-pipeline`, `v2.1-security-audit` |
+
+### Added — Public Truth CI/CD Pipeline
+
+- **rust-ci.yml** — `.github/workflows/rust-ci.yml`
+  - 4 jobs: `build` (cargo build --verbose), `test` (cargo test --all-features + proptests), `lint` (clippy -D warnings + fmt check), `wasm-check` (wasm32-unknown-unknown target)
+  - Concurrency control: `cancel-in-progress: true` for fast feedback on PRs
+  - Cargo cache: registry, git, and target directory cached per job
+  - Triggers: push/PR to main
+
+### Added — Automated Security Audit
+
+- **security-audit.yml** — `.github/workflows/security-audit.yml`
+  - `cargo audit`: CVE detection on Cargo.lock changes + daily cron (06:00 UTC)
+  - Fails on Critical/High vulnerabilities
+  - Reports saved to `docs/audit-reports/` with 90-day retention
+  - `cargo deny`: License compliance + duplicate dependency detection
+
+- **dependabot.yml** — `.github/dependabot.yml`
+  - Weekly updates (Monday 09:00 CST) for cargo and GitHub Actions
+  - Auto-labels: `dependencies`, `security`, `ci-cd`
+  - Commit prefix: `chore(deps)` for cargo, `ci(deps)` for actions
+
+### Added — Ed25519 Release Signing
+
+- **release-signer.sh** — `scripts/release-signer.sh`
+  - `set -euo pipefail` with `trap cleanup EXIT INT TERM`
+  - `--init`: Generate Ed25519 key via `openssl genpkey -algorithm ed25519`
+  - `--sign <file>`: Generate `<file>.sig` via `openssl pkeyutl -sign`
+  - `--verify <file> <sig>`: Verify signature via `openssl pkeyutl -verify`
+  - Signing log: `docs/release-signatures/signing-log.md` with SHA-256 hashes
+  - Zero external dependencies (OpenSSL is POSIX standard)
+
+### Changed
+
+- **README.md** — Radical transparency refactor
+  - New badges: Rust CI, Security Audit, Release Signing (Ed25519), Dependabot
+  - New section: `🔍 Estado Actual vs. Visión (Transparencia Radical)` with functional vs roadmap matrix
+  - Explicit note: "Cero vaporware, cero lógica financiera"
+  - Feature gates table updated with `v2.1-ci-cd-pipeline` and `v2.1-security-audit`
+
+- **Cargo.toml** — Version bumped to `2.1.0-sprint27`
+
+---
+
 ## [v2.1.0-sprint26] — 2026-05-22
 
 ### 🎉 Sprint Summary

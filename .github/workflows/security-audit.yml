@@ -1,0 +1,108 @@
+name: Security Audit — Automated Dependency Scanning
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - '.github/workflows/security-audit.yml'
+  schedule:
+    # Daily at 06:00 UTC
+    - cron: '0 6 * * *'
+  workflow_dispatch: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_TOOLCHAIN: stable
+
+permissions:
+  contents: read
+
+jobs:
+  # ============================================
+  # 1. Cargo Audit — CVE Detection
+  # ============================================
+  cargo-audit:
+    name: Cargo Audit (Dependency Vulnerability Scan)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+
+      - name: Install cargo-audit
+        run: |
+          cargo install cargo-audit || true
+          which cargo-audit
+
+      - name: Run cargo audit
+        run: |
+          mkdir -p docs/audit-reports
+          AUDIT_DATE=$(date +%Y%m%d-%H%M%S)
+          cargo audit --output json > "docs/audit-reports/audit-${AUDIT_DATE}.json" 2>&1 || true
+          cargo audit || {
+            echo "::error::Critical/High vulnerabilities detected in dependencies"
+            echo "Full report saved to docs/audit-reports/audit-${AUDIT_DATE}.json"
+            exit 1
+          }
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-audit-report
+          path: docs/audit-reports/
+          retention-days: 90
+
+  # ============================================
+  # 2. Cargo Deny — License & Duplicate Check
+  # ============================================
+  cargo-deny:
+    name: Cargo Deny (License & Duplicate Check)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+
+      - name: Install cargo-deny
+        run: |
+          cargo install cargo-deny || true
+          which cargo-deny
+
+      - name: Check for duplicate dependencies
+        run: cargo deny check duplicates || echo "::warning::Duplicate dependencies detected"
+        continue-on-error: true
+
+      - name: Check licenses
+        run: cargo deny check licenses || echo "::warning::License issues detected"
+        continue-on-error: true

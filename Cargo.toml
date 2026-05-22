@@ -1,6 +1,6 @@
 [package]
 name = "ed2kia"
-version = "2.1.0-sprint26"
+version = "2.1.0-sprint27"
 edition = "2021"
 description = "Descentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
 license = "Apache-2.0"
@@ -612,6 +612,13 @@ test-mocks = []
 # scripts/harden-production.sh: CSP headers, WASM sandbox, rate limiting, Ed25519 validation
 # docs/production-hardening.md: Deployment runbook, incident resolution, scaling
 "v2.1-production-hardening" = []
+
+# Sprint27 — Escudo de Transparencia (Anti-Vaporware)
+# .github/workflows/rust-ci.yml: Public Truth CI/CD Pipeline (build/test/lint/wasm-check)
+"v2.1-ci-cd-pipeline" = []
+# .github/workflows/security-audit.yml: Automated CVE scanning (cargo audit + cargo deny)
+# scripts/release-signer.sh: Ed25519 cryptographic release signatures
+"v2.1-security-audit" = []
 
 [dev-dependencies]
 tempfile = "3.10"

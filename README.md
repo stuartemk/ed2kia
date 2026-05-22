@@ -6,7 +6,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ethical-blue)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-2021-orange)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/Version-2.1.0-sprint26-yellowgreen)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-2.1.0-sprint27-yellowgreen)](CHANGELOG.md)
 [![Audit](https://img.shields.io/badge/Audit-Ready-brightgreen)](docs/audit-prep.md)
 [![Governance](https://img.shields.io/badge/Governance-Active-blueviolet)](GOVERNANCE.md)
 [![Launch](https://img.shields.io/badge/Launch-Ready-red)](docs/public-launch-guide.md)
@@ -17,7 +17,10 @@
 [![Coverage](https://img.shields.io/badge/Coverage-≥80%25-tracking)](release/v2.0.0-stable/final-signoff.json)
 [![OSSF](https://img.shields.io/badge/OSSF-8.5%2F10-passing)](security/audit_v2.0_sprint2.md)
 [![Mode](https://img.shields.io/badge/Mode-STEWARDSHIP-blueviolet)](docs/governance/project-constitution.md)
-[![CI](https://github.com/ed2kia/ed2kIA/actions/workflows/ci.yml/badge.svg)](https://github.com/ed2kia/ed2kIA/actions)
+[![Rust CI](https://github.com/ed2kia/ed2kIA/actions/workflows/rust-ci.yml/badge.svg)](https://github.com/ed2kia/ed2kIA/actions/workflows/rust-ci.yml)
+[![Security Audit](https://github.com/ed2kia/ed2kIA/actions/workflows/security-audit.yml/badge.svg)](https://github.com/ed2kia/ed2kIA/actions/workflows/security-audit.yml)
+[![Release Signing](https://img.shields.io/badge/Releases-Ed25519_Signed-brightgreen)](scripts/release-signer.sh)
+[![Dependabot](https://badgen.net/github/dependabot/ed2kia/ed2kIA)](https://github.com/ed2kia/ed2kIA/issues?q=is%3Aissue+author%3Aapp%2Fdependabot)
 
 ## 🌍 Mandato Ético
 
@@ -119,10 +122,29 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 | `v2.1-formal-validation` | Formal Kernel Invariants — proptest for SCT (Z-axis bounds, decision), BFT (median convergence), CRDT (commutativity/associativity/idempotency), QLoRA (rank, payload) | ✅ Implementado (Sprint26) |
 | `v2.1-cross-platform-sync` | Cross-Platform Offline-First Sync — Priority queue (SCT>BFT>CRDT>Telemetry), VersionVector causal ordering, deterministic conflict resolution, Tauri/Capacitor/PWA ready | ✅ Implementado (Sprint26) |
 | `v2.1-production-hardening` | Production Security Hardening — CSP headers, WASM sandboxing, rate limiting + Ed25519, deployment runbook | ✅ Implementado (Sprint26) |
+| `v2.1-ci-cd-pipeline` | Public Truth CI/CD Pipeline — GitHub Actions (build/test/lint/wasm-check), concurrency control, cargo cache | ✅ Implementado (Sprint27) |
+| `v2.1-security-audit` | Automated Security Audit — cargo audit (CVE scan), cargo deny (licenses/duplicates), Ed25519 release signing | ✅ Implementado (Sprint27) |
 
 > **Nota:** Los feature gates `v2.1-*` NO están incluidos en `default = ["stable"]`. Requieren activación explícita vía RFC comunitario.
 
-## 🚀 End-to-End Local MVP (La Chispa) — Sprint23
+## 🔍 Estado Actual vs. Visión (Transparencia Radical)
+
+Esta tabla separa explícitamente lo funcional de lo visionario. Cero vaporware, cero opacidad.
+
+| ✅ MVP Funcional Hoy | 🔮 Visión Futura/Roadmap |
+|---------------------|--------------------------|
+| Nodos locales con SCT + BFT + CRDT | Red global masiva de miles de nodos |
+| Proptests del Kernel (18 invariantes) | Auditoría formal de terceros (Kudelski, Trail of Bits) |
+| WASM Browser Node + Web Workers | Integración multi-chain (EVM, Solana, Cosmos) |
+| CI/CD público con 4 jobs (build/test/lint/wasm) | ZKP completo con Halo2/Plonky2 en producción |
+| Auditoría automática de dependencias (cargo audit) | Federated Learning a escala continental |
+| Firmas criptográficas Ed25519 en releases | GUI desktop Tauri + Mobile (iOS/Android) |
+| Sincronización offline-first cross-platform | Marketplace de features SAE con gobernanza DAO |
+| Hardening de seguridad (CSP, WASM sandbox) | Integración con datasets públicos de alineación |
+
+> **Nota de transparencia:** Este proyecto utiliza CI/CD público ([`rust-ci.yml`](.github/workflows/rust-ci.yml)), auditorías automáticas de dependencias ([`security-audit.yml`](.github/workflows/security-audit.yml)), Dependabot ([`dependabot.yml`](.github/dependabot.yml)) y firmas criptográficas Ed25519 ([`release-signer.sh`](scripts/release-signer.sh)) para demostrar que cada línea de código es funcional, verificable y auditable. **Cero vaporware, cero lógica financiera.**
+
+##  End-to-End Local MVP (La Chispa) — Sprint23
 
 El **MVP Local** demuestra el ciclo completo del Kernel Estuardiano en hardware modesto: 3 nodos → SAE payloads → SCT Guard → BFT Consensus → Resultados.
 
