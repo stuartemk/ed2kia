@@ -6,6 +6,39 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.1.0-stable] — 2026-05-22 (Sprint 34 Update)
+
+### Sprint 34 "Strategic Deployment & Technical Traction"
+
+Sprint de tracción estratégica: reporte técnico académico, scripts de onboarding friccion-cero, kit de contenido de lanzamiento y programa de stewards. Cero nuevas features en Rust. 100% docs, scripts y contenido.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| Technical Report | `docs/technical-report.md` | Academic/industrial report (arXiv/Substack ready) |
+| Quickstart Script | `scripts/quickstart.sh` | One-command POSIX setup (idempotent) |
+| Testnet Script | `scripts/testnet-mode.sh` | Isolated testnet configuration (N nodes) |
+| X/Twitter Thread | `docs/launch-content/thread-x.md` | 12-tweet technical launch thread |
+| Reddit Post | `docs/launch-content/reddit-post.md` | Crosspost for r/MachineLearning, r/rust, r/LocalLLaMA |
+| Demo Script | `docs/launch-content/demo-script.md` | 90s-3min terminal recording script |
+| Steward Program | `docs/steward-program.md` | Criteria, roles, rewards, code of conduct |
+| Metrics Dashboard | `scripts/metrics-dashboard.sh` | Weekly metrics report generator |
+
+### Added — Documentation & Content
+
+- **Technical Report** — Academic structure: Abstract, 6 sections (Architecture, Neuroplasticity, Benchmarks, Security, Governance, Roadmap), references to real metrics
+- **Quickstart Script** — POSIX-compliant, idempotent, pre-flight validation, auto identity generation
+- **Testnet Script** — Isolated N-node testnet, configurable ports, clean state, dry-run support
+- **Launch Content Kit** — X thread (12 tweets), Reddit crosspost, 90s demo script with timing
+- **Steward Program** — 4 roles (Observer/Contributor/Steward/Council), orientation, decision framework
+- **Metrics Dashboard** — Weekly report generator (git, tests, code, security, GitHub metrics)
+
+### Updated — README.md
+
+- Added badges: Technical Report, Steward Program, Quickstart
+- Updated test count: 3460 → 3505
+
+---
+
 ## [v2.1.0-stable] — 2026-05-22
 
 ### Sprint 33 "Production Readiness, Benchmarking & Mainnet Launch Protocol"
