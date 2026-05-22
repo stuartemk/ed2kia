@@ -561,6 +561,12 @@ pub mod alignment {
     #[cfg(feature = "v2.1-stuartian-geometry")]
     #[path = "../alignment/stuartian_geometry.rs"]
     pub mod stuartian_geometry;
+
+    // ─── Sprint28: Motor de Significado Simbólico ───
+    #[cfg(feature = "v2.1-symbolic-engine")]
+    pub mod symbolic_engine;
+    #[cfg(feature = "v2.1-ethical-attention")]
+    pub mod ethical_attention;
 }
 
 /// Mainnet Genesis — Deterministic genesis state & steward activation (Sprint22)
@@ -613,6 +619,10 @@ pub mod async_gossip {
     #[cfg(feature = "v2.1-crdt-state")]
     #[path = "../async_gossip/crdt.rs"]
     pub mod crdt;
+
+    #[cfg(feature = "v2.1-crdt-symbols")]
+    #[path = "../async_gossip/crdt_symbols.rs"]
+    pub mod crdt_symbols;
 }
 
 /// Cross-network federation bridge and trust scoring

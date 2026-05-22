@@ -77,7 +77,7 @@ impl std::error::Error for CrdtError {}
 /// - **Commutative:** max(a, b) == max(b, a)
 /// - **Associative:** max(max(a, b), c) == max(a, max(b, c))
 /// - **Idempotent:** max(a, a) == a
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct VersionVector {
     /// Contador por nodo_id.
     counters: BTreeMap<String, u64>,
@@ -187,7 +187,7 @@ impl VersionVector {
 /// - Mérito criptográfico acumulado
 /// - Conteo de contribuciones
 /// - Tokens generados (no destruibles)
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct GCounter {
     /// Contador por nodo_id.
     counters: BTreeMap<String, u64>,

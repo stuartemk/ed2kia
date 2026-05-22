@@ -6,6 +6,25 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.1.0-sprint28] — 2026-05-22
+
+### Sprint 28 "Motor de Significado Simbolico (De Tokens a Simbolos)"
+
+Implementa `SymbolicEmbedding` (fusion O(1) vectorizada de embeddings con SCT Z-axis), `apply_stuartian_mask` (penalizacion pre-softmax para tokens Z<0) y `SymbolRegistry` CRDT (ORSet + VersionVector para propagacion distribuida de SCT).
+
+| Artifact | Path | Purpose |
+|----------|------|---------|
+| SymbolicEmbedding | `src/alignment/symbolic_engine.rs` | Fusion layer: `result = base_emb * (1 + clamp(Z, -0.5, 0.5))` |
+| Ethical Attention | `src/alignment/ethical_attention.rs` | Pre-softmax mask: -10.0 penalty for Z<0 tokens |
+| Symbol Registry CRDT | `src/async_gossip/crdt_symbols.rs` | ORSet + VersionVector, higher-Z-wins merge |
+| Integration Tests | `tests/symbolic_cognition.rs` | 6 tests: fusion decay, ethical masking, 3-node CRDT convergence |
+| Feature Gates | `Cargo.toml` | `v2.1-symbolic-engine`, `v2.1-ethical-attention`, `v2.1-crdt-symbols` |
+
+### Fixed
+- Added `PartialEq` + serde derives to `VersionVector` and `GCounter` for CRDT serialization
+- Fixed tensor shape mismatches in `apply_stuartian_mask` and `SymbolicEmbedding::forward`
+- Fixed `Embedding::new()` API to use pre-constructed Tensor instead of VarBuilder
+
 ## [v2.1.0-sprint27] — 2026-05-22
 
 ### 🎉 Sprint Summary

@@ -1,6 +1,6 @@
 [package]
 name = "ed2kia"
-version = "2.1.0-sprint27"
+version = "2.1.0-sprint28"
 edition = "2021"
 description = "Descentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
 license = "Apache-2.0"
@@ -620,6 +620,14 @@ test-mocks = []
 # scripts/release-signer.sh: Ed25519 cryptographic release signatures
 "v2.1-security-audit" = []
 
+# Sprint28 — Motor de Significado Simbólico (De Tokens a Símbolos)
+# src/alignment/symbolic_engine.rs: SymbolicEmbedding — Token embeddings fused with SCT 3D vectors
+"v2.1-symbolic-engine" = ["v2.1-sct-core"]
+# src/alignment/ethical_attention.rs: Stuartian pre-softmax attention masking
+"v2.1-ethical-attention" = []
+# src/async_gossip/crdt_symbols.rs: Distributed SymbolRegistry CRDT
+"v2.1-crdt-symbols" = []
+
 [dev-dependencies]
 tempfile = "3.10"
 criterion = { version = "0.5", features = ["html_reports"] }
@@ -946,3 +954,9 @@ required-features = ["v2.1-kernel-integration"]
 name = "kernel_invariants"
 path = "tests/property/kernel_invariants.rs"
 required-features = ["v2.1-formal-validation"]
+
+# v2.1.0-sprint28 Symbolic Cognition — SymbolicEmbedding + EthicalAttention + CRDT Symbols
+[[test]]
+name = "symbolic_cognition"
+path = "tests/symbolic_cognition.rs"
+required-features = ["v2.1-symbolic-engine", "v2.1-ethical-attention", "v2.1-crdt-symbols"]
