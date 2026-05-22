@@ -141,7 +141,8 @@ pub mod sae {
     feature = "v2.1-federated-agg",
     feature = "v2.1-agg-committees",
     feature = "v2.1-staleness-aware",
-    feature = "v2.1-bft-aggregation"
+    feature = "v2.1-bft-aggregation",
+    feature = "v2.1-network-apoptosis"
 ))]
 pub mod federated;
 
@@ -638,6 +639,17 @@ pub mod federation_v2 {
 #[cfg(feature = "v2.1-cross-platform-sync")]
 #[path = "platform/cross_sync.rs"]
 pub mod cross_sync;
+
+// ============================================================================
+// Sprint29: Proof of Symbiosis, Crédito de Existencia & Apoptosis de Red
+// ============================================================================
+
+/// Economics — Existential Credit & Proof of Symbiosis (Sprint29)
+#[cfg(any(
+    feature = "v2.1-proof-of-symbiosis",
+    feature = "v2.1-network-apoptosis"
+))]
+pub mod economics;
 
 // ============================================================================
 // Fase 8: Marketplace, UI Backend, SLO Engine, Cross-Model Scaling

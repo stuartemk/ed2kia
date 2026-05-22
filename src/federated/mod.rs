@@ -16,3 +16,6 @@ pub mod staleness;
 
 #[cfg(feature = "v2.1-bft-aggregation")]
 pub mod bft_aggregator;
+
+#[cfg(feature = "v2.1-network-apoptosis")]
+pub mod network_apoptosis;

@@ -6,6 +6,53 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.1.0-sprint29] — 2026-05-22
+
+### Sprint 29 "Proof of Symbiosis, Crédito de Existencia & Apoptosis de Red"
+
+Implementa `ExistentialCreditLedger` (contabilidad CE por peer con semántica CRDT), `SymbiosisValidator` (consenso ponderado por CE con umbral dinámico anti-Sybil) y `NetworkImmuneSystem` (sistema inmunológico: Healthy → Pain → Apoptosis con blocklisting automático y callbacks de desconexión).
+
+| Artifact | Path | Purpose |
+|----------|------|---------|
+| ExistentialCreditLedger | `src/economics/existential_credit.rs` | Ledger CE: `emit_credit(z>0)`, `burn_credit(z<0)`, CRDT merge (LWW by version) |
+| Proof of Symbiosis | `src/economics/proof_of_symbiosis.rs` | Consenso PoS: `committee_threshold_met()` con `threshold = base * (1 + load_factor)` |
+| Network Immune System | `src/federated/network_apoptosis.rs` | Inmunología: `evaluate_peer()` → Healthy/Pain/Apoptosis, `trigger_apoptosis()` + blocklist |
+| Integration Tests | `tests/immune_system.rs` | 14 tests: CE emit/burn, PoS threshold, apoptosis flow, mixed states |
+| Feature Gates | `Cargo.toml` | `v2.1-proof-of-symbiosis`, `v2.1-network-apoptosis` |
+
+### Added — Existential Credit (CE) Ledger
+
+- **existential_credit.rs** — `src/economics/existential_credit.rs`
+  - `CeEntry { value, version, last_updated }`: Estado CE por peer con versión para merge CRDT
+  - `emit_credit(peer_id, z_score, compute_weight)`: Emisión por compute ético (Z > 0)
+  - `burn_credit(peer_id, z_score, penalty_multiplier)`: Quema por perversidad (Z < 0)
+  - `merge(other)`: Semántica CRDT — higher version wins, LWW by value on ties
+  - 21 unit tests: emit, burn, merge idempotency/commutativity/associativity, error cases
+
+### Added — Proof of Symbiosis (PoS) Consensus
+
+- **proof_of_symbiosis.rs** — `src/economics/proof_of_symbiosis.rs`
+  - `SymbiosisValidator` trait: `validate_committee()`, `calculate_weight()`
+  - `committee_threshold_met()`: Umbral dinámico `threshold = base * (1 + network_load_factor)`
+  - Weight formula: `weight = ce_score / total_ce` (proporcional a CE acumulado)
+  - Anti-Sybil: Nodos con CE = 0 tienen peso = 0 (no pueden validar)
+  - 14 unit tests: threshold validation, network load impact, anti-Sybil resistance
+
+### Added — Network Immune System (Apoptosis)
+
+- **network_apoptosis.rs** — `src/federated/network_apoptosis.rs`
+  - `ImmuneState` enum: `Healthy` (score ≥ 0), `Pain` (score < 0), `Apoptosis` (score ≤ -100.0)
+  - `NetworkImmuneSystem`: Monitor de salud con blocklist y `DisconnectCallback` para libp2p
+  - `evaluate_peer()`: Evaluación de estado inmunológico por CE score
+  - `trigger_apoptosis()`: Blocklisting + desconexión del Swarm + registro de evento
+  - `evaluate_all()`: Evaluación masiva con apoptosis automática
+  - 30 unit tests: immune states, apoptosis flow, blocklist management, callback integration
+
+### Fixed
+
+- Added custom `Debug` impl for `NetworkImmuneSystem` to handle `DisconnectCallback` (trait object)
+- Calibrated test burn values in `test_full_apoptosis_flow` to reach -100.0 apoptosis threshold
+
 ## [v2.1.0-sprint28] — 2026-05-22
 
 ### Sprint 28 "Motor de Significado Simbolico (De Tokens a Simbolos)"

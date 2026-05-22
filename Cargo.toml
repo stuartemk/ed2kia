@@ -1,6 +1,6 @@
 [package]
 name = "ed2kia"
-version = "2.1.0-sprint28"
+version = "2.1.0-sprint29"
 edition = "2021"
 description = "Descentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
 license = "Apache-2.0"
@@ -627,6 +627,13 @@ test-mocks = []
 "v2.1-ethical-attention" = []
 # src/async_gossip/crdt_symbols.rs: Distributed SymbolRegistry CRDT
 "v2.1-crdt-symbols" = []
+
+# Sprint29 — Proof of Symbiosis, Crédito de Existencia & Apoptosis de Red
+# src/economics/existential_credit.rs: ExistentialCreditLedger — CRDT per-peer CE tracking
+"v2.1-proof-of-symbiosis" = []
+# src/economics/proof_of_symbiosis.rs: SymbiosisValidator — Dynamic threshold consensus
+# src/federated/network_apoptosis.rs: NetworkImmuneSystem — Peer health monitoring & blocklisting
+"v2.1-network-apoptosis" = []
 
 [dev-dependencies]
 tempfile = "3.10"
