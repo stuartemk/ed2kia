@@ -6,6 +6,42 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.1.0-stable] — 2026-05-23 (Sprint 35 Update)
+
+### Sprint 35 "Live Testnet Activation, Public Dashboard & Steward Onboarding Pipeline"
+
+Sprint 100% operacional y enfocado en comunidad: orquestador de testnet en vivo, dashboard público de estado, guía de onboarding para stewards y pipeline de validación CI. Cero modificaciones en Rust. Feature gates: `v2.1-testnet-ops`, `v2.1-public-dashboard`.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| Testnet Orchestrator | `scripts/activate-testnet.sh` | POSIX testnet orchestrator (N nodes, bootstrap JSON, P2P handshake, SymbolRegistry sync) |
+| Public Dashboard | `web/testnet-status.html` | Static public dashboard (Vanilla JS + CSS, 3D octahedron, nodes/CE/events) |
+| Steward Guide | `docs/steward-onboarding-guide.md` | Step-by-step steward onboarding (requirements → connect → steer → verify → report) |
+| CI Validation | `.github/workflows/testnet-validation.yml` | Continuous validation workflow (syntax, cargo check, build, integration, E2E) |
+
+### Added — Scripts & Operations
+
+- **activate-testnet.sh** — POSIX testnet orchestrator: N-node deployment (default 3), testnet-bootstrap.json generation, P2P handshake verification, SymbolRegistry CRDT sync validation, Docker/cargo modes, --start/--stop/--clean/--status lifecycle management
+
+### Added — Web & Dashboard
+
+- **testnet-status.html** — Static public dashboard: Active nodes list, CE distribution bars, apoptosis/steering event logs, 3D Stuartian Octahedron (geometry-bridge.js), connect-CTA with copy-to-clipboard, auto-refresh 15s, responsive dark mode, zero dependencies
+
+### Added — Documentation
+
+- **steward-onboarding-guide.md** — Complete steward onboarding: 10 sections (What is a Steward, Requirements, Quickstart, Connect to Testnet, Steering Bridge, Octahedron Verification, Report Issues, Join Channel, Troubleshooting, Next Steps), hardware/software requirements, feedback guidelines, architecture overview
+
+### Added — CI/CD
+
+- **testnet-validation.yml** — 9-job CI workflow: syntax-check, cargo-check, build-testnet, integration-test, e2e-testnet, dashboard-validation, docs-validation, abort-report (on failure), success-summary. Scheduled weekly + on push. Concurrency control, artifact reporting.
+
+### Updated — README.md
+
+- Added badge: Testnet Active, Steward Onboarding Guide
+- Added "🌐 Testnet Activa & Únete" section with bootstrap instructions
+
+---
+
 ## [v2.1.0-stable] — 2026-05-22 (Sprint 34 Update)
 
 ### Sprint 34 "Strategic Deployment & Technical Traction"

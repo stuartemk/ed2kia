@@ -26,6 +26,8 @@
 [![Security Audit](https://github.com/ed2kia/ed2kIA/actions/workflows/security-audit.yml/badge.svg)](https://github.com/ed2kia/ed2kIA/actions/workflows/security-audit.yml)
 [![Release Signing](https://img.shields.io/badge/Releases-Ed25519_Signed-brightgreen)](scripts/release-signer.sh)
 [![Dependabot](https://badgen.net/github/dependabot/ed2kia/ed2kIA)](https://github.com/ed2kia/ed2kIA/issues?q=is%3Aissue+author%3Aapp%2Fdependabot)
+[![Testnet](https://img.shields.io/badge/Testnet-Active-brightgreen)](scripts/activate-testnet.sh)
+[![Steward Onboarding](https://img.shields.io/badge/Steward_Onboarding-Ready-blueviolet)](docs/steward-onboarding-guide.md)
 
 ## 🌍 Mandato Ético
 
@@ -135,7 +137,66 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 
 > **Nota:** Los feature gates `v2.1-*` NO están incluidos en `default = ["stable"]`. Requieren activación explícita vía RFC comunitario.
 
-## 🔍 Estado Actual vs. Visión (Transparencia Radical)
+## 🌐 Testnet Activa & Únete
+
+La **testnet pública de ed2kIA** está activa y lista para stewards. Conecta tu nodo, envía feedback ético y observa el Octaedro Estuardiano reaccionar en tiempo real.
+
+### Arranca la Testnet (1 comando)
+
+```bash
+# Descarga y arranca una testnet de 3 nodos
+./scripts/activate-testnet.sh --nodes 3
+
+# Revisa el estado
+./scripts/activate-testnet.sh --status
+
+# Dashboard público (abre en tu navegador)
+# web/testnet-status.html
+```
+
+### Conecta tu Nodo Externo
+
+```bash
+# Usa el bootstrap generado para conectar tu propio nodo
+./target/release/ed2kIA-node \
+  --bootstrap ~/.ed2kIA/testnet-live/testnet-bootstrap.json \
+  --features v2.1-testnet-ops
+```
+
+### Guía de Onboarding para Stewards
+
+¿Quieres convertirte en Steward? Sigue la guía completa:
+
+- 📖 **[Steward Onboarding Guide](docs/steward-onboarding-guide.md)** — Requisitos, quickstart, Steering Bridge, Octahedron, reportes y comunidad.
+- 📋 **[Steward Program](docs/steward-program.md)** — Roles, recompensas, código de conducta y gobernanza.
+- 🌐 **[Testnet Dashboard](web/testnet-status.html)** — Estado en vivo: nodos activos, distribución CE, eventos apoptosis/steering, Octaedro 3D.
+
+### Gestión de la Testnet
+
+```bash
+# Iniciar testnet
+./scripts/activate-testnet.sh --start
+
+# Detener nodos
+./scripts/activate-testnet.sh --stop
+
+# Limpiar datos
+./scripts/activate-testnet.sh --clean
+
+# Modo Docker
+./scripts/activate-testnet.sh --mode docker --nodes 5
+```
+
+### Feature Gates
+
+| Feature | Descripción |
+|---------|-------------|
+| `v2.1-testnet-ops` | Operaciones de testnet: bootstrap, P2P handshake, SymbolRegistry sync |
+| `v2.1-public-dashboard` | Dashboard público: estado en vivo, Octaedro 3D, eventos en tiempo real |
+
+---
+
+##  Estado Actual vs. Visión (Transparencia Radical)
 
 Esta tabla separa explícitamente lo funcional de lo visionario. Cero vaporware, cero opacidad.
 

@@ -656,6 +656,10 @@ test-mocks = []
     "v2.1-proof-of-symbiosis",
 ]
 
+# Sprint 35: Live Testnet Activation — ops-only feature gates (zero Rust changes)
+"v2.1-testnet-ops" = []
+"v2.1-public-dashboard" = []
+
 [dev-dependencies]
 tempfile = "3.10"
 criterion = { version = "0.5", features = ["html_reports"] }
