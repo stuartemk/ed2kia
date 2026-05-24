@@ -619,6 +619,88 @@ cargo test --lib pillar_messaging --features v3.0-pillar-messaging
 cargo test --lib privacy_enforcer --features v3.0-privacy-guard
 ```
 
+### Validación Sprint 43
+
+```bash
+# Verificar Corpuscular Bridge completo
+cargo check --features "v3.0-corpuscular-bridge"
+
+# Ejecutar tests de integración
+cargo test --test corpuscular_bridge --features "v3.0-corpuscular-bridge"
+
+# Tests por módulo
+cargo test --lib iot_adapter --features "v3.0-corpuscular-bridge"
+cargo test --lib ce_exchange --features "v3.0-corpuscular-bridge"
+```
+
+## 🔌 Corpuscular Bridge — IoT Simbiótico & CE Exchange (Sprint 43 — v3.0)
+
+**ed2kIA v3.0.0-sprint43** implementa la lógica real del Pilar 1: Corpuscular Bridge (RFC 001), conectando la red de información con el nivel físico a través de protocolos CE ↔ Recurso Físico.
+
+### Componentes del Corpuscular Bridge
+
+| Componente | Módulo | Descripción |
+|------------|--------|-------------|
+| **IoT Adapter** | `src/pillars/corpuscular/iot_adapter.rs` | `LocalHardwareAdapter` — Registro LOCAL_ONLY de dispositivos IoT |
+| **CE Exchange** | `src/pillars/corpuscular/ce_exchange.rs` | `CEExchangeEngine` — Intercambio atómico CE ↔ Recurso Físico |
+| **Corpuscular Engine** | `src/pillars/corpuscular/mod.rs` | `CorpuscularEngine` — Integración con PillarOrchestrator |
+| **Integration Tests** | `tests/corpuscular_bridge.rs` | 17 tests: LOCAL_ONLY, mint/redeem, replay, routing |
+
+### Local Hardware Adapter — LOCAL_ONLY Enforcement
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│           LocalHardwareAdapter (v3.0-corpuscular-bridge)      │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  Device Registration:                                       │
+│  ┌──────────────┐  ┌────────────┐  ┌──────────────────┐   │
+│  │ HardwareId   │  │ Endpoint   │  │ NodeSignature    │   │
+│  │ (String)     │  │ SocketAddr │  │ (Ed25519 bytes)  │   │
+│  └──────────────┘  └────────────┘  └──────────────────┘   │
+│                                                             │
+│  LOCAL_ONLY Validation:                                     │
+│  ✅ 127.0.0.1 (IPv4 localhost)                              │
+│  ✅ ::1 (IPv6 loopback)                                     │
+│  ❌ Any other IP → NonLocalEndpoint error                   │
+│                                                             │
+│  Command Routing:                                           │
+│  • Payload size validation (max_payload_bytes)              │
+│  • Stream registry for data flows                           │
+│                                                             │
+│  ⚠️ HARDWARE ISOLATION — Loopback only, no external access  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### CE Exchange Protocol — Intercambio Atómico
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│            CEExchangeEngine (v3.0-corpuscular-bridge)        │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  Voucher Minting Pipeline:                                  │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │
+│  │ CE > 0   │→ │ Z ≥ 0    │→ │ Replay   │→ │ CE Window│   │
+│  │ Check    │  │ SCT Eval │  │ Check    │  │ ≤1000/h  │   │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘   │
+│                                                             │
+│  Voucher Redemption:                                        │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │
+│  │ Ed25519  │→ │ Drift ≤30│→ │ Replay   │→ │ Fulfill  │   │
+│  │ Verify   │  │ Seconds  │  │ Protect  │  │ Resource │   │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘   │
+│                                                             │
+│  ResourceType: Print3DHours | SolarEnergyKwh |              │
+│             HydroponicUnits | ComputeCycles |               │
+│             HypothesisToken | Custom                        │
+│                                                             │
+│  ⚠️ ZERO FINANCIAL LOGIC — CE is symbiotic merit only      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+> **Nota:** Sprint 43 completa la implementación del Pilar 1. Pilares 2-4 (Maieutic, Steganographic, Resonance) siguen en desarrollo.
+
 ## ⚡ Hardening & Cross-Platform (Sprint13)
 
 **ed2kIA v2.1.0-sprint13** introduce infraestructura de hardening para escalabilidad y resiliencia de mainnet:

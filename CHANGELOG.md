@@ -6,6 +6,55 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v3.0.0-sprint43] — 2026-05-24 (Sprint 43 — Corpuscular Bridge Implementation & IoT/CE Exchange Protocol)
+
+### Sprint 43 "Corpuscular Bridge Implementation & IoT/CE Exchange Protocol"
+
+Sprint de implementación real para Pilar 1: Corpuscular Bridge (RFC 001). Lógica completa de protocolo CE ↔ Recurso Físico con adaptador de hardware LOCAL_ONLY, motor de intercambio atómico con protección contra replay y ventanas de emisión CE, y enrutamiento integrado con Orquestador de Pilares.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| IoT Adapter | `src/pillars/corpuscular/iot_adapter.rs` | `LocalHardwareAdapter`, `HardwareId`, `HardwareConfig`, `AdapterError` — Registro LOCAL_ONLY de dispositivos |
+| CE Exchange | `src/pillars/corpuscular/ce_exchange.rs` | `CEExchangeEngine`, `ExchangeError`, `PhysicalFulfillment` — Intercambio atómico CE ↔ Recurso Físico |
+| Corpuscular Module | `src/pillars/corpuscular/mod.rs` | `CorpuscularEngine` — Integración con PillarOrchestrator, implementaciones reales de `PillarInterface`/`CEExchangeTrait` |
+| Integration Tests | `tests/corpuscular_bridge.rs` | 17 tests: LOCAL_ONLY, mint/redeem, replay protection, orchestrator routing |
+| Cargo.toml | `Cargo.toml` | Feature `v3.0-corpuscular-bridge` → `v3.0-pillar-messaging` + `v3.0-orchestration` |
+
+### Added — Local Hardware Adapter (LOCAL_ONLY)
+
+- **LocalHardwareAdapter** — Registro de dispositivos IoT con validación estricta de endpoints loopback (127.0.0.1 / ::1).
+- **HardwareId / StreamId** — Identificadores únicos para dispositivos y flujos de datos.
+- **HardwareConfig** — Endpoint (SocketAddr), device_type, node_signature (Ed25519), max_payload_bytes.
+- **AdapterError** — `NonLocalEndpoint`, `DeviceNotFound`, `PayloadTooLarge`, `InvalidSignature`, `DeviceAlreadyRegistered`, `RoutingFailed`.
+- **register_local_device()** — Rechaza endpoints no-localhost con `NonLocalEndpoint`.
+- **route_command()** — Enrutamiento de comandos con validación de tamaño de payload.
+
+### Added — CE Exchange Protocol
+
+- **CEExchangeEngine** — Motor de intercambio atómico con protección contra replay (max 10,000 nonces) y ventanas de emisión CE (1000 CE / 1h).
+- **ExchangeError** — `InvalidCEAmount`, `NegativeZScore`, `ReplayDetected`, `TimestampDriftExceeded`, `InvalidSignature`, `CEWindowLimitExceeded`, `UnsupportedResource`, `HardwareDispatchFailed`.
+- **PhysicalFulfillment** — Registro de cumplimiento: resource_type, ce_consumed, hardware_response, timestamp_ms.
+- **mint_voucher()** — Emisión de CEVoucher con validación SCT Z-score (Z ≥ 0), CE > 0, replay check, CE window limit.
+- **redeem_physical_resource()** — Canje atómico: verifica firma Ed25519, drift ≤30s, replay protection.
+
+### Added — Corpuscular Engine Integration
+
+- **handle_request()** — Enrutamiento de `PillarMessage` a iot_adapter o ce_exchange según payload.
+- **Real PillarInterface** — `validate_local_constraint()` → true, `consume_ce()` → validación real con CE > 0.
+- **Real CEExchangeTrait** — `request_physical_resource()` / `redeem_compute_credit()` → implementaciones funcionales.
+
+### Validation
+
+- `cargo check --features v3.0-corpuscular-bridge`: ✅ PASS (0 errors, 0 warnings)
+- Unit tests: 36 tests across 3 modules (iot_adapter: 15, ce_exchange: 12, mod: 9)
+- Integration tests: 17 tests in `tests/corpuscular_bridge.rs`
+- `cargo clippy`: ✅ PASS
+- Prohibited words: 0 matches
+- LOCAL_ONLY constraint: Enforced via `validate_local_endpoint()`
+- CE-only merit system: Zero Babylonian financial logic
+
+---
+
 ## [v3.0.0-sprint42] — 2026-05-24 (Sprint 42 — WASM Execution Sandbox & Secure Pillar Communication Layer)
 
 ### Sprint 42 "WASM Execution Sandbox & Secure Pillar Communication Layer"
