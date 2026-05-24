@@ -689,6 +689,20 @@ test-mocks = []
 # src/runtime/privacy_enforcer.rs: PrivacyEnforcer — LOCAL_ONLY syscall interception
 "v3.0-privacy-guard" = []
 
+# Sprint 47: Omni-Node Integration & Symbiotic Ignition Sequence
+# src/orchestration/omni_node.rs: OmniNode — Unified pillar integration with SCT Guard
+# src/pillars/steganographic/migration_protocol.rs: MigrationProtocol — Cluster onboarding
+# tests/symbiotic_ignition_e2e.rs: Full E2E cycle across all 4 pillars
+"v3.0-omni-integration" = [
+    "v3.0-orchestration",
+    "v3.0-pillar-messaging",
+    "v3.0-corpuscular-bridge",
+    "v3.0-maieutic-synthesizer",
+    "v3.0-steganographic-survival",
+    "v3.0-resonance-interface",
+    "v2.1-sct-core",
+]
+
 # Sprint 43: Corpuscular Bridge Implementation & IoT/CE Exchange Protocol
 # src/pillars/corpuscular/iot_adapter.rs: LocalHardwareAdapter — LOCAL_ONLY device registry
 # src/pillars/corpuscular/ce_exchange.rs: CEExchangeEngine — CE ↔ Physical Resource atomic exchange
@@ -1026,3 +1040,9 @@ required-features = ["v2.1-formal-validation"]
 name = "symbolic_cognition"
 path = "tests/symbolic_cognition.rs"
 required-features = ["v2.1-symbolic-engine", "v2.1-ethical-attention", "v2.1-crdt-symbols"]
+
+# Sprint 47: Symbiotic Ignition E2E — Full Omni-Node integration cycle
+[[test]]
+name = "symbiotic_ignition_e2e"
+path = "tests/symbiotic_ignition_e2e.rs"
+required-features = ["v3.0-omni-integration"]

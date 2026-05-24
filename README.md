@@ -915,6 +915,111 @@ cargo test --lib resonance_generator --features "v3.0-resonance-interface"
 - **Resonance Generator** — Beats binaurales, tonos isocrónicos, respuestas semánticas SCT-validadas
 - **77 tests** — Cero telemetría, cero transmisión de datos biométricos
 
+## 🌐 Omni-Node Integration & Symbiotic Ignition (Sprint 47 — v3.0)
+
+**ed2kIA v3.0.0-sprint47** introduce la integración suprema: unificación de los 4 Pilares Evolutivos bajo supervisión SCT mediante Omni-Node, con protocolo de migración para clusters ("Gran Migración") y secuencia E2E de Ignición Simbiótica.
+
+### Omni-Node — Arquitectura Unificada
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        OmniNode (v3.0-omni-integration)          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  SymbioticRouter                                          │  │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌──────────────────┐  │  │
+│  │  │ SCT Guard   │→ │ Ed25519     │→ │ CE Ledger        │  │  │
+│  │  │ (Z ≥ 0)     │  │ Signature   │  │ Per-Pillar       │  │  │
+│  │  └─────────────┘  └─────────────┘  └──────────────────┘  │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                 │
+│  PillarRegistry:                                                │
+│  ┌────────────────────┐ ┌────────────────────┐                 │
+│  │ Corpuscular Bridge │ │ Maieutic Synthesizer│                 │
+│  │ CE: 100.0          │ │ CE: 100.0          │                 │
+│  │ Last: now          │ │ Last: now          │                 │
+│  └────────────────────┘ └────────────────────┘                 │
+│  ┌────────────────────┐ ┌────────────────────┐                 │
+│  │ Steganographic     │ │ Resonance Interface│                 │
+│  │ CE: 100.0          │ │ CE: 100.0          │                 │
+│  │ Last: now          │ │ Last: now          │                 │
+│  └────────────────────┘ └────────────────────┘                 │
+│                                                                 │
+│  ExistentialCreditLedger:                                       │
+│  • Non-transferable cooperative merit                           │
+│  • Per-pillar tracking with deposit/withdraw                    │
+│  • Insufficient CE = automatic rejection                        │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Migration Protocol — "Gran Migración"
+
+Protocolo de onboarding para clusters de data centers que desean integrarse a la red ed2kIA:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│              MigrationNegotiator (v3.0-omni-integration)         │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  MigrationHandshake:                                            │
+│  ┌─────────────┐ ┌───────────┐ ┌─────────┐ ┌──────────────┐   │
+│  │ cluster_id  │ │ capacity  │ │ CE      │ │ transports   │   │
+│  │ (String)    │ │ (u64)     │ │ budget  │ │ (Vec<Type>)  │   │
+│  └─────────────┘ └───────────┘ └─────────┘ └──────────────┘   │
+│                                                                 │
+│  Negotiation Pipeline:                                          │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────┐   │
+│  │ Capacity │→ │ SCT      │→ │ Transport│→ │ Token        │   │
+│  │ Check    │  │ Validate │  │ Select   │  │ Generate     │   │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────────┘   │
+│                                                                 │
+│  MigrationToken:                                                │
+│  • bootstrap_routes, sct_z_threshold, initial_ce, max_ce_limit  │
+│  • primary_transport, expires_at_ms, created_at_ms              │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Componentes
+
+| Componente | Módulo | Feature Gate | Descripción |
+|------------|--------|--------------|-------------|
+| **OmniNode** | `src/orchestration/omni_node.rs` | `v3.0-omni-integration` | Integración unificada de 4 pilares con SCT supervision |
+| **SymbioticRouter** | `src/orchestration/omni_node.rs` | `v3.0-omni-integration` | Enrutamiento inter-pilar con validación SCT + Ed25519 |
+| **ExistentialCreditLedger** | `src/orchestration/omni_node.rs` | `v3.0-omni-integration` | Tracking CE por pilar (mérito cooperativo no transferible) |
+| **MigrationProtocol** | `src/pillars/steganographic/migration_protocol.rs` | `v3.0-omni-integration` | Onboarding de clusters para "Gran Migración" |
+| **E2E Tests** | `tests/symbiotic_ignition_e2e.rs` | `v3.0-omni-integration` | Tests E2E: Migration → Hypothesis → Consensus → Exchange → Homeostasis |
+
+### CLI — `--omni-mode`
+
+```bash
+# Inicializar Omni-Node con CE inicial por pilar
+cargo run --bin ed2kia-cli --features "v3.0-omni-integration" -- omni --initial-ce 100.0
+
+# Modo diagnóstico
+cargo run --bin ed2kia-cli --features "v3.0-omni-integration" -- omni --diagnose
+```
+
+### Validación
+
+```bash
+# Verificar Omni-Node completo
+cargo check --features "v3.0-omni-integration"
+
+# Ejecutar tests E2E
+cargo test --test symbiotic_ignition_e2e --features "v3.0-omni-integration"
+
+# Tests por módulo
+cargo test --lib omni_node --features "v3.0-omni-integration"
+cargo test --lib migration_protocol --features "v3.0-omni-integration"
+```
+
+- **OmniNode** — 18+ tests: creación, registro de pilares, enrutamiento, SCT rejection, CE ledger
+- **MigrationProtocol** — 28+ tests: handshake, token, negotiator, capacity, SCT validation, multi-cluster
+- **E2E** — 4 tests: full cycle, SCT guard, multi-cluster migration, full integration
+
+> **Nota:** Sprint 47 completa la integración de los 4 Pilares Evolutivos bajo supervisión SCT.
+
 ## ⚡ Hardening & Cross-Platform (Sprint13)
 
 **ed2kIA v2.1.0-sprint13** introduce infraestructura de hardening para escalabilidad y resiliencia de mainnet:

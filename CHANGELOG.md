@@ -6,6 +6,58 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v3.0.0-sprint47] — 2026-05-24 (Sprint 47 — Omni-Node Integration & Symbiotic Ignition Sequence)
+
+### Sprint 47 "Omni-Node Integration & Symbiotic Ignition Sequence"
+
+Sprint de integración suprema: unificación de los 4 Pilares Evolutivos bajo supervisión SCT mediante Omni-Node. Incluye SymbioticRouter (enrutamiento inter-pilar con validación SCT), ExistentialCreditLedger (tracking CE por pilar), MigrationProtocol (onboarding de clusters para "Gran Migración") y secuencia E2E de Ignición Simbiótica.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| OmniNode | `src/orchestration/omni_node.rs` | `OmniNode`, `SymbioticRouter`, `SymbiosisValidator`, `ExistentialCreditLedger`, `PillarRegistry`, `RoutingError` — Integración unificada de 4 pilares (~791 líneas, 18+ tests) |
+| Migration Protocol | `src/pillars/steganographic/migration_protocol.rs` | `MigrationHandshake`, `MigrationToken`, `MigrationNegotiator`, `MigrationRecord`, `MigrationError` — Protocolo de onboarding de clusters (~800 líneas, 28+ tests) |
+| E2E Tests | `tests/symbiotic_ignition_e2e.rs` | `test_symbiotic_ignition_full_cycle`, `test_sct_guard_blocks_unethical_migration`, `test_multi_cluster_migration_sequence`, `test_full_symbiotic_ignition_with_migration` — Tests E2E (~400 líneas) |
+| CLI | `src/bin/ed2kia-cli.rs` | `--omni-mode` command con `run_omni_mode()` — Inicialización y diagnóstico Omni-Node |
+| Cargo.toml | `Cargo.toml` | Feature `v3.0-omni-integration` → all 4 pillars + orchestration + pillar-messaging + sct-core |
+
+### Added — Omni-Node Architecture
+
+- **OmniNode** — Nodo unificado que registra, enruta y diagnostica los 4 Pilares Evolutivos bajo supervisión SCT.
+- **SymbioticRouter** — Enrutamiento inter-pilar con validación SCT (Z ≥ 0), verificación de firmas Ed25519 y consumo CE.
+- **SymbiosisValidator** — SCT Guard Supreme: rechaza automáticamente mensajes con Z < 0.
+- **ExistentialCreditLedger** — Ledger de créditos existenciales por pilar (no transferible, mérito cooperativo).
+- **PillarRegistry** — Registro de pilares con timestamps de actividad y estado.
+- **RoutingError** — `SctRejection`, `InsufficientCE`, `InvalidSignature`, `UnknownTarget`, `ReplayDetected`.
+
+### Added — Migration Protocol (Gran Migración)
+
+- **MigrationHandshake** — Contacto inicial de cluster: `cluster_id`, `capacity`, `transports`, `health_reports`, `signature`, `ce_budget`.
+- **MigrationToken** — Credenciales de bootstrap: `bootstrap_routes`, `sct_z_threshold`, `initial_ce`, `max_ce_limit`, `expires_at_ms`.
+- **MigrationNegotiator** — Negociación de onboarding: validación de capacidad, SCT validation, selección de transporte óptimo, generación de tokens.
+- **MigrationRecord** — Registro de migración: `cluster_id`, `status`, `timestamp_ms`, `ce_allocated`, `transport_selected`.
+- **MigrationError** — `CapacityExceeded`, `EthicalRejection`, `InvalidHandshake`, `TransportUnavailable`, `SignatureInvalid`.
+
+### Added — Symbiotic Ignition E2E Tests
+
+- **Full Cycle Test** — Migration → Hypothesis → Consensus → Exchange → Homeostasis.
+- **SCT Guard Test** — Validación de rechazo ético en migraciones con Z < 0.
+- **Multi-Cluster Test** — Simulación "Gran Migración" con múltiples clusters.
+- **Integration Test** — Flujo completo de ignición simbiótica con migración integrada.
+
+### Added — CLI --omni-mode
+
+- **run_omni_mode()** — Inicializa OmniNode con CE inicial configurable y modo diagnóstico.
+- **--initial-ce** — Créditos existenciales iniciales por pilar (default: 100.0).
+- **--diagnose** — Modo diagnóstico: muestra estado CE, registro de pilares y validación SCT.
+
+### Validation
+
+- `cargo check --features "v3.0-omni-integration"` — PASS (zero errors)
+- `cargo test --features "v3.0-omni-integration" -- omni_node migration_protocol` — PASS (Sprint 47 tests)
+- Feature gate: `v3.0-omni-integration` depends on all 4 pillars + orchestration + pillar-messaging + sct-core
+
+---
+
 ## [v3.0.0-sprint46] — 2026-05-24 (Sprint 46 — Resonance Interface Implementation (Pillar 4))
 
 ### Sprint 46 "Resonance Interface Implementation (Pillar 4)"

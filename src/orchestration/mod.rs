@@ -12,5 +12,7 @@
 //! **Feature Gate:** `v3.0-orchestration`
 
 mod pillar_router;
+mod omni_node;
 
 pub use pillar_router::*;
+pub use omni_node::*;

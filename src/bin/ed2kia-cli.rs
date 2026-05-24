@@ -76,6 +76,10 @@ async fn main() {
             println!("Features: {}", cli::enabled_features_str());
             Ok(())
         }
+        #[cfg(feature = "v3.0-omni-integration")]
+        Commands::Omni { initial_ce, diagnose } => {
+            run_omni_mode(*initial_ce, *diagnose)
+        }
     };
 
     if let Err(e) = result {
@@ -332,6 +336,16 @@ mod cli {
         },
         /// Show version information
         Version,
+        /// Omni-Node mode — Initialize and diagnose all 4 Evolutionary Pillars
+        #[cfg(feature = "v3.0-omni-integration")]
+        Omni {
+            /// Initial CE allocation per pillar
+            #[arg(short, long, default_value_t = 100.0)]
+            initial_ce: f64,
+            /// Run diagnostics and exit
+            #[arg(short, long)]
+            diagnose: bool,
+        },
     }
 
     #[derive(Subcommand, Debug)]
@@ -573,4 +587,52 @@ mod wizard {
             Ok(PathBuf::from(path))
         }
     }
+}
+
+/// Run Omni-Node mode — Initialize and diagnose all 4 Evolutionary Pillars.
+#[cfg(feature = "v3.0-omni-integration")]
+fn run_omni_mode(initial_ce: f64, diagnose: bool) -> Result<(), String> {
+    use ed2kia::orchestration::OmniNode;
+
+    println!("╔═══════════════════════════════════════════════════════════╗");
+    println!("║              ed2kIA Omni-Node Mode                        ║");
+    println!("║       Sprint 47 — Symbiotic Integration                   ║");
+    println!("╚═══════════════════════════════════════════════════════════╝");
+    println!();
+
+    // Initialize Omni-Node
+    let mut omni = OmniNode::new();
+    omni.initialize_pillars(initial_ce);
+
+    println!("✓ Omni-Node initialized with 4 Evolutionary Pillars");
+    println!("✓ Initial CE per pillar: {:.2}", initial_ce);
+    println!();
+
+    // Display pillar status
+    println!("— Pillar Registry —");
+    for pillar in omni.registered_pillars() {
+        let status = omni.get_pillar_status(pillar).unwrap_or(ed2kia::orchestration::PillarStatus::Pending);
+        let ce = omni.ce_ledger().balance(pillar);
+        println!("  • {} — Status: {:?}, CE: {:.2}", pillar, status, ce);
+    }
+    println!();
+
+    // Display CE Ledger summary
+    println!("— CE Ledger Summary —");
+    println!("  Total CE Emitted: {:.2}", omni.ce_ledger().total_emitted());
+    println!("  Total CE Consumed: {:.2}", omni.ce_ledger().total_consumed());
+    println!("  SCT Rejections: {}", omni.rejection_count());
+    println!();
+
+    if diagnose {
+        println!("— Diagnostics —");
+        let diagnostics = omni.diagnose();
+        for (pillar, diag) in &diagnostics {
+            println!("  • {}: {}", pillar, diag);
+        }
+        println!();
+    }
+
+    println!("Omni-Node is ready for symbiotic operation.");
+    Ok(())
 }

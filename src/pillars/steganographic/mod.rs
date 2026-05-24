@@ -29,10 +29,14 @@ use crate::pillars::{PillarError, PillarInterface};
 pub mod traffic_masker;
 pub mod chaffing_engine;
 pub mod transport_rotator;
+#[cfg(feature = "v3.0-omni-integration")]
+pub mod migration_protocol;
 
 pub use traffic_masker::{TrafficMasker, MaskingError, MaskerConfig, SrtpHeader};
 pub use chaffing_engine::{ChaffingEngine, ChaffingError, ChaffConfig, TaggedPacket};
 pub use transport_rotator::{TransportRotator, RotationError, RotatorConfig, TransportType, TransportHealth};
+#[cfg(feature = "v3.0-omni-integration")]
+pub use migration_protocol::{MigrationHandshake, MigrationToken, MigrationNegotiator, MigrationError, MigrationRecord, MigrationStatus};
 
 /// Obfuscation pipeline result: (SRTP frames, chaffed packets, selected transport).
 pub type ObfuscationResult = Result<(Vec<Vec<u8>>, Vec<TaggedPacket>, TransportType), String>;
