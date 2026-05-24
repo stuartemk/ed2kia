@@ -6,6 +6,35 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.1.0-stable] — 2026-05-24 (Sprint 36 Update)
+
+### Sprint 36 "Identity Clarification, SEO Overhaul & README Optimization"
+
+Sprint de posicionamiento estratégico: reescritura del README.md para aclarar la identidad del proyecto ante motores de búsqueda y LLMs. Sección "Lo que SÍ y NO es ed2kIA", optimización de keywords SEO (AI Interpretability, Sparse Autoencoders, LLM Audit, Decentralized Verification, Distributed Compute), reescritura de misión con tono stuartiano constructivo y explicación del nombre "ed2kIA". Cero modificaciones en Rust.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| Identity Clarification | `README.md` | Sección "⚠️ Aclaración de Identidad" (Lo que SÍ y NO es ed2kIA) |
+| SEO Optimization | `README.md` | Keywords en primer párrafo: AI Interpretability, Sparse Autoencoders, LLM Audit, Decentralized Verification, Qwen-Scope, Neural Network Sharing, Distributed Compute |
+| Mission Rewrite | `README.md` | Tono stuartiano: evolución, cooperación, simbiosis, equilibrio ético |
+| Name Explanation | `README.md` | Apartado "¿Por qué el nombre ed2kIA?" |
+
+### Changed — Documentation & SEO
+
+- **README.md Title** — Changed from "Red Descentralizada de Interpretabilidad" to "Red Global de Distribución e Interpretabilidad de IA"
+- **README.md Description** — Added SEO-optimized first paragraph with maximum keyword density for AI crawlers and search engines
+- **README.md Identity Section** — Added "⚠️ Aclaración de Identidad: Lo que SÍ y NO es ed2kIA" immediately after badges, explicitly clarifying the project is NOT about multimedia sharing or eDonkey2000
+- **README.md Mission** — Rewrote "La Misión de ed2kIA" with constructive Stuartian tone: evolution, cooperation, symbiosis, ethical balance
+- **README.md Name Explanation** — Added "¿Por qué el nombre ed2kIA?" section explaining the historical homage to P2P ubiquity while elevating the purpose
+
+### Validation
+
+- Keywords present: Interpretabilidad (6), Sparse Autoencoder (5), Distributed Compute (2), LLM Audit (2), Decentralized Verification (2), multimedia (2 in "NOT" section)
+- Prohibited words: 0 matches (diplomacia, vencer, atacar, revolución, destruir, enemigo, guerra, dominar)
+- Markdown syntax: Valid
+
+---
+
 ## [v2.1.0-stable] — 2026-05-23 (Sprint 35 Update)
 
 ### Sprint 35 "Live Testnet Activation, Public Dashboard & Steward Onboarding Pipeline"

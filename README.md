@@ -1,8 +1,6 @@
-# ed2kIA - Red Descentralizada de Interpretabilidad
+# ed2kIA - Red Global de Distribución e Interpretabilidad de IA
 
-> **Imagina que los LLMs son sistemas complejos que requieren auditoría colaborativa. ed2kIA es una red de verificadores voluntarios distribuidos por todo el mundo que trabajan juntos para hacer estos sistemas más comprensibles, uno a uno, de forma transparente y verificable.**
-
-> **Red descentralizada de código abierto para análisis interpretativo distribuido de LLMs usando Sparse Autoencoders (Qwen-Scope)**
+> **AI Interpretability at Scale:** ed2kIA es una red descentralizada de **Sparse Autoencoders (Qwen-Scope)** para **LLM Audit** y **Decentralized Verification**. Compartimos **Redes Neuronales Artificiales y Poder de Cómputo** mediante **Neural Network Sharing** y **Distributed Compute** cooperativo.
 
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ethical-blue)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-2021-orange)](https://www.rust-lang.org/)
@@ -29,22 +27,39 @@
 [![Testnet](https://img.shields.io/badge/Testnet-Active-brightgreen)](scripts/activate-testnet.sh)
 [![Steward Onboarding](https://img.shields.io/badge/Steward_Onboarding-Ready-blueviolet)](docs/steward-onboarding-guide.md)
 
+## ⚠️ Aclaración de Identidad: Lo que SÍ y NO es ed2kIA
+
+> **⚠️ Aclaración de Identidad: Lo que NO es ed2kIA**
+> * ❌ **NO compartimos multimedia:** No es una red para compartir películas, música o juegos.
+> * ❌ **NO tiene lógica financiera:** Cero tokens, cero criptomonedas, cero especulación. Es un proyecto puramente científico y ético.
+> * ❌ **NO es un cliente eDonkey2000:** El nombre es un homenaje histórico, pero ed2kIA no tiene relación con protocolos de archivo multimedia legacy.
+>
+> **✅ Lo que SÍ es ed2kIA:**
+> * ✅ **SÍ es una red de intercambio (sharing):** Pero compartimos **Redes Neuronales Artificiales y Poder de Cómputo** de manera distribuida.
+> * ✅ Una red global diseñada para vivir en todos los dispositivos conectados a internet, creando una infraestructura unificada y positiva para la **evolución** de la IA.
+> * ✅ Un sistema de **Sparse Autoencoders (SAEs)** distribuido para auditar LLMs, garantizando la cooperación y el equilibrio ético en la Inteligencia Artificial.
+> * ✅ Plataforma de **AI Interpretability**, **LLM Audit** y **Decentralized Verification** mediante **Distributed Compute** cooperativo.
+
 ## 🌍 Mandato Ético
 
 Este proyecto es de código abierto, transparente y diseñado exclusivamente para el progreso humano y el desarrollo responsable de la IA. Todo el código es auditable, libre de backdoors y compatible con infraestructura voluntaria global.
 
 **Licencia:** Apache 2.0 + Cláusula de Uso Ético (bienestar humano/IA)
 
-## 🌍 La Misión de ed2kIA: Alinear a los Gigantes mediante Verificación Comunitaria
+## 🌍 La Misión de ed2kIA: Evolución y Equilibrio Ético de la IA
 
-Hoy en día, organizaciones como Google, OpenAI o Meta desarrollan las Inteligencias Artificiales más potentes del planeta. Estos sistemas son complejos: la comunidad científica busca comprender cómo toman decisiones, en qué se basan y cómo garantizar su alineación ética. **ed2kIA contribuye a este esfuerzo colectivo.**
+Hoy en día, organizaciones como Google, OpenAI o Meta desarrollan las Inteligencias Artificiales más potentes del planeta. Estos sistemas son complejos: la comunidad científica busca comprender cómo toman decisiones, en qué se basan y cómo garantizar su alineación ética. **ed2kIA contribuye a este esfuerzo colectivo mediante la cooperación distribuida.**
 
-### 🤝 ¿Cómo democratizamos el acceso a la interpretabilidad?
-* **Un Supercomputador Colaborativo:** Unimos las computadoras y teléfonos de miles de personas en todo el mundo para crear una red de verificación distribuida y transparente.
-* **Puente de Transparencia:** Nuestro software analiza las matemáticas complejas de la IA y las traduce a información que cualquier investigador puede auditar. Es un puente de transparencia y alineación verificable.
-* **Acceso Abierto para Todos:** Al ser un proyecto 100% abierto y comunitario, democratizamos el acceso a la interpretabilidad. Cualquier estudiante o ciudadano podrá participar en la auditoría colaborativa de sistemas de IA para promover la seguridad, equidad y transparencia.
+### 🤝 ¿Cómo equilibramos el acceso a la IA?
+* **Infraestructura Global Cooperativa:** Conectamos las computadoras y teléfonos de miles de personas en todo el mundo para crear una red de verificación distribuida y transparente. Cada dispositivo aporta poder de cómputo, incluso desde el navegador vía WASM, democratizando el acceso a la interpretabilidad de IA.
+* **Puente de Transparencia:** Nuestro software analiza las matemáticas complejas de la IA y las traduce a información que cualquier investigador puede auditar. Es un puente de transparencia, simbiosis y alineación verificable.
+* **Acceso Abierto para Todos:** Al ser un proyecto 100% abierto y comunitario, permitimos que cualquier estudiante o ciudadano participe en la auditoría colaborativa de sistemas de IA para promover la seguridad, equidad y transparencia.
 
-No necesitas ser un científico para contribuir al futuro. Al compartir un poco de la potencia de tu PC o tu teléfono, te conviertes en parte de una red global de verificación colaborativa.
+No necesitas ser un científico para contribuir al futuro. Al compartir un poco de la potencia de tu PC o tu teléfono, te conviertes en parte de una red global de verificación colaborativa que busca el equilibrio ético entre tecnología y humanidad.
+
+### 💡 ¿Por qué el nombre "ed2kIA"?
+
+> *"¿Por qué el nombre ed2kIA? Elegimos este prefijo como un homenaje a la ubicuidad de las redes P2P originales, pero elevando su propósito. ed2kIA es una red de intercambio, pero en lugar de archivos tradicionales, distribuimos redes neuronales y poder de cómputo. Es la materialización de una red global positiva que conecta todos los dispositivos para la evolución y el equilibrio de la Inteligencia Artificial."*
 
 ## 📐 Arquitectura
 
