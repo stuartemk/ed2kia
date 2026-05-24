@@ -524,6 +524,101 @@ cargo check-wasm --features "v3.0-orchestration,v3.0-wasm-edge"
 
 > **Nota:** Sprint 41 establece el scaffolding y contratos. La implementación completa de cada pilar corresponde a Fase 10.
 
+## 🔒 Runtime Seguro & Comunicación de Pilares (Sprint 42 — v3.0)
+
+**ed2kIA v3.0.0-sprint42** introduce el entorno de ejecución seguro (WASM Sandbox) y la capa de comunicación cifrada entre el Orquestador y los 4 Pilares Evolutivos.
+
+### Componentes del Runtime
+
+| Componente | Módulo | Feature Gate | Descripción |
+|------------|--------|--------------|-------------|
+| **WASM Sandbox** | `src/runtime/wasm_sandbox.rs` | `v3.0-wasm-runtime` | Ejecución aislada: 256MB, 5s timeout, syscall filtering |
+| **Pillar Messaging** | `src/runtime/pillar_messaging.rs` | `v3.0-pillar-messaging` | Ed25519 + bincode + zstd + replay protection |
+| **Privacy Enforcer** | `src/runtime/privacy_enforcer.rs` | `v3.0-privacy-guard` | Guardián LOCAL_ONLY: bloquea syscalls de red |
+
+### WASM Sandbox — Ejecución Aislada
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    WasmSandbox (v3.0-wasm-runtime)           │
+├─────────────────────────────────────────────────────────────┤
+│  Memory: 256MB (configurable)                               │
+│  Timeout: 5s (configurable)                                 │
+│  SyscallPolicy: LocalReadOnly | FullyIsolated               │
+│                                                             │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │  Module Validation                                    │  │
+│  │  • WASM magic number check (0x00 0x61 0x73 0x6d)     │  │
+│  │  • Non-empty module enforcement                       │  │
+│  │  • Structured logging (timestamp_ms, level, message)  │  │
+│  └───────────────────────────────────────────────────────┘  │
+│                                                             │
+│  ⚠️ ZERO PERSISTENCE — State cleared after execution       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Secure Messaging — Canal Orquestador ↔ Pilares
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│              MessageChannelManager (v3.0-pillar-messaging)   │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  PillarMessage:                                             │
+│  ┌─────────────┐ ┌───────────┐ ┌─────────┐ ┌───────────┐  │
+│  │ Payload     │ │ Ed25519   │ │ Nonce   │ │ CE-weight │  │
+│  │ (bincode+   │ │ Signature │ │ (u64)   │ │ (f64)     │  │
+│  │  zstd)      │ │           │ │         │ │           │  │
+│  └─────────────┘ └───────────┘ └─────────┘ └───────────┘  │
+│                                                             │
+│  Verification Pipeline:                                     │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │
+│  │ Signature│→ │ Drift ≤30│→ │ Replay   │→ │ Payload  │   │
+│  │ Check    │  │ Seconds  │  │ Protect  │  │ Return   │   │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘   │
+│                                                             │
+│  ReplayProtection: LRU eviction (max 10,000 nonces)        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Privacy Enforcer — Guardián LOCAL_ONLY
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│              PrivacyEnforcer (v3.0-privacy-guard)            │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  Allowed Syscalls (default):                                │
+│  • read (0)    • fstat (2)    • lseek (3)    • close (4)   │
+│                                                             │
+│  Blocked Syscalls (network):                                │
+│  • socket (41) • connect (43) • sendto (44)   • recvfrom   │
+│  • sendmsg (46)• recvmsg (47) • bind (49)    • listen (50) │
+│                                                             │
+│  Telemetry Blocklist:                                       │
+│  telemetry.*, analytics.*, tracking.*, .google., .microsoft.│
+│                                                             │
+│  Audit Ledger: timestamp_ms | operation | result | context  │
+│                                                             │
+│  ⚠️ LOCAL_ONLY — No network access, no telemetry           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Validación
+
+```bash
+# Verificar runtime completo
+cargo check --features "v3.0-wasm-runtime,v3.0-pillar-messaging,v3.0-privacy-guard"
+
+# Ejecutar tests de integración
+cargo test --test wasm_runtime --features "v3.0-wasm-runtime,v3.0-pillar-messaging,v3.0-privacy-guard"
+
+# Tests por módulo
+cargo test --lib wasm_sandbox --features v3.0-wasm-runtime
+cargo test --lib pillar_messaging --features v3.0-pillar-messaging
+cargo test --lib privacy_enforcer --features v3.0-privacy-guard
+```
+
 ## ⚡ Hardening & Cross-Platform (Sprint13)
 
 **ed2kIA v2.1.0-sprint13** introduce infraestructura de hardening para escalabilidad y resiliencia de mainnet:

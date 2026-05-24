@@ -351,14 +351,27 @@ pub mod monitoring {
 }
 
 /// Runtime optimization — Tokio tuning, task scheduling, worker pools
-#[cfg(feature = "v1.4-sprint1")]
+/// Runtime v3.0 — WASM sandbox, secure messaging, privacy enforcement
+#[cfg(any(feature = "v1.4-sprint1", feature = "v3.0-wasm-runtime", feature = "v3.0-pillar-messaging", feature = "v3.0-privacy-guard"))]
 pub mod runtime {
+    #[cfg(feature = "v1.4-sprint1")]
     #[path = "../runtime/task_scheduler.rs"]
     pub mod task_scheduler;
+    #[cfg(feature = "v1.4-sprint1")]
     #[path = "../runtime/tokio_optimizer.rs"]
     pub mod tokio_optimizer;
+    #[cfg(feature = "v1.4-sprint1")]
     #[path = "../runtime/worker_pool.rs"]
     pub mod worker_pool;
+    #[cfg(feature = "v3.0-wasm-runtime")]
+    #[path = "../runtime/wasm_sandbox.rs"]
+    pub mod wasm_sandbox;
+    #[cfg(feature = "v3.0-pillar-messaging")]
+    #[path = "../runtime/pillar_messaging.rs"]
+    pub mod pillar_messaging;
+    #[cfg(feature = "v3.0-privacy-guard")]
+    #[path = "../runtime/privacy_enforcer.rs"]
+    pub mod privacy_enforcer;
 }
 
 /// Storage — LZ4 compression, checkpoint cache, gradient archive

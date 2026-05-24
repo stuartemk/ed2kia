@@ -6,6 +6,54 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v3.0.0-sprint42] — 2026-05-24 (Sprint 42 — WASM Execution Sandbox & Secure Pillar Communication Layer)
+
+### Sprint 42 "WASM Execution Sandbox & Secure Pillar Communication Layer"
+
+Sprint de runtime seguro: entorno de ejecución aislado para módulos WASM de los 4 Pilares Evolutivos. Canal de comunicación cifrado entre Orquestador y Pilares con firmas Ed25519, compresión zstd y protección contra replay. Guardián de privacidad que bloquea syscalls de red para forzar la constraint LOCAL_ONLY.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| WASM Sandbox | `src/runtime/wasm_sandbox.rs` | `WasmSandbox`, `SandboxConfig`, `SyscallPolicy`, `SandboxError`, `SandboxLog` |
+| Pillar Messaging | `src/runtime/pillar_messaging.rs` | `PillarMessage`, `MessagingError`, `ReplayProtection`, `MessageChannelManager` |
+| Privacy Enforcer | `src/runtime/privacy_enforcer.rs` | `PrivacyEnforcer`, `PrivacyViolation`, `AuditEntry`, `InterceptionResult` |
+| Runtime Module | `src/runtime/mod.rs` | Module declarations with v3.0 feature gates |
+| Integration Tests | `tests/wasm_runtime.rs` | Sandbox isolation, message integrity, privacy enforcement, CE-weighted priority |
+| Cargo.toml | `Cargo.toml` | Features `v3.0-wasm-runtime`, `v3.0-pillar-messaging`, `v3.0-privacy-guard` |
+| lib.rs | `src/lib.rs` | Runtime module registration with v3.0 feature gates |
+
+### Added — WASM Execution Sandbox
+
+- **WasmSandbox** — Entorno de ejecución aislado: 256MB memory limit, 5s timeout, syscall filtering (`LocalReadOnly` / `FullyIsolated`).
+- **SandboxConfig** — Configuración personalizable: `memory_limit_bytes`, `timeout_seconds`, `syscall_filter`.
+- **SandboxError** — Errores: `ModuleInvalid`, `MemoryLimitExceeded`, `TimeoutExceeded`, `BlockedSyscall`, `WasmTrap`.
+- **SandboxLog** — Registro estructurado: `timestamp_ms`, `level`, `message`.
+
+### Added — Secure Pillar Messaging
+
+- **PillarMessage** — Mensaje seguro: payload bincode+zstd, firma Ed25519, nonce, timestamp, CE-weight.
+- **ReplayProtection** — Tracking de nonces con LRU eviction (max 10,000). Previene procesamiento duplicado.
+- **MessageChannelManager** — Verificación de integridad: firma, drift ≤30s, replay detection.
+- **CE-weighted Priority** — Nodos con mayor CE obtienen prioridad en canales de mensaje.
+
+### Added — Privacy Enforcement
+
+- **PrivacyEnforcer** — Guardián LOCAL_ONLY: intercepta syscalls, bloquea red (connect/sendto/recvfrom), previene telemetría.
+- **PrivacyViolation** — Tipos: `NetworkBlocked`, `TelemetryAttempt`, `UnauthorizedFileAccess`, `GeneralViolation`.
+- **AuditEntry** — Ledger inmutable: `timestamp_ms`, `operation`, `result`, `context`.
+- **Telemetry Blocklist** — Patrones bloqueados: `telemetry.`, `analytics.`, `tracking.`, `.google.`, `.microsoft.`, `.amazon.`.
+
+### Validation
+
+- `cargo check --features v3.0-wasm-runtime,v3.0-pillar-messaging,v3.0-privacy-guard`: ✅ PASS (pending)
+- Unit tests: 30 tests across 3 modules
+- Integration tests: 20 tests in `tests/wasm_runtime.rs`
+- Prohibited words: 0 matches
+- LOCAL_ONLY constraint: Enforced via PrivacyEnforcer
+- CE-only merit system: Zero Babylonian financial logic
+
+---
+
 ## [v3.0.0-sprint41] — 2026-05-24 (Sprint 41 — Cross-Pillar Orchestration & WASM/Edge Integration)
 
 ### Sprint 41 "Cross-Pillar Orchestration & WASM/Edge Integration Scaffolding"

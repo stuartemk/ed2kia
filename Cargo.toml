@@ -678,6 +678,14 @@ test-mocks = []
 "v3.0-orchestration" = []
 "v3.0-wasm-edge" = []
 
+# Sprint 42: WASM Execution Sandbox & Secure Pillar Communication Layer
+# src/runtime/wasm_sandbox.rs: WasmSandbox — memory-bounded, timeout-limited, syscall-filtered
+"v3.0-wasm-runtime" = []
+# src/runtime/pillar_messaging.rs: MessageChannelManager — Ed25519, bincode, zstd, replay protection
+"v3.0-pillar-messaging" = ["v3.0-orchestration"]
+# src/runtime/privacy_enforcer.rs: PrivacyEnforcer — LOCAL_ONLY syscall interception
+"v3.0-privacy-guard" = []
+
 [dev-dependencies]
 tempfile = "3.10"
 criterion = { version = "0.5", features = ["html_reports"] }
