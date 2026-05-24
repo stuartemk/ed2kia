@@ -660,6 +660,16 @@ test-mocks = []
 "v2.1-testnet-ops" = []
 "v2.1-public-dashboard" = []
 
+# Sprint 40: Project Genesis — 4 Evolutionary Pillars (v3.0 architecture scaffolding)
+# RFC 001: Corpuscular Bridge — IoT Simbiótico & Economía CE
+"v3.0-corpuscular-bridge" = []
+# RFC 002: Maieutic Synthesizer — Motor de Sabiduría (distributed scientific creation)
+"v3.0-maieutic-synthesizer" = []
+# RFC 003: Steganographic Survival — Preservación de Red (traffic obfuscation)
+"v3.0-steganographic-survival" = []
+# RFC 004: Resonance Interface — Biorretroalimentación local (100% WASM/Edge)
+"v3.0-resonance-interface" = []
+
 [dev-dependencies]
 tempfile = "3.10"
 criterion = { version = "0.5", features = ["html_reports"] }

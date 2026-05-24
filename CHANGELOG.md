@@ -6,6 +6,40 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v3.0.0-arch] — 2026-05-24 (Sprint 40 — Project Genesis)
+
+### Sprint 40 "Project Genesis — The 4 Evolutionary Pillars of Positive SKYNET"
+
+Sprint de arquitectura v3.0: definición técnica (RFCs) y scaffolding de los 4 Pilares Evolutivos que trascienden la capa de software e integran ed2kIA con el mundo físico, la biología y la creación científica distribuida. Cero lógica implementada — RFCs + feature gates vacíos en Cargo.toml.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| RFC 001 | `docs/architecture/rfc/001-corpuscular-bridge.md` | IoT Simbiótico & Economía CE — MQTT/CoAP over libp2p, HardwareAdapter, Corpuscular Contracts |
+| RFC 002 | `docs/architecture/rfc/002-maieutic-synthesizer.md` | Motor de Sabiduría — Simulación científica distribuida (MD, Protein Folding, Epigenética), BFT + SCT |
+| RFC 003 | `docs/architecture/rfc/003-steganographic-survival.md` | Preservación de Red — SRTP Frame Injection, Chaffing & Winnowing, Transport Rotation |
+| RFC 004 | `docs/architecture/rfc/004-resonance-interface.md` | Biorretroalimentación — FACS, rPPG, Voice, Homeostasis Index, Resonance Generator (100% local WASM) |
+| Feature Gates | `Cargo.toml` | `v3.0-corpuscular-bridge`, `v3.0-maieutic-synthesizer`, `v3.0-steganographic-survival`, `v3.0-resonance-interface` |
+
+### Added — v3.0 Architecture RFCs
+
+- **RFC 001: Corpuscular Bridge** — Puente IoT Simbiótico & Economía CE. Conecta la red de información ed2kIA con el nivel físico/energético mediante intercambio de recursos físicos firmado con Ed25519. Protocols: MQTT 3.1.1/5.0, CoAP (RFC 7252), WebTransport over HTTP/3. Rust trait `HardwareAdapter` para abstracción de dispositivos (impresoras 3D, microrredes solares, controladores hidropónicos). Contratos corpusculares: CE ↔ Recurso Físico con ejecución atómica y reembolso automático.
+- **RFC 002: Maieutic Synthesizer** — Motor de Sabiduría. Evoluciona ed2kIA desde la auditoría de conocimiento hacia la creación científica distribuida. Pipeline de 4 fases: Descomposición Científica → Distribución P2P → Agregación BFT → Síntesis Maieútica. Módulos de simulación WASM: Dinámica Molecular (Verlet + CHARMM36), Plegamiento de Proteínas (AlphaFold-lite), Epigenética (metilación + DESeq2-like). `HypothesisEngine` con síntesis cruzada de dominios. Evaluación ética SCT (Z > 0).
+- **RFC 003: Steganographic Survival** — Preservación de Red. Ofuscación de tráfico para hacer indistinguible a ed2kIA del tráfico estándar de internet. Inyección de frames SRTP: cargas útiles libp2p fragmentadas (≤1400 bytes) incrustadas como esteganografía LSB en frames H.264/VP8. Chaffing & Winnowing: inyección de paquetes de ruido (relación 3:1) con plantillas HTTPS/DNS/QUIC. Transport Rotator: rotación dinámica de puertos/protocolos (443/8443/9000/9001, TCP/UDP/QUIC/WebTransport) cada 300s. Feature-gated, deshabilitado por defecto.
+- **RFC 004: Resonance Interface** — Biorretroalimentación. Bucle de retroalimentación biométrica 100% local vía WASM/Edge — CERO telemetría. `FaceAnalyzer`: detección de Action Units FACS (AU1-AU12), emociones básicas, valencia/arousal/dominancia. `RppgEngine`: extracción del canal verde, filtro bandpass (0.7-2.5 Hz), cálculo BPM, HRV (SDNN, RMSSD), derivación de índice de estrés. `VoiceEngine`: análisis de pitch, jitter, shimmer. Homeostasis Index (HI): fusión multi-biométrica = 0.4×emocional + 0.4×cardiovascular + 0.2×vocal. `ResonanceGenerator`: beats binaurales (theta/alpha/beta/gamma), tonos isocrónicos, respuestas semánticas validadas por SCT. WebAudio API para síntesis de audio local.
+
+### Changed — Build Configuration
+
+- **Cargo.toml** — Added 4 v3.0 feature gates (empty, scaffolding only): `v3.0-corpuscular-bridge`, `v3.0-maieutic-synthesizer`, `v3.0-steganographic-survival`, `v3.0-resonance-interface`
+
+### Validation
+
+- Prohibited words in RFCs: 0 matches (diplomacia, vencer, atacar, revolución, destruir, enemigo, guerra, dominar, esconderse, evadir)
+- Privacy: 100% local WASM processing for biometric data (RFC 004)
+- Financial logic: Zero Babylonian logic — CE-based merit system only (RFC 001)
+- Feature gates: Empty arrays, no dependencies (scaffolding only)
+
+---
+
 ## [v2.1.0-stable] — 2026-05-24 (Sprint 36 Update)
 
 ### Sprint 36 "Identity Clarification, SEO Overhaul & README Optimization"
