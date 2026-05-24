@@ -1,0 +1,41 @@
+# ed2kIA — Cargo Configuration for WASM/Edge Targets
+# Sprint 41: Cross-Pillar Orchestration & WASM/Edge Integration
+
+[build]
+# Default target remains native for core P2P/consensus modules.
+# WASM targets activated via `--target` flag.
+
+[target.wasm32-unknown-unknown]
+# Browser WASM target — Resonance Interface (RFC 004) & Browser Node.
+# Optimized for minimal binary size + fast initialization.
+rustflags = [
+    "-C", "opt-level=3",
+    "-C", "target-cpu=mvp",
+    "-C", "lto=fat",
+]
+
+[target.wasm32-wasi]
+# Edge/WASI target — Lightweight server deployments for pillar orchestration.
+# Balances performance with system call compatibility.
+rustflags = [
+    "-C", "opt-level=3",
+    "-C", "target-cpu=mvp",
+]
+
+[target.x86_64-unknown-linux-gnu]
+# Native Linux target — Full node deployments.
+rustflags = [
+    "-C", "opt-level=2",
+]
+
+[target.x86_64-pc-windows-msvc]
+# Native Windows target — Development & local testing.
+rustflags = [
+    "-C", "opt-level=2",
+]
+
+# Alias for common WASM build command
+[alias]
+build-wasm-browser = "build --target wasm32-unknown-unknown --release"
+build-wasm-edge = "build --target wasm32-wasi --release"
+check-wasm = "check --target wasm32-unknown-unknown"

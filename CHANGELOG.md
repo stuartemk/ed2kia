@@ -6,6 +6,49 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v3.0.0-sprint41] — 2026-05-24 (Sprint 41 — Cross-Pillar Orchestration & WASM/Edge Integration)
+
+### Sprint 41 "Cross-Pillar Orchestration & WASM/Edge Integration Scaffolding"
+
+Sprint de integración: capa de orquestación que conecta los 4 Pilares Evolutivos (RFCs 001-004) con el núcleo ed2kIA (P2P, SCT, Ledger CE, CRDTs). Contratos de integración (traits), enrutador de pilares, estructura de módulos y configuración de compilación WASM/Edge. Cero lógica profunda — scaffolding estructural.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| Pillar Orchestrator | `src/orchestration/mod.rs` | Module declaration + re-export |
+| Pillar Router | `src/orchestration/pillar_router.rs` | `PillarOrchestrator`, `PillarId`, `PillarEndpoint`, `PillarPayload`, `PillarResponse` |
+| Integration Contracts | `src/pillars/contracts.rs` | `PillarInterface`, `LocalComputeTrait`, `CEExchangeTrait`, `CEVoucher`, `ResourceType` |
+| Corpuscular Module | `src/pillars/corpuscular/mod.rs` | `CorpuscularEngine` — RFC 001 scaffolding |
+| Maieutic Module | `src/pillars/maieutic/mod.rs` | `MaieuticEngine` — RFC 002 scaffolding |
+| Steganographic Module | `src/pillars/steganographic/mod.rs` | `SteganographicEngine` — RFC 003 scaffolding |
+| Resonance Module | `src/pillars/resonance/mod.rs` | `ResonanceEngine` — RFC 004 scaffolding (LOCAL_ONLY) |
+| WASM/Edge Config | `.cargo/config.toml` | `wasm32-unknown-unknown` + `wasm32-wasi` targets, rustflags, aliases |
+| Cargo.toml | `Cargo.toml` | Features `v3.0-orchestration`, `v3.0-wasm-edge` + WASM deps (wasm-bindgen, js-sys, web-sys) |
+| lib.rs | `src/lib.rs` | Module registration for `orchestration` + `pillars` |
+
+### Added — Cross-Pillar Orchestration
+
+- **PillarOrchestrator** — Enrutador central que valida firma Ed25519, CE > 0, SCT Z > 0 antes de dispatch a `PillarEndpoint` (LocalWasm, Edge, Remote).
+- **LOCAL_ONLY Enforcement** — ResonanceInterface (RFC 004) solo acepta `PillarEndpoint::LocalWasm`. Cero telemetría.
+- **PillarInterface trait** — Contrato unificado: `id()`, `validate_local_constraint()`, `consume_ce()`.
+- **LocalComputeTrait** — Interfaz WASM/Edge para cómputo local biométrico y científico (ZERO telemetry).
+- **CEExchangeTrait** — Interfaz corpuscular: `request_physical_resource()`, `redeem_compute_credit()`. CE como mérito simbiótico.
+- **4 Pillar Engines** — `CorpuscularEngine`, `MaieuticEngine`, `SteganographicEngine`, `ResonanceEngine` con stubs `unimplemented!()` + documentación técnica detallada.
+
+### Added — WASM/Edge Build Configuration
+
+- **.cargo/config.toml** — Targets `wasm32-unknown-unknown` (browser) y `wasm32-wasi` (edge). Rustflags: `-C opt-level=3`, `-C target-cpu=mvp`, `-C lto=fat`.
+- **Cargo.toml** — `v3.0-orchestration`, `v3.0-wasm-edge` features. WASM deps: `wasm-bindgen`, `js-sys`, `web-sys` (AudioContext, OscillatorNode, GainNode).
+- **Cargo aliases** — `cargo build-wasm-browser`, `cargo build-wasm-edge`, `cargo check-wasm`.
+
+### Validation
+
+- `cargo check --features v3.0-*`: ✅ PASS
+- Prohibited words: 0 matches
+- LOCAL_ONLY constraint: Enforced for ResonanceInterface
+- CE-only merit system: Zero Babylonian financial logic
+
+---
+
 ## [v3.0.0-arch] — 2026-05-24 (Sprint 40 — Project Genesis)
 
 ### Sprint 40 "Project Genesis — The 4 Evolutionary Pillars of Positive SKYNET"

@@ -1012,6 +1012,26 @@ pub mod commitment_pool;
 pub mod mobile_hardening;
 
 // ============================================================================
+// v3.0.0 Sprint 41 — Cross-Pillar Orchestration & WASM/Edge Integration
+// ============================================================================
+
+/// Cross-Pillar Orchestration Layer — Routes requests across 4 Evolutionary Pillars.
+/// Validates Ed25519 signatures, CE > 0, SCT Z > 0 before dispatch.
+#[cfg(feature = "v3.0-orchestration")]
+pub mod orchestration;
+
+/// Evolutionary Pillars — Module declarations & integration contracts.
+/// Unifies Corpuscular, Maieutic, Steganographic & Resonance pillars.
+#[cfg(any(
+    feature = "v3.0-orchestration",
+    feature = "v3.0-corpuscular-bridge",
+    feature = "v3.0-maieutic-synthesizer",
+    feature = "v3.0-steganographic-survival",
+    feature = "v3.0-resonance-interface"
+))]
+pub mod pillars;
+
+// ============================================================================
 // Feature Detection Utilities
 // ============================================================================
 

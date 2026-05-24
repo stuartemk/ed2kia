@@ -439,6 +439,91 @@ Esto confirma que la gravedad no lineal identifica correctamente los patrones de
 cargo test --lib --features "v2.1-stuartian-geometry" -- stuartian_geometry
 ```
 
+## 🧩 Arquitectura de Pilares & Orquestación (Sprint 41 — v3.0)
+
+**ed2kIA v3.0.0-sprint41** introduce la capa de orquestación cross-pillar y la integración WASM/Edge para los 4 Pilares Evolutivos definidos en Sprint 40 (RFCs 001-004).
+
+### Diagrama de Arquitectura
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        ed2kIA v3.0 — Orquestación                       │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  ┌───────────────────────────────────────────────────────────────────┐  │
+│  │                    PillarOrchestrator (v3.0-orchestration)         │  │
+│  │  ┌─────────────┐  ┌──────────────┐  ┌─────────────────────────┐  │  │
+│  │  │ Ed25519     │  │ CE > 0       │  │ SCT Z-score > 0        │  │  │
+│  │  │ Validation  │→ │ Verification │→ │ Ethical Evaluation     │  │  │
+│  │  └─────────────┘  └──────────────┘  └─────────────────────────┘  │  │
+│  └───────────────────────────────────────────────────────────────────┘  │
+│               │                  │                  │                   │
+│               ▼                  ▼                  ▼                   │
+│  ┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐        │
+│  │  RFC 001         │ │  RFC 002         │ │  RFC 003         │        │
+│  │  Corpuscular     │ │  Maieutic        │ │  Steganographic  │        │
+│  │  Bridge          │ │  Synthesizer     │ │  Survival        │        │
+│  │  IoT Simbiótico  │ │  Sabiduría       │ │  Preservación    │        │
+│  │  CE ↔ Física     │ │  Científica      │ │  de Red          │        │
+│  └──────────────────┘ └──────────────────┘ └──────────────────┘        │
+│                                                                         │
+│  ┌───────────────────────────────────────────────────────────────────┐  │
+│  │  RFC 004  Resonance Interface (LOCAL_ONLY — WASM/Edge)           │  │
+│  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌───────────┐  │  │
+│  │  │ Face        │ │ RPPG        │ │ Voice       │ │ Homeo-    │  │  │
+│  │  │ Analyzer    │ │ Engine      │ │ Engine      │ │ stasis    │  │  │
+│  │  │ (FACS)      │ │ (BPM/HRV)   │ │ (Pitch)     │ │ Index     │  │  │
+│  │  └─────────────┘ └─────────────┘ └─────────────┘ └───────────┘  │  │
+│  │  ⚠️ ZERO TELEMETRY — Biometric data processed & discarded locally │  │
+│  └───────────────────────────────────────────────────────────────────┘  │
+│                                                                         │
+│  ┌───────────────────────────────────────────────────────────────────┐  │
+│  │                    WASM/Edge Compilation Targets                   │  │
+│  │  wasm32-unknown-unknown (Browser)  │  wasm32-wasi (Edge)          │  │
+│  │  ──────────────────────────────    │  ──────────────────────      │  │
+│  │  • Resonance Interface             │  • Pillar Orchestration      │  │
+│  │  • Browser Node P2P                │  • Edge Compute Distribution │  │
+│  │  • Biometric Processing (local)    │  • WASM Module Loading       │  │
+│  └───────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Pilares Evolutivos
+
+| Pilar | RFC | Módulo | Feature Gate | Descripción |
+|-------|-----|--------|--------------|-------------|
+| **Corpuscular Bridge** | 001 | `src/pillars/corpuscular/` | `v3.0-corpuscular-bridge` | IoT Simbiótico — CE ↔ Recursos Físicos (3D Print, Solar, Hidropónico) |
+| **Maieutic Synthesizer** | 002 | `src/pillars/maieutic/` | `v3.0-maieutic-synthesizer` | Motor de Sabiduría — Creación Científica Distribuida |
+| **Steganographic Survival** | 003 | `src/pillars/steganographic/` | `v3.0-steganographic-survival` | Preservación de Red — Ofuscación de Tráfico Cooperativo |
+| **Resonance Interface** | 004 | `src/pillars/resonance/` | `v3.0-resonance-interface` | Biorretroalimentación Local — 100% WASM/Edge (ZERO Telemetry) |
+
+### Contratos de Integración
+
+Todos los pilares implementan [`PillarInterface`](src/pillars/contracts.rs) unificado:
+
+```rust
+pub trait PillarInterface {
+    fn id() -> PillarId;
+    fn validate_local_constraint(&self) -> bool;
+    fn consume_ce(&self, amount: f64) -> Result<(), PillarError>;
+}
+```
+
+### Compilación WASM/Edge
+
+```bash
+# Browser WASM (Resonance Interface)
+cargo build-wasm-browser --features "v3.0-resonance-interface"
+
+# Edge WASM (Orchestration)
+cargo build-wasm-edge --features "v3.0-orchestration"
+
+# Verificación rápida
+cargo check-wasm --features "v3.0-orchestration,v3.0-wasm-edge"
+```
+
+> **Nota:** Sprint 41 establece el scaffolding y contratos. La implementación completa de cada pilar corresponde a Fase 10.
+
 ## ⚡ Hardening & Cross-Platform (Sprint13)
 
 **ed2kIA v2.1.0-sprint13** introduce infraestructura de hardening para escalabilidad y resiliencia de mainnet:
