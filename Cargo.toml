@@ -675,7 +675,7 @@ test-mocks = []
 # RFC 003: Steganographic Survival — Preservación de Red (traffic obfuscation)
 "v3.0-steganographic-survival" = ["v3.0-orchestration"]
 # RFC 004: Resonance Interface — Biorretroalimentación local (100% WASM/Edge)
-"v3.0-resonance-interface" = []
+"v3.0-resonance-interface" = ["v3.0-orchestration"]
 
 # Sprint 41: Cross-Pillar Orchestration & WASM/Edge Integration
 "v3.0-orchestration" = []

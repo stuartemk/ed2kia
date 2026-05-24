@@ -893,6 +893,28 @@ cargo test --lib chaffing_engine --features "v3.0-steganographic-survival"
 cargo test --lib transport_rotator --features "v3.0-steganographic-survival"
 ```
 
+### Resonance Interface — `v3.0-resonance-interface`
+
+Biorretroalimentación local 100% on-device (Sprint 46):
+
+```bash
+# Verificar Resonance Interface completo
+cargo check --features "v3.0-resonance-interface"
+
+# Ejecutar tests de integración
+cargo test --test resonance_interface --features "v3.0-resonance-interface"
+
+# Tests por módulo
+cargo test --lib biometric_analyzer --features "v3.0-resonance-interface"
+cargo test --lib homeostasis_engine --features "v3.0-resonance-interface"
+cargo test --lib resonance_generator --features "v3.0-resonance-interface"
+```
+
+- **Biometric Analyzer** — rPPG (cardiovascular), FACS-lite (microexpresiones), voz (pitch/jitter/shimmer)
+- **Homeostasis Engine** — Multi-biometric fusion (0.4×emotional + 0.4×cardiovascular + 0.2×vocal), SCT Guard (Z ≥ 0)
+- **Resonance Generator** — Beats binaurales, tonos isocrónicos, respuestas semánticas SCT-validadas
+- **77 tests** — Cero telemetría, cero transmisión de datos biométricos
+
 ## ⚡ Hardening & Cross-Platform (Sprint13)
 
 **ed2kIA v2.1.0-sprint13** introduce infraestructura de hardening para escalabilidad y resiliencia de mainnet:
