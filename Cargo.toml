@@ -673,7 +673,7 @@ test-mocks = []
 # src/pillars/maieutic/scientific_consensus.rs: BFT consensus validation
 "v3.0-maieutic-synthesizer" = ["v3.0-orchestration"]
 # RFC 003: Steganographic Survival — Preservación de Red (traffic obfuscation)
-"v3.0-steganographic-survival" = []
+"v3.0-steganographic-survival" = ["v3.0-orchestration"]
 # RFC 004: Resonance Interface — Biorretroalimentación local (100% WASM/Edge)
 "v3.0-resonance-interface" = []
 

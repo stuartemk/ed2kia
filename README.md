@@ -798,6 +798,101 @@ cargo test --lib bio_sim_worker --features "v3.0-maieutic-synthesizer"
 cargo test --lib scientific_consensus --features "v3.0-maieutic-synthesizer"
 ```
 
+## 🛡️ Steganographic Survival — Preservación de Red (Sprint 45 — v3.0)
+
+**ed2kIA v3.0.0-sprint45** implementa la lógica real del Pilar 3: Steganographic Survival (RFC 003), la capa de preservación de red mediante ofuscación de tráfico cooperativo con SRTP frame simulation, chaffing & winnowing y rotación dinámica de transporte.
+
+### Componentes del Steganographic Survival
+
+| Componente | Módulo | Descripción |
+|------------|--------|-------------|
+| **Traffic Masker** | `src/pillars/steganographic/traffic_masker.rs` | `TrafficMasker` — SRTP frame simulation con fragmentación y checksum |
+| **Chaffing Engine** | `src/pillars/steganographic/chaffing_engine.rs` | `ChaffingEngine` — Chaffing & Winnowing con ruido criptográfico |
+| **Transport Rotator** | `src/pillars/steganographic/transport_rotator.rs` | `TransportRotator` — Rotación dinámica TCP/QUIC/WebSocket/WebRTC |
+| **Steganographic Engine** | `src/pillars/steganographic/mod.rs` | `SteganographicEngine` — Integración con PillarOrchestrator |
+| **Integration Tests** | `tests/steganographic_survival.rs` | 16 tests: masking, chaffing, rotation, pipeline |
+
+### Traffic Masking — SRTP Frame Simulation
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│              TrafficMasker (SRTP Frame Simulation)           │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  SRTP Header: version, padding, extension, seq_num,         │
+│              timestamp, ssrc, payload_type                   │
+│                                                             │
+│  mask_payload(payload) → Vec<SRTP Frame>                    │
+│  unmask_frame(frame) → (payload_chunk, total, idx)          │
+│  unmask_payload(frames) → original_payload                  │
+│                                                             │
+│  ✅ Fragmentación automática (max_payload_size configurable) │
+│  ✅ Checksum por frame (detección de corrupción)            │
+│  ✅ WASM-compatible (zero std::fs, zero std::net)           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Chaffing & Winnowing — Ruido Criptográfico
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│           ChaffingEngine (Chaffing & Winnowing)              │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  inject_chaff(stream, session_id) → Vec<TaggedPacket>       │
+│  winnow(chaffed, session_id) → original_stream              │
+│                                                             │
+│  TaggedPacket: { tag, payload, expected_tag }               │
+│  Chaff Ratio: 0.0–1.0 (configurable)                        │
+│  PRNG: LCG determinista (WASM-compatible)                   │
+│                                                             │
+│  ✅ Ruido criptográfico diluye patrones de tráfico          │
+│  ✅ Reconstrucción perfecta mediante winnowing              │
+│  ✅ Claves de sesión por ID para filtrado selectivo         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Dynamic Transport Rotation — Health-Based Selection
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│         TransportRotator (Dynamic Protocol Rotation)         │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  Transports: Tcp | Quic | WebSocket | WebRtc                │
+│                                                             │
+│  Health Score: latency*0.4 + loss*0.4 + throughput*0.2      │
+│  rotate() → best_healthy_transport | fallback_cycle         │
+│  update_health(TransportHealth) → refresh metrics           │
+│                                                             │
+│  ✅ Rotación basada en métricas de salud                    │
+│  ✅ Fallback automático cuando no hay transporte saludable   │
+│  ✅ Jitter configurable en intervalos de rotación           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Pipeline Completo — Obfuscation Flow
+
+```
+Raw Payload → SCT Validation → Traffic Masking (SRTP)
+    → Chaffing & Winnowing → Transport Rotation → Network
+```
+
+### Verificación
+
+```bash
+# Verificar Steganographic Survival completo
+cargo check --features "v3.0-steganographic-survival"
+
+# Ejecutar tests de integración
+cargo test --test steganographic_survival --features "v3.0-steganographic-survival"
+
+# Tests por módulo
+cargo test --lib traffic_masker --features "v3.0-steganographic-survival"
+cargo test --lib chaffing_engine --features "v3.0-steganographic-survival"
+cargo test --lib transport_rotator --features "v3.0-steganographic-survival"
+```
+
 ## ⚡ Hardening & Cross-Platform (Sprint13)
 
 **ed2kIA v2.1.0-sprint13** introduce infraestructura de hardening para escalabilidad y resiliencia de mainnet:

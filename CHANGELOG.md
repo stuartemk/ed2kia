@@ -6,6 +6,64 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v3.0.0-sprint45] — 2026-05-24 (Sprint 45 — Steganographic Survival Implementation (Pillar 3))
+
+### Sprint 45 "Steganographic Survival Implementation (Pillar 3)"
+
+Sprint de implementación real para Pilar 3: Steganographic Survival (RFC 003). Capa de preservación de red mediante SRTP frame simulation, chaffing & winnowing con ruido criptográfico, y rotación dinámica de protocolos de transporte basada en métricas de salud.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| Traffic Masker | `src/pillars/steganographic/traffic_masker.rs` | `TrafficMasker`, `SrtpHeader`, `MaskerConfig`, `MaskingError` — SRTP frame simulation con fragmentación y checksum |
+| Chaffing Engine | `src/pillars/steganographic/chaffing_engine.rs` | `ChaffingEngine`, `ChaffConfig`, `TaggedPacket`, `ChaffingError` — Chaffing & Winnowing con ruido criptográfico |
+| Transport Rotator | `src/pillars/steganographic/transport_rotator.rs` | `TransportRotator`, `RotatorConfig`, `TransportHealth`, `RotationError` — Rotación dinámica TCP/QUIC/WebSocket/WebRTC |
+| Steganographic Module | `src/pillars/steganographic/mod.rs` | `SteganographicEngine` — Integración con PillarOrchestrator, `PillarInterface`, pipeline obfuscate/deobfuscate |
+| Integration Tests | `tests/steganographic_survival.rs` | 16 tests: SRTP masking, chaffing roundtrip, transport rotation, full pipeline |
+| Cargo.toml | `Cargo.toml` | Feature `v3.0-steganographic-survival` → `v3.0-orchestration` |
+
+### Added — Traffic Masking (SRTP Frame Simulation)
+
+- **TrafficMasker** — Motor de simulación de frames SRTP/WebRTC para preservación de tráfico.
+- **SrtpHeader** — Headers SRTP serializables: version, padding, extension, sequence_number, timestamp, ssrc, payload_type.
+- **MaskerConfig** — Configuración: `max_payload_size`, `noise_seed`, `ssrc`, `clock_rate`.
+- **Fragmentación** — Payloads grandes fragmentados en chunks ≤ max_payload_size con metadata de reensamblaje.
+- **Checksum** — Verificación de integridad por frame (detecta corrupción de tráfico).
+- **MaskingError** — `PayloadTooLarge`, `InvalidConfig`, `EncodingFailed`, `DecodingFailed`.
+
+### Added — Chaffing & Winnowing Engine
+
+- **ChaffingEngine** — Motor de inyección de ruido criptográfico (protocolo de Ferguson).
+- **TaggedPacket** — Paquetes etiquetados: `tag`, `payload`, `expected_tag` para filtrado winnowing.
+- **ChaffConfig** — Configuración: `chaff_ratio`, `entropy_seed`, `max_chaff_size`.
+- **Session Keys** — Claves de sesión por ID para winnowing selectivo.
+- **PRNG LCG** — Generador pseudo-aleatorio determinista compatible WASM.
+- **ChaffingError** — `InvalidRatio`, `StreamTooShort`, `MissingKey`, `CorruptedStream`, `InvalidKeyLength`.
+
+### Added — Dynamic Transport Rotation
+
+- **TransportRotator** — Motor de rotación dinámica de protocolos de transporte.
+- **TransportType** — `Tcp`, `Quic`, `WebSocket`, `WebRtc`.
+- **TransportHealth** — Métricas de salud: `latency_ms`, `packet_loss`, `throughput_bps`, `is_healthy`.
+- **RotatorConfig** — Configuración: `active_protocols`, `rotation_interval`, `health_threshold`, `jitter_ms`.
+- **Scoring** — Fórmula de salud: `latency_score * 0.4 + loss_score * 0.4 + throughput_score * 0.2`.
+- **RotationError** — `NoHealthyTransport`, `IntervalTooShort`, `EmptyProtocolList`, `TransportNotAvailable`.
+
+### Added — Steganographic Engine Integration
+
+- **SteganographicEngine** — Coordinador de preservación de red, implementa `PillarInterface`.
+- **Pipeline Obfuscate** — mask → chaff → select transport, retorna `(frames, chaffed, transport)`.
+- **Pipeline Deobfuscate** — winnow → unmask, reconstruye payload original.
+- **CE Consumption** — Validación de consumo CE para overhead de procesamiento esteganográfico.
+
+### Validation
+
+- `cargo check --features "v3.0-steganographic-survival"` — PASS
+- `cargo test --test steganographic_survival --features "v3.0-steganographic-survival"` — 16/16 PASS
+- `cargo clippy --features "v3.0-steganographic-survival" -- -D warnings` — PASS
+- Prohibited words grep — PASS (0 matches)
+
+---
+
 ## [v3.0.0-sprint44] — 2026-05-24 (Sprint 44 — Maieutic Synthesizer Implementation (Pillar 2))
 
 ### Sprint 44 "Maieutic Synthesizer Implementation (Pillar 2)"
