@@ -668,7 +668,10 @@ test-mocks = []
 # RFC 001: Corpuscular Bridge — IoT Simbiótico & Economía CE
 "v3.0-corpuscular-bridge" = ["v3.0-pillar-messaging", "v3.0-orchestration"]
 # RFC 002: Maieutic Synthesizer — Motor de Sabiduría (distributed scientific creation)
-"v3.0-maieutic-synthesizer" = []
+# src/pillars/maieutic/hypothesis_engine.rs: HypothesisEngine with SCT Guard
+# src/pillars/maieutic/bio_sim_worker.rs: BioSimWorker — WASM-compatible simulation
+# src/pillars/maieutic/scientific_consensus.rs: BFT consensus validation
+"v3.0-maieutic-synthesizer" = ["v3.0-orchestration"]
 # RFC 003: Steganographic Survival — Preservación de Red (traffic obfuscation)
 "v3.0-steganographic-survival" = []
 # RFC 004: Resonance Interface — Biorretroalimentación local (100% WASM/Edge)

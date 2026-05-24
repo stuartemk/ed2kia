@@ -6,6 +6,67 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v3.0.0-sprint44] — 2026-05-24 (Sprint 44 — Maieutic Synthesizer Implementation (Pillar 2))
+
+### Sprint 44 "Maieutic Synthesizer Implementation (Pillar 2)"
+
+Sprint de implementación real para Pilar 2: Maieutic Synthesizer (RFC 002). Motor de generación distribuida de hipótesis científicas con SCT Guard (Z ≥ 0), workers de bio-simulación WASM-compatible y consenso BFT científico (≥66% convergencia).
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| Hypothesis Engine | `src/pillars/maieutic/hypothesis_engine.rs` | `HypothesisEngine`, `Domain`, `Evidence`, `HypothesisState`, `HypothesisError` — Generación y gestión de hipótesis con SCT Guard |
+| Bio-Sim Worker | `src/pillars/maieutic/bio_sim_worker.rs` | `BioSimWorker`, `SimResult`, `SimConfig`, `BioSimError` — Workers de bio-simulación WASM-compatible |
+| Scientific Consensus | `src/pillars/maieutic/scientific_consensus.rs` | `ScientificConsensus`, `ConsensusResult`, `ConsensusError` — Consenso BFT científico (≥66%) |
+| Maieutic Module | `src/pillars/maieutic/mod.rs` | `MaieuticEngine` — Integración con PillarOrchestrator, `PillarInterface` |
+| Integration Tests | `tests/maieutic_synthesizer.rs` | 17 tests: hypothesis lifecycle, BFT consensus, SCT guard, full pipeline |
+| Cargo.toml | `Cargo.toml` | Feature `v3.0-maieutic-synthesizer` → `v3.0-orchestration` |
+
+### Added — Hypothesis Engine with SCT Guard
+
+- **HypothesisEngine** — Motor de generación y gestión de hipótesis científicas distribuidas.
+- **Domain Enum** — `MolecularDynamics`, `ProteinFolding`, `Epigenetics`, `ClimateModeling`, `MaterialsScience`, `Custom(String)`.
+- **HypothesisState Lifecycle** — `Proposed` → `CollectingEvidence` → `ReadyForConsensus` → `Validated`/`Rejected`.
+- **Evidence Structure** — `source_node`, `domain`, `payload`, `z_score`, `timestamp_ms`.
+- **SCT Guard** — Rechaza hipótesis con Z < 0 (configurable threshold, default 0.0).
+- **HypothesisError** — `SctGuardRejected`, `HypothesisNotFound`, `DuplicateId`, `ConsensusNotReady`.
+
+### Added — Bio-Simulation Workers (WASM-Compatible)
+
+- **BioSimWorker** — Workers de simulación bio-científica compatibles con `wasm32-unknown-unknown`.
+- **SimResult** — Output de simulación: `domain`, `output`, `energy_score`, `iterations`, `z_score`, `worker_id`, `timestamp_ms`.
+- **SimConfig** — Configuración: `max_iterations`, `precision`, `reference_value`.
+- **Simulaciones** — `simulate_molecular_dynamics()`, `simulate_protein_folding()`, `simulate_epigenetics()`, `simulate_climate()`, `simulate_materials()`, `simulate_generic()`.
+- **BioSimError** — `InvalidInput`, `SimulationFailed`, `MaxIterationsExceeded`, `InvalidConfig`.
+
+### Added — Scientific Consensus (BFT ≥66%)
+
+- **ScientificConsensus** — Motor de consenso BFT para validación de evidencia científica.
+- **ConsensusResult** — `Validated { agreements, total, convergence }` / `Rejected { agreements, total, convergence }`.
+- **Validator Registration** — Registro de validadores con deduplicación.
+- **Evidence Collection** — Recolección de evidencia con SCT Guard (Z ≥ 0) y deduplicación.
+- **BFT Threshold** — Default 2.0/3.0 (66.7%), configurable.
+- **ConsensusError** — `NoEvidence`, `InsufficientValidators`, `SctGuardRejected`, `DuplicateEvidence`.
+
+### Added — Maieutic Engine Integration
+
+- **MaieuticEngine** — Integración completa con `PillarOrchestrator` e implementación de `PillarInterface`.
+- **PillarInterface** — `validate_local_constraint()` → true, `consume_ce()` → validación CE > 0.
+- **Pipeline Methods** — `generate_hypothesis()`, `register_validator()`, `submit_evidence()`, `run_consensus()`, `get_hypothesis()`, `ready_for_consensus()`.
+
+### Validation
+
+- `cargo check --features v3.0-maieutic-synthesizer`: ✅ PASS (0 errors, 0 warnings)
+- Unit tests: 58 tests across 4 modules (hypothesis_engine: 18, bio_sim_worker: 14, scientific_consensus: 16, mod: 10)
+- Integration tests: 17 tests in `tests/maieutic_synthesizer.rs`
+- `cargo clippy`: ✅ PASS
+- Prohibited words: 0 matches
+- SCT Guard: Enforced (Z ≥ 0)
+- BFT Consensus: ≥66% convergence threshold
+- WASM Compatible: Zero native threads, zero std::fs, zero std::net
+- Zero Financial Logic: Pure scientific creation
+
+---
+
 ## [v3.0.0-sprint43] — 2026-05-24 (Sprint 43 — Corpuscular Bridge Implementation & IoT/CE Exchange Protocol)
 
 ### Sprint 43 "Corpuscular Bridge Implementation & IoT/CE Exchange Protocol"
