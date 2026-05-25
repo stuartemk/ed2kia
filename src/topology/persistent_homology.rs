@@ -331,8 +331,8 @@ impl PersistentHomologyEngine {
 
         // Remaining components are immortal (death = infinity).
         // We cap at max_scale for practical purposes.
-        for i in 0..n {
-            if !death_recorded[i] && uf.find(i) == i {
+        for (i, &recorded) in death_recorded.iter().enumerate().take(n) {
+            if !recorded && uf.find(i) == i {
                 pairs.push(PersistencePair::new(0.0, self.config.max_scale));
             }
         }
@@ -600,9 +600,10 @@ mod tests {
     fn test_from_stuartian_tensor() {
         let tensor = StuartianTensor::new(0.6, 0.3, 0.5).unwrap();
         let point = EthicalPoint::from_stuartian(&tensor);
-        assert!((point.x - 0.6).abs() < 1e-10);
-        assert!((point.y - 0.3).abs() < 1e-10);
-        assert!((point.z - 0.5).abs() < 1e-10);
+        // f32→f64 conversion introduces precision loss; use 1e-6 tolerance
+        assert!((point.x - 0.6).abs() < 1e-6);
+        assert!((point.y - 0.3).abs() < 1e-6);
+        assert!((point.z - 0.5).abs() < 1e-6);
     }
 
     #[test]

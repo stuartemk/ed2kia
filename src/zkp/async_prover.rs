@@ -527,13 +527,15 @@ mod tests {
 
     #[tokio::test]
     async fn test_timeout_no_fallback() {
+        // Use 50ms timeout with large witness to ensure reliable timeout
         let config = AsyncProverConfig {
-            proof_timeout: Duration::from_millis(1),
+            proof_timeout: Duration::from_millis(50),
             enable_fallback: false,
+            max_batch_size: 2, // Force batch overflow for reliable timeout
             ..Default::default()
         };
         let prover = AsyncProver::with_config(config);
-        let witness = make_witness(16);
+        let witness = make_witness(128); // Large witness to trigger timeout
         let result = prover
             .generate_proof("no-fallback".to_string(), witness)
             .await;
