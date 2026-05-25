@@ -267,6 +267,10 @@ pub mod zkp {
     pub mod proof_aggregator;
     pub mod verifier;
     pub mod verifier_pool;
+
+    // ─── Sprint49: GEI ZKP Certification ───
+    #[cfg(feature = "v3.1-gei-topology")]
+    pub mod gei_zkp;
 }
 
 /// Marketplace v2 — Resource matching, escrow ledger, adaptive pricing
@@ -601,6 +605,17 @@ pub mod alignment {
     #[cfg(feature = "v2.1-steering-bridge")]
     #[path = "../alignment/steering_bridge.rs"]
     pub mod steering_bridge;
+
+    // ─── Sprint49: Geometric Ethical Invariants (GEI) ───
+    #[cfg(feature = "v3.1-gei-topology")]
+    pub mod gei_fingerprint;
+}
+
+/// Topological Fingerprinting — Persistent Homology for GEI (Sprint49)
+#[cfg(feature = "v3.1-gei-topology")]
+pub mod topology {
+    #[path = "../topology/persistent_homology.rs"]
+    pub mod persistent_homology;
 }
 
 /// Mainnet Genesis — Deterministic genesis state & steward activation (Sprint22)

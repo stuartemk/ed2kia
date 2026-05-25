@@ -710,6 +710,12 @@ test-mocks = []
 "v3.0-scaling-bench" = ["v3.0-omni-integration"]
 "v3.0-release-eng" = ["v3.0-omni-integration"]
 
+# Sprint 49: Geometric Ethical Invariants (GEI) — Topological Fingerprinting
+# src/topology/persistent_homology.rs: PersistentHomologyEngine — Vietoris-Rips complex, PH₀/PH₁
+# src/alignment/gei_fingerprint.rs: GEIFingerprintEngine — GEI vector extraction, SAE top-k → SCT
+# src/zkp/gei_zkp.rs: GEIZKPCircuit — ZKP certification of GEI over valid point cloud P
+"v3.1-gei-topology" = ["v2.1-sct-core"]
+
 # Sprint 43: Corpuscular Bridge Implementation & IoT/CE Exchange Protocol
 # src/pillars/corpuscular/iot_adapter.rs: LocalHardwareAdapter — LOCAL_ONLY device registry
 # src/pillars/corpuscular/ce_exchange.rs: CEExchangeEngine — CE ↔ Physical Resource atomic exchange
@@ -1053,3 +1059,9 @@ required-features = ["v2.1-symbolic-engine", "v2.1-ethical-attention", "v2.1-crd
 name = "symbiotic_ignition_e2e"
 path = "tests/symbiotic_ignition_e2e.rs"
 required-features = ["v3.0-omni-integration"]
+
+# Sprint 49: GEI Invariance Benchmark — Topological fingerprint stability across models
+[[test]]
+name = "gei_invariance_benchmark"
+path = "tests/gei_invariance_benchmark.rs"
+required-features = ["v3.1-gei-topology"]

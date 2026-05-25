@@ -169,6 +169,14 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 
 > **Nota:** Los feature gates `v3.0-*` requieren activación explícita. `v3.0-omni-integration` depende de los 4 pilares + orchestration + pillar-messaging + sct-core.
 
+### Feature Gates v3.1 (Geometric Ethical Invariants — Topological Fingerprinting)
+
+| Feature Gate | Módulo | Status |
+|--------------|--------|--------|
+| `v3.1-gei-topology` | Persistent Homology + GEI Fingerprint + GEI ZKP Certification | ✅ Stable |
+
+> **Nota:** `v3.1-gei-topology` depende de `v2.1-sct-core`. Proporciona fingerprinting topológico cross-model vía Persistent Homology (Vietoris-Rips complex, PH₀/PH₁), extracción de GEI vector y certificación ZKP con consenso BFT.
+
 ## 🚀 Producción v3.0.0-stable
 
 **ed2kIA v3.0.0-stable** es la primera release estable de la arquitectura de Pilares Evolutivos. Integra 4 pilares bajo supervisión SCT mediante Omni-Node, con protocolo de migración para clusters ("Gran Migración") y secuencia E2E de Ignición Simbiótica validada.

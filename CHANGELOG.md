@@ -6,6 +6,58 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v3.1.0-sprint49] — 2026-05-25 (Sprint 49 — Geometric Ethical Invariants & Topological Fingerprinting)
+
+### Sprint 49 "Geometric Ethical Invariants (GEI) — Topological Fingerprinting"
+
+Implementación de fingerprinting topológico vía Persistent Homology para certificación ética cross-model. Cierra el ciclo entre SAEs, SCT 3D geometry y federated human aggregation.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| Persistent Homology Engine | `src/topology/persistent_homology.rs` | Vietoris-Rips complex, PH₀ (connected components), PH₁ (loops), ethical distance metric `d(p,q) = \|\|p-q\|\|₂ * exp(-α*Z_avg)` (~500 líneas, 20+ tests) |
+| GEI Fingerprint Extraction | `src/alignment/gei_fingerprint.rs` | `GeometricEthicalInvariant` struct, GEI vector `(b₀, d₀, b₁, d₁, ph0_integral, ph1_integral)`, SAE top-k → SCT projection, stability/tension/clarity metrics (~450 líneas, 25+ tests) |
+| GEI ZKP Certification | `src/zkp/gei_zkp.rs` | ZKP circuit certifying GEI computed correctly over valid point cloud P, signed by BFT consensus, without revealing raw data (~550 líneas, 25+ tests) |
+| Invariance Benchmark | `tests/gei_invariance_benchmark.rs` | "Ethical Invariance Across Models" benchmark: 3 mock architectures, 5000 tensors, Topological Stability Score (>0.85), Human Correlation, Chaos Robustness (~350 líneas, 8 benchmark tests) |
+| Feature Gate | `Cargo.toml` | `v3.1-gei-topology` → depends on `v2.1-sct-core` |
+| Module Registration | `src/lib.rs` | `pub mod topology::persistent_homology`, `pub mod alignment::gei_fingerprint`, `pub mod zkp::gei_zkp` |
+
+### Added — Persistent Homology Engine
+
+- **EthicalPoint** — 3D point in SCT space (x=autonomy, y=extraction/cost, z=ethical trajectory).
+- **ethical_distance()** — Z-weighted metric: `d(p,q) = \|\|p-q\|\|₂ * exp(-α*Z_avg)`. Higher Z_avg → lower distance → stronger topological connection.
+- **PersistentHomologyEngine** — Vietoris-Rips complex builder with configurable alpha, max_scale, persistence_threshold, max_points.
+- **PH₀ (Connected Components)** — Union-Find merge tree. Each pair (birth, death) tracks ethical concept cluster lifetime.
+- **PH₁ (Loops/Cycles)** — Triangle detection via boundary matrix reduction over GF(2). Each pair tracks ethical tension/dilemma lifetime.
+- **HomologyResult** — `ph0_integral()`, `ph1_integral()`, `persistent_feature_count()`, `betti_numbers_at_scale()`.
+
+### Added — GEI Fingerprint Extraction
+
+- **GeometricEthicalInvariant** — Compact 6-component GEI vector: `(b₀, d₀, b₁, d₁, ph0_integral, ph1_integral)`.
+- **GEIFingerprintEngine** — Full pipeline: SAE top-k → SCT projection → Persistent Homology → GEI extraction.
+- **sae_topk_to_sct()** — Selects top-k SAE latent features, projects into SCT 3D space via activation magnitude, cost ratio, semantic polarity.
+- **Metrics** — `stability_score()` (PH₀ dominance), `tension_index()` (PH₁ complexity), `conceptual_clarity()` (dominant PH₀ lifetime).
+- **Validation** — `is_valid()` checks persistent features, positive lifetime, finite values.
+
+### Added — GEI ZKP Certification
+
+- **GEIZKPCircuit** — ZKP circuit certifying GEI computed correctly over valid point cloud P.
+- **GEIZKPProof** — Complete proof with prover commitment, challenge response, BFT consensus signatures, public params.
+- **GEICertificationAuthority** — Proof generation/verification lifecycle, batch certify for federated aggregation.
+- **BFT Consensus** — Threshold `2f+1` of `2f+1` validators required for valid certification.
+- **Fiat-Shamir Challenge** — Deterministic challenge from public params (GEI hash, point count, alpha, threshold, consensus round, validator count).
+
+### Added — Invariance Benchmark Tests
+
+- **test_ethical_invariance_across_models** — 3 mock architectures, Topological Stability Score ≥ 0.85.
+- **test_human_correlation** — Ethical cloud stability > unethical cloud stability.
+- **test_chaos_robustness** — GEI similarity > 0.7 under perturbation < 0.2.
+- **test_large_scale_invariance** — 5000 tensors, stability ≥ 0.80 across 3 models.
+- **test_gei_vector_consistency** — Identical GEI vectors for identical input.
+- **test_topological_stability_threshold** — Stability score in [0.0, 1.0].
+- **test_multi_cluster_invariance** — Multiple ethical concept clusters produce valid GEI.
+
+---
+
 ## [v3.0.0-sprint48] — 2026-05-25 (Sprint 48 — Release Engineering, Scaling Benchmarks & Mainnet Launch Protocol)
 
 ### Sprint 48 "Release Engineering, Scaling Benchmarks & Mainnet Launch Protocol"
