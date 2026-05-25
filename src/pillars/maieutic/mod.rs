@@ -21,6 +21,8 @@
 pub mod hypothesis_engine;
 pub mod bio_sim_worker;
 pub mod scientific_consensus;
+#[cfg(feature = "v3.2-genesis-manifold")]
+pub mod workloads;
 
 use crate::orchestration::PillarId;
 use crate::pillars::{PillarError, PillarInterface};

@@ -219,7 +219,7 @@ impl ScientificConsensus {
         let evidence_list = self
             .evidence
             .entry(hypothesis_id.to_string())
-            .or_insert_with(Vec::new);
+            .or_default();
 
         if evidence_list.iter().any(|e| e.source_node == evidence.source_node) {
             return Err(ConsensusError::DuplicateEvidence(

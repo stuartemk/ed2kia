@@ -193,6 +193,14 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 
 > **Nota:** `v3.3-rssi-evolution` depende de `v3.1-gei-topology` + `v3.2-moral-manifold`. Motor de mejora recursiva de 5 fases con validación Lyapunov, detección topológica de inestabilidad cíclica (PH₁) y apoptosis automática con rollback.
 
+### Feature Gates v3.4 (Temporal Cohesion Engine & Global Symbiotic Ledger DAG)
+
+| Feature Gate | Módulo | Status |
+|--------------|--------|--------|
+| `v3.4-macro-symbiosis` | TemporalCohesionEngine + GlobalSymbioticLedger(DAG) + MacroCorpuscularBridge | ✅ Stable |
+
+> **Nota:** `v3.4-macro-symbiosis` depende de `v3.3-rssi-evolution`. Motor de cohesión temporal PTP/NTP para P2P/GossipSub, ledger DAG cooperativo con validación Ed25519 y SCT Guard Economic, puente Macro-Corpuscular para homeostasis de recursos.
+
 ## 🚀 Producción v3.0.0-stable
 
 **ed2kIA v3.0.0-stable** es la primera release estable de la arquitectura de Pilares Evolutivos. Integra 4 pilares bajo supervisión SCT mediante Omni-Node, con protocolo de migración para clusters ("Gran Migración") y secuencia E2E de Ignición Simbiótica validada.

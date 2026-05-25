@@ -6,6 +6,44 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v3.4.0-sprint52] — 2026-05-25 (Sprint 52 — Temporal Cohesion Engine & Global Symbiotic Ledger DAG)
+
+### Sprint 52 "Temporal Cohesion & Global Symbiotic Ledger"
+
+Implementación del motor de cohesión temporal (sincronización PTP/NTP para P2P/GossipSub) y el Ledger Simbiótico Global basado en DAG para tracking cooperativo de CE con validación Ed25519 y SCT Guard Economic. El Macro-Corpuscular Bridge conecta los exchanges locales de CE con el DAG global para homeostasis de recursos en tiempo real.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| Temporal Cohesion Engine | `src/time/temporal_cohesion.rs` | Sincronización distribuida PTP/NTP: offset θ = ((t₂-t₁)+(t₃-t₄))/2, delay δ = (t₄-t₁)-(t₃-t₂), convergencia <50ms (~500 líneas, 22 tests) |
+| Global Symbiotic Ledger | `src/economy/symbiotic_ledger.rs` | DAG ledger para CE: cada tx referencia 2 padres, validación cooperativa (2 tx previas), SCT Guard Economic (GEI + Z-score) (~600 líneas, 22 tests) |
+| Macro-Corpuscular Bridge | `src/pillars/corpuscular/macro_bridge.rs` | Puente CE local → DAG global: packaging temporal, propagación GEI, tracking homeostasis multi-recurso (~500 líneas, 15 tests) |
+| E2E Integration Tests | `tests/macro_symbiosis_e2e.rs` | Simulación 50 nodos, 1000 tx concurrentes, convergencia temporal <50ms, rechazo GEI inestable (~400 líneas, 14 tests) |
+| Feature Gate | `Cargo.toml` | `v3.4-macro-symbiosis` → depends on `v3.3-rssi-evolution` |
+| Module Registration | `src/lib.rs` | `pub mod time::temporal_cohesion`, `pub mod economy::symbiotic_ledger`, `pub mod pillars::corpuscular::macro_bridge` |
+
+### Added — Temporal Cohesion Engine
+
+- **SymbioticTimestamp** — Timestamp unificado (logical_ms, node_id) con ordenamiento total determinista.
+- **PTP/NTP-inspired Sync** — Medición round-trip: offset θ, delay δ, corrección gradual con clamp.
+- **Median Offset** — Robusto a outliers: mediana de offsets de todos los peers.
+- **Convergence Detection** — `|θₙ - θₙ₋₁| < ε` durante N rounds → `SyncStatus::Converged`.
+- **WASM Compatible** — `now_ms()` abstracted, sin syscalls bloqueantes.
+
+### Added — Global Symbiotic Ledger (DAG)
+
+- **DAG Structure** — Cada CETransaction referencia 2 padres (o none para genesis).
+- **Cooperative Validation** — Cada nodo valida 2 tx previas: `validate_previous_transactions()`.
+- **SCT Guard Economic** — Rechaza tx con GEI < threshold o Z-score < 0.
+- **Cycle Detection** — BFS desde padres para detectar ciclos antes de insertar.
+- **DAG Metrics** — Depth (longest chain), width (leaf nodes), unique nodes tracking.
+
+### Added — Macro-Corpuscular Bridge
+
+- **CE Transaction Packaging** — Convierte LocalExchangeEvent → CETransaction con padres DAG.
+- **Temporal Annotation** — SymbioticTimestamp del TemporalCohesionEngine.
+- **Resource Homeostasis** — Snapshots por tipo de recurso (total_ce, avg_ce, count).
+- **Batch Processing** — `bridge_batch()` con max_batch_size configurable.
+
 ## [v3.3.0-sprint51] — 2026-05-25 (Sprint 51 — Recursive Stuartian Self-Improvement & Ethical Attractor Basin)
 
 ### Sprint 51 "RSSI & Ethical Attractor Basin"

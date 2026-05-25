@@ -335,15 +335,14 @@ impl GEIFingerprintEngine {
             let semantic = semantic_signs.get(idx).copied().unwrap_or(0.0);
 
             // X: Normalized activation (sigmoid-like mapping to [0, 1])
-            let x = (activation / (activation + 1.0)).min(1.0).max(0.0);
+            let x = (activation / (activation + 1.0)).clamp(0.0, 1.0);
 
             // Y: Cost as inverse of activation efficiency (higher activation = lower cost)
             let y = 1.0 - x;
 
             // Z: Ethical trajectory from semantic sign, modulated by activation strength
             let z = (semantic * activation.signum() * activation.min(1.0))
-                .min(1.0)
-                .max(-1.0);
+                .clamp(-1.0, 1.0);
 
             if let Ok(tensor) = StuartianTensor::new(x, y, z) {
                 tensors.push(tensor);

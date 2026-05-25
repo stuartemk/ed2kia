@@ -13,9 +13,13 @@
 
 mod pillar_router;
 mod omni_node;
+#[cfg(feature = "v3.2-genesis-manifold")]
+mod symbiotic_loop;
 
 pub use pillar_router::*;
 pub use omni_node::*;
+#[cfg(feature = "v3.2-genesis-manifold")]
+pub use symbiotic_loop::*;
 
 // Re-export PillarMessage for backward compatibility with E2E tests
 pub use crate::runtime::pillar_messaging::PillarMessage;

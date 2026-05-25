@@ -609,13 +609,46 @@ pub mod alignment {
     // ─── Sprint49: Geometric Ethical Invariants (GEI) ───
     #[cfg(feature = "v3.1-gei-topology")]
     pub mod gei_fingerprint;
+
+    // ─── Sprint51: Recursive Stuartian Self-Improvement (RSSI) ───
+    #[cfg(feature = "v3.3-rssi-evolution")]
+    pub mod attractor_basin;
+    #[cfg(feature = "v3.3-rssi-evolution")]
+    pub mod rssi_engine;
 }
 
-/// Topological Fingerprinting — Persistent Homology for GEI (Sprint49)
-#[cfg(feature = "v3.1-gei-topology")]
+/// Topological Fingerprinting — Persistent Homology for GEI (Sprint49) + Deception Detection (Sprint51)
+#[cfg(any(feature = "v3.1-gei-topology", feature = "v3.3-rssi-evolution"))]
 pub mod topology {
+    #[cfg(feature = "v3.1-gei-topology")]
     #[path = "../topology/persistent_homology.rs"]
     pub mod persistent_homology;
+
+    // ─── Sprint51: Topological Deception Detection ───
+    #[cfg(feature = "v3.3-rssi-evolution")]
+    #[path = "../topology/deception_detector.rs"]
+    pub mod deception_detector;
+}
+
+/// Stuartian Moral Manifold — Trajectory-based Ethical Evaluation (Sprint50)
+#[cfg(feature = "v3.2-genesis-manifold")]
+pub mod ethics {
+    #[path = "../ethics/moral_manifold.rs"]
+    pub mod moral_manifold;
+}
+
+/// Temporal Cohesion — Distributed Time Synchronization (Sprint52)
+#[cfg(feature = "v3.4-macro-symbiosis")]
+pub mod time {
+    #[path = "../time/temporal_cohesion.rs"]
+    pub mod temporal_cohesion;
+}
+
+/// Global Symbiotic Economy — DAG-based CE Ledger (Sprint52)
+#[cfg(feature = "v3.4-macro-symbiosis")]
+pub mod economy {
+    #[path = "../economy/symbiotic_ledger.rs"]
+    pub mod symbiotic_ledger;
 }
 
 /// Mainnet Genesis — Deterministic genesis state & steward activation (Sprint22)

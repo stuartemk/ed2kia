@@ -207,7 +207,7 @@ impl BioSimWorker {
         let mut iterations = 0;
 
         // Verlet integration loop.
-        for (_i, &byte) in input.iter().enumerate() {
+        for &byte in input.iter() {
             if iterations >= self.config.max_iterations {
                 return Err(SimError::MaxIterationsExceeded(
                     self.config.max_iterations,

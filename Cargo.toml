@@ -1,6 +1,6 @@
 [package]
 name = "ed2kia"
-version = "2.1.0-sprint30"
+version = "3.4.0-sprint52"
 edition = "2021"
 description = "Descentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
 license = "Apache-2.0"
@@ -715,6 +715,42 @@ test-mocks = []
 # src/alignment/gei_fingerprint.rs: GEIFingerprintEngine — GEI vector extraction, SAE top-k → SCT
 # src/zkp/gei_zkp.rs: GEIZKPCircuit — ZKP certification of GEI over valid point cloud P
 "v3.1-gei-topology" = ["v2.1-sct-core"]
+
+# Sprint 50: Stuartian Moral Manifold & Genesis Telomere Workload
+# src/ethics/moral_manifold.rs: StuartianMoralManifold — Trajectory-based ethical evaluation
+# src/pillars/maieutic/workloads/telomere_genesis.rs: TelomereRegenerationTask — Distributed bio-mathematical workload
+# src/orchestration/symbiotic_loop.rs: SymbioticLoop — GEI + SMM + Telomere integration with BFT consensus
+"v3.2-genesis-manifold" = ["v3.1-gei-topology", "v3.0-orchestration", "v3.0-pillar-messaging", "v3.0-maieutic-synthesizer"]
+
+# Sprint 51: Recursive Stuartian Self-Improvement (RSSI) & Ethical Attractor Basin
+# src/alignment/attractor_basin.rs: EthicalAttractorBasin — Lyapunov stability + ethical distance d_E(I)
+# src/topology/deception_detector.rs: DeceptionDetector — PH₁ persistent loop detection for cyclic instability
+# src/alignment/rssi_engine.rs: RssiEngine — 5-phase self-improvement cycle with apoptosis rollback
+"v3.3-rssi-evolution" = ["v3.2-genesis-manifold"]
+
+# Sprint 52: Temporal Cohesion Engine & Global Symbiotic Ledger (DAG)
+# src/time/temporal_cohesion.rs: TemporalCohesionEngine — PTP/NTP-inspired distributed time sync for P2P
+# src/economy/symbiotic_ledger.rs: GlobalSymbioticLedger — DAG-based CE ledger with cooperative Ed25519 validation
+# src/pillars/corpuscular/macro_bridge.rs: MacroCorpuscularBridge — Local CE exchange to global DAG bridge
+"v3.4-macro-symbiosis" = ["v3.3-rssi-evolution", "v3.0-corpuscular-bridge"]
+
+# Sprint 50 Test: Moral Manifold Behavior
+[[test]]
+name = "moral_manifold_behavior"
+path = "tests/moral_manifold_behavior.rs"
+required-features = ["v3.2-genesis-manifold"]
+
+# Sprint 51 Test: RSSI Controlled Evolution
+[[test]]
+name = "rssi_controlled_evolution"
+path = "tests/rssi_controlled_evolution.rs"
+required-features = ["v3.3-rssi-evolution"]
+
+# Sprint 52 Test: Macro Symbiosis E2E
+[[test]]
+name = "macro_symbiosis_e2e"
+path = "tests/macro_symbiosis_e2e.rs"
+required-features = ["v3.4-macro-symbiosis"]
 
 # Sprint 43: Corpuscular Bridge Implementation & IoT/CE Exchange Protocol
 # src/pillars/corpuscular/iot_adapter.rs: LocalHardwareAdapter — LOCAL_ONLY device registry

@@ -21,6 +21,10 @@ pub mod iot_adapter;
 #[path = "ce_exchange.rs"]
 pub mod ce_exchange;
 
+#[cfg(feature = "v3.4-macro-symbiosis")]
+#[path = "macro_bridge.rs"]
+pub mod macro_bridge;
+
 use crate::orchestration::PillarId;
 use crate::pillars::{CEExchangeTrait, CEVoucher, PillarError, PillarInterface, ResourceType};
 
