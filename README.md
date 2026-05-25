@@ -177,6 +177,22 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 
 > **Nota:** `v3.1-gei-topology` depende de `v2.1-sct-core`. Proporciona fingerprinting topológico cross-model vía Persistent Homology (Vietoris-Rips complex, PH₀/PH₁), extracción de GEI vector y certificación ZKP con consenso BFT.
 
+### Feature Gates v3.2 (Stuartian Moral Manifold & Symbiotic Orchestration)
+
+| Feature Gate | Módulo | Status |
+|--------------|--------|--------|
+| `v3.2-moral-manifold` | SMM + Telomere Genesis + Symbiotic Loop + BFT Consensus | ✅ Stable |
+
+> **Nota:** `v3.2-moral-manifold` depende de `v3.1-gei-topology`. Manifold Moral Estuardiano con detección de trayectorias Upper/Lower Focus, workloads distribuidos bio-matemáticos y orquestación simbiótica GEI+SMM+Telomere.
+
+### Feature Gates v3.3 (Recursive Stuartian Self-Improvement & Ethical Attractor Basin)
+
+| Feature Gate | Módulo | Status |
+|--------------|--------|--------|
+| `v3.3-rssi-evolution` | RSSI Engine + Ethical Attractor Basin + Deception Detector + Apoptosis | ✅ Stable |
+
+> **Nota:** `v3.3-rssi-evolution` depende de `v3.1-gei-topology` + `v3.2-moral-manifold`. Motor de mejora recursiva de 5 fases con validación Lyapunov, detección topológica de inestabilidad cíclica (PH₁) y apoptosis automática con rollback.
+
 ## 🚀 Producción v3.0.0-stable
 
 **ed2kIA v3.0.0-stable** es la primera release estable de la arquitectura de Pilares Evolutivos. Integra 4 pilares bajo supervisión SCT mediante Omni-Node, con protocolo de migración para clusters ("Gran Migración") y secuencia E2E de Ignición Simbiótica validada.

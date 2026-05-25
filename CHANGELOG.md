@@ -6,6 +6,58 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v3.3.0-sprint51] — 2026-05-25 (Sprint 51 — Recursive Stuartian Self-Improvement & Ethical Attractor Basin)
+
+### Sprint 51 "RSSI & Ethical Attractor Basin"
+
+Implementación del motor de mejora recursiva con validación topológica de estabilidad. El ciclo RSSI de 5 fases (Inference → Steering → Ethical Gradient → Improvement → Validation Gate) garantiza que cada paso de auto-mejora converge hacia el Atractor Ético, con apoptosis automática al detectar inestabilidad cíclica vía PH₁.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| Ethical Attractor Basin | `src/alignment/attractor_basin.rs` | Distancia ética `d_E(I) = ||proj_Oct(I) - C_ideal||₂ * (1 + β*H_PH)`, proyección octaédrica L1, validación Lyapunov `γ < 1.0` (~350 líneas, 16 tests) |
+| Topological Deception Detection | `src/topology/deception_detector.rs` | Detección de bucles PH₁ persistentes como indicador de inestabilidad cíclica. `DeceptionStatus::OutsideBasin` cuando `max_lifetime > threshold` (~250 líneas, 10 tests) |
+| RSSI Engine | `src/alignment/rssi_engine.rs` | Motor de 5 fases con apoptosis automática: rollback de estado + reset de capas SAE al salir del basin de atracción (~650 líneas, 21 tests) |
+| Integration Tests | `tests/rssi_controlled_evolution.rs` | Tests E2E: controlled recursive alignment, ethical distance decrease, trajectory convergence, apoptosis rollback, BFT consensus gating (~350 líneas, 14 tests) |
+| Feature Gate | `Cargo.toml` | `v3.3-rssi-evolution` → depends on `v3.1-gei-topology`, `v3.2-moral-manifold` |
+| Module Registration | `src/lib.rs` | `pub mod alignment::attractor_basin`, `pub mod topology::deception_detector`, `pub mod alignment::rssi_engine` |
+
+### Added — Ethical Attractor Basin
+
+- **EthicalDistance** — Métrica compuesta: distancia euclidiana en octaedro + entropía homológica ponderada.
+- **Octahedron Projection** — Normalización L1: `proj_Oct(I) = I / max(1, ||I||₁)`.
+- **Lyapunov Contraction** — Validación `||I_{n+1} - I_n|| < γ * d_E(I_n)` con `γ < 1.0`.
+- **BasinExitWarning** — `ContractionViolation`, `PersistentLoopDetected`, `CriticalInstability`.
+
+### Added — Topological Deception Detection
+
+- **DeceptionDetector** — Analiza trayectorias SCT para detectar bucles PH₁ persistentes.
+- **DeceptionStatus** — `WithinBasin`, `ApproachingBoundary`, `OutsideBasin { max_lifetime }`.
+- **DeceptionRisk** — Riesgo normalizado [0,1] basado en `max_lifetime / threshold`.
+
+### Added — RSSI Engine
+
+- **5-Phase Cycle** — Inference → Steering Aggregation → Ethical Gradient → Improvement Step → Validation Gate.
+- **Apoptosis** — Rollback automático a `previous_state` + reset de pesos SAE en capas inestables.
+- **BFT Consensus** — Mínimo 7 firmas Steward + 67% approval threshold para aprobar mejoras.
+- **Lyapunov Exponent** — Estimador de estabilidad a lo largo de la trayectoria completa.
+
+---
+
+## [v3.2.0-sprint50] — 2026-05-25 (Sprint 50 — Stuartian Moral Manifold & Symbiotic Orchestration)
+
+### Sprint 50 "Moral Manifold & Symbiotic Orchestration"
+
+Implementación del Manifold Moral Estuardiano (SMM) con detección de trayectorias Upper/Lower Focus y orquestación simbiótica GEI+SMM+Telomere.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| Stuartian Moral Manifold | `src/ethics/moral_manifold.rs` | SMM con `calculate_trajectory_pull()`, detección dependencia/uniformidad, `evaluate_trajectory()` → Upper/Lower/Homeostatic/Rejected (~450 líneas, 20+ tests) |
+| Telomere Regeneration Workload | `src/pillars/maieutic/workloads/telomere_genesis.rs` | Workload distribuido bio-matemático: ruido epigenético, entropía Shannon, divergencia KL (~700 líneas, 30+ tests) |
+| Symbiotic Orchestration | `src/orchestration/symbiotic_loop.rs` | BFT Consensus Rule + SymbioticScore (GEI stability + SMM alignment + telomere entropy) (~450 líneas, 20+ tests) |
+| Behavior Tests | `tests/moral_manifold_behavior.rs` | Tests E2E: convergencia Upper/Lower Focus, BFT consensus, telomere distributed compute (~300 líneas, 20+ tests) |
+
+---
+
 ## [v3.1.0-sprint49] — 2026-05-25 (Sprint 49 — Geometric Ethical Invariants & Topological Fingerprinting)
 
 ### Sprint 49 "Geometric Ethical Invariants (GEI) — Topological Fingerprinting"
