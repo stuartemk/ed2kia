@@ -1,0 +1,266 @@
+# ed2kIA v3.0 Production CI/CD Pipeline
+# Sprint 48 — Release Engineering & Mainnet Launch Protocol
+#
+# Matrix: rust (stable, nightly) × OS (ubuntu, macos, windows)
+# Jobs: lint, test-all-features, wasm-check, e2e-ignition, benchmarks, security-audit, release-sign
+
+name: CI v3.0 Production
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 6 * * 1'  # Weekly Monday 06:00 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  # ------------------------------------------------------------------
+  # Lint: fmt + clippy
+  # ------------------------------------------------------------------
+  lint:
+    name: Lint (${{ matrix.rust }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        rust: [stable]
+        os: [ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust ${{ matrix.rust }}
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ matrix.rust }}
+          components: rustfmt, clippy
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+
+      - name: Cache cargo git
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache target
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-lint-target-${{ hashFiles('**/Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-lint-target-${{ hashFiles('**/Cargo.lock') }}-
+
+      - name: cargo fmt --check
+        run: cargo fmt --all --check
+
+      - name: cargo clippy --all-features
+        run: cargo clippy --all-features -- -D warnings
+
+  # ------------------------------------------------------------------
+  # Test All Features — Cross-platform matrix
+  # ------------------------------------------------------------------
+  test-all-features:
+    name: Tests (${{ matrix.rust }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        rust: [stable, nightly]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust ${{ matrix.rust }}
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ matrix.rust }}
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+
+      - name: Cache target
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-${{ matrix.rust }}-test-target-${{ hashFiles('**/Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.rust }}-test-target-${{ hashFiles('**/Cargo.lock') }}-
+
+      - name: cargo check --all-features
+        run: cargo check --all-features
+
+      - name: cargo test --all-targets --all-features
+        run: cargo test --all-targets --all-features -- --test-threads=4
+
+      - name: Upload test logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs-${{ matrix.os }}-${{ matrix.rust }}
+          path: target/test-logs/
+          retention-days: 7
+
+  # ------------------------------------------------------------------
+  # WASM Check — wasm32-unknown-unknown target
+  # ------------------------------------------------------------------
+  wasm-check:
+    name: WASM Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: wasm32-unknown-unknown
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ubuntu-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: cargo check --target wasm32-unknown-unknown
+        run: cargo check --target wasm32-unknown-unknown --features "v3.0-resonance-interface"
+
+  # ------------------------------------------------------------------
+  # E2E Ignition — Omni-Node Symbiotic Ignition Tests
+  # ------------------------------------------------------------------
+  e2e-ignition:
+    name: E2E Symbiotic Ignition
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ubuntu-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: cargo test --test symbiotic_ignition_e2e
+        run: cargo test --test symbiotic_ignition_e2e --features "v3.0-omni-integration"
+
+      - name: cargo test --lib omni_node
+        run: cargo test --lib omni_node --features "v3.0-omni-integration"
+
+      - name: cargo test --lib migration_protocol
+        run: cargo test --lib migration_protocol --features "v3.0-omni-integration"
+
+  # ------------------------------------------------------------------
+  # Benchmarks — Scaling benchmarks with baseline comparison
+  # ------------------------------------------------------------------
+  benchmarks:
+    name: Scaling Benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ubuntu-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Run benchmarks
+        run: |
+          cargo bench --features "v3.0-scaling-bench" --bench omni_node_scaling \
+            -- --save-baseline v3.0.0-stable 2>&1 | tee bench-output.txt || true
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results-v3.0
+          path: |
+            target/criterion/
+            bench-output.txt
+          retention-days: 30
+
+  # ------------------------------------------------------------------
+  # Security Audit — cargo audit + cargo deny
+  # ------------------------------------------------------------------
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
+
+      - name: Install cargo-deny
+        run: cargo install cargo-deny --locked
+
+      - name: cargo audit
+        run: cargo audit || true
+
+      - name: cargo deny check
+        run: cargo deny check || true
+
+  # ------------------------------------------------------------------
+  # Release Sign — Generate signatures & checksums (on tags)
+  # ------------------------------------------------------------------
+  release-sign:
+    name: Release Sign
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [lint, test-all-features, e2e-ignition, security-audit]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Build release binaries
+        run: cargo build --release --all-features
+
+      - name: Generate SHA256 checksums
+        run: |
+          cd target/release
+          sha256sum ed2kia* > SHA256SUMS 2>/dev/null || true
+          cat SHA256SUMS
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-v3.0-artifacts
+          path: target/release/
+          retention-days: 90

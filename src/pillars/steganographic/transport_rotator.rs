@@ -143,6 +143,7 @@ impl Default for RotatorConfig {
 ///
 /// Monitors transport health and rotates protocols to maintain
 /// resilient cooperative communication across diverse network conditions.
+#[derive(Debug)]
 pub struct TransportRotator {
     config: RotatorConfig,
     /// Current active transport.

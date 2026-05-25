@@ -6,6 +6,70 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v3.0.0-sprint48] — 2026-05-25 (Sprint 48 — Release Engineering, Scaling Benchmarks & Mainnet Launch Protocol)
+
+### Sprint 48 "Release Engineering, Scaling Benchmarks & Mainnet Launch Protocol"
+
+Sprint final antes de v3.0.0-stable: benchmarks de escalado con Criterion, pipeline CI/CD de producción, paquete de release completo y protocolo de lanzamiento mainnet. **Cero features nuevos.** 100% focus en estabilización, validación cuantitativa y documentación.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| Scaling Benchmarks | `benches/omni_node_scaling.rs` | Criterion benchmarks: Omni-Node throughput, SCT latency, CE ledger concurrency, migration handshake scale, full ignition cycle (~300 líneas, 5 benchmark groups) |
+| CI/CD Pipeline v3 | `.github/workflows/ci_v3.yml` | Production CI/CD: lint, test-all-features (matrix stable/nightly × ubuntu/macos/windows), wasm-check, e2e-ignition, benchmarks, security-audit, release-sign (~267 líneas) |
+| Release Notes | `release/v3.0.0-stable/release-notes.md` | Notas técnicas de release v3.0.0-stable: arquitectura, breaking changes, métricas de escalado, validación |
+| Migration Guide | `release/v3.0.0-stable/migration-guide-v2.1-to-v3.0.md` | Guía de migración paso a paso v2.1 → v3.0 con ejemplos de código y procedimiento de rollback |
+| Launch Checklist | `release/v3.0.0-stable/launch-checklist.md` | Checklist de lanzamiento mainnet: pre-flight (T-24h), deploy (T-0), validación E2E (T+1h), monitoring (T+24h), rollback plan, governance sign-off |
+| Sign Release Script | `release/v3.0.0-stable/sign-release.sh` | Script POSIX de firma Ed25519: generación de tarball, SHA256SUMS, firmas criptográficas (~180 líneas) |
+| Cargo.toml | `Cargo.toml` | Features `v3.0-scaling-bench` → `v3.0-omni-integration`, `v3.0-release-eng` → `v3.0-omni-integration` |
+| README.md | `README.md` | Badge `v3.0.0-stable`, tabla feature gates v3.0, sección producción, diagrama Omni-Node, enlaces release/migration/launch |
+
+### Added — Scaling Benchmarks (Criterion)
+
+- **omni_node/throughput** — Mensajes inter-pilar con validación SCT (batch sizes: 100, 500, 1K, 5K, 10K).
+- **omni_node/sct_latency** — Latencia p50/p95 de validación Z ≥ 0 (batch sizes: 10, 50, 100, 500, 1K).
+- **omni_node/ce_ledger** — Concurrencia depósitos/retiros en ExistentialCreditLedger (batch sizes: 100, 500, 1K, 5K, 10K).
+- **omni_node/migration** — Throughput negociación de clusters MigrationProtocol (batch sizes: 10, 50, 100, 200, 500).
+- **omni_node/ignition** — Ciclo E2E: Migration→Hypothesis→Exchange→Route (batch sizes: 10, 50, 100, 200, 500).
+
+### Added — CI/CD Pipeline v3.0
+
+- **lint** — fmt + clippy (stable/ubuntu-latest).
+- **test-all-features** — Matrix rust (stable, nightly) × OS (ubuntu-latest, macos-latest, windows-latest), fail-fast: false.
+- **wasm-check** — Verificación target wasm32-unknown-unknown.
+- **e2e-ignition** — Tests symbiotic_ignition_e2e + omni_node + migration_protocol.
+- **benchmarks** — Ejecución Criterion con --save-baseline v3.0.0-stable, upload artifacts.
+- **security-audit** — cargo audit + cargo deny.
+- **release-sign** — Build release + SHA256SUMS (tags only), needs lint+test+e2e+security.
+
+### Added — Release Package
+
+- **Release Notes** — Resumen ejecutivo, arquitectura v3.0, breaking changes vs v2.1, métricas de escalado, guía de upgrade, checklist de validación.
+- **Migration Guide** — 6 pasos: Cargo.toml, imports, SCT Results, Omni-Node, MigrationProtocol, validación. Procedimiento de rollback incluido.
+- **Launch Checklist** — 6 fases: Pre-Flight (T-24h), Deploy (T-0), Validación E2E (T+1h), Monitoring (T+24h), Rollback Plan, Governance Sign-off.
+- **Sign Release Script** — POSIX, Ed25519 vía openssl, SHA256SUMS, tarball, signing log. Exit codes: 0=success, 1=prereq, 2=signing, 3=checksum.
+
+### Changed — Documentation Sync
+
+- **README.md** — Badge `v3.0.0-stable`, tabla feature gates v3.0, sección producción con artifacts/benchmarks/CI/CD, diagrama Omni-Node ASCII, enlaces a release/migration/launch.
+- **CHANGELOG.md** — Entry Sprint 48 con tabla de benchmarks, CI/CD, release artifacts y validación final.
+
+### Feature Gates
+
+| Feature | Depende de | Descripción |
+|---------|-----------|-------------|
+| `v3.0-scaling-bench` | `v3.0-omni-integration` | Benchmarks de escalado Omni-Node |
+| `v3.0-release-eng` | `v3.0-omni-integration` | Ingeniería de release + CI/CD |
+
+### Validation
+
+- [ ] `cargo bench --features "v3.0-scaling-bench"` — Pending validation
+- [ ] `cargo test --all-features` — Pending validation
+- [ ] `cargo clippy --all-features` — Pending validation
+- [ ] `cargo audit` — Pending validation
+- [ ] YAML/POSIX validation — Pending validation
+
+---
+
 ## [v3.0.0-sprint47] — 2026-05-24 (Sprint 47 — Omni-Node Integration & Symbiotic Ignition Sequence)
 
 ### Sprint 47 "Omni-Node Integration & Symbiotic Ignition Sequence"

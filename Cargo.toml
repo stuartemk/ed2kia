@@ -703,6 +703,13 @@ test-mocks = []
     "v2.1-sct-core",
 ]
 
+# Sprint 48: Release Engineering, Scaling Benchmarks & Mainnet Launch Protocol
+# benches/omni_node_scaling.rs: Criterion benchmarks for Omni-Node scaling
+# .github/workflows/ci_v3.yml: Production CI/CD pipeline
+# release/v3.0.0-stable/: Release package (notes, migration guide, checklist, signing)
+"v3.0-scaling-bench" = ["v3.0-omni-integration"]
+"v3.0-release-eng" = ["v3.0-omni-integration"]
+
 # Sprint 43: Corpuscular Bridge Implementation & IoT/CE Exchange Protocol
 # src/pillars/corpuscular/iot_adapter.rs: LocalHardwareAdapter — LOCAL_ONLY device registry
 # src/pillars/corpuscular/ce_exchange.rs: CEExchangeEngine — CE ↔ Physical Resource atomic exchange

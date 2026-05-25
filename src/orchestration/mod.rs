@@ -16,3 +16,6 @@ mod omni_node;
 
 pub use pillar_router::*;
 pub use omni_node::*;
+
+// Re-export PillarMessage for backward compatibility with E2E tests
+pub use crate::runtime::pillar_messaging::PillarMessage;

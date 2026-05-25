@@ -334,7 +334,7 @@ mod tests {
 
     #[test]
     fn test_inject_chaff_empty_stream() {
-        let engine = ChaffingEngine::new();
+        let mut engine = ChaffingEngine::new();
         match engine.inject_chaff(&[], "test") {
             Err(ChaffingError::StreamTooShort) => {},
             other => panic!("Expected StreamTooShort, got {:?}", other),
@@ -343,7 +343,7 @@ mod tests {
 
     #[test]
     fn test_inject_chaff_missing_key() {
-        let engine = ChaffingEngine::new();
+        let mut engine = ChaffingEngine::new();
         match engine.inject_chaff(b"hello", "unknown-session") {
             Err(ChaffingError::MissingKey(id)) => assert_eq!(id, "unknown-session"),
             other => panic!("Expected MissingKey, got {:?}", other),
@@ -407,7 +407,7 @@ mod tests {
 
     #[test]
     fn test_invalid_ratio() {
-        let engine = ChaffingEngine::with_config(ChaffConfig {
+        let mut engine = ChaffingEngine::with_config(ChaffConfig {
             chaff_ratio: 1.5,
             ..ChaffConfig::default()
         });

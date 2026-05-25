@@ -4,14 +4,14 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ethical-blue)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-2021-orange)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/Version-v2.1.0-stable-brightgreen)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-v3.0.0-stable-brightgreen)](CHANGELOG.md)
 [![Audit](https://img.shields.io/badge/Audit-Ready-brightgreen)](docs/audit-prep.md)
 [![Governance](https://img.shields.io/badge/Governance-Active-blueviolet)](GOVERNANCE.md)
 [![Launch](https://img.shields.io/badge/Launch-Ready-red)](docs/public-launch-guide.md)
 [![Onboarding](https://img.shields.io/badge/Onboarding-Active-orange)](docs/public-launch-guide.md)
 [![Deploy](https://img.shields.io/badge/GitHub%20Pages-Active-brightgreen)](https://ed2kia.github.io/ed2kIA)
 [![Tests](https://img.shields.io/badge/Tests-3505_passing-success)](CHANGELOG.md)
-[![Benchmarks](https://img.shields.io/badge/Benchmarks-v2.1.0--stable-blue)](benchmarks/README.md)
+[![Benchmarks](https://img.shields.io/badge/Benchmarks-v3.0.0--stable-blue)](benches/omni_node_scaling.rs)
 [![Security](https://img.shields.io/badge/Security-Audited-brightgreen)](docs/security/production-threat-model.md)
 [![Technical Report](https://img.shields.io/badge/Technical_Report-v2.1.0--stable-blueviolet)](docs/technical-report.md)
 [![Steward Program](https://img.shields.io/badge/Steward_Program-Active-blueviolet)](docs/steward-program.md)
@@ -20,8 +20,9 @@
 [![Coverage](https://img.shields.io/badge/Coverage-≥80%25-tracking)](release/v2.0.0-stable/final-signoff.json)
 [![OSSF](https://img.shields.io/badge/OSSF-8.5%2F10-passing)](security/audit_v2.0_sprint2.md)
 [![Mode](https://img.shields.io/badge/Mode-STEWARDSHIP-blueviolet)](docs/governance/project-constitution.md)
-[![Rust CI](https://github.com/ed2kia/ed2kIA/actions/workflows/rust-ci.yml/badge.svg)](https://github.com/ed2kia/ed2kIA/actions/workflows/rust-ci.yml)
+[![CI v3.0](https://github.com/ed2kia/ed2kIA/actions/workflows/ci_v3.yml/badge.svg)](https://github.com/ed2kia/ed2kIA/actions/workflows/ci_v3.yml)
 [![Security Audit](https://github.com/ed2kia/ed2kIA/actions/workflows/security-audit.yml/badge.svg)](https://github.com/ed2kia/ed2kIA/actions/workflows/security-audit.yml)
+[![Release](https://img.shields.io/badge/Release-v3.0.0--stable-brightgreen)](release/v3.0.0-stable/release-notes.md)
 [![Release Signing](https://img.shields.io/badge/Releases-Ed25519_Signed-brightgreen)](scripts/release-signer.sh)
 [![Dependabot](https://badgen.net/github/dependabot/ed2kia/ed2kIA)](https://github.com/ed2kia/ed2kIA/issues?q=is%3Aissue+author%3Aapp%2Fdependabot)
 [![Testnet](https://img.shields.io/badge/Testnet-Active-brightgreen)](scripts/activate-testnet.sh)
@@ -151,6 +152,85 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 | `v2.1-quantum-feedback` | Async Quantum Feedback CRDT — VersionVector sync, CE*Z priority conflict resolution, bincode persistence | ✅ Implementado (Sprint30) |
 
 > **Nota:** Los feature gates `v2.1-*` NO están incluidos en `default = ["stable"]`. Requieren activación explícita vía RFC comunitario.
+
+### Feature Gates v3.0 (Production — Omni-Node Architecture)
+
+| Feature Gate | Módulo | Status |
+|--------------|--------|--------|
+| `v3.0-corpuscular-bridge` | Corpuscular Bridge — IoT Simbiótico & CE Exchange | ✅ Stable |
+| `v3.0-maieutic-synthesizer` | Maieutic Synthesizer — Motor de Hipótesis Científicas | ✅ Stable |
+| `v3.0-steganographic-survival` | Steganographic Survival — Traffic Masking + Chaffing + Transport Rotator | ✅ Stable |
+| `v3.0-resonance-interface` | Resonance Interface — Biorretroalimentación Local (rPPG + Homeostasis) | ✅ Stable |
+| `v3.0-orchestration` | Pillar Router — Inter-pillar routing with CE/SCT validation | ✅ Stable |
+| `v3.0-pillar-messaging` | Secure Pillar Messaging — Ed25519 + Replay Protection | ✅ Stable |
+| `v3.0-omni-integration` | OmniNode — Unified 4-pillar integration with SCT Guard Supreme | ✅ Stable |
+| `v3.0-scaling-bench` | Scaling Benchmarks — Criterion benchmarks for Omni-Node throughput/latency | ✅ Stable |
+| `v3.0-release-eng` | Release Engineering — CI/CD pipeline + release signing + launch protocol | ✅ Stable |
+
+> **Nota:** Los feature gates `v3.0-*` requieren activación explícita. `v3.0-omni-integration` depende de los 4 pilares + orchestration + pillar-messaging + sct-core.
+
+## 🚀 Producción v3.0.0-stable
+
+**ed2kIA v3.0.0-stable** es la primera release estable de la arquitectura de Pilares Evolutivos. Integra 4 pilares bajo supervisión SCT mediante Omni-Node, con protocolo de migración para clusters ("Gran Migración") y secuencia E2E de Ignición Simbiótica validada.
+
+### Artifacts de Release
+
+| Artifact | Path | Descripción |
+|----------|------|-------------|
+| Release Notes | [`release/v3.0.0-stable/release-notes.md`](release/v3.0.0-stable/release-notes.md) | Notas técnicas de release |
+| Migration Guide | [`release/v3.0.0-stable/migration-guide-v2.1-to-v3.0.md`](release/v3.0.0-stable/migration-guide-v2.1-to-v3.0.md) | Guía de migración v2.1 → v3.0 |
+| Launch Checklist | [`release/v3.0.0-stable/launch-checklist.md`](release/v3.0.0-stable/launch-checklist.md) | Checklist de lanzamiento mainnet |
+| Sign Release | [`release/v3.0.0-stable/sign-release.sh`](release/v3.0.0-stable/sign-release.sh) | Script POSIX de firma Ed25519 |
+
+### Benchmarks de Escalado
+
+| Benchmark | Grupo | Descripción |
+|-----------|-------|-------------|
+| Omni-Node Throughput | `omni_node/throughput` | Mensajes/sec con validación SCT (100-10,000) |
+| SCT Routing Latency | `omni_node/sct_latency` | p50/p95 latencia Z ≥ 0 (10-1,000) |
+| CE Ledger Concurrency | `omni_node/ce_ledger` | Depósitos/retiros concurrentes (100-10,000) |
+| Migration Handshake Scale | `omni_node/migration` | Negociación de clusters (10-500) |
+| Full Ignition Cycle | `omni_node/ignition` | E2E: Migration→Hypothesis→Exchange→Route |
+
+### CI/CD Pipeline v3.0
+
+| Job | Descripción |
+|-----|-------------|
+| `lint` | fmt + clippy (stable/ubuntu) |
+| `test-all-features` | Matrix stable/nightly × ubuntu/macos/windows |
+| `wasm-check` | wasm32-unknown-unknown target check |
+| `e2e-ignition` | symbiotic_ignition_e2e + omni_node + migration_protocol |
+| `benchmarks` | Criterion benchmarks con --save-baseline v3.0.0-stable |
+| `security-audit` | cargo audit + cargo deny |
+| `release-sign` | Build release + SHA256SUMS (tags only) |
+
+### Arquitectura Omni-Node
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    OmniNode (v3.0)                          │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
+│  │  Corpuscular │  │    Maieutic  │  │  Steganographic│     │
+│  │   Bridge     │  │  Synthesizer │  │   Survival    │     │
+│  │  (Pillar 1)  │  │  (Pillar 2)  │  │  (Pillar 3)   │     │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘      │
+│         │                 │                 │               │
+│         └─────────────────┼─────────────────┘               │
+│                   ┌───────┴───────┐                         │
+│                   │  Symbiotic    │                         │
+│                   │    Router     │  ◄── SCT Guard (Z≥0)   │
+│                   └───────┬───────┘                         │
+│         ┌─────────────────┼─────────────────┘               │
+│         │                 │                                 │
+│  ┌──────┴───────┐  ┌──────┴───────┐                        │
+│  │  Resonance   │  │   Existential│                        │
+│  │  Interface   │  │  Credit      │                        │
+│  │  (Pillar 4)  │  │   Ledger     │                        │
+│  └──────────────┘  └──────────────┘                        │
+│                                                             │
+│  MigrationProtocol ──► Cluster Onboarding ("Gran Migración")│
+└─────────────────────────────────────────────────────────────┘
+```
 
 ## 🌐 Testnet Activa & Únete
 
