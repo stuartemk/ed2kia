@@ -6,6 +6,92 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v3.7.0-sprint55] — 2026-05-26 (Sprint 55 — Symbiotic Portal WASM Client for Zero-Friction Onboarding)
+
+### Sprint 55 "Symbiotic Portal (WASM Client)"
+
+Implementación del Portal Simbiótico (SymbioticPortal) como cliente WASM para onboarding de cero fricción. El Portal ejecuta el OmniNode en un Web Worker aislado (no bloquea la UI) con puente asíncrono de mensajes. Incluye CE Wallet + Dashboard bindings (ui_bridge) para integración con Alpine.js/Vanilla.js, y el Protocolo de Bootstrap Global (bootstrap) con descubrimiento de Seed Nodes vía WebRTC-Star/Circuit Relay v2 para arranque <3s en la malla planetaria.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| SymbioticPortal WASM Client | `src/portal/wasm_client.rs` | SymbioticPortal + PortalMessage/Response/Health, generate_worker_script() para Web Worker isolation (~400 líneas, 9 tests) |
+| UI Bridge (CE Wallet + Dashboard) | `src/portal/ui_bridge.rs` | CeWallet, GeiState, ResonanceStatus, HealthMonitor, UiBridge con to_json() para Alpine.js (~500 líneas, 30+ tests) |
+| Global Bootstrap Protocol | `src/network/bootstrap.rs` | SeedNode, BootstrapStrategy (WebRTCStar/CircuitRelay/DnsSd/StaticSeeds/Auto), BootstrapProtocol con discover() y BootstrapStats (~500 líneas, 30+ tests) |
+| Test Purification | `tests/resonance_interface.rs` | API fixes: crate name `ed2kIA`→`ed2kia`, private field→`with_config()`, private method→`generate_response()`, brainwave assertion alignment |
+| Feature Gate | `Cargo.toml` | `v3.7-symbiotic-portal` → depends on `v3.6-aegis-resonance` + `v3.0-resonance-interface` |
+| Module Registration | `src/lib.rs` | `pub mod portal`, `pub mod network::bootstrap` |
+
+### Added — SymbioticPortal WASM Client
+
+- **PortalMessage** — Init, BiometricSample, QueryCeBalance, QueryGeiState, QueryResonanceStatus, DepositCe, CalibrateBaseline, Shutdown, Custom.
+- **PortalResponse** — Ready, ResonanceResult, CeBalance, GeiState, ResonanceStatus, CeDeposited, Calibrated, Stopped, Error.
+- **SymbioticPortal** — Web Worker manager: `new()`, `init()`, `send_biometric()`, `query_*()`, `deposit_ce()`, `calibrate_baseline()`, `health()`, `shutdown()`.
+- **generate_worker_script(wasm_url, wasm_init_url)** — Genera JavaScript bootstrap para Web Worker con carga automática de WASM.
+
+### Added — UI Bridge (CE Wallet + Dashboard Bindings)
+
+- **CeWallet** — `balance`, `total_deposited`, `total_consumed`, `transaction_count`; methods: `deposit()`, `consume()`, `to_json()`, `reset()`.
+- **GeiState** — `x`, `y`, `z`, `stability`, `approved`; methods: `calculate_stability()`, `is_harmonic()`, `to_json()`.
+- **ResonanceStatus** — `sct_z`, `brainwave_band`, `confidence`, `approved`, `homeostasis_target`; methods: `get_frequency_range()`, `to_json()`.
+- **HealthMonitor** — `status`, `last_heartbeat`, `heartbeat_interval_ms`, `missed_heartbeats`; methods: `heartbeat()`, `check()`, `to_json()`.
+- **UiBridge** — Aggregator: `wallet()`, `gei_state()`, `resonance_status()`, `health_monitor()`, `get_dashboard_json()`.
+
+### Added — Global Bootstrap Protocol
+
+- **SeedNode** — `node_id`, `address`, `port`, `transports`, `region`, `last_heartbeat`, `active`; methods: `is_alive()`, `endpoint()`.
+- **BootstrapStrategy** — WebRTCStar, CircuitRelay, DnsSd, StaticSeeds, Auto.
+- **BootstrapProtocol** — `discover()`, `select_best_seed()`, `get_stats()`, `update_config()`, `reset()`.
+- **BootstrapStats** — `total_discoveries`, `successful_discoveries`, `success_rate`, `avg_discovery_time_ms`, `to_json()`.
+- **Default Seed Nodes** — 3 seeds regionales (us-east, eu-west, ap-southeast) en puerto 9000.
+
+### Fixed — Test Purification (resonance_interface.rs)
+
+- Crate name `ed2kIA` → `ed2kia` (9 ocurrencias).
+- Private field access `engine.config` → `HomeostasisEngine::with_config()`.
+- Private method `select_brainwave_band()` → `generate_response()` + `response.semantic.brainwave_band`.
+- Brainwave band assertion: `high_stress` con `coherence=0.2` → alpha (condition 1: `stress > 0.6 && coherence < 0.4`).
+
+---
+
+## [v3.5.0-sprint53] — 2026-05-26 (Sprint 53 — Planetary Mesh & Autonomous Emergence Engine)
+
+### Sprint 53 "Planetary Mesh & Autonomous Emergence Engine"
+
+Implementación del Planetary Mesh (Kademlia DHT + AutoNAT + Circuit Relay) para routing WAN a escala planetaria, Swarm Auto-Organization (topología dinámica por capacidad hardware) y Stuartian Emergence Engine (Cross-Tensor Fusion con SCT Guard Z ≥ 0) para la resolución autónoma del "Grok Challenge" a 1000+ nodos.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| Planetary Mesh Router | `src/network/planetary_mesh.rs` | Kademlia DHT (XOR distance, K-Buckets), AutoNAT (public address detection), Circuit Relay v2 (NAT traversal, DCutR hole punching) (~830 líneas, 20 tests) |
+| Swarm Auto-Organization | `src/orchestration/swarm_topology.rs` | Topología dinámica por capacidad: MaieuticSynth/Validator/Router/Relay/Light, rebalanceo automático, sub-networks por rol (~1543 líneas, 50+ tests) |
+| Stuartian Emergence Engine | `src/intelligence/emergence_core.rs` | Cross-Tensor Fusion (similarity threshold, problem/solution/ethical weights), SCT Guard (Z ≥ 0), EmergentSolutionEvent para Grok Challenge (~1100 líneas, 50+ tests) |
+| E2E Integration Tests | `tests/planetary_emergence_e2e.rs` | Grok Challenge 1000 nodos, 3 fragments convergence, Planetary Mesh + Swarm + Emergence integration, edge cases (~700 líneas, 30 tests) |
+| Feature Gate | `Cargo.toml` | `v3.5-planetary-emergence` → depends on `v3.4-macro-symbiosis` |
+| Module Registration | `src/lib.rs` | `pub mod intelligence`, `pub mod network::planetary_mesh` |
+
+### Added — Planetary Mesh Routing
+
+- **Kademlia DHT** — XOR distance metric, K-Bucket table with alpha-bit partitioning, iterative closest peer discovery.
+- **AutoNAT Engine** — Public address detection via server dial attempts (success/failure tracking).
+- **Circuit Relay v2** — NAT traversal with relay-assisted hole punching (DCutR), TTL-based circuit expiry.
+- **PlanetaryMesh Router** — Unified mesh with DHT + AutoNAT + Relay, inactive peer pruning, mesh statistics.
+
+### Added — Swarm Auto-Organization
+
+- **ComputeTier** — Light (0), Standard (1), GPU (2) — determines eligible roles.
+- **SwarmRole** — MaieuticSynth, Validator, Router, Relay, Light — priority-based assignment.
+- **NodeCapabilities** — Hardware profile (CPU cores, RAM, VRAM, bandwidth, CE balance) → capability score.
+- **SubNetwork** — Dynamic grouping by role with load balancing (overload/underutilization detection).
+- **SwarmTopology** — Register/unregister nodes, heartbeat monitoring, automatic rebalancing, role reassignment.
+
+### Added — Stuartian Emergence Engine
+
+- **NodeTensor** — Per-node feature representation (problem, solution, ethical_direction vectors).
+- **Vector3** — Ethical space coordinates (x, y, z) within Octahedron constraints.
+- **CrossTensorFusion** — Detects latent correlations across node tensors, fuses to generate EmergentInsight.
+- **SCTGuard** — Ethical validation (Z ≥ 0) for all emergent insights.
+- **EmergentSolutionEvent** — Key event for "Grok Challenge" — emitted when disconnected fragments converge.
+- **StuartianEmergenceEngine** — Main engine: register tensors → run emergence cycle → emit solution events.
+
 ## [v3.4.0-sprint52] — 2026-05-25 (Sprint 52 — Temporal Cohesion Engine & Global Symbiotic Ledger DAG)
 
 ### Sprint 52 "Temporal Cohesion & Global Symbiotic Ledger"

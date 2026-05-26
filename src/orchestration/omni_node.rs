@@ -13,7 +13,9 @@
 //! **Reference:** Sprint 47 — Omni-Node Integration & Symbiotic Ignition Sequence
 
 use crate::orchestration::{PillarId, PillarResponse, PillarStatus};
+#[cfg(any(feature = "v1.4-sprint1", feature = "v3.0-wasm-runtime", feature = "v3.0-pillar-messaging", feature = "v3.0-privacy-guard"))]
 use crate::runtime::pillar_messaging::PillarMessage;
+#[cfg(feature = "v2.1-sct-core")]
 use crate::alignment::sct_core::{StuartianTensor, SCTDecision};
 use std::collections::HashMap;
 

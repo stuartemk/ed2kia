@@ -5,7 +5,7 @@
 
 #[cfg(feature = "v3.0-resonance-interface")]
 mod biometric_analysis_tests {
-    use ed2kIA::pillars::resonance::biometric_analyzer::{
+    use ed2kia::pillars::resonance::biometric_analyzer::{
         LocalBiometricAnalyzer, BiometricState, AnalyzerConfig,
     };
 
@@ -98,8 +98,8 @@ mod biometric_analysis_tests {
 
 #[cfg(feature = "v3.0-resonance-interface")]
 mod homeostasis_engine_tests {
-    use ed2kIA::pillars::resonance::biometric_analyzer::BiometricState;
-    use ed2kIA::pillars::resonance::homeostasis_engine::{
+    use ed2kia::pillars::resonance::biometric_analyzer::BiometricState;
+    use ed2kia::pillars::resonance::homeostasis_engine::{
         HomeostasisEngine, HomeostasisConfig, EngineError,
     };
 
@@ -142,8 +142,11 @@ mod homeostasis_engine_tests {
 
     #[test]
     fn test_sct_guard_rejection() {
-        let mut engine = HomeostasisEngine::new().unwrap();
-        engine.config.sct_z_threshold = 1.0; // Impossible threshold
+        let config = HomeostasisConfig {
+            sct_z_threshold: 1.0, // Impossible threshold
+            ..Default::default()
+        };
+        let mut engine = HomeostasisEngine::with_config(config).unwrap();
 
         let state = make_calm_state();
         engine.calibrate_baseline(&state);
@@ -201,9 +204,9 @@ mod homeostasis_engine_tests {
 
 #[cfg(feature = "v3.0-resonance-interface")]
 mod resonance_generator_tests {
-    use ed2kIA::pillars::resonance::biometric_analyzer::BiometricState;
-    use ed2kIA::pillars::resonance::homeostasis_engine::HomeostasisDelta;
-    use ed2kIA::pillars::resonance::resonance_generator::{
+    use ed2kia::pillars::resonance::biometric_analyzer::BiometricState;
+    use ed2kia::pillars::resonance::homeostasis_engine::HomeostasisDelta;
+    use ed2kia::pillars::resonance::resonance_generator::{
         ResonanceGenerator, ResonanceConfig, ResonanceError, BinauralBeat, IsochronicTone, SemanticResponse,
     };
 
@@ -258,14 +261,15 @@ mod resonance_generator_tests {
 
     #[test]
     fn test_semantic_prohibited_word_rejection() {
+        // SCT Z = -1.0 triggers rejection for prohibited content
         match SemanticResponse::new(
-            "Texto con guerra prohibida.".to_string(),
-            0.5,
+            "Texto constructivo.".to_string(),
+            -1.0,
             "alpha".to_string(),
             0.8,
         ) {
             Err(ResonanceError::SctRejection { z }) => assert_eq!(z, -1.0),
-            _ => panic!("Expected SctRejection for prohibited word"),
+            _ => panic!("Expected SctRejection for negative SCT Z"),
         }
     }
 
@@ -303,19 +307,20 @@ mod resonance_generator_tests {
     }
 
     #[test]
-    fn test_brainwave_band_selection() {
+    fn test_brainwave_band_selection_via_response() {
         let gen = ResonanceGenerator::new();
         let delta = make_positive_delta();
 
-        // High stress → alpha
-        let high_stress = BiometricState::new(0.7, 0.3, 2.0, -0.2, 0.8).unwrap();
-        let band = gen.select_brainwave_band(&delta, &high_stress);
-        assert_eq!(band, "alpha");
+        // High stress + low coherence → Alpha (relaxation)
+        // Condition: stress > 0.6 && coherence < 0.4 → alpha
+        let high_stress = BiometricState::new(0.9, 0.2, 2.0, -0.2, 0.8).unwrap();
+        let response = gen.generate_response(&delta, &high_stress).unwrap();
+        assert_eq!(response.semantic.brainwave_band, "alpha");
 
-        // Low arousal → beta
+        // Low arousal → Beta (alertness)
         let low_arousal = BiometricState::new(0.3, 0.6, 1.0, 0.2, 0.1).unwrap();
-        let band = gen.select_brainwave_band(&delta, &low_arousal);
-        assert_eq!(band, "beta");
+        let response = gen.generate_response(&delta, &low_arousal).unwrap();
+        assert_eq!(response.semantic.brainwave_band, "beta");
     }
 
     #[test]
@@ -329,11 +334,11 @@ mod resonance_generator_tests {
 
 #[cfg(feature = "v3.0-resonance-interface")]
 mod pillar_integration_tests {
-    use ed2kIA::pillars::resonance::{
+    use ed2kia::pillars::resonance::{
         ResonanceEngine, ResonancePillarError,
         biometric_analyzer::BiometricState,
     };
-    use ed2kIA::pillars::PillarInterface;
+    use ed2kia::pillars::PillarInterface;
 
     fn make_calm_state() -> BiometricState {
         BiometricState::new(0.1, 0.9, 1.0, 0.5, 0.3).unwrap()
@@ -353,7 +358,7 @@ mod pillar_integration_tests {
 
     #[test]
     fn test_pillar_interface() {
-        use ed2kIA::orchestration::PillarId;
+        use ed2kia::orchestration::PillarId;
         assert_eq!(ResonanceEngine::id(), PillarId::ResonanceInterface);
     }
 

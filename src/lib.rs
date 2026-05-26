@@ -678,16 +678,23 @@ pub mod mvp {
     feature = "v2.1-region-sync",
     feature = "v2.1-federation-bootstrap",
     feature = "v3.5-planetary-emergence",
-    feature = "v3.6-aegis-resonance"
+    feature = "v3.6-aegis-resonance",
+    feature = "v3.7-symbiotic-portal"
 ))]
 pub mod network;
 
 /// Intelligence — Autonomous Emergence Engine (Sprint53)
 #[cfg(any(
     feature = "v3.5-planetary-emergence",
-    feature = "v3.6-aegis-resonance"
+    feature = "v3.6-aegis-resonance",
+    feature = "v3.7-symbiotic-portal"
 ))]
 pub mod intelligence;
+
+/// Symbiotic Portal — Zero-Friction Onboarding via WASM Client (Sprint 55)
+/// Only compiles for wasm32 target (requires wasm-bindgen, js-sys, web-sys).
+#[cfg(all(feature = "v3.7-symbiotic-portal", target_arch = "wasm32"))]
+pub mod portal;
 
 /// Async Gossip with CRDTs — Partition-tolerant GossipSub mesh (Sprint16.4)
 #[cfg(any(

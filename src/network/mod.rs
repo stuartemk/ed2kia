@@ -36,3 +36,12 @@ pub use planetary_mesh::{
     MeshConfig, MeshError, MeshStats, NodeCapabilities as MeshNodeCapabilities, PeerEntry,
     PlanetaryMesh, RelayCircuit,
 };
+
+#[cfg(feature = "v3.7-symbiotic-portal")]
+pub mod bootstrap;
+
+#[cfg(feature = "v3.7-symbiotic-portal")]
+pub use bootstrap::{
+    BootstrapConfig, BootstrapProtocol, BootstrapStats, BootstrapStrategy,
+    DiscoveryResult, SeedNode, TransportType,
+};

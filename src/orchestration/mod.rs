@@ -12,6 +12,10 @@
 //! **Feature Gate:** `v3.0-orchestration`
 
 mod pillar_router;
+#[cfg(all(
+    any(feature = "v1.4-sprint1", feature = "v3.0-wasm-runtime", feature = "v3.0-pillar-messaging", feature = "v3.0-privacy-guard"),
+    feature = "v2.1-sct-core"
+))]
 mod omni_node;
 #[cfg(feature = "v3.2-genesis-manifold")]
 mod symbiotic_loop;
@@ -21,6 +25,10 @@ mod swarm_topology;
 mod aegis_healer;
 
 pub use pillar_router::*;
+#[cfg(all(
+    any(feature = "v1.4-sprint1", feature = "v3.0-wasm-runtime", feature = "v3.0-pillar-messaging", feature = "v3.0-privacy-guard"),
+    feature = "v2.1-sct-core"
+))]
 pub use omni_node::*;
 #[cfg(feature = "v3.2-genesis-manifold")]
 pub use symbiotic_loop::*;
@@ -30,4 +38,5 @@ pub use swarm_topology::*;
 pub use aegis_healer::{AegisConfig, AegisError, AegisHealer, HealingAction, HealingResult, AegisSymbioticState};
 
 // Re-export PillarMessage for backward compatibility with E2E tests
+#[cfg(any(feature = "v1.4-sprint1", feature = "v3.0-wasm-runtime", feature = "v3.0-pillar-messaging", feature = "v3.0-privacy-guard"))]
 pub use crate::runtime::pillar_messaging::PillarMessage;
