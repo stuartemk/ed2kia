@@ -26,3 +26,13 @@ pub use region_sync::{
     apply_deltas, generate_deltas, resolve_conflicts, sync_region_state, DeltaEntry, RegionState,
     SyncConfig, SyncError, SyncResult,
 };
+
+#[cfg(feature = "v3.5-planetary-emergence")]
+pub mod planetary_mesh;
+
+#[cfg(feature = "v3.5-planetary-emergence")]
+pub use planetary_mesh::{
+    AutoNatEngine, AutoNatStatus, BucketAction, CircuitState, kademlia_distance, KTable,
+    MeshConfig, MeshError, MeshStats, NodeCapabilities as MeshNodeCapabilities, PeerEntry,
+    PlanetaryMesh, RelayCircuit,
+};

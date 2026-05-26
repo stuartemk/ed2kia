@@ -734,6 +734,12 @@ test-mocks = []
 # src/pillars/corpuscular/macro_bridge.rs: MacroCorpuscularBridge — Local CE exchange to global DAG bridge
 "v3.4-macro-symbiosis" = ["v3.3-rssi-evolution", "v3.0-corpuscular-bridge"]
 
+# Sprint 53: Planetary Mesh & Autonomous Emergence Engine
+# src/network/planetary_mesh.rs: PlanetaryMesh — Kademlia DHT, AutoNAT, Circuit Relay
+# src/orchestration/swarm_topology.rs: SwarmTopology — Auto-organization by hardware capability
+# src/intelligence/emergence_core.rs: StuartianEmergenceEngine — Cross-Tensor Fusion, SCT Guard
+"v3.5-planetary-emergence" = ["v3.4-macro-symbiosis"]
+
 # Sprint 50 Test: Moral Manifold Behavior
 [[test]]
 name = "moral_manifold_behavior"
@@ -751,6 +757,12 @@ required-features = ["v3.3-rssi-evolution"]
 name = "macro_symbiosis_e2e"
 path = "tests/macro_symbiosis_e2e.rs"
 required-features = ["v3.4-macro-symbiosis"]
+
+# Sprint 53 Test: Planetary Emergence E2E
+[[test]]
+name = "planetary_emergence_e2e"
+path = "tests/planetary_emergence_e2e.rs"
+required-features = ["v3.5-planetary-emergence"]
 
 # Sprint 43: Corpuscular Bridge Implementation & IoT/CE Exchange Protocol
 # src/pillars/corpuscular/iot_adapter.rs: LocalHardwareAdapter — LOCAL_ONLY device registry
