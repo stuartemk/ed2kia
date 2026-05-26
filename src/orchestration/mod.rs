@@ -15,11 +15,19 @@ mod pillar_router;
 mod omni_node;
 #[cfg(feature = "v3.2-genesis-manifold")]
 mod symbiotic_loop;
+#[cfg(feature = "v3.5-planetary-emergence")]
+mod swarm_topology;
+#[cfg(feature = "v3.6-aegis-resonance")]
+mod aegis_healer;
 
 pub use pillar_router::*;
 pub use omni_node::*;
 #[cfg(feature = "v3.2-genesis-manifold")]
 pub use symbiotic_loop::*;
+#[cfg(feature = "v3.5-planetary-emergence")]
+pub use swarm_topology::*;
+#[cfg(feature = "v3.6-aegis-resonance")]
+pub use aegis_healer::{AegisConfig, AegisError, AegisHealer, HealingAction, HealingResult, AegisSymbioticState};
 
 // Re-export PillarMessage for backward compatibility with E2E tests
 pub use crate::runtime::pillar_messaging::PillarMessage;

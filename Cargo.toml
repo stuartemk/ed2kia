@@ -1,6 +1,6 @@
 [package]
 name = "ed2kia"
-version = "3.4.0-sprint52"
+version = "3.6.0-sprint54"
 edition = "2021"
 description = "Descentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
 license = "Apache-2.0"
@@ -740,6 +740,12 @@ test-mocks = []
 # src/intelligence/emergence_core.rs: StuartianEmergenceEngine — Cross-Tensor Fusion, SCT Guard
 "v3.5-planetary-emergence" = ["v3.4-macro-symbiosis"]
 
+# Sprint 54: Harmonic Steganography & Resonance Interface
+# src/pillars/steganographic/harmonic_flow.rs: HarmonicFlow — SRTP Pipeline Coordinator (TrafficMasker + ChaffingEngine + TransportRotator)
+# src/pillars/resonance/biofeedback_engine.rs: BiofeedbackEngine — Zero-Telemetry Local Healing (Analyzer + Homeostasis + Resonance)
+# src/orchestration/aegis_healer.rs: AegisHealer — Symbiotic Shield bridging P3 (Network) + P4 (Human)
+"v3.6-aegis-resonance" = ["v3.5-planetary-emergence", "v3.0-steganographic-survival", "v3.0-resonance-interface"]
+
 # Sprint 50 Test: Moral Manifold Behavior
 [[test]]
 name = "moral_manifold_behavior"
@@ -763,6 +769,12 @@ required-features = ["v3.4-macro-symbiosis"]
 name = "planetary_emergence_e2e"
 path = "tests/planetary_emergence_e2e.rs"
 required-features = ["v3.5-planetary-emergence"]
+
+# Sprint 54 Test: Symbiotic Aegis E2E
+[[test]]
+name = "symbiotic_aegis_e2e"
+path = "tests/symbiotic_aegis_e2e.rs"
+required-features = ["v3.6-aegis-resonance"]
 
 # Sprint 43: Corpuscular Bridge Implementation & IoT/CE Exchange Protocol
 # src/pillars/corpuscular/iot_adapter.rs: LocalHardwareAdapter — LOCAL_ONLY device registry

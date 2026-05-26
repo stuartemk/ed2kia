@@ -677,12 +677,16 @@ pub mod mvp {
     feature = "v2.1-cross-mesh",
     feature = "v2.1-region-sync",
     feature = "v2.1-federation-bootstrap",
-    feature = "v3.5-planetary-emergence"
+    feature = "v3.5-planetary-emergence",
+    feature = "v3.6-aegis-resonance"
 ))]
 pub mod network;
 
 /// Intelligence — Autonomous Emergence Engine (Sprint53)
-#[cfg(feature = "v3.5-planetary-emergence")]
+#[cfg(any(
+    feature = "v3.5-planetary-emergence",
+    feature = "v3.6-aegis-resonance"
+))]
 pub mod intelligence;
 
 /// Async Gossip with CRDTs — Partition-tolerant GossipSub mesh (Sprint16.4)

@@ -24,6 +24,8 @@
 pub mod biometric_analyzer;
 pub mod homeostasis_engine;
 pub mod resonance_generator;
+#[cfg(feature = "v3.6-aegis-resonance")]
+pub mod biofeedback_engine;
 
 use crate::orchestration::PillarId;
 use crate::pillars::{PillarError, PillarInterface};
