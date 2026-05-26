@@ -649,6 +649,21 @@ pub mod time {
 pub mod economy {
     #[path = "../economy/symbiotic_ledger.rs"]
     pub mod symbiotic_ledger;
+
+    /// Genesis Graph — DAG Root Node with Stuartian Laws hash (Sprint 56)
+    #[cfg(feature = "v3.8-morphic-genesis")]
+    #[path = "../economy/genesis_graph.rs"]
+    pub mod genesis_graph;
+}
+
+/// Morphic Resonance Decoder — Semantic Manipulation Protection (Sprint 56)
+#[cfg(feature = "v3.8-morphic-genesis")]
+pub mod semantics {
+    #[path = "../semantics/morphic_decoder.rs"]
+    pub mod morphic_decoder;
+
+    #[path = "../semantics/semantic_purifier.rs"]
+    pub mod semantic_purifier;
 }
 
 /// Mainnet Genesis — Deterministic genesis state & steward activation (Sprint22)
@@ -692,8 +707,12 @@ pub mod network;
 pub mod intelligence;
 
 /// Symbiotic Portal — Zero-Friction Onboarding via WASM Client (Sprint 55)
-/// Only compiles for wasm32 target (requires wasm-bindgen, js-sys, web-sys).
-#[cfg(all(feature = "v3.7-symbiotic-portal", target_arch = "wasm32"))]
+/// Full portal (wasm_client, ui_bridge) requires wasm32 target.
+/// MorphicBridge (morphic_bridge) is available for native testing via v3.8-morphic-genesis.
+#[cfg(any(
+    all(feature = "v3.7-symbiotic-portal", target_arch = "wasm32"),
+    feature = "v3.8-morphic-genesis"
+))]
 pub mod portal;
 
 /// Async Gossip with CRDTs — Partition-tolerant GossipSub mesh (Sprint16.4)

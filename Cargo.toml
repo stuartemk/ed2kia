@@ -752,6 +752,13 @@ test-mocks = []
 # src/network/bootstrap.rs: BootstrapProtocol — Seed Node Discovery (WebRTC-Star/Circuit Relay v2)
 "v3.7-symbiotic-portal" = ["v3.6-aegis-resonance", "v3.0-resonance-interface"]
 
+# Sprint 56: Morphic Resonance Decoder + Genesis Graph
+# src/semantics/morphic_decoder.rs: MorphicResonanceDecoder — Semantic waveform analysis with Stuartian Moral Manifold mapping
+# src/semantics/semantic_purifier.rs: SemanticPurifier — Re-contextualizes Lower Focus inputs into constructive queries
+# src/economy/genesis_graph.rs: GenesisNode + GenesisGraph — DAG root with Stuartian Laws hash, zero pre-mine
+# src/portal/morphic_bridge.rs: MorphicBridge — Connects MRD + Purifier to SymbioticPortal with WASM bindings
+"v3.8-morphic-genesis" = ["v3.7-symbiotic-portal"]
+
 # Sprint 50 Test: Moral Manifold Behavior
 [[test]]
 name = "moral_manifold_behavior"
@@ -1131,3 +1138,9 @@ required-features = ["v3.0-omni-integration"]
 name = "gei_invariance_benchmark"
 path = "tests/gei_invariance_benchmark.rs"
 required-features = ["v3.1-gei-topology"]
+
+# Sprint 56: Morphic Resonance Decoder + Genesis Graph — Full pipeline E2E
+[[test]]
+name = "morphic_resonance_e2e"
+path = "tests/morphic_resonance_e2e.rs"
+required-features = ["v3.8-morphic-genesis"]

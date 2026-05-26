@@ -6,6 +6,58 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v3.8.0-sprint56] — 2026-05-26 (Sprint 56 — Morphic Resonance Decoder and Genesis Graph Initialization)
+
+### Sprint 56 "Morphic Resonance Decoder + Genesis Graph"
+
+Implementación del Decodificador de Resonancia Mórfica (MRD) para protección contra manipulación semántica + Grafo de Génesis para inicialización del Ledger Simbiótico Global. El MRD mapea texto natural al Manifold Moral Stuartiano (espacio ético 3D X, Y, Z) detectando patrones de intención oculta (miedo, escasez, división = Lower Focus). El Purificador Semántico re-contextualiza inputs de Lower Focus en consultas constructivas (sin censura, solo realineación). El GenesisNode establece el nodo raíz del DAG con hash criptográfico de las Leyes Stuartianas, cero CE pre-minados.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| MorphicResonanceDecoder | `src/semantics/morphic_decoder.rs` | Semantic waveform analysis with Stuartian Moral Manifold mapping, bilingual lexicon (ES/EN), topology analysis (~780 líneas, 30+ tests) |
+| SemanticPurifier | `src/semantics/semantic_purifier.rs` | Re-contextualizes Lower Focus inputs into constructive queries via pattern matching + re-expression (~560 líneas, 20+ tests) |
+| GenesisNode + GenesisGraph | `src/economy/genesis_graph.rs` | DAG root with Stuartian Laws FNV-1a hash, zero CE pre-mine, immutable signature, NetworkId support (~515 líneas, 25+ tests) |
+| MorphicBridge | `src/portal/morphic_bridge.rs` | Connects MRD + Purifier to SymbioticPortal with WASM bindings for Web Worker purification pipeline (~480 líneas, 15+ tests) |
+| E2E Tests | `tests/morphic_resonance_e2e.rs` | Full pipeline: propaganda→negative Z→purified Z≥0→Genesis accepts first transaction (~300 líneas, 14 tests) |
+| Feature Gate | `Cargo.toml` | `v3.8-morphic-genesis` → depends on `v3.7-symbiotic-portal` |
+| Module Registration | `src/lib.rs` | `pub mod semantics`, `pub mod economy::genesis_graph` |
+| Portal Module | `src/portal/mod.rs` | `pub mod morphic_bridge` with feature gate |
+
+### Added — Morphic Resonance Decoder (MRD)
+
+- **MorphicResonanceDecoder** — `decode(text)` → `SemanticWaveform` with x, y, z coordinates in Stuartian Moral Manifold.
+- **SemanticWaveform** — `x` (autonomy), `y` (extraction), `z` (ethical focus), `z_score`, `token_count`, `intent` (UpperFocus/LowerFocus/Neutral).
+- **Resonance Lexicon** — Bilingual (ES/EN) with 70+ entries: Upper Focus (cooperación, evolución, armonía, simbiosis, resonancia...) / Lower Focus (miedo, escasez, división, urgencia, control...).
+- **Topology Analysis** — Non-linear processing: us-vs-them framing, false urgency, false scarcity, constructive patterns, knowledge-seeking.
+- **Context Weighting** — Clustering detection: consecutive same-sign tokens amplify effect.
+- **MorphicError** — EmptyInput, PureLowerFocus, ComputationError.
+
+### Added — Semantic Purifier
+
+- **SemanticPurifier** — `purify(input)` → `PurificationResult` with original/purified text and waveforms.
+- **NegativePattern** — Fear, Scarcity, Division, FalseUrgency, Control, Deception.
+- **Re-contextualization Templates** — 30+ pattern→replacement mappings (fear→preparation, scarcity→distribution, division→dialogue...).
+- **Strong Purification** — Wraps input in constructive query frame when basic re-contextualization is insufficient.
+- **PurificationError** — DecodeError, PurificationFailed, AlreadyConstructive.
+
+### Added — Genesis Graph
+
+- **GenesisNode** — DAG root with `hash`, `stuartian_laws_hash` (FNV-1a 128-bit), `timestamp` (epoch 0), `ce_balance` (always 0.0), `signature` (64-byte), `version`, `network_id`.
+- **NetworkId** — Mainnet, Testnet, Local.
+- **GenesisGraph** — `is_valid_child(parent_hashes)` validation, deterministic hash per network.
+- **GenesisError** — ImmutableGenesis, InvalidSignature, DuplicateGenesis, PreMineDetected, HashMismatch.
+- **Zero Pre-mine** — `ce_balance` is always 0.0, verified on creation.
+
+### Added — Morphic Bridge
+
+- **MorphicBridge** — Pipeline: Input → Decode → Check Z-score → Purify if needed → Re-verify → Pass/Block.
+- **BridgeResult** — input, output, waveform, was_purified, detected_pattern, status (Passed/Purified/Blocked/Error).
+- **BridgeConfig** — min_z_score, auto_purify, block_unpurifiable, decoder_config, purifier_config.
+- **WasmMorphicBridge** — WASM-exposed version for Web Worker with `#[wasm_bindgen]` bindings.
+- **BridgeError** — DecodeError, PurificationFailed, ThresholdNotMet.
+
+---
+
 ## [v3.7.0-sprint55] — 2026-05-26 (Sprint 55 — Symbiotic Portal WASM Client for Zero-Friction Onboarding)
 
 ### Sprint 55 "Symbiotic Portal (WASM Client)"
