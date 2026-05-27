@@ -201,6 +201,14 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 
 > **Nota:** `v3.4-macro-symbiosis` depende de `v3.3-rssi-evolution`. Motor de cohesión temporal PTP/NTP para P2P/GossipSub, ledger DAG cooperativo con validación Ed25519 y SCT Guard Economic, puente Macro-Corpuscular para homeostasis de recursos.
 
+### Feature Gates v3.5 (Planetary Mesh & Autonomous Emergence Engine)
+
+| Feature Gate | Módulo | Status |
+|--------------|--------|--------|
+| `v3.5-planetary-emergence` | PlanetaryMesh(Kademlia+AutoNAT+Relay) + SwarmTopology + StuartianEmergenceEngine | ✅ Stable |
+
+> **Nota:** `v3.5-planetary-emergence` depende de `v3.4-macro-symbiosis`. Routing WAN a escala planetaria con Kademlia DHT, AutoNAT y Circuit Relay. Auto-organización de enjambre por capacidad hardware (GPU/Standard/Light). Motor de emergencia Stuartian con Cross-Tensor Fusion y SCT Guard (Z ≥ 0) para resolución autónoma del Grok Challenge a 1000+ nodos.
+
 ## 🚀 Producción v3.0.0-stable
 
 **ed2kIA v3.0.0-stable** es la primera release estable de la arquitectura de Pilares Evolutivos. Integra 4 pilares bajo supervisión SCT mediante Omni-Node, con protocolo de migración para clusters ("Gran Migración") y secuencia E2E de Ignición Simbiótica validada.

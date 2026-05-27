@@ -74,7 +74,7 @@ impl BiometricState {
                 max: 1.0,
             });
         }
-        if dominant_frequency < 0.0 || dominant_frequency > 5.0 {
+        if !(0.0..=5.0).contains(&dominant_frequency) {
             return Err(AnalyzerError::InvalidValue {
                 field: "dominant_frequency".into(),
                 value: dominant_frequency,
@@ -258,7 +258,7 @@ impl LocalBiometricAnalyzer {
         };
 
         // Clamp BPM to physiological range (40-180)
-        let bpm = bpm.max(40.0).min(180.0);
+        let bpm = bpm.clamp(40.0, 180.0);
 
         // HRV: coefficient of variation of inter-peak intervals
         // Higher HRV = better coherence
@@ -362,7 +362,7 @@ impl LocalBiometricAnalyzer {
         // Valence: positive AUs (AU6, AU12) vs negative AUs (AU1, AU4)
         let positive_au = samples.get(5).copied().unwrap_or(0.0)
             + samples.get(11).copied().unwrap_or(0.0);
-        let negative_au = samples.get(0).copied().unwrap_or(0.0)
+        let negative_au = samples.first().copied().unwrap_or(0.0)
             + samples.get(3).copied().unwrap_or(0.0);
         let valence = if positive_au + negative_au > 0.0 {
             (positive_au - negative_au) / (positive_au + negative_au)

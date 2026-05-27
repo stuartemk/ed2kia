@@ -179,7 +179,7 @@ impl HophEngine {
         let mut active_cavities: HashMap<usize, f64> = HashMap::new(); // cavity_id → birth_radius
         let mut cavity_id = 0;
 
-        for (_step, &radius) in radii.iter().enumerate() {
+        for &radius in &radii {
             if radius <= 0.0 {
                 continue;
             }
@@ -203,15 +203,10 @@ impl HophEngine {
                     let e1 = &edge_list[ei];
                     let e2 = &edge_list[ej];
                     // Shared vertex?
-                    let shared = if e1.vertices[0] == e2.vertices[0]
+                    let shared = e1.vertices[0] == e2.vertices[0]
                         || e1.vertices[0] == e2.vertices[1]
                         || e1.vertices[1] == e2.vertices[0]
-                        || e1.vertices[1] == e2.vertices[1]
-                    {
-                        true
-                    } else {
-                        false
-                    };
+                        || e1.vertices[1] == e2.vertices[1];
                     if shared {
                         // Find third vertex.
                         let third = if e1.vertices[0] != e2.vertices[0]
@@ -265,8 +260,11 @@ impl HophEngine {
                             shared_count += 1;
                         }
                     }
-                    if shared_count == 2 && fourth.is_some() {
-                        let d = fourth.unwrap();
+                    if shared_count == 2 {
+                        let d = match fourth {
+                            Some(v) => v,
+                            None => continue,
+                        };
                         // Check all 4 triangular faces exist.
                         let all_verts = [f1[0], f1[1], d];
                         let faces = [
@@ -406,7 +404,7 @@ mod tests {
     fn test_empty_point_cloud() {
         let engine = HophEngine::new();
         let points: Vec<Point> = vec![];
-        assert!(engine.compute_beta2(&points)).is_err();
+        assert!(engine.compute_beta2(&points).is_err());
     }
 
     #[test]
@@ -451,7 +449,7 @@ mod tests {
     fn test_invalid_radius() {
         let engine = HophEngine::new();
         let points = make_points(10);
-        assert!(engine.significant_beta2_count(&points, -1.0)).is_err();
+        assert!(engine.significant_beta2_count(&points, -1.0).is_err());
     }
 
     #[test]
@@ -493,7 +491,7 @@ mod tests {
         engine.reset();
         // Should still work after reset.
         let points = make_points(10);
-        assert!(engine.compute_beta2(&points)).is_ok();
+        assert!(engine.compute_beta2(&points).is_ok());
     }
 
     #[test]

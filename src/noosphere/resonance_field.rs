@@ -73,10 +73,10 @@ pub struct NodeState {
 
 impl NodeState {
     pub fn new(node_id: u128, weight: f64, gei: f64, z_score: f64, position: f64) -> Result<Self, ResonanceFieldError> {
-        if gei < 0.0 || gei > 1.0 {
+        if !(0.0..=1.0).contains(&gei) {
             return Err(ResonanceFieldError::InvalidGEI(gei));
         }
-        if z_score < -1.0 || z_score > 1.0 {
+        if !(-1.0..=1.0).contains(&z_score) {
             return Err(ResonanceFieldError::InvalidZScore(z_score));
         }
         if weight <= 0.0 {
@@ -193,13 +193,13 @@ impl EthicalResonanceField {
             .ok_or(ResonanceFieldError::NodeNotFound(node_id))?;
 
         if let Some(g) = gei {
-            if g < 0.0 || g > 1.0 {
+            if !(0.0..=1.0).contains(&g) {
                 return Err(ResonanceFieldError::InvalidGEI(g));
             }
             node.gei = g;
         }
         if let Some(z) = z_score {
-            if z < -1.0 || z > 1.0 {
+            if !(-1.0..=1.0).contains(&z) {
                 return Err(ResonanceFieldError::InvalidZScore(z));
             }
             node.z_score = z;
@@ -359,7 +359,7 @@ mod tests {
     #[test]
     fn test_add_node() {
         let mut field = EthicalResonanceField::new();
-        assert!(field.add_node(make_node(1, 0.0))).is_ok();
+        assert!(field.add_node(make_node(1, 0.0)).is_ok());
         assert_eq!(field.node_count(), 1);
         assert!(field.contains(1));
     }
@@ -367,8 +367,8 @@ mod tests {
     #[test]
     fn test_duplicate_node() {
         let mut field = EthicalResonanceField::new();
-        assert!(field.add_node(make_node(1, 0.0))).is_ok();
-        assert!(field.add_node(make_node(1, 0.0))).is_err();
+        assert!(field.add_node(make_node(1, 0.0)).is_ok());
+        assert!(field.add_node(make_node(1, 0.0)).is_err());
     }
 
     #[test]
@@ -383,7 +383,7 @@ mod tests {
     #[test]
     fn test_remove_nonexistent() {
         let mut field = EthicalResonanceField::new();
-        assert!(field.remove_node(999)).is_err();
+        assert!(field.remove_node(999).is_err());
     }
 
     #[test]
@@ -398,7 +398,7 @@ mod tests {
     fn test_update_node_invalid_gei() {
         let mut field = EthicalResonanceField::new();
         field.add_node(make_node(1, 0.0)).unwrap();
-        assert!(field.update_node(1, Some(1.5), None, None)).is_err();
+        assert!(field.update_node(1, Some(1.5), None, None).is_err());
     }
 
     #[test]
@@ -433,7 +433,7 @@ mod tests {
     #[test]
     fn test_compute_empty_field() {
         let field = EthicalResonanceField::new();
-        assert!(field.compute_at(0.0)).is_err();
+        assert!(field.compute_at(0.0).is_err());
     }
 
     #[test]
@@ -467,17 +467,17 @@ mod tests {
 
     #[test]
     fn test_node_state_invalid_gei() {
-        assert!(NodeState::new(1, 1.0, 1.5, 0.5, 0.0)).is_err();
+        assert!(NodeState::new(1, 1.0, 1.5, 0.5, 0.0).is_err());
     }
 
     #[test]
     fn test_node_state_invalid_z() {
-        assert!(NodeState::new(1, 1.0, 0.5, 1.5, 0.0)).is_err();
+        assert!(NodeState::new(1, 1.0, 0.5, 1.5, 0.0).is_err());
     }
 
     #[test]
     fn test_node_state_invalid_weight() {
-        assert!(NodeState::new(1, 0.0, 0.5, 0.5, 0.0)).is_err();
+        assert!(NodeState::new(1, 0.0, 0.5, 0.5, 0.0).is_err());
     }
 
     #[test]

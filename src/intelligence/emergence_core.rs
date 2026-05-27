@@ -690,8 +690,7 @@ impl StuartianEmergenceEngine {
 
     /// Actualiza el tensor de un nodo existente.
     pub fn update_tensor(&mut self, tensor: NodeTensor) -> bool {
-        if self.node_tensors.contains_key(&tensor.node_id) {
-            self.node_tensors.insert(tensor.node_id, tensor);
+        if self.node_tensors.insert(tensor.node_id, tensor).is_some() {
             self.stats.tensors_processed += 1;
             true
         } else {
@@ -701,8 +700,7 @@ impl StuartianEmergenceEngine {
 
     /// Elimina un tensor de nodo.
     pub fn unregister_tensor(&mut self, node_id: u128) -> bool {
-        let removed = self.node_tensors.remove(&node_id).is_some();
-        removed
+        self.node_tensors.remove(&node_id).is_some()
     }
 
     /// Obtiene el tensor de un nodo.

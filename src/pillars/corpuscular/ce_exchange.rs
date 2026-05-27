@@ -235,7 +235,7 @@ impl CEExchangeEngine {
 
     /// Hash a voucher to create a surrogate nonce for replay protection.
     fn hash_voucher(voucher: &CEVoucher) -> u64 {
-        let mut hash: u64 = voucher.ce_amount.to_bits() as u64;
+        let mut hash = voucher.ce_amount.to_bits();
         hash ^= voucher.signature.len() as u64;
         hash
     }

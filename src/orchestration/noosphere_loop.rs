@@ -239,7 +239,7 @@ impl NoosphericRespirationCycle {
         self.current_tick += 1;
 
         // Check if it's time for a cycle.
-        if self.current_tick % self.config.cycle_interval != 0 {
+        if !self.current_tick.is_multiple_of(self.config.cycle_interval) {
             // Still between cycles — monitor ethical threshold.
             self.monitor_ethical_threshold(human_validation);
             return None;
@@ -443,7 +443,7 @@ mod tests {
 
     #[test]
     fn test_cycle_creation() {
-        let cycle = NoosphericRespirationCycle::new();
+        let cycle = NoosphericRespirationCycle::new().unwrap();
         assert_eq!(cycle.current_cycle(), 0);
         assert_eq!(*cycle.phase(), RespirationPhase::Idle);
     }
@@ -467,12 +467,12 @@ mod tests {
             cycle_interval: 0,
             ..NoosphereConfig::default()
         };
-        assert!(NoosphericRespirationCycle::with_config(config)).is_err();
+        assert!(NoosphericRespirationCycle::with_config(config).is_err());
     }
 
     #[test]
     fn test_tick_no_cycle_yet() {
-        let mut cycle = NoosphericRespirationCycle::new();
+        let mut cycle = NoosphericRespirationCycle::new().unwrap();
         let result = cycle.tick(&make_snapshot(0.1, 50), &make_hoph(0.5, 3), &make_validation(0.9, true));
         assert!(result.is_none());
         assert_eq!(cycle.current_tick(), 1);
@@ -515,7 +515,7 @@ mod tests {
 
     #[test]
     fn test_field_computation_scales_with_peers() {
-        let cycle = NoosphericRespirationCycle::new();
+        let cycle = NoosphericRespirationCycle::new().unwrap();
         let r1 = cycle.compute_field(&make_snapshot(0.1, 10));
         let r2 = cycle.compute_field(&make_snapshot(0.1, 100));
         assert!(r2 > r1, "More peers → higher resonance");
@@ -523,7 +523,7 @@ mod tests {
 
     #[test]
     fn test_field_computation_scales_with_cohesion() {
-        let cycle = NoosphericRespirationCycle::new();
+        let cycle = NoosphericRespirationCycle::new().unwrap();
         let r1 = cycle.compute_field(&make_snapshot(0.01, 50));
         let r2 = cycle.compute_field(&make_snapshot(10.0, 50));
         assert!(r1 > r2, "Lower variance → higher resonance");
@@ -560,7 +560,7 @@ mod tests {
 
     #[test]
     fn test_default() {
-        let cycle = NoosphericRespirationCycle::default();
+        let cycle = NoosphericRespirationCycle::new().unwrap();
         assert_eq!(cycle.current_cycle(), 0);
     }
 
@@ -587,7 +587,7 @@ mod tests {
 
     #[test]
     fn test_update_config() {
-        let mut cycle = NoosphericRespirationCycle::new();
+        let mut cycle = NoosphericRespirationCycle::new().unwrap();
         let new_config = NoosphereConfig {
             cycle_interval: 3,
             ..NoosphereConfig::default()

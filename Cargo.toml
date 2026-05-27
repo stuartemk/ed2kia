@@ -766,6 +766,13 @@ test-mocks = []
 # src/orchestration/noosphere_loop.rs: NoosphericRespirationCycle — 5-phase respiration orchestration
 "v3.9-noosphere-engine" = ["v3.8-morphic-genesis"]
 
+# Sprint 58: Stuartian Noospheric Activation Protocol (SNAP) + Symbiotic Proliferation
+# src/orchestration/snap_engine.rs: SnapEngine — Global Ignition Event when nodes ≥ 10,000 + NH stable
+# src/network/proliferation.rs: SymbioticProliferator — Zero-friction deployment (Vercel, Cloudflare, Docker)
+# src/noosphere/global_metrics.rs: GlobalMetrics — NH (Noospheric Health) + SIA (Intelligence Amplification)
+# src/ethics/global_safeguards.rs: GlobalSafeguards — Ethical Quarantine + Global Collective Apoptosis
+"v4.0-snap-activation" = ["v3.9-noosphere-engine"]
+
 # Sprint 50 Test: Moral Manifold Behavior
 [[test]]
 name = "moral_manifold_behavior"

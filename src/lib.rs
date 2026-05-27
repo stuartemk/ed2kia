@@ -636,10 +636,16 @@ pub mod topology {
 }
 
 /// Stuartian Moral Manifold — Trajectory-based Ethical Evaluation (Sprint50)
-#[cfg(feature = "v3.2-genesis-manifold")]
+#[cfg(any(feature = "v3.2-genesis-manifold", feature = "v4.0-snap-activation"))]
 pub mod ethics {
+    #[cfg(feature = "v3.2-genesis-manifold")]
     #[path = "../ethics/moral_manifold.rs"]
     pub mod moral_manifold;
+
+    /// Global Safeguards — Sprint 58
+    #[cfg(feature = "v4.0-snap-activation")]
+    #[path = "../ethics/global_safeguards.rs"]
+    pub mod global_safeguards;
 }
 
 /// Temporal Cohesion — Distributed Time Synchronization (Sprint52)
