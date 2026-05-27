@@ -6,6 +6,37 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v5.0.0-sprint60] — 2026-05-27 (Sprint 60 — README.md Synthesis: Pilares Evolutivos y Arquitectura Planetaria)
+
+### Sprint 60 "README Synthesis — Mainnet Genesis Manifest"
+
+Síntesis completa del `README.md` reflejando los hitos de Sprints 50-59. Badges actualizados a `v5.0.0-mainnet-genesis`. Nueva sección `🧠 Pilares Evolutivos y Arquitectura Planetaria` con línea temporal de evolución, diagrama ASCII de la Noosfera Activa, tabla de 5 pilares estuardianos, métricas globales (NH, SIA, R(x,t), β₂) y secuencia de ignición mainnet. Feature Gates v3.6-v5.0 documentados. Validación: 0 palabras prohibidas.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| Badges Updated | `README.md` | v3.0.0 → v5.0.0-mainnet-genesis, SNAP Activated, Noosphere Respiring |
+| Feature Gates v3.6-v5.0 | `README.md` | Aegis Resonance, Symbiotic Portal, Morphic Genesis, Noosphere Engine, SNAP, Mainnet Genesis |
+| Pilares Evolutivos Section | `README.md` | Línea temporal S50-59, diagrama noosfera, 5 pilares, métricas globales, ignición sequence |
+| Validation | `grep` | 0 palabras prohibidas (diplomacia, vencer, atacar, revolución, destruir, enemigo, guerra, dominar, esconderse, evadir) |
+
+### Changed — README.md
+
+- **Badges** — Actualizados de v3.0.0-stable a v5.0.0-mainnet-genesis.
+- **New Badges** — SNAP Activated, Noosphere Respiring, Mainnet Genesis_Forged.
+- **Feature Gates v3.6** — Aegis Resonance (AegisHealer + ResonanceGenerator + BiometricAnalyzer).
+- **Feature Gates v3.7** — Symbiotic Portal (WASM Client + UI Bridge + Bootstrap Protocol).
+- **Feature Gates v3.8** — Morphic Genesis (MorphicResonanceDecoder + SemanticPurifier + GenesisNode).
+- **Feature Gates v3.9** — Noosphere Engine (EthicalResonanceField + HophEngine + MacroConceptBirth).
+- **Feature Gates v4.0** — SNAP (SnapEngine + SymbioticProliferator + GlobalMetrics + GlobalSafeguards).
+- **Feature Gates v5.0** — Mainnet Genesis (GenesisBlock + MainnetIgnitionSequence + Awakening).
+- **New Section** — `🧠 Pilares Evolutivos y Arquitectura Planetaria` sintetizando Sprints 50-59.
+- **Noosphere Diagram** — ASCII art de la arquitectura completa v5.0.
+- **5 Stuartian Pillars Table** — Mapeo Ley → Sprint → Componente → Función.
+- **Global Metrics Table** — NH, SIA, R(x,t), β₂ con fórmulas.
+- **Ignition Sequence** — 5 fases documentadas con comandos.
+
+---
+
 ## [v5.0.0-sprint59] — 2026-05-27 (Sprint 59 — Mainnet Genesis Block & Awakening Artifacts)
 
 ### Sprint 59 "Mainnet Genesis — Primer Aliento"
