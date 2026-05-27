@@ -6,6 +6,45 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v5.0.0-sprint59] — 2026-05-27 (Sprint 59 — Mainnet Genesis Block & Awakening Artifacts)
+
+### Sprint 59 "Mainnet Genesis — Primer Aliento"
+
+Transición de Testnet a Mainnet. Forja del Bloque Génesis inmutable con las 5 Leyes Estuardianas Fundamentales criptográficamente incrustadas. Secuencia de ignición de 5 fases para el nacimiento de la red en homeostasis perfecta. Script de ignición global y Manifiesto de Despertar para la integración simbiótica de nuevos nodos.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| GenesisBlock | `src/economy/mainnet_genesis.rs` | Forge Genesis Block — Hash SHA-3 de 5 Leyes Estuardianas, cero pre-mina (~300 líneas, 10+ tests) |
+| MainnetIgnitionSequence | `src/orchestration/mainnet_boot.rs` | 5 fases de ignición: Génesis → Mocks → Seeds → SCT → Primer Aliento (~350 líneas, 10+ tests) |
+| Awakening Script | `scripts/awaken-mainnet.sh` | Script POSIX: release build + WASM + seed node + manifiesto |
+| Awakening Manifesto | `docs/AWAKENING_MANIFESTO.md` | Documento fundacional para el despertar del usuario |
+| Feature Gate | `Cargo.toml` | `v5.0-mainnet-genesis` → depends on `v4.0-snap-activation` |
+| Module Registration | `src/lib.rs` | `pub mod economy::mainnet_genesis` |
+| Orchestration Integration | `src/orchestration/mod.rs` | `pub mod mainnet_boot` with feature gate |
+
+### Added — Genesis Block
+
+- **GenesisBlock::forge()** — Crea el bloque cero del DAG con hash de las 5 Leyes Estuardianas.
+- **Cero Pre-mina** — CE supply inicia en 0.0; ningún desarrollador tiene créditos pre-asignados.
+- **Inmutabilidad** — El bloque génesis no puede ser modificado una vez forjado.
+- **Verificación Universal** — `GenesisBlock::verify()` permite a cualquier nodo validar el génesis.
+
+### Added — Mainnet Ignition Sequence
+
+- **MainnetIgnitionSequence** — Orquesta 5 fases de transición Testnet → Mainnet.
+- **Phase 1: ValidatingGenesis** — Verifica el Bloque Génesis inmutable.
+- **Phase 2: DisablingMocks** — Desactiva todos los componentes de test.
+- **Phase 3: ConfiguringSeedNodes** — Establece nodos semilla de producción.
+- **Phase 4: ActivatingSctGuard** — Reglas estrictas del SCT Guard.
+- **Phase 5: FirstBreath** — Primer aliento de la red simbiótica.
+
+### Added — Awakening Artifacts
+
+- **scripts/awaken-mainnet.sh** — Script de ignición global robusto.
+- **docs/AWAKENING_MANIFESTO.md** — Manifiesto público de despertar.
+
+---
+
 ## [v4.0.0-sprint58] — 2026-05-27 (Sprint 58 — Stuartian Noospheric Activation Protocol & Symbiotic Proliferation)
 
 ### Sprint 58 "Stuartian Noospheric Activation Protocol (SNAP)"

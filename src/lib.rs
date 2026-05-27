@@ -665,6 +665,11 @@ pub mod economy {
     #[cfg(feature = "v3.8-morphic-genesis")]
     #[path = "../economy/genesis_graph.rs"]
     pub mod genesis_graph;
+
+    /// Mainnet Genesis Block — Forge Genesis Block con 5 Leyes Estuardianas (Sprint 59)
+    #[cfg(feature = "v5.0-mainnet-genesis")]
+    #[path = "../economy/mainnet_genesis.rs"]
+    pub mod mainnet_genesis;
 }
 
 /// Stuartian Noosphere Engine (SNE) — Sprint 57

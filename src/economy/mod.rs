@@ -13,3 +13,6 @@ pub mod symbiotic_ledger;
 
 #[cfg(feature = "v3.8-morphic-genesis")]
 pub mod genesis_graph;
+
+#[cfg(feature = "v5.0-mainnet-genesis")]
+pub mod mainnet_genesis;

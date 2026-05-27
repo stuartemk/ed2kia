@@ -773,6 +773,13 @@ test-mocks = []
 # src/ethics/global_safeguards.rs: GlobalSafeguards — Ethical Quarantine + Global Collective Apoptosis
 "v4.0-snap-activation" = ["v3.9-noosphere-engine"]
 
+# Sprint 59: Mainnet Genesis Block + Awakening Artifacts
+# src/economy/mainnet_genesis.rs: GenesisBlock — Forge Genesis Block con 5 Leyes Estuardianas (SHA-3), cero pre-mina
+# src/orchestration/mainnet_boot.rs: MainnetIgnitionSequence — 5 fases de ignición (Génesis → Mocks → Seeds → SCT → Primer Aliento)
+# scripts/awaken-mainnet.sh: Script de ignición global (release build + WASM + seed node)
+# docs/AWAKENING_MANIFESTO.md: Manifiesto público de despertar
+"v5.0-mainnet-genesis" = ["v4.0-snap-activation"]
+
 # Sprint 50 Test: Moral Manifold Behavior
 [[test]]
 name = "moral_manifold_behavior"
