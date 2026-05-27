@@ -636,10 +636,16 @@ pub mod topology {
 }
 
 /// Stuartian Moral Manifold — Trajectory-based Ethical Evaluation (Sprint50)
-#[cfg(feature = "v3.2-genesis-manifold")]
+#[cfg(any(feature = "v3.2-genesis-manifold", feature = "v4.0-snap-activation"))]
 pub mod ethics {
+    #[cfg(feature = "v3.2-genesis-manifold")]
     #[path = "../ethics/moral_manifold.rs"]
     pub mod moral_manifold;
+
+    /// Global Safeguards — Sprint 58
+    #[cfg(feature = "v4.0-snap-activation")]
+    #[path = "../ethics/global_safeguards.rs"]
+    pub mod global_safeguards;
 }
 
 /// Temporal Cohesion — Distributed Time Synchronization (Sprint52)
@@ -659,6 +665,11 @@ pub mod economy {
     #[cfg(feature = "v3.8-morphic-genesis")]
     #[path = "../economy/genesis_graph.rs"]
     pub mod genesis_graph;
+
+    /// Mainnet Genesis Block — Forge Genesis Block con 5 Leyes Estuardianas (Sprint 59)
+    #[cfg(feature = "v5.0-mainnet-genesis")]
+    #[path = "../economy/mainnet_genesis.rs"]
+    pub mod mainnet_genesis;
 }
 
 /// Stuartian Noosphere Engine (SNE) — Sprint 57

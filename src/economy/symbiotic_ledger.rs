@@ -64,6 +64,7 @@ pub struct CETransaction {
 
 impl CETransaction {
     /// Create a new CE transaction.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         hash: u128,
         origin_node: u64,
@@ -311,13 +312,11 @@ impl GlobalSymbioticLedger {
         }
 
         // Validate parent existence.
-        for parent in &tx.parent_hashes {
-            if let Some(parent_hash) = parent {
-                if !self.transactions.contains_key(parent_hash) {
-                    return ValidationResult::RejectedMissingParent {
-                        parent_hash: *parent_hash,
-                    };
-                }
+        for parent_hash in tx.parent_hashes.iter().flatten() {
+            if !self.transactions.contains_key(parent_hash) {
+                return ValidationResult::RejectedMissingParent {
+                    parent_hash: *parent_hash,
+                };
             }
         }
 
@@ -349,7 +348,7 @@ impl GlobalSymbioticLedger {
         // Update node index.
         self.node_index
             .entry(tx.origin_node)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(tx.hash);
 
         // Track unique nodes.
@@ -428,11 +427,9 @@ impl GlobalSymbioticLedger {
         let mut queue = VecDeque::new();
 
         // Start from parents.
-        for parent in &tx.parent_hashes {
-            if let Some(ph) = parent {
-                if let Some(parent_tx) = self.transactions.get(ph) {
-                    queue.push_back(parent_tx.hash);
-                }
+        for ph in tx.parent_hashes.iter().flatten() {
+            if let Some(parent_tx) = self.transactions.get(ph) {
+                queue.push_back(parent_tx.hash);
             }
         }
 
@@ -445,10 +442,8 @@ impl GlobalSymbioticLedger {
             }
 
             if let Some(current_tx) = self.transactions.get(&current_hash) {
-                for parent in &current_tx.parent_hashes {
-                    if let Some(ph) = parent {
-                        queue.push_back(*ph);
-                    }
+                for ph in current_tx.parent_hashes.iter().flatten() {
+                    queue.push_back(*ph);
                 }
             }
         }
@@ -470,10 +465,8 @@ impl GlobalSymbioticLedger {
         // Compute width: number of leaf nodes (transactions with no children).
         let mut has_parent: HashSet<u128> = HashSet::new();
         for tx in self.transactions.values() {
-            for p in &tx.parent_hashes {
-                if let Some(ph) = p {
-                    has_parent.insert(*ph);
-                }
+            for ph in tx.parent_hashes.iter().flatten() {
+                has_parent.insert(*ph);
             }
         }
         self.stats.dag_width = self
@@ -515,12 +508,10 @@ impl GlobalSymbioticLedger {
         }
 
         let mut max_parent_depth = 0;
-        for parent in &tx.parent_hashes {
-            if let Some(ph) = parent {
-                let d = self.get_tx_depth(*ph, cache);
-                if d > max_parent_depth {
-                    max_parent_depth = d;
-                }
+        for ph in tx.parent_hashes.iter().flatten() {
+            let d = self.get_tx_depth(*ph, cache);
+            if d > max_parent_depth {
+                max_parent_depth = d;
             }
         }
 

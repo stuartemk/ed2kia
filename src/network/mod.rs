@@ -45,3 +45,11 @@ pub use bootstrap::{
     BootstrapConfig, BootstrapProtocol, BootstrapStats, BootstrapStrategy,
     DiscoveryResult, SeedNode, TransportType,
 };
+
+#[cfg(feature = "v4.0-snap-activation")]
+pub mod proliferation;
+
+#[cfg(feature = "v4.0-snap-activation")]
+pub use proliferation::{
+    DeploymentArtifact, Platform, ProliferationConfig, ProliferationError, SymbioticProliferator,
+};

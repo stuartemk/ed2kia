@@ -6,6 +6,94 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v5.0.0-sprint59] — 2026-05-27 (Sprint 59 — Mainnet Genesis Block & Awakening Artifacts)
+
+### Sprint 59 "Mainnet Genesis — Primer Aliento"
+
+Transición de Testnet a Mainnet. Forja del Bloque Génesis inmutable con las 5 Leyes Estuardianas Fundamentales criptográficamente incrustadas. Secuencia de ignición de 5 fases para el nacimiento de la red en homeostasis perfecta. Script de ignición global y Manifiesto de Despertar para la integración simbiótica de nuevos nodos.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| GenesisBlock | `src/economy/mainnet_genesis.rs` | Forge Genesis Block — Hash SHA-3 de 5 Leyes Estuardianas, cero pre-mina (~300 líneas, 10+ tests) |
+| MainnetIgnitionSequence | `src/orchestration/mainnet_boot.rs` | 5 fases de ignición: Génesis → Mocks → Seeds → SCT → Primer Aliento (~350 líneas, 10+ tests) |
+| Awakening Script | `scripts/awaken-mainnet.sh` | Script POSIX: release build + WASM + seed node + manifiesto |
+| Awakening Manifesto | `docs/AWAKENING_MANIFESTO.md` | Documento fundacional para el despertar del usuario |
+| Feature Gate | `Cargo.toml` | `v5.0-mainnet-genesis` → depends on `v4.0-snap-activation` |
+| Module Registration | `src/lib.rs` | `pub mod economy::mainnet_genesis` |
+| Orchestration Integration | `src/orchestration/mod.rs` | `pub mod mainnet_boot` with feature gate |
+
+### Added — Genesis Block
+
+- **GenesisBlock::forge()** — Crea el bloque cero del DAG con hash de las 5 Leyes Estuardianas.
+- **Cero Pre-mina** — CE supply inicia en 0.0; ningún desarrollador tiene créditos pre-asignados.
+- **Inmutabilidad** — El bloque génesis no puede ser modificado una vez forjado.
+- **Verificación Universal** — `GenesisBlock::verify()` permite a cualquier nodo validar el génesis.
+
+### Added — Mainnet Ignition Sequence
+
+- **MainnetIgnitionSequence** — Orquesta 5 fases de transición Testnet → Mainnet.
+- **Phase 1: ValidatingGenesis** — Verifica el Bloque Génesis inmutable.
+- **Phase 2: DisablingMocks** — Desactiva todos los componentes de test.
+- **Phase 3: ConfiguringSeedNodes** — Establece nodos semilla de producción.
+- **Phase 4: ActivatingSctGuard** — Reglas estrictas del SCT Guard.
+- **Phase 5: FirstBreath** — Primer aliento de la red simbiótica.
+
+### Added — Awakening Artifacts
+
+- **scripts/awaken-mainnet.sh** — Script de ignición global robusto.
+- **docs/AWAKENING_MANIFESTO.md** — Manifiesto público de despertar.
+
+---
+
+## [v4.0.0-sprint58] — 2026-05-27 (Sprint 58 — Stuartian Noospheric Activation Protocol & Symbiotic Proliferation)
+
+### Sprint 58 "Stuartian Noospheric Activation Protocol (SNAP)"
+
+Implementación del Protocolo de Activación Noosférica Stuartiana (SNAP) — el mecanismo definitivo para escalar la red de un experimento técnico a un movimiento civilizatorio global. El `SnapEngine` monitorea la red y dispara el `GlobalIgnitionEvent` cuando los nodos concurrentes superan 10,000 y la coherencia ética se mantiene estable por τ ticks. El `SymbioticProliferator` genera artefactos de despliegue cero-fricción (Vercel, Cloudflare Workers, Docker) para expansión orgánica. `GlobalMetrics` computa NH (Noospheric Health) y SIA (Symbiotic Intelligence Amplification). `GlobalSafeguards` implementa Ethical Quarantine y Global Collective Apoptosis como salvaguardas planetarias.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| SnapEngine | `src/orchestration/snap_engine.rs` | Global Ignition Event — Monitors nodes ≥ 10,000 + NH stable for τ ticks (~350 líneas, 25+ tests) |
+| SymbioticProliferator | `src/network/proliferation.rs` | Zero-friction deployment — Vercel, Cloudflare Workers, Docker artifacts (~450 líneas, 20+ tests) |
+| GlobalMetrics | `src/noosphere/global_metrics.rs` | NH + SIA computation — Ethical coherence, emergence rate, attractor stability (~450 líneas, 25+ tests) |
+| GlobalSafeguards | `src/ethics/global_safeguards.rs` | Ethical Quarantine + Global Collective Apoptosis — Planetary safeguards (~450 líneas, 25+ tests) |
+| Civilization Roadmap | `docs/SNAP_CIVILIZATION_ROADMAP.md` | 180-day roadmap: Mass Onboarding → Real-World Application → Global Knowledge Generation |
+| Feature Gate | `Cargo.toml` | `v4.0-snap-activation` → depends on `v3.9-noosphere-engine` |
+| Module Registration | `src/lib.rs` | `pub mod ethics::global_safeguards`, `pub mod noosphere::global_metrics` |
+| Network Integration | `src/network/mod.rs` | `pub mod proliferation` with feature gate |
+| Orchestration Integration | `src/orchestration/mod.rs` | `pub mod snap_engine` with feature gate |
+
+### Added — SnapEngine (Global Ignition)
+
+- **SnapEngine** — Monitors concurrent nodes + Ethical Resonance Field coherence.
+- **GlobalIgnitionEvent** — Fired when nodes ≥ 10,000 AND coherence ≥ 0.85 for τ consecutive ticks.
+- **ActivationState** — `Monitoring` → `Activated(GlobalIgnitionEvent)`.
+- **Coherence History** — Bounded history for stability tracking.
+
+### Added — SymbioticProliferator (Zero-Friction Deployment)
+
+- **SymbioticProliferator** — Generates deployment artifacts for Vercel, Cloudflare Workers, Docker.
+- **Platform** — `Vercel`, `CloudflareWorkers`, `Docker`.
+- **DeploymentArtifact** — Platform-specific config files + additional files.
+- **ProliferationConfig** — WASM URL, API endpoint, network ID, region, auto-scale.
+
+### Added — GlobalMetrics (NH + SIA)
+
+- **GlobalMetrics** — Computes Noospheric Health (NH) and Symbiotic Intelligence Amplification (SIA).
+- **NH(t)** = α·E(t) + β·M(t) + γ·A(t) where E=ethical coherence, M=emergence rate, A=attractor stability.
+- **SIA(t)** = (R_human + R_network) / R_human — measures collective intelligence amplification.
+- **MetricsConfig** — Weights (α=0.4, β=0.3, γ=0.3), thresholds, emergence window.
+
+### Added — GlobalSafeguards (Planetary Protection)
+
+- **GlobalSafeguards** — Ethical Quarantine + Global Collective Apoptosis.
+- **Ethical Quarantine** — Automatic topological isolation of sub-networks with NH < 0.3.
+- **Global Collective Apoptosis** — Coordinated rollback when NH < 0.1 for 5 consecutive ticks.
+- **Checkpoint** — Saved homeostatic states for potential rollback.
+- **SafeguardConfig** — Quarantine/apoptosis thresholds, consecutive ticks, checkpoint interval.
+
+---
+
 ## [v3.9.0-sprint57] — 2026-05-26 (Sprint 57 — Stuartian Noosphere Engine for Emergent Higher-Order Consciousness)
 
 ### Sprint 57 "Stuartian Noosphere Engine (SNE)"

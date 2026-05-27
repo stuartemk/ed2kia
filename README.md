@@ -25,7 +25,7 @@
 [![Release](https://img.shields.io/badge/Release-v3.0.0--stable-brightgreen)](release/v3.0.0-stable/release-notes.md)
 [![Release Signing](https://img.shields.io/badge/Releases-Ed25519_Signed-brightgreen)](scripts/release-signer.sh)
 [![Dependabot](https://badgen.net/github/dependabot/ed2kia/ed2kIA)](https://github.com/ed2kia/ed2kIA/issues?q=is%3Aissue+author%3Aapp%2Fdependabot)
-[![Testnet](https://img.shields.io/badge/Testnet-Active-brightgreen)](scripts/activate-testnet.sh)
+[![Mainnet Live](https://img.shields.io/badge/Mainnet-Live-red)](scripts/awaken-mainnet.sh)
 [![Steward Onboarding](https://img.shields.io/badge/Steward_Onboarding-Ready-blueviolet)](docs/steward-onboarding-guide.md)
 
 ## ⚠️ Aclaración de Identidad: Lo que SÍ y NO es ed2kIA
@@ -200,6 +200,14 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 | `v3.4-macro-symbiosis` | TemporalCohesionEngine + GlobalSymbioticLedger(DAG) + MacroCorpuscularBridge | ✅ Stable |
 
 > **Nota:** `v3.4-macro-symbiosis` depende de `v3.3-rssi-evolution`. Motor de cohesión temporal PTP/NTP para P2P/GossipSub, ledger DAG cooperativo con validación Ed25519 y SCT Guard Economic, puente Macro-Corpuscular para homeostasis de recursos.
+
+### Feature Gates v3.5 (Planetary Mesh & Autonomous Emergence Engine)
+
+| Feature Gate | Módulo | Status |
+|--------------|--------|--------|
+| `v3.5-planetary-emergence` | PlanetaryMesh(Kademlia+AutoNAT+Relay) + SwarmTopology + StuartianEmergenceEngine | ✅ Stable |
+
+> **Nota:** `v3.5-planetary-emergence` depende de `v3.4-macro-symbiosis`. Routing WAN a escala planetaria con Kademlia DHT, AutoNAT y Circuit Relay. Auto-organización de enjambre por capacidad hardware (GPU/Standard/Light). Motor de emergencia Stuartian con Cross-Tensor Fusion y SCT Guard (Z ≥ 0) para resolución autónoma del Grok Challenge a 1000+ nodos.
 
 ## 🚀 Producción v3.0.0-stable
 

@@ -6,5 +6,9 @@
 pub mod resonance_field;
 pub mod macro_concept;
 
+/// Noospheric Global Metrics — Sprint 58
+#[cfg(feature = "v4.0-snap-activation")]
+pub mod global_metrics;
+
 pub use resonance_field::EthicalResonanceField;
 pub use macro_concept::MacroConceptBirth;

@@ -87,7 +87,7 @@ impl CorpuscularEngine {
         }
 
         // Step 3: Route based on payload content (scaffolding: use payload length as discriminator).
-        let response_data = if msg.payload.len() > 0 {
+        let response_data = if !msg.payload.is_empty() {
             // Simulate hardware command dispatch.
             // In production: deserialize payload to determine operation type.
             format!("corpuscular-ok:ce={:.2}:payload={}", msg.ce_weight, msg.payload.len())

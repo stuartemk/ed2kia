@@ -26,6 +26,12 @@ mod aegis_healer;
 #[cfg(feature = "v3.9-noosphere-engine")]
 mod noosphere_loop;
 
+#[cfg(feature = "v4.0-snap-activation")]
+mod snap_engine;
+
+#[cfg(feature = "v5.0-mainnet-genesis")]
+mod mainnet_boot;
+
 pub use pillar_router::*;
 #[cfg(all(
     any(feature = "v1.4-sprint1", feature = "v3.0-wasm-runtime", feature = "v3.0-pillar-messaging", feature = "v3.0-privacy-guard"),
@@ -40,6 +46,10 @@ pub use swarm_topology::*;
 pub use aegis_healer::{AegisConfig, AegisError, AegisHealer, HealingAction, HealingResult, AegisSymbioticState};
 #[cfg(feature = "v3.9-noosphere-engine")]
 pub use noosphere_loop::*;
+#[cfg(feature = "v4.0-snap-activation")]
+pub use snap_engine::*;
+#[cfg(feature = "v5.0-mainnet-genesis")]
+pub use mainnet_boot::*;
 
 // Re-export PillarMessage for backward compatibility with E2E tests
 #[cfg(any(feature = "v1.4-sprint1", feature = "v3.0-wasm-runtime", feature = "v3.0-pillar-messaging", feature = "v3.0-privacy-guard"))]

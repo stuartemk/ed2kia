@@ -72,7 +72,7 @@ impl HardwareConfig {
         match addr.ip() {
             IpAddr::V4(Ipv4Addr::LOCALHOST) => Ok(()),
             IpAddr::V6(addr_v6) if addr_v6.is_loopback() => Ok(()),
-            _ => Err(AdapterError::NonLocalEndpoint(addr.clone())),
+            _ => Err(AdapterError::NonLocalEndpoint(*addr)),
         }
     }
 }

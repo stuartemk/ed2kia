@@ -75,7 +75,7 @@ impl BinauralBeat {
                 max_hz: MAX_FREQ,
             });
         }
-        if beat_freq_hz < 0.5 || beat_freq_hz > 40.0 {
+        if !(0.5..=40.0).contains(&beat_freq_hz) {
             return Err(ResonanceError::InvalidFrequency {
                 freq_hz: beat_freq_hz,
                 min_hz: 0.5,
@@ -159,7 +159,7 @@ impl IsochronicTone {
                 max_hz: MAX_FREQ,
             });
         }
-        if pulse_rate_hz < 0.5 || pulse_rate_hz > 40.0 {
+        if !(0.5..=40.0).contains(&pulse_rate_hz) {
             return Err(ResonanceError::InvalidFrequency {
                 freq_hz: pulse_rate_hz,
                 min_hz: 0.5,

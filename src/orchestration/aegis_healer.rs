@@ -258,6 +258,7 @@ impl AegisHealer {
     // --- Construction ---
 
     /// Create a new AegisHealer with default configuration.
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         let config = AegisConfig::default();
         Self::with_config(config).expect("Default config should be valid")
@@ -268,8 +269,10 @@ impl AegisHealer {
         config.validate()?;
 
         // Create HarmonicFlow with network session from config.
-        let mut flow_config = HarmonicFlowConfig::default();
-        flow_config.session_id = config.network_session_id.clone();
+        let flow_config = HarmonicFlowConfig {
+            session_id: config.network_session_id.clone(),
+            ..HarmonicFlowConfig::default()
+        };
         let harmonic_flow = HarmonicFlow::with_config(flow_config);
 
         // Create BiofeedbackEngine.

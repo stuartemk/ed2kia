@@ -29,9 +29,10 @@ use std::time::{Duration, Instant};
 // ============================================================================
 
 /// Tier computacional del nodo (determina roles elegibles).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Default)]
 pub enum ComputeTier {
     /// Nodo WASM/light — Solo routing y validación básica.
+    #[default]
     Light = 0,
     /// Nodo estándar — Validación completa y almacenamiento.
     Standard = 1,
@@ -39,11 +40,6 @@ pub enum ComputeTier {
     Gpu = 2,
 }
 
-impl Default for ComputeTier {
-    fn default() -> Self {
-        ComputeTier::Light
-    }
-}
 
 impl fmt::Display for ComputeTier {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
