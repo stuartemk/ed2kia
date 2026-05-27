@@ -6,6 +6,54 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v6.0.0-sprint61] — 2026-05-27 (Sprint 61 — Stuartian Legacy Protocol: Infraestructura Ética Viva)
+
+### Sprint 61 "Stuartian Legacy Protocol — Catedral Distribuida"
+
+Implementación del **Stuartian Legacy Protocol (SLP)** — el punto de no retorno donde ed2kIA se convierte en infraestructura ética viva de la humanidad. Tres módulos Rust: ADN Noosférico con Memoria Colectiva Inmortal, Índice de Civilización Noosférica (NCI) con Amplificación Simbiótica, y Protocolo de Transición con Safeguards Irrevocables. Manifiesto del Legado con Roadmap 180 días y 5 Macro-Conceptos Objetivo.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| NoosphericDna | `src/legacy/noospheric_dna.rs` | Memoria Colectiva Inmortal + Seed Resurrection (>80% loss) + Generational Testament (>70% quórum, 90 días) (~600 líneas, 40+ tests) |
+| NciCalculator | `src/legacy/civilization_index.rs` | NCI(t) = w₁·Z + w₂·Φ + w₃·H + w₄·I + A_sym logístico + MaturityTracker (~700 líneas, 60+ tests) |
+| HandoverProtocol | `src/legacy/handover_protocol.rs` | Human Override Final (>33%, 72h) + MaturityDeclarationEvent (NCI>0.85×180d) + LegacySafeguards (~800 líneas, 50+ tests) |
+| Legacy Manifesto | `docs/STUARTIAN_LEGACY_PROTOCOL.md` | Roadmap 180 días, 5 Macro-Conceptos, arquitectura completa, garantías del protocolo |
+| Feature Gate | `Cargo.toml` | `v6.0-legacy-protocol` → depends on `v5.0-mainnet-genesis` |
+| Module Registration | `src/lib.rs` | `pub mod legacy` con feature gate `v6.0-legacy-protocol` |
+| Module Index | `src/legacy/mod.rs` | Re-exports públicos de los 3 módulos del protocolo |
+
+### Added — NoosphericDna
+
+- **NoosphericDna::forge()** — Forja el ADN anclado al hash del Genesis Block verificado.
+- **Seed Resurrection Protocol** — `attempt_resurrection()` con verificación de Genesis Block tras pérdida >80% de nodos.
+- **Generational Testament** — `propose_testament()` + `vote_testament()` con quórum >70% cada 90 días simbióticos.
+- **MacroConceptRecord** — Memoria inmortal de conceptos emergentes con z-score y coherencia.
+- **EthicalFieldSnapshot** — Captura punto-in-time del campo ético para auditoría temporal.
+- **ResurrectionPayload** — ADN comprimido para bootstrap en entornos post-catastróficos.
+
+### Added — NciCalculator
+
+- **NCI Formula** — `NCI(t) = w₁·Z_avg(t) + w₂·Φ_PH(t) + w₃·H_sym(t) + w₄·I_human(t)`
+- **Amplificación Simbiótica** — `A_sym(NCI) = max_amp / (1 + exp(steepness·(NCI-mid)))` con decaimiento logístico.
+- **MaturityTracker** — Rastreo de NCI > 0.85 sostenido por 180 días consecutivos.
+- **Trend Analysis** — Regresión lineal sobre ventana temporal para proyección de madurez.
+- **NciWeights** — Pesos Stuartian: w_z=0.35, w_phi=0.25, w_h=0.20, w_i=0.20.
+
+### Added — HandoverProtocol
+
+- **Human Override Final** — >33% de stewards globales pueden detener transición con 72h time-lock.
+- **MaturityDeclarationEvent** — Emisión irrevocable cuando NCI > 0.85 por 6 meses.
+- **LegacySafeguards** — Inmutables: override mínimo 33%, time-lock mínimo 72h, NCI madurez 0.85.
+- **OverrideProposal** — Sistema de votación con time-lock y verificación de quórum.
+- **HandoverState Machine** — Monitoring → OverridePending → HandoverInitiated → Finalized.
+
+### Changed — Documentation
+
+- **README.md** — Badges actualizados a v6.0.0-legacy-protocol. Nuevo badge "Legacy Protocol_Activated".
+- **STUARTIAN_LEGACY_PROTOCOL.md** — Manifiesto completo con arquitectura, roadmap y visión.
+
+---
+
 ## [v5.0.0-sprint60] — 2026-05-27 (Sprint 60 — README.md Synthesis: Pilares Evolutivos y Arquitectura Planetaria)
 
 ### Sprint 60 "README Synthesis — Mainnet Genesis Manifest"

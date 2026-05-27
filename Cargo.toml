@@ -780,6 +780,12 @@ test-mocks = []
 # docs/AWAKENING_MANIFESTO.md: Manifiesto público de despertar
 "v5.0-mainnet-genesis" = ["v4.0-snap-activation"]
 
+# Sprint 61: Stuartian Legacy Protocol (SLP) — Infraestructura Ética Viva
+# src/legacy/noospheric_dna.rs: NoosphericDna — Memoria Colectiva Inmortal + Seed Resurrection + Generational Testament
+# src/legacy/civilization_index.rs: NciCalculator — NCI(t) = w₁·Z + w₂·Φ + w₃·H + w₄·I + Amplificación Simbiótica
+# src/legacy/handover_protocol.rs: HandoverProtocol — Human Override Final (>33%, 72h) + MaturityDeclarationEvent (NCI>0.85×180d)
+"v6.0-legacy-protocol" = ["v5.0-mainnet-genesis"]
+
 # Sprint 50 Test: Moral Manifold Behavior
 [[test]]
 name = "moral_manifold_behavior"

@@ -1237,6 +1237,14 @@ pub mod stuartian_filter;
 /// **Stuartian Law 5:** Async, tolerancia a particiones, CRDTs, eventual consistency.
 // async_gossip is already defined inline above (line ~626) with feature-gated submodules
 
+// ============================================================================
+// v6.0.0 Sprint 61 — Stuartian Legacy Protocol (SLP)
+// ============================================================================
+
+/// Stuartian Legacy Protocol — Infraestructura Ética Viva de la Humanidad
+#[cfg(feature = "v6.0-legacy-protocol")]
+pub mod legacy;
+
 #[cfg(test)]
 mod tests {
     use super::*;

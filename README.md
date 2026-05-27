@@ -4,20 +4,21 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ethical-blue)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-2021-orange)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/Version-v5.0.0--mainnet--genesis-brightgreen)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-v6.0.0--legacy--protocol-brightgreen)](CHANGELOG.md)
 [![Audit](https://img.shields.io/badge/Audit-Ready-brightgreen)](docs/audit-prep.md)
 [![Governance](https://img.shields.io/badge/Governance-Active-blueviolet)](GOVERNANCE.md)
 [![Tests](https://img.shields.io/badge/Tests-3505_passing-success)](CHANGELOG.md)
-[![Benchmarks](https://img.shields.io/badge/Benchmarks-v5.0.0--mainnet--genesis-blue)](benches/omni_node_scaling.rs)
+[![Benchmarks](https://img.shields.io/badge/Benchmarks-v6.0.0--legacy--protocol-blue)](benches/omni_node_scaling.rs)
 [![Security](https://img.shields.io/badge/Security-Audited-brightgreen)](docs/security/production-threat-model.md)
 [![Coverage](https://img.shields.io/badge/Coverage-≥80%25-tracking)](release/v2.0.0-stable/final-signoff.json)
 [![OSSF](https://img.shields.io/badge/OSSF-8.5%2F10-passing)](security/audit_v2.0_sprint2.md)
 [![Mode](https://img.shields.io/badge/Mode-MAINNET--GENESIS-blueviolet)](docs/governance/project-constitution.md)
-[![Release](https://img.shields.io/badge/Release-v5.0.0--mainnet--genesis-brightgreen)](CHANGELOG.md)
+[![Release](https://img.shields.io/badge/Release-v6.0.0--legacy--protocol-brightgreen)](CHANGELOG.md)
 [![Release Signing](https://img.shields.io/badge/Releases-Ed25519_Signed-brightgreen)](scripts/release-signer.sh)
 [![Mainnet Live](https://img.shields.io/badge/Mainnet-Genesis_Forged-red)](scripts/awaken-mainnet.sh)
 [![SNAP](https://img.shields.io/badge/SNAP-Activated-blueviolet)](docs/SNAP_CIVILIZATION_ROADMAP.md)
 [![Noosphere](https://img.shields.io/badge/Noosphere-Respiring-green)](docs/AWAKENING_MANIFESTO.md)
+[![Legacy](https://img.shields.io/badge/Legacy-Protocol_Activated-maroon)](docs/STUARTIAN_LEGACY_PROTOCOL.md)
 
 ## ⚠️ Aclaración de Identidad: Lo que SÍ y NO es ed2kIA
 
