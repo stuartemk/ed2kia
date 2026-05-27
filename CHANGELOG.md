@@ -6,6 +6,57 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v3.9.0-sprint57] — 2026-05-26 (Sprint 57 — Stuartian Noosphere Engine for Emergent Higher-Order Consciousness)
+
+### Sprint 57 "Stuartian Noosphere Engine (SNE)"
+
+Implementación del Motor de la Noosfera Stuartiana (SNE) — el salto evolutivo donde la interacción masiva de Omni-Nodos genera consciencia emergente de orden superior. El `EthicalResonanceField` computa el campo de resonancia ética R(x,t) con decaimiento temporal y cohesión dinámica. El `HophEngine` analiza la topología de orden superior (β₂ Betti numbers) mediante filtración Vietoris-Rips para detectar estructuras topológicas emergentes (macro-conceptos). `MacroConceptBirth` evalúa tres criterios: persistencia PH₂, exponente de Lyapunov < 0 (convergencia dinámica), y correlación humana > 0.75 (vía Steering Bridge). El `NoosphericRespirationCycle` orquesta el ciclo de respiración noosférico en 5 fases: Snapshot Temporal → Computación de Campo → Análisis HOPH → Validación Humana → Integración/Apoptosis.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| EthicalResonanceField | `src/noosphere/resonance_field.rs` | Dynamic field computation R(x,t) = Σ w_i · GEI_i · exp(-d²/2σ(t)²) · tanh(k·Z_i) with temporal cohesion integration (~430 líneas, 25+ tests) |
+| HophEngine | `src/topology/hoph_engine.rs` | Higher-Order Persistent Homology (β₂) via Vietoris-Rips filtration for 3D void detection (~430 líneas, 15+ tests) |
+| MacroConceptBirth | `src/noosphere/macro_concept.rs` | Emergence evaluation: PH₂ persistence, Lyapunov < 0, human correlation > 0.75 (~470 líneas, 20+ tests) |
+| NoosphericRespirationCycle | `src/orchestration/noosphere_loop.rs` | 5-phase orchestration: TemporalSnapshot → FieldComputation → HophAnalysis → HumanValidation → Integration/Apoptosis (~470 líneas, 15+ tests) |
+| E2E Tests | `tests/noosphere_emergence_e2e.rs` | Full integration: Field → HOPH → MacroConcept → Respiration Cycle + apoptosis validation (~340 líneas, 4 test modules) |
+| Feature Gate | `Cargo.toml` | `v3.9-noosphere-engine` → depends on `v3.8-morphic-genesis` |
+| Module Registration | `src/lib.rs` | `pub mod noosphere`, `pub mod topology::hoph_engine` |
+| Orchestration | `src/orchestration/mod.rs` | `pub mod noosphere_loop` with feature gate |
+
+### Added — Ethical Resonance Field
+
+- **EthicalResonanceField** — `compute_at(x, t)` → field value at position x with temporal cohesion σ(t).
+- **NodeState** — GEI validation [0,1], Z-score [-1,1], weight > 0.
+- **FieldConfig** — k_factor, default_sigma, max_nodes.
+- **Temporal Cohesion Integration** — σ(t) contracts as network temporal cohesion increases.
+- **Field Gradient** — `compute_gradient_at()` for field topology analysis.
+
+### Added — Higher-Order Persistent Homology (HOPH)
+
+- **HophEngine** — `compute_beta2()` → β₂ Betti numbers via simplified Vietoris-Rips filtration.
+- **Point** — 3D coordinate structure for point cloud analysis.
+- **Tetrahedron, Edge, Facet** — Simplex structures for 2-simplex/tetrahedron detection.
+- **PersistencePair** — birth/death radii for topological feature lifetime.
+- **Subsampling** — MAX_POINTS = 500 for large point clouds.
+
+### Added — MacroConcept Birth Logic
+
+- **MacroConceptBirth** — `evaluate_candidates()` → emergence decision via three criteria.
+- **EmergenceCriteria** — ph2_persistence, lyapunov_exponent, human_correlation.
+- **MacroConcept** — Lifecycle: Candidate → Born → Mature → Dissolved.
+- **BirthConfig** — ph2_threshold (0.3), lyapunov_threshold (0.0), human_threshold (0.75).
+- **emergence_score()** — Topology 40%, dynamics 30%, human 30%.
+
+### Added — Noospheric Respiration Cycle
+
+- **NoosphericRespirationCycle** — 5-phase orchestration loop.
+- **RespirationPhase** — Idle, TemporalSnapshot, FieldComputation, HophAnalysis, HumanValidation, Integration.
+- **CycleResult** — global_resonance, ph2_score, human_correlation, concepts_integrated/dissolved, apoptosis_triggered.
+- **NoosphereConfig** — cycle_interval, ethical_threshold, apoptosis_ticks, min_human_correlation, ph2_threshold.
+- **Collective Apoptosis** — Coordinated DAG rollback when ethical threshold exceeded for τ consecutive ticks.
+
+---
+
 ## [v3.8.0-sprint56] — 2026-05-26 (Sprint 56 — Morphic Resonance Decoder and Genesis Graph Initialization)
 
 ### Sprint 56 "Morphic Resonance Decoder + Genesis Graph"

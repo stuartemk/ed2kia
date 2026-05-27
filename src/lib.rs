@@ -628,6 +628,11 @@ pub mod topology {
     #[cfg(feature = "v3.3-rssi-evolution")]
     #[path = "../topology/deception_detector.rs"]
     pub mod deception_detector;
+
+    // ─── Sprint57: Higher-Order Persistent Homology (β₂) ───
+    #[cfg(feature = "v3.9-noosphere-engine")]
+    #[path = "../topology/hoph_engine.rs"]
+    pub mod hoph_engine;
 }
 
 /// Stuartian Moral Manifold — Trajectory-based Ethical Evaluation (Sprint50)
@@ -655,6 +660,10 @@ pub mod economy {
     #[path = "../economy/genesis_graph.rs"]
     pub mod genesis_graph;
 }
+
+/// Stuartian Noosphere Engine (SNE) — Sprint 57
+#[cfg(feature = "v3.9-noosphere-engine")]
+pub mod noosphere;
 
 /// Morphic Resonance Decoder — Semantic Manipulation Protection (Sprint 56)
 #[cfg(feature = "v3.8-morphic-genesis")]

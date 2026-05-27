@@ -759,6 +759,13 @@ test-mocks = []
 # src/portal/morphic_bridge.rs: MorphicBridge — Connects MRD + Purifier to SymbioticPortal with WASM bindings
 "v3.8-morphic-genesis" = ["v3.7-symbiotic-portal"]
 
+# Sprint 57: Stuartian Noosphere Engine (SNE) + Higher-Order Persistent Homology
+# src/noosphere/resonance_field.rs: EthicalResonanceField — Dynamic field R(x,t) = Σ w_i · GEI_i · exp(-d²/2σ(t)²) · tanh(k·Z_i)
+# src/noosphere/macro_concept.rs: MacroConceptBirth — PH₂ persistence + Lyapunov + Human correlation criteria
+# src/topology/hoph_engine.rs: HophEngine — β₂ Betti numbers via Vietoris-Rips filtration
+# src/orchestration/noosphere_loop.rs: NoosphericRespirationCycle — 5-phase respiration orchestration
+"v3.9-noosphere-engine" = ["v3.8-morphic-genesis"]
+
 # Sprint 50 Test: Moral Manifold Behavior
 [[test]]
 name = "moral_manifold_behavior"
@@ -1144,3 +1151,9 @@ required-features = ["v3.1-gei-topology"]
 name = "morphic_resonance_e2e"
 path = "tests/morphic_resonance_e2e.rs"
 required-features = ["v3.8-morphic-genesis"]
+
+# Sprint 57: Stuartian Noosphere Engine (SNE) — Emergent higher-order consciousness
+[[test]]
+name = "noosphere_emergence_e2e"
+path = "tests/noosphere_emergence_e2e.rs"
+required-features = ["v3.9-noosphere-engine"]
