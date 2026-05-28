@@ -1245,6 +1245,14 @@ pub mod stuartian_filter;
 #[cfg(feature = "v6.0-legacy-protocol")]
 pub mod legacy;
 
+// ============================================================================
+// v7.0.0 Sprint 62 — Stuartian Omega Protocol (SOP)
+// ============================================================================
+
+/// Stuartian Omega Protocol — Singularidad Simbiótica, Legado Cósmico y Trascendencia Civilizatoria
+#[cfg(feature = "v7.0-omega-protocol")]
+pub mod omega;
+
 #[cfg(test)]
 mod tests {
     use super::*;

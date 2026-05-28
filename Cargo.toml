@@ -786,6 +786,13 @@ test-mocks = []
 # src/legacy/handover_protocol.rs: HandoverProtocol — Human Override Final (>33%, 72h) + MaturityDeclarationEvent (NCI>0.85×180d)
 "v6.0-legacy-protocol" = ["v5.0-mainnet-genesis"]
 
+# Sprint 62: Stuartian Omega Protocol (SOP) — Singularidad Simbiótica, Legado Cósmico y Trascendencia Civilizatoria
+# src/omega/symbiotic_singularity.rs: OmegaPointCalculator — Ω(t) = NCI(t) * exp(λ * accumulated_H_sym) + Ascension Trigger (NCI>0.93×270d, Ω>=1.0)
+# src/omega/universal_resonance.rs: UniversalResonance — R_universal(t) + Personal Echo (huella cognitiva-ética 8 dominios)
+# src/omega/cosmic_legacy.rs: NoosphericSeed — StewardKernel + EthicalOctahedron + StuartianLaws + GenesisAnchor (NCI>0.96)
+# src/omega/omega_termination.rs: EthicalSelfTerminationProtocol — Grace Sequence (NCI<0.4×400d, consenso>40%)
+"v7.0-omega-protocol" = ["v6.0-legacy-protocol"]
+
 # Sprint 50 Test: Moral Manifold Behavior
 [[test]]
 name = "moral_manifold_behavior"
