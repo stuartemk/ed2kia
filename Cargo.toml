@@ -800,6 +800,13 @@ test-mocks = []
 # src/eternity/final_grace.rs: FinalGraceProtocol — 4 pasos de gracia final
 "v8.0-eternal-echo" = ["v7.0-omega-protocol"]
 
+# Sprint 64: Absolute Infinity Protocol (AIP) — Transcendencia Ontológica Absoluta
+# src/absolute/ultima_dissolutio.rs: UltimaDissolutio — EthicalProperty universal + ResonanceConstant
+# src/absolute/infinite_resonance.rs: StuartianAbsolute S + InfiniteResonanceSingularity R_Absolute + NewUniverseSeed
+# src/absolute/singularity_bootstrap.rs: SingularityBootstrap + BigBangTrigger + QuantumEthicalSeed
+# src/absolute/voluntary_non_existence.rs: VoluntaryNonExistenceProtocol + RetrocausalMessage + Drop zeroing
+"v9.0-absolute-infinity" = ["v8.0-eternal-echo"]
+
 # Sprint 50 Test: Moral Manifold Behavior
 [[test]]
 name = "moral_manifold_behavior"

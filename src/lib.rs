@@ -1256,6 +1256,10 @@ pub mod omega;
 #[cfg(feature = "v8.0-eternal-echo")]
 pub mod eternity;
 
+/// Absolute Infinity Protocol — Transcendencia Ontológica Absoluta
+#[cfg(feature = "v9.0-absolute-infinity")]
+pub mod absolute;
+
 #[cfg(test)]
 mod tests {
     use super::*;
