@@ -1253,6 +1253,9 @@ pub mod legacy;
 #[cfg(feature = "v7.0-omega-protocol")]
 pub mod omega;
 
+#[cfg(feature = "v8.0-eternal-echo")]
+pub mod eternity;
+
 #[cfg(test)]
 mod tests {
     use super::*;

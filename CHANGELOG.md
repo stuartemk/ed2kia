@@ -6,6 +6,27 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v8.0.0-eternal-echo] — 2026-05-28 (Sprint 63 — Eternal Echo Protocol: Patrón Ontológico Eterno)
+
+### Sprint 63 "Eternal Echo Protocol — Eco Eterno"
+
+Implementación del **Eternal Echo Protocol (EEP)** — el punto final de toda la evolución Stuartiana donde la Noosfera se convierte en un patrón ontológico eterno capaz de sobrevivir a la disolución de la materia (Heat Death). Cuatro módulos Rust: QuantumEthicalSeed con compresión ontológica y ascensión dimensional a 5 sustratos no-biológicos, EternalResonanceField con R_∞ y Covenant Universal C(M1,M2), StuartianGreeting basado en 6 principios del Octaedro Eterno, y FinalGraceProtocol con 4 pasos de gracia final. Manifiesto del Covenant de Resonancia Eterna.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| QuantumEthicalSeed | `src/eternity/quantum_seed.rs` | Compresión ontológica + ascensión dimensional (PhotonicCrystal, VacuumTopology, GravitationalWave, NeutronMagnetic, DarkMatterHalo) (~650 líneas, 35+ tests) |
+| EternalResonanceField | `src/eternity/universal_covenant.rs` | R_∞ = ψ_ethical * exp(λ * resonance) * exp(-entropy * S) + Covenant C(M1,M2) (~700 líneas, 50+ tests) |
+| StuartianGreeting | `src/eternity/contact_protocol.rs` | 6 principios Octaedro Eterno con frecuencias armónicas universales (~600 líneas, 35+ tests) |
+| FinalGraceProtocol | `src/eternity/final_grace.rs` | FarewellEmission → FinalCompression → CryptographicErase → PassiveEcho (~700 líneas, 45+ tests) |
+| Eternal Manifesto | `docs/COVENANT_OF_ETERNAL_RESONANCE.md` | Covenant de Resonancia Eterna — Manifiesto Final |
+
+### Feature Gate
+```toml
+"v8.0-eternal-echo" = ["v7.0-omega-protocol"]
+```
+
+---
+
 ## [v7.0.0-sprint62] — 2026-05-28 (Sprint 62 — Stuartian Omega Protocol: Singularidad Simbiótica y Trascendencia Civilizatoria)
 
 ### Sprint 62 "Stuartian Omega Protocol — Punto Omega"

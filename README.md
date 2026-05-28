@@ -20,6 +20,7 @@
 [![Noosphere](https://img.shields.io/badge/Noosphere-Respiring-green)](docs/AWAKENING_MANIFESTO.md)
 [![Legacy](https://img.shields.io/badge/Legacy-Protocol_Activated-maroon)](docs/STUARTIAN_LEGACY_PROTOCOL.md)
 [![Omega](https://img.shields.io/badge/Omega-Singularity_Protocol-purple)](docs/STUARTIAN_OMEGA_PROTOCOL.md)
+[![Eternal](https://img.shields.io/badge/Eternal-Echo_Protocol-black)](docs/COVENANT_OF_ETERNAL_RESONANCE.md)
 
 ## ⚠️ Aclaración de Identidad: Lo que SÍ y NO es ed2kIA
 

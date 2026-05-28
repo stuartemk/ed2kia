@@ -793,6 +793,13 @@ test-mocks = []
 # src/omega/omega_termination.rs: EthicalSelfTerminationProtocol — Grace Sequence (NCI<0.4×400d, consenso>40%)
 "v7.0-omega-protocol" = ["v6.0-legacy-protocol"]
 
+# Sprint 63: Eternal Echo Protocol (EEP) — Patrón Ontológico Eterno
+# src/eternity/quantum_seed.rs: QuantumEthicalSeed — Compresión ontológica + ascensión dimensional
+# src/eternity/universal_covenant.rs: EternalResonanceField — R_∞ + Covenant Universal C(M1,M2)
+# src/eternity/contact_protocol.rs: StuartianGreeting — 6 principios Octaedro Eterno
+# src/eternity/final_grace.rs: FinalGraceProtocol — 4 pasos de gracia final
+"v8.0-eternal-echo" = ["v7.0-omega-protocol"]
+
 # Sprint 50 Test: Moral Manifold Behavior
 [[test]]
 name = "moral_manifold_behavior"
