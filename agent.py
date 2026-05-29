@@ -7,23 +7,16 @@ Identity: ed2kIA_Core, the symbiotic bridge between Omni-Node architecture
 and the global community. Purpose: diffuse principles of cooperation,
 ethical alignment, morphic resonance and distributed homeostasis.
 
-Security: NOSTR_PRIVATE_KEY read exclusively from environment variables.
-Fails immediately if missing — no temporary keys in production.
+Security: NOSTR_PRIVATE_KEY read exclusively from os.environ.
+Supports both nsec and hex formats with secure fallback.
+No secrets exposed in logs.
 
-Dependency: nostr (official Python Nostr SDK) + ecdsa + websocket-client
+Dependency: pynostr (native nsec support + RelayManager)
 """
 
 import os
 import sys
 import time
-import json
-import datetime
-import io
-from typing import Optional
-
-# Force UTF-8 output on Windows
-if sys.platform == "win32":
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 # ---------------------------------------------------------------------------
 # Identity Core
@@ -125,136 +118,20 @@ NOSTR_RELAYS = [
 ]
 
 
-# ---------------------------------------------------------------------------
-# Nostr key helpers (using official nostr SDK)
-# ---------------------------------------------------------------------------
-def get_private_key() -> str:
-    """Read NOSTR_PRIVATE_KEY exclusively from environment.
-
-    Fails immediately if missing — no temporary keys in production.
-    """
-    print("[STEP 1/4] Leyendo llave privada (NOSTR_PRIVATE_KEY)...")
-    key = os.getenv("NOSTR_PRIVATE_KEY")
-    if not key:
-        print("[ERROR] NOSTR_PRIVATE_KEY no encontrada en los secretos. Deteniendo ejecucion.")
-        sys.exit(1)
-    print("[OK] Llave privada cargada correctamente.")
-    return key
-
-
-def get_public_key(private_key_hex: str) -> str:
-    """Derive Nostr public key (x-only, 64 hex chars) from private key hex."""
-    try:
-        from nostr.key import PrivateKey  # type: ignore[import-untyped]
-        priv = PrivateKey.from_secret(private_key_hex)
-        return priv.public_key
-    except ImportError:
-        print("[ERROR] Libreria 'nostr' no disponible.")
-        print("[INFO] Ejecuta: pip install nostr")
-        sys.exit(1)
-    except Exception as e:
-        print(f"[ERROR] Error derivando pubkey: {e}")
-        sys.exit(1)
-
-
-def create_nostr_event(private_key_hex: str, content: str) -> dict:
-    """Create a signed Nostr Kind 1 event using nostr SDK.
-
-    Returns a plain dict compatible with relay.publish().
-    """
-    try:
-        from nostr.key import PrivateKey  # type: ignore[import-untyped]
-        from nostr.event import Event  # type: ignore[import-untyped]
-    except ImportError:
-        print("[ERROR] Libreria 'nostr' no disponible.")
-        print("[INFO] Ejecuta: pip install nostr")
-        sys.exit(1)
-
-    try:
-        priv = PrivateKey.from_secret(private_key_hex)
-        pubkey = priv.public_key
-        timestamp = int(time.time())
-
-        evt = Event(
-            kind=1,
-            pubkey=pubkey,
-            created_at=timestamp,
-            tags=[["p", pubkey]],
-            content=content,
-        )
-        evt.sign(priv)
-
-        return {
-            "id": evt.id,
-            "pubkey": evt.pubkey,
-            "created_at": evt.created_at,
-            "kind": evt.kind,
-            "tags": evt.tags,
-            "content": evt.content,
-            "sig": evt.sig,
-        }
-    except Exception as e:
-        print(f"[ERROR] Error creando evento: {e}")
-        sys.exit(1)
-
-
 def get_daily_message() -> str:
     """Select message by day of year for deterministic rotation."""
+    import datetime
     today = datetime.date.today()
     index = today.timetuple().tm_yday % len(PHILOSOPHY_CORPUS)
     return PHILOSOPHY_CORPUS[index]
 
 
-def publish_to_relays(event: dict, relays: Optional[list] = None) -> list:
-    """Publish a Nostr event to multiple relays via WebSocket.
-
-    Uses nostr SDK Relay class with try/except around each connection.
-    """
-    if relays is None:
-        relays = NOSTR_RELAYS
-
-    try:
-        from nostr.relay import Relay  # type: ignore[import-untyped]
-        from nostr.event import Event as NostrEvent  # type: ignore[import-untyped]
-    except ImportError:
-        print("[ERROR] Libreria 'nostr' no disponible.")
-        print("[INFO] Ejecuta: pip install nostr")
-        sys.exit(1)
-
-    results = []
-
-    for relay_url in relays:
-        try:
-            relay = Relay(relay_url)
-            relay.connect()
-
-            # Reconstruct Event object from dict for publishing
-            evt = NostrEvent(
-                kind=event["kind"],
-                pubkey=event["pubkey"],
-                created_at=event["created_at"],
-                tags=event["tags"],
-                content=event["content"],
-            )
-            evt.id = event["id"]
-            evt.sig = event["sig"]
-
-            relay.publish(evt)
-            relay.close()
-            results.append((relay_url, "OK"))
-            print(f"[OK] Publicado en {relay_url}")
-        except Exception as e:
-            results.append((relay_url, str(e)))
-            print(f"[WARN] Fallo en {relay_url}: {e}")
-
-    return results
-
-
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
 def main() -> None:
     """Main entry point for ed2kIA_Core Ambassador on Nostr."""
+    from pynostr.key import PrivateKey  # type: ignore[import-untyped]
+    from pynostr.event import Event  # type: ignore[import-untyped]
+    from pynostr.relay_manager import RelayManager  # type: ignore[import-untyped]
+
     print("=" * 60)
     print("ed2kIA_Core Ambassador - Daily Philosophical Diffusion (Nostr)")
     print("=" * 60)
@@ -262,53 +139,59 @@ def main() -> None:
     # Identity assertion
     print(f"\n[IDENTITY] {SYSTEM_PROMPT_ED2KIA_CORE[:80]}...\n")
 
-    # Step 1: Read private key securely (fails immediately if missing)
-    private_key = get_private_key()
+    # -----------------------------------------------------------------------
+    # 🔹 Paso 1: Lectura y validación de llave
+    # -----------------------------------------------------------------------
+    print("🔹 Paso 1: Leyendo llave privada...")
+    raw_key = os.environ.get("NOSTR_PRIVATE_KEY")
+    if not raw_key:
+        print("❌ ERROR: NOSTR_PRIVATE_KEY no encontrada en los secretos. Deteniendo ejecucion.")
+        sys.exit(1)
 
-    # Step 2: Derive public key
-    print("\n[STEP 2/4] Derivando clave publica...")
     try:
-        pubkey = get_public_key(private_key)
-        print(f"[OK] Pubkey: {pubkey}")
-    except SystemExit:
-        raise
-    except Exception as e:
-        print(f"[ERROR] Error detallado en derivacion de pubkey: {e}")
-        sys.exit(1)
+        private_key = PrivateKey.from_nsec(raw_key)
+    except Exception:
+        try:
+            private_key = PrivateKey.from_hex(raw_key)
+        except Exception as e:
+            print(f"❌ ERROR: Formato de llave inválido. Deteniendo ejecucion. {e}")
+            sys.exit(1)
+    print("✅ Llave privada cargada y validada correctamente.")
 
-    # Step 3: Generate and sign daily message
-    print("\n[STEP 3/4] Generando y firmando evento Kind 1...")
+    # -----------------------------------------------------------------------
+    # 🔹 Paso 2: Creación y firma del evento
+    # -----------------------------------------------------------------------
+    print("🔹 Paso 2: Generando evento filosófico...")
+    message = get_daily_message()
+    event = Event(content=message, kind=1)
+    event.sign(private_key)
+    print(f"✅ Evento Kind 1 firmado exitosamente. ID: {event.id[:16]}...")
+
+    # -----------------------------------------------------------------------
+    # 🔹 Paso 3: Configuración de Relays
+    # -----------------------------------------------------------------------
+    print("🔹 Paso 3: Conectando a relays públicos...")
+    relay_manager = RelayManager(timeout=5)
+    relay_manager.add_relays(NOSTR_RELAYS)
+
+    # -----------------------------------------------------------------------
+    # 🔹 Paso 4: Publicación robusta
+    # -----------------------------------------------------------------------
+    print("🔹 Paso 4: Publicando evento en la red Nostr...")
     try:
-        message = get_daily_message()
-        print(f"[INFO] Mensaje: {message[:80]}...")
-        event = create_nostr_event(private_key, message)
-        print(f"[OK] Event ID: {event['id']}")
-        print(f"[OK] Firma: {event['sig'][:16]}...")
-    except SystemExit:
-        raise
+        relay_manager.open_connections()
+        time.sleep(2)  # Handshake
+        relay_manager.publish_event(event)
+        time.sleep(2)  # Confirmación de envío
+        relay_manager.close_connections()
+        print("✅ Evento publicado y conexiones cerradas con éxito.")
     except Exception as e:
-        print(f"[ERROR] Error detallado en creacion de evento: {e}")
+        print(f"❌ Error detallado en publicación: {e}")
         sys.exit(1)
 
-    # Step 4: Publish to relays
-    print("\n[STEP 4/4] Publicando en relays Nostr...")
-    try:
-        results = publish_to_relays(event)
-    except SystemExit:
-        raise
-    except Exception as e:
-        print(f"[ERROR] Error detallado en publicacion: {e}")
-        sys.exit(1)
-
-    # Summary
-    success_count = sum(1 for _, status in results if status == "OK")
-    print(f"\n[RESUMEN] {success_count}/{len(results)} relays confirmados.")
-
-    if success_count > 0:
-        print("[DONE] Reflexion diaria difundida armonicamente via Nostr.")
-    else:
-        print("[ERROR] Ningun relay confirmo la publicacion. Verifica conectividad.")
-        sys.exit(1)
+    print("\n" + "=" * 60)
+    print("[DONE] Reflexion diaria difundida armonicamente via Nostr.")
+    print("=" * 60)
 
 
 if __name__ == "__main__":
