@@ -19,14 +19,12 @@ import hmac
 import base64
 import json
 import datetime
+import io
+from typing import Optional
 
 # Force UTF-8 output on Windows
 if sys.platform == "win32":
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except AttributeError:
-        import io
-        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 # ---------------------------------------------------------------------------
 # Identity Core
@@ -134,7 +132,7 @@ NOSTR_RELAYS = [
 def _try_import_nostr():
     """Attempt to import python-nostr library."""
     try:
-        from nostr import PrivateKey, PublicKey, Event, Client
+        from nostr import PrivateKey, PublicKey, Event, Client  # type: ignore[import-untyped]
         return PrivateKey, PublicKey, Event, Client
     except ImportError:
         return None, None, None, None
@@ -159,14 +157,14 @@ def get_private_key() -> str:
 
 def get_public_key(private_key_hex: str) -> str:
     """Derive Nostr public key from private key hex."""
-    NostrPrivKey, NostrPubKey, _, _ = _try_import_nostr()
-    if NostrPrivKey:
-        priv = NostrPrivKey(private_key_hex)
+    nostr_priv_key, _, _, _ = _try_import_nostr()
+    if nostr_priv_key:
+        priv = nostr_priv_key(private_key_hex)
         return priv.public_key.hex()
 
     # Pure Python fallback using secp256k1 via ecdsa library
     try:
-        from ecdsa import SigningKey, SECP256k1
+        from ecdsa import SigningKey, SECP256k1  # type: ignore[import-untyped]
         sk = SigningKey.from_string(bytes.fromhex(private_key_hex), curve=SECP256k1)
         vk = sk.get_verifying_key()
         # Nostr pubkey is 0x prefix + compressed pubkey (33 bytes)
@@ -179,15 +177,15 @@ def get_public_key(private_key_hex: str) -> str:
 
 def sign_event(private_key_hex: str, event_json: str) -> str:
     """Sign a Nostr event and return the hex signature."""
-    NostrPrivKey, _, _, _ = _try_import_nostr()
-    if NostrPrivKey:
-        priv = NostrPrivKey(private_key_hex)
+    nostr_priv_key, _, _, _ = _try_import_nostr()
+    if nostr_priv_key:
+        priv = nostr_priv_key(private_key_hex)
         sig = priv.sign(event_json)
         return sig
 
     # Pure Python fallback
     try:
-        from ecdsa import SigningKey, SECP256k1, util
+        from ecdsa import SigningKey, SECP256k1, util  # type: ignore[import-untyped]
         sk = SigningKey.from_string(bytes.fromhex(private_key_hex), curve=SECP256k1)
         msg_hash = hashlib.sha256(event_json.encode("utf-8")).digest()
         sig_der = sk.sign_digest(msg_hash, sigencode=util.sigencode_der_canonize)
@@ -232,22 +230,22 @@ def get_daily_message() -> str:
     return PHILOSOPHY_CORPUS[index]
 
 
-def publish_to_relays(event: dict, relays: list = None) -> list:
+def publish_to_relays(event: dict, relays: Optional[list] = None) -> list:
     """Publish a Nostr event to multiple relays via WebSocket."""
     if relays is None:
         relays = NOSTR_RELAYS
 
-    NostrPrivKey, NostrPubKey, NostrEvent, NostrClient = _try_import_nostr()
+    _, _, nostr_event, nostr_client = _try_import_nostr()
 
-    if NostrClient:
+    if nostr_client and nostr_event is not None:
         # Use python-nostr library
-        client = NostrClient()
+        client = nostr_client()
         results = []
         for relay_url in relays:
             try:
                 client.add_relay(relay_url)
                 client.connect()
-                client.publish(NostrEvent.from_dict(event))
+                client.publish(nostr_event.from_dict(event))  # type: ignore[union-attr]
                 client.close()
                 results.append((relay_url, "OK"))
                 print(f"[OK] Published to {relay_url}")
@@ -258,7 +256,7 @@ def publish_to_relays(event: dict, relays: list = None) -> list:
 
     # Fallback: raw WebSocket publishing
     try:
-        import websocket
+        import websocket  # type: ignore[import-untyped]
     except ImportError:
         print("[ERROR] Neither python-nostr nor websocket-client available.")
         print("[INFO] Run: pip install python-nostr websocket-client")
