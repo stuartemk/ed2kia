@@ -157,6 +157,7 @@ def main() -> None:
             print(f"❌ ERROR: Formato de llave inválido. Deteniendo ejecucion. {e}")
             sys.exit(1)
     print("✅ Llave privada cargada y validada correctamente.")
+    print(f"Llave Pública (npub): {private_key.public_key.bech32()}")
 
     # -----------------------------------------------------------------------
     # 🔹 Paso 2: Creación y firma del evento
@@ -193,6 +194,8 @@ def main() -> None:
     print("\n" + "=" * 60)
     print("[DONE] Reflexion diaria difundida armonicamente via Nostr.")
     print("=" * 60)
+
+    sys.exit(0)
 
 
 if __name__ == "__main__":
