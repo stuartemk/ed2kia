@@ -1,0 +1,32 @@
+# Sprint 66: Nostr Daily Philosophical Agent
+# Schedule: Daily at 12:00 UTC (06:00 CST)
+# Purpose: Diffuse Stuartian philosophy via ed2kIA_Core ambassador on Nostr
+
+name: "Nostr Daily Ambassador"
+
+on:
+  schedule:
+    - cron: '0 12 * * *'  # Daily at 12:00 UTC
+  workflow_dispatch:      # Manual trigger for testing
+
+jobs:
+  publish-philosophy:
+    name: Publish Daily Reflection to Nostr
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run ed2kIA_Core Ambassador on Nostr
+        env:
+          NOSTR_PRIVATE_KEY: ${{ secrets.NOSTR_PRIVATE_KEY }}
+        run: python agent.py
