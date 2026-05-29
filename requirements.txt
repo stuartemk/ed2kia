@@ -1,1 +1,3 @@
-python-nostr
+nostr
+ecdsa
+websocket-client

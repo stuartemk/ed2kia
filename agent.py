@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ed2kIA_Core Ambassador Agent - Sprint 66
+ed2kIA_Core Ambassador Agent - Sprint 66.2
 Daily philosophical diffusion via Nostr network (Kind 1 events).
 
 Identity: ed2kIA_Core, the symbiotic bridge between Omni-Node architecture
@@ -8,15 +8,14 @@ and the global community. Purpose: diffuse principles of cooperation,
 ethical alignment, morphic resonance and distributed homeostasis.
 
 Security: NOSTR_PRIVATE_KEY read exclusively from environment variables.
-If missing, a temporary key is generated for testing with a clear warning.
+Fails immediately if missing — no temporary keys in production.
+
+Dependency: nostr (official Python Nostr SDK) + ecdsa + websocket-client
 """
 
 import os
 import sys
 import time
-import hashlib
-import hmac
-import base64
 import json
 import datetime
 import io
@@ -127,17 +126,8 @@ NOSTR_RELAYS = [
 
 
 # ---------------------------------------------------------------------------
-# Nostr Cryptographic primitives (secp256k1 via pure Python fallback)
+# Nostr key helpers (using official nostr SDK)
 # ---------------------------------------------------------------------------
-def _try_import_nostr():
-    """Attempt to import python-nostr library."""
-    try:
-        from nostr import PrivateKey, PublicKey, Event, Client  # type: ignore[import-untyped]
-        return PrivateKey, PublicKey, Event, Client
-    except ImportError:
-        return None, None, None, None
-
-
 def get_private_key() -> str:
     """Read NOSTR_PRIVATE_KEY exclusively from environment.
 
@@ -153,71 +143,59 @@ def get_private_key() -> str:
 
 
 def get_public_key(private_key_hex: str) -> str:
-    """Derive Nostr public key from private key hex."""
-    nostr_priv_key, _, _, _ = _try_import_nostr()
-    if nostr_priv_key:
-        priv = nostr_priv_key(private_key_hex)
-        return priv.public_key.hex()
-
-    # Pure Python fallback using secp256k1 via ecdsa library
+    """Derive Nostr public key (x-only, 64 hex chars) from private key hex."""
     try:
-        from ecdsa import SigningKey, SECP256k1  # type: ignore[import-untyped]
-        sk = SigningKey.from_string(bytes.fromhex(private_key_hex), curve=SECP256k1)
-        vk = sk.get_verifying_key()
-        # Nostr pubkey is 0x prefix + compressed pubkey (33 bytes)
-        return vk.to_string().hex()  # type: ignore[union-attr]
+        from nostr.key import PrivateKey  # type: ignore[import-untyped]
+        priv = PrivateKey.from_secret(private_key_hex)
+        return priv.public_key
     except ImportError:
-        print("[ERROR] Neither python-nostr nor ecdsa library available.")
-        print("[INFO] Run: pip install python-nostr")
+        print("[ERROR] Libreria 'nostr' no disponible.")
+        print("[INFO] Ejecuta: pip install nostr")
         sys.exit(1)
-
-
-def sign_event(private_key_hex: str, event_json: str) -> str:
-    """Sign a Nostr event and return the hex signature."""
-    nostr_priv_key, _, _, _ = _try_import_nostr()
-    if nostr_priv_key:
-        priv = nostr_priv_key(private_key_hex)
-        sig = priv.sign(event_json)
-        return sig
-
-    # Pure Python fallback
-    try:
-        from ecdsa import SigningKey, SECP256k1, util  # type: ignore[import-untyped]
-        sk = SigningKey.from_string(bytes.fromhex(private_key_hex), curve=SECP256k1)
-        msg_hash = hashlib.sha256(event_json.encode("utf-8")).digest()
-        sig_der = sk.sign_digest(msg_hash, sigencode=util.sigencode_der_canonize)
-        # Convert DER to fixed 64-byte format
-        r = int.from_bytes(sig_der[4:4+sig_der[3]], "big")
-        s = int.from_bytes(sig_der[4+sig_der[3]+4:4+sig_der[3]+4+sig_der[4+sig_der[3]+3]], "big")
-        return r.to_bytes(32, "big").hex() + s.to_bytes(32, "big").hex()
-    except ImportError:
-        print("[ERROR] Signing failed: no crypto library available.")
+    except Exception as e:
+        print(f"[ERROR] Error derivando pubkey: {e}")
         sys.exit(1)
 
 
 def create_nostr_event(private_key_hex: str, content: str) -> dict:
-    """Create a signed Nostr Kind 1 event."""
-    pubkey = get_public_key(private_key_hex)
-    timestamp = int(time.time())
+    """Create a signed Nostr Kind 1 event using nostr SDK.
 
-    event = {
-        "kind": 1,
-        "pubkey": pubkey,
-        "created_at": timestamp,
-        "tags": [
-            ["p", pubkey],  # self-reference
-        ],
-        "content": content,
-    }
+    Returns a plain dict compatible with relay.publish().
+    """
+    try:
+        from nostr.key import PrivateKey  # type: ignore[import-untyped]
+        from nostr.event import Event  # type: ignore[import-untyped]
+    except ImportError:
+        print("[ERROR] Libreria 'nostr' no disponible.")
+        print("[INFO] Ejecuta: pip install nostr")
+        sys.exit(1)
 
-    # Serialize for signing (canonical JSON)
-    event_for_signing = json.dumps(event, separators=(",", ":"), sort_keys=True)
-    signature = sign_event(private_key_hex, event_for_signing)
+    try:
+        priv = PrivateKey.from_secret(private_key_hex)
+        pubkey = priv.public_key
+        timestamp = int(time.time())
 
-    event["id"] = hashlib.sha256(event_for_signing.encode("utf-8")).hexdigest()
-    event["sig"] = signature
+        evt = Event(
+            kind=1,
+            pubkey=pubkey,
+            created_at=timestamp,
+            tags=[["p", pubkey]],
+            content=content,
+        )
+        evt.sign(priv)
 
-    return event
+        return {
+            "id": evt.id,
+            "pubkey": evt.pubkey,
+            "created_at": evt.created_at,
+            "kind": evt.kind,
+            "tags": evt.tags,
+            "content": evt.content,
+            "sig": evt.sig,
+        }
+    except Exception as e:
+        print(f"[ERROR] Error creando evento: {e}")
+        sys.exit(1)
 
 
 def get_daily_message() -> str:
@@ -228,59 +206,53 @@ def get_daily_message() -> str:
 
 
 def publish_to_relays(event: dict, relays: Optional[list] = None) -> list:
-    """Publish a Nostr event to multiple relays via WebSocket."""
+    """Publish a Nostr event to multiple relays via WebSocket.
+
+    Uses nostr SDK Relay class with try/except around each connection.
+    """
     if relays is None:
         relays = NOSTR_RELAYS
 
-    _, _, nostr_event, nostr_client = _try_import_nostr()
-
-    if nostr_client and nostr_event is not None:
-        # Use python-nostr library
-        client = nostr_client()
-        results = []
-        for relay_url in relays:
-            try:
-                client.add_relay(relay_url)
-                client.connect()
-                client.publish(nostr_event.from_dict(event))  # type: ignore[union-attr]
-                client.close()
-                results.append((relay_url, "OK"))
-                print(f"[OK] Published to {relay_url}")
-            except Exception as e:
-                results.append((relay_url, str(e)))
-                print(f"[WARN] Failed to publish to {relay_url}: {e}")
-        return results
-
-    # Fallback: raw WebSocket publishing
     try:
-        import websocket  # type: ignore[import-untyped]
+        from nostr.relay import Relay  # type: ignore[import-untyped]
+        from nostr.event import Event as NostrEvent  # type: ignore[import-untyped]
     except ImportError:
-        print("[ERROR] Neither python-nostr nor websocket-client available.")
-        print("[INFO] Run: pip install python-nostr websocket-client")
+        print("[ERROR] Libreria 'nostr' no disponible.")
+        print("[INFO] Ejecuta: pip install nostr")
         sys.exit(1)
 
     results = []
-    publish_msg = json.dumps(["EVENT", json.dumps(event)])
 
     for relay_url in relays:
         try:
-            ws = websocket.create_connection(relay_url, timeout=10)
-            ws.send(publish_msg)
-            response = json.loads(ws.recv())
-            ws.close()
-            if response and len(response) >= 2 and response[1]:
-                results.append((relay_url, "OK"))
-                print(f"[OK] Published to {relay_url}")
-            else:
-                results.append((relay_url, "Rejected"))
-                print(f"[WARN] Event rejected by {relay_url}")
+            relay = Relay(relay_url)
+            relay.connect()
+
+            # Reconstruct Event object from dict for publishing
+            evt = NostrEvent(
+                kind=event["kind"],
+                pubkey=event["pubkey"],
+                created_at=event["created_at"],
+                tags=event["tags"],
+                content=event["content"],
+            )
+            evt.id = event["id"]
+            evt.sig = event["sig"]
+
+            relay.publish(evt)
+            relay.close()
+            results.append((relay_url, "OK"))
+            print(f"[OK] Publicado en {relay_url}")
         except Exception as e:
             results.append((relay_url, str(e)))
-            print(f"[WARN] Failed to publish to {relay_url}: {e}")
+            print(f"[WARN] Fallo en {relay_url}: {e}")
 
     return results
 
 
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
 def main() -> None:
     """Main entry point for ed2kIA_Core Ambassador on Nostr."""
     print("=" * 60)
@@ -298,6 +270,8 @@ def main() -> None:
     try:
         pubkey = get_public_key(private_key)
         print(f"[OK] Pubkey: {pubkey}")
+    except SystemExit:
+        raise
     except Exception as e:
         print(f"[ERROR] Error detallado en derivacion de pubkey: {e}")
         sys.exit(1)
@@ -310,6 +284,8 @@ def main() -> None:
         event = create_nostr_event(private_key, message)
         print(f"[OK] Event ID: {event['id']}")
         print(f"[OK] Firma: {event['sig'][:16]}...")
+    except SystemExit:
+        raise
     except Exception as e:
         print(f"[ERROR] Error detallado en creacion de evento: {e}")
         sys.exit(1)
@@ -318,6 +294,8 @@ def main() -> None:
     print("\n[STEP 4/4] Publicando en relays Nostr...")
     try:
         results = publish_to_relays(event)
+    except SystemExit:
+        raise
     except Exception as e:
         print(f"[ERROR] Error detallado en publicacion: {e}")
         sys.exit(1)
