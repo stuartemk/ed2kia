@@ -164,7 +164,7 @@ def main() -> None:
     print("🔹 Paso 2: Generando evento filosófico...")
     message = get_daily_message()
     event = Event(content=message, kind=1)
-    event.sign(private_key)
+    event.sign(private_key.hex())
     print(f"✅ Evento Kind 1 firmado exitosamente. ID: {event.id[:16]}...")
 
     # -----------------------------------------------------------------------
