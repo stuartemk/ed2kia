@@ -172,7 +172,8 @@ def main() -> None:
     # -----------------------------------------------------------------------
     print("🔹 Paso 3: Conectando a relays públicos...")
     relay_manager = RelayManager(timeout=5)
-    relay_manager.add_relays(NOSTR_RELAYS)
+    for relay in NOSTR_RELAYS:
+        relay_manager.add_relay(relay)
 
     # -----------------------------------------------------------------------
     # 🔹 Paso 4: Publicación robusta
