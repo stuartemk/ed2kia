@@ -195,7 +195,7 @@ def main() -> None:
     print("[DONE] Reflexion diaria difundida armonicamente via Nostr.")
     print("=" * 60)
 
-    sys.exit(0)
+    os._exit(0)
 
 
 if __name__ == "__main__":
