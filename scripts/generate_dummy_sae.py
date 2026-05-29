@@ -119,7 +119,7 @@ def main() -> None:
         output_path = str(project_root / "models" / "dummy_qwen_scope.safetensors")
 
     if not os.path.isabs(output_path):
-        output_path = str(project_root / output_path)
+        output_path = str(project_root / output_path)  # type: ignore[operator]
 
     generate_dummy_safetensors(output_path, args.d_model, args.d_sae)
 

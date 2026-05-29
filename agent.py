@@ -168,7 +168,7 @@ def get_public_key(private_key_hex: str) -> str:
         sk = SigningKey.from_string(bytes.fromhex(private_key_hex), curve=SECP256k1)
         vk = sk.get_verifying_key()
         # Nostr pubkey is 0x prefix + compressed pubkey (33 bytes)
-        return vk.to_string().hex()
+        return vk.to_string().hex()  # type: ignore[union-attr]
     except ImportError:
         print("[ERROR] Neither python-nostr nor ecdsa library available.")
         print("[INFO] Run: pip install python-nostr")
