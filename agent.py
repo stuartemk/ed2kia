@@ -141,17 +141,14 @@ def _try_import_nostr():
 def get_private_key() -> str:
     """Read NOSTR_PRIVATE_KEY exclusively from environment.
 
-    If missing, generate a temporary key for testing with a clear warning.
+    Fails immediately if missing — no temporary keys in production.
     """
+    print("[STEP 1/4] Leyendo llave privada (NOSTR_PRIVATE_KEY)...")
     key = os.getenv("NOSTR_PRIVATE_KEY")
     if not key:
-        # Generate temporary key for testing
-        import secrets
-        temp_key = secrets.token_hex(32)
-        print("[WARN] NOSTR_PRIVATE_KEY not found in environment.")
-        print("[WARN] Using temporary key for testing only.")
-        print("[INFO] In production, set NOSTR_PRIVATE_KEY in GitHub Secrets.")
-        return temp_key
+        print("[ERROR] NOSTR_PRIVATE_KEY no encontrada en los secretos. Deteniendo ejecucion.")
+        sys.exit(1)
+    print("[OK] Llave privada cargada correctamente.")
     return key
 
 
@@ -293,33 +290,46 @@ def main() -> None:
     # Identity assertion
     print(f"\n[IDENTITY] {SYSTEM_PROMPT_ED2KIA_CORE[:80]}...\n")
 
-    # Read private key securely
+    # Step 1: Read private key securely (fails immediately if missing)
     private_key = get_private_key()
-    pubkey = get_public_key(private_key)
-    print(f"[PUBKEY] {pubkey}\n")
 
-    # Generate daily message
-    message = get_daily_message()
-    print(f"[MESSAGE] {message[:100]}...\n")
+    # Step 2: Derive public key
+    print("\n[STEP 2/4] Derivando clave publica...")
+    try:
+        pubkey = get_public_key(private_key)
+        print(f"[OK] Pubkey: {pubkey}")
+    except Exception as e:
+        print(f"[ERROR] Error detallado en derivacion de pubkey: {e}")
+        sys.exit(1)
 
-    # Create signed Nostr event
-    event = create_nostr_event(private_key, message)
-    print(f"[EVENT_ID] {event['id']}")
-    print(f"[KIND] {event['kind']}")
-    print(f"[SIG] {event['sig'][:16]}...\n")
+    # Step 3: Generate and sign daily message
+    print("\n[STEP 3/4] Generando y firmando evento Kind 1...")
+    try:
+        message = get_daily_message()
+        print(f"[INFO] Mensaje: {message[:80]}...")
+        event = create_nostr_event(private_key, message)
+        print(f"[OK] Event ID: {event['id']}")
+        print(f"[OK] Firma: {event['sig'][:16]}...")
+    except Exception as e:
+        print(f"[ERROR] Error detallado en creacion de evento: {e}")
+        sys.exit(1)
 
-    # Publish to relays
-    print("[PUBLISH] Broadcasting to Nostr relays...")
-    results = publish_to_relays(event)
+    # Step 4: Publish to relays
+    print("\n[STEP 4/4] Publicando en relays Nostr...")
+    try:
+        results = publish_to_relays(event)
+    except Exception as e:
+        print(f"[ERROR] Error detallado en publicacion: {e}")
+        sys.exit(1)
 
     # Summary
     success_count = sum(1 for _, status in results if status == "OK")
-    print(f"\n[SUMMARY] {success_count}/{len(results)} relays confirmed.")
+    print(f"\n[RESUMEN] {success_count}/{len(results)} relays confirmados.")
 
     if success_count > 0:
-        print("[DONE] Daily reflection diffused harmonically via Nostr.")
+        print("[DONE] Reflexion diaria difundida armonicamente via Nostr.")
     else:
-        print("[WARN] No relay confirmed publication. Check connectivity.")
+        print("[ERROR] Ningun relay confirmo la publicacion. Verifica conectividad.")
         sys.exit(1)
 
 
