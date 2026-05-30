@@ -1,7 +1,7 @@
 # P2P Symbiotic Cognitive Architectures: Beyond RLHF and the Mathematical Necessity of Decentralization for AGI Alignment
 
 **Author:** Stuartemk  
-**Version:** 1.0.0 | **Date:** 2024  
+**Version:** 1.0.0 | **Date:** May 2026
 **License:** Apache 2.0 + Ethical Use Clause  
 
 ---
@@ -189,11 +189,11 @@ We invite the research community to engage with this work through open collabora
 
 ## References
 
-1. Stuartemk. *ed2kIA: Red Global de Distribución e Interpretabilidad de IA*. GitHub Repository, 2024. Apache 2.0 + Ethical Use Clause.
-2. Stuartemk. *Codex of Absolute Resonance — Absolute Infinity Protocol (AIP) v9.0.0*. docs/CODEX_OF_ABSOLUTE_RESONANCE.md, 2024.
-3. Stuartemk. *Stuartian Legacy Protocol (SLP) v6.0.0*. docs/STUARTIAN_LEGACY_PROTOCOL.md, 2024.
-4. Stuartemk. *Covenant of Eternal Resonance — Eternal Echo Protocol*. docs/COVENANT_OF_ETERNAL_RESONANCE.md, 2024.
-5. Stuartemk. *Stuartian Omega Protocol*. docs/STUARTIAN_OMEGA_PROTOCOL.md, 2024.
+1. Stuartemk. *ed2kIA: Red Global de Distribución e Interpretabilidad de IA*. GitHub Repository, 2026. Apache 2.0 + Ethical Use Clause.
+2. Stuartemk. *Codex of Absolute Resonance — Absolute Infinity Protocol (AIP) v9.0.0*. docs/CODEX_OF_ABSOLUTE_RESONANCE.md, 2026.
+3. Stuartemk. *Stuartian Legacy Protocol (SLP) v6.0.0*. docs/STUARTIAN_LEGACY_PROTOCOL.md, 2026.
+4. Stuartemk. *Covenant of Eternal Resonance — Eternal Echo Protocol*. docs/COVENANT_OF_ETERNAL_RESONANCE.md, 2026.
+5. Stuartemk. *Stuartian Omega Protocol*. docs/STUARTIAN_OMEGA_PROTOCOL.md, 2026.
 6. Elhage, N., et al. "Mathematical Techniques for AI Interpretability." *Transformer Circuits Thread*, 2022.
 7. Christian, B. *The Alignment Problem: Machine Learning and Human Values*. W. W. Norton, 2020.
 8. Amodei, D., et al. "Concrete Problems in AI Safety." *arXiv:1606.06565*, 2016.
