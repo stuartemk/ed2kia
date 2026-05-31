@@ -44,9 +44,15 @@ pub enum ProliferationError {
 impl std::fmt::Display for ProliferationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ProliferationError::InvalidConfig(msg) => write!(f, "Proliferation config invalid: {}", msg),
-            ProliferationError::MissingField(field) => write!(f, "Missing required field: {}", field),
-            ProliferationError::GenerationFailed(msg) => write!(f, "Artifact generation failed: {}", msg),
+            ProliferationError::InvalidConfig(msg) => {
+                write!(f, "Proliferation config invalid: {}", msg)
+            }
+            ProliferationError::MissingField(field) => {
+                write!(f, "Missing required field: {}", field)
+            }
+            ProliferationError::GenerationFailed(msg) => {
+                write!(f, "Artifact generation failed: {}", msg)
+            }
         }
     }
 }
@@ -118,7 +124,9 @@ impl std::fmt::Display for DeploymentArtifact {
         write!(
             f,
             "DeploymentArtifact {{ platform={}, filename={}, additional_files={} }}",
-            self.platform, self.filename, self.additional_files.len()
+            self.platform,
+            self.filename,
+            self.additional_files.len()
         )
     }
 }
@@ -533,7 +541,10 @@ mod tests {
     #[test]
     fn test_platform_display() {
         assert_eq!(format!("{}", Platform::Vercel), "vercel");
-        assert_eq!(format!("{}", Platform::CloudflareWorkers), "cloudflare-workers");
+        assert_eq!(
+            format!("{}", Platform::CloudflareWorkers),
+            "cloudflare-workers"
+        );
         assert_eq!(format!("{}", Platform::Docker), "docker");
     }
 

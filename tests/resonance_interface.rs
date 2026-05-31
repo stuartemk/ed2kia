@@ -6,15 +6,19 @@
 #[cfg(feature = "v3.0-resonance-interface")]
 mod biometric_analysis_tests {
     use ed2kia::pillars::resonance::biometric_analyzer::{
-        LocalBiometricAnalyzer, BiometricState, AnalyzerConfig,
+        AnalyzerConfig, BiometricState, LocalBiometricAnalyzer,
     };
 
     fn make_rppg_samples(count: usize) -> Vec<f32> {
-        (0..count).map(|i| (i as f32 * 0.01).sin() * 0.5 + 0.5).collect()
+        (0..count)
+            .map(|i| (i as f32 * 0.01).sin() * 0.5 + 0.5)
+            .collect()
     }
 
     fn make_voice_samples(count: usize) -> Vec<f32> {
-        (0..count).map(|i| (i as f32 * 0.02).sin() * 0.3 + 0.5).collect()
+        (0..count)
+            .map(|i| (i as f32 * 0.02).sin() * 0.3 + 0.5)
+            .collect()
     }
 
     fn make_expression_samples(count: usize) -> Vec<f32> {
@@ -85,7 +89,10 @@ mod biometric_analysis_tests {
         let calm_score = calm.homeostasis_score();
         let stressed_score = stressed.homeostasis_score();
 
-        assert!(calm_score > stressed_score, "Calm state should have higher homeostasis score");
+        assert!(
+            calm_score > stressed_score,
+            "Calm state should have higher homeostasis score"
+        );
     }
 
     #[test]
@@ -100,7 +107,7 @@ mod biometric_analysis_tests {
 mod homeostasis_engine_tests {
     use ed2kia::pillars::resonance::biometric_analyzer::BiometricState;
     use ed2kia::pillars::resonance::homeostasis_engine::{
-        HomeostasisEngine, HomeostasisConfig, EngineError,
+        EngineError, HomeostasisConfig, HomeostasisEngine,
     };
 
     fn make_calm_state() -> BiometricState {
@@ -207,7 +214,8 @@ mod resonance_generator_tests {
     use ed2kia::pillars::resonance::biometric_analyzer::BiometricState;
     use ed2kia::pillars::resonance::homeostasis_engine::HomeostasisDelta;
     use ed2kia::pillars::resonance::resonance_generator::{
-        ResonanceGenerator, ResonanceConfig, ResonanceError, BinauralBeat, IsochronicTone, SemanticResponse,
+        BinauralBeat, IsochronicTone, ResonanceConfig, ResonanceError, ResonanceGenerator,
+        SemanticResponse,
     };
 
     fn make_calm_state() -> BiometricState {
@@ -255,7 +263,8 @@ mod resonance_generator_tests {
             0.5,
             "alpha".to_string(),
             0.8,
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(resp.sct_z, 0.5);
     }
 
@@ -335,8 +344,7 @@ mod resonance_generator_tests {
 #[cfg(feature = "v3.0-resonance-interface")]
 mod pillar_integration_tests {
     use ed2kia::pillars::resonance::{
-        ResonanceEngine, ResonancePillarError,
-        biometric_analyzer::BiometricState,
+        biometric_analyzer::BiometricState, ResonanceEngine, ResonancePillarError,
     };
     use ed2kia::pillars::PillarInterface;
 
@@ -345,11 +353,15 @@ mod pillar_integration_tests {
     }
 
     fn make_rppg_samples(count: usize) -> Vec<f32> {
-        (0..count).map(|i| (i as f32 * 0.01).sin() * 0.5 + 0.5).collect()
+        (0..count)
+            .map(|i| (i as f32 * 0.01).sin() * 0.5 + 0.5)
+            .collect()
     }
 
     fn make_voice_samples(count: usize) -> Vec<f32> {
-        (0..count).map(|i| (i as f32 * 0.02).sin() * 0.3 + 0.5).collect()
+        (0..count)
+            .map(|i| (i as f32 * 0.02).sin() * 0.3 + 0.5)
+            .collect()
     }
 
     fn make_expression_samples(count: usize) -> Vec<f32> {

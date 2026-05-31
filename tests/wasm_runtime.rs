@@ -149,7 +149,10 @@ mod message_integrity_tests {
             - 60_000; // 1 minute ago
         let msg = make_message(1, old_timestamp, 1.0);
         let result = manager.verify_message(&msg);
-        assert!(matches!(result, Err(MessagingError::TimestampDriftExceeded(_))));
+        assert!(matches!(
+            result,
+            Err(MessagingError::TimestampDriftExceeded(_))
+        ));
     }
 
     #[test]
@@ -181,7 +184,7 @@ mod message_integrity_tests {
         replay.record(4, 400);
         assert_eq!(replay.nonces.len(), 3);
         assert!(!replay.is_replay(1)); // Evicted
-        assert!(replay.is_replay(4));  // Present
+        assert!(replay.is_replay(4)); // Present
     }
 
     #[test]
@@ -206,7 +209,10 @@ mod privacy_enforcement_tests {
         // connect (syscall 43)
         let result = enforcer.intercept_io(43, &[0x7f000001]);
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), PrivacyViolation::NetworkBlocked(_)));
+        assert!(matches!(
+            result.unwrap_err(),
+            PrivacyViolation::NetworkBlocked(_)
+        ));
     }
 
     #[test]
@@ -215,7 +221,10 @@ mod privacy_enforcement_tests {
         // sendto (syscall 44)
         let result = enforcer.intercept_io(44, &[0x0]);
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), PrivacyViolation::NetworkBlocked(_)));
+        assert!(matches!(
+            result.unwrap_err(),
+            PrivacyViolation::NetworkBlocked(_)
+        ));
     }
 
     #[test]
@@ -224,7 +233,10 @@ mod privacy_enforcement_tests {
         // recvfrom (syscall 45)
         let result = enforcer.intercept_io(45, &[0x0]);
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), PrivacyViolation::NetworkBlocked(_)));
+        assert!(matches!(
+            result.unwrap_err(),
+            PrivacyViolation::NetworkBlocked(_)
+        ));
     }
 
     #[test]
@@ -252,7 +264,10 @@ mod privacy_enforcement_tests {
         let mut enforcer = PrivacyEnforcer::new();
         let result = enforcer.intercept_network("connect", "8.8.8.8:443");
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), PrivacyViolation::NetworkBlocked(_)));
+        assert!(matches!(
+            result.unwrap_err(),
+            PrivacyViolation::NetworkBlocked(_)
+        ));
     }
 
     #[test]

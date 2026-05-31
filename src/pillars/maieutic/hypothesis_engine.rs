@@ -10,7 +10,6 @@
 //!
 //! **Reference:** Sprint 44 — Maieutic Synthesizer Implementation (Pillar 2)
 
-
 /// Scientific domain categories for hypothesis classification.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub enum Domain {
@@ -64,7 +63,10 @@ impl std::fmt::Display for HypothesisError {
             HypothesisError::HypothesisNotFound(id) => {
                 write!(f, "Hypothesis not found: {}", id)
             }
-            HypothesisError::InsufficientEvidence { required, available } => {
+            HypothesisError::InsufficientEvidence {
+                required,
+                available,
+            } => {
                 write!(
                     f,
                     "Insufficient evidence for synthesis: required={}, available={}",
@@ -281,10 +283,12 @@ impl HypothesisEngine {
         hypothesis_id: &str,
         evidence: Evidence,
     ) -> Result<Hypothesis, HypothesisError> {
-        let hypothesis = self
-            .hypotheses
-            .get_mut(hypothesis_id)
-            .ok_or(HypothesisError::HypothesisNotFound(hypothesis_id.to_string()))?;
+        let hypothesis =
+            self.hypotheses
+                .get_mut(hypothesis_id)
+                .ok_or(HypothesisError::HypothesisNotFound(
+                    hypothesis_id.to_string(),
+                ))?;
 
         // Advance state if still proposed.
         if hypothesis.state == HypothesisState::Proposed {
@@ -424,13 +428,14 @@ mod tests {
     #[test]
     fn test_generate_hypothesis_duplicate_id() {
         let mut engine = HypothesisEngine::new();
-        engine.generate_hypothesis(
-            "h1".to_string(),
-            Domain::Epigenetics,
-            "First".to_string(),
-            0.5,
-        )
-        .unwrap();
+        engine
+            .generate_hypothesis(
+                "h1".to_string(),
+                Domain::Epigenetics,
+                "First".to_string(),
+                0.5,
+            )
+            .unwrap();
         let result = engine.generate_hypothesis(
             "h1".to_string(),
             Domain::Epigenetics,
@@ -448,13 +453,14 @@ mod tests {
     #[test]
     fn test_submit_evidence_advances_state() {
         let mut engine = HypothesisEngine::with_config(2, 0.0);
-        engine.generate_hypothesis(
-            "h1".to_string(),
-            Domain::MolecularDynamics,
-            "Test hypothesis".to_string(),
-            0.5,
-        )
-        .unwrap();
+        engine
+            .generate_hypothesis(
+                "h1".to_string(),
+                Domain::MolecularDynamics,
+                "Test hypothesis".to_string(),
+                0.5,
+            )
+            .unwrap();
 
         // First evidence advances to CollectingEvidence.
         let h = engine
@@ -472,7 +478,8 @@ mod tests {
     #[test]
     fn test_submit_evidence_unknown_hypothesis() {
         let mut engine = HypothesisEngine::new();
-        let result = engine.submit_evidence("unknown", make_evidence("n", Domain::Epigenetics, 0.5));
+        let result =
+            engine.submit_evidence("unknown", make_evidence("n", Domain::Epigenetics, 0.5));
         match result {
             Err(HypothesisError::HypothesisNotFound(id)) => {
                 assert_eq!(id, "unknown");
@@ -484,13 +491,14 @@ mod tests {
     #[test]
     fn test_get_hypothesis() {
         let mut engine = HypothesisEngine::new();
-        engine.generate_hypothesis(
-            "h1".to_string(),
-            Domain::ClimateModeling,
-            "Climate hypothesis".to_string(),
-            0.7,
-        )
-        .unwrap();
+        engine
+            .generate_hypothesis(
+                "h1".to_string(),
+                Domain::ClimateModeling,
+                "Climate hypothesis".to_string(),
+                0.7,
+            )
+            .unwrap();
         let h = engine.get_hypothesis("h1").unwrap();
         assert_eq!(h.id, "h1");
         assert_eq!(h.domain, Domain::ClimateModeling);
@@ -499,27 +507,25 @@ mod tests {
     #[test]
     fn test_list_by_domain() {
         let mut engine = HypothesisEngine::new();
-        engine.generate_hypothesis(
-            "h1".to_string(),
-            Domain::ProteinFolding,
-            "H1".to_string(),
-            0.5,
-        )
-        .unwrap();
-        engine.generate_hypothesis(
-            "h2".to_string(),
-            Domain::ProteinFolding,
-            "H2".to_string(),
-            0.3,
-        )
-        .unwrap();
-        engine.generate_hypothesis(
-            "h3".to_string(),
-            Domain::Epigenetics,
-            "H3".to_string(),
-            0.4,
-        )
-        .unwrap();
+        engine
+            .generate_hypothesis(
+                "h1".to_string(),
+                Domain::ProteinFolding,
+                "H1".to_string(),
+                0.5,
+            )
+            .unwrap();
+        engine
+            .generate_hypothesis(
+                "h2".to_string(),
+                Domain::ProteinFolding,
+                "H2".to_string(),
+                0.3,
+            )
+            .unwrap();
+        engine
+            .generate_hypothesis("h3".to_string(), Domain::Epigenetics, "H3".to_string(), 0.4)
+            .unwrap();
 
         let pf = engine.list_by_domain(&Domain::ProteinFolding);
         assert_eq!(pf.len(), 2);
@@ -530,13 +536,14 @@ mod tests {
     #[test]
     fn test_ready_for_consensus() {
         let mut engine = HypothesisEngine::with_config(1, 0.0);
-        engine.generate_hypothesis(
-            "h1".to_string(),
-            Domain::MaterialsScience,
-            "Test".to_string(),
-            0.5,
-        )
-        .unwrap();
+        engine
+            .generate_hypothesis(
+                "h1".to_string(),
+                Domain::MaterialsScience,
+                "Test".to_string(),
+                0.5,
+            )
+            .unwrap();
 
         assert_eq!(engine.ready_for_consensus().len(), 0);
 
@@ -549,13 +556,14 @@ mod tests {
     #[test]
     fn test_update_consensus_result_validated() {
         let mut engine = HypothesisEngine::new();
-        engine.generate_hypothesis(
-            "h1".to_string(),
-            Domain::Epigenetics,
-            "Test".to_string(),
-            0.5,
-        )
-        .unwrap();
+        engine
+            .generate_hypothesis(
+                "h1".to_string(),
+                Domain::Epigenetics,
+                "Test".to_string(),
+                0.5,
+            )
+            .unwrap();
         let h = engine.update_consensus_result("h1", true).unwrap();
         assert_eq!(h.state, HypothesisState::Validated);
     }
@@ -563,13 +571,14 @@ mod tests {
     #[test]
     fn test_update_consensus_result_rejected() {
         let mut engine = HypothesisEngine::new();
-        engine.generate_hypothesis(
-            "h1".to_string(),
-            Domain::Epigenetics,
-            "Test".to_string(),
-            0.5,
-        )
-        .unwrap();
+        engine
+            .generate_hypothesis(
+                "h1".to_string(),
+                Domain::Epigenetics,
+                "Test".to_string(),
+                0.5,
+            )
+            .unwrap();
         let h = engine.update_consensus_result("h1", false).unwrap();
         assert_eq!(h.state, HypothesisState::Rejected);
     }
@@ -596,20 +605,12 @@ mod tests {
     #[test]
     fn test_all_hypotheses() {
         let mut engine = HypothesisEngine::new();
-        engine.generate_hypothesis(
-            "h1".to_string(),
-            Domain::Epigenetics,
-            "A".to_string(),
-            0.5,
-        )
-        .unwrap();
-        engine.generate_hypothesis(
-            "h2".to_string(),
-            Domain::Epigenetics,
-            "B".to_string(),
-            0.3,
-        )
-        .unwrap();
+        engine
+            .generate_hypothesis("h1".to_string(), Domain::Epigenetics, "A".to_string(), 0.5)
+            .unwrap();
+        engine
+            .generate_hypothesis("h2".to_string(), Domain::Epigenetics, "B".to_string(), 0.3)
+            .unwrap();
         assert_eq!(engine.all_hypotheses().len(), 2);
     }
 
@@ -623,7 +624,10 @@ mod tests {
     #[test]
     fn test_domain_display() {
         assert_eq!(format!("{}", Domain::ProteinFolding), "ProteinFolding");
-        assert_eq!(format!("{}", Domain::MolecularDynamics), "MolecularDynamics");
+        assert_eq!(
+            format!("{}", Domain::MolecularDynamics),
+            "MolecularDynamics"
+        );
         assert_eq!(
             format!("{}", Domain::Custom("test".to_string())),
             "Custom:test"
@@ -633,10 +637,7 @@ mod tests {
     #[test]
     fn test_state_display() {
         assert_eq!(format!("{}", HypothesisState::Proposed), "Proposed");
-        assert_eq!(
-            format!("{}", HypothesisState::Validated),
-            "Validated"
-        );
+        assert_eq!(format!("{}", HypothesisState::Validated), "Validated");
     }
 
     #[test]

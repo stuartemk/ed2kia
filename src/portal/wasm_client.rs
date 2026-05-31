@@ -50,7 +50,11 @@ impl PortalMessage {
     /// Serialize this message to a JS `Object` for `postMessage()`.
     pub fn to_js_value(&self, payload: Option<&str>) -> Result<JsValue, JsValue> {
         let obj = js_sys::Object::new();
-        Reflect::set(&obj, &JsValue::from_str("type"), &JsValue::from_u32(*self as u32))?;
+        Reflect::set(
+            &obj,
+            &JsValue::from_str("type"),
+            &JsValue::from_u32(*self as u32),
+        )?;
         if let Some(p) = payload {
             Reflect::set(&obj, &JsValue::from_str("payload"), &JsValue::from_str(p))?;
         }
@@ -157,7 +161,11 @@ impl PortalInner {
 
     fn emit_event(&self, event_type: &str, data: &str) {
         if let Some(cb) = &self.on_event {
-            let _ = cb.call2(&JsValue::NULL, &JsValue::from_str(event_type), &JsValue::from_str(data));
+            let _ = cb.call2(
+                &JsValue::NULL,
+                &JsValue::from_str(event_type),
+                &JsValue::from_str(data),
+            );
         }
     }
 }
@@ -213,59 +221,67 @@ impl SymbioticPortal {
                 let portal_clone = self.inner.clone();
 
                 // Set up message handler
-                let closure = Closure::<dyn FnMut(MessageEvent)>::new(move |event: &MessageEvent| {
-                    let portal_inner: &mut PortalInner = portal_clone.unchecked_ref();
+                let closure =
+                    Closure::<dyn FnMut(MessageEvent)>::new(move |event: &MessageEvent| {
+                        let portal_inner: &mut PortalInner = portal_clone.unchecked_ref();
 
-                    // Parse the response from the worker
-                    if let Ok(data) = event.data().dyn_into::<js_sys::Object>() {
-                        if let Some(type_val) = Reflect::get(&data, &JsValue::from_str("type")).ok().and_then(|v| v.as_f64()) {
-                            let response_type = type_val as u8;
-                            let payload = Reflect::get(&data, &JsValue::from_str("payload"))
+                        // Parse the response from the worker
+                        if let Ok(data) = event.data().dyn_into::<js_sys::Object>() {
+                            if let Some(type_val) = Reflect::get(&data, &JsValue::from_str("type"))
                                 .ok()
-                                .and_then(|v| v.as_string())
-                                .unwrap_or_default();
+                                .and_then(|v| v.as_f64())
+                            {
+                                let response_type = type_val as u8;
+                                let payload = Reflect::get(&data, &JsValue::from_str("payload"))
+                                    .ok()
+                                    .and_then(|v| v.as_string())
+                                    .unwrap_or_default();
 
-                            match response_type {
-                                x if x == PortalResponse::Ready as u8 => {
-                                    portal_inner.health = PortalHealth::Healthy;
-                                    portal_inner.emit_event("ready", &payload);
-                                    portal_inner.emit_event("health", &portal_inner.health.to_string());
-                                    let _ = resolve.call0(&JsValue::NULL);
+                                match response_type {
+                                    x if x == PortalResponse::Ready as u8 => {
+                                        portal_inner.health = PortalHealth::Healthy;
+                                        portal_inner.emit_event("ready", &payload);
+                                        portal_inner
+                                            .emit_event("health", &portal_inner.health.to_string());
+                                        let _ = resolve.call0(&JsValue::NULL);
+                                    }
+                                    x if x == PortalResponse::ResonanceResult as u8 => {
+                                        portal_inner.emit_event("resonance", &payload);
+                                    }
+                                    x if x == PortalResponse::CeBalance as u8 => {
+                                        portal_inner.emit_event("ce_balance", &payload);
+                                    }
+                                    x if x == PortalResponse::GeiState as u8 => {
+                                        portal_inner.emit_event("gei_state", &payload);
+                                    }
+                                    x if x == PortalResponse::ResonanceStatus as u8 => {
+                                        portal_inner.emit_event("resonance_status", &payload);
+                                    }
+                                    x if x == PortalResponse::CeDeposited as u8 => {
+                                        portal_inner.emit_event("ce_deposited", &payload);
+                                    }
+                                    x if x == PortalResponse::Calibrated as u8 => {
+                                        portal_inner.emit_event("calibrated", &payload);
+                                    }
+                                    x if x == PortalResponse::Stopped as u8 => {
+                                        portal_inner.health = PortalHealth::Idle;
+                                        portal_inner.emit_event("stopped", &payload);
+                                        portal_inner
+                                            .emit_event("health", &portal_inner.health.to_string());
+                                    }
+                                    x if x == PortalResponse::Error as u8 => {
+                                        portal_inner.health = PortalHealth::Failed;
+                                        portal_inner.emit_event("error", &payload);
+                                        portal_inner
+                                            .emit_event("health", &portal_inner.health.to_string());
+                                        let _ = reject
+                                            .call1(&JsValue::NULL, &JsValue::from_str(&payload));
+                                    }
+                                    _ => {}
                                 }
-                                x if x == PortalResponse::ResonanceResult as u8 => {
-                                    portal_inner.emit_event("resonance", &payload);
-                                }
-                                x if x == PortalResponse::CeBalance as u8 => {
-                                    portal_inner.emit_event("ce_balance", &payload);
-                                }
-                                x if x == PortalResponse::GeiState as u8 => {
-                                    portal_inner.emit_event("gei_state", &payload);
-                                }
-                                x if x == PortalResponse::ResonanceStatus as u8 => {
-                                    portal_inner.emit_event("resonance_status", &payload);
-                                }
-                                x if x == PortalResponse::CeDeposited as u8 => {
-                                    portal_inner.emit_event("ce_deposited", &payload);
-                                }
-                                x if x == PortalResponse::Calibrated as u8 => {
-                                    portal_inner.emit_event("calibrated", &payload);
-                                }
-                                x if x == PortalResponse::Stopped as u8 => {
-                                    portal_inner.health = PortalHealth::Idle;
-                                    portal_inner.emit_event("stopped", &payload);
-                                    portal_inner.emit_event("health", &portal_inner.health.to_string());
-                                }
-                                x if x == PortalResponse::Error as u8 => {
-                                    portal_inner.health = PortalHealth::Failed;
-                                    portal_inner.emit_event("error", &payload);
-                                    portal_inner.emit_event("health", &portal_inner.health.to_string());
-                                    let _ = reject.call1(&JsValue::NULL, &JsValue::from_str(&payload));
-                                }
-                                _ => {}
                             }
                         }
-                    }
-                });
+                    });
 
                 // Attach the message handler to the worker
                 let _ = worker.set_onmessage(Some(closure.as_ref().unchecked_ref()));
@@ -295,14 +311,19 @@ impl SymbioticPortal {
     /// @returns Promise<void>
     pub fn send_biometric(&self, sample_json: &str) -> Result<Promise, JsValue> {
         let inner: &PortalInner = self.inner.unchecked_ref();
-        let worker = inner.worker.as_ref().ok_or(JsValue::from_str("Worker not initialized"))?;
+        let worker = inner
+            .worker
+            .as_ref()
+            .ok_or(JsValue::from_str("Worker not initialized"))?;
 
         let msg = PortalMessage::BiometricSample.to_js_value(Some(sample_json))?;
         let _ = worker.post_message(&msg);
         Ok(Promise::new_with_promise_and_rejection_handler(
             &js_sys::Promise::promise().0,
-            &Function::new_no_args("function() {}").unwrap_or_else(|_| Function::new_no_args("function() {}").unwrap()),
-        ).unwrap_or_else(|_| js_sys::Promise::promise().0.into()))
+            &Function::new_no_args("function() {}")
+                .unwrap_or_else(|_| Function::new_no_args("function() {}").unwrap()),
+        )
+        .unwrap_or_else(|_| js_sys::Promise::promise().0.into()))
     }
 
     /// Query the current CE (Compute Energy) balance.
@@ -310,14 +331,19 @@ impl SymbioticPortal {
     /// @returns Promise<void>
     pub fn query_ce_balance(&self) -> Result<Promise, JsValue> {
         let inner: &PortalInner = self.inner.unchecked_ref();
-        let worker = inner.worker.as_ref().ok_or(JsValue::from_str("Worker not initialized"))?;
+        let worker = inner
+            .worker
+            .as_ref()
+            .ok_or(JsValue::from_str("Worker not initialized"))?;
 
         let msg = PortalMessage::QueryCeBalance.to_js_value(None)?;
         let _ = worker.post_message(&msg);
         Ok(Promise::new_with_promise_and_rejection_handler(
             &js_sys::Promise::promise().0,
-            &Function::new_no_args("function() {}").unwrap_or_else(|_| Function::new_no_args("function() {}").unwrap()),
-        ).unwrap_or_else(|_| js_sys::Promise::promise().0.into()))
+            &Function::new_no_args("function() {}")
+                .unwrap_or_else(|_| Function::new_no_args("function() {}").unwrap()),
+        )
+        .unwrap_or_else(|_| js_sys::Promise::promise().0.into()))
     }
 
     /// Query the current GEI (Geometric Ethical Invariant) state.
@@ -325,14 +351,19 @@ impl SymbioticPortal {
     /// @returns Promise<void>
     pub fn query_gei_state(&self) -> Result<Promise, JsValue> {
         let inner: &PortalInner = self.inner.unchecked_ref();
-        let worker = inner.worker.as_ref().ok_or(JsValue::from_str("Worker not initialized"))?;
+        let worker = inner
+            .worker
+            .as_ref()
+            .ok_or(JsValue::from_str("Worker not initialized"))?;
 
         let msg = PortalMessage::QueryGeiState.to_js_value(None)?;
         let _ = worker.post_message(&msg);
         Ok(Promise::new_with_promise_and_rejection_handler(
             &js_sys::Promise::promise().0,
-            &Function::new_no_args("function() {}").unwrap_or_else(|_| Function::new_no_args("function() {}").unwrap()),
-        ).unwrap_or_else(|_| js_sys::Promise::promise().0.into()))
+            &Function::new_no_args("function() {}")
+                .unwrap_or_else(|_| Function::new_no_args("function() {}").unwrap()),
+        )
+        .unwrap_or_else(|_| js_sys::Promise::promise().0.into()))
     }
 
     /// Query the current Resonance status.
@@ -340,14 +371,19 @@ impl SymbioticPortal {
     /// @returns Promise<void>
     pub fn query_resonance_status(&self) -> Result<Promise, JsValue> {
         let inner: &PortalInner = self.inner.unchecked_ref();
-        let worker = inner.worker.as_ref().ok_or(JsValue::from_str("Worker not initialized"))?;
+        let worker = inner
+            .worker
+            .as_ref()
+            .ok_or(JsValue::from_str("Worker not initialized"))?;
 
         let msg = PortalMessage::QueryResonanceStatus.to_js_value(None)?;
         let _ = worker.post_message(&msg);
         Ok(Promise::new_with_promise_and_rejection_handler(
             &js_sys::Promise::promise().0,
-            &Function::new_no_args("function() {}").unwrap_or_else(|_| Function::new_no_args("function() {}").unwrap()),
-        ).unwrap_or_else(|_| js_sys::Promise::promise().0.into()))
+            &Function::new_no_args("function() {}")
+                .unwrap_or_else(|_| Function::new_no_args("function() {}").unwrap()),
+        )
+        .unwrap_or_else(|_| js_sys::Promise::promise().0.into()))
     }
 
     /// Deposit CE credits.
@@ -356,14 +392,19 @@ impl SymbioticPortal {
     /// @returns Promise<void>
     pub fn deposit_ce(&self, amount_json: &str) -> Result<Promise, JsValue> {
         let inner: &PortalInner = self.inner.unchecked_ref();
-        let worker = inner.worker.as_ref().ok_or(JsValue::from_str("Worker not initialized"))?;
+        let worker = inner
+            .worker
+            .as_ref()
+            .ok_or(JsValue::from_str("Worker not initialized"))?;
 
         let msg = PortalMessage::DepositCe.to_js_value(Some(amount_json))?;
         let _ = worker.post_message(&msg);
         Ok(Promise::new_with_promise_and_rejection_handler(
             &js_sys::Promise::promise().0,
-            &Function::new_no_args("function() {}").unwrap_or_else(|_| Function::new_no_args("function() {}").unwrap()),
-        ).unwrap_or_else(|_| js_sys::Promise::promise().0.into()))
+            &Function::new_no_args("function() {}")
+                .unwrap_or_else(|_| Function::new_no_args("function() {}").unwrap()),
+        )
+        .unwrap_or_else(|_| js_sys::Promise::promise().0.into()))
     }
 
     /// Calibrate the biometric baseline.
@@ -372,14 +413,19 @@ impl SymbioticPortal {
     /// @returns Promise<void>
     pub fn calibrate_baseline(&self, baseline_json: &str) -> Result<Promise, JsValue> {
         let inner: &PortalInner = self.inner.unchecked_ref();
-        let worker = inner.worker.as_ref().ok_or(JsValue::from_str("Worker not initialized"))?;
+        let worker = inner
+            .worker
+            .as_ref()
+            .ok_or(JsValue::from_str("Worker not initialized"))?;
 
         let msg = PortalMessage::CalibrateBaseline.to_js_value(Some(baseline_json))?;
         let _ = worker.post_message(&msg);
         Ok(Promise::new_with_promise_and_rejection_handler(
             &js_sys::Promise::promise().0,
-            &Function::new_no_args("function() {}").unwrap_or_else(|_| Function::new_no_args("function() {}").unwrap()),
-        ).unwrap_or_else(|_| js_sys::Promise::promise().0.into()))
+            &Function::new_no_args("function() {}")
+                .unwrap_or_else(|_| Function::new_no_args("function() {}").unwrap()),
+        )
+        .unwrap_or_else(|_| js_sys::Promise::promise().0.into()))
     }
 
     /// Get the current health status of the portal.
@@ -555,7 +601,9 @@ mod tests {
         assert!(!js_val.is_undefined());
 
         let msg = PortalMessage::BiometricSample;
-        let js_val = msg.to_js_value(Some(r#"{"rppg":[0.5]}"#)).expect("BiometricSample should serialize");
+        let js_val = msg
+            .to_js_value(Some(r#"{"rppg":[0.5]}"#))
+            .expect("BiometricSample should serialize");
         assert!(!js_val.is_undefined());
     }
 

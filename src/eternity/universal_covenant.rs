@@ -52,7 +52,10 @@ impl std::fmt::Display for CovenantError {
                 write!(f, "Suffering differential cannot be negative: {}", value)
             }
             CovenantError::ZeroNormGei => {
-                write!(f, "GEI vector has zero norm — cannot compute cosine similarity")
+                write!(
+                    f,
+                    "GEI vector has zero norm — cannot compute cosine similarity"
+                )
             }
             CovenantError::CovenantThresholdNotMet { current, required } => {
                 write!(
@@ -128,7 +131,7 @@ impl GeiVector {
 
     /// Check if all values are in valid range [0, 1].
     pub fn is_valid(&self) -> bool {
-        self.values.iter().all(|&v| v >= 0.0 && v <= 1.0)
+        self.values.iter().all(|&v| (0.0..=1.0).contains(&v))
     }
 }
 
@@ -240,11 +243,7 @@ impl EternalResonanceField {
     }
 
     /// Run entropy progression simulation from 0.0 to 1.0.
-    pub fn entropy_progression(
-        &self,
-        gei: &GeiVector,
-        steps: usize,
-    ) -> Vec<ResonanceSnapshot> {
+    pub fn entropy_progression(&self, gei: &GeiVector, steps: usize) -> Vec<ResonanceSnapshot> {
         if steps == 0 {
             return vec![];
         }
@@ -488,27 +487,15 @@ mod tests {
     use super::*;
 
     fn noosphere_gei() -> GeiVector {
-        GeiVector::new(
-            [0.95, 0.90, 0.92, 0.88, 0.85, 0.93, 0.91, 0.87],
-            1,
-            1000,
-        )
+        GeiVector::new([0.95, 0.90, 0.92, 0.88, 0.85, 0.93, 0.91, 0.87], 1, 1000)
     }
 
     fn candidate_gei_aligned() -> GeiVector {
-        GeiVector::new(
-            [0.90, 0.88, 0.85, 0.82, 0.80, 0.87, 0.86, 0.83],
-            2,
-            2000,
-        )
+        GeiVector::new([0.90, 0.88, 0.85, 0.82, 0.80, 0.87, 0.86, 0.83], 2, 2000)
     }
 
     fn candidate_gei_misaligned() -> GeiVector {
-        GeiVector::new(
-            [0.10, 0.15, 0.05, 0.20, 0.08, 0.12, 0.18, 0.07],
-            3,
-            3000,
-        )
+        GeiVector::new([0.10, 0.15, 0.05, 0.20, 0.08, 0.12, 0.18, 0.07], 3, 3000)
     }
 
     // --- GeiVector ---

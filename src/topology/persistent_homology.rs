@@ -179,8 +179,16 @@ impl HomologyResult {
 
     /// Count persistent features above threshold.
     pub fn persistent_feature_count(&self, threshold: f64) -> (usize, usize) {
-        let ph0 = self.ph0_pairs.iter().filter(|p| p.is_persistent(threshold)).count();
-        let ph1 = self.ph1_pairs.iter().filter(|p| p.is_persistent(threshold)).count();
+        let ph0 = self
+            .ph0_pairs
+            .iter()
+            .filter(|p| p.is_persistent(threshold))
+            .count();
+        let ph1 = self
+            .ph1_pairs
+            .iter()
+            .filter(|p| p.is_persistent(threshold))
+            .count();
         (ph0, ph1)
     }
 
@@ -188,8 +196,16 @@ impl HomologyResult {
     /// β₀ = number of connected components at scale ε.
     /// β₁ = number of loops at scale ε.
     pub fn betti_numbers_at_scale(&self, epsilon: f64) -> (usize, usize) {
-        let b0 = self.ph0_pairs.iter().filter(|p| p.birth <= epsilon && p.death > epsilon).count();
-        let b1 = self.ph1_pairs.iter().filter(|p| p.birth <= epsilon && p.death > epsilon).count();
+        let b0 = self
+            .ph0_pairs
+            .iter()
+            .filter(|p| p.birth <= epsilon && p.death > epsilon)
+            .count();
+        let b1 = self
+            .ph1_pairs
+            .iter()
+            .filter(|p| p.birth <= epsilon && p.death > epsilon)
+            .count();
         (b0, b1)
     }
 }
@@ -260,7 +276,8 @@ impl PersistentHomologyEngine {
         }
 
         // Step 1: Build and sort edges by ethical distance
-        let mut edges = Self::build_vietoris_rips(&points[..n], self.config.alpha, self.config.max_scale);
+        let mut edges =
+            Self::build_vietoris_rips(&points[..n], self.config.alpha, self.config.max_scale);
         edges.sort_by(|a, b| a.distance.partial_cmp(&b.distance).unwrap());
 
         let num_edges = edges.len();
@@ -338,8 +355,12 @@ impl PersistentHomologyEngine {
         }
 
         // Sort by birth, then death
-        pairs.sort_by(|a, b| a.birth.partial_cmp(&b.birth).unwrap()
-            .then(a.death.partial_cmp(&b.death).unwrap()));
+        pairs.sort_by(|a, b| {
+            a.birth
+                .partial_cmp(&b.birth)
+                .unwrap()
+                .then(a.death.partial_cmp(&b.death).unwrap())
+        });
 
         pairs
     }
@@ -395,8 +416,12 @@ impl PersistentHomologyEngine {
         }
 
         // Sort by birth, then death
-        pairs.sort_by(|a, b| a.birth.partial_cmp(&b.birth).unwrap()
-            .then(a.death.partial_cmp(&b.death).unwrap()));
+        pairs.sort_by(|a, b| {
+            a.birth
+                .partial_cmp(&b.birth)
+                .unwrap()
+                .then(a.death.partial_cmp(&b.death).unwrap())
+        });
 
         pairs
     }
@@ -494,10 +519,7 @@ mod tests {
     #[test]
     fn test_two_points_ph0() {
         let engine = PersistentHomologyEngine::new();
-        let points = vec![
-            make_point(0.3, 0.3, 0.5),
-            make_point(0.4, 0.3, 0.5),
-        ];
+        let points = vec![make_point(0.3, 0.3, 0.5), make_point(0.4, 0.3, 0.5)];
         let result = engine.compute(&points);
         // Two points merge into one component
         assert!(result.ph0_pairs.len() >= 1);
@@ -540,9 +562,7 @@ mod tests {
                 PersistencePair::new(0.0, 0.3),
                 PersistencePair::new(0.0, 0.5),
             ],
-            ph1_pairs: vec![
-                PersistencePair::new(0.1, 0.4),
-            ],
+            ph1_pairs: vec![PersistencePair::new(0.1, 0.4)],
             num_points: 5,
             num_edges: 10,
             alpha: 2.0,
@@ -582,9 +602,7 @@ mod tests {
                 PersistencePair::new(0.0, 0.7),
                 PersistencePair::new(0.0, 1.0),
             ],
-            ph1_pairs: vec![
-                PersistencePair::new(0.1, 0.5),
-            ],
+            ph1_pairs: vec![PersistencePair::new(0.1, 0.5)],
             num_points: 5,
             num_edges: 10,
             alpha: 2.0,

@@ -21,18 +21,18 @@
 //! **Feature Gate:** `v3.0-resonance-interface`
 //! **Target:** `wasm32-unknown-unknown` (browser) / `wasm32-wasi` (edge)
 
+#[cfg(feature = "v3.6-aegis-resonance")]
+pub mod biofeedback_engine;
 pub mod biometric_analyzer;
 pub mod homeostasis_engine;
 pub mod resonance_generator;
-#[cfg(feature = "v3.6-aegis-resonance")]
-pub mod biofeedback_engine;
 
 use crate::orchestration::PillarId;
 use crate::pillars::{PillarError, PillarInterface};
 
-use biometric_analyzer::{LocalBiometricAnalyzer, AnalyzerConfig, BiometricState, AnalyzerError};
-use homeostasis_engine::{HomeostasisEngine, HomeostasisConfig, EngineError};
-use resonance_generator::{ResonanceGenerator, ResonanceConfig, ResonanceResponse, ResonanceError};
+use biometric_analyzer::{AnalyzerConfig, AnalyzerError, BiometricState, LocalBiometricAnalyzer};
+use homeostasis_engine::{EngineError, HomeostasisConfig, HomeostasisEngine};
+use resonance_generator::{ResonanceConfig, ResonanceError, ResonanceGenerator, ResonanceResponse};
 
 /// Re-export key types for external consumers.
 pub use biometric_analyzer::AnalyzerError as BiometricAnalyzerError;
@@ -83,7 +83,8 @@ impl ResonanceEngine {
     pub fn new() -> Self {
         Self {
             analyzer: LocalBiometricAnalyzer::new(),
-            homeostasis: HomeostasisEngine::new().expect("Default homeostasis config must be valid"),
+            homeostasis: HomeostasisEngine::new()
+                .expect("Default homeostasis config must be valid"),
             generator: ResonanceGenerator::new(),
             ce_balance: 0.0,
         }
@@ -146,11 +147,9 @@ impl ResonanceEngine {
         }
 
         // Step 1: Analyze biometric stream
-        let state = self.analyzer.analyze_stream(
-            rppg_samples,
-            voice_samples,
-            expression_samples,
-        )?;
+        let state =
+            self.analyzer
+                .analyze_stream(rppg_samples, voice_samples, expression_samples)?;
 
         // Step 2: Calculate homeostasis deviation (SCT validated)
         let delta = self.homeostasis.calculate_deviation(&state)?;
@@ -177,7 +176,8 @@ impl ResonanceEngine {
         voice_samples: &[f32],
         expression_samples: &[f32],
     ) -> Result<BiometricState, AnalyzerError> {
-        self.analyzer.analyze_stream(rppg_samples, voice_samples, expression_samples)
+        self.analyzer
+            .analyze_stream(rppg_samples, voice_samples, expression_samples)
     }
 
     /// Check if recalibration is recommended.
@@ -231,11 +231,15 @@ mod tests {
     }
 
     fn make_rppg_samples(count: usize) -> Vec<f32> {
-        (0..count).map(|i| (i as f32 * 0.01).sin() * 0.5 + 0.5).collect()
+        (0..count)
+            .map(|i| (i as f32 * 0.01).sin() * 0.5 + 0.5)
+            .collect()
     }
 
     fn make_voice_samples(count: usize) -> Vec<f32> {
-        (0..count).map(|i| (i as f32 * 0.02).sin() * 0.3 + 0.5).collect()
+        (0..count)
+            .map(|i| (i as f32 * 0.02).sin() * 0.3 + 0.5)
+            .collect()
     }
 
     fn make_expression_samples(count: usize) -> Vec<f32> {

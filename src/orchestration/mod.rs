@@ -11,20 +11,25 @@
 //!
 //! **Feature Gate:** `v3.0-orchestration`
 
-mod pillar_router;
-#[cfg(all(
-    any(feature = "v1.4-sprint1", feature = "v3.0-wasm-runtime", feature = "v3.0-pillar-messaging", feature = "v3.0-privacy-guard"),
-    feature = "v2.1-sct-core"
-))]
-mod omni_node;
-#[cfg(feature = "v3.2-genesis-manifold")]
-mod symbiotic_loop;
-#[cfg(feature = "v3.5-planetary-emergence")]
-mod swarm_topology;
 #[cfg(feature = "v3.6-aegis-resonance")]
 mod aegis_healer;
 #[cfg(feature = "v3.9-noosphere-engine")]
 mod noosphere_loop;
+#[cfg(all(
+    any(
+        feature = "v1.4-sprint1",
+        feature = "v3.0-wasm-runtime",
+        feature = "v3.0-pillar-messaging",
+        feature = "v3.0-privacy-guard"
+    ),
+    feature = "v2.1-sct-core"
+))]
+mod omni_node;
+mod pillar_router;
+#[cfg(feature = "v3.5-planetary-emergence")]
+mod swarm_topology;
+#[cfg(feature = "v3.2-genesis-manifold")]
+mod symbiotic_loop;
 
 #[cfg(feature = "v4.0-snap-activation")]
 mod snap_engine;
@@ -32,25 +37,37 @@ mod snap_engine;
 #[cfg(feature = "v5.0-mainnet-genesis")]
 mod mainnet_boot;
 
-pub use pillar_router::*;
+#[cfg(feature = "v3.6-aegis-resonance")]
+pub use aegis_healer::{
+    AegisConfig, AegisError, AegisHealer, AegisSymbioticState, HealingAction, HealingResult,
+};
+#[cfg(feature = "v5.0-mainnet-genesis")]
+pub use mainnet_boot::*;
+#[cfg(feature = "v3.9-noosphere-engine")]
+pub use noosphere_loop::*;
 #[cfg(all(
-    any(feature = "v1.4-sprint1", feature = "v3.0-wasm-runtime", feature = "v3.0-pillar-messaging", feature = "v3.0-privacy-guard"),
+    any(
+        feature = "v1.4-sprint1",
+        feature = "v3.0-wasm-runtime",
+        feature = "v3.0-pillar-messaging",
+        feature = "v3.0-privacy-guard"
+    ),
     feature = "v2.1-sct-core"
 ))]
 pub use omni_node::*;
-#[cfg(feature = "v3.2-genesis-manifold")]
-pub use symbiotic_loop::*;
-#[cfg(feature = "v3.5-planetary-emergence")]
-pub use swarm_topology::*;
-#[cfg(feature = "v3.6-aegis-resonance")]
-pub use aegis_healer::{AegisConfig, AegisError, AegisHealer, HealingAction, HealingResult, AegisSymbioticState};
-#[cfg(feature = "v3.9-noosphere-engine")]
-pub use noosphere_loop::*;
+pub use pillar_router::*;
 #[cfg(feature = "v4.0-snap-activation")]
 pub use snap_engine::*;
-#[cfg(feature = "v5.0-mainnet-genesis")]
-pub use mainnet_boot::*;
+#[cfg(feature = "v3.5-planetary-emergence")]
+pub use swarm_topology::*;
+#[cfg(feature = "v3.2-genesis-manifold")]
+pub use symbiotic_loop::*;
 
 // Re-export PillarMessage for backward compatibility with E2E tests
-#[cfg(any(feature = "v1.4-sprint1", feature = "v3.0-wasm-runtime", feature = "v3.0-pillar-messaging", feature = "v3.0-privacy-guard"))]
+#[cfg(any(
+    feature = "v1.4-sprint1",
+    feature = "v3.0-wasm-runtime",
+    feature = "v3.0-pillar-messaging",
+    feature = "v3.0-privacy-guard"
+))]
 pub use crate::runtime::pillar_messaging::PillarMessage;

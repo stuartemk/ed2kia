@@ -6,7 +6,6 @@
 pub mod telomere_genesis;
 
 pub use telomere_genesis::{
-    DistributedWorkload, EpigeneticNoiseModel, SyntaxCorrection,
-    TelomereRegenerationTask, WorkloadContext, WorkloadCost, WorkloadError,
-    WorkloadResult,
+    DistributedWorkload, EpigeneticNoiseModel, SyntaxCorrection, TelomereRegenerationTask,
+    WorkloadContext, WorkloadCost, WorkloadError, WorkloadResult,
 };

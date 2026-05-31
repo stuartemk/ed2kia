@@ -217,8 +217,13 @@ impl fmt::Display for GenesisBlock {
     ce_supply: {} (cero pre-mina),
     network: {},
     version: {}
-}}" ,
-            self.hash, self.laws_hash, self.timestamp, self.ce_supply, self.network_id, self.version
+}}",
+            self.hash,
+            self.laws_hash,
+            self.timestamp,
+            self.ce_supply,
+            self.network_id,
+            self.version
         )
     }
 }

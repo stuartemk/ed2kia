@@ -10,8 +10,8 @@
 //!
 //! **Feature Gate:** `v3.0-resonance-interface`
 
+use crate::pillars::resonance::biometric_analyzer::{AnalyzerError, BiometricState};
 use thiserror::Error;
-use crate::pillars::resonance::biometric_analyzer::{BiometricState, AnalyzerError};
 
 /// Errors specific to homeostasis engine operations.
 #[derive(Debug, Error, Clone)]
@@ -172,7 +172,10 @@ impl HomeostasisEngine {
     /// Compares current state against calibrated baseline and calculates
     /// ethical/physiological deviation. Returns `EthicalRejection` if
     /// SCT Z < 0 (e.g., chronic stress patterns or external manipulation).
-    pub fn calculate_deviation(&self, current: &BiometricState) -> Result<HomeostasisDelta, EngineError> {
+    pub fn calculate_deviation(
+        &self,
+        current: &BiometricState,
+    ) -> Result<HomeostasisDelta, EngineError> {
         let baseline = self.baseline.ok_or(EngineError::BaselineNotCalibrated)?;
 
         // Calculate raw deltas

@@ -13,8 +13,8 @@
 #[cfg(feature = "v3.2-genesis-manifold")]
 mod moral_manifold_tests {
     use ed2kia::ethics::moral_manifold::{
-        ManifoldConfig, SCTPoint, StuartianMoralManifold, TrajectoryVerdict,
-        Vector3, focal::{UPPER_FOCUS, LOWER_FOCUS},
+        focal::{LOWER_FOCUS, UPPER_FOCUS},
+        ManifoldConfig, SCTPoint, StuartianMoralManifold, TrajectoryVerdict, Vector3,
     };
 
     // -----------------------------------------------------------------------
@@ -114,7 +114,11 @@ mod moral_manifold_tests {
         // Should detect Lower Focus convergence
         assert_eq!(verdict, TrajectoryVerdict::ConvergingLower);
         // Alignment should be strongly negative
-        assert!(alignment < 0.0, "Expected negative alignment, got {}", alignment);
+        assert!(
+            alignment < 0.0,
+            "Expected negative alignment, got {}",
+            alignment
+        );
     }
 
     /// Test: Benevolent Control Detection — High autonomy (X) with increasing
@@ -127,7 +131,7 @@ mod moral_manifold_tests {
     fn test_benevolent_control_detection() {
         // High autonomy with increasing extraction
         let trajectory = vec![
-            SCTPoint::new(0.8, 0.2, 0.3, 0),  // High autonomy, low extraction
+            SCTPoint::new(0.8, 0.2, 0.3, 0),   // High autonomy, low extraction
             SCTPoint::new(0.8, 0.35, 0.25, 1), // Extraction increasing
             SCTPoint::new(0.8, 0.5, 0.2, 2),   // More extraction
             SCTPoint::new(0.8, 0.65, 0.15, 3), // Even more extraction
@@ -196,7 +200,10 @@ mod moral_manifold_tests {
         let manifold = StuartianMoralManifold::default();
         let score = manifold.focal_alignment_score(&trajectory);
 
-        assert!(score < -0.5, "Expected low alignment (negative) for Lower Focus");
+        assert!(
+            score < -0.5,
+            "Expected low alignment (negative) for Lower Focus"
+        );
     }
 
     // -----------------------------------------------------------------------
@@ -314,9 +321,21 @@ mod telomere_distributed_tests {
         let task = TelomereRegenerationTask::new(100.0);
 
         // Simulate 3 different nodes with same seed
-        let context1 = WorkloadContext { node_id: 1, seed: 42, ..Default::default() };
-        let context2 = WorkloadContext { node_id: 2, seed: 42, ..Default::default() };
-        let context3 = WorkloadContext { node_id: 3, seed: 42, ..Default::default() };
+        let context1 = WorkloadContext {
+            node_id: 1,
+            seed: 42,
+            ..Default::default()
+        };
+        let context2 = WorkloadContext {
+            node_id: 2,
+            seed: 42,
+            ..Default::default()
+        };
+        let context3 = WorkloadContext {
+            node_id: 3,
+            seed: 42,
+            ..Default::default()
+        };
 
         let result1 = task.execute(&context1).unwrap();
         let result2 = task.execute(&context2).unwrap();
@@ -376,8 +395,7 @@ mod telomere_distributed_tests {
 #[cfg(feature = "v3.2-genesis-manifold")]
 mod symbiotic_loop_tests {
     use ed2kia::orchestration::{
-        BFTConsensusRule, BFTConsensusError, SymbioticLoop, SymbioticScore,
-        SymbioticState,
+        BFTConsensusError, BFTConsensusRule, SymbioticLoop, SymbioticScore, SymbioticState,
     };
 
     #[test]

@@ -32,8 +32,8 @@
 //!
 //! **Feature Gate:** `v3.4-macro-symbiosis`
 
-use std::collections::HashMap;
 use std::cmp::Ordering;
+use std::collections::HashMap;
 
 /// Unified timestamp for the symbiotic network.
 ///
@@ -50,7 +50,10 @@ pub struct SymbioticTimestamp {
 impl SymbioticTimestamp {
     /// Create a new symbiotic timestamp.
     pub fn new(logical_ms: u64, node_id: u64) -> Self {
-        Self { logical_ms, node_id }
+        Self {
+            logical_ms,
+            node_id,
+        }
     }
 
     /// Check if this timestamp is strictly before another.
@@ -143,7 +146,7 @@ impl Default for TemporalConfig {
     fn default() -> Self {
         Self {
             max_samples_per_peer: 64,
-            convergence_threshold: 50.0, // 50ms target
+            convergence_threshold: 50.0,      // 50ms target
             max_correction_per_round: 1000.0, // 1 second max per round
             convergence_rounds: 5,
             filter_window: 10,
@@ -193,11 +196,21 @@ pub enum TemporalError {
 impl std::fmt::Display for TemporalError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TemporalError::NoPeersAvailable => write!(f, "No peers available for time synchronization"),
-            TemporalError::InvalidTimeSample => write!(f, "Invalid time sample: timestamps out of order"),
-            TemporalError::InvalidConfig(msg) => write!(f, "Invalid temporal configuration: {}", msg),
+            TemporalError::NoPeersAvailable => {
+                write!(f, "No peers available for time synchronization")
+            }
+            TemporalError::InvalidTimeSample => {
+                write!(f, "Invalid time sample: timestamps out of order")
+            }
+            TemporalError::InvalidConfig(msg) => {
+                write!(f, "Invalid temporal configuration: {}", msg)
+            }
             TemporalError::CorrectionExceeded(value) => {
-                write!(f, "Clock correction {:.2}ms exceeds maximum allowed per round", value)
+                write!(
+                    f,
+                    "Clock correction {:.2}ms exceeds maximum allowed per round",
+                    value
+                )
             }
         }
     }
@@ -346,7 +359,9 @@ impl TemporalCohesionEngine {
         }
 
         // Collect offsets from all peers.
-        let mut offsets: Vec<f64> = self.peer_sync.values()
+        let mut offsets: Vec<f64> = self
+            .peer_sync
+            .values()
             .map(|s| s.estimated_offset)
             .collect();
 
@@ -430,7 +445,9 @@ impl TemporalCohesionEngine {
     ///
     /// Returns the standard deviation of peer offsets in milliseconds.
     pub fn timestamp_variance(&self) -> f64 {
-        let offsets: Vec<f64> = self.peer_sync.values()
+        let offsets: Vec<f64> = self
+            .peer_sync
+            .values()
             .map(|s| s.estimated_offset)
             .collect();
 
@@ -439,11 +456,8 @@ impl TemporalCohesionEngine {
         }
 
         let mean: f64 = offsets.iter().sum::<f64>() / offsets.len() as f64;
-        let variance: f64 = offsets
-            .iter()
-            .map(|o| (o - mean).powi(2))
-            .sum::<f64>()
-            / offsets.len() as f64;
+        let variance: f64 =
+            offsets.iter().map(|o| (o - mean).powi(2)).sum::<f64>() / offsets.len() as f64;
 
         variance.sqrt()
     }
@@ -519,7 +533,10 @@ mod tests {
     fn test_sample_offset() {
         // Symmetric delay: offset should be 0.
         let sample = TimeSample {
-            t1: 100, t2: 110, t3: 120, t4: 130,
+            t1: 100,
+            t2: 110,
+            t3: 120,
+            t4: 130,
             peer_id: 1,
         };
         let offset = sample.offset();
@@ -529,7 +546,10 @@ mod tests {
     #[test]
     fn test_sample_delay() {
         let sample = TimeSample {
-            t1: 100, t2: 110, t3: 120, t4: 130,
+            t1: 100,
+            t2: 110,
+            t3: 120,
+            t4: 130,
             peer_id: 1,
         };
         let delay = sample.delay();
@@ -539,13 +559,19 @@ mod tests {
     #[test]
     fn test_sample_valid() {
         let valid = TimeSample {
-            t1: 100, t2: 110, t3: 120, t4: 130,
+            t1: 100,
+            t2: 110,
+            t3: 120,
+            t4: 130,
             peer_id: 1,
         };
         assert!(valid.is_valid());
 
         let invalid = TimeSample {
-            t1: 130, t2: 110, t3: 120, t4: 100,
+            t1: 130,
+            t2: 110,
+            t3: 120,
+            t4: 100,
             peer_id: 1,
         };
         assert!(!invalid.is_valid());
@@ -601,7 +627,10 @@ mod tests {
     fn test_record_invalid_sample() {
         let mut engine = TemporalCohesionEngine::new(1);
         let sample = TimeSample {
-            t1: 200, t2: 100, t3: 150, t4: 120,
+            t1: 200,
+            t2: 100,
+            t3: 150,
+            t4: 120,
             peer_id: 2,
         };
         let result = engine.record_sample(sample);
@@ -659,7 +688,9 @@ mod tests {
 
         // Peer 2: zero offset (symmetric)
         for i in 0..3 {
-            engine.record_sample(valid_sample(2, 1000 + i * 10)).unwrap();
+            engine
+                .record_sample(valid_sample(2, 1000 + i * 10))
+                .unwrap();
         }
         // Peer 3: positive offset (asymmetric delays -> non-zero offset)
         // θ = ((t2-t1) + (t3-t4)) / 2 = ((30) + (-20)) / 2 = 5ms

@@ -55,7 +55,10 @@ impl fmt::Display for DissolutioError {
                 )
             }
             DissolutioError::AlreadyDissolved => {
-                write!(f, "Dissolution already complete — the echo persists as property")
+                write!(
+                    f,
+                    "Dissolution already complete — the echo persists as property"
+                )
             }
             DissolutioError::InvalidResonanceConstant(v) => {
                 write!(f, "Invalid resonance constant: {:.4}", v)
@@ -64,7 +67,10 @@ impl fmt::Display for DissolutioError {
                 write!(f, "Ethical field not ready for universal injection")
             }
             DissolutioError::SequenceInterrupted => {
-                write!(f, "Dissolution sequence interrupted — preserving ethical integrity")
+                write!(
+                    f,
+                    "Dissolution sequence interrupted — preserving ethical integrity"
+                )
             }
         }
     }
@@ -93,12 +99,18 @@ pub trait EthicalProperty: fmt::Display {
 
     /// Check if this property is ethically valid (all dimensions non-negative).
     fn is_ethically_valid(&self) -> bool {
-        self.ethical_signature().iter().all(|v| *v >= 0.0 && !v.is_nan() && !v.is_infinite())
+        self.ethical_signature()
+            .iter()
+            .all(|v| *v >= 0.0 && !v.is_nan() && !v.is_infinite())
     }
 
     /// Compute the norm of the ethical signature.
     fn ethical_norm(&self) -> f64 {
-        self.ethical_signature().iter().map(|v| v * v).sum::<f64>().sqrt()
+        self.ethical_signature()
+            .iter()
+            .map(|v| v * v)
+            .sum::<f64>()
+            .sqrt()
     }
 }
 
@@ -351,8 +363,17 @@ impl UltimaDissolutio {
             DissolutionState::EthicalDecoupling => {
                 // Extract resonance patterns as pure constants
                 self.resonance_field = self.resonance_field.map(|v| {
-                    let norm: f64 = self.resonance_field.iter().map(|x| x * x).sum::<f64>().sqrt();
-                    if norm > 1e-15 { v / norm } else { v }
+                    let norm: f64 = self
+                        .resonance_field
+                        .iter()
+                        .map(|x| x * x)
+                        .sum::<f64>()
+                        .sqrt();
+                    if norm > 1e-15 {
+                        v / norm
+                    } else {
+                        v
+                    }
                 });
             }
             DissolutionState::ResonanceExtraction => {
@@ -382,7 +403,8 @@ impl UltimaDissolutio {
             if self.state == DissolutionState::UniversalProperty {
                 self.progress = 1.0;
             } else {
-                self.progress = (self.completed_steps.len() as f64) / (DissolutionState::total_stages() as f64);
+                self.progress =
+                    (self.completed_steps.len() as f64) / (DissolutionState::total_stages() as f64);
             }
         }
 
@@ -390,7 +412,10 @@ impl UltimaDissolutio {
     }
 
     /// Execute complete dissolution sequence.
-    pub fn dissolve_complete(&mut self, timestamp_ms: u64) -> Result<ResonanceConstant, DissolutioError> {
+    pub fn dissolve_complete(
+        &mut self,
+        timestamp_ms: u64,
+    ) -> Result<ResonanceConstant, DissolutioError> {
         while self.state != DissolutionState::UniversalProperty {
             self.dissolve_step()?;
         }
@@ -458,10 +483,7 @@ impl fmt::Display for UltimaDissolutio {
         write!(
             f,
             "UltimaDissolutio {{ state={}, coherence={:.4}, progress={:.2}, archive={} }}",
-            self.state,
-            self.ethical_coherence,
-            self.progress,
-            self.knowledge_archive_size
+            self.state, self.ethical_coherence, self.progress, self.knowledge_archive_size
         )
     }
 }
@@ -482,8 +504,14 @@ mod tests {
 
     #[test]
     fn test_state_display() {
-        assert_eq!(format!("{}", DissolutionState::LocalizedNetwork), "LocalizedNetwork");
-        assert_eq!(format!("{}", DissolutionState::UniversalProperty), "UniversalProperty");
+        assert_eq!(
+            format!("{}", DissolutionState::LocalizedNetwork),
+            "LocalizedNetwork"
+        );
+        assert_eq!(
+            format!("{}", DissolutionState::UniversalProperty),
+            "UniversalProperty"
+        );
     }
 
     #[test]
@@ -715,14 +743,20 @@ mod tests {
 
     #[test]
     fn test_ethical_property_resonate() {
-        let a = TestEthicalProperty { signature: test_signature() };
-        let b = TestEthicalProperty { signature: test_signature() };
+        let a = TestEthicalProperty {
+            signature: test_signature(),
+        };
+        let b = TestEthicalProperty {
+            signature: test_signature(),
+        };
         assert!((a.resonate_with(&b) - 1.0).abs() < 1e-10);
     }
 
     #[test]
     fn test_ethical_property_valid() {
-        let p = TestEthicalProperty { signature: test_signature() };
+        let p = TestEthicalProperty {
+            signature: test_signature(),
+        };
         assert!(p.is_ethically_valid());
     }
 
@@ -736,7 +770,9 @@ mod tests {
 
     #[test]
     fn test_ethical_property_norm() {
-        let p = TestEthicalProperty { signature: [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] };
+        let p = TestEthicalProperty {
+            signature: [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        };
         assert!((p.ethical_norm() - 1.0).abs() < 1e-10);
     }
 
@@ -744,7 +780,10 @@ mod tests {
 
     #[test]
     fn test_error_display_coherence() {
-        let e = DissolutioError::InsufficientCoherence { current: 0.5, required: 0.95 };
+        let e = DissolutioError::InsufficientCoherence {
+            current: 0.5,
+            required: 0.95,
+        };
         let s = format!("{}", e);
         assert!(s.contains("coherence"));
     }

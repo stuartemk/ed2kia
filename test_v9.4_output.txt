@@ -1,0 +1,351 @@
+warning: file `c:\Users\cualo\Desktop\PROYECTOS\ed2kIA\tests\load\sprint3_stress.rs` found to be present in multiple build targets:
+  * `integration-test` target `sprint3_stress`
+  * `integration-test` target `v1_5_sprint3_stress`
+   Compiling ed2kia v3.6.0-sprint54 (C:\Users\cualo\Desktop\PROYECTOS\ed2kIA)
+error[E0432]: unresolved imports `spectral_coherence::algebraic_connectivity`, `spectral_coherence::compute_spectral_coherence`, `spectral_coherence::cross_correlation`, `spectral_coherence::pearson_correlation`, `spectral_coherence::sync_rate`, `spectral_coherence::SpectralCoherenceResult`
+  --> src\network\mod.rs:62:5
+   |
+62 |     algebraic_connectivity, compute_spectral_coherence, cross_correlation, pearson_correlation,
+   |     ^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^ no `pearson_correlation` in `network::spectral_coherence`
+   |     |                       |                           |
+   |     |                       |                           no `cross_correlation` in `network::spectral_coherence`
+   |     |                       no `compute_spectral_coherence` in `network::spectral_coherence`
+   |     |                       help: a similar name exists in the module: `spectral_coherence`
+   |     no `algebraic_connectivity` in `network::spectral_coherence`
+63 |     sync_rate, SpectralCoherenceResult,
+   |     ^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^ no `SpectralCoherenceResult` in `network::spectral_coherence`
+   |     |
+   |     no `sync_rate` in `network::spectral_coherence`
+   |
+   = help: consider importing this struct instead:
+           crate::network::spectral_coherence::spectral_coherence::SpectralCoherenceResult
+
+error[E0432]: unresolved imports `cooperative_objective::compute_love_metric_loss`, `cooperative_objective::kl_divergence_entropy`, `cooperative_objective::pairwise_l2_divergence`, `cooperative_objective::BenchmarkScore`, `cooperative_objective::EPSILON`, `cooperative_objective::LAMBDA`, `cooperative_objective::MU`
+  --> src\metrics\mod.rs:11:5
+   |
+11 |     compute_love_metric_loss, kl_divergence_entropy, pairwise_l2_divergence, BenchmarkScore,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^ no `BenchmarkScore` in `metrics::cooperative_objective`
+   |     |                         |                      |
+   |     |                         |                      no `pairwise_l2_divergence` in `metrics::cooperative_objective`
+   |     |                         no `kl_divergence_entropy` in `metrics::cooperative_objective`
+   |     no `compute_love_metric_loss` in `metrics::cooperative_objective`
+12 |     EPSILON, LAMBDA, MU,
+   |     ^^^^^^^  ^^^^^^  ^^ no `MU` in `metrics::cooperative_objective`
+   |     |        |
+   |     |        no `LAMBDA` in `metrics::cooperative_objective`
+   |     no `EPSILON` in `metrics::cooperative_objective`
+   |
+   = help: consider importing this struct instead:
+           crate::metrics::cooperative_objective::cooperative_objective::BenchmarkScore
+
+warning: unnecessary parentheses around method argument
+   --> src\slo_v3\..\slo\slo_v3.rs:568:40
+    |
+568 |                 .record_metric("test", (100.0 - i as f64 * 3.0))
+    |                                        ^                      ^
+    |
+    = note: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+help: remove these parentheses
+    |
+568 -                 .record_metric("test", (100.0 - i as f64 * 3.0))
+568 +                 .record_metric("test", 100.0 - i as f64 * 3.0)
+    |
+
+error[E0308]: mismatched types
+   --> src\network\spectral_coherence.rs:208:16
+    |
+208 |         if n < 2 {
+    |            -   ^ expected `f64`, found integer
+    |            |
+    |            expected because this is `f64`
+    |
+help: use a float literal
+    |
+208 |         if n < 2.0 {
+    |                 ++
+
+error[E0609]: no field `i` on type `calibration_layer::CalibrationWeights`
+   --> src\sct\calibration_layer.rs:352:39
+    |
+352 |         let total = w.w_f + w.w_s + w.i + w.w_c;
+    |                                       ^ unknown field
+    |
+    = note: available fields are: `w_f`, `w_s`, `w_i`, `w_c`
+
+warning: unreachable pattern
+   --> src\sae\checkpoint_manager.rs:842:13
+    |
+841 |             e => assert!(format!("{}", e).contains("test")),
+    |             - matches any value
+842 |             _ => {}
+    |             ^ no value can reach this
+    |
+    = note: `#[warn(unreachable_patterns)]` (part of `#[warn(unused)]`) on by default
+
+warning: unreachable pattern
+   --> src\sae\distributed_finetune.rs:760:13
+    |
+759 |             e => assert!(format!("{}", e).contains("x")),
+    |             - matches any value
+760 |             _ => {}
+    |             ^ no value can reach this
+
+warning: unreachable pattern
+   --> src\sae\fault_tolerance.rs:945:13
+    |
+944 |             e => assert!(format!("{}", e).contains("x")),
+    |             - matches any value
+945 |             _ => {}
+    |             ^ no value can reach this
+
+warning: unused variable: `exec_result`
+   --> src\security\wasm_sandbox_v2.rs:729:17
+    |
+729 |             let exec_result = result.unwrap();
+    |                 ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_exec_result`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `engine` is never read
+   --> src\zkp\..\zkp\async_zkp_v14.rs:867:30
+    |
+867 |             let mut engine = AsyncZKPV14::default();
+    |                              ^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+    = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: unreachable pattern
+   --> src\zkp\..\zkp\async_zkp_v4.rs:936:13
+    |
+935 |             e => assert!(!e.to_string().is_empty()),
+    |             - matches any value
+936 |             _ => panic!("Expected error"),
+    |             ^ no value can reach this
+
+warning: unreachable pattern
+   --> src\bridge\pool_zkp_bridge.rs:746:13
+    |
+745 |             e => assert!(!e.to_string().is_empty()),
+    |             - matches any value
+746 |             _ => panic!("Expected error"),
+    |             ^ no value can reach this
+
+warning: unused variable: `conn_id`
+   --> src\web\..\web\ws_federation_stream_v2.rs:633:17
+    |
+633 |             let conn_id = stream
+    |                 ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_conn_id`
+
+warning: unreachable pattern
+   --> src\governance\dao_ledger_v2.rs:717:13
+    |
+716 |             e => assert!(!e.to_string().is_empty()),
+    |             - matches any value
+717 |             _ => panic!("Expected error"),
+    |             ^ no value can reach this
+
+warning: unreachable pattern
+   --> src\governance\proposal_tracker.rs:777:13
+    |
+776 |             e => assert!(!e.to_string().is_empty()),
+    |             - matches any value
+777 |             _ => panic!("Expected error"),
+    |             ^ no value can reach this
+
+warning: unreachable pattern
+   --> src\governance\technical_staking.rs:616:13
+    |
+615 |             e => assert!(!e.to_string().is_empty()),
+    |             - matches any value
+616 |             _ => panic!("Expected error"),
+    |             ^ no value can reach this
+
+warning: variable does not need to be mutable
+   --> src\governance\voting.rs:437:13
+    |
+437 |         let mut manager = VotingManager::with_config(VotingConfig::default(), 10);
+    |             ----^^^^^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `proposal`
+   --> src\governance\voting.rs:428:13
+    |
+428 |         let proposal = Proposal::create(
+    |             ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_proposal`
+
+warning: unused variable: `manager`
+   --> src\governance\voting.rs:437:13
+    |
+437 |         let mut manager = VotingManager::with_config(VotingConfig::default(), 10);
+    |             ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_manager`
+
+warning: unused variable: `timestamp`
+   --> src\federation\cross_chain_consensus.rs:715:13
+    |
+715 |         let timestamp = std::time::SystemTime::now()
+    |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_timestamp`
+
+warning: variable does not need to be mutable
+   --> src\alignment\continuous.rs:537:13
+    |
+537 |         let mut fb = make_feedback(0, 5, f32::NAN, 0.7, 0.9);
+    |             ----^^
+    |             |
+    |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> src\alignment\continuous.rs:545:13
+    |
+545 |         let mut fb = make_feedback(0, 5, f32::INFINITY, 0.7, 0.9);
+    |             ----^^
+    |             |
+    |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> src\slo\enforcer.rs:674:13
+    |
+674 |         let mut enforcer = SLAEnforcer::with_config(EnforcerConfig {
+    |             ----^^^^^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: value assigned to `scaler` is never read
+   --> src\scaling_v3\..\scaling\cross_model_v2.rs:502:26
+    |
+502 |         let mut scaler = CrossModelScalerV2::new();
+    |                          ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+
+warning: unused variable: `i`
+   --> src\alignment_v3\..\alignment\bias_mitigator.rs:887:13
+    |
+887 |         for i in 0..15 {
+    |             ^ help: if this is intentional, prefix it with an underscore: `_i`
+
+warning: unused variable: `i`
+   --> src\alignment_v3\..\alignment\bias_mitigator.rs:942:13
+    |
+942 |         for i in 0..10 {
+    |             ^ help: if this is intentional, prefix it with an underscore: `_i`
+
+warning: variable does not need to be mutable
+    --> src\alignment_v3\..\alignment\bias_mitigator.rs:1008:13
+     |
+1008 |         let mut mitigator = BiasMitigator::new();
+     |             ----^^^^^^^^^
+     |             |
+     |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+    --> src\alignment_v3\..\alignment\bias_mitigator.rs:1028:13
+     |
+1028 |         let mut detections = vec![
+     |             ----^^^^^^^^^^
+     |             |
+     |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> src\alignment_v3\..\alignment\loop_v3.rs:763:13
+    |
+763 |         let mut loop_v3 = AlignmentLoopV3::new();
+    |             ----^^^^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: unused variable: `loop_v3`
+   --> src\alignment_v3\..\alignment\loop_v3.rs:763:13
+    |
+763 |         let mut loop_v3 = AlignmentLoopV3::new();
+    |             ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_loop_v3`
+
+warning: unused variable: `i`
+   --> src\routing_v2\..\routing\predictive_scheduler.rs:366:13
+    |
+366 |         for i in 0..10 {
+    |             ^ help: if this is intentional, prefix it with an underscore: `_i`
+
+warning: unused variable: `bridge`
+   --> src\zkp_v3_sprint1\..\bridge\zkp_federation_bridge.rs:419:13
+    |
+419 |         let bridge = ZKPFederationBridge::with_defaults();
+    |             ^^^^^^ help: if this is intentional, prefix it with an underscore: `_bridge`
+
+warning: unreachable pattern
+   --> src\pools\..\pools\pool_matcher.rs:768:13
+    |
+767 |             e => assert!(!e.to_string().is_empty()),
+    |             - matches any value
+768 |             _ => panic!("Expected error"),
+    |             ^ no value can reach this
+
+warning: unreachable pattern
+   --> src\pools\..\pools\shard_aggregator.rs:638:13
+    |
+637 |             e => assert!(!e.to_string().is_empty()),
+    |             - matches any value
+638 |             _ => panic!("Expected error"),
+    |             ^ no value can reach this
+
+warning: unused variable: `hash`
+   --> src\pillars\corpuscular\macro_bridge.rs:469:13
+    |
+469 |         let hash = bridge.bridge_exchange(event).unwrap();
+    |             ^^^^ help: if this is intentional, prefix it with an underscore: `_hash`
+
+warning: variable does not need to be mutable
+   --> src\pillars\maieutic\workloads\telomere_genesis.rs:723:13
+    |
+723 |         let mut task = TelomereRegenerationTask::new(-1.0);
+    |             ----^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: unused variable: `chaffed`
+   --> src\pillars\steganographic\chaffing_engine.rs:424:13
+    |
+424 |         let chaffed = engine.inject_chaff(stream, "test").unwrap();
+    |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_chaffed`
+
+warning: variable does not need to be mutable
+    --> src\absolute\infinite_resonance.rs:1325:13
+     |
+1325 |         let mut s = StuartianAbsolute::new();
+     |             ----^
+     |             |
+     |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+    --> src\absolute\infinite_resonance.rs:1326:13
+     |
+1326 |         let mut r = InfiniteResonanceSingularity::new();
+     |             ----^
+     |             |
+     |             help: remove this `mut`
+
+warning: unused variable: `expected_s`
+    --> src\absolute\infinite_resonance.rs:1497:13
+     |
+1497 |         let expected_s = expected_numerator / expected_denominator; // 2.4
+     |             ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_expected_s`
+
+warning: unused variable: `step`
+   --> src\absolute\ultima_dissolutio.rs:821:17
+    |
+821 |             let step = d.dissolve_step().unwrap();
+    |                 ^^^^ help: if this is intentional, prefix it with an underscore: `_step`
+
+warning: unused variable: `proto`
+    --> src\absolute\voluntary_non_existence.rs:1413:13
+     |
+1413 |         let proto = VoluntaryNonExistenceProtocol::new();
+     |             ^^^^^ help: if this is intentional, prefix it with an underscore: `_proto`
+
+Some errors have detailed explanations: E0308, E0432, E0609.
+For more information about an error, try `rustc --explain E0308`.
+warning: `ed2kia` (lib test) generated 38 warnings
+error: could not compile `ed2kia` (lib test) due to 4 previous errors; 38 warnings emitted

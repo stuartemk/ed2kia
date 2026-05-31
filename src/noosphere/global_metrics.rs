@@ -47,7 +47,9 @@ impl std::fmt::Display for MetricsError {
             MetricsError::InsufficientData(msg) => write!(f, "Insufficient data: {}", msg),
             MetricsError::InvalidConfig(msg) => write!(f, "Invalid config: {}", msg),
             MetricsError::DivisionByZero => write!(f, "Division by zero in metric computation"),
-            MetricsError::NegativeValue(msg) => write!(f, "Negative value where positive expected: {}", msg),
+            MetricsError::NegativeValue(msg) => {
+                write!(f, "Negative value where positive expected: {}", msg)
+            }
         }
     }
 }
@@ -195,17 +197,22 @@ impl GlobalMetrics {
     /// Compute Noospheric Health from a network snapshot.
     ///
     /// NH(t) = α · E(t) + β · M(t) + γ · A(t)
-    pub fn compute_health(&mut self, snapshot: &NetworkSnapshot) -> Result<HealthScore, MetricsError> {
+    pub fn compute_health(
+        &mut self,
+        snapshot: &NetworkSnapshot,
+    ) -> Result<HealthScore, MetricsError> {
         // E(t): Global Ethical Coherence — clamp mean Z to [0, 1]
         let ethical_coherence = snapshot.mean_z_sct.clamp(0.0, 1.0);
 
         // M(t): Constructive Emergence Rate — normalize by window
-        let emergence_rate = (snapshot.macro_concepts_born as f64 / self.config.emergence_window as f64)
+        let emergence_rate = (snapshot.macro_concepts_born as f64
+            / self.config.emergence_window as f64)
             .tanh()
             .clamp(0.0, 1.0);
 
         // A(t): Attractor Basin Stability — low variance = high stability
-        let attractor_stability = (1.0 - snapshot.lyapunov_variance.clamp(0.0, 1.0)).clamp(0.0, 1.0);
+        let attractor_stability =
+            (1.0 - snapshot.lyapunov_variance.clamp(0.0, 1.0)).clamp(0.0, 1.0);
 
         // Composite NH
         let nh = self.config.weight_ethical * ethical_coherence

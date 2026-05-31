@@ -224,11 +224,7 @@ impl HophEngine {
                         } else {
                             e2.vertices[1]
                         };
-                        let mut tri = [
-                            e1.vertices[0],
-                            e1.vertices[1],
-                            third,
-                        ];
+                        let mut tri = [e1.vertices[0], e1.vertices[1], third];
                         // Check third edge exists.
                         tri.sort();
                         let e_ab = Edge::new(tri[0], tri[1]);
@@ -411,12 +407,27 @@ mod tests {
     fn test_insufficient_points() {
         let engine = HophEngine::new();
         let points = vec![
-            Point { x: 0.0, y: 0.0, z: 0.0 },
-            Point { x: 1.0, y: 0.0, z: 0.0 },
-            Point { x: 0.0, y: 1.0, z: 0.0 },
+            Point {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            Point {
+                x: 1.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            Point {
+                x: 0.0,
+                y: 1.0,
+                z: 0.0,
+            },
         ];
         match engine.compute_beta2(&points) {
-            Err(HophError::InsufficientPoints { actual: 3, required: 4 }) => {},
+            Err(HophError::InsufficientPoints {
+                actual: 3,
+                required: 4,
+            }) => {}
             other => panic!("Expected InsufficientPoints, got {:?}", other),
         }
     }
@@ -454,22 +465,41 @@ mod tests {
 
     #[test]
     fn test_point_distance() {
-        let p1 = Point { x: 0.0, y: 0.0, z: 0.0 };
-        let p2 = Point { x: 1.0, y: 0.0, z: 0.0 };
+        let p1 = Point {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        };
+        let p2 = Point {
+            x: 1.0,
+            y: 0.0,
+            z: 0.0,
+        };
         assert!((p1.distance(&p2) - 1.0).abs() < 1e-10);
     }
 
     #[test]
     fn test_point_distance_3d() {
-        let p1 = Point { x: 0.0, y: 0.0, z: 0.0 };
-        let p2 = Point { x: 1.0, y: 1.0, z: 1.0 };
+        let p1 = Point {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        };
+        let p2 = Point {
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+        };
         let expected = (3.0_f64).sqrt();
         assert!((p1.distance(&p2) - expected).abs() < 1e-10);
     }
 
     #[test]
     fn test_persistence_pair() {
-        let pair = PersistencePair { birth: 0.5, death: 1.5 };
+        let pair = PersistencePair {
+            birth: 0.5,
+            death: 1.5,
+        };
         assert!((pair.persistence() - 1.0).abs() < 1e-10);
     }
 

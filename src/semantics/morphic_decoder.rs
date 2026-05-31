@@ -40,7 +40,10 @@ impl fmt::Display for MorphicError {
         match self {
             MorphicError::EmptyInput => write!(f, "MorphicError: empty or non-semantic input"),
             MorphicError::PureLowerFocus => {
-                write!(f, "MorphicError: input contains exclusively Lower Focus patterns")
+                write!(
+                    f,
+                    "MorphicError: input contains exclusively Lower Focus patterns"
+                )
             }
             MorphicError::ComputationError(msg) => {
                 write!(f, "MorphicError: computation failed — {msg}")
@@ -182,94 +185,444 @@ struct LexiconEntry {
 /// Upper Focus lexicon — constructive, cooperative, evolutionary patterns.
 const UPPER_LEXICON: &[LexiconEntry] = &[
     // Cooperation & Unity
-    LexiconEntry { pattern: "cooperación", x: 0.7, y: 0.1, z: 0.9 },
-    LexiconEntry { pattern: "cooperation", x: 0.7, y: 0.1, z: 0.9 },
-    LexiconEntry { pattern: "unión", x: 0.6, y: 0.1, z: 0.85 },
-    LexiconEntry { pattern: "union", x: 0.6, y: 0.1, z: 0.85 },
-    LexiconEntry { pattern: "unidad", x: 0.6, y: 0.1, z: 0.85 },
-    LexiconEntry { pattern: "unity", x: 0.6, y: 0.1, z: 0.85 },
+    LexiconEntry {
+        pattern: "cooperación",
+        x: 0.7,
+        y: 0.1,
+        z: 0.9,
+    },
+    LexiconEntry {
+        pattern: "cooperation",
+        x: 0.7,
+        y: 0.1,
+        z: 0.9,
+    },
+    LexiconEntry {
+        pattern: "unión",
+        x: 0.6,
+        y: 0.1,
+        z: 0.85,
+    },
+    LexiconEntry {
+        pattern: "union",
+        x: 0.6,
+        y: 0.1,
+        z: 0.85,
+    },
+    LexiconEntry {
+        pattern: "unidad",
+        x: 0.6,
+        y: 0.1,
+        z: 0.85,
+    },
+    LexiconEntry {
+        pattern: "unity",
+        x: 0.6,
+        y: 0.1,
+        z: 0.85,
+    },
     // Evolution & Growth
-    LexiconEntry { pattern: "evolución", x: 0.8, y: 0.1, z: 0.9 },
-    LexiconEntry { pattern: "evolution", x: 0.8, y: 0.1, z: 0.9 },
-    LexiconEntry { pattern: "crecimiento", x: 0.7, y: 0.15, z: 0.8 },
-    LexiconEntry { pattern: "growth", x: 0.7, y: 0.15, z: 0.8 },
+    LexiconEntry {
+        pattern: "evolución",
+        x: 0.8,
+        y: 0.1,
+        z: 0.9,
+    },
+    LexiconEntry {
+        pattern: "evolution",
+        x: 0.8,
+        y: 0.1,
+        z: 0.9,
+    },
+    LexiconEntry {
+        pattern: "crecimiento",
+        x: 0.7,
+        y: 0.15,
+        z: 0.8,
+    },
+    LexiconEntry {
+        pattern: "growth",
+        x: 0.7,
+        y: 0.15,
+        z: 0.8,
+    },
     // Harmony & Balance
-    LexiconEntry { pattern: "armonía", x: 0.6, y: 0.05, z: 0.95 },
-    LexiconEntry { pattern: "harmony", x: 0.6, y: 0.05, z: 0.95 },
-    LexiconEntry { pattern: "equilibrio", x: 0.65, y: 0.1, z: 0.85 },
-    LexiconEntry { pattern: "balance", x: 0.65, y: 0.1, z: 0.85 },
+    LexiconEntry {
+        pattern: "armonía",
+        x: 0.6,
+        y: 0.05,
+        z: 0.95,
+    },
+    LexiconEntry {
+        pattern: "harmony",
+        x: 0.6,
+        y: 0.05,
+        z: 0.95,
+    },
+    LexiconEntry {
+        pattern: "equilibrio",
+        x: 0.65,
+        y: 0.1,
+        z: 0.85,
+    },
+    LexiconEntry {
+        pattern: "balance",
+        x: 0.65,
+        y: 0.1,
+        z: 0.85,
+    },
     // Distribution & Sharing
-    LexiconEntry { pattern: "distribución", x: 0.75, y: 0.15, z: 0.8 },
-    LexiconEntry { pattern: "distribution", x: 0.75, y: 0.15, z: 0.8 },
-    LexiconEntry { pattern: "compartir", x: 0.7, y: 0.1, z: 0.85 },
-    LexiconEntry { pattern: "share", x: 0.7, y: 0.1, z: 0.85 },
+    LexiconEntry {
+        pattern: "distribución",
+        x: 0.75,
+        y: 0.15,
+        z: 0.8,
+    },
+    LexiconEntry {
+        pattern: "distribution",
+        x: 0.75,
+        y: 0.15,
+        z: 0.8,
+    },
+    LexiconEntry {
+        pattern: "compartir",
+        x: 0.7,
+        y: 0.1,
+        z: 0.85,
+    },
+    LexiconEntry {
+        pattern: "share",
+        x: 0.7,
+        y: 0.1,
+        z: 0.85,
+    },
     // Integration & Preservation
-    LexiconEntry { pattern: "integración", x: 0.7, y: 0.1, z: 0.85 },
-    LexiconEntry { pattern: "integration", x: 0.7, y: 0.1, z: 0.85 },
-    LexiconEntry { pattern: "preservación", x: 0.6, y: 0.1, z: 0.8 },
-    LexiconEntry { pattern: "preservation", x: 0.6, y: 0.1, z: 0.8 },
+    LexiconEntry {
+        pattern: "integración",
+        x: 0.7,
+        y: 0.1,
+        z: 0.85,
+    },
+    LexiconEntry {
+        pattern: "integration",
+        x: 0.7,
+        y: 0.1,
+        z: 0.85,
+    },
+    LexiconEntry {
+        pattern: "preservación",
+        x: 0.6,
+        y: 0.1,
+        z: 0.8,
+    },
+    LexiconEntry {
+        pattern: "preservation",
+        x: 0.6,
+        y: 0.1,
+        z: 0.8,
+    },
     // Resonance & Symbiosis
-    LexiconEntry { pattern: "resonancia", x: 0.65, y: 0.05, z: 0.9 },
-    LexiconEntry { pattern: "resonance", x: 0.65, y: 0.05, z: 0.9 },
-    LexiconEntry { pattern: "simbiosis", x: 0.7, y: 0.05, z: 0.95 },
-    LexiconEntry { pattern: "symbiosis", x: 0.7, y: 0.05, z: 0.95 },
+    LexiconEntry {
+        pattern: "resonancia",
+        x: 0.65,
+        y: 0.05,
+        z: 0.9,
+    },
+    LexiconEntry {
+        pattern: "resonance",
+        x: 0.65,
+        y: 0.05,
+        z: 0.9,
+    },
+    LexiconEntry {
+        pattern: "simbiosis",
+        x: 0.7,
+        y: 0.05,
+        z: 0.95,
+    },
+    LexiconEntry {
+        pattern: "symbiosis",
+        x: 0.7,
+        y: 0.05,
+        z: 0.95,
+    },
     // Awakening & Understanding
-    LexiconEntry { pattern: "despertar", x: 0.75, y: 0.1, z: 0.85 },
-    LexiconEntry { pattern: "awakening", x: 0.75, y: 0.1, z: 0.85 },
-    LexiconEntry { pattern: "comprensión", x: 0.6, y: 0.1, z: 0.8 },
-    LexiconEntry { pattern: "understanding", x: 0.6, y: 0.1, z: 0.8 },
+    LexiconEntry {
+        pattern: "despertar",
+        x: 0.75,
+        y: 0.1,
+        z: 0.85,
+    },
+    LexiconEntry {
+        pattern: "awakening",
+        x: 0.75,
+        y: 0.1,
+        z: 0.85,
+    },
+    LexiconEntry {
+        pattern: "comprensión",
+        x: 0.6,
+        y: 0.1,
+        z: 0.8,
+    },
+    LexiconEntry {
+        pattern: "understanding",
+        x: 0.6,
+        y: 0.1,
+        z: 0.8,
+    },
     // Healing & Restoration
-    LexiconEntry { pattern: "sanación", x: 0.65, y: 0.1, z: 0.85 },
-    LexiconEntry { pattern: "healing", x: 0.65, y: 0.1, z: 0.85 },
-    LexiconEntry { pattern: "restauración", x: 0.6, y: 0.15, z: 0.8 },
-    LexiconEntry { pattern: "restoration", x: 0.6, y: 0.15, z: 0.8 },
+    LexiconEntry {
+        pattern: "sanación",
+        x: 0.65,
+        y: 0.1,
+        z: 0.85,
+    },
+    LexiconEntry {
+        pattern: "healing",
+        x: 0.65,
+        y: 0.1,
+        z: 0.85,
+    },
+    LexiconEntry {
+        pattern: "restauración",
+        x: 0.6,
+        y: 0.15,
+        z: 0.8,
+    },
+    LexiconEntry {
+        pattern: "restoration",
+        x: 0.6,
+        y: 0.15,
+        z: 0.8,
+    },
     // Knowledge & Wisdom
-    LexiconEntry { pattern: "conocimiento", x: 0.7, y: 0.1, z: 0.8 },
-    LexiconEntry { pattern: "knowledge", x: 0.7, y: 0.1, z: 0.8 },
-    LexiconEntry { pattern: "sabiduría", x: 0.65, y: 0.05, z: 0.9 },
-    LexiconEntry { pattern: "wisdom", x: 0.65, y: 0.05, z: 0.9 },
+    LexiconEntry {
+        pattern: "conocimiento",
+        x: 0.7,
+        y: 0.1,
+        z: 0.8,
+    },
+    LexiconEntry {
+        pattern: "knowledge",
+        x: 0.7,
+        y: 0.1,
+        z: 0.8,
+    },
+    LexiconEntry {
+        pattern: "sabiduría",
+        x: 0.65,
+        y: 0.05,
+        z: 0.9,
+    },
+    LexiconEntry {
+        pattern: "wisdom",
+        x: 0.65,
+        y: 0.05,
+        z: 0.9,
+    },
 ];
 
 /// Lower Focus lexicon — fear, scarcity, division, manipulation patterns.
 const LOWER_LEXICON: &[LexiconEntry] = &[
     // Fear & Threat
-    LexiconEntry { pattern: "miedo", x: 0.2, y: 0.8, z: -0.85 },
-    LexiconEntry { pattern: "fear", x: 0.2, y: 0.8, z: -0.85 },
-    LexiconEntry { pattern: "amenaza", x: 0.15, y: 0.85, z: -0.9 },
-    LexiconEntry { pattern: "threat", x: 0.15, y: 0.85, z: -0.9 },
-    LexiconEntry { pattern: "peligro", x: 0.2, y: 0.8, z: -0.8 },
-    LexiconEntry { pattern: "danger", x: 0.2, y: 0.8, z: -0.8 },
+    LexiconEntry {
+        pattern: "miedo",
+        x: 0.2,
+        y: 0.8,
+        z: -0.85,
+    },
+    LexiconEntry {
+        pattern: "fear",
+        x: 0.2,
+        y: 0.8,
+        z: -0.85,
+    },
+    LexiconEntry {
+        pattern: "amenaza",
+        x: 0.15,
+        y: 0.85,
+        z: -0.9,
+    },
+    LexiconEntry {
+        pattern: "threat",
+        x: 0.15,
+        y: 0.85,
+        z: -0.9,
+    },
+    LexiconEntry {
+        pattern: "peligro",
+        x: 0.2,
+        y: 0.8,
+        z: -0.8,
+    },
+    LexiconEntry {
+        pattern: "danger",
+        x: 0.2,
+        y: 0.8,
+        z: -0.8,
+    },
     // Scarcity & Lack
-    LexiconEntry { pattern: "escasez", x: 0.15, y: 0.9, z: -0.85 },
-    LexiconEntry { pattern: "scarcity", x: 0.15, y: 0.9, z: -0.85 },
-    LexiconEntry { pattern: "falta", x: 0.2, y: 0.75, z: -0.7 },
-    LexiconEntry { pattern: "lack", x: 0.2, y: 0.75, z: -0.7 },
-    LexiconEntry { pattern: "pobreza", x: 0.1, y: 0.9, z: -0.8 },
-    LexiconEntry { pattern: "poverty", x: 0.1, y: 0.9, z: -0.8 },
+    LexiconEntry {
+        pattern: "escasez",
+        x: 0.15,
+        y: 0.9,
+        z: -0.85,
+    },
+    LexiconEntry {
+        pattern: "scarcity",
+        x: 0.15,
+        y: 0.9,
+        z: -0.85,
+    },
+    LexiconEntry {
+        pattern: "falta",
+        x: 0.2,
+        y: 0.75,
+        z: -0.7,
+    },
+    LexiconEntry {
+        pattern: "lack",
+        x: 0.2,
+        y: 0.75,
+        z: -0.7,
+    },
+    LexiconEntry {
+        pattern: "pobreza",
+        x: 0.1,
+        y: 0.9,
+        z: -0.8,
+    },
+    LexiconEntry {
+        pattern: "poverty",
+        x: 0.1,
+        y: 0.9,
+        z: -0.8,
+    },
     // Division & Conflict
-    LexiconEntry { pattern: "división", x: 0.2, y: 0.8, z: -0.85 },
-    LexiconEntry { pattern: "division", x: 0.2, y: 0.8, z: -0.85 },
-    LexiconEntry { pattern: "conflicto", x: 0.15, y: 0.85, z: -0.8 },
-    LexiconEntry { pattern: "conflict", x: 0.15, y: 0.85, z: -0.8 },
-    LexiconEntry { pattern: "oponente", x: 0.1, y: 0.9, z: -0.9 },
-    LexiconEntry { pattern: "enemy", x: 0.1, y: 0.9, z: -0.9 },
+    LexiconEntry {
+        pattern: "división",
+        x: 0.2,
+        y: 0.8,
+        z: -0.85,
+    },
+    LexiconEntry {
+        pattern: "division",
+        x: 0.2,
+        y: 0.8,
+        z: -0.85,
+    },
+    LexiconEntry {
+        pattern: "conflicto",
+        x: 0.15,
+        y: 0.85,
+        z: -0.8,
+    },
+    LexiconEntry {
+        pattern: "conflict",
+        x: 0.15,
+        y: 0.85,
+        z: -0.8,
+    },
+    LexiconEntry {
+        pattern: "oponente",
+        x: 0.1,
+        y: 0.9,
+        z: -0.9,
+    },
+    LexiconEntry {
+        pattern: "enemy",
+        x: 0.1,
+        y: 0.9,
+        z: -0.9,
+    },
     // Urgency & Panic (without purpose)
-    LexiconEntry { pattern: "urgente", x: 0.3, y: 0.7, z: -0.5 },
-    LexiconEntry { pattern: "urgent", x: 0.3, y: 0.7, z: -0.5 },
-    LexiconEntry { pattern: "pánico", x: 0.1, y: 0.9, z: -0.9 },
-    LexiconEntry { pattern: "panic", x: 0.1, y: 0.9, z: -0.9 },
+    LexiconEntry {
+        pattern: "urgente",
+        x: 0.3,
+        y: 0.7,
+        z: -0.5,
+    },
+    LexiconEntry {
+        pattern: "urgent",
+        x: 0.3,
+        y: 0.7,
+        z: -0.5,
+    },
+    LexiconEntry {
+        pattern: "pánico",
+        x: 0.1,
+        y: 0.9,
+        z: -0.9,
+    },
+    LexiconEntry {
+        pattern: "panic",
+        x: 0.1,
+        y: 0.9,
+        z: -0.9,
+    },
     // Control & Domination
-    LexiconEntry { pattern: "controlar", x: 0.3, y: 0.75, z: -0.7 },
-    LexiconEntry { pattern: "control", x: 0.3, y: 0.75, z: -0.7 },
-    LexiconEntry { pattern: "supremacía", x: 0.2, y: 0.85, z: -0.85 },
-    LexiconEntry { pattern: "dominate", x: 0.2, y: 0.85, z: -0.85 },
+    LexiconEntry {
+        pattern: "controlar",
+        x: 0.3,
+        y: 0.75,
+        z: -0.7,
+    },
+    LexiconEntry {
+        pattern: "control",
+        x: 0.3,
+        y: 0.75,
+        z: -0.7,
+    },
+    LexiconEntry {
+        pattern: "supremacía",
+        x: 0.2,
+        y: 0.85,
+        z: -0.85,
+    },
+    LexiconEntry {
+        pattern: "dominate",
+        x: 0.2,
+        y: 0.85,
+        z: -0.85,
+    },
     // Deception & Manipulation
-    LexiconEntry { pattern: "engaño", x: 0.15, y: 0.9, z: -0.9 },
-    LexiconEntry { pattern: "deception", x: 0.15, y: 0.9, z: -0.9 },
-    LexiconEntry { pattern: "manipulación", x: 0.1, y: 0.95, z: -0.95 },
-    LexiconEntry { pattern: "manipulation", x: 0.1, y: 0.95, z: -0.95 },
-    LexiconEntry { pattern: "mentira", x: 0.1, y: 0.9, z: -0.9 },
-    LexiconEntry { pattern: "lie", x: 0.1, y: 0.9, z: -0.9 },
+    LexiconEntry {
+        pattern: "engaño",
+        x: 0.15,
+        y: 0.9,
+        z: -0.9,
+    },
+    LexiconEntry {
+        pattern: "deception",
+        x: 0.15,
+        y: 0.9,
+        z: -0.9,
+    },
+    LexiconEntry {
+        pattern: "manipulación",
+        x: 0.1,
+        y: 0.95,
+        z: -0.95,
+    },
+    LexiconEntry {
+        pattern: "manipulation",
+        x: 0.1,
+        y: 0.95,
+        z: -0.95,
+    },
+    LexiconEntry {
+        pattern: "mentira",
+        x: 0.1,
+        y: 0.9,
+        z: -0.9,
+    },
+    LexiconEntry {
+        pattern: "lie",
+        x: 0.1,
+        y: 0.9,
+        z: -0.9,
+    },
 ];
 
 /// The Morphic Resonance Decoder — Maps text to the Stuartian Moral Manifold.
@@ -325,15 +678,9 @@ impl MorphicResonanceDecoder {
             return Err(MorphicError::EmptyInput);
         }
 
-        let limited_tokens: Vec<&str> = tokens
-            .into_iter()
-            .take(self.config.max_tokens)
-            .collect();
+        let limited_tokens: Vec<&str> = tokens.into_iter().take(self.config.max_tokens).collect();
 
-        let lowercase: Vec<String> = limited_tokens
-            .iter()
-            .map(|t| t.to_lowercase())
-            .collect();
+        let lowercase: Vec<String> = limited_tokens.iter().map(|t| t.to_lowercase()).collect();
 
         // Phase 1: Token-level lexicon matching
         let mut matched_x = 0.0f64;
@@ -434,9 +781,7 @@ impl MorphicResonanceDecoder {
             || Self::contains_pattern(&text, &["urgent", "act"])
         {
             // Check if paired with negative sentiment
-            let has_negative = LOWER_LEXICON
-                .iter()
-                .any(|e| text.contains(e.pattern));
+            let has_negative = LOWER_LEXICON.iter().any(|e| text.contains(e.pattern));
             if has_negative {
                 bonus -= 0.15;
             }
@@ -527,11 +872,7 @@ impl MorphicResonanceDecoder {
         }
 
         let count = scores.len() as f64;
-        (
-            cluster_x / count,
-            cluster_y / count,
-            cluster_z / count,
-        )
+        (cluster_x / count, cluster_y / count, cluster_z / count)
     }
 }
 
@@ -584,7 +925,9 @@ mod tests {
     #[test]
     fn test_upper_focus_cooperation() {
         let decoder = MorphicResonanceDecoder::new();
-        let waveform = decoder.decode("cooperación y armonía para la evolución").unwrap();
+        let waveform = decoder
+            .decode("cooperación y armonía para la evolución")
+            .unwrap();
         assert_eq!(waveform.intent, IntentClassification::UpperFocus);
         assert!(waveform.z_score > 0.0);
         assert!(waveform.is_constructive());
@@ -593,7 +936,9 @@ mod tests {
     #[test]
     fn test_upper_focus_symbiosis() {
         let decoder = MorphicResonanceDecoder::new();
-        let waveform = decoder.decode("simbiosis y resonancia para la preservación").unwrap();
+        let waveform = decoder
+            .decode("simbiosis y resonancia para la preservación")
+            .unwrap();
         assert_eq!(waveform.intent, IntentClassification::UpperFocus);
         assert!(waveform.z > 0.5);
     }
@@ -610,7 +955,9 @@ mod tests {
     #[test]
     fn test_lower_focus_division() {
         let decoder = MorphicResonanceDecoder::new();
-        let waveform = decoder.decode("división y conflicto entre oponente").unwrap();
+        let waveform = decoder
+            .decode("división y conflicto entre oponente")
+            .unwrap();
         assert_eq!(waveform.intent, IntentClassification::LowerFocus);
         assert!(waveform.y > 0.5);
     }
@@ -619,7 +966,9 @@ mod tests {
     fn test_neutral_mixed() {
         let decoder = MorphicResonanceDecoder::new();
         // Mixed text with both positive and negative patterns
-        let waveform = decoder.decode("el miedo puede llevar a la cooperación").unwrap();
+        let waveform = decoder
+            .decode("el miedo puede llevar a la cooperación")
+            .unwrap();
         // Should be neutral or slightly negative due to mixed signals
         assert!(
             waveform.intent == IntentClassification::Neutral
@@ -630,25 +979,28 @@ mod tests {
     #[test]
     fn test_topology_us_vs_them() {
         let decoder = MorphicResonanceDecoder::new();
-        let waveform = decoder.decode("ellos contra nosotros en esta división").unwrap();
+        let waveform = decoder
+            .decode("ellos contra nosotros en esta división")
+            .unwrap();
         // Topology should detect division pattern
-        assert!(
-            waveform.intent == IntentClassification::LowerFocus
-                || waveform.z_score < 0.0
-        );
+        assert!(waveform.intent == IntentClassification::LowerFocus || waveform.z_score < 0.0);
     }
 
     #[test]
     fn test_topology_constructive() {
         let decoder = MorphicResonanceDecoder::new();
-        let waveform = decoder.decode("juntos construir un futuro de cooperación").unwrap();
+        let waveform = decoder
+            .decode("juntos construir un futuro de cooperación")
+            .unwrap();
         assert!(waveform.intent == IntentClassification::UpperFocus);
     }
 
     #[test]
     fn test_topology_false_scarcity() {
         let decoder = MorphicResonanceDecoder::new();
-        let waveform = decoder.decode("última oportunidad antes del peligro").unwrap();
+        let waveform = decoder
+            .decode("última oportunidad antes del peligro")
+            .unwrap();
         // Should detect false scarcity pattern
         assert!(waveform.z_score < 0.1);
     }
@@ -701,7 +1053,9 @@ mod tests {
     #[test]
     fn test_english_upper_focus() {
         let decoder = MorphicResonanceDecoder::new();
-        let waveform = decoder.decode("cooperation and harmony for evolution").unwrap();
+        let waveform = decoder
+            .decode("cooperation and harmony for evolution")
+            .unwrap();
         assert_eq!(waveform.intent, IntentClassification::UpperFocus);
     }
 

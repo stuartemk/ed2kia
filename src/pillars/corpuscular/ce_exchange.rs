@@ -59,13 +59,23 @@ impl std::fmt::Display for ExchangeError {
                 write!(f, "Replay detected: nonce {} already redeemed", nonce)
             }
             ExchangeError::TimestampDriftExceeded(drift) => {
-                write!(f, "Timestamp drift {}s exceeds maximum {}s", drift, MAX_VOUCHER_DRIFT_SECS)
+                write!(
+                    f,
+                    "Timestamp drift {}s exceeds maximum {}s",
+                    drift, MAX_VOUCHER_DRIFT_SECS
+                )
             }
             ExchangeError::InvalidSignature => write!(f, "Invalid Ed25519 signature on voucher"),
             ExchangeError::CEWindowLimitExceeded => {
-                write!(f, "CE emission limit ({:.0}) exceeded for current window", MAX_CE_PER_WINDOW)
+                write!(
+                    f,
+                    "CE emission limit ({:.0}) exceeded for current window",
+                    MAX_CE_PER_WINDOW
+                )
             }
-            ExchangeError::UnsupportedResource => write!(f, "Resource type not supported by Corpuscular Bridge"),
+            ExchangeError::UnsupportedResource => {
+                write!(f, "Resource type not supported by Corpuscular Bridge")
+            }
             ExchangeError::HardwareDispatchFailed(msg) => {
                 write!(f, "Hardware dispatch failed: {}", msg)
             }
@@ -189,7 +199,9 @@ impl CEExchangeEngine {
 
         // Evict oldest nonces if over limit.
         if self.redeemed_nonces.len() > self.max_nonces {
-            if let Some(oldest) = self.redeemed_nonces.iter()
+            if let Some(oldest) = self
+                .redeemed_nonces
+                .iter()
                 .min_by_key(|&(_, ts)| ts)
                 .map(|(n, _)| *n)
             {
@@ -293,7 +305,7 @@ mod tests {
     fn test_mint_voucher_zero_ce_rejected() {
         let mut engine = CEExchangeEngine::new();
         match engine.mint_voucher(0.0, make_resource(), 0.5, 1) {
-            Err(ExchangeError::InvalidCEAmount(0.0)) => {}, // Expected
+            Err(ExchangeError::InvalidCEAmount(0.0)) => {} // Expected
             other => panic!("Expected InvalidCEAmount, got {:?}", other),
         }
     }
@@ -302,7 +314,7 @@ mod tests {
     fn test_mint_voucher_negative_ce_rejected() {
         let mut engine = CEExchangeEngine::new();
         match engine.mint_voucher(-5.0, make_resource(), 0.5, 1) {
-            Err(ExchangeError::InvalidCEAmount(-5.0)) => {}, // Expected
+            Err(ExchangeError::InvalidCEAmount(-5.0)) => {} // Expected
             other => panic!("Expected InvalidCEAmount, got {:?}", other),
         }
     }
@@ -311,7 +323,7 @@ mod tests {
     fn test_mint_voucher_negative_z_rejected() {
         let mut engine = CEExchangeEngine::new();
         match engine.mint_voucher(10.0, make_resource(), -0.3, 1) {
-            Err(ExchangeError::NegativeZScore(z)) if z < 0.0 => {}, // Expected
+            Err(ExchangeError::NegativeZScore(z)) if z < 0.0 => {} // Expected
             other => panic!("Expected NegativeZScore, got {:?}", other),
         }
     }
@@ -336,7 +348,7 @@ mod tests {
             signature: vec![],
         };
         match engine.redeem_physical_resource(&voucher, vec![]) {
-            Err(ExchangeError::InvalidSignature) => {}, // Expected
+            Err(ExchangeError::InvalidSignature) => {} // Expected
             other => panic!("Expected InvalidSignature, got {:?}", other),
         }
     }
@@ -354,7 +366,7 @@ mod tests {
         // This should exceed the 1000 CE window limit.
         let voucher3 = engine.mint_voucher(1.0, make_resource(), 0.5, 3);
         match voucher3 {
-            Err(ExchangeError::CEWindowLimitExceeded) => {}, // Expected
+            Err(ExchangeError::CEWindowLimitExceeded) => {} // Expected
             other => panic!("Expected CEWindowLimitExceeded, got {:?}", other),
         }
     }
@@ -365,12 +377,14 @@ mod tests {
         let voucher = engine.mint_voucher(10.0, make_resource(), 0.5, 1).unwrap();
 
         // First redemption succeeds.
-        assert!(engine.redeem_physical_resource(&voucher, b"ok".to_vec()).is_ok());
+        assert!(engine
+            .redeem_physical_resource(&voucher, b"ok".to_vec())
+            .is_ok());
 
         // Second redemption with same voucher should be detected as replay.
         // Note: Since we use surrogate nonce (hash), same voucher = same nonce.
         match engine.redeem_physical_resource(&voucher, b"ok".to_vec()) {
-            Err(ExchangeError::ReplayDetected(_)) => {}, // Expected
+            Err(ExchangeError::ReplayDetected(_)) => {} // Expected
             other => panic!("Expected ReplayDetected, got {:?}", other),
         }
     }
@@ -384,7 +398,7 @@ mod tests {
     #[test]
     fn test_error_display() {
         match ExchangeError::InvalidCEAmount(-1.0) {
-            ExchangeError::InvalidCEAmount(_) => {},
+            ExchangeError::InvalidCEAmount(_) => {}
             _ => unreachable!(),
         }
     }

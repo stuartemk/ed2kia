@@ -181,7 +181,12 @@ pub struct ResonanceStatus {
 impl ResonanceStatus {
     /// Create a new ResonanceStatus.
     #[wasm_bindgen(constructor)]
-    pub fn new(sct_z: f32, brainwave_band: String, confidence: f32, homeostasis_target: f32) -> ResonanceStatus {
+    pub fn new(
+        sct_z: f32,
+        brainwave_band: String,
+        confidence: f32,
+        homeostasis_target: f32,
+    ) -> ResonanceStatus {
         ResonanceStatus {
             approved: sct_z >= 0.0,
             sct_z,
@@ -198,9 +203,9 @@ impl ResonanceStatus {
             "delta" => (0.5, 4.0),
             "theta" => (4.0, 8.0),
             "alpha" => (8.0, 14.0),
-            "beta"  => (14.0, 30.0),
+            "beta" => (14.0, 30.0),
             "gamma" => (30.0, 100.0),
-            _       => (8.0, 14.0), // Default alpha
+            _ => (8.0, 14.0), // Default alpha
         }
     }
 
@@ -210,7 +215,13 @@ impl ResonanceStatus {
         let (freq_min, freq_max) = self.get_frequency_range();
         format!(
             r#"{{"sctZ":{:.4},"brainwaveBand":"{}","confidence":{:.4},"approved":{},"homeostasisTarget":{:.4},"frequencyRange":[{:.1},{:.1}]}}"#,
-            self.sct_z, self.brainwave_band, self.confidence, self.approved, self.homeostasis_target, freq_min, freq_max
+            self.sct_z,
+            self.brainwave_band,
+            self.confidence,
+            self.approved,
+            self.homeostasis_target,
+            freq_min,
+            freq_max
         )
     }
 }
@@ -284,7 +295,11 @@ impl HealthMonitor {
     pub fn to_json(&self) -> String {
         format!(
             r#"{{"status":"{}","lastHeartbeat":{},"heartbeatIntervalMs":{},"missedHeartbeats":{},"maxMissedHeartbeats":{}}}"#,
-            self.status, self.last_heartbeat, self.heartbeat_interval_ms, self.missed_heartbeats, self.max_missed_heartbeats
+            self.status,
+            self.last_heartbeat,
+            self.heartbeat_interval_ms,
+            self.missed_heartbeats,
+            self.max_missed_heartbeats
         )
     }
 }
@@ -352,8 +367,15 @@ impl UiBridge {
 
     /// Update the resonance status from incoming data.
     #[wasm_bindgen(js_name = "updateResonanceStatus")]
-    pub fn update_resonance_status(&mut self, sct_z: f32, brainwave_band: String, confidence: f32, homeostasis_target: f32) {
-        self.resonance = ResonanceStatus::new(sct_z, brainwave_band, confidence, homeostasis_target);
+    pub fn update_resonance_status(
+        &mut self,
+        sct_z: f32,
+        brainwave_band: String,
+        confidence: f32,
+        homeostasis_target: f32,
+    ) {
+        self.resonance =
+            ResonanceStatus::new(sct_z, brainwave_band, confidence, homeostasis_target);
     }
 
     /// Record a CE deposit.

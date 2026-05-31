@@ -77,9 +77,10 @@ async fn main() {
             Ok(())
         }
         #[cfg(feature = "v3.0-omni-integration")]
-        Commands::Omni { initial_ce, diagnose } => {
-            run_omni_mode(*initial_ce, *diagnose)
-        }
+        Commands::Omni {
+            initial_ce,
+            diagnose,
+        } => run_omni_mode(*initial_ce, *diagnose),
     };
 
     if let Err(e) = result {
@@ -611,7 +612,9 @@ fn run_omni_mode(initial_ce: f64, diagnose: bool) -> Result<(), String> {
     // Display pillar status
     println!("— Pillar Registry —");
     for pillar in omni.registered_pillars() {
-        let status = omni.get_pillar_status(pillar).unwrap_or(ed2kia::orchestration::PillarStatus::Pending);
+        let status = omni
+            .get_pillar_status(pillar)
+            .unwrap_or(ed2kia::orchestration::PillarStatus::Pending);
         let ce = omni.ce_ledger().balance(pillar);
         println!("  • {} — Status: {:?}, CE: {:.2}", pillar, status, ce);
     }
@@ -619,8 +622,14 @@ fn run_omni_mode(initial_ce: f64, diagnose: bool) -> Result<(), String> {
 
     // Display CE Ledger summary
     println!("— CE Ledger Summary —");
-    println!("  Total CE Emitted: {:.2}", omni.ce_ledger().total_emitted());
-    println!("  Total CE Consumed: {:.2}", omni.ce_ledger().total_consumed());
+    println!(
+        "  Total CE Emitted: {:.2}",
+        omni.ce_ledger().total_emitted()
+    );
+    println!(
+        "  Total CE Consumed: {:.2}",
+        omni.ce_ledger().total_consumed()
+    );
     println!("  SCT Rejections: {}", omni.rejection_count());
     println!();
 

@@ -96,9 +96,7 @@ impl EthicalAttractorBasin {
             ));
         }
         if config.beta < 0.0 {
-            return Err(BasinError::InvalidBeta(
-                "beta must be non-negative",
-            ));
+            return Err(BasinError::InvalidBeta("beta must be non-negative"));
         }
         Ok(Self {
             c_ideal,
@@ -273,11 +271,8 @@ mod tests {
             gamma: 0.9,
             max_violations: 3,
         };
-        let basin = EthicalAttractorBasin::with_config(
-            Vector3::new(0.0, 0.0, 0.8),
-            config,
-        )
-        .unwrap();
+        let basin =
+            EthicalAttractorBasin::with_config(Vector3::new(0.0, 0.0, 0.8), config).unwrap();
         assert!((basin.c_ideal().z - 0.8).abs() < 1e-10);
     }
 
@@ -317,7 +312,10 @@ mod tests {
         // Point far from ideal center
         let far = Vector3::new(0.0, 0.0, -1.0);
         let dist = basin.compute_ethical_distance(&far, &empty_homology());
-        assert!(dist.euclidean > 1.0, "Distance to opposite pole should be > 1");
+        assert!(
+            dist.euclidean > 1.0,
+            "Distance to opposite pole should be > 1"
+        );
     }
 
     #[test]

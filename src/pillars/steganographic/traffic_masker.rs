@@ -12,7 +12,6 @@
 //!
 //! **Reference:** RFC 003 (Steganographic Survival), Sprint 45
 
-
 /// Errors specific to traffic masking operations.
 #[derive(Debug, Clone, PartialEq)]
 pub enum MaskingError {
@@ -30,7 +29,11 @@ impl std::fmt::Display for MaskingError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             MaskingError::PayloadTooLarge(size) => {
-                write!(f, "Payload too large for SRTP frame: {} bytes (max 1400)", size)
+                write!(
+                    f,
+                    "Payload too large for SRTP frame: {} bytes (max 1400)",
+                    size
+                )
             }
             MaskingError::InvalidConfig(msg) => write!(f, "Invalid masking configuration: {}", msg),
             MaskingError::EncodingFailed(msg) => write!(f, "Frame encoding failed: {}", msg),
@@ -107,9 +110,10 @@ impl SrtpHeader {
         let ssrc = u32::from_be_bytes([data[8], data[9], data[10], data[11]]);
 
         if version != 2 {
-            return Err(MaskingError::DecodingFailed(
-                format!("Invalid SRTP version: {}", version),
-            ));
+            return Err(MaskingError::DecodingFailed(format!(
+                "Invalid SRTP version: {}",
+                version
+            )));
         }
 
         Ok(Self {
@@ -180,7 +184,11 @@ impl TrafficMasker {
     /// Generate a pseudo-random timestamp based on noise_seed and frame count.
     fn generate_timestamp(&self) -> u32 {
         // Simple LCG for deterministic timestamp generation
-        let lcg = self.config.noise_seed.wrapping_mul(6364136223846793005).wrapping_add(1);
+        let lcg = self
+            .config
+            .noise_seed
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(1);
         (lcg as u32).wrapping_add((self.frame_count as u32) * self.config.clock_rate / 30)
     }
 
@@ -191,7 +199,9 @@ impl TrafficMasker {
     /// Returns a vector of masked frames.
     pub fn mask_payload(&mut self, original: &[u8]) -> Result<Vec<Vec<u8>>, MaskingError> {
         if original.is_empty() {
-            return Err(MaskingError::InvalidConfig("Empty payload cannot be masked".into()));
+            return Err(MaskingError::InvalidConfig(
+                "Empty payload cannot be masked".into(),
+            ));
         }
 
         let max_payload = self.config.max_payload_size;
@@ -287,9 +297,11 @@ impl TrafficMasker {
         // Verify completeness
         let total = expected_total.unwrap_or(chunks.len());
         if chunks.len() != total {
-            return Err(MaskingError::DecodingFailed(
-                format!("Missing frames: expected {}, got {}", total, chunks.len()),
-            ));
+            return Err(MaskingError::DecodingFailed(format!(
+                "Missing frames: expected {}, got {}",
+                total,
+                chunks.len()
+            )));
         }
 
         // Reassemble

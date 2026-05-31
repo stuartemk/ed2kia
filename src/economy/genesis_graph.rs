@@ -38,10 +38,7 @@ pub enum GenesisError {
     /// CE amount in genesis must be zero (no pre-mine).
     PreMineDetected(f64),
     /// Genesis hash does not match expected Stuartian Laws signature.
-    HashMismatch {
-        expected: u128,
-        actual: u128,
-    },
+    HashMismatch { expected: u128, actual: u128 },
 }
 
 impl fmt::Display for GenesisError {
@@ -210,7 +207,8 @@ impl GenesisNode {
         // Fill remaining bytes with deterministic expansion
         for (idx, sig_byte) in sig.iter_mut().skip(24).enumerate() {
             let i = idx + 24;
-            *sig_byte = ((laws_hash >> ((i % 8) * 8)) ^ (network_seed as u128 >> ((i % 8) * 8))) as u8;
+            *sig_byte =
+                ((laws_hash >> ((i % 8) * 8)) ^ (network_seed as u128 >> ((i % 8) * 8))) as u8;
         }
 
         sig

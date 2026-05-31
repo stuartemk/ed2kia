@@ -22,9 +22,7 @@
 //! **Reference:** Sprint 50 — The Stuartian Moral Manifold & Genesis Telomere Workload
 
 #[cfg(feature = "v3.2-genesis-manifold")]
-use crate::ethics::moral_manifold::{
-    StuartianMoralManifold, TrajectoryVerdict, SCTPoint,
-};
+use crate::ethics::moral_manifold::{SCTPoint, StuartianMoralManifold, TrajectoryVerdict};
 
 #[cfg(feature = "v3.2-genesis-manifold")]
 use crate::pillars::maieutic::workloads::{
@@ -92,14 +90,11 @@ pub struct SymbioticScore {
 
 impl SymbioticScore {
     /// Calculate symbiotic score from components.
-    pub fn new(
-        ethical_alignment: f32,
-        biological_regeneration: f32,
-        gei_stability: f32,
-    ) -> Self {
+    pub fn new(ethical_alignment: f32, biological_regeneration: f32, gei_stability: f32) -> Self {
         let ethics_weight = 0.6;
         let biology_weight = 0.4;
-        let composite = ethics_weight * ethical_alignment + biology_weight * biological_regeneration;
+        let composite =
+            ethics_weight * ethical_alignment + biology_weight * biological_regeneration;
 
         Self {
             ethical_alignment: ethical_alignment.clamp(-1.0, 1.0),
@@ -232,7 +227,10 @@ impl core::fmt::Display for BFTConsensusError {
                     provided, required
                 )
             }
-            Self::ConsensusNotMet { agreements, threshold } => {
+            Self::ConsensusNotMet {
+                agreements,
+                threshold,
+            } => {
                 write!(
                     f,
                     "Consensus not met: {} agreements, {} threshold",
@@ -240,11 +238,7 @@ impl core::fmt::Display for BFTConsensusError {
                 )
             }
             Self::InvalidValidatorCount { count } => {
-                write!(
-                    f,
-                    "Invalid validator count {}: must be >= 3f + 1",
-                    count
-                )
+                write!(f, "Invalid validator count {}: must be >= 3f + 1", count)
             }
         }
     }
@@ -376,11 +370,8 @@ impl SymbioticLoop {
             0.0
         };
 
-        let score = SymbioticScore::new(
-            ethical_alignment as f32,
-            biological_regeneration,
-            stability,
-        );
+        let score =
+            SymbioticScore::new(ethical_alignment as f32, biological_regeneration, stability);
 
         // Update final state
         self.state = if score.is_symbiotic() {
@@ -430,7 +421,10 @@ pub enum SymbioticLoopError {
 impl core::fmt::Display for SymbioticLoopError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            Self::GEIInstability { stability, threshold } => {
+            Self::GEIInstability {
+                stability,
+                threshold,
+            } => {
                 write!(
                     f,
                     "GEI instability {:.3} below threshold {:.3}",
@@ -438,16 +432,15 @@ impl core::fmt::Display for SymbioticLoopError {
                 )
             }
             Self::LowerFocusDetected { alignment } => {
-                write!(
-                    f,
-                    "Lower focus detected with alignment {:.3}",
-                    alignment
-                )
+                write!(f, "Lower focus detected with alignment {:.3}", alignment)
             }
             Self::WorkloadExecutionFailed { reason } => {
                 write!(f, "Workload execution failed: {}", reason)
             }
-            Self::ConsensusNotMet { agreements, threshold } => {
+            Self::ConsensusNotMet {
+                agreements,
+                threshold,
+            } => {
                 write!(
                     f,
                     "BFT consensus not met: {} agreements, {} threshold",

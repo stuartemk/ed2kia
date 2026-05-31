@@ -32,14 +32,20 @@ pub enum ConsensusError {
 impl std::fmt::Display for ConsensusError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ConsensusError::InsufficientValidators { required, available } => {
+            ConsensusError::InsufficientValidators {
+                required,
+                available,
+            } => {
                 write!(
                     f,
                     "Insufficient validators for BFT: required={}, available={}",
                     required, available
                 )
             }
-            ConsensusError::ThresholdNotMet { convergence, threshold } => {
+            ConsensusError::ThresholdNotMet {
+                convergence,
+                threshold,
+            } => {
                 write!(
                     f,
                     "BFT threshold not met: convergence={:.1}% < threshold={:.1}%",
@@ -61,11 +67,7 @@ impl std::fmt::Display for ConsensusError {
                 write!(f, "Duplicate evidence from validator: {}", id)
             }
             ConsensusError::DomainMismatch { expected, got } => {
-                write!(
-                    f,
-                    "Domain mismatch: expected={}, got={}",
-                    expected, got
-                )
+                write!(f, "Domain mismatch: expected={}, got={}", expected, got)
             }
         }
     }
@@ -216,12 +218,12 @@ impl ScientificConsensus {
         }
 
         // Check for duplicate evidence.
-        let evidence_list = self
-            .evidence
-            .entry(hypothesis_id.to_string())
-            .or_default();
+        let evidence_list = self.evidence.entry(hypothesis_id.to_string()).or_default();
 
-        if evidence_list.iter().any(|e| e.source_node == evidence.source_node) {
+        if evidence_list
+            .iter()
+            .any(|e| e.source_node == evidence.source_node)
+        {
             return Err(ConsensusError::DuplicateEvidence(
                 evidence.source_node.clone(),
             ));
@@ -248,13 +250,13 @@ impl ScientificConsensus {
         hypothesis_id: &str,
         domain: &Domain,
     ) -> Result<ConsensusResult, ConsensusError> {
-        let evidence_list = self
-            .evidence
-            .get(hypothesis_id)
-            .ok_or(ConsensusError::InsufficientValidators {
-                required: 1,
-                available: 0,
-            })?;
+        let evidence_list =
+            self.evidence
+                .get(hypothesis_id)
+                .ok_or(ConsensusError::InsufficientValidators {
+                    required: 1,
+                    available: 0,
+                })?;
 
         let total = evidence_list.len();
         if total == 0 {
@@ -267,9 +269,7 @@ impl ScientificConsensus {
         // Count agreements: evidence with matching domain and Z >= 0.
         let agreements = evidence_list
             .iter()
-            .filter(|e| {
-                e.domain == *domain && e.z_score >= self.sct_min_z
-            })
+            .filter(|e| e.domain == *domain && e.z_score >= self.sct_min_z)
             .count();
 
         let convergence = agreements as f64 / total as f64;
@@ -361,20 +361,16 @@ mod tests {
     fn test_submit_evidence_valid() {
         let mut consensus = ScientificConsensus::new();
         consensus.register_validator("v1".to_string());
-        let result = consensus.submit_evidence(
-            "h1",
-            make_evidence("v1", Domain::ProteinFolding, 0.5),
-        );
+        let result =
+            consensus.submit_evidence("h1", make_evidence("v1", Domain::ProteinFolding, 0.5));
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_submit_evidence_unknown_validator() {
         let mut consensus = ScientificConsensus::new();
-        let result = consensus.submit_evidence(
-            "h1",
-            make_evidence("unknown", Domain::ProteinFolding, 0.5),
-        );
+        let result =
+            consensus.submit_evidence("h1", make_evidence("unknown", Domain::ProteinFolding, 0.5));
         match result {
             Err(ConsensusError::UnknownValidator(id)) => {
                 assert_eq!(id, "unknown");
@@ -387,15 +383,11 @@ mod tests {
     fn test_submit_evidence_duplicate() {
         let mut consensus = ScientificConsensus::new();
         consensus.register_validator("v1".to_string());
-        consensus.submit_evidence(
-            "h1",
-            make_evidence("v1", Domain::ProteinFolding, 0.5),
-        )
-        .unwrap();
-        let result = consensus.submit_evidence(
-            "h1",
-            make_evidence("v1", Domain::ProteinFolding, 0.3),
-        );
+        consensus
+            .submit_evidence("h1", make_evidence("v1", Domain::ProteinFolding, 0.5))
+            .unwrap();
+        let result =
+            consensus.submit_evidence("h1", make_evidence("v1", Domain::ProteinFolding, 0.3));
         match result {
             Err(ConsensusError::DuplicateEvidence(id)) => {
                 assert_eq!(id, "v1");
@@ -408,10 +400,8 @@ mod tests {
     fn test_submit_evidence_sct_guard_rejects() {
         let mut consensus = ScientificConsensus::new();
         consensus.register_validator("v1".to_string());
-        let result = consensus.submit_evidence(
-            "h1",
-            make_evidence("v1", Domain::ProteinFolding, -0.5),
-        );
+        let result =
+            consensus.submit_evidence("h1", make_evidence("v1", Domain::ProteinFolding, -0.5));
         match result {
             Err(ConsensusError::SctGuardRejected { source, z_score }) => {
                 assert_eq!(source, "v1");
@@ -428,23 +418,19 @@ mod tests {
         consensus.register_validator("v2".to_string());
         consensus.register_validator("v3".to_string());
 
-        consensus.submit_evidence(
-            "h1",
-            make_evidence("v1", Domain::ProteinFolding, 0.5),
-        )
-        .unwrap();
-        consensus.submit_evidence(
-            "h1",
-            make_evidence("v2", Domain::ProteinFolding, 0.3),
-        )
-        .unwrap();
-        consensus.submit_evidence(
-            "h1",
-            make_evidence("v3", Domain::ProteinFolding, 0.4),
-        )
-        .unwrap();
+        consensus
+            .submit_evidence("h1", make_evidence("v1", Domain::ProteinFolding, 0.5))
+            .unwrap();
+        consensus
+            .submit_evidence("h1", make_evidence("v2", Domain::ProteinFolding, 0.3))
+            .unwrap();
+        consensus
+            .submit_evidence("h1", make_evidence("v3", Domain::ProteinFolding, 0.4))
+            .unwrap();
 
-        let result = consensus.run_consensus("h1", &Domain::ProteinFolding).unwrap();
+        let result = consensus
+            .run_consensus("h1", &Domain::ProteinFolding)
+            .unwrap();
         assert!(result.is_validated());
         assert!(result.convergence() >= 2.0 / 3.0);
     }
@@ -457,23 +443,19 @@ mod tests {
         consensus.register_validator("v3".to_string());
 
         // Only 1 out of 3 agrees (domain mismatch for 2).
-        consensus.submit_evidence(
-            "h1",
-            make_evidence("v1", Domain::ProteinFolding, 0.5),
-        )
-        .unwrap();
-        consensus.submit_evidence(
-            "h1",
-            make_evidence("v2", Domain::Epigenetics, 0.3),
-        )
-        .unwrap();
-        consensus.submit_evidence(
-            "h1",
-            make_evidence("v3", Domain::Epigenetics, 0.4),
-        )
-        .unwrap();
+        consensus
+            .submit_evidence("h1", make_evidence("v1", Domain::ProteinFolding, 0.5))
+            .unwrap();
+        consensus
+            .submit_evidence("h1", make_evidence("v2", Domain::Epigenetics, 0.3))
+            .unwrap();
+        consensus
+            .submit_evidence("h1", make_evidence("v3", Domain::Epigenetics, 0.4))
+            .unwrap();
 
-        let result = consensus.run_consensus("h1", &Domain::ProteinFolding).unwrap();
+        let result = consensus
+            .run_consensus("h1", &Domain::ProteinFolding)
+            .unwrap();
         assert!(!result.is_validated());
     }
 
@@ -493,21 +475,15 @@ mod tests {
         consensus.register_validator("v4".to_string());
 
         // 3 out of 4 = 75% — exactly at threshold.
-        consensus.submit_evidence(
-            "h1",
-            make_evidence("v1", Domain::Epigenetics, 0.5),
-        )
-        .unwrap();
-        consensus.submit_evidence(
-            "h1",
-            make_evidence("v2", Domain::Epigenetics, 0.3),
-        )
-        .unwrap();
-        consensus.submit_evidence(
-            "h1",
-            make_evidence("v3", Domain::Epigenetics, 0.4),
-        )
-        .unwrap();
+        consensus
+            .submit_evidence("h1", make_evidence("v1", Domain::Epigenetics, 0.5))
+            .unwrap();
+        consensus
+            .submit_evidence("h1", make_evidence("v2", Domain::Epigenetics, 0.3))
+            .unwrap();
+        consensus
+            .submit_evidence("h1", make_evidence("v3", Domain::Epigenetics, 0.4))
+            .unwrap();
 
         let result = consensus.run_consensus("h1", &Domain::Epigenetics).unwrap();
         assert!(result.is_validated());
@@ -517,11 +493,9 @@ mod tests {
     fn test_clear_evidence() {
         let mut consensus = ScientificConsensus::new();
         consensus.register_validator("v1".to_string());
-        consensus.submit_evidence(
-            "h1",
-            make_evidence("v1", Domain::Epigenetics, 0.5),
-        )
-        .unwrap();
+        consensus
+            .submit_evidence("h1", make_evidence("v1", Domain::Epigenetics, 0.5))
+            .unwrap();
         assert_eq!(consensus.get_evidence("h1").len(), 1);
 
         consensus.clear_evidence("h1");

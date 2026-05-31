@@ -41,11 +41,17 @@ impl std::fmt::Display for SafeguardError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             SafeguardError::InvalidConfig(msg) => write!(f, "Safeguard config invalid: {}", msg),
-            SafeguardError::AlreadyQuarantined(id) => write!(f, "Sub-network {} already quarantined", id),
+            SafeguardError::AlreadyQuarantined(id) => {
+                write!(f, "Sub-network {} already quarantined", id)
+            }
             SafeguardError::NotQuarantined(id) => write!(f, "Sub-network {} not quarantined", id),
             SafeguardError::ApoptosisActive => write!(f, "Global apoptosis is active"),
-            SafeguardError::NoCheckpointAvailable => write!(f, "No checkpoint available for rollback"),
-            SafeguardError::InsufficientData => write!(f, "Insufficient data for safeguard decision"),
+            SafeguardError::NoCheckpointAvailable => {
+                write!(f, "No checkpoint available for rollback")
+            }
+            SafeguardError::InsufficientData => {
+                write!(f, "Insufficient data for safeguard decision")
+            }
         }
     }
 }
@@ -262,7 +268,11 @@ impl GlobalSafeguards {
 
         // Evaluate each sub-network for quarantine
         for (&id, &nh) in sub_networks {
-            let current_state = self.quarantine_map.get(&id).cloned().unwrap_or(QuarantineState::Active);
+            let current_state = self
+                .quarantine_map
+                .get(&id)
+                .cloned()
+                .unwrap_or(QuarantineState::Active);
 
             match current_state {
                 QuarantineState::Active => {
@@ -272,7 +282,10 @@ impl GlobalSafeguards {
                             QuarantineState::Quarantined {
                                 since_tick: self.current_tick,
                                 nh_at_quarantine: nh,
-                                reason: format!("NH {:.4} below {:.4}", nh, self.config.quarantine_threshold),
+                                reason: format!(
+                                    "NH {:.4} below {:.4}",
+                                    nh, self.config.quarantine_threshold
+                                ),
                             },
                         );
                         result.quarantined.push(id);
@@ -295,9 +308,7 @@ impl GlobalSafeguards {
             .count();
 
         if quarantined_count > 0 {
-            self.state = SafeguardState::PartialQuarantine {
-                quarantined_count,
-            };
+            self.state = SafeguardState::PartialQuarantine { quarantined_count };
         } else {
             self.state = SafeguardState::Nominal;
         }
@@ -332,7 +343,8 @@ impl GlobalSafeguards {
         if let SafeguardState::ApoptosisActive { .. } = self.state {
             return Err(SafeguardError::ApoptosisActive);
         }
-        if let Some(QuarantineState::Quarantined { .. }) = self.quarantine_map.get(&sub_network_id) {
+        if let Some(QuarantineState::Quarantined { .. }) = self.quarantine_map.get(&sub_network_id)
+        {
             return Err(SafeguardError::AlreadyQuarantined(sub_network_id));
         }
         self.quarantine_map.insert(
@@ -356,7 +368,8 @@ impl GlobalSafeguards {
                 return Err(SafeguardError::NotQuarantined(sub_network_id));
             }
             Some(QuarantineState::Quarantined { .. }) => {
-                self.quarantine_map.insert(sub_network_id, QuarantineState::Active);
+                self.quarantine_map
+                    .insert(sub_network_id, QuarantineState::Active);
             }
         }
         Ok(())
@@ -498,7 +511,10 @@ mod tests {
 
         let result = s.evaluate(0.7, &sub_networks).unwrap();
         assert_eq!(result.quarantined, vec![3]);
-        assert!(matches!(result.state, SafeguardState::PartialQuarantine { .. }));
+        assert!(matches!(
+            result.state,
+            SafeguardState::PartialQuarantine { .. }
+        ));
     }
 
     #[test]
@@ -586,7 +602,8 @@ mod tests {
     #[test]
     fn test_double_quarantine_error() {
         let mut s = GlobalSafeguards::new();
-        s.quarantine_sub_network(1, 0.2, "First".to_string()).unwrap();
+        s.quarantine_sub_network(1, 0.2, "First".to_string())
+            .unwrap();
         let err = s.quarantine_sub_network(1, 0.2, "Second".to_string());
         assert_eq!(err.unwrap_err(), SafeguardError::AlreadyQuarantined(1));
     }
@@ -601,7 +618,8 @@ mod tests {
     #[test]
     fn test_manual_release() {
         let mut s = GlobalSafeguards::new();
-        s.quarantine_sub_network(1, 0.2, "Test".to_string()).unwrap();
+        s.quarantine_sub_network(1, 0.2, "Test".to_string())
+            .unwrap();
         s.release_sub_network(1).unwrap();
         assert_eq!(s.get_quarantine_state(1), Some(&QuarantineState::Active));
     }
@@ -624,7 +642,8 @@ mod tests {
     #[test]
     fn test_reset() {
         let mut s = GlobalSafeguards::new();
-        s.quarantine_sub_network(1, 0.2, "Test".to_string()).unwrap();
+        s.quarantine_sub_network(1, 0.2, "Test".to_string())
+            .unwrap();
         s.reset();
         assert_eq!(s.state(), &SafeguardState::Nominal);
         assert_eq!(s.quarantined_count(), 0);
@@ -650,8 +669,10 @@ mod tests {
     #[test]
     fn test_quarantined_count() {
         let mut s = GlobalSafeguards::new();
-        s.quarantine_sub_network(1, 0.2, "Test".to_string()).unwrap();
-        s.quarantine_sub_network(2, 0.1, "Test".to_string()).unwrap();
+        s.quarantine_sub_network(1, 0.2, "Test".to_string())
+            .unwrap();
+        s.quarantine_sub_network(2, 0.1, "Test".to_string())
+            .unwrap();
         assert_eq!(s.quarantined_count(), 2);
     }
 

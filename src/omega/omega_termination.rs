@@ -22,7 +22,10 @@ pub enum TerminationError {
     /// Consensus threshold not yet reached.
     ConsensusThresholdNotMet { current: f64, required: f64 },
     /// Duration requirement not yet met.
-    DurationNotMet { current_days: usize, required_days: usize },
+    DurationNotMet {
+        current_days: usize,
+        required_days: usize,
+    },
     /// Protocol already finalized.
     ProtocolFinalized,
     /// Protocol not yet activated.
@@ -30,7 +33,10 @@ pub enum TerminationError {
     /// Grace sequence step already completed.
     StepAlreadyCompleted(String),
     /// Invalid termination state transition.
-    InvalidStateTransition { current: TerminationState, attempted: TerminationState },
+    InvalidStateTransition {
+        current: TerminationState,
+        attempted: TerminationState,
+    },
     /// Insufficient steward signatures.
     InsufficientSignatures { current: u64, required: u64 },
     /// Knowledge dump incomplete.
@@ -41,29 +47,38 @@ impl std::fmt::Display for TerminationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             TerminationError::NciThresholdNotMet { current, required } => {
-                write!(f, "NCI threshold not met: current={:.4}, required={:.4}", current, required)
+                write!(
+                    f,
+                    "NCI threshold not met: current={:.4}, required={:.4}",
+                    current, required
+                )
             }
             TerminationError::ConsensusThresholdNotMet { current, required } => {
-                write!(f, "Consensus threshold not met: current={:.4}, required={:.4}", current, required)
+                write!(
+                    f,
+                    "Consensus threshold not met: current={:.4}, required={:.4}",
+                    current, required
+                )
             }
-            TerminationError::DurationNotMet { current_days, required_days } => {
+            TerminationError::DurationNotMet {
+                current_days,
+                required_days,
+            } => {
                 write!(
                     f,
                     "Duration requirement not met: current={} days, required={} days",
                     current_days, required_days
                 )
             }
-            TerminationError::ProtocolFinalized => write!(f, "Termination protocol already finalized"),
+            TerminationError::ProtocolFinalized => {
+                write!(f, "Termination protocol already finalized")
+            }
             TerminationError::NotActivated => write!(f, "Termination protocol not yet activated"),
             TerminationError::StepAlreadyCompleted(step) => {
                 write!(f, "Grace sequence step already completed: {}", step)
             }
             TerminationError::InvalidStateTransition { current, attempted } => {
-                write!(
-                    f,
-                    "Invalid state transition: {} -> {}",
-                    current, attempted
-                )
+                write!(f, "Invalid state transition: {} -> {}", current, attempted)
             }
             TerminationError::InsufficientSignatures { current, required } => {
                 write!(
@@ -454,10 +469,10 @@ impl EthicalSelfTerminationProtocol {
         // Check if thresholds are met
         if self.can_activate() {
             self.state = TerminationState::ThresholdDetected;
-        } else if self.current_nci >= self.config.nci_threshold {
-            if self.state == TerminationState::ThresholdDetected {
-                self.state = TerminationState::Monitoring;
-            }
+        } else if self.current_nci >= self.config.nci_threshold
+            && self.state == TerminationState::ThresholdDetected
+        {
+            self.state = TerminationState::Monitoring;
         }
     }
 
@@ -546,13 +561,12 @@ impl EthicalSelfTerminationProtocol {
             GraceStep::BroadcastFarewell,
             GraceStep::ShutdownNetwork,
         ];
-        let expected_index = expected_order
-            .iter()
-            .position(|s| s == &step)
-            .ok_or(TerminationError::InvalidStateTransition {
+        let expected_index = expected_order.iter().position(|s| s == &step).ok_or(
+            TerminationError::InvalidStateTransition {
                 current: self.state.clone(),
                 attempted: TerminationState::GraceSequenceInProgress,
-            })?;
+            },
+        )?;
 
         let completed_count = self.completed_steps.len();
         if expected_index != completed_count {
@@ -572,9 +586,9 @@ impl EthicalSelfTerminationProtocol {
                 self.event_counter += 1;
                 let mut dump = KnowledgeDump::new(
                     self.event_counter,
-                    1000, // Simulated entry count
+                    1000,       // Simulated entry count
                     0xDEADBEEF, // Simulated checksum
-                    0, // Timestamp placeholder
+                    0,          // Timestamp placeholder
                 );
                 dump.verify(); // Auto-verify on creation
                 self.knowledge_dump = Some(dump);
@@ -615,12 +629,14 @@ impl EthicalSelfTerminationProtocol {
                 attempted: TerminationState::Finalized,
             });
         }
-        let knowledge_dump = self.knowledge_dump.clone().ok_or(
-            TerminationError::KnowledgeDumpIncomplete,
-        )?;
-        let farewell = self.farewell_message.clone().ok_or(
-            TerminationError::KnowledgeDumpIncomplete,
-        )?;
+        let knowledge_dump = self
+            .knowledge_dump
+            .clone()
+            .ok_or(TerminationError::KnowledgeDumpIncomplete)?;
+        let farewell = self
+            .farewell_message
+            .clone()
+            .ok_or(TerminationError::KnowledgeDumpIncomplete)?;
 
         self.event_counter += 1;
         let event = TerminationEvent::new(
@@ -771,7 +787,10 @@ mod tests {
     #[test]
     fn test_state_display() {
         assert_eq!(TerminationState::Monitoring.to_string(), "Monitoring");
-        assert_eq!(TerminationState::ThresholdDetected.to_string(), "ThresholdDetected");
+        assert_eq!(
+            TerminationState::ThresholdDetected.to_string(),
+            "ThresholdDetected"
+        );
         assert_eq!(TerminationState::Activated.to_string(), "Activated");
         assert_eq!(
             TerminationState::GraceSequenceInProgress.to_string(),
@@ -794,9 +813,15 @@ mod tests {
 
     #[test]
     fn test_grace_step_display() {
-        assert_eq!(GraceStep::DissolveResonanceField.to_string(), "DissolveResonanceField");
+        assert_eq!(
+            GraceStep::DissolveResonanceField.to_string(),
+            "DissolveResonanceField"
+        );
         assert_eq!(GraceStep::DumpKnowledge.to_string(), "DumpKnowledge");
-        assert_eq!(GraceStep::BroadcastFarewell.to_string(), "BroadcastFarewell");
+        assert_eq!(
+            GraceStep::BroadcastFarewell.to_string(),
+            "BroadcastFarewell"
+        );
         assert_eq!(GraceStep::ShutdownNetwork.to_string(), "ShutdownNetwork");
     }
 
@@ -990,9 +1015,9 @@ mod tests {
 
     #[test]
     fn test_can_activate_true() {
-        let mut proto = EthicalSelfTerminationProtocol::with_config(
-            TerminationConfig::new(0.4, 10, 0.4)
-        ).unwrap();
+        let mut proto =
+            EthicalSelfTerminationProtocol::with_config(TerminationConfig::new(0.4, 10, 0.4))
+                .unwrap();
         for _ in 0..10 {
             proto.update_nci(0.3);
         }
@@ -1002,9 +1027,9 @@ mod tests {
 
     #[test]
     fn test_activate_success() {
-        let mut proto = EthicalSelfTerminationProtocol::with_config(
-            TerminationConfig::new(0.4, 10, 0.4)
-        ).unwrap();
+        let mut proto =
+            EthicalSelfTerminationProtocol::with_config(TerminationConfig::new(0.4, 10, 0.4))
+                .unwrap();
         for _ in 0..10 {
             proto.update_nci(0.3);
         }
@@ -1018,9 +1043,9 @@ mod tests {
 
     #[test]
     fn test_activate_duration_not_met() {
-        let mut proto = EthicalSelfTerminationProtocol::with_config(
-            TerminationConfig::new(0.4, 100, 0.4)
-        ).unwrap();
+        let mut proto =
+            EthicalSelfTerminationProtocol::with_config(TerminationConfig::new(0.4, 100, 0.4))
+                .unwrap();
         for _ in 0..10 {
             proto.update_nci(0.3);
         }
@@ -1036,9 +1061,9 @@ mod tests {
 
     #[test]
     fn test_activate_consensus_not_met() {
-        let mut proto = EthicalSelfTerminationProtocol::with_config(
-            TerminationConfig::new(0.4, 10, 0.4)
-        ).unwrap();
+        let mut proto =
+            EthicalSelfTerminationProtocol::with_config(TerminationConfig::new(0.4, 10, 0.4))
+                .unwrap();
         for _ in 0..10 {
             proto.update_nci(0.3);
         }
@@ -1054,9 +1079,9 @@ mod tests {
 
     #[test]
     fn test_activate_insufficient_signatures() {
-        let mut proto = EthicalSelfTerminationProtocol::with_config(
-            TerminationConfig::new(0.4, 10, 0.4)
-        ).unwrap();
+        let mut proto =
+            EthicalSelfTerminationProtocol::with_config(TerminationConfig::new(0.4, 10, 0.4))
+                .unwrap();
         for _ in 0..10 {
             proto.update_nci(0.3);
         }
@@ -1088,9 +1113,9 @@ mod tests {
 
     #[test]
     fn test_execute_grace_step_order() {
-        let mut proto = EthicalSelfTerminationProtocol::with_config(
-            TerminationConfig::new(0.4, 10, 0.4)
-        ).unwrap();
+        let mut proto =
+            EthicalSelfTerminationProtocol::with_config(TerminationConfig::new(0.4, 10, 0.4))
+                .unwrap();
         for _ in 0..10 {
             proto.update_nci(0.3);
         }
@@ -1101,7 +1126,9 @@ mod tests {
         proto.activate().unwrap();
 
         // Step 1: DissolveResonanceField
-        assert!(proto.execute_grace_step(GraceStep::DissolveResonanceField).is_ok());
+        assert!(proto
+            .execute_grace_step(GraceStep::DissolveResonanceField)
+            .is_ok());
         assert_eq!(proto.completed_steps.len(), 1);
 
         // Step 2: DumpKnowledge
@@ -1109,7 +1136,9 @@ mod tests {
         assert_eq!(proto.completed_steps.len(), 2);
 
         // Step 3: BroadcastFarewell
-        assert!(proto.execute_grace_step(GraceStep::BroadcastFarewell).is_ok());
+        assert!(proto
+            .execute_grace_step(GraceStep::BroadcastFarewell)
+            .is_ok());
         assert_eq!(proto.completed_steps.len(), 3);
 
         // Step 4: ShutdownNetwork
@@ -1121,9 +1150,9 @@ mod tests {
 
     #[test]
     fn test_execute_grace_step_wrong_order() {
-        let mut proto = EthicalSelfTerminationProtocol::with_config(
-            TerminationConfig::new(0.4, 10, 0.4)
-        ).unwrap();
+        let mut proto =
+            EthicalSelfTerminationProtocol::with_config(TerminationConfig::new(0.4, 10, 0.4))
+                .unwrap();
         for _ in 0..10 {
             proto.update_nci(0.3);
         }
@@ -1142,9 +1171,9 @@ mod tests {
 
     #[test]
     fn test_execute_grace_step_duplicate() {
-        let mut proto = EthicalSelfTerminationProtocol::with_config(
-            TerminationConfig::new(0.4, 10, 0.4)
-        ).unwrap();
+        let mut proto =
+            EthicalSelfTerminationProtocol::with_config(TerminationConfig::new(0.4, 10, 0.4))
+                .unwrap();
         for _ in 0..10 {
             proto.update_nci(0.3);
         }
@@ -1153,7 +1182,9 @@ mod tests {
             proto.record_signature(i, true);
         }
         proto.activate().unwrap();
-        proto.execute_grace_step(GraceStep::DissolveResonanceField).unwrap();
+        proto
+            .execute_grace_step(GraceStep::DissolveResonanceField)
+            .unwrap();
 
         match proto.execute_grace_step(GraceStep::DissolveResonanceField) {
             Err(TerminationError::StepAlreadyCompleted(_)) => {}
@@ -1163,9 +1194,9 @@ mod tests {
 
     #[test]
     fn test_grace_progress() {
-        let mut proto = EthicalSelfTerminationProtocol::with_config(
-            TerminationConfig::new(0.4, 10, 0.4)
-        ).unwrap();
+        let mut proto =
+            EthicalSelfTerminationProtocol::with_config(TerminationConfig::new(0.4, 10, 0.4))
+                .unwrap();
         for _ in 0..10 {
             proto.update_nci(0.3);
         }
@@ -1176,21 +1207,27 @@ mod tests {
         proto.activate().unwrap();
 
         assert_eq!(proto.grace_progress(), 0.0);
-        proto.execute_grace_step(GraceStep::DissolveResonanceField).unwrap();
+        proto
+            .execute_grace_step(GraceStep::DissolveResonanceField)
+            .unwrap();
         assert_eq!(proto.grace_progress(), 0.25);
         proto.execute_grace_step(GraceStep::DumpKnowledge).unwrap();
         assert_eq!(proto.grace_progress(), 0.5);
-        proto.execute_grace_step(GraceStep::BroadcastFarewell).unwrap();
+        proto
+            .execute_grace_step(GraceStep::BroadcastFarewell)
+            .unwrap();
         assert_eq!(proto.grace_progress(), 0.75);
-        proto.execute_grace_step(GraceStep::ShutdownNetwork).unwrap();
+        proto
+            .execute_grace_step(GraceStep::ShutdownNetwork)
+            .unwrap();
         assert_eq!(proto.grace_progress(), 1.0);
     }
 
     #[test]
     fn test_finalize_success() {
-        let mut proto = EthicalSelfTerminationProtocol::with_config(
-            TerminationConfig::new(0.4, 10, 0.4)
-        ).unwrap();
+        let mut proto =
+            EthicalSelfTerminationProtocol::with_config(TerminationConfig::new(0.4, 10, 0.4))
+                .unwrap();
         for _ in 0..10 {
             proto.update_nci(0.3);
         }
@@ -1199,10 +1236,16 @@ mod tests {
             proto.record_signature(i, true);
         }
         proto.activate().unwrap();
-        proto.execute_grace_step(GraceStep::DissolveResonanceField).unwrap();
+        proto
+            .execute_grace_step(GraceStep::DissolveResonanceField)
+            .unwrap();
         proto.execute_grace_step(GraceStep::DumpKnowledge).unwrap();
-        proto.execute_grace_step(GraceStep::BroadcastFarewell).unwrap();
-        proto.execute_grace_step(GraceStep::ShutdownNetwork).unwrap();
+        proto
+            .execute_grace_step(GraceStep::BroadcastFarewell)
+            .unwrap();
+        proto
+            .execute_grace_step(GraceStep::ShutdownNetwork)
+            .unwrap();
 
         let event = proto.finalize().unwrap();
         assert!(event.is_valid());
@@ -1252,9 +1295,9 @@ mod tests {
 
     #[test]
     fn test_full_termination_workflow() {
-        let mut proto = EthicalSelfTerminationProtocol::with_config(
-            TerminationConfig::new(0.4, 5, 0.4)
-        ).unwrap();
+        let mut proto =
+            EthicalSelfTerminationProtocol::with_config(TerminationConfig::new(0.4, 5, 0.4))
+                .unwrap();
 
         // Simulate low NCI for required duration
         for _ in 0..5 {
@@ -1272,9 +1315,13 @@ mod tests {
         assert_eq!(*proto.state(), TerminationState::Activated);
 
         // Execute grace sequence
-        assert!(proto.execute_grace_step(GraceStep::DissolveResonanceField).is_ok());
+        assert!(proto
+            .execute_grace_step(GraceStep::DissolveResonanceField)
+            .is_ok());
         assert!(proto.execute_grace_step(GraceStep::DumpKnowledge).is_ok());
-        assert!(proto.execute_grace_step(GraceStep::BroadcastFarewell).is_ok());
+        assert!(proto
+            .execute_grace_step(GraceStep::BroadcastFarewell)
+            .is_ok());
         assert!(proto.execute_grace_step(GraceStep::ShutdownNetwork).is_ok());
 
         assert_eq!(*proto.state(), TerminationState::GraceSequenceComplete);
@@ -1362,9 +1409,9 @@ mod tests {
 
     #[test]
     fn test_threshold_detected_state() {
-        let mut proto = EthicalSelfTerminationProtocol::with_config(
-            TerminationConfig::new(0.4, 5, 0.4)
-        ).unwrap();
+        let mut proto =
+            EthicalSelfTerminationProtocol::with_config(TerminationConfig::new(0.4, 5, 0.4))
+                .unwrap();
         for _ in 0..5 {
             proto.update_nci(0.3);
         }
@@ -1374,9 +1421,9 @@ mod tests {
 
     #[test]
     fn test_threshold_resets_on_high_nci() {
-        let mut proto = EthicalSelfTerminationProtocol::with_config(
-            TerminationConfig::new(0.4, 5, 0.4)
-        ).unwrap();
+        let mut proto =
+            EthicalSelfTerminationProtocol::with_config(TerminationConfig::new(0.4, 5, 0.4))
+                .unwrap();
         for _ in 0..5 {
             proto.update_nci(0.3);
         }

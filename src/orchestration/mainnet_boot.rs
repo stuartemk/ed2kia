@@ -49,7 +49,10 @@ pub enum MainnetBootError {
     /// SCT Guard activation failed.
     SctGuardError(String),
     /// Network environment mismatch.
-    EnvironmentMismatch { expected: NetworkEnvironment, actual: NetworkEnvironment },
+    EnvironmentMismatch {
+        expected: NetworkEnvironment,
+        actual: NetworkEnvironment,
+    },
 }
 
 impl fmt::Display for MainnetBootError {
@@ -226,9 +229,8 @@ impl MainnetIgnitionSequence {
 
         #[cfg(feature = "v5.0-mainnet-genesis")]
         {
-            let genesis = GenesisBlock::forge().map_err(|e| {
-                MainnetBootError::GenesisValidationFailed(format!("{}", e))
-            })?;
+            let genesis = GenesisBlock::forge()
+                .map_err(|e| MainnetBootError::GenesisValidationFailed(format!("{}", e)))?;
 
             if !GenesisBlock::verify(&genesis) {
                 return Err(MainnetBootError::GenesisValidationFailed(
@@ -272,21 +274,9 @@ impl MainnetIgnitionSequence {
 
         // Configurar nodos semilla de producción
         let seed_nodes = vec![
-            SeedNodeConfig::new(
-                1,
-                "/ip4/0.0.0.0/tcp/9000".to_string(),
-                1.0,
-            ),
-            SeedNodeConfig::new(
-                2,
-                "/ip4/0.0.0.0/tcp/9001".to_string(),
-                1.0,
-            ),
-            SeedNodeConfig::new(
-                3,
-                "/ip4/0.0.0.0/tcp/9002".to_string(),
-                1.0,
-            ),
+            SeedNodeConfig::new(1, "/ip4/0.0.0.0/tcp/9000".to_string(), 1.0),
+            SeedNodeConfig::new(2, "/ip4/0.0.0.0/tcp/9001".to_string(), 1.0),
+            SeedNodeConfig::new(3, "/ip4/0.0.0.0/tcp/9002".to_string(), 1.0),
         ];
 
         if seed_nodes.is_empty() {
@@ -375,7 +365,7 @@ impl fmt::Display for MainnetIgnitionSequence {
     seed_nodes: {},
     sct_guard_active: {},
     complete: {}
-}}" ,
+}}",
             self.state.current_phase,
             self.state.environment,
             self.state.genesis_block.is_some(),

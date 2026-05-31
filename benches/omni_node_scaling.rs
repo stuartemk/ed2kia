@@ -138,29 +138,33 @@ fn benchmark_ce_ledger_concurrency(c: &mut Criterion) {
 
     for size in operations {
         group.throughput(Throughput::Elements(size as u64));
-        group.bench_with_input(BenchmarkId::new("deposit_withdraw", size), &size, |b, size| {
-            let amounts = generate_ce_weights(*size);
-            b.iter(|| {
-                // Simulate 4 pillars with independent CE ledgers
-                let mut ledgers = [0.0f64; 4];
-                let mut successes = 0u32;
-                let mut failures = 0u32;
-                for (i, &amount) in amounts.iter().enumerate() {
-                    let pillar = (i % 4);
-                    // Deposit
-                    ledgers[pillar] += amount;
-                    // Withdraw half
-                    let withdraw_amount = amount * 0.5;
-                    if ledgers[pillar] >= withdraw_amount {
-                        ledgers[pillar] -= withdraw_amount;
-                        successes += 1;
-                    } else {
-                        failures += 1;
+        group.bench_with_input(
+            BenchmarkId::new("deposit_withdraw", size),
+            &size,
+            |b, size| {
+                let amounts = generate_ce_weights(*size);
+                b.iter(|| {
+                    // Simulate 4 pillars with independent CE ledgers
+                    let mut ledgers = [0.0f64; 4];
+                    let mut successes = 0u32;
+                    let mut failures = 0u32;
+                    for (i, &amount) in amounts.iter().enumerate() {
+                        let pillar = (i % 4);
+                        // Deposit
+                        ledgers[pillar] += amount;
+                        // Withdraw half
+                        let withdraw_amount = amount * 0.5;
+                        if ledgers[pillar] >= withdraw_amount {
+                            ledgers[pillar] -= withdraw_amount;
+                            successes += 1;
+                        } else {
+                            failures += 1;
+                        }
                     }
-                }
-                black_box((ledgers, successes, failures));
-            });
-        });
+                    black_box((ledgers, successes, failures));
+                });
+            },
+        );
     }
 
     group.finish();
@@ -180,40 +184,44 @@ fn benchmark_migration_handshake_scale(c: &mut Criterion) {
 
     for count in cluster_counts {
         group.throughput(Throughput::Elements(count as u64));
-        group.bench_with_input(BenchmarkId::new("negotiation", count), &count, |b, count| {
-            let payloads = generate_handshake_payloads(*count);
-            let tensors = generate_ethical_tensors(*count);
-            let max_capacity = 10_000_000u64;
-            b.iter(|| {
-                let mut accepted = 0u32;
-                let mut rejected_capacity = 0u32;
-                let mut rejected_ethics = 0u32;
-                let mut total_capacity = 0u64;
+        group.bench_with_input(
+            BenchmarkId::new("negotiation", count),
+            &count,
+            |b, count| {
+                let payloads = generate_handshake_payloads(*count);
+                let tensors = generate_ethical_tensors(*count);
+                let max_capacity = 10_000_000u64;
+                b.iter(|| {
+                    let mut accepted = 0u32;
+                    let mut rejected_capacity = 0u32;
+                    let mut rejected_ethics = 0u32;
+                    let mut total_capacity = 0u64;
 
-                for (i, payload) in payloads.iter().enumerate() {
-                    let cluster_size = (payload.len() as u64) * 1_000;
-                    let (_, _, z) = tensors[i];
+                    for (i, payload) in payloads.iter().enumerate() {
+                        let cluster_size = (payload.len() as u64) * 1_000;
+                        let (_, _, z) = tensors[i];
 
-                    // Capacity check
-                    if total_capacity + cluster_size > max_capacity {
-                        rejected_capacity += 1;
-                        continue;
+                        // Capacity check
+                        if total_capacity + cluster_size > max_capacity {
+                            rejected_capacity += 1;
+                            continue;
+                        }
+
+                        // SCT validation
+                        if z < 0.0 {
+                            rejected_ethics += 1;
+                            continue;
+                        }
+
+                        // Accept cluster
+                        total_capacity += cluster_size;
+                        accepted += 1;
                     }
 
-                    // SCT validation
-                    if z < 0.0 {
-                        rejected_ethics += 1;
-                        continue;
-                    }
-
-                    // Accept cluster
-                    total_capacity += cluster_size;
-                    accepted += 1;
-                }
-
-                black_box((accepted, rejected_capacity, rejected_ethics, total_capacity));
-            });
-        });
+                    black_box((accepted, rejected_capacity, rejected_ethics, total_capacity));
+                });
+            },
+        );
     }
 
     group.finish();

@@ -41,7 +41,11 @@ impl std::fmt::Display for MessagingError {
         match self {
             MessagingError::SignatureInvalid => write!(f, "Invalid Ed25519 signature"),
             MessagingError::TimestampDriftExceeded(drift) => {
-                write!(f, "Timestamp drift {}s exceeds maximum {}s", drift, MAX_TIMESTAMP_DRIFT_SECS)
+                write!(
+                    f,
+                    "Timestamp drift {}s exceeds maximum {}s",
+                    drift, MAX_TIMESTAMP_DRIFT_SECS
+                )
             }
             MessagingError::ReplayDetected(nonce) => write!(f, "Replay detected: nonce {}", nonce),
             MessagingError::SerializationError(msg) => write!(f, "Serialization error: {}", msg),
@@ -120,7 +124,11 @@ impl ReplayProtection {
         self.nonces.insert(nonce, timestamp);
         // Evict oldest entries if over limit
         if self.nonces.len() > self.max_nonces {
-            if let Some(oldest_nonce) = self.nonces.iter().min_by_key(|&(_, ts)| ts).map(|(n, _)| *n)
+            if let Some(oldest_nonce) = self
+                .nonces
+                .iter()
+                .min_by_key(|&(_, ts)| ts)
+                .map(|(n, _)| *n)
             {
                 self.nonces.remove(&oldest_nonce);
             }
@@ -260,7 +268,10 @@ mod tests {
             - 60_000;
         let msg = make_message(1, old_timestamp, 1.0);
         let result = manager.verify_message(&msg);
-        assert!(matches!(result, Err(MessagingError::TimestampDriftExceeded(_))));
+        assert!(matches!(
+            result,
+            Err(MessagingError::TimestampDriftExceeded(_))
+        ));
     }
 
     #[test]
@@ -271,10 +282,10 @@ mod tests {
             .unwrap()
             .as_millis() as u64;
         let msg = make_message(42, now, 1.0);
-        
+
         // First verification should pass
         assert!(manager.verify_message(&msg).is_ok());
-        
+
         // Second verification with same nonce should fail
         let result = manager.verify_message(&msg);
         assert!(matches!(result, Err(MessagingError::ReplayDetected(42))));
@@ -287,18 +298,23 @@ mod tests {
         replay.record(2, 200);
         replay.record(3, 300);
         assert_eq!(replay.nonces.len(), 3);
-        
+
         // Adding 4th should evict oldest
         replay.record(4, 400);
         assert_eq!(replay.nonces.len(), 3);
         assert!(!replay.is_replay(1)); // Evicted
-        assert!(replay.is_replay(4));  // Present
+        assert!(replay.is_replay(4)); // Present
     }
 
     #[test]
     fn test_default() {
         let manager = MessageChannelManager::default();
-        assert!(manager.replay_protection().lock().unwrap().nonces.is_empty());
+        assert!(manager
+            .replay_protection()
+            .lock()
+            .unwrap()
+            .nonces
+            .is_empty());
     }
 
     #[test]

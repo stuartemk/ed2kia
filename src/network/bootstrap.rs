@@ -145,7 +145,12 @@ pub struct DiscoveryResult {
 
 impl DiscoveryResult {
     /// Create a successful discovery result.
-    pub fn success(peers: Vec<String>, strategy: BootstrapStrategy, time_ms: u64, seeds: usize) -> Self {
+    pub fn success(
+        peers: Vec<String>,
+        strategy: BootstrapStrategy,
+        time_ms: u64,
+        seeds: usize,
+    ) -> Self {
         Self {
             peers,
             strategy,
@@ -239,10 +244,14 @@ impl BootstrapConfig {
             return Err(BootstrapError::NoSeedNodes);
         }
         if self.timeout_ms == 0 {
-            return Err(BootstrapError::InvalidConfig("timeout_ms must be > 0".to_string()));
+            return Err(BootstrapError::InvalidConfig(
+                "timeout_ms must be > 0".to_string(),
+            ));
         }
         if self.max_peers == 0 {
-            return Err(BootstrapError::InvalidConfig("max_peers must be > 0".to_string()));
+            return Err(BootstrapError::InvalidConfig(
+                "max_peers must be > 0".to_string(),
+            ));
         }
         for seed in &self.seed_nodes {
             if seed.transports.is_empty() {
@@ -309,7 +318,11 @@ impl BootstrapProtocol {
     }
 
     /// Select the best seed node based on region and transport compatibility.
-    pub fn select_best_seed(&self, preferred_region: Option<&str>, preferred_transport: TransportType) -> Option<&SeedNode> {
+    pub fn select_best_seed(
+        &self,
+        preferred_region: Option<&str>,
+        preferred_transport: TransportType,
+    ) -> Option<&SeedNode> {
         let active = self.active_seeds();
         if active.is_empty() {
             return None;
@@ -317,9 +330,10 @@ impl BootstrapProtocol {
 
         // Try to find a seed in the preferred region with the preferred transport
         if let Some(region) = preferred_region {
-            if let Some(seed) = active.iter().find(|s| {
-                s.region == region && s.transports.contains(&preferred_transport)
-            }) {
+            if let Some(seed) = active
+                .iter()
+                .find(|s| s.region == region && s.transports.contains(&preferred_transport))
+            {
                 return Some(seed);
             }
             // Fallback to region match without transport
@@ -329,7 +343,10 @@ impl BootstrapProtocol {
         }
 
         // Fallback to any active seed with preferred transport
-        if let Some(seed) = active.iter().find(|s| s.transports.contains(&preferred_transport)) {
+        if let Some(seed) = active
+            .iter()
+            .find(|s| s.transports.contains(&preferred_transport))
+        {
             return Some(seed);
         }
 
@@ -343,7 +360,11 @@ impl BootstrapProtocol {
             BootstrapStrategy::Auto => {
                 // Prefer WebRTC if enabled and seeds support it
                 if self.config.enable_webrtc
-                    && self.config.seed_nodes.iter().any(|s| s.transports.contains(&TransportType::WebRTC))
+                    && self
+                        .config
+                        .seed_nodes
+                        .iter()
+                        .any(|s| s.transports.contains(&TransportType::WebRTC))
                 {
                     return BootstrapStrategy::WebRTCStar;
                 }
@@ -367,7 +388,10 @@ impl BootstrapProtocol {
 
         // Validate configuration
         if let Err(_e) = self.config.validate() {
-            return DiscoveryResult::failed(self.select_strategy(), start.elapsed().as_millis() as u64);
+            return DiscoveryResult::failed(
+                self.select_strategy(),
+                start.elapsed().as_millis() as u64,
+            );
         }
 
         let strategy = self.select_strategy();
@@ -423,7 +447,11 @@ impl BootstrapProtocol {
     }
 
     /// Simulate peer discovery from a seed node.
-    fn simulate_discovery_from_seed(&self, seed: &SeedNode, strategy: &BootstrapStrategy) -> Vec<String> {
+    fn simulate_discovery_from_seed(
+        &self,
+        seed: &SeedNode,
+        strategy: &BootstrapStrategy,
+    ) -> Vec<String> {
         // In production, this performs actual network discovery via:
         // - WebRTC-Star signaling
         // - Circuit Relay v2 queries
@@ -441,11 +469,7 @@ impl BootstrapProtocol {
         };
 
         for i in 0..peer_count {
-            let peer = format!(
-                "{}:{}",
-                seed.address,
-                seed.port + 1000 + i as u16
-            );
+            let peer = format!("{}:{}", seed.address, seed.port + 1000 + i as u16);
             peers.push(peer);
         }
 
@@ -475,7 +499,11 @@ impl BootstrapProtocol {
         let total_discoveries = self.discovery_history.len();
         let successful: usize = self.discovery_history.iter().filter(|r| r.success).count();
         let avg_time = if total_discoveries > 0 {
-            self.discovery_history.iter().map(|r| r.discovery_time_ms).sum::<u64>() / total_discoveries as u64
+            self.discovery_history
+                .iter()
+                .map(|r| r.discovery_time_ms)
+                .sum::<u64>()
+                / total_discoveries as u64
         } else {
             0
         };
@@ -640,9 +668,15 @@ mod tests {
     #[test]
     fn test_strategy_display() {
         assert_eq!(format!("{}", BootstrapStrategy::WebRTCStar), "webrtc-star");
-        assert_eq!(format!("{}", BootstrapStrategy::CircuitRelay), "circuit-relay");
+        assert_eq!(
+            format!("{}", BootstrapStrategy::CircuitRelay),
+            "circuit-relay"
+        );
         assert_eq!(format!("{}", BootstrapStrategy::DnsSd), "dns-sd");
-        assert_eq!(format!("{}", BootstrapStrategy::StaticSeeds), "static-seeds");
+        assert_eq!(
+            format!("{}", BootstrapStrategy::StaticSeeds),
+            "static-seeds"
+        );
         assert_eq!(format!("{}", BootstrapStrategy::Auto), "auto");
     }
 
@@ -669,7 +703,7 @@ mod tests {
             ..BootstrapConfig::default()
         };
         match config.validate() {
-            Err(BootstrapError::NoSeedNodes) => {},
+            Err(BootstrapError::NoSeedNodes) => {}
             other => panic!("Expected NoSeedNodes, got {:?}", other),
         }
     }
@@ -679,7 +713,7 @@ mod tests {
         let mut config = BootstrapConfig::default();
         config.timeout_ms = 0;
         match config.validate() {
-            Err(BootstrapError::InvalidConfig(_)) => {},
+            Err(BootstrapError::InvalidConfig(_)) => {}
             other => panic!("Expected InvalidConfig, got {:?}", other),
         }
     }
@@ -689,7 +723,7 @@ mod tests {
         let mut config = BootstrapConfig::default();
         config.max_peers = 0;
         match config.validate() {
-            Err(BootstrapError::InvalidConfig(_)) => {},
+            Err(BootstrapError::InvalidConfig(_)) => {}
             other => panic!("Expected InvalidConfig, got {:?}", other),
         }
     }
@@ -705,7 +739,12 @@ mod tests {
     #[test]
     fn test_protocol_custom_config() {
         let config = BootstrapConfig {
-            seed_nodes: vec![SeedNode::new(1, "test.local".to_string(), 8000, "test".to_string())],
+            seed_nodes: vec![SeedNode::new(
+                1,
+                "test.local".to_string(),
+                8000,
+                "test".to_string(),
+            )],
             strategy: BootstrapStrategy::StaticSeeds,
             ..BootstrapConfig::default()
         };
@@ -718,7 +757,12 @@ mod tests {
     fn test_add_seed_node() {
         let mut protocol = BootstrapProtocol::new();
         let initial_count = protocol.config.seed_nodes.len();
-        protocol.add_seed_node(SeedNode::new(999, "new.local".to_string(), 7000, "new".to_string()));
+        protocol.add_seed_node(SeedNode::new(
+            999,
+            "new.local".to_string(),
+            7000,
+            "new".to_string(),
+        ));
         assert_eq!(protocol.config.seed_nodes.len(), initial_count + 1);
     }
 
@@ -727,7 +771,11 @@ mod tests {
         let mut protocol = BootstrapProtocol::new();
         let target_id = protocol.config.seed_nodes[0].node_id;
         assert!(protocol.remove_seed_node(target_id));
-        assert!(!protocol.config.seed_nodes.iter().any(|s| s.node_id == target_id));
+        assert!(!protocol
+            .config
+            .seed_nodes
+            .iter()
+            .any(|s| s.node_id == target_id));
     }
 
     #[test]
@@ -746,7 +794,12 @@ mod tests {
     #[test]
     fn test_select_best_seed() {
         let mut protocol = BootstrapProtocol::new();
-        protocol.add_seed_node(SeedNode::new(100, "us.local".to_string(), 8000, "us-east".to_string()));
+        protocol.add_seed_node(SeedNode::new(
+            100,
+            "us.local".to_string(),
+            8000,
+            "us-east".to_string(),
+        ));
 
         let seed = protocol.select_best_seed(Some("us-east"), TransportType::WebRTC);
         assert!(seed.is_some());
@@ -850,9 +903,18 @@ mod tests {
 
     #[test]
     fn test_bootstrap_error_display() {
-        assert_eq!(format!("{}", BootstrapError::NoSeedNodes), "No seed nodes configured");
-        assert_eq!(format!("{}", BootstrapError::Timeout), "Discovery timeout exceeded");
-        assert_eq!(format!("{}", BootstrapError::NetworkUnreachable), "Network unreachable");
+        assert_eq!(
+            format!("{}", BootstrapError::NoSeedNodes),
+            "No seed nodes configured"
+        );
+        assert_eq!(
+            format!("{}", BootstrapError::Timeout),
+            "Discovery timeout exceeded"
+        );
+        assert_eq!(
+            format!("{}", BootstrapError::NetworkUnreachable),
+            "Network unreachable"
+        );
     }
 
     #[test]

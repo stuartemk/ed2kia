@@ -12,15 +12,13 @@
 //! Migration → Hypothesis → Consensus → Exchange → Homeostasis
 //! ```
 
-#[cfg(all(
-    feature = "v3.0-omni-integration",
-))]
+#[cfg(all(feature = "v3.0-omni-integration",))]
 mod omni_node_tests {
-    use ed2kia::orchestration::{
-        OmniNode, RoutingError, SymbiosisValidator, ExistentialCreditLedger,
-        PillarRegistry, PillarId, PillarMessage, PillarStatus,
-    };
     use ed2kia::alignment::sct_core::StuartianTensor;
+    use ed2kia::orchestration::{
+        ExistentialCreditLedger, OmniNode, PillarId, PillarMessage, PillarRegistry, PillarStatus,
+        RoutingError, SymbiosisValidator,
+    };
 
     fn make_message(pillar_id: PillarId, ce_weight: f64) -> PillarMessage {
         PillarMessage::new(
@@ -44,9 +42,18 @@ mod omni_node_tests {
 
         assert_eq!(node.registered_pillars().len(), 4);
         assert_eq!(node.ce_ledger().balance(PillarId::CorpuscularBridge), 100.0);
-        assert_eq!(node.ce_ledger().balance(PillarId::MaieuticSynthesizer), 100.0);
-        assert_eq!(node.ce_ledger().balance(PillarId::SteganographicSurvival), 100.0);
-        assert_eq!(node.ce_ledger().balance(PillarId::ResonanceInterface), 100.0);
+        assert_eq!(
+            node.ce_ledger().balance(PillarId::MaieuticSynthesizer),
+            100.0
+        );
+        assert_eq!(
+            node.ce_ledger().balance(PillarId::SteganographicSurvival),
+            100.0
+        );
+        assert_eq!(
+            node.ce_ledger().balance(PillarId::ResonanceInterface),
+            100.0
+        );
     }
 
     #[test]
@@ -194,15 +201,13 @@ mod omni_node_tests {
     }
 }
 
-#[cfg(all(
-    feature = "v3.0-omni-integration",
-))]
+#[cfg(all(feature = "v3.0-omni-integration",))]
 mod migration_tests {
-    use ed2kia::pillars::steganographic::{
-        MigrationHandshake, MigrationToken, MigrationNegotiator, MigrationError, MigrationStatus,
-    };
-    use ed2kia::pillars::steganographic::transport_rotator::TransportType;
     use ed2kia::alignment::sct_core::StuartianTensor;
+    use ed2kia::pillars::steganographic::transport_rotator::TransportType;
+    use ed2kia::pillars::steganographic::{
+        MigrationError, MigrationHandshake, MigrationNegotiator, MigrationStatus, MigrationToken,
+    };
 
     fn make_handshake(cluster_id: &str, capacity: u64, ce_budget: f64) -> MigrationHandshake {
         MigrationHandshake::new(
@@ -211,7 +216,8 @@ mod migration_tests {
             vec![TransportType::Tcp, TransportType::Quic],
             b"valid_signature".to_vec(),
             ce_budget,
-        ).unwrap()
+        )
+        .unwrap()
     }
 
     fn make_valid_tensor(z: f32) -> StuartianTensor {
@@ -240,7 +246,10 @@ mod migration_tests {
         let tensor = make_valid_tensor(-0.3); // Negative Z
 
         let result = negotiator.negotiate_migration(&handshake, &tensor);
-        assert!(matches!(result, Err(MigrationError::EthicalRejection { .. })));
+        assert!(matches!(
+            result,
+            Err(MigrationError::EthicalRejection { .. })
+        ));
         assert_eq!(negotiator.cluster_count(), 0);
     }
 
@@ -252,7 +261,10 @@ mod migration_tests {
 
         let _ = negotiator.negotiate_migration(&handshake, &tensor);
         let result = negotiator.negotiate_migration(&handshake, &tensor);
-        assert!(matches!(result, Err(MigrationError::ClusterAlreadyExists(_))));
+        assert!(matches!(
+            result,
+            Err(MigrationError::ClusterAlreadyExists(_))
+        ));
     }
 
     #[test]
@@ -262,7 +274,10 @@ mod migration_tests {
         let tensor = make_valid_tensor(0.5);
 
         let result = negotiator.negotiate_migration(&handshake, &tensor);
-        assert!(matches!(result, Err(MigrationError::CapacityExceeded { .. })));
+        assert!(matches!(
+            result,
+            Err(MigrationError::CapacityExceeded { .. })
+        ));
     }
 
     #[test]
@@ -318,16 +333,12 @@ mod migration_tests {
     }
 }
 
-#[cfg(all(
-    feature = "v3.0-omni-integration",
-))]
+#[cfg(all(feature = "v3.0-omni-integration",))]
 mod integration_tests {
-    use ed2kia::orchestration::{OmniNode, PillarId, PillarMessage, PillarStatus};
-    use ed2kia::pillars::steganographic::{
-        MigrationNegotiator, MigrationHandshake,
-    };
-    use ed2kia::pillars::steganographic::transport_rotator::TransportType;
     use ed2kia::alignment::sct_core::StuartianTensor;
+    use ed2kia::orchestration::{OmniNode, PillarId, PillarMessage, PillarStatus};
+    use ed2kia::pillars::steganographic::transport_rotator::TransportType;
+    use ed2kia::pillars::steganographic::{MigrationHandshake, MigrationNegotiator};
 
     fn make_message(pillar_id: PillarId, ce_weight: f64) -> PillarMessage {
         PillarMessage::new(
@@ -354,10 +365,17 @@ mod integration_tests {
             vec![TransportType::Tcp, TransportType::Quic],
             b"cluster_sig".to_vec(),
             40.0,
-        ).unwrap();
-        let migration_tensor = StuartianTensor { x: 0.8, y: 0.2, z: 0.9 };
+        )
+        .unwrap();
+        let migration_tensor = StuartianTensor {
+            x: 0.8,
+            y: 0.2,
+            z: 0.9,
+        };
 
-        let token = negotiator.negotiate_migration(&handshake, &migration_tensor).unwrap();
+        let token = negotiator
+            .negotiate_migration(&handshake, &migration_tensor)
+            .unwrap();
         assert_eq!(token.cluster_id, "new-cluster");
 
         // Step 2: Initialize Omni-Node with all pillars
@@ -393,9 +411,18 @@ mod integration_tests {
         omni.register_pillar(PillarId::ResonanceInterface, 120.0);
 
         assert_eq!(omni.ce_ledger().balance(PillarId::CorpuscularBridge), 50.0);
-        assert_eq!(omni.ce_ledger().balance(PillarId::MaieuticSynthesizer), 100.0);
-        assert_eq!(omni.ce_ledger().balance(PillarId::SteganographicSurvival), 75.0);
-        assert_eq!(omni.ce_ledger().balance(PillarId::ResonanceInterface), 120.0);
+        assert_eq!(
+            omni.ce_ledger().balance(PillarId::MaieuticSynthesizer),
+            100.0
+        );
+        assert_eq!(
+            omni.ce_ledger().balance(PillarId::SteganographicSurvival),
+            75.0
+        );
+        assert_eq!(
+            omni.ce_ledger().balance(PillarId::ResonanceInterface),
+            120.0
+        );
 
         // Total CE emitted
         assert_eq!(omni.ce_ledger().total_emitted(), 345.0);
@@ -447,12 +474,7 @@ mod integration_tests {
             for to in &pillars {
                 if from != to {
                     let result = omni.route_message(*from, *to, &msg, &bad_tensor);
-                    assert!(
-                        result.is_err(),
-                        "Expected rejection for {} -> {}",
-                        from,
-                        to
-                    );
+                    assert!(result.is_err(), "Expected rejection for {} -> {}", from, to);
                 }
             }
         }

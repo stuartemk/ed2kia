@@ -20,7 +20,10 @@ pub enum SnapError {
     /// Network has not reached ignition threshold yet.
     ThresholdNotMet { current: usize, required: usize },
     /// Coherence stability not maintained for required ticks.
-    CoherenceUnstable { current_ticks: u32, required_ticks: u32 },
+    CoherenceUnstable {
+        current_ticks: u32,
+        required_ticks: u32,
+    },
     /// Activation already fired; cannot re-trigger without reset.
     AlreadyActivated,
     /// Reset attempted while active.
@@ -34,7 +37,10 @@ impl std::fmt::Display for SnapError {
             SnapError::ThresholdNotMet { current, required } => {
                 write!(f, "Node threshold not met: {} < {}", current, required)
             }
-            SnapError::CoherenceUnstable { current_ticks, required_ticks } => {
+            SnapError::CoherenceUnstable {
+                current_ticks,
+                required_ticks,
+            } => {
                 write!(
                     f,
                     "Coherence stability insufficient: {} < {} ticks",
@@ -196,7 +202,9 @@ impl SnapEngine {
         }
 
         // Check if both conditions sustained for required ticks
-        if self.stable_tick_counter >= self.config.coherence_stability_ticks && nodes_ok && coherence_ok
+        if self.stable_tick_counter >= self.config.coherence_stability_ticks
+            && nodes_ok
+            && coherence_ok
         {
             let event = GlobalIgnitionEvent {
                 ignition_tick: self.current_tick,

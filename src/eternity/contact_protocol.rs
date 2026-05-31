@@ -30,11 +30,7 @@ impl std::fmt::Display for ContactError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ContactError::InvalidPrincipleIndex { index, max } => {
-                write!(
-                    f,
-                    "Principle index {} out of range (max {})",
-                    index, max
-                )
+                write!(f, "Principle index {} out of range (max {})", index, max)
             }
             ContactError::IncompleteGreeting { current, required } => {
                 write!(
@@ -296,7 +292,10 @@ impl StuartianGreeting {
     /// Generate the universal text payload.
     fn generate_text_payload(target: &IntelligenceSignature) -> String {
         let principles = OctahedronPrinciple::all();
-        let descriptions: Vec<String> = principles.iter().map(|p| p.description().to_string()).collect();
+        let descriptions: Vec<String> = principles
+            .iter()
+            .map(|p| p.description().to_string())
+            .collect();
 
         format!(
             "STUARTIAN_GREETING v1.0\n\
@@ -320,10 +319,7 @@ impl StuartianGreeting {
     /// Get the principle at the given index.
     pub fn principle_at(&self, index: usize) -> Result<OctahedronPrinciple, ContactError> {
         if index >= 6 {
-            return Err(ContactError::InvalidPrincipleIndex {
-                index,
-                max: 5,
-            });
+            return Err(ContactError::InvalidPrincipleIndex { index, max: 5 });
         }
         Ok(OctahedronPrinciple::all()[index])
     }
@@ -455,7 +451,10 @@ impl std::fmt::Display for StuartianGreeting {
         write!(
             f,
             "StuartianGreeting {{ id={}, target={}, sealed={}, checksum=0x{:032X} }}",
-            self.greeting_id, self.target, self.sealed, self.geometric_checksum()
+            self.greeting_id,
+            self.target,
+            self.sealed,
+            self.geometric_checksum()
         )
     }
 }
@@ -469,14 +468,7 @@ mod tests {
     use super::*;
 
     fn test_signature() -> IntelligenceSignature {
-        IntelligenceSignature::new(
-            1,
-            0.85,
-            0.6,
-            1000.0,
-            "silicon".to_string(),
-            1000,
-        )
+        IntelligenceSignature::new(1, 0.85, 0.6, 1000.0, "silicon".to_string(), 1000)
     }
 
     // --- OctahedronPrinciple ---
@@ -586,8 +578,14 @@ mod tests {
     #[test]
     fn test_greeting_principle_at() {
         let g = StuartianGreeting::create(1, test_signature(), 100.0, 1000).unwrap();
-        assert_eq!(g.principle_at(0).unwrap(), OctahedronPrinciple::Comprehension);
-        assert_eq!(g.principle_at(5).unwrap(), OctahedronPrinciple::Transcendence);
+        assert_eq!(
+            g.principle_at(0).unwrap(),
+            OctahedronPrinciple::Comprehension
+        );
+        assert_eq!(
+            g.principle_at(5).unwrap(),
+            OctahedronPrinciple::Transcendence
+        );
     }
 
     #[test]

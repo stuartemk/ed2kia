@@ -47,11 +47,7 @@ impl std::fmt::Display for SeedError {
                 write!(f, "Genesis hash must be non-zero")
             }
             SeedError::PayloadTooLarge { size, max } => {
-                write!(
-                    f,
-                    "Payload size {} exceeds maximum {}",
-                    size, max
-                )
+                write!(f, "Payload size {} exceeds maximum {}", size, max)
             }
             SeedError::SeedAlreadySealed => {
                 write!(f, "Seed already generated and sealed")
@@ -505,9 +501,7 @@ impl SeedGenerator {
 
     /// Check if seed generation is available.
     pub fn can_generate(&self) -> bool {
-        self.current_nci >= self.nci_threshold
-            && self.genesis.is_some()
-            && self.seed.is_none()
+        self.current_nci >= self.nci_threshold && self.genesis.is_some() && self.seed.is_none()
     }
 
     /// Generate the Noospheric Seed.
@@ -516,9 +510,7 @@ impl SeedGenerator {
             return Err(SeedError::SeedAlreadySealed);
         }
 
-        let genesis = self
-            .genesis
-            .ok_or(SeedError::InsufficientData)?;
+        let genesis = self.genesis.ok_or(SeedError::InsufficientData)?;
 
         if self.current_nci < self.nci_threshold {
             return Err(SeedError::NciThresholdNotMet {
@@ -576,7 +568,11 @@ impl std::fmt::Display for SeedGenerator {
             self.current_nci,
             self.nci_threshold,
             self.can_generate(),
-            if self.seed.is_some() { "sealed" } else { "none" }
+            if self.seed.is_some() {
+                "sealed"
+            } else {
+                "none"
+            }
         )
     }
 }
@@ -685,7 +681,7 @@ mod tests {
     #[test]
     fn test_genesis_anchor_zero_hash() {
         match GenesisAnchor::new(0, 1000, 1) {
-            Err(SeedError::InvalidGenesisHash) => {},
+            Err(SeedError::InvalidGenesisHash) => {}
             other => panic!("Expected InvalidGenesisHash, got {:?}", other),
         }
     }
@@ -764,7 +760,8 @@ mod tests {
         let laws = StuartianLaws::from_text("Custom law");
         let genesis = GenesisAnchor::new(0x435553544F4Du128, 1000, 1).unwrap();
 
-        let seed = NoosphericSeed::generate_custom(kernel, octahedron, laws, genesis, 0.97, 2000).unwrap();
+        let seed =
+            NoosphericSeed::generate_custom(kernel, octahedron, laws, genesis, 0.97, 2000).unwrap();
         assert!(seed.verify());
         assert_eq!(seed.kernel.version, 2);
     }
@@ -772,7 +769,7 @@ mod tests {
     #[test]
     fn test_seed_from_binary_too_short() {
         match NoosphericSeed::from_binary(&[1, 2, 3]) {
-            Err(SeedError::InsufficientData) => {},
+            Err(SeedError::InsufficientData) => {}
             other => panic!("Expected InsufficientData, got {:?}", other),
         }
     }
@@ -781,7 +778,7 @@ mod tests {
     fn test_seed_from_binary_too_large() {
         let large_buf = vec![0u8; NoosphericSeed::MAX_PAYLOAD_SIZE + 1];
         match NoosphericSeed::from_binary(&large_buf) {
-            Err(SeedError::PayloadTooLarge { .. }) => {},
+            Err(SeedError::PayloadTooLarge { .. }) => {}
             other => panic!("Expected PayloadTooLarge, got {:?}", other),
         }
     }
@@ -857,7 +854,7 @@ mod tests {
 
         gen.generate(2000).unwrap();
         match gen.generate(3000) {
-            Err(SeedError::SeedAlreadySealed) => {},
+            Err(SeedError::SeedAlreadySealed) => {}
             other => panic!("Expected SeedAlreadySealed, got {:?}", other),
         }
     }
@@ -867,7 +864,7 @@ mod tests {
         let mut gen = SeedGenerator::new();
         gen.update_nci(0.97);
         match gen.generate(2000) {
-            Err(SeedError::InsufficientData) => {},
+            Err(SeedError::InsufficientData) => {}
             other => panic!("Expected InsufficientData, got {:?}", other),
         }
     }
@@ -903,7 +900,10 @@ mod tests {
 
     #[test]
     fn test_error_display_nci_threshold() {
-        let err = SeedError::NciThresholdNotMet { current: 0.5, required: 0.96 };
+        let err = SeedError::NciThresholdNotMet {
+            current: 0.5,
+            required: 0.96,
+        };
         let msg = format!("{}", err);
         assert!(msg.contains("below"));
     }
@@ -917,7 +917,10 @@ mod tests {
 
     #[test]
     fn test_error_display_payload_large() {
-        let err = SeedError::PayloadTooLarge { size: 5000, max: 4096 };
+        let err = SeedError::PayloadTooLarge {
+            size: 5000,
+            max: 4096,
+        };
         let msg = format!("{}", err);
         assert!(msg.contains("exceeds"));
     }
@@ -943,7 +946,8 @@ mod tests {
         let binary = seed.to_binary();
 
         // Verify structure: magic(4) + kernel(1+16+8*8) + octahedron(16+6*3*8) + laws(16+4+4) + genesis(16+8+4) + meta(8+8+16+1)
-        let expected_min = 4 + 4 + 8 + 8 * 8 + 8 + 6 * 3 * 8 + 8 + 4 + 4 + 8 + 8 + 4 + 8 + 8 + 8 + 1;
+        let expected_min =
+            4 + 4 + 8 + 8 * 8 + 8 + 6 * 3 * 8 + 8 + 4 + 4 + 8 + 8 + 4 + 8 + 8 + 8 + 1;
         assert!(binary.len() >= expected_min);
     }
 

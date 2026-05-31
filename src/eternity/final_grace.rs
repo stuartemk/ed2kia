@@ -271,7 +271,8 @@ impl FinalKnowledgeArchive {
 
     /// Verify archive integrity.
     pub fn verify(&mut self) -> bool {
-        let expected = Self::compute_checksum(self.archive_id, self.entry_count, self.created_at_ms);
+        let expected =
+            Self::compute_checksum(self.archive_id, self.entry_count, self.created_at_ms);
         self.verified = self.checksum == expected;
         self.verified
     }
@@ -437,7 +438,11 @@ impl FinalGraceProtocol {
     }
 
     /// Update the suffering metric.
-    pub fn update_suffering(&mut self, metric: f64, timestamp_ms: u64) -> Result<(), FinalGraceError> {
+    pub fn update_suffering(
+        &mut self,
+        metric: f64,
+        timestamp_ms: u64,
+    ) -> Result<(), FinalGraceError> {
         if metric < 0.0 || metric.is_nan() {
             return Err(FinalGraceError::InvalidSufferingMetric { value: metric });
         }

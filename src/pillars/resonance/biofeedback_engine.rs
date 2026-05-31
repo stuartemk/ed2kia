@@ -310,7 +310,9 @@ impl BiofeedbackEngine {
 
         // Validate SCT guard (Z >= 0).
         if !response.is_approved() {
-            return Err(BiofeedbackError::SCTRejected(response.semantic.sct_z as f64));
+            return Err(BiofeedbackError::SCTRejected(
+                response.semantic.sct_z as f64,
+            ));
         }
 
         // Stage 4: Adaptive Baseline Update
@@ -493,7 +495,9 @@ mod tests {
         let voice = make_voice(128);
         let expr = make_expressions(128);
 
-        let state = engine.calibrate(&rppg, &voice, &expr).expect("Calibration failed");
+        let state = engine
+            .calibrate(&rppg, &voice, &expr)
+            .expect("Calibration failed");
         assert!(engine.get_stats().calibrated);
         assert!(state.stress_index >= 0.0 && state.stress_index <= 1.0);
     }
@@ -520,8 +524,12 @@ mod tests {
         let voice = make_voice(128);
         let expr = make_expressions(128);
 
-        engine.calibrate(&rppg, &voice, &expr).expect("Calibration failed");
-        let result = engine.process_cycle(&rppg, &voice, &expr).expect("Cycle failed");
+        engine
+            .calibrate(&rppg, &voice, &expr)
+            .expect("Calibration failed");
+        let result = engine
+            .process_cycle(&rppg, &voice, &expr)
+            .expect("Cycle failed");
 
         assert!(result.homeostasis_score >= 0.0 && result.homeostasis_score <= 1.0);
         assert!(engine.get_stats().total_cycles == 1);
@@ -534,10 +542,14 @@ mod tests {
         let voice = make_voice(128);
         let expr = make_expressions(128);
 
-        engine.calibrate(&rppg, &voice, &expr).expect("Calibration failed");
+        engine
+            .calibrate(&rppg, &voice, &expr)
+            .expect("Calibration failed");
 
         for _ in 0..5 {
-            engine.process_cycle(&rppg, &voice, &expr).expect("Cycle failed");
+            engine
+                .process_cycle(&rppg, &voice, &expr)
+                .expect("Cycle failed");
         }
 
         assert_eq!(engine.get_stats().total_cycles, 5);
@@ -551,8 +563,12 @@ mod tests {
         let voice = make_voice(128);
         let expr = make_expressions(128);
 
-        engine.calibrate(&rppg, &voice, &expr).expect("Calibration failed");
-        let result = engine.process_cycle(&rppg, &voice, &expr).expect("Cycle failed");
+        engine
+            .calibrate(&rppg, &voice, &expr)
+            .expect("Calibration failed");
+        let result = engine
+            .process_cycle(&rppg, &voice, &expr)
+            .expect("Cycle failed");
 
         assert_eq!(result.adapt_steps, 1);
         assert_eq!(engine.get_stats().total_adaptations, 1);
@@ -569,8 +585,12 @@ mod tests {
         let voice = make_voice(128);
         let expr = make_expressions(128);
 
-        engine.calibrate(&rppg, &voice, &expr).expect("Calibration failed");
-        let result = engine.process_cycle(&rppg, &voice, &expr).expect("Cycle failed");
+        engine
+            .calibrate(&rppg, &voice, &expr)
+            .expect("Calibration failed");
+        let result = engine
+            .process_cycle(&rppg, &voice, &expr)
+            .expect("Cycle failed");
 
         assert_eq!(result.adapt_steps, 0);
         assert_eq!(engine.get_stats().total_adaptations, 0);
@@ -610,7 +630,9 @@ mod tests {
         let voice = make_voice(128);
         let expr = make_expressions(128);
 
-        engine.calibrate(&rppg, &voice, &expr).expect("Calibration failed");
+        engine
+            .calibrate(&rppg, &voice, &expr)
+            .expect("Calibration failed");
         assert!(engine.get_stats().calibrated);
 
         engine.reset();
@@ -666,12 +688,16 @@ mod tests {
         let expr = make_expressions(128);
 
         // Calibrate.
-        let baseline = engine.calibrate(&rppg, &voice, &expr).expect("Calibration failed");
+        let baseline = engine
+            .calibrate(&rppg, &voice, &expr)
+            .expect("Calibration failed");
         assert!(baseline.homeostasis_score() > 0.0);
 
         // Run multiple cycles.
         for i in 0..10 {
-            let result = engine.process_cycle(&rppg, &voice, &expr).expect("Cycle failed");
+            let result = engine
+                .process_cycle(&rppg, &voice, &expr)
+                .expect("Cycle failed");
             assert!(result.homeostasis_score >= 0.0);
             let _ = i; // Ensure loop executes
         }
@@ -686,7 +712,9 @@ mod tests {
         let voice = make_voice(128);
         let expr = make_expressions(128);
 
-        engine.calibrate(&rppg, &voice, &expr).expect("Calibration failed");
+        engine
+            .calibrate(&rppg, &voice, &expr)
+            .expect("Calibration failed");
 
         // Same state should not need recalibration.
         let state = engine

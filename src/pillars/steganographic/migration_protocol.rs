@@ -20,8 +20,8 @@
 //!
 //! **Reference:** Sprint 47 — Omni-Node Integration & Symbiotic Ignition Sequence
 
-use crate::pillars::steganographic::transport_rotator::{TransportType, TransportHealth};
-use crate::alignment::sct_core::{StuartianTensor, SCTDecision};
+use crate::alignment::sct_core::{SCTDecision, StuartianTensor};
+use crate::pillars::steganographic::transport_rotator::{TransportHealth, TransportType};
 use std::collections::HashMap;
 
 /// Maximum allowed CE cost per migration handshake.
@@ -61,10 +61,21 @@ impl std::fmt::Display for MigrationError {
                 write!(f, "Invalid cluster identifier: '{}'", id)
             }
             MigrationError::EthicalRejection { z } => {
-                write!(f, "SCT ethical rejection for migration: Z = {:.3} < {:.3}", z, MIGRATION_Z_THRESHOLD)
+                write!(
+                    f,
+                    "SCT ethical rejection for migration: Z = {:.3} < {:.3}",
+                    z, MIGRATION_Z_THRESHOLD
+                )
             }
-            MigrationError::InsufficientCE { required, available } => {
-                write!(f, "Insufficient CE for migration: required {:.2}, available {:.2}", required, available)
+            MigrationError::InsufficientCE {
+                required,
+                available,
+            } => {
+                write!(
+                    f,
+                    "Insufficient CE for migration: required {:.2}, available {:.2}",
+                    required, available
+                )
             }
             MigrationError::NoCompatibleTransport => {
                 write!(f, "No compatible transport found for cluster onboarding")
@@ -76,7 +87,11 @@ impl std::fmt::Display for MigrationError {
                 write!(f, "Migration token has expired")
             }
             MigrationError::CapacityExceeded { requested, max } => {
-                write!(f, "Cluster capacity exceeds network limits: requested {}, max {}", requested, max)
+                write!(
+                    f,
+                    "Cluster capacity exceeds network limits: requested {}, max {}",
+                    requested, max
+                )
             }
         }
     }
@@ -161,7 +176,11 @@ impl MigrationHandshake {
         self.health_reports
             .iter()
             .filter(|r| r.is_healthy)
-            .max_by(|a, b| a.score().partial_cmp(&b.score()).unwrap_or(std::cmp::Ordering::Equal))
+            .max_by(|a, b| {
+                a.score()
+                    .partial_cmp(&b.score())
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
             .map(|r| r.transport.clone())
     }
 
@@ -348,7 +367,8 @@ impl MigrationNegotiator {
         }
 
         // Step 4: SCT ethical validation
-        let decision = sct_tensor.evaluate_trajectory()
+        let decision = sct_tensor
+            .evaluate_trajectory()
             .map_err(|_| MigrationError::EthicalRejection { z: -1.0 })?;
         match decision {
             SCTDecision::Approved(z) => {
@@ -362,7 +382,8 @@ impl MigrationNegotiator {
         }
 
         // Step 5: Select optimal transport
-        let primary_transport = handshake.get_best_transport()
+        let primary_transport = handshake
+            .get_best_transport()
             .ok_or(MigrationError::NoCompatibleTransport)?;
 
         // Step 6: Generate bootstrap routes
@@ -375,13 +396,12 @@ impl MigrationNegotiator {
             primary_transport,
             handshake.ce_budget,
             handshake.ce_budget * 2.0, // Max limit is 2x initial
-        ).with_sct_threshold(self.sct_z_threshold);
+        )
+        .with_sct_threshold(self.sct_z_threshold);
 
         // Step 8: Register cluster
-        self.registered_clusters.insert(
-            handshake.cluster_id.clone(),
-            token.clone(),
-        );
+        self.registered_clusters
+            .insert(handshake.cluster_id.clone(), token.clone());
 
         // Step 9: Record migration in audit log
         self.migration_log.push(MigrationRecord {
@@ -504,7 +524,8 @@ mod tests {
             vec![TransportType::Tcp, TransportType::Quic],
             b"valid_signature".to_vec(),
             ce_budget,
-        ).unwrap()
+        )
+        .unwrap()
     }
 
     fn make_valid_tensor(z: f32) -> StuartianTensor {
@@ -546,13 +567,8 @@ mod tests {
 
     #[test]
     fn test_handshake_no_transports() {
-        let result = MigrationHandshake::new(
-            "cluster-1".to_string(),
-            1000,
-            vec![],
-            b"sig".to_vec(),
-            25.0,
-        );
+        let result =
+            MigrationHandshake::new("cluster-1".to_string(), 1000, vec![], b"sig".to_vec(), 25.0);
         assert!(matches!(result, Err(MigrationError::NoCompatibleTransport)));
     }
 
@@ -588,7 +604,8 @@ mod tests {
             vec![TransportType::Tcp],
             vec![], // Empty signature
             25.0,
-        ).unwrap();
+        )
+        .unwrap();
         assert!(handshake.verify_signature().is_err());
     }
 
@@ -636,7 +653,8 @@ mod tests {
             TransportType::Tcp,
             25.0,
             50.0,
-        ).with_sct_threshold(0.5);
+        )
+        .with_sct_threshold(0.5);
         assert_eq!(token.sct_z_threshold, 0.5);
     }
 
@@ -687,7 +705,10 @@ mod tests {
 
         let _ = negotiator.negotiate_migration(&handshake, &tensor);
         let result = negotiator.negotiate_migration(&handshake, &tensor);
-        assert!(matches!(result, Err(MigrationError::ClusterAlreadyExists(_))));
+        assert!(matches!(
+            result,
+            Err(MigrationError::ClusterAlreadyExists(_))
+        ));
     }
 
     #[test]
@@ -697,7 +718,10 @@ mod tests {
         let tensor = make_valid_tensor(0.5);
 
         let result = negotiator.negotiate_migration(&handshake, &tensor);
-        assert!(matches!(result, Err(MigrationError::CapacityExceeded { .. })));
+        assert!(matches!(
+            result,
+            Err(MigrationError::CapacityExceeded { .. })
+        ));
     }
 
     #[test]
@@ -707,7 +731,10 @@ mod tests {
         let tensor = make_valid_tensor(-0.5); // Negative Z
 
         let result = negotiator.negotiate_migration(&handshake, &tensor);
-        assert!(matches!(result, Err(MigrationError::EthicalRejection { .. })));
+        assert!(matches!(
+            result,
+            Err(MigrationError::EthicalRejection { .. })
+        ));
     }
 
     #[test]
@@ -719,7 +746,8 @@ mod tests {
             vec![TransportType::Tcp],
             vec![], // Empty signature
             25.0,
-        ).unwrap();
+        )
+        .unwrap();
         let tensor = make_valid_tensor(0.5);
 
         let result = negotiator.negotiate_migration(&handshake, &tensor);
@@ -802,7 +830,10 @@ mod tests {
     #[test]
     fn test_migration_status_display() {
         assert_eq!(format!("{}", MigrationStatus::Success), "success");
-        assert_eq!(format!("{}", MigrationStatus::EthicalRejection), "ethical_rejection");
+        assert_eq!(
+            format!("{}", MigrationStatus::EthicalRejection),
+            "ethical_rejection"
+        );
         assert_eq!(format!("{}", MigrationStatus::Failed), "failed");
     }
 

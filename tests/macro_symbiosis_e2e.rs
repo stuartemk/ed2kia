@@ -11,18 +11,19 @@ mod macro_symbiosis_tests {
     use ed2kia::economy::symbiotic_ledger::{
         CETransaction, GlobalSymbioticLedger, LedgerError, ValidationResult,
     };
-    use ed2kia::pillars::corpuscular::macro_bridge::{
-        LocalExchangeEvent, MacroCorpuscularBridge,
-    };
-    use ed2kia::time::temporal_cohesion::{
-        SymbioticTimestamp, TemporalCohesionEngine, TimeSample,
-    };
+    use ed2kia::pillars::corpuscular::macro_bridge::{LocalExchangeEvent, MacroCorpuscularBridge};
+    use ed2kia::time::temporal_cohesion::{SymbioticTimestamp, TemporalCohesionEngine, TimeSample};
 
     // ============================================================================
     // Helper Functions
     // ============================================================================
 
-    fn make_exchange(exchange_id: u64, node_id: u64, ce: f64, resource: &str) -> LocalExchangeEvent {
+    fn make_exchange(
+        exchange_id: u64,
+        node_id: u64,
+        ce: f64,
+        resource: &str,
+    ) -> LocalExchangeEvent {
         LocalExchangeEvent {
             exchange_id,
             origin_node: node_id,
@@ -54,7 +55,15 @@ mod macro_symbiosis_tests {
         )
     }
 
-    fn make_child_tx(hash: u128, origin: u64, validator: u64, ce: f64, ts: u64, node_ts: u64, parents: [Option<u128>; 2]) -> CETransaction {
+    fn make_child_tx(
+        hash: u128,
+        origin: u64,
+        validator: u64,
+        ce: f64,
+        ts: u64,
+        node_ts: u64,
+        parents: [Option<u128>; 2],
+    ) -> CETransaction {
         CETransaction::new(
             hash,
             origin,
@@ -122,7 +131,11 @@ mod macro_symbiosis_tests {
         let avg_variance: f64 = variances.iter().sum::<f64>() / variances.len() as f64;
 
         // With symmetric samples, variance converges to near zero.
-        assert!(avg_variance < 1.0, "Average variance {} too high", avg_variance);
+        assert!(
+            avg_variance < 1.0,
+            "Average variance {} too high",
+            avg_variance
+        );
     }
 
     #[test]
@@ -191,7 +204,12 @@ mod macro_symbiosis_tests {
         // Check that most nodes converged.
         let converged_count = engines
             .iter()
-            .filter(|e| matches!(e.get_sync_status(), ed2kia::time::temporal_cohesion::SyncStatus::Converged))
+            .filter(|e| {
+                matches!(
+                    e.get_sync_status(),
+                    ed2kia::time::temporal_cohesion::SyncStatus::Converged
+                )
+            })
             .count();
 
         assert!(
@@ -243,8 +261,16 @@ mod macro_symbiosis_tests {
 
         let stats = ledger.get_stats();
         assert_eq!(stats.total_transactions, 1001); // 1000 + genesis
-        assert!(stats.dag_depth > 500, "DAG depth {} too shallow", stats.dag_depth);
-        assert!(stats.unique_nodes > 40, "Only {} unique nodes", stats.unique_nodes);
+        assert!(
+            stats.dag_depth > 500,
+            "DAG depth {} too shallow",
+            stats.dag_depth
+        );
+        assert!(
+            stats.unique_nodes > 40,
+            "Only {} unique nodes",
+            stats.unique_nodes
+        );
     }
 
     #[test]
@@ -292,7 +318,8 @@ mod macro_symbiosis_tests {
         for (i, ledger) in ledgers.iter().enumerate() {
             let stats = ledger.get_stats();
             assert_eq!(
-                stats.total_transactions, 101, // 100 + genesis
+                stats.total_transactions,
+                101, // 100 + genesis
                 "Validator {} has {} transactions",
                 i + 1,
                 stats.total_transactions
@@ -391,7 +418,12 @@ mod macro_symbiosis_tests {
         }
 
         // Each node processes 20 exchanges (total 1000).
-        let resources = ["3d_print", "solar_energy", "hydroponics", "water_purification"];
+        let resources = [
+            "3d_print",
+            "solar_energy",
+            "hydroponics",
+            "water_purification",
+        ];
         let mut total_bridged = 0usize;
 
         for (i, bridge) in bridges.iter_mut().enumerate() {
@@ -399,12 +431,7 @@ mod macro_symbiosis_tests {
 
             for j in 0..20 {
                 let resource = &resources[(i + j as usize) % resources.len()];
-                let event = make_exchange(
-                    node_id * 1000 + j,
-                    node_id,
-                    5.0,
-                    resource,
-                );
+                let event = make_exchange(node_id * 1000 + j, node_id, 5.0, resource);
 
                 match bridge.bridge_exchange(event) {
                     Ok(_) => total_bridged += 1,
@@ -420,7 +447,8 @@ mod macro_symbiosis_tests {
             let node_id = (i + 1) as u64;
             let stats = bridge.ledger().get_stats();
             assert_eq!(
-                stats.total_transactions, 21, // 20 + genesis
+                stats.total_transactions,
+                21, // 20 + genesis
                 "Node {} has {} transactions",
                 node_id,
                 stats.total_transactions
@@ -469,12 +497,7 @@ mod macro_symbiosis_tests {
         let resources = ["3d_print", "solar_energy", "hydroponics"];
         for (i, resource) in resources.iter().enumerate() {
             for j in 0..5 {
-                let event = make_exchange(
-                    (2001 + i * 10 + j) as u64,
-                    2,
-                    10.0,
-                    resource,
-                );
+                let event = make_exchange((2001 + i * 10 + j) as u64, 2, 10.0, resource);
                 bridge.bridge_exchange(event).unwrap();
             }
         }

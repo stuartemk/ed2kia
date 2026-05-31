@@ -39,9 +39,7 @@ use crate::pillars::steganographic::harmonic_flow::{
 };
 
 #[cfg(feature = "v3.6-aegis-resonance")]
-use crate::pillars::resonance::biofeedback_engine::{
-    BiofeedbackEngine, BiofeedbackResult,
-};
+use crate::pillars::resonance::biofeedback_engine::{BiofeedbackEngine, BiofeedbackResult};
 
 // ---------------------------------------------------------------------------
 // Error Types
@@ -55,7 +53,10 @@ pub enum AegisError {
     /// Biofeedback pipeline (P4) error.
     BiofeedbackError(String),
     /// Symbiotic alignment failed — P3 and P4 out of harmony.
-    AlignmentMismatch { network_score: f64, human_score: f64 },
+    AlignmentMismatch {
+        network_score: f64,
+        human_score: f64,
+    },
     /// SCT guard rejected the symbiotic operation.
     SCTRejected(f64),
     /// Configuration error.
@@ -276,8 +277,8 @@ impl AegisHealer {
         let harmonic_flow = HarmonicFlow::with_config(flow_config);
 
         // Create BiofeedbackEngine.
-        let biofeedback = BiofeedbackEngine::new()
-            .map_err(|e| AegisError::BiofeedbackError(format!("{}", e)))?;
+        let biofeedback =
+            BiofeedbackEngine::new().map_err(|e| AegisError::BiofeedbackError(format!("{}", e)))?;
 
         Ok(Self {
             harmonic_flow,
@@ -298,10 +299,7 @@ impl AegisHealer {
     // --- Network Operations (P3) ---
 
     /// Obfuscate a network payload through the harmonic flow pipeline.
-    pub fn obfuscate_network(
-        &mut self,
-        payload: &[u8],
-    ) -> Result<ObfuscatedStream, AegisError> {
+    pub fn obfuscate_network(&mut self, payload: &[u8]) -> Result<ObfuscatedStream, AegisError> {
         self.harmonic_flow
             .obfuscate(payload)
             .map_err(|e| AegisError::NetworkError(format!("{}", e)))
@@ -315,8 +313,7 @@ impl AegisHealer {
 
     /// Report transport health to the harmonic flow pipeline.
     pub fn report_transport_health(&mut self, success_rate: f64, latency_ms: f64) {
-        self.harmonic_flow
-            .report_health(success_rate, latency_ms);
+        self.harmonic_flow.report_health(success_rate, latency_ms);
     }
 
     // --- Biofeedback Operations (P4) ---
@@ -328,7 +325,8 @@ impl AegisHealer {
         voice: &[f32],
         expressions: &[f32],
     ) -> Result<(), AegisError> {
-        let _state = self.biofeedback
+        let _state = self
+            .biofeedback
             .calibrate(rppg, voice, expressions)
             .map_err(|e| AegisError::BiofeedbackError(format!("{}", e)))?;
         Ok(())
@@ -510,7 +508,7 @@ mod tests {
     #[cfg(feature = "v3.6-aegis-resonance")]
     mod with_feature {
         use super::super::{
-            AegisConfig, AegisError, AegisHealer, HealingAction, AegisSymbioticState,
+            AegisConfig, AegisError, AegisHealer, AegisSymbioticState, HealingAction,
         };
 
         fn make_rppg(len: usize) -> Vec<f32> {
@@ -661,7 +659,8 @@ mod tests {
             let rppg = make_rppg(128);
             let voice = make_voice(128);
             let expr = make_expressions(128);
-            healer.calibrate_biofeedback(&rppg, &voice, &expr)
+            healer
+                .calibrate_biofeedback(&rppg, &voice, &expr)
                 .expect("Calibration failed");
         }
 

@@ -212,11 +212,7 @@ impl AutoNatEngine {
     }
 
     /// Procesa la respuesta de un servidor AutoNAT.
-    pub fn process_server_response(
-        &mut self,
-        success: bool,
-        server_observed_addr: Option<String>,
-    ) {
+    pub fn process_server_response(&mut self, success: bool, server_observed_addr: Option<String>) {
         self.dial_attempts += 1;
         if success {
             if let Some(addr) = server_observed_addr {
@@ -232,7 +228,14 @@ impl AutoNatEngine {
 
     /// Simula un intento de dial desde un servidor remoto.
     pub fn simulate_server_dial(&mut self, can_reach: bool, observed_addr: &str) {
-        self.process_server_response(can_reach, if can_reach { Some(observed_addr.to_string()) } else { None });
+        self.process_server_response(
+            can_reach,
+            if can_reach {
+                Some(observed_addr.to_string())
+            } else {
+                None
+            },
+        );
     }
 
     pub fn get_status(&self) -> AutoNatStatus {
@@ -386,7 +389,7 @@ impl Default for MeshConfig {
             k_bucket_size: 20,
             alpha_bits: 128,
             autonat_max_attempts: 5,
-            circuit_ttl_ms: 300_000, // 5 minutos
+            circuit_ttl_ms: 300_000,  // 5 minutos
             peer_timeout_ms: 600_000, // 10 minutos
             bootstrap_nodes: vec![
                 (1, "/ip4/10.0.0.1/tcp/4001".to_string()),
@@ -500,7 +503,12 @@ impl PlanetaryMesh {
     // ------------------------------------------------------------------
 
     /// Crea un circuito de relay entre dos pares privados.
-    pub fn create_relay_circuit(&mut self, peer_a: u128, peer_b: u128, relay_node: u128) -> Result<u64, MeshError> {
+    pub fn create_relay_circuit(
+        &mut self,
+        peer_a: u128,
+        peer_b: u128,
+        relay_node: u128,
+    ) -> Result<u64, MeshError> {
         let circuit_id = self.next_circuit_id;
         self.next_circuit_id += 1;
         let circuit = RelayCircuit::new(
@@ -516,8 +524,15 @@ impl PlanetaryMesh {
     }
 
     /// Establece un circuito y intenta hole punching.
-    pub fn establish_and_punch(&mut self, circuit_id: u64, punch_success: bool) -> Result<CircuitState, MeshError> {
-        let circuit = self.circuits.get_mut(&circuit_id).ok_or(MeshError::CircuitFailed(circuit_id))?;
+    pub fn establish_and_punch(
+        &mut self,
+        circuit_id: u64,
+        punch_success: bool,
+    ) -> Result<CircuitState, MeshError> {
+        let circuit = self
+            .circuits
+            .get_mut(&circuit_id)
+            .ok_or(MeshError::CircuitFailed(circuit_id))?;
         circuit.state = CircuitState::Established;
         circuit.attempt_hole_punch(punch_success);
         if circuit.state == CircuitState::HolePunched {
@@ -541,7 +556,8 @@ impl PlanetaryMesh {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default()
             .as_millis() as u64;
-        self.k_table.prune_inactive(now, self.config.peer_timeout_ms)
+        self.k_table
+            .prune_inactive(now, self.config.peer_timeout_ms)
     }
 
     // ------------------------------------------------------------------
@@ -622,7 +638,10 @@ mod tests {
         let mut bucket = KademliaBucket::new(0, 2);
         bucket.add_or_update(make_peer(1, "a", 1));
         bucket.add_or_update(make_peer(2, "b", 1));
-        assert_eq!(bucket.add_or_update(make_peer(3, "c", 1)), BucketAction::Full);
+        assert_eq!(
+            bucket.add_or_update(make_peer(3, "c", 1)),
+            BucketAction::Full
+        );
         assert!(bucket.needs_split());
     }
 
@@ -664,7 +683,10 @@ mod tests {
     fn test_autonat_public_detection() {
         let mut engine = AutoNatEngine::new();
         engine.simulate_server_dial(true, "203.0.113.1:4001");
-        assert_eq!(engine.get_status(), AutoNatStatus::Public("203.0.113.1:4001".to_string()));
+        assert_eq!(
+            engine.get_status(),
+            AutoNatStatus::Public("203.0.113.1:4001".to_string())
+        );
         assert!(!engine.needs_relay());
     }
 

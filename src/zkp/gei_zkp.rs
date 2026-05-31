@@ -187,7 +187,9 @@ impl GEIZKPCircuit {
         let mut id_hasher = Sha256::new();
         id_hasher.update(challenge);
         let mut commitment_buf = Vec::new();
-        prover_commitment.serialize_compressed(&mut commitment_buf).ok();
+        prover_commitment
+            .serialize_compressed(&mut commitment_buf)
+            .ok();
         id_hasher.update(&commitment_buf);
         let proof_id_bytes = id_hasher.finalize();
         let proof_id = format!("gei-{}", hex_encode(&proof_id_bytes[..8]));
@@ -231,11 +233,7 @@ impl GEIZKPCircuit {
             return GEIVerificationResult::CircuitFailure;
         }
 
-        for (i, &expected_response_affine) in proof
-            .challenge_response
-            .iter()
-            .enumerate()
-        {
+        for (i, &expected_response_affine) in proof.challenge_response.iter().enumerate() {
             if let Some(&gen) = self.generators.get(i) {
                 let expected: G1Affine = (G1Projective::from(gen) * challenge_scalar).into();
                 if expected != expected_response_affine {
@@ -383,8 +381,7 @@ impl GEICertificationAuthority {
             self.current_round,
             validator_signatures.len(),
         );
-        let witness =
-            GEIZKPCircuit::witness_from_gei(gei, point_cloud_hash, validator_signatures);
+        let witness = GEIZKPCircuit::witness_from_gei(gei, point_cloud_hash, validator_signatures);
 
         Some(self.circuit.generate_proof(&witness, &params))
     }
@@ -480,7 +477,10 @@ mod tests {
         };
         let challenge1 = GEIZKPCircuit::compute_challenge(&params1);
         let challenge2 = GEIZKPCircuit::compute_challenge(&params2);
-        assert_ne!(challenge1, challenge2, "Different params should yield different challenges");
+        assert_ne!(
+            challenge1, challenge2,
+            "Different params should yield different challenges"
+        );
     }
 
     // ─── BFT Threshold Tests ───
@@ -730,12 +730,7 @@ mod tests {
         };
 
         let signatures = vec![[1u8; 32], [2u8; 32], [3u8; 32]];
-        let proof = ca.certify(
-            &gei,
-            100,
-            [7u8; 32],
-            signatures,
-        );
+        let proof = ca.certify(&gei, 100, [7u8; 32], signatures);
         assert!(proof.is_some());
     }
 
@@ -777,16 +772,28 @@ mod tests {
         let ca = GEICertificationAuthority::new(3);
         let geis = vec![
             GeometricEthicalInvariant {
-                b0: 0.1, d0: 0.5, b1: 0.2, d1: 0.6,
-                ph0_integral: 1.0, ph1_integral: 0.5,
-                persistent_ph0_count: 3, persistent_ph1_count: 1,
-                alpha: 2.0, persistence_threshold: 0.05,
+                b0: 0.1,
+                d0: 0.5,
+                b1: 0.2,
+                d1: 0.6,
+                ph0_integral: 1.0,
+                ph1_integral: 0.5,
+                persistent_ph0_count: 3,
+                persistent_ph1_count: 1,
+                alpha: 2.0,
+                persistence_threshold: 0.05,
             },
             GeometricEthicalInvariant {
-                b0: 0.2, d0: 0.6, b1: 0.3, d1: 0.7,
-                ph0_integral: 2.0, ph1_integral: 1.0,
-                persistent_ph0_count: 4, persistent_ph1_count: 2,
-                alpha: 2.0, persistence_threshold: 0.05,
+                b0: 0.2,
+                d0: 0.6,
+                b1: 0.3,
+                d1: 0.7,
+                ph0_integral: 2.0,
+                ph1_integral: 1.0,
+                persistent_ph0_count: 4,
+                persistent_ph1_count: 2,
+                alpha: 2.0,
+                persistence_threshold: 0.05,
             },
         ];
         let point_counts = vec![100, 200];
@@ -801,9 +808,18 @@ mod tests {
 
     #[test]
     fn test_verification_result_equality() {
-        assert_eq!(GEIVerificationResult::Verified, GEIVerificationResult::Verified);
-        assert_eq!(GEIVerificationResult::InvalidGEI, GEIVerificationResult::InvalidGEI);
-        assert_ne!(GEIVerificationResult::Verified, GEIVerificationResult::InvalidGEI);
+        assert_eq!(
+            GEIVerificationResult::Verified,
+            GEIVerificationResult::Verified
+        );
+        assert_eq!(
+            GEIVerificationResult::InvalidGEI,
+            GEIVerificationResult::InvalidGEI
+        );
+        assert_ne!(
+            GEIVerificationResult::Verified,
+            GEIVerificationResult::InvalidGEI
+        );
     }
 
     // ─── Witness Tests ───

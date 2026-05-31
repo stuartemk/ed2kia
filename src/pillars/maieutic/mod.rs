@@ -18,8 +18,8 @@
 //!
 //! **Reference:** Sprint 44 — Maieutic Synthesizer Implementation (Pillar 2)
 
-pub mod hypothesis_engine;
 pub mod bio_sim_worker;
+pub mod hypothesis_engine;
 pub mod scientific_consensus;
 #[cfg(feature = "v3.2-genesis-manifold")]
 pub mod workloads;
@@ -94,7 +94,8 @@ impl MaieuticEngine {
         evidence: hypothesis_engine::Evidence,
     ) -> Result<(), String> {
         // Submit to consensus engine first.
-        self.consensus.submit_evidence(hypothesis_id, evidence.clone())
+        self.consensus
+            .submit_evidence(hypothesis_id, evidence.clone())
             .map_err(|e| format!("Consensus error: {}", e))?;
         // Then to hypothesis engine.
         self.hypothesis_engine
@@ -238,13 +239,14 @@ mod tests {
         let mut engine = MaieuticEngine::new();
 
         // Generate hypothesis.
-        engine.generate_hypothesis(
-            "h1".to_string(),
-            hypothesis_engine::Domain::Epigenetics,
-            "Methylation affects gene X".to_string(),
-            0.5,
-        )
-        .unwrap();
+        engine
+            .generate_hypothesis(
+                "h1".to_string(),
+                hypothesis_engine::Domain::Epigenetics,
+                "Methylation affects gene X".to_string(),
+                0.5,
+            )
+            .unwrap();
 
         // Register validators.
         engine.register_validator("v1".to_string());
@@ -252,44 +254,49 @@ mod tests {
         engine.register_validator("v3".to_string());
 
         // Submit evidence.
-        engine.submit_evidence(
-            "h1",
-            hypothesis_engine::Evidence {
-                source_node: "v1".to_string(),
-                domain: hypothesis_engine::Domain::Epigenetics,
-                payload: b"e1".to_vec(),
-                z_score: 0.5,
-                timestamp_ms: 1000,
-            },
-        )
-        .unwrap();
+        engine
+            .submit_evidence(
+                "h1",
+                hypothesis_engine::Evidence {
+                    source_node: "v1".to_string(),
+                    domain: hypothesis_engine::Domain::Epigenetics,
+                    payload: b"e1".to_vec(),
+                    z_score: 0.5,
+                    timestamp_ms: 1000,
+                },
+            )
+            .unwrap();
 
-        engine.submit_evidence(
-            "h1",
-            hypothesis_engine::Evidence {
-                source_node: "v2".to_string(),
-                domain: hypothesis_engine::Domain::Epigenetics,
-                payload: b"e2".to_vec(),
-                z_score: 0.3,
-                timestamp_ms: 1001,
-            },
-        )
-        .unwrap();
+        engine
+            .submit_evidence(
+                "h1",
+                hypothesis_engine::Evidence {
+                    source_node: "v2".to_string(),
+                    domain: hypothesis_engine::Domain::Epigenetics,
+                    payload: b"e2".to_vec(),
+                    z_score: 0.3,
+                    timestamp_ms: 1001,
+                },
+            )
+            .unwrap();
 
-        engine.submit_evidence(
-            "h1",
-            hypothesis_engine::Evidence {
-                source_node: "v3".to_string(),
-                domain: hypothesis_engine::Domain::Epigenetics,
-                payload: b"e3".to_vec(),
-                z_score: 0.4,
-                timestamp_ms: 1002,
-            },
-        )
-        .unwrap();
+        engine
+            .submit_evidence(
+                "h1",
+                hypothesis_engine::Evidence {
+                    source_node: "v3".to_string(),
+                    domain: hypothesis_engine::Domain::Epigenetics,
+                    payload: b"e3".to_vec(),
+                    z_score: 0.4,
+                    timestamp_ms: 1002,
+                },
+            )
+            .unwrap();
 
         // Run consensus.
-        let result = engine.run_consensus("h1", &hypothesis_engine::Domain::Epigenetics).unwrap();
+        let result = engine
+            .run_consensus("h1", &hypothesis_engine::Domain::Epigenetics)
+            .unwrap();
         assert!(result.is_validated());
     }
 }

@@ -17,12 +17,12 @@
 
 mod planetary_emergence_tests {
     use ed2kia::intelligence::{
-        cosine_similarity, CrossTensorFusion, EmergentInsight, EmergentSolutionEvent,
-        NodeTensor, SCTGuard, StuartianEmergenceEngine, Vector3,
+        cosine_similarity, CrossTensorFusion, EmergentInsight, EmergentSolutionEvent, NodeTensor,
+        SCTGuard, StuartianEmergenceEngine, Vector3,
     };
     use ed2kia::network::{
-        kademlia_distance, AutoNatEngine, AutoNatStatus, KTable, MeshConfig, MeshStats,
-        MeshNodeCapabilities, PeerEntry, PlanetaryMesh, RelayCircuit,
+        kademlia_distance, AutoNatEngine, AutoNatStatus, KTable, MeshConfig, MeshNodeCapabilities,
+        MeshStats, PeerEntry, PlanetaryMesh, RelayCircuit,
     };
     use ed2kia::orchestration::{
         ComputeTier, NodeCapabilities, SwarmRole, SwarmTopology, TopologyConfig,
@@ -67,8 +67,12 @@ mod planetary_emergence_tests {
             solution_features,
             ethical_direction,
         );
-        tensor.metadata.insert("domain".to_string(), domain.to_string());
-        tensor.metadata.insert("fragment".to_string(), fragment_id.to_string());
+        tensor
+            .metadata
+            .insert("domain".to_string(), domain.to_string());
+        tensor
+            .metadata
+            .insert("fragment".to_string(), fragment_id.to_string());
         tensor.metadata.insert(
             "problem_type".to_string(),
             "information_fragment".to_string(),
@@ -255,8 +259,13 @@ mod planetary_emergence_tests {
     fn test_swarm_rebalance() {
         let mut topo = SwarmTopology::new();
         for i in 0..20 {
-            let tier = if i % 3 == 0 { ComputeTier::Gpu } else { ComputeTier::Standard };
-            topo.register_node(i, make_capabilities(tier, 50.0)).unwrap();
+            let tier = if i % 3 == 0 {
+                ComputeTier::Gpu
+            } else {
+                ComputeTier::Standard
+            };
+            topo.register_node(i, make_capabilities(tier, 50.0))
+                .unwrap();
         }
         let moved = topo.rebalance();
         assert!(moved >= 0);
@@ -480,10 +489,7 @@ mod planetary_emergence_tests {
             guard.validations_passed + guard.validations_failed > 0,
             "SCT Guard should have processed validations"
         );
-        assert!(
-            guard.success_rate() >= 0.0,
-            "Success rate should be valid"
-        );
+        assert!(guard.success_rate() >= 0.0, "Success rate should be valid");
 
         // Verify swarm topology is healthy
         assert_eq!(topo.get_stats().active_nodes, 1000);
@@ -761,7 +767,7 @@ mod planetary_emergence_tests {
                 vec![0.5, 0.5],
                 Vector3::new(0.5, 0.3, 0.8),
             ),
-            0.9, // high novelty
+            0.9,  // high novelty
             0.95, // high utility
         );
         let quality = insight.quality_score();
@@ -774,12 +780,7 @@ mod planetary_emergence_tests {
         let insight = EmergentInsight::new(
             42,
             vec![1, 2, 3],
-            NodeTensor::new(
-                1,
-                vec![0.5],
-                vec![0.5],
-                Vector3::new(0.5, 0.3, 0.7),
-            ),
+            NodeTensor::new(1, vec![0.5], vec![0.5], Vector3::new(0.5, 0.3, 0.7)),
             0.8,
             0.9,
         );

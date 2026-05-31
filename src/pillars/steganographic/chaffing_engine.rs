@@ -33,11 +33,15 @@ pub enum ChaffingError {
 impl std::fmt::Display for ChaffingError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ChaffingError::InvalidRatio(r) => write!(f, "Invalid chaff ratio: {} (must be 0.0..=1.0)", r),
+            ChaffingError::InvalidRatio(r) => {
+                write!(f, "Invalid chaff ratio: {} (must be 0.0..=1.0)", r)
+            }
             ChaffingError::StreamTooShort => write!(f, "Stream too short for chaffing"),
             ChaffingError::MissingKey(id) => write!(f, "Missing winnowing key for session: {}", id),
             ChaffingError::CorruptedStream => write!(f, "Corrupted chaffed stream — tag mismatch"),
-            ChaffingError::InvalidKeyLength(len) => write!(f, "Invalid key length: {} bytes (expected 32)", len),
+            ChaffingError::InvalidKeyLength(len) => {
+                write!(f, "Invalid key length: {} bytes (expected 32)", len)
+            }
         }
     }
 }
@@ -133,7 +137,8 @@ impl ChaffingEngine {
 
     /// Next PRNG value (LCG — WASM compatible, no external deps).
     fn next_rng(&mut self) -> u64 {
-        self.rng_state = self.rng_state
+        self.rng_state = self
+            .rng_state
             .wrapping_mul(6364136223846793005)
             .wrapping_add(1442695040888963407);
         self.rng_state
@@ -141,17 +146,26 @@ impl ChaffingEngine {
 
     /// Generate expected tag from session key and packet index.
     fn compute_expected_tag(&self, key: &[u8; 32], packet_idx: usize) -> u8 {
-        let hash_base: u32 = key.iter().enumerate()
+        let hash_base: u32 = key
+            .iter()
+            .enumerate()
             .map(|(i, &b)| (b as u32).wrapping_mul((i + 1) as u32))
             .sum();
-        ((hash_base.wrapping_add(packet_idx as u32).wrapping_mul(2654435761)) >> 24) as u8
+        ((hash_base
+            .wrapping_add(packet_idx as u32)
+            .wrapping_mul(2654435761))
+            >> 24) as u8
     }
 
     /// Inject chaff into a stream of packets.
     ///
     /// Each real packet is tagged, and chaff packets are interleaved
     /// based on the configured ratio. Returns the chaffed stream.
-    pub fn inject_chaff(&mut self, stream: &[u8], session_id: &str) -> Result<Vec<TaggedPacket>, ChaffingError> {
+    pub fn inject_chaff(
+        &mut self,
+        stream: &[u8],
+        session_id: &str,
+    ) -> Result<Vec<TaggedPacket>, ChaffingError> {
         if stream.is_empty() {
             return Err(ChaffingError::StreamTooShort);
         }
@@ -161,7 +175,9 @@ impl ChaffingEngine {
         }
 
         // Find session key
-        let key = self.winnowing_keys.iter()
+        let key = self
+            .winnowing_keys
+            .iter()
             .find(|(id, _)| id == session_id)
             .map(|(_, k)| *k)
             .ok_or_else(|| ChaffingError::MissingKey(session_id.to_string()))?;
@@ -198,7 +214,8 @@ impl ChaffingEngine {
                 }
 
                 // Generate chaff payload (random noise)
-                let chaff_size = (self.next_rng() % self.config.max_chaff_size as u64) as usize + 16;
+                let chaff_size =
+                    (self.next_rng() % self.config.max_chaff_size as u64) as usize + 16;
                 let mut chaff_payload = vec![0u8; chaff_size];
                 for (i, byte) in chaff_payload.iter_mut().enumerate() {
                     *byte = ((self.next_rng() >> (i % 8)) & 0xFF) as u8;
@@ -211,7 +228,6 @@ impl ChaffingEngine {
                 });
                 self.total_chaff += 1;
             }
-
         }
 
         // Shuffle the result using Fisher-Yates with our PRNG
@@ -230,9 +246,15 @@ impl ChaffingEngine {
     /// Winnow a chaffed stream, extracting only real packets.
     ///
     /// Uses the session key to verify expected tags and filter out chaff.
-    pub fn winnow(&self, chaffed: &[TaggedPacket], session_id: &str) -> Result<Vec<u8>, ChaffingError> {
+    pub fn winnow(
+        &self,
+        chaffed: &[TaggedPacket],
+        session_id: &str,
+    ) -> Result<Vec<u8>, ChaffingError> {
         // Verify session key exists
-        let _key = self.winnowing_keys.iter()
+        let _key = self
+            .winnowing_keys
+            .iter()
             .find(|(id, _)| id == session_id)
             .map(|(_, k)| *k)
             .ok_or_else(|| ChaffingError::MissingKey(session_id.to_string()))?;
@@ -336,7 +358,7 @@ mod tests {
     fn test_inject_chaff_empty_stream() {
         let mut engine = ChaffingEngine::new();
         match engine.inject_chaff(&[], "test") {
-            Err(ChaffingError::StreamTooShort) => {},
+            Err(ChaffingError::StreamTooShort) => {}
             other => panic!("Expected StreamTooShort, got {:?}", other),
         }
     }
@@ -366,7 +388,7 @@ mod tests {
     fn test_winnow_missing_key() {
         let engine = ChaffingEngine::new();
         match engine.winnow(&[], "unknown") {
-            Err(ChaffingError::MissingKey(_)) => {},
+            Err(ChaffingError::MissingKey(_)) => {}
             other => panic!("Expected MissingKey, got {:?}", other),
         }
     }
@@ -432,9 +454,21 @@ mod tests {
 
     #[test]
     fn test_tagged_packet_equality() {
-        let p1 = TaggedPacket { tag: 1, payload: vec![1, 2, 3], expected_tag: 1 };
-        let p2 = TaggedPacket { tag: 1, payload: vec![1, 2, 3], expected_tag: 1 };
-        let p3 = TaggedPacket { tag: 2, payload: vec![1, 2, 3], expected_tag: 2 };
+        let p1 = TaggedPacket {
+            tag: 1,
+            payload: vec![1, 2, 3],
+            expected_tag: 1,
+        };
+        let p2 = TaggedPacket {
+            tag: 1,
+            payload: vec![1, 2, 3],
+            expected_tag: 1,
+        };
+        let p3 = TaggedPacket {
+            tag: 2,
+            payload: vec![1, 2, 3],
+            expected_tag: 2,
+        };
         assert_eq!(p1, p2);
         assert_ne!(p1, p3);
     }

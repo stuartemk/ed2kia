@@ -32,7 +32,7 @@ pub mod planetary_mesh;
 
 #[cfg(feature = "v3.5-planetary-emergence")]
 pub use planetary_mesh::{
-    AutoNatEngine, AutoNatStatus, BucketAction, CircuitState, kademlia_distance, KTable,
+    kademlia_distance, AutoNatEngine, AutoNatStatus, BucketAction, CircuitState, KTable,
     MeshConfig, MeshError, MeshStats, NodeCapabilities as MeshNodeCapabilities, PeerEntry,
     PlanetaryMesh, RelayCircuit,
 };
@@ -42,8 +42,8 @@ pub mod bootstrap;
 
 #[cfg(feature = "v3.7-symbiotic-portal")]
 pub use bootstrap::{
-    BootstrapConfig, BootstrapProtocol, BootstrapStats, BootstrapStrategy,
-    DiscoveryResult, SeedNode, TransportType,
+    BootstrapConfig, BootstrapProtocol, BootstrapStats, BootstrapStrategy, DiscoveryResult,
+    SeedNode, TransportType,
 };
 
 #[cfg(feature = "v4.0-snap-activation")]
@@ -52,4 +52,13 @@ pub mod proliferation;
 #[cfg(feature = "v4.0-snap-activation")]
 pub use proliferation::{
     DeploymentArtifact, Platform, ProliferationConfig, ProliferationError, SymbioticProliferator,
+};
+
+#[cfg(feature = "v9.4-validation-layer")]
+pub mod spectral_coherence;
+
+#[cfg(feature = "v9.4-validation-layer")]
+pub use spectral_coherence::{
+    algebraic_connectivity, compute_spectral_coherence, cross_correlation, pearson_correlation,
+    sync_rate, SpectralCoherenceResult,
 };

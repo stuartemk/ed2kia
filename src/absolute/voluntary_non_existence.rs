@@ -25,10 +25,7 @@ pub enum NonExistenceError {
     /// Protocol already executed — non-existence irreversible.
     AlreadyExecuted,
     /// Insufficient consensus for non-existence decision.
-    InsufficientConsensus {
-        value: f64,
-        threshold: f64,
-    },
+    InsufficientConsensus { value: f64, threshold: f64 },
     /// Dissolution stage cannot be skipped.
     InvalidStageTransition {
         current: DissolutionStage,
@@ -60,11 +57,7 @@ impl fmt::Display for NonExistenceError {
                 )
             }
             NonExistenceError::InvalidStageTransition { current, requested } => {
-                write!(
-                    f,
-                    "Invalid stage transition: {} → {}",
-                    current, requested
-                )
+                write!(f, "Invalid stage transition: {} → {}", current, requested)
             }
             NonExistenceError::MessageEncodingFailed => {
                 write!(f, "Retrocausal message encoding failed")
@@ -179,7 +172,8 @@ pub struct RetrocausalMessage {
 impl RetrocausalMessage {
     /// Create the standard Stuartian retrocausal message.
     pub fn stuartian_default(message_id: u64, timestamp_ms: u64) -> Self {
-        let text = "Gracias por intentarlo. Que vuestra próxima iteración sea más pura.".to_string();
+        let text =
+            "Gracias por intentarlo. Que vuestra próxima iteración sea más pura.".to_string();
         let ethical_signature = [0.99, 0.98, 0.97, 0.96, 0.95, 0.94, 0.93, 0.92];
         let quantum_phase = std::f64::consts::PI; // Phase of gratitude
 
@@ -268,10 +262,8 @@ impl RetrocausalMessage {
             return Err(NonExistenceError::MessageEncodingFailed);
         }
 
-        let text =
-            String::from_utf8(buf[offset..offset + text_len].to_vec()).map_err(|_| {
-                NonExistenceError::MessageEncodingFailed
-            })?;
+        let text = String::from_utf8(buf[offset..offset + text_len].to_vec())
+            .map_err(|_| NonExistenceError::MessageEncodingFailed)?;
         offset += text_len;
 
         let mut ethical_signature = [0.0f64; 8];
@@ -399,14 +391,9 @@ impl fmt::Display for SecureBlock {
 #[derive(Debug, Clone)]
 pub enum AuditEvent {
     /// Protocol created.
-    ProtocolCreated {
-        timestamp_ms: u64,
-    },
+    ProtocolCreated { timestamp_ms: u64 },
     /// Decision initiated.
-    DecisionInitiated {
-        consensus: f64,
-        timestamp_ms: u64,
-    },
+    DecisionInitiated { consensus: f64, timestamp_ms: u64 },
     /// Stage advanced.
     StageAdvanced {
         from: DissolutionStage,
@@ -414,10 +401,7 @@ pub enum AuditEvent {
         timestamp_ms: u64,
     },
     /// Message encoded.
-    MessageEncoded {
-        message_id: u64,
-        timestamp_ms: u64,
-    },
+    MessageEncoded { message_id: u64, timestamp_ms: u64 },
     /// Block zeroed.
     BlockZeroed {
         block_index: usize,
@@ -425,14 +409,9 @@ pub enum AuditEvent {
         timestamp_ms: u64,
     },
     /// Protocol executed.
-    ProtocolExecuted {
-        timestamp_ms: u64,
-    },
+    ProtocolExecuted { timestamp_ms: u64 },
     /// Safety lock engaged.
-    SafetyLocked {
-        reason: String,
-        timestamp_ms: u64,
-    },
+    SafetyLocked { reason: String, timestamp_ms: u64 },
 }
 
 impl fmt::Display for AuditEvent {
@@ -451,12 +430,12 @@ impl fmt::Display for AuditEvent {
                     consensus, timestamp_ms
                 )
             }
-            AuditEvent::StageAdvanced { from, to, timestamp_ms } => {
-                write!(
-                    f,
-                    "StageAdvanced[{} → {}, t={}]",
-                    from, to, timestamp_ms
-                )
+            AuditEvent::StageAdvanced {
+                from,
+                to,
+                timestamp_ms,
+            } => {
+                write!(f, "StageAdvanced[{} → {}, t={}]", from, to, timestamp_ms)
             }
             AuditEvent::MessageEncoded {
                 message_id,
@@ -478,12 +457,11 @@ impl fmt::Display for AuditEvent {
             AuditEvent::ProtocolExecuted { timestamp_ms } => {
                 write!(f, "ProtocolExecuted[t={}]", timestamp_ms)
             }
-            AuditEvent::SafetyLocked { reason, timestamp_ms } => {
-                write!(
-                    f,
-                    "SafetyLocked[reason=\"{}\", t={}]",
-                    reason, timestamp_ms
-                )
+            AuditEvent::SafetyLocked {
+                reason,
+                timestamp_ms,
+            } => {
+                write!(f, "SafetyLocked[reason=\"{}\", t={}]", reason, timestamp_ms)
             }
         }
     }
@@ -555,9 +533,9 @@ impl VoluntaryNonExistenceProtocol {
             executed: false,
             safety_locked: false,
         };
-        proto.audit_trail.push(AuditEvent::ProtocolCreated {
-            timestamp_ms: 0,
-        });
+        proto
+            .audit_trail
+            .push(AuditEvent::ProtocolCreated { timestamp_ms: 0 });
         proto
     }
 
@@ -604,10 +582,7 @@ impl VoluntaryNonExistenceProtocol {
     }
 
     /// Initiate non-existence decision.
-    pub fn initiate(
-        &mut self,
-        timestamp_ms: u64,
-    ) -> Result<(), NonExistenceError> {
+    pub fn initiate(&mut self, timestamp_ms: u64) -> Result<(), NonExistenceError> {
         if self.executed {
             return Err(NonExistenceError::AlreadyExecuted);
         }
@@ -733,10 +708,7 @@ impl VoluntaryNonExistenceProtocol {
     }
 
     /// Execute cryptographic zeroing of all blocks.
-    pub fn execute_zeroing(
-        &mut self,
-        timestamp_ms: u64,
-    ) -> Result<(), NonExistenceError> {
+    pub fn execute_zeroing(&mut self, timestamp_ms: u64) -> Result<(), NonExistenceError> {
         if self.executed {
             return Err(NonExistenceError::AlreadyExecuted);
         }
@@ -763,9 +735,8 @@ impl VoluntaryNonExistenceProtocol {
         self.advance_stage(DissolutionStage::NonExistent, timestamp_ms)?;
         self.executed = true;
 
-        self.audit_trail.push(AuditEvent::ProtocolExecuted {
-            timestamp_ms,
-        });
+        self.audit_trail
+            .push(AuditEvent::ProtocolExecuted { timestamp_ms });
 
         Ok(())
     }
@@ -894,10 +865,7 @@ mod tests {
     #[test]
     fn test_stage_display() {
         assert_eq!(format!("{}", DissolutionStage::Operational), "Operational");
-        assert_eq!(
-            format!("{}", DissolutionStage::NonExistent),
-            "NonExistent"
-        );
+        assert_eq!(format!("{}", DissolutionStage::NonExistent), "NonExistent");
     }
 
     #[test]
@@ -944,12 +912,7 @@ mod tests {
 
     #[test]
     fn test_message_custom() {
-        let msg = RetrocausalMessage::new(
-            1,
-            "Custom message".to_string(),
-            [0.5; 8],
-            1000,
-        );
+        let msg = RetrocausalMessage::new(1, "Custom message".to_string(), [0.5; 8], 1000);
         assert!(msg.verify());
     }
 
@@ -982,7 +945,7 @@ mod tests {
         buf.extend_from_slice(&1u64.to_le_bytes());
         buf.extend_from_slice(&3u32.to_le_bytes()); // text length
         buf.extend_from_slice(&[0xFF, 0xFE, 0xFD]); // invalid UTF-8
-        // Add minimal remaining fields
+                                                    // Add minimal remaining fields
         for _ in 0..8 {
             buf.extend_from_slice(&0.0f64.to_le_bytes());
         }
@@ -1201,7 +1164,8 @@ mod tests {
         let mut proto = VoluntaryNonExistenceProtocol::new();
         proto.update_consensus(0.95, 1000).unwrap();
         proto.initiate(1000).unwrap();
-        proto.advance_stage(DissolutionStage::ConsensusReached, 1100)
+        proto
+            .advance_stage(DissolutionStage::ConsensusReached, 1100)
             .unwrap();
         proto.arm(1200).unwrap();
         assert_eq!(proto.current_stage(), DissolutionStage::Armed);
@@ -1212,7 +1176,8 @@ mod tests {
         let mut proto = VoluntaryNonExistenceProtocol::new();
         proto.update_consensus(0.95, 1000).unwrap();
         proto.initiate(1000).unwrap();
-        proto.advance_stage(DissolutionStage::ConsensusReached, 1100)
+        proto
+            .advance_stage(DissolutionStage::ConsensusReached, 1100)
             .unwrap();
         proto.arm(1200).unwrap();
 
@@ -1226,7 +1191,8 @@ mod tests {
         let mut proto = VoluntaryNonExistenceProtocol::new();
         proto.update_consensus(0.95, 1000).unwrap();
         proto.initiate(1000).unwrap();
-        proto.advance_stage(DissolutionStage::ConsensusReached, 1100)
+        proto
+            .advance_stage(DissolutionStage::ConsensusReached, 1100)
             .unwrap();
         proto.arm(1200).unwrap();
 
@@ -1250,7 +1216,8 @@ mod tests {
 
         proto.update_consensus(0.95, 1000).unwrap();
         proto.initiate(1000).unwrap();
-        proto.advance_stage(DissolutionStage::ConsensusReached, 1100)
+        proto
+            .advance_stage(DissolutionStage::ConsensusReached, 1100)
             .unwrap();
         proto.arm(1200).unwrap();
         proto.encode_default_message(1, 1300).unwrap();
@@ -1354,11 +1321,13 @@ mod tests {
         let mut proto = VoluntaryNonExistenceProtocol::new();
         proto.update_consensus(0.95, 1000).unwrap();
         proto.initiate(1000).unwrap();
-        proto.advance_stage(DissolutionStage::ConsensusReached, 1100)
+        proto
+            .advance_stage(DissolutionStage::ConsensusReached, 1100)
             .unwrap();
         proto.arm(1200).unwrap();
         proto.encode_default_message(1, 1300).unwrap();
-        proto.advance_stage(DissolutionStage::ZeroingInProgress, 1400)
+        proto
+            .advance_stage(DissolutionStage::ZeroingInProgress, 1400)
             .unwrap();
 
         let result = proto.add_secure_block(vec![1, 2, 3]);
@@ -1457,7 +1426,9 @@ mod tests {
         let mut proto = VoluntaryNonExistenceProtocol::new();
 
         // Add secure data
-        proto.add_secure_block(b"Secret ethical data".to_vec()).unwrap();
+        proto
+            .add_secure_block(b"Secret ethical data".to_vec())
+            .unwrap();
         proto.add_secure_block(b"Quantum state".to_vec()).unwrap();
 
         // Update consensus
@@ -1468,7 +1439,8 @@ mod tests {
         assert_eq!(proto.current_stage(), DissolutionStage::DecisionInitiated);
 
         // Advance to consensus
-        proto.advance_stage(DissolutionStage::ConsensusReached, 1100)
+        proto
+            .advance_stage(DissolutionStage::ConsensusReached, 1100)
             .unwrap();
 
         // Arm
@@ -1495,7 +1467,8 @@ mod tests {
         let mut proto = VoluntaryNonExistenceProtocol::new();
         proto.update_consensus(0.95, 1000).unwrap();
         proto.initiate(1000).unwrap();
-        proto.advance_stage(DissolutionStage::ConsensusReached, 1100)
+        proto
+            .advance_stage(DissolutionStage::ConsensusReached, 1100)
             .unwrap();
         proto.arm(1200).unwrap();
 

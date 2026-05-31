@@ -19,7 +19,12 @@ pub enum AnalyzerError {
     StreamTooShort { len: usize, min: usize },
 
     #[error("Invalid biometric value: {field} = {value} (expected range [{min}, {max}])")]
-    InvalidValue { field: String, value: f32, min: f32, max: f32 },
+    InvalidValue {
+        field: String,
+        value: f32,
+        min: f32,
+        max: f32,
+    },
 
     #[error("Model not found: {0}")]
     ModelNotFound(String),
@@ -112,7 +117,8 @@ impl BiometricState {
         // Homeostasis = coherence * (1 - stress) * (1 - |valence|) * (1 - arousal_deviation)
         let valence_balance = 1.0 - self.valence.abs();
         let arousal_balance = 1.0 - (self.arousal - 0.5).abs() * 2.0;
-        (self.coherence * (1.0 - self.stress_index) * valence_balance * arousal_balance).clamp(0.0, 1.0)
+        (self.coherence * (1.0 - self.stress_index) * valence_balance * arousal_balance)
+            .clamp(0.0, 1.0)
     }
 }
 
@@ -265,7 +271,8 @@ impl LocalBiometricAnalyzer {
         let hrv = if peaks > 1 {
             let interval = samples.len() as f32 / peaks as f32;
             // Simulated HRV based on signal variance
-            let variance = samples.iter()
+            let variance = samples
+                .iter()
                 .map(|s| {
                     let mean = samples.iter().sum::<f32>() / samples.len() as f32;
                     (s - mean) * (s - mean)
@@ -313,7 +320,8 @@ impl LocalBiometricAnalyzer {
         }
         let jitter = if intervals.len() > 1 {
             let mean_interval = intervals.iter().sum::<f32>() / intervals.len() as f32;
-            let variance = intervals.iter()
+            let variance = intervals
+                .iter()
                 .map(|&x| (x - mean_interval) * (x - mean_interval))
                 .sum::<f32>()
                 / intervals.len() as f32;
@@ -331,7 +339,8 @@ impl LocalBiometricAnalyzer {
         let shimmer = if amplitudes.len() > 1 {
             let mean_amp = amplitudes.iter().sum::<f32>() / amplitudes.len() as f32;
             if mean_amp > 0.0 {
-                let variance = amplitudes.iter()
+                let variance = amplitudes
+                    .iter()
                     .map(|&x| (x - mean_amp) * (x - mean_amp))
                     .sum::<f32>()
                     / amplitudes.len() as f32;
@@ -354,16 +363,14 @@ impl LocalBiometricAnalyzer {
         // AU6 (cheek raiser), AU12 (lip corner puller)
 
         let mean = samples.iter().sum::<f32>() / samples.len() as f32;
-        let variance = samples.iter()
-            .map(|s| (s - mean) * (s - mean))
-            .sum::<f32>()
-            / samples.len() as f32;
+        let variance =
+            samples.iter().map(|s| (s - mean) * (s - mean)).sum::<f32>() / samples.len() as f32;
 
         // Valence: positive AUs (AU6, AU12) vs negative AUs (AU1, AU4)
-        let positive_au = samples.get(5).copied().unwrap_or(0.0)
-            + samples.get(11).copied().unwrap_or(0.0);
-        let negative_au = samples.first().copied().unwrap_or(0.0)
-            + samples.get(3).copied().unwrap_or(0.0);
+        let positive_au =
+            samples.get(5).copied().unwrap_or(0.0) + samples.get(11).copied().unwrap_or(0.0);
+        let negative_au =
+            samples.first().copied().unwrap_or(0.0) + samples.get(3).copied().unwrap_or(0.0);
         let valence = if positive_au + negative_au > 0.0 {
             (positive_au - negative_au) / (positive_au + negative_au)
         } else {
@@ -425,7 +432,9 @@ mod tests {
 
     fn make_expression_samples() -> Vec<f32> {
         // Simulated AU intensities [AU1..AU12]
-        vec![0.1, 0.2, 0.0, 0.1, 0.3, 0.8, 0.2, 0.1, 0.0, 0.1, 0.2, 0.9, 0.05, 0.15, 0.1, 0.7]
+        vec![
+            0.1, 0.2, 0.0, 0.1, 0.3, 0.8, 0.2, 0.1, 0.0, 0.1, 0.2, 0.9, 0.05, 0.15, 0.1, 0.7,
+        ]
     }
 
     #[test]
@@ -467,7 +476,7 @@ mod tests {
         let expr = make_expression_samples();
 
         match analyzer.analyze_stream(&rppg, &voice, &expr) {
-            Err(AnalyzerError::StreamTooShort { .. }) => {},
+            Err(AnalyzerError::StreamTooShort { .. }) => {}
             other => panic!("Expected StreamTooShort, got {:?}", other),
         }
     }
@@ -480,7 +489,7 @@ mod tests {
         let expr = make_expression_samples();
 
         match analyzer.analyze_stream(&rppg, &voice, &expr) {
-            Err(AnalyzerError::StreamTooShort { .. }) => {},
+            Err(AnalyzerError::StreamTooShort { .. }) => {}
             other => panic!("Expected StreamTooShort, got {:?}", other),
         }
     }
@@ -493,7 +502,7 @@ mod tests {
         let expr = vec![0.1, 0.2];
 
         match analyzer.analyze_stream(&rppg, &voice, &expr) {
-            Err(AnalyzerError::StreamTooShort { .. }) => {},
+            Err(AnalyzerError::StreamTooShort { .. }) => {}
             other => panic!("Expected StreamTooShort, got {:?}", other),
         }
     }
@@ -510,7 +519,7 @@ mod tests {
         match BiometricState::new(1.5, 0.5, 1.0, 0.0, 0.5) {
             Err(AnalyzerError::InvalidValue { field, .. }) => {
                 assert_eq!(field, "stress_index");
-            },
+            }
             other => panic!("Expected InvalidValue, got {:?}", other),
         }
     }
@@ -520,7 +529,7 @@ mod tests {
         match BiometricState::new(0.5, 0.5, 1.0, 1.5, 0.5) {
             Err(AnalyzerError::InvalidValue { field, .. }) => {
                 assert_eq!(field, "valence");
-            },
+            }
             other => panic!("Expected InvalidValue, got {:?}", other),
         }
     }
@@ -572,7 +581,10 @@ mod tests {
         // High positive AUs (AU6=0.9, AU12=0.9), low negative AUs
         let samples = vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.9];
         let (valence, _arousal) = analyzer.process_expressions(&samples).unwrap();
-        assert!(valence > 0.0, "Positive expressions should yield positive valence");
+        assert!(
+            valence > 0.0,
+            "Positive expressions should yield positive valence"
+        );
     }
 
     #[test]
@@ -581,7 +593,10 @@ mod tests {
         // High negative AUs (AU1=0.9, AU4=0.9), no positive AUs
         let samples = vec![0.9, 0.0, 0.0, 0.9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
         let (valence, _arousal) = analyzer.process_expressions(&samples).unwrap();
-        assert!(valence < 0.0, "Negative expressions should yield negative valence");
+        assert!(
+            valence < 0.0,
+            "Negative expressions should yield negative valence"
+        );
     }
 
     #[test]

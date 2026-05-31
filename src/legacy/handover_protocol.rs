@@ -30,7 +30,10 @@ pub enum HandoverError {
     /// Handover already finalized — state is immutable.
     HandoverFinalized,
     /// NCI maturity not sustained for required duration.
-    MaturityNotSustained { current_days: u64, required_days: u64 },
+    MaturityNotSustained {
+        current_days: u64,
+        required_days: u64,
+    },
     /// Invalid voter participation (negative or exceeding 1.0).
     InvalidParticipation(f64),
     /// Quorum calculation failed.
@@ -75,7 +78,11 @@ impl std::fmt::Display for HandoverError {
                 )
             }
             HandoverError::InvalidParticipation(val) => {
-                write!(f, "Invalid participation value: {} (must be [0.0, 1.0])", val)
+                write!(
+                    f,
+                    "Invalid participation value: {} (must be [0.0, 1.0])",
+                    val
+                )
             }
             HandoverError::QuorumError(msg) => write!(f, "Quorum error: {}", msg),
             HandoverError::SafeguardViolation(msg) => {
@@ -112,12 +119,7 @@ pub struct OverrideProposal {
 
 impl OverrideProposal {
     /// Create a new proposal with 72h time-lock.
-    pub fn new(
-        id: u64,
-        created_ms: u64,
-        threshold: f64,
-        time_lock_hours: u64,
-    ) -> Self {
+    pub fn new(id: u64, created_ms: u64, threshold: f64, time_lock_hours: u64) -> Self {
         let expires_ms = created_ms + time_lock_hours * 3_600_000;
         Self {
             id,
@@ -132,7 +134,7 @@ impl OverrideProposal {
 
     /// Record a vote from a steward.
     pub fn vote(&mut self, voter_id: u64, amount: f64) -> Result<(), HandoverError> {
-        if amount < 0.0 || amount > 1.0 {
+        if !(0.0..=1.0).contains(&amount) {
             return Err(HandoverError::InvalidParticipation(amount));
         }
 
@@ -247,12 +249,7 @@ pub struct MaturityDeclarationEvent {
 
 impl MaturityDeclarationEvent {
     /// Create a new maturity declaration.
-    pub fn new(
-        id: u64,
-        declared_ms: u64,
-        final_nci: f64,
-        sustained_days: u64,
-    ) -> Self {
+    pub fn new(id: u64, declared_ms: u64, final_nci: f64, sustained_days: u64) -> Self {
         let message = format!(
             "Maturidad Noosférica Declarada: NCI={:.4} sostenido por {} días. \
              ed2kIA transiciona a Propiedad Común de la Humanidad.",
@@ -537,21 +534,20 @@ impl HandoverProtocol {
     }
 
     /// Vote on the active override proposal.
-    pub fn vote_override(
-        &mut self,
-        voter_id: u64,
-        amount: f64,
-    ) -> Result<(), HandoverError> {
-        let proposal = self.active_proposal.as_mut().ok_or(HandoverError::NoActiveProposal)?;
+    pub fn vote_override(&mut self, voter_id: u64, amount: f64) -> Result<(), HandoverError> {
+        let proposal = self
+            .active_proposal
+            .as_mut()
+            .ok_or(HandoverError::NoActiveProposal)?;
         proposal.vote(voter_id, amount)
     }
 
     /// Execute the active override proposal if conditions are met.
-    pub fn execute_override(
-        &mut self,
-        current_ms: u64,
-    ) -> Result<(), HandoverError> {
-        let proposal = self.active_proposal.as_mut().ok_or(HandoverError::NoActiveProposal)?;
+    pub fn execute_override(&mut self, current_ms: u64) -> Result<(), HandoverError> {
+        let proposal = self
+            .active_proposal
+            .as_mut()
+            .ok_or(HandoverError::NoActiveProposal)?;
         proposal.execute(current_ms)?;
 
         // Transition to handover initiated

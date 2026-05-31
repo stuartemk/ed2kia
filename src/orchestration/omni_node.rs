@@ -12,11 +12,16 @@
 //!
 //! **Reference:** Sprint 47 — Omni-Node Integration & Symbiotic Ignition Sequence
 
-use crate::orchestration::{PillarId, PillarResponse, PillarStatus};
-#[cfg(any(feature = "v1.4-sprint1", feature = "v3.0-wasm-runtime", feature = "v3.0-pillar-messaging", feature = "v3.0-privacy-guard"))]
-use crate::runtime::pillar_messaging::PillarMessage;
 #[cfg(feature = "v2.1-sct-core")]
-use crate::alignment::sct_core::{StuartianTensor, SCTDecision};
+use crate::alignment::sct_core::{SCTDecision, StuartianTensor};
+use crate::orchestration::{PillarId, PillarResponse, PillarStatus};
+#[cfg(any(
+    feature = "v1.4-sprint1",
+    feature = "v3.0-wasm-runtime",
+    feature = "v3.0-pillar-messaging",
+    feature = "v3.0-privacy-guard"
+))]
+use crate::runtime::pillar_messaging::PillarMessage;
 use std::collections::HashMap;
 
 /// Maximum SCT Z-score threshold for ethical approval.
@@ -43,10 +48,18 @@ impl std::fmt::Display for RoutingError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             RoutingError::EthicalRejection { z } => {
-                write!(f, "SCT ethical rejection: Z = {:.3} < {:.3}", z, SCT_Z_THRESHOLD)
+                write!(
+                    f,
+                    "SCT ethical rejection: Z = {:.3} < {:.3}",
+                    z, SCT_Z_THRESHOLD
+                )
             }
-            RoutingError::SourceNotRegistered(id) => write!(f, "Source pillar not registered: {}", id),
-            RoutingError::TargetNotRegistered(id) => write!(f, "Target pillar not registered: {}", id),
+            RoutingError::SourceNotRegistered(id) => {
+                write!(f, "Source pillar not registered: {}", id)
+            }
+            RoutingError::TargetNotRegistered(id) => {
+                write!(f, "Target pillar not registered: {}", id)
+            }
             RoutingError::InsufficientCE => write!(f, "Insufficient CE for inter-pillar operation"),
             RoutingError::InvalidSignature => write!(f, "Invalid Ed25519 signature"),
             RoutingError::ChannelClosed => write!(f, "Message channel closed"),
@@ -461,7 +474,9 @@ impl OmniNode {
         message: &PillarMessage,
         sct_tensor: &StuartianTensor,
     ) -> Result<PillarResponse, RoutingError> {
-        let result = self.router.route_inter_pillar(from, to, message, sct_tensor);
+        let result = self
+            .router
+            .route_inter_pillar(from, to, message, sct_tensor);
 
         // Update pillar status based on routing result
         match &result {
@@ -470,7 +485,8 @@ impl OmniNode {
                 self.pillars.update_status(to, PillarStatus::Success);
             }
             Err(RoutingError::EthicalRejection { z }) => {
-                self.pillars.update_status(from, PillarStatus::EthicalRejection(*z));
+                self.pillars
+                    .update_status(from, PillarStatus::EthicalRejection(*z));
             }
             Err(_) => {
                 self.pillars.update_status(from, PillarStatus::Pending);
@@ -521,12 +537,11 @@ impl OmniNode {
     pub fn diagnose(&self) -> HashMap<PillarId, String> {
         let mut diagnostics = HashMap::new();
         for pillar in self.registered_pillars() {
-            let status = self.get_pillar_status(pillar).unwrap_or(PillarStatus::Pending);
+            let status = self
+                .get_pillar_status(pillar)
+                .unwrap_or(PillarStatus::Pending);
             let ce = self.ce_ledger().balance(pillar);
-            diagnostics.insert(
-                pillar,
-                format!("Status: {:?}, CE: {:.2}", status, ce),
-            );
+            diagnostics.insert(pillar, format!("Status: {:?}, CE: {:.2}", status, ce));
         }
         diagnostics
     }
@@ -716,8 +731,14 @@ mod tests {
         let tensor_low = make_valid_tensor(0.3);
         let tensor_high = make_valid_tensor(0.7);
 
-        assert!(matches!(validator.validate(&tensor_low), SCTDecision::Rejected(_)));
-        assert!(matches!(validator.validate(&tensor_high), SCTDecision::Approved(_)));
+        assert!(matches!(
+            validator.validate(&tensor_low),
+            SCTDecision::Rejected(_)
+        ));
+        assert!(matches!(
+            validator.validate(&tensor_high),
+            SCTDecision::Approved(_)
+        ));
     }
 
     #[test]

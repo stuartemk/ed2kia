@@ -46,7 +46,9 @@ impl std::fmt::Display for ResonanceFieldError {
             ResonanceFieldError::InvalidZScore(v) => {
                 write!(f, "Invalid Z-score: {} (must be [-1,1])", v)
             }
-            ResonanceFieldError::InvalidWeight(v) => write!(f, "Invalid weight: {} (must be >0)", v),
+            ResonanceFieldError::InvalidWeight(v) => {
+                write!(f, "Invalid weight: {} (must be >0)", v)
+            }
             ResonanceFieldError::FieldEmpty => write!(f, "Field is empty"),
         }
     }
@@ -72,7 +74,13 @@ pub struct NodeState {
 }
 
 impl NodeState {
-    pub fn new(node_id: u128, weight: f64, gei: f64, z_score: f64, position: f64) -> Result<Self, ResonanceFieldError> {
+    pub fn new(
+        node_id: u128,
+        weight: f64,
+        gei: f64,
+        z_score: f64,
+        position: f64,
+    ) -> Result<Self, ResonanceFieldError> {
         if !(0.0..=1.0).contains(&gei) {
             return Err(ResonanceFieldError::InvalidGEI(gei));
         }
@@ -310,7 +318,11 @@ impl EthicalResonanceField {
         }
         // Simple pruning: remove nodes with lowest GEI first (least ethical contribution).
         let mut nodes: Vec<_> = self.nodes.drain().collect();
-        nodes.sort_by(|a, b| a.1.gei.partial_cmp(&b.1.gei).unwrap_or(std::cmp::Ordering::Equal));
+        nodes.sort_by(|a, b| {
+            a.1.gei
+                .partial_cmp(&b.1.gei)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         let keep = self.config.max_nodes / 2;
         if nodes.len() > keep {
             self.nodes = nodes.split_off(keep).into_iter().collect();
@@ -427,7 +439,10 @@ mod tests {
         field.add_node(make_node(1, 0.0)).unwrap();
         field.add_node(make_node(2, 1.0)).unwrap();
         let global = field.compute_global().unwrap();
-        assert!(global > 0.0, "Global resonance should be positive for ethical nodes");
+        assert!(
+            global > 0.0,
+            "Global resonance should be positive for ethical nodes"
+        );
     }
 
     #[test]
@@ -443,7 +458,10 @@ mod tests {
         let sigma_before = field.sigma_t();
         // Low variance → high cohesion → narrow sigma
         field.update_temporal_cohesion(0.001);
-        assert!(field.sigma_t() < sigma_before, "Sigma should contract with high cohesion");
+        assert!(
+            field.sigma_t() < sigma_before,
+            "Sigma should contract with high cohesion"
+        );
     }
 
     #[test]
@@ -453,7 +471,10 @@ mod tests {
         let sigma_before = field.sigma_t();
         // High variance → low cohesion → wide sigma
         field.update_temporal_cohesion(100.0);
-        assert!(field.sigma_t() > sigma_before, "Sigma should expand with low cohesion");
+        assert!(
+            field.sigma_t() > sigma_before,
+            "Sigma should expand with low cohesion"
+        );
     }
 
     #[test]
@@ -513,7 +534,10 @@ mod tests {
         let left = field.compute_at(-1.0).unwrap();
         let right = field.compute_at(1.0).unwrap();
         // Center should be between left and right due to symmetry
-        assert!(center < left || center < right, "Center should be influenced by both nodes");
+        assert!(
+            center < left || center < right,
+            "Center should be influenced by both nodes"
+        );
     }
 
     #[test]

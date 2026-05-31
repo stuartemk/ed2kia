@@ -40,7 +40,6 @@ pub enum ComputeTier {
     Gpu = 2,
 }
 
-
 impl fmt::Display for ComputeTier {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -76,7 +75,10 @@ pub struct NodeCapabilities {
 
 impl NodeCapabilities {
     /// Crea capacidades desde [`crate::p2p::swarm::NodeResources`].
-    pub fn from_p2p_resources(resources: &crate::p2p::swarm::NodeResources, ce_balance: f64) -> Self {
+    pub fn from_p2p_resources(
+        resources: &crate::p2p::swarm::NodeResources,
+        ce_balance: f64,
+    ) -> Self {
         let compute_tier = if resources.has_gpu && resources.vram_gb.unwrap_or(0.0) >= 4.0 {
             ComputeTier::Gpu
         } else if resources.cpu_cores >= 4 && resources.available_ram_gb >= 8.0 {
@@ -121,9 +123,7 @@ impl NodeCapabilities {
             SwarmRole::Validator => {
                 self.compute_tier >= ComputeTier::Standard && self.ram_gb >= 4.0
             }
-            SwarmRole::Router => {
-                self.bandwidth_mbps >= 5.0 && self.ram_gb >= 2.0
-            }
+            SwarmRole::Router => self.bandwidth_mbps >= 5.0 && self.ram_gb >= 2.0,
             SwarmRole::Relay => self.can_relay,
             SwarmRole::Light => true, // Todos pueden ser light
         }
@@ -182,11 +182,9 @@ impl SwarmRole {
                 SwarmRole::Router,
                 SwarmRole::Relay,
             ],
-            ComputeTier::Standard => vec![
-                SwarmRole::Validator,
-                SwarmRole::Router,
-                SwarmRole::Relay,
-            ],
+            ComputeTier::Standard => {
+                vec![SwarmRole::Validator, SwarmRole::Router, SwarmRole::Relay]
+            }
             ComputeTier::Light => vec![SwarmRole::Router, SwarmRole::Relay, SwarmRole::Light],
         }
     }
@@ -243,7 +241,10 @@ impl NodeEntry {
     /// Rol inicial basado en capacidades.
     fn initial_role(capabilities: &NodeCapabilities) -> SwarmRole {
         let compatible = SwarmRole::compatible_roles(capabilities.compute_tier);
-        compatible.into_iter().min_by_key(|r| r.priority()).unwrap_or(SwarmRole::Light)
+        compatible
+            .into_iter()
+            .min_by_key(|r| r.priority())
+            .unwrap_or(SwarmRole::Light)
     }
 
     /// Marca al nodo como activo (actualiza timestamp).
@@ -899,14 +900,18 @@ impl SwarmTopology {
 
             if let Some(target) = target {
                 let target_id = target.id;
-                let moved_members: Vec<(u128, f64)> = small_subnet.members.iter().map(|(&node_id, _)| {
-                    let capacity = self
-                        .nodes
-                        .get(&node_id)
-                        .map(|n| n.capabilities.capability_score())
-                        .unwrap_or(1.0);
-                    (node_id, capacity)
-                }).collect();
+                let moved_members: Vec<(u128, f64)> = small_subnet
+                    .members
+                    .iter()
+                    .map(|(&node_id, _)| {
+                        let capacity = self
+                            .nodes
+                            .get(&node_id)
+                            .map(|n| n.capabilities.capability_score())
+                            .unwrap_or(1.0);
+                        (node_id, capacity)
+                    })
+                    .collect();
                 if let Some(target_subnet) = self.sub_networks.get_mut(&target_id) {
                     for (node_id, capacity) in moved_members {
                         target_subnet.add_member(node_id, capacity);
@@ -955,7 +960,9 @@ impl SwarmTopology {
         candidates.sort_by(|a, b| {
             let score_a = self.role_score(a);
             let score_b = self.role_score(b);
-            score_b.partial_cmp(&score_a).unwrap_or(std::cmp::Ordering::Equal)
+            score_b
+                .partial_cmp(&score_a)
+                .unwrap_or(std::cmp::Ordering::Equal)
         });
 
         candidates.into_iter().take(count).collect()
@@ -972,12 +979,8 @@ impl SwarmTopology {
 
     /// Actualiza las estadísticas de rol.
     fn update_role_stats(&mut self, role: &SwarmRole, delta: i32) {
-        let counter = self
-            .stats
-            .nodes_per_role
-            .entry(*role)
-            .or_insert(0);
-        *counter = ( *counter as i32 + delta).max(0) as usize;
+        let counter = self.stats.nodes_per_role.entry(*role).or_insert(0);
+        *counter = (*counter as i32 + delta).max(0) as usize;
     }
 
     /// Registra un evento en el historial.
@@ -1447,7 +1450,10 @@ mod tests {
         topo.register_node(1, caps).unwrap();
         let events = topo.get_event_log();
         assert!(!events.is_empty());
-        assert!(matches!(events.back(), Some(&TopologyEvent::NodoIngresado { .. })));
+        assert!(matches!(
+            events.back(),
+            Some(&TopologyEvent::NodoIngresado { .. })
+        ));
     }
 
     #[test]

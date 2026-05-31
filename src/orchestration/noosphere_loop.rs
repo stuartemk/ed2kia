@@ -9,7 +9,6 @@
 //!
 //! Feature gate: `v3.9-noosphere-engine`
 
-
 /// Default number of symbiotic clock ticks between respiration cycles.
 const DEFAULT_CYCLE_INTERVAL: u32 = 10;
 
@@ -43,7 +42,11 @@ impl std::fmt::Display for NoosphereError {
             NoosphereError::FieldComputation(msg) => write!(f, "Field computation: {}", msg),
             NoosphereError::HophAnalysis(msg) => write!(f, "HOPH analysis: {}", msg),
             NoosphereError::HumanValidationRejected { correlation } => {
-                write!(f, "Human validation rejected (correlation: {:.4})", correlation)
+                write!(
+                    f,
+                    "Human validation rejected (correlation: {:.4})",
+                    correlation
+                )
             }
             NoosphereError::CollectiveApoptosis { cycle, reason } => {
                 write!(f, "Collective apoptosis at cycle {}: {}", cycle, reason)
@@ -264,11 +267,8 @@ impl NoosphericRespirationCycle {
 
         self.phase = RespirationPhase::Integration;
         // Phase 5: Integration / Apoptosis.
-        let (integrated, dissolved, apoptosis) = self.integrate(
-            human_correlation,
-            ph2_score,
-            hoph_result,
-        );
+        let (integrated, dissolved, apoptosis) =
+            self.integrate(human_correlation, ph2_score, hoph_result);
 
         // Check for apoptosis.
         if apoptosis || self.check_collective_apoptosis() {
@@ -473,7 +473,11 @@ mod tests {
     #[test]
     fn test_tick_no_cycle_yet() {
         let mut cycle = NoosphericRespirationCycle::new().unwrap();
-        let result = cycle.tick(&make_snapshot(0.1, 50), &make_hoph(0.5, 3), &make_validation(0.9, true));
+        let result = cycle.tick(
+            &make_snapshot(0.1, 50),
+            &make_hoph(0.5, 3),
+            &make_validation(0.9, true),
+        );
         assert!(result.is_none());
         assert_eq!(cycle.current_tick(), 1);
     }
@@ -483,12 +487,23 @@ mod tests {
         let mut cycle = NoosphericRespirationCycle::with_config(NoosphereConfig {
             cycle_interval: 5,
             ..NoosphereConfig::default()
-        }).unwrap();
+        })
+        .unwrap();
 
         for _ in 0..4 {
-            assert!(cycle.tick(&make_snapshot(0.1, 50), &make_hoph(0.5, 3), &make_validation(0.9, true)).is_none());
+            assert!(cycle
+                .tick(
+                    &make_snapshot(0.1, 50),
+                    &make_hoph(0.5, 3),
+                    &make_validation(0.9, true)
+                )
+                .is_none());
         }
-        let result = cycle.tick(&make_snapshot(0.1, 50), &make_hoph(0.5, 3), &make_validation(0.9, true));
+        let result = cycle.tick(
+            &make_snapshot(0.1, 50),
+            &make_hoph(0.5, 3),
+            &make_validation(0.9, true),
+        );
         assert!(result.is_some());
         let result = result.unwrap();
         assert_eq!(result.cycle, 1);
@@ -501,13 +516,22 @@ mod tests {
             cycle_interval: 3,
             min_human_correlation: 0.75,
             ..NoosphereConfig::default()
-        }).unwrap();
+        })
+        .unwrap();
 
         // Low correlation → dissolution.
         for _ in 0..2 {
-            cycle.tick(&make_snapshot(0.1, 50), &make_hoph(0.5, 3), &make_validation(0.3, false));
+            cycle.tick(
+                &make_snapshot(0.1, 50),
+                &make_hoph(0.5, 3),
+                &make_validation(0.3, false),
+            );
         }
-        let result = cycle.tick(&make_snapshot(0.1, 50), &make_hoph(0.5, 3), &make_validation(0.3, false));
+        let result = cycle.tick(
+            &make_snapshot(0.1, 50),
+            &make_hoph(0.5, 3),
+            &make_validation(0.3, false),
+        );
         assert!(result.is_some());
         let result = result.unwrap();
         assert!(result.concepts_dissolved > 0);
@@ -534,13 +558,22 @@ mod tests {
         let mut cycle = NoosphericRespirationCycle::with_config(NoosphereConfig {
             cycle_interval: 2,
             ..NoosphereConfig::default()
-        }).unwrap();
+        })
+        .unwrap();
 
         for _ in 0..2 {
-            cycle.tick(&make_snapshot(0.1, 50), &make_hoph(0.5, 3), &make_validation(0.9, true));
+            cycle.tick(
+                &make_snapshot(0.1, 50),
+                &make_hoph(0.5, 3),
+                &make_validation(0.9, true),
+            );
         }
         for _ in 0..2 {
-            cycle.tick(&make_snapshot(0.1, 50), &make_hoph(0.5, 3), &make_validation(0.9, true));
+            cycle.tick(
+                &make_snapshot(0.1, 50),
+                &make_hoph(0.5, 3),
+                &make_validation(0.9, true),
+            );
         }
         assert_eq!(cycle.history().len(), 2);
     }
@@ -550,9 +583,18 @@ mod tests {
         let mut cycle = NoosphericRespirationCycle::with_config(NoosphereConfig {
             cycle_interval: 2,
             ..NoosphereConfig::default()
-        }).unwrap();
-        cycle.tick(&make_snapshot(0.1, 50), &make_hoph(0.5, 3), &make_validation(0.9, true));
-        cycle.tick(&make_snapshot(0.1, 50), &make_hoph(0.5, 3), &make_validation(0.9, true));
+        })
+        .unwrap();
+        cycle.tick(
+            &make_snapshot(0.1, 50),
+            &make_hoph(0.5, 3),
+            &make_validation(0.9, true),
+        );
+        cycle.tick(
+            &make_snapshot(0.1, 50),
+            &make_hoph(0.5, 3),
+            &make_validation(0.9, true),
+        );
         cycle.reset();
         assert_eq!(cycle.current_cycle(), 0);
         assert_eq!(cycle.history().len(), 0);

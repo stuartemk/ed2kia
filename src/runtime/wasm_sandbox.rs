@@ -148,8 +148,15 @@ impl WasmSandbox {
         }
 
         // Validate WASM magic number (0x00 0x61 0x73 0x6d = "\0asm")
-        if module.len() < 4 || module[0] != 0x00 || module[1] != 0x61 || module[2] != 0x73 || module[3] != 0x6d {
-            return Err(SandboxError::ModuleInvalid("Invalid WASM magic number".to_string()));
+        if module.len() < 4
+            || module[0] != 0x00
+            || module[1] != 0x61
+            || module[2] != 0x73
+            || module[3] != 0x6d
+        {
+            return Err(SandboxError::ModuleInvalid(
+                "Invalid WASM magic number".to_string(),
+            ));
         }
 
         // Record execution start

@@ -3,10 +3,7 @@
 //! Tests the full Maieutic Synthesizer pipeline:
 //! Hypothesis Generation → Evidence Collection → BFT Consensus → Validation.
 
-#[cfg(all(
-    feature = "v3.0-maieutic-synthesizer",
-    feature = "v3.0-orchestration"
-))]
+#[cfg(all(feature = "v3.0-maieutic-synthesizer", feature = "v3.0-orchestration"))]
 mod hypothesis_engine_tests {
     use ed2kia::pillars::maieutic::hypothesis_engine::{
         Domain, Evidence, HypothesisEngine, HypothesisState,
@@ -37,12 +34,14 @@ mod hypothesis_engine_tests {
         assert_eq!(h.unwrap().state, HypothesisState::Proposed);
 
         // Submit evidence.
-        engine.submit_evidence("h1", make_evidence("n1", Domain::ProteinFolding, 0.5))
+        engine
+            .submit_evidence("h1", make_evidence("n1", Domain::ProteinFolding, 0.5))
             .unwrap();
         let h = engine.get_hypothesis("h1").unwrap();
         assert_eq!(h.state, HypothesisState::CollectingEvidence);
 
-        engine.submit_evidence("h1", make_evidence("n2", Domain::ProteinFolding, 0.3))
+        engine
+            .submit_evidence("h1", make_evidence("n2", Domain::ProteinFolding, 0.3))
             .unwrap();
         let h = engine.get_hypothesis("h1").unwrap();
         assert_eq!(h.state, HypothesisState::ReadyForConsensus);
@@ -64,27 +63,25 @@ mod hypothesis_engine_tests {
     #[test]
     fn test_cross_domain_hypotheses() {
         let mut engine = HypothesisEngine::new();
-        engine.generate_hypothesis(
-            "h1".to_string(),
-            Domain::ProteinFolding,
-            "A".to_string(),
-            0.5,
-        )
-        .unwrap();
-        engine.generate_hypothesis(
-            "h2".to_string(),
-            Domain::MolecularDynamics,
-            "B".to_string(),
-            0.5,
-        )
-        .unwrap();
-        engine.generate_hypothesis(
-            "h3".to_string(),
-            Domain::Epigenetics,
-            "C".to_string(),
-            0.5,
-        )
-        .unwrap();
+        engine
+            .generate_hypothesis(
+                "h1".to_string(),
+                Domain::ProteinFolding,
+                "A".to_string(),
+                0.5,
+            )
+            .unwrap();
+        engine
+            .generate_hypothesis(
+                "h2".to_string(),
+                Domain::MolecularDynamics,
+                "B".to_string(),
+                0.5,
+            )
+            .unwrap();
+        engine
+            .generate_hypothesis("h3".to_string(), Domain::Epigenetics, "C".to_string(), 0.5)
+            .unwrap();
 
         assert_eq!(engine.list_by_domain(&Domain::ProteinFolding).len(), 1);
         assert_eq!(engine.list_by_domain(&Domain::MolecularDynamics).len(), 1);
@@ -95,33 +92,32 @@ mod hypothesis_engine_tests {
     #[test]
     fn test_consensus_result_update() {
         let mut engine = HypothesisEngine::new();
-        engine.generate_hypothesis(
-            "h1".to_string(),
-            Domain::ClimateModeling,
-            "Test".to_string(),
-            0.5,
-        )
-        .unwrap();
+        engine
+            .generate_hypothesis(
+                "h1".to_string(),
+                Domain::ClimateModeling,
+                "Test".to_string(),
+                0.5,
+            )
+            .unwrap();
 
         let h = engine.update_consensus_result("h1", true).unwrap();
         assert_eq!(h.state, HypothesisState::Validated);
 
-        engine.generate_hypothesis(
-            "h2".to_string(),
-            Domain::ClimateModeling,
-            "Test2".to_string(),
-            0.5,
-        )
-        .unwrap();
+        engine
+            .generate_hypothesis(
+                "h2".to_string(),
+                Domain::ClimateModeling,
+                "Test2".to_string(),
+                0.5,
+            )
+            .unwrap();
         let h = engine.update_consensus_result("h2", false).unwrap();
         assert_eq!(h.state, HypothesisState::Rejected);
     }
 }
 
-#[cfg(all(
-    feature = "v3.0-maieutic-synthesizer",
-    feature = "v3.0-orchestration"
-))]
+#[cfg(all(feature = "v3.0-maieutic-synthesizer", feature = "v3.0-orchestration"))]
 mod bio_sim_worker_tests {
     use ed2kia::pillars::maieutic::bio_sim_worker::{BioSimWorker, SimConfig};
     use ed2kia::pillars::maieutic::hypothesis_engine::Domain;
@@ -161,12 +157,10 @@ mod bio_sim_worker_tests {
 
     #[test]
     fn test_worker_config_validation() {
-        let config = SimConfig::new(Domain::Epigenetics, "w".to_string())
-            .with_max_iterations(0);
+        let config = SimConfig::new(Domain::Epigenetics, "w".to_string()).with_max_iterations(0);
         assert!(BioSimWorker::new(config).is_err());
 
-        let config = SimConfig::new(Domain::Epigenetics, "w".to_string())
-            .with_precision(-1.0);
+        let config = SimConfig::new(Domain::Epigenetics, "w".to_string()).with_precision(-1.0);
         assert!(BioSimWorker::new(config).is_err());
     }
 
@@ -178,10 +172,7 @@ mod bio_sim_worker_tests {
     }
 }
 
-#[cfg(all(
-    feature = "v3.0-maieutic-synthesizer",
-    feature = "v3.0-orchestration"
-))]
+#[cfg(all(feature = "v3.0-maieutic-synthesizer", feature = "v3.0-orchestration"))]
 mod scientific_consensus_tests {
     use ed2kia::pillars::maieutic::hypothesis_engine::{Domain, Evidence};
     use ed2kia::pillars::maieutic::scientific_consensus::{ConsensusError, ScientificConsensus};
@@ -203,11 +194,14 @@ mod scientific_consensus_tests {
         consensus.register_validator("v2".to_string());
         consensus.register_validator("v3".to_string());
 
-        consensus.submit_evidence("h1", make_evidence("v1", Domain::Epigenetics, 0.5))
+        consensus
+            .submit_evidence("h1", make_evidence("v1", Domain::Epigenetics, 0.5))
             .unwrap();
-        consensus.submit_evidence("h1", make_evidence("v2", Domain::Epigenetics, 0.3))
+        consensus
+            .submit_evidence("h1", make_evidence("v2", Domain::Epigenetics, 0.3))
             .unwrap();
-        consensus.submit_evidence("h1", make_evidence("v3", Domain::Epigenetics, 0.4))
+        consensus
+            .submit_evidence("h1", make_evidence("v3", Domain::Epigenetics, 0.4))
             .unwrap();
 
         let result = consensus.run_consensus("h1", &Domain::Epigenetics).unwrap();
@@ -221,11 +215,14 @@ mod scientific_consensus_tests {
         consensus.register_validator("v2".to_string());
         consensus.register_validator("v3".to_string());
 
-        consensus.submit_evidence("h1", make_evidence("v1", Domain::Epigenetics, 0.5))
+        consensus
+            .submit_evidence("h1", make_evidence("v1", Domain::Epigenetics, 0.5))
             .unwrap();
-        consensus.submit_evidence("h1", make_evidence("v2", Domain::ProteinFolding, 0.3))
+        consensus
+            .submit_evidence("h1", make_evidence("v2", Domain::ProteinFolding, 0.3))
             .unwrap();
-        consensus.submit_evidence("h1", make_evidence("v3", Domain::ProteinFolding, 0.4))
+        consensus
+            .submit_evidence("h1", make_evidence("v3", Domain::ProteinFolding, 0.4))
             .unwrap();
 
         let result = consensus.run_consensus("h1", &Domain::Epigenetics).unwrap();
@@ -236,7 +233,8 @@ mod scientific_consensus_tests {
     fn test_sct_guard_in_consensus() {
         let mut consensus = ScientificConsensus::new();
         consensus.register_validator("v1".to_string());
-        let result = consensus.submit_evidence("h1", make_evidence("v1", Domain::Epigenetics, -0.5));
+        let result =
+            consensus.submit_evidence("h1", make_evidence("v1", Domain::Epigenetics, -0.5));
         match result {
             Err(ConsensusError::SctGuardRejected { z_score, .. }) => {
                 assert!(z_score < 0.0);
@@ -249,7 +247,8 @@ mod scientific_consensus_tests {
     fn test_duplicate_evidence_rejected() {
         let mut consensus = ScientificConsensus::new();
         consensus.register_validator("v1".to_string());
-        consensus.submit_evidence("h1", make_evidence("v1", Domain::Epigenetics, 0.5))
+        consensus
+            .submit_evidence("h1", make_evidence("v1", Domain::Epigenetics, 0.5))
             .unwrap();
         let result = consensus.submit_evidence("h1", make_evidence("v1", Domain::Epigenetics, 0.3));
         assert!(matches!(result, Err(ConsensusError::DuplicateEvidence(_))));
@@ -261,7 +260,8 @@ mod scientific_consensus_tests {
         consensus.register_validator("v1".to_string());
         consensus.register_validator("v2".to_string());
 
-        consensus.submit_evidence("h1", make_evidence("v1", Domain::Epigenetics, 0.5))
+        consensus
+            .submit_evidence("h1", make_evidence("v1", Domain::Epigenetics, 0.5))
             .unwrap();
         // 1 out of 2 = 50% — exactly at threshold.
         let result = consensus.run_consensus("h1", &Domain::Epigenetics).unwrap();
@@ -269,10 +269,7 @@ mod scientific_consensus_tests {
     }
 }
 
-#[cfg(all(
-    feature = "v3.0-maieutic-synthesizer",
-    feature = "v3.0-orchestration"
-))]
+#[cfg(all(feature = "v3.0-maieutic-synthesizer", feature = "v3.0-orchestration"))]
 mod maieutic_engine_integration_tests {
     use ed2kia::pillars::maieutic::hypothesis_engine::{Domain, Evidence};
     use ed2kia::pillars::maieutic::MaieuticEngine;
@@ -301,13 +298,14 @@ mod maieutic_engine_integration_tests {
         let mut engine = MaieuticEngine::new();
 
         // Generate hypothesis.
-        engine.generate_hypothesis(
-            "h1".to_string(),
-            Domain::ProteinFolding,
-            "Protein X stabilizes under condition Y".to_string(),
-            0.5,
-        )
-        .unwrap();
+        engine
+            .generate_hypothesis(
+                "h1".to_string(),
+                Domain::ProteinFolding,
+                "Protein X stabilizes under condition Y".to_string(),
+                0.5,
+            )
+            .unwrap();
 
         // Register validators.
         engine.register_validator("v1".to_string());
@@ -315,11 +313,14 @@ mod maieutic_engine_integration_tests {
         engine.register_validator("v3".to_string());
 
         // Submit evidence.
-        engine.submit_evidence("h1", make_evidence("v1", Domain::ProteinFolding, 0.5))
+        engine
+            .submit_evidence("h1", make_evidence("v1", Domain::ProteinFolding, 0.5))
             .unwrap();
-        engine.submit_evidence("h1", make_evidence("v2", Domain::ProteinFolding, 0.3))
+        engine
+            .submit_evidence("h1", make_evidence("v2", Domain::ProteinFolding, 0.3))
             .unwrap();
-        engine.submit_evidence("h1", make_evidence("v3", Domain::ProteinFolding, 0.4))
+        engine
+            .submit_evidence("h1", make_evidence("v3", Domain::ProteinFolding, 0.4))
             .unwrap();
 
         // Run consensus.
@@ -347,22 +348,26 @@ mod maieutic_engine_integration_tests {
     #[test]
     fn test_ready_for_consensus_list() {
         let mut engine = MaieuticEngine::new();
-        engine.generate_hypothesis(
-            "h1".to_string(),
-            Domain::MolecularDynamics,
-            "A".to_string(),
-            0.5,
-        )
-        .unwrap();
+        engine
+            .generate_hypothesis(
+                "h1".to_string(),
+                Domain::MolecularDynamics,
+                "A".to_string(),
+                0.5,
+            )
+            .unwrap();
         engine.register_validator("v1".to_string());
         engine.register_validator("v2".to_string());
         engine.register_validator("v3".to_string());
 
-        engine.submit_evidence("h1", make_evidence("v1", Domain::MolecularDynamics, 0.5))
+        engine
+            .submit_evidence("h1", make_evidence("v1", Domain::MolecularDynamics, 0.5))
             .unwrap();
-        engine.submit_evidence("h1", make_evidence("v2", Domain::MolecularDynamics, 0.3))
+        engine
+            .submit_evidence("h1", make_evidence("v2", Domain::MolecularDynamics, 0.3))
             .unwrap();
-        engine.submit_evidence("h1", make_evidence("v3", Domain::MolecularDynamics, 0.4))
+        engine
+            .submit_evidence("h1", make_evidence("v3", Domain::MolecularDynamics, 0.4))
             .unwrap();
 
         let ready = engine.ready_for_consensus();

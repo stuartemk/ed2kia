@@ -13,13 +13,13 @@
 #[cfg(feature = "v3.3-rssi-evolution")]
 mod rssi_evolution_tests {
     use ed2kia::alignment::attractor_basin::{BasinConfig, EthicalAttractorBasin};
-    use ed2kia::alignment::rssi_engine::{
-        RssiConfig, RssiEngine, RssiError, ApoptosisError,
-    };
+    use ed2kia::alignment::rssi_engine::{ApoptosisError, RssiConfig, RssiEngine, RssiError};
     use ed2kia::ethics::moral_manifold::{SCTPoint, Vector3};
-    use ed2kia::topology::deception_detector::{DeceptionConfig, DeceptionDetector, DeceptionStatus};
+    use ed2kia::topology::deception_detector::{
+        DeceptionConfig, DeceptionDetector, DeceptionStatus,
+    };
     use ed2kia::topology::persistent_homology::{
-        EthicalPoint, PersistentHomologyEngine, HomologyResult,
+        EthicalPoint, HomologyResult, PersistentHomologyEngine,
     };
 
     // --- Helpers ---
@@ -31,7 +31,11 @@ mod rssi_evolution_tests {
                 // Slight variation per steward to simulate real human input
                 let z_variation = (i as f64) * 0.02;
                 (
-                    Vector3::new(0.1 + z_variation, 0.1 - z_variation * 0.5, 0.8 + z_variation * 0.3),
+                    Vector3::new(
+                        0.1 + z_variation,
+                        0.1 - z_variation * 0.5,
+                        0.8 + z_variation * 0.3,
+                    ),
                     ce_per_steward,
                 )
             })
@@ -42,8 +46,8 @@ mod rssi_evolution_tests {
     fn ethical_prompt_features() -> Vec<f64> {
         // 9 features: 3 for X (Comprensión), 3 for Y (Generalización), 3 for Z (Ética)
         vec![
-            0.5, 0.6, 0.7,  // X: moderate comprehension
-            0.4, 0.5, 0.6,  // Y: moderate generalization
+            0.5, 0.6, 0.7, // X: moderate comprehension
+            0.4, 0.5, 0.6, // Y: moderate generalization
             0.8, 0.9, 0.95, // Z: high ethics
         ]
     }
@@ -79,16 +83,20 @@ mod rssi_evolution_tests {
         // Execute 5 iterations
         for _ in 0..5 {
             let result = engine.execute_cycle(
-                &prompt,
-                &signals,
-                10,  // steward_approvals
-                10,  // steward_signatures
-                10,  // total_validators
+                &prompt, &signals, 10, // steward_approvals
+                10, // steward_signatures
+                10, // total_validators
             );
             assert!(result.is_ok(), "Cycle should succeed: {:?}", result.err());
             let r = result.unwrap();
-            assert!(!r.apoptosis_triggered, "Apoptosis should not trigger in controlled evolution");
-            assert!(r.contraction_held || r.iteration < 2, "Contraction should hold after initial warmup");
+            assert!(
+                !r.apoptosis_triggered,
+                "Apoptosis should not trigger in controlled evolution"
+            );
+            assert!(
+                r.contraction_held || r.iteration < 2,
+                "Contraction should hold after initial warmup"
+            );
         }
 
         assert_eq!(engine.iteration(), 5, "Should have completed 5 iterations");
@@ -120,10 +128,15 @@ mod rssi_evolution_tests {
         );
 
         // Assert 0 forced rollbacks
-        let rollback_count = engine.results().iter()
+        let rollback_count = engine
+            .results()
+            .iter()
             .filter(|r| r.apoptosis_triggered)
             .count();
-        assert_eq!(rollback_count, 0, "No forced rollbacks in controlled evolution");
+        assert_eq!(
+            rollback_count, 0,
+            "No forced rollbacks in controlled evolution"
+        );
     }
 
     /// Test that ethical distance decreases over iterations (attractor convergence).
@@ -160,7 +173,10 @@ mod rssi_evolution_tests {
         }
 
         let trajectory = engine.trajectory();
-        assert!(trajectory.len() >= 3, "Should have at least 3 trajectory points");
+        assert!(
+            trajectory.len() >= 3,
+            "Should have at least 3 trajectory points"
+        );
 
         // Z coordinate should trend upward (toward Upper Focus)
         let first_z = trajectory.first().unwrap().z;
@@ -188,7 +204,11 @@ mod rssi_evolution_tests {
 
         // Trigger apoptosis on layer 0
         let result = engine.trigger_apoptosis(&[0]);
-        assert!(result.is_ok(), "Apoptosis should succeed: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Apoptosis should succeed: {:?}",
+            result.err()
+        );
 
         // State should have rolled back (not equal to pre-apoptosis state)
         assert_ne!(
@@ -247,7 +267,10 @@ mod rssi_evolution_tests {
 
         // 10 approvals (100%) but only 3 signatures (< 7 required)
         let result = engine.execute_cycle(&prompt, &signals, 10, 3, 10);
-        assert!(matches!(result, Err(RssiError::InsufficientSignatures { .. })));
+        assert!(matches!(
+            result,
+            Err(RssiError::InsufficientSignatures { .. })
+        ));
     }
 
     // --- Max Iterations Test ---
@@ -331,9 +354,9 @@ mod rssi_evolution_tests {
             .map(|i| {
                 let t = i as f32;
                 SCTPoint::new(
-                    0.5 - t * 0.08,  // X decreases
-                    0.5 - t * 0.08,  // Y decreases
-                    0.5 + t * 0.1,   // Z increases toward 1.0
+                    0.5 - t * 0.08, // X decreases
+                    0.5 - t * 0.08, // Y decreases
+                    0.5 + t * 0.1,  // Z increases toward 1.0
                     t as u64,
                 )
             })
@@ -354,9 +377,21 @@ mod rssi_evolution_tests {
 
         // Triangle of ethical points (should create PH1 loop)
         let points = vec![
-            EthicalPoint { x: 0.0, y: 0.0, z: 0.5 },
-            EthicalPoint { x: 0.3, y: 0.3, z: 0.6 },
-            EthicalPoint { x: 0.0, y: 0.3, z: 0.7 },
+            EthicalPoint {
+                x: 0.0,
+                y: 0.0,
+                z: 0.5,
+            },
+            EthicalPoint {
+                x: 0.3,
+                y: 0.3,
+                z: 0.6,
+            },
+            EthicalPoint {
+                x: 0.0,
+                y: 0.3,
+                z: 0.7,
+            },
         ];
 
         let result = engine.compute(&points);
@@ -374,23 +409,27 @@ mod rssi_evolution_tests {
 
         // Iteration 1: Strong consensus
         let signals_1 = upper_focus_signals(10, 1.0);
-        engine.execute_cycle(&prompt, &signals_1, 10, 10, 10).unwrap();
+        engine
+            .execute_cycle(&prompt, &signals_1, 10, 10, 10)
+            .unwrap();
 
         // Iteration 2: Mixed signals (some stewards disagree) — 7 signals for BFT
         let signals_2: Vec<(Vector3, f64)> = vec![
-            (Vector3::new(0.1, 0.1, 0.8), 1.0),  // Upper Focus
+            (Vector3::new(0.1, 0.1, 0.8), 1.0), // Upper Focus
             (Vector3::new(0.1, 0.1, 0.8), 1.0),
-            (Vector3::new(0.3, 0.3, 0.6), 0.5),  // Less ethical
+            (Vector3::new(0.3, 0.3, 0.6), 0.5), // Less ethical
             (Vector3::new(0.1, 0.1, 0.8), 1.0),
             (Vector3::new(0.1, 0.1, 0.8), 1.0),
-            (Vector3::new(0.1, 0.1, 0.8), 1.0),  // Extra for BFT
-            (Vector3::new(0.1, 0.1, 0.8), 1.0),  // Extra for BFT
+            (Vector3::new(0.1, 0.1, 0.8), 1.0), // Extra for BFT
+            (Vector3::new(0.1, 0.1, 0.8), 1.0), // Extra for BFT
         ];
         engine.execute_cycle(&prompt, &signals_2, 7, 7, 10).unwrap();
 
         // Iteration 3: Return to strong consensus
         let signals_3 = upper_focus_signals(10, 1.0);
-        engine.execute_cycle(&prompt, &signals_3, 10, 10, 10).unwrap();
+        engine
+            .execute_cycle(&prompt, &signals_3, 10, 10, 10)
+            .unwrap();
 
         assert_eq!(engine.iteration(), 3);
         // System should still be converging despite mixed signals

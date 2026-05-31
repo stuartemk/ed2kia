@@ -49,7 +49,10 @@ impl std::fmt::Display for OmegaError {
             OmegaError::NciOutOfRange(val) => {
                 write!(f, "NCI value {} outside valid range [0.0, 1.0]", val)
             }
-            OmegaError::InsufficientData { required, available } => {
+            OmegaError::InsufficientData {
+                required,
+                available,
+            } => {
                 write!(
                     f,
                     "Insufficient data for Omega computation: required {}, available {}",
@@ -305,12 +308,17 @@ impl OmegaPointCalculator {
     /// Record a new NCI observation and compute Omega Point.
     ///
     /// Returns the computed OmegaSnapshot.
-    pub fn record(&mut self, timestamp_ms: u64, nci: f64, h_sym: f64) -> Result<OmegaSnapshot, OmegaError> {
+    pub fn record(
+        &mut self,
+        timestamp_ms: u64,
+        nci: f64,
+        h_sym: f64,
+    ) -> Result<OmegaSnapshot, OmegaError> {
         if self.mode == AscensionMode::GuidedAscension {
             return Err(OmegaError::SingularityAlreadyDeclared);
         }
 
-        if nci < 0.0 || nci > 1.0 {
+        if !(0.0..=1.0).contains(&nci) {
             return Err(OmegaError::NciOutOfRange(nci));
         }
 
@@ -402,7 +410,8 @@ impl OmegaPointCalculator {
 
     /// Get progress toward ascension (0.0 to 1.0).
     pub fn ascension_progress(&self) -> f64 {
-        let day_progress = self.consecutive_mature_days as f64 / self.config.required_sustained_days as f64;
+        let day_progress =
+            self.consecutive_mature_days as f64 / self.config.required_sustained_days as f64;
         let omega_progress = self.current_omega().unwrap_or(0.0) / self.config.omega_threshold;
         (day_progress.min(omega_progress)).min(1.0)
     }
@@ -528,7 +537,10 @@ mod tests {
     #[test]
     fn test_ascension_mode_display() {
         assert_eq!(format!("{}", AscensionMode::Normal), "Normal");
-        assert_eq!(format!("{}", AscensionMode::GuidedAscension), "Guided Ascension");
+        assert_eq!(
+            format!("{}", AscensionMode::GuidedAscension),
+            "Guided Ascension"
+        );
     }
 
     // --- OmegaConfig ---
@@ -566,7 +578,7 @@ mod tests {
     #[test]
     fn test_config_zero_resonance() {
         match OmegaConfig::new(0.0, 0.93, 270, 1.0) {
-            Err(OmegaError::InvalidResonanceConstant(0.0)) => {},
+            Err(OmegaError::InvalidResonanceConstant(0.0)) => {}
             other => panic!("Expected InvalidResonanceConstant, got {:?}", other),
         }
     }
@@ -629,7 +641,10 @@ mod tests {
         let mut calc = OmegaPointCalculator::new();
         let snap1 = calc.record(1000, 0.9, 0.5).unwrap();
         let snap2 = calc.record(2000, 0.9, 0.5).unwrap();
-        assert!(snap2.omega > snap1.omega, "Omega should increase with accumulation");
+        assert!(
+            snap2.omega > snap1.omega,
+            "Omega should increase with accumulation"
+        );
     }
 
     #[test]
@@ -728,7 +743,7 @@ mod tests {
         }
 
         match calc.record(20000, 0.95, 0.5) {
-            Err(OmegaError::SingularityAlreadyDeclared) => {},
+            Err(OmegaError::SingularityAlreadyDeclared) => {}
             other => panic!("Expected SingularityAlreadyDeclared, got {:?}", other),
         }
     }
@@ -855,7 +870,10 @@ mod tests {
 
     #[test]
     fn test_error_display_insufficient_data() {
-        let err = OmegaError::InsufficientData { required: 10, available: 3 };
+        let err = OmegaError::InsufficientData {
+            required: 10,
+            available: 3,
+        };
         let msg = format!("{}", err);
         assert!(msg.contains("Insufficient"));
     }
@@ -869,7 +887,11 @@ mod tests {
 
     #[test]
     fn test_error_display_ascension_not_met() {
-        let err = OmegaError::AscensionThresholdNotMet { nci: 0.5, omega: 0.3, days: 10 };
+        let err = OmegaError::AscensionThresholdNotMet {
+            nci: 0.5,
+            omega: 0.3,
+            days: 10,
+        };
         let msg = format!("{}", err);
         assert!(msg.contains("not met"));
     }
@@ -889,17 +911,15 @@ mod tests {
 
         // Phase 1: Growth
         for i in 0..5 {
-            let snap = calc.record(1000 + i * 86400000, 0.85 + i as f64 * 0.01, 0.4).unwrap();
+            let snap = calc
+                .record(1000 + i * 86400000, 0.85 + i as f64 * 0.01, 0.4)
+                .unwrap();
             assert!(snap.omega > 0.0);
         }
 
         // Phase 2: Sustained maturity
         for i in 0..15 {
-            let result = calc.record(
-                5000 + i * 86400000,
-                0.95,
-                0.5
-            );
+            let result = calc.record(5000 + i * 86400000, 0.95, 0.5);
             if let Ok(snap) = result {
                 if i >= 5 {
                     assert!(snap.omega > 1.0, "Omega should exceed 1.0 by day {}", i);
@@ -933,7 +953,12 @@ mod tests {
         // Ω = 0.9 * exp(0.5 * 1.0) = 0.9 * exp(0.5)
         let expected = 0.9 * (0.5_f64).exp();
         let actual = calc.current_omega().unwrap();
-        assert!((actual - expected).abs() < 1e-10, "Expected {}, got {}", expected, actual);
+        assert!(
+            (actual - expected).abs() < 1e-10,
+            "Expected {}, got {}",
+            expected,
+            actual
+        );
     }
 
     #[test]

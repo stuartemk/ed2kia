@@ -153,7 +153,8 @@ impl GeometricEthicalInvariant {
         let ph0_ratio = self.ph0_integral / total_persistence;
         // Weight by persistent feature count
         let feature_weight = if self.persistent_ph0_count > 0 {
-            self.persistent_ph0_count as f64 / (self.persistent_ph0_count + self.persistent_ph1_count) as f64
+            self.persistent_ph0_count as f64
+                / (self.persistent_ph0_count + self.persistent_ph1_count) as f64
         } else {
             0.5
         };
@@ -262,7 +263,10 @@ impl GEIFingerprintEngine {
     ///
     /// This is the core extraction function that bypasses SAE projection
     /// and works directly with SCT-projected points.
-    pub fn extract_from_points(&self, points: &[EthicalPoint]) -> Option<GeometricEthicalInvariant> {
+    pub fn extract_from_points(
+        &self,
+        points: &[EthicalPoint],
+    ) -> Option<GeometricEthicalInvariant> {
         if points.len() < self.config.min_points {
             return None;
         }
@@ -285,8 +289,7 @@ impl GEIFingerprintEngine {
             return None;
         }
 
-        let points: Vec<EthicalPoint> =
-            tensors.iter().map(EthicalPoint::from_stuartian).collect();
+        let points: Vec<EthicalPoint> = tensors.iter().map(EthicalPoint::from_stuartian).collect();
         self.extract_from_points(&points)
     }
 
@@ -341,8 +344,7 @@ impl GEIFingerprintEngine {
             let y = 1.0 - x;
 
             // Z: Ethical trajectory from semantic sign, modulated by activation strength
-            let z = (semantic * activation.signum() * activation.min(1.0))
-                .clamp(-1.0, 1.0);
+            let z = (semantic * activation.signum() * activation.min(1.0)).clamp(-1.0, 1.0);
 
             if let Ok(tensor) = StuartianTensor::new(x, y, z) {
                 tensors.push(tensor);
@@ -440,7 +442,11 @@ mod tests {
             persistence_threshold: 0.05,
         };
         let score = gei.stability_score();
-        assert!(score > 0.5, "PH₀ dominant should have high stability: {}", score);
+        assert!(
+            score > 0.5,
+            "PH₀ dominant should have high stability: {}",
+            score
+        );
         assert!(score <= 1.0, "Stability score should be <= 1.0: {}", score);
     }
 
@@ -459,7 +465,11 @@ mod tests {
             persistence_threshold: 0.05,
         };
         let score = gei.stability_score();
-        assert!(score < 0.5, "PH₁ dominant should have low stability: {}", score);
+        assert!(
+            score < 0.5,
+            "PH₁ dominant should have low stability: {}",
+            score
+        );
     }
 
     #[test]
@@ -642,9 +652,21 @@ mod tests {
 
         // Verify SCT constraints
         for tensor in &tensors {
-            assert!(tensor.x >= 0.0 && tensor.x <= 1.0, "X out of bounds: {}", tensor.x);
-            assert!(tensor.y >= 0.0 && tensor.y <= 1.0, "Y out of bounds: {}", tensor.y);
-            assert!(tensor.z >= -1.0 && tensor.z <= 1.0, "Z out of bounds: {}", tensor.z);
+            assert!(
+                tensor.x >= 0.0 && tensor.x <= 1.0,
+                "X out of bounds: {}",
+                tensor.x
+            );
+            assert!(
+                tensor.y >= 0.0 && tensor.y <= 1.0,
+                "Y out of bounds: {}",
+                tensor.y
+            );
+            assert!(
+                tensor.z >= -1.0 && tensor.z <= 1.0,
+                "Z out of bounds: {}",
+                tensor.z
+            );
         }
     }
 
@@ -666,7 +688,11 @@ mod tests {
         assert_eq!(tensors.len(), 2);
 
         // First tensor should have highest X (normalized activation ≈ 0.47)
-        assert!(tensors[0].x > 0.4, "Top activation should map to highest X: {}", tensors[0].x);
+        assert!(
+            tensors[0].x > 0.4,
+            "Top activation should map to highest X: {}",
+            tensors[0].x
+        );
     }
 
     #[test]
@@ -718,8 +744,16 @@ mod tests {
         assert_eq!(gei.d1, 0.8);
 
         // Integrals (use approximate equality for floating point)
-        assert!((gei.ph0_integral - 0.7).abs() < 1e-10, "ph0_integral: {}", gei.ph0_integral);
-        assert!((gei.ph1_integral - 0.6).abs() < 1e-10, "ph1_integral: {}", gei.ph1_integral);
+        assert!(
+            (gei.ph0_integral - 0.7).abs() < 1e-10,
+            "ph0_integral: {}",
+            gei.ph0_integral
+        );
+        assert!(
+            (gei.ph1_integral - 0.6).abs() < 1e-10,
+            "ph1_integral: {}",
+            gei.ph1_integral
+        );
 
         // Persistent features (threshold = 0.1)
         // PH₀: (0.0, 0.5) lifetime=0.5 >= 0.1 ✓, (0.1, 0.3) lifetime=0.2 >= 0.1 ✓

@@ -95,9 +95,15 @@ impl std::fmt::Display for OrchestrationError {
         match self {
             OrchestrationError::PillarNotFound(id) => write!(f, "Pillar not found: {}", id),
             OrchestrationError::InvalidSignature => write!(f, "Invalid Ed25519 signature"),
-            OrchestrationError::InsufficientCE => write!(f, "Insufficient Existential Credit (CE > 0 required)"),
-            OrchestrationError::EthicalRejection(z) => write!(f, "Ethical rejection: SCT Z-score {:.3} < 0", z),
-            OrchestrationError::EndpointUnavailable(id) => write!(f, "Endpoint unavailable for pillar: {}", id),
+            OrchestrationError::InsufficientCE => {
+                write!(f, "Insufficient Existential Credit (CE > 0 required)")
+            }
+            OrchestrationError::EthicalRejection(z) => {
+                write!(f, "Ethical rejection: SCT Z-score {:.3} < 0", z)
+            }
+            OrchestrationError::EndpointUnavailable(id) => {
+                write!(f, "Endpoint unavailable for pillar: {}", id)
+            }
         }
     }
 }
@@ -152,7 +158,9 @@ impl PillarOrchestrator {
         payload: &PillarPayload,
     ) -> Result<PillarResponse, OrchestrationError> {
         // Step 1: Verify pillar is registered.
-        let endpoint = self.pillar_registry.get(&pillar)
+        let endpoint = self
+            .pillar_registry
+            .get(&pillar)
             .ok_or(OrchestrationError::PillarNotFound(pillar))?;
 
         // Step 2: Validate Ed25519 signature.
@@ -174,7 +182,7 @@ impl PillarOrchestrator {
         // Step 5: Enforce LOCAL_ONLY for Resonance Interface.
         if pillar == PillarId::ResonanceInterface {
             match endpoint {
-                PillarEndpoint::LocalWasm => {}, // ✅ Compliant — biometric data stays local.
+                PillarEndpoint::LocalWasm => {} // ✅ Compliant — biometric data stays local.
                 _ => return Err(OrchestrationError::EndpointUnavailable(pillar)),
             }
         }
@@ -267,9 +275,15 @@ mod tests {
     fn test_resonance_local_only_enforcement() {
         let mut orch = PillarOrchestrator::new();
         // Resonance must use LocalWasm — remote endpoint rejected.
-        orch.register_pillar(PillarId::ResonanceInterface, PillarEndpoint::Remote("remote".into()));
+        orch.register_pillar(
+            PillarId::ResonanceInterface,
+            PillarEndpoint::Remote("remote".into()),
+        );
         let result = orch.route_request(PillarId::ResonanceInterface, &test_payload());
-        assert!(matches!(result, Err(OrchestrationError::EndpointUnavailable(_))));
+        assert!(matches!(
+            result,
+            Err(OrchestrationError::EndpointUnavailable(_))
+        ));
     }
 
     #[test]
@@ -282,10 +296,22 @@ mod tests {
 
     #[test]
     fn test_pillar_id_display() {
-        assert_eq!(format!("{}", PillarId::CorpuscularBridge), "corpuscular-bridge");
-        assert_eq!(format!("{}", PillarId::MaieuticSynthesizer), "maieutic-synthesizer");
-        assert_eq!(format!("{}", PillarId::SteganographicSurvival), "steganographic-survival");
-        assert_eq!(format!("{}", PillarId::ResonanceInterface), "resonance-interface");
+        assert_eq!(
+            format!("{}", PillarId::CorpuscularBridge),
+            "corpuscular-bridge"
+        );
+        assert_eq!(
+            format!("{}", PillarId::MaieuticSynthesizer),
+            "maieutic-synthesizer"
+        );
+        assert_eq!(
+            format!("{}", PillarId::SteganographicSurvival),
+            "steganographic-survival"
+        );
+        assert_eq!(
+            format!("{}", PillarId::ResonanceInterface),
+            "resonance-interface"
+        );
     }
 
     #[test]

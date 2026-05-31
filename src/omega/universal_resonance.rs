@@ -56,7 +56,11 @@ impl std::fmt::Display for ResonanceError {
                 write!(f, "Coherence {} outside valid range [0.0, 1.0]", val)
             }
             ResonanceError::AlignmentOutOfRange(val) => {
-                write!(f, "Ethical alignment {} outside valid range [-1.0, 1.0]", val)
+                write!(
+                    f,
+                    "Ethical alignment {} outside valid range [-1.0, 1.0]",
+                    val
+                )
             }
         }
     }
@@ -100,10 +104,10 @@ impl PersonalEcho {
         if participation < 0.0 {
             return Err(ResonanceError::NegativeParticipation(participation));
         }
-        if coherence < 0.0 || coherence > 1.0 {
+        if !(0.0..=1.0).contains(&coherence) {
             return Err(ResonanceError::CoherenceOutOfRange(coherence));
         }
-        if ethical_alignment < -1.0 || ethical_alignment > 1.0 {
+        if !(-1.0..=1.0).contains(&ethical_alignment) {
             return Err(ResonanceError::AlignmentOutOfRange(ethical_alignment));
         }
 
@@ -155,8 +159,8 @@ impl PersonalEcho {
             return [0.0; 8];
         }
         let mut normalized = [0.0; 8];
-        for i in 0..8 {
-            normalized[i] = self.domain_vector[i] / sum;
+        for (i, val) in normalized.iter_mut().enumerate().take(8) {
+            *val = self.domain_vector[i] / sum;
         }
         normalized
     }
@@ -170,7 +174,12 @@ impl PersonalEcho {
             .map(|(a, b)| a * b)
             .sum();
         let mag_self: f64 = self.domain_vector.iter().map(|v| v * v).sum::<f64>().sqrt();
-        let mag_other: f64 = other.domain_vector.iter().map(|v| v * v).sum::<f64>().sqrt();
+        let mag_other: f64 = other
+            .domain_vector
+            .iter()
+            .map(|v| v * v)
+            .sum::<f64>()
+            .sqrt();
         let denom = mag_self * mag_other;
         if denom < 1e-10 {
             return 0.0;
@@ -263,11 +272,7 @@ impl UniversalResonance {
             return Err(ResonanceError::NoEchoesAvailable);
         }
 
-        let weighted_sum: f64 = self
-            .echoes
-            .iter()
-            .map(|e| e.resonance_contribution())
-            .sum();
+        let weighted_sum: f64 = self.echoes.iter().map(|e| e.resonance_contribution()).sum();
 
         self.current_resonance = if self.total_participation > 1e-10 {
             weighted_sum / self.total_participation
@@ -303,14 +308,18 @@ impl UniversalResonance {
 
     /// Find the most coherent echo (highest coherence score).
     pub fn most_coherent_echo(&self) -> Option<&PersonalEcho> {
-        self.echoes.iter().max_by(|a, b| a.coherence.partial_cmp(&b.coherence).unwrap())
+        self.echoes
+            .iter()
+            .max_by(|a, b| a.coherence.partial_cmp(&b.coherence).unwrap())
     }
 
     /// Find the most ethically aligned echo (highest alignment).
     pub fn most_aligned_echo(&self) -> Option<&PersonalEcho> {
-        self.echoes
-            .iter()
-            .max_by(|a, b| a.ethical_alignment.partial_cmp(&b.ethical_alignment).unwrap())
+        self.echoes.iter().max_by(|a, b| {
+            a.ethical_alignment
+                .partial_cmp(&b.ethical_alignment)
+                .unwrap()
+        })
     }
 
     /// Compute average coherence across all echoes.
@@ -338,7 +347,11 @@ impl UniversalResonance {
         }
 
         let mut hypothesis = [0.0; 8];
-        let total_weight: f64 = self.echoes.iter().map(|e| e.participation * e.coherence).sum();
+        let total_weight: f64 = self
+            .echoes
+            .iter()
+            .map(|e| e.participation * e.coherence)
+            .sum();
 
         if total_weight < 1e-10 {
             return [0.0; 8];
@@ -536,7 +549,7 @@ mod tests {
     fn test_unregister_echo_not_found() {
         let mut r = UniversalResonance::new();
         match r.unregister_echo(999) {
-            Err(ResonanceError::UserIdNotFound(999)) => {},
+            Err(ResonanceError::UserIdNotFound(999)) => {}
             other => panic!("Expected UserIdNotFound, got {:?}", other),
         }
     }
@@ -554,7 +567,7 @@ mod tests {
     fn test_get_echo_not_found() {
         let r = UniversalResonance::new();
         match r.get_echo(999) {
-            Err(ResonanceError::UserIdNotFound(999)) => {},
+            Err(ResonanceError::UserIdNotFound(999)) => {}
             other => panic!("Expected UserIdNotFound, got {:?}", other),
         }
     }
@@ -588,7 +601,7 @@ mod tests {
     fn test_compute_no_echoes() {
         let mut r = UniversalResonance::new();
         match r.compute(1000) {
-            Err(ResonanceError::NoEchoesAvailable) => {},
+            Err(ResonanceError::NoEchoesAvailable) => {}
             other => panic!("Expected NoEchoesAvailable, got {:?}", other),
         }
     }

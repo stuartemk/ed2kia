@@ -29,9 +29,9 @@ use crate::orchestration::PillarId;
 use crate::pillars::{CEExchangeTrait, CEVoucher, PillarError, PillarInterface, ResourceType};
 
 #[cfg(feature = "v3.0-corpuscular-bridge")]
-use crate::runtime::pillar_messaging::PillarMessage;
-#[cfg(feature = "v3.0-corpuscular-bridge")]
 use crate::orchestration::{PillarResponse, PillarStatus};
+#[cfg(feature = "v3.0-corpuscular-bridge")]
+use crate::runtime::pillar_messaging::PillarMessage;
 
 #[cfg(feature = "v3.0-corpuscular-bridge")]
 use ce_exchange::CEExchangeEngine;
@@ -72,10 +72,7 @@ impl CorpuscularEngine {
     /// Deserializes the message, validates CE, routes to IoT adapter or CE exchange,
     /// and returns a signed response with CE metrics and SCT state.
     #[cfg(feature = "v3.0-corpuscular-bridge")]
-    pub fn handle_request(
-        &mut self,
-        msg: &PillarMessage,
-    ) -> Result<PillarResponse, PillarError> {
+    pub fn handle_request(&mut self, msg: &PillarMessage) -> Result<PillarResponse, PillarError> {
         // Step 1: Validate that message target is this pillar.
         if msg.pillar_id != PillarId::CorpuscularBridge {
             return Err(PillarError::UnsupportedResource);
@@ -90,8 +87,12 @@ impl CorpuscularEngine {
         let response_data = if !msg.payload.is_empty() {
             // Simulate hardware command dispatch.
             // In production: deserialize payload to determine operation type.
-            format!("corpuscular-ok:ce={:.2}:payload={}", msg.ce_weight, msg.payload.len())
-                .into_bytes()
+            format!(
+                "corpuscular-ok:ce={:.2}:payload={}",
+                msg.ce_weight,
+                msg.payload.len()
+            )
+            .into_bytes()
         } else {
             // Empty payload: return status metrics.
             format!(
@@ -133,7 +134,10 @@ impl PillarInterface for CorpuscularEngine {
 }
 
 impl CEExchangeTrait for CorpuscularEngine {
-    fn request_physical_resource(&self, resource_type: ResourceType) -> Result<CEVoucher, PillarError> {
+    fn request_physical_resource(
+        &self,
+        resource_type: ResourceType,
+    ) -> Result<CEVoucher, PillarError> {
         // Generate CE voucher with Ed25519 signature.
         // Voucher binds CE amount to specific resource type.
         // Non-transferable, expires after atomic execution.
@@ -190,7 +194,7 @@ mod tests {
     fn test_consume_ce_zero_rejected() {
         let engine = CorpuscularEngine::new();
         match engine.consume_ce(0.0) {
-            Err(PillarError::InsufficientCE) => {}, // Expected
+            Err(PillarError::InsufficientCE) => {} // Expected
             other => panic!("Expected InsufficientCE, got {:?}", other),
         }
     }
@@ -214,7 +218,7 @@ mod tests {
     fn test_redeem_compute_credit_zero_rejected() {
         let engine = CorpuscularEngine::new();
         match engine.redeem_compute_credit(0.0) {
-            Err(PillarError::InsufficientCE) => {}, // Expected
+            Err(PillarError::InsufficientCE) => {} // Expected
             other => panic!("Expected InsufficientCE, got {:?}", other),
         }
     }

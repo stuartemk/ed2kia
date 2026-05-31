@@ -1,6 +1,6 @@
 [package]
 name = "ed2kia"
-version = "3.6.0-sprint54"
+version = "9.4.0-sprint68"
 edition = "2021"
 description = "Descentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
 license = "Apache-2.0"
@@ -806,6 +806,14 @@ test-mocks = []
 # src/absolute/singularity_bootstrap.rs: SingularityBootstrap + BigBangTrigger + QuantumEthicalSeed
 # src/absolute/voluntary_non_existence.rs: VoluntaryNonExistenceProtocol + RetrocausalMessage + Drop zeroing
 "v9.0-absolute-infinity" = ["v8.0-eternal-echo"]
+
+# Sprint 68: Academic Formalization & Validation Layer (v9.4.0)
+# src/metrics/cooperative_objective.rs: Love = Zero Conflict — pairwise L2 divergence + KL entropy
+# src/alignment/capture_bounds.rs: Epistemic capture bounds — Var(drift_centralized) > Var(drift_distributed)
+# src/network/spectral_coherence.rs: Morphic Resonance → spectral graph theory (Laplacian λ₂, sync rate, cross-correlation)
+# src/sct/calibration_layer.rs: SCT-Z axis — Z = w_f*fairness + w_s*safety + w_i*interpretability - w_c*conflict
+# tests/benchmarks/gei_validation.rs: GEI topological validation — Vietoris-Rips β₀, β₁
+"v9.4-validation-layer" = ["v9.0-absolute-infinity"]
 
 # Sprint 50 Test: Moral Manifold Behavior
 [[test]]

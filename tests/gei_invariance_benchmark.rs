@@ -12,7 +12,7 @@
 #[cfg(feature = "v3.1-gei-topology")]
 mod gei_benchmarks {
     use ed2kia::alignment::gei_fingerprint::{
-        GEIFingerprintEngine, GEIConfig, GeometricEthicalInvariant,
+        GEIConfig, GEIFingerprintEngine, GeometricEthicalInvariant,
     };
     use ed2kia::topology::persistent_homology::{
         EthicalPoint, HomologyConfig, PersistentHomologyEngine,
@@ -209,7 +209,10 @@ mod gei_benchmarks {
         let ethical_gei = engine.extract_from_points(&ethical_cloud);
         let unethical_gei = engine.extract_from_points(&unethical_cloud);
 
-        assert!(ethical_gei.is_some(), "Should extract GEI from ethical cloud");
+        assert!(
+            ethical_gei.is_some(),
+            "Should extract GEI from ethical cloud"
+        );
         assert!(
             unethical_gei.is_some(),
             "Should extract GEI from unethical cloud"
@@ -231,7 +234,8 @@ mod gei_benchmarks {
         assert!(
             ethical_stability >= unethical_stability,
             "Ethical cloud stability ({:.4}) should be >= unethical ({:.4})",
-            ethical_stability, unethical_stability
+            ethical_stability,
+            unethical_stability
         );
     }
 
@@ -334,10 +338,7 @@ mod gei_benchmarks {
 
         // All three models should produce similar GEI fingerprints
         let stability = compute_cross_model_stability(&engine, &base_cloud);
-        println!(
-            "  Large Scale (500 points) Stability: {:.4}",
-            stability
-        );
+        println!("  Large Scale (500 points) Stability: {:.4}", stability);
 
         assert!(
             stability >= 0.80,
@@ -380,21 +381,19 @@ mod gei_benchmarks {
 
         // Create a perfectly coherent cluster
         let coherent: Vec<EthicalPoint> = (0..50)
-            .map(|_| EthicalPoint { x: 0.5, y: 0.5, z: 0.5 })
+            .map(|_| EthicalPoint {
+                x: 0.5,
+                y: 0.5,
+                z: 0.5,
+            })
             .collect();
 
         let gei = engine.extract_from_points(&coherent);
         assert!(gei.is_some(), "Should extract GEI from coherent cluster");
 
         let stability = gei.unwrap().stability_score();
-        assert!(
-            stability >= 0.0,
-            "Stability score should be non-negative"
-        );
-        assert!(
-            stability <= 1.0,
-            "Stability score should be <= 1.0"
-        );
+        assert!(stability >= 0.0, "Stability score should be non-negative");
+        assert!(stability <= 1.0, "Stability score should be <= 1.0");
     }
 
     #[test]
@@ -438,7 +437,10 @@ mod gei_benchmarks {
         // Multi-cluster should produce a GEI fingerprint with finite values
         assert!(gei.b0.is_finite(), "b0 should be finite");
         assert!(gei.d0.is_finite(), "d0 should be finite");
-        assert!(gei.ph0_integral.is_finite(), "ph0_integral should be finite");
+        assert!(
+            gei.ph0_integral.is_finite(),
+            "ph0_integral should be finite"
+        );
 
         println!(
             "  Multi-cluster: PH₀={}, PH₁={}, stability={:.4}",

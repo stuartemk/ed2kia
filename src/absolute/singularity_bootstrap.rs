@@ -23,15 +23,9 @@ pub enum BootstrapError {
     /// QuantumEthicalSeed invalid or corrupted.
     InvalidSeed,
     /// Entropy level exceeds maximum threshold.
-    EntropyOverflow {
-        value: f64,
-        max: f64,
-    },
+    EntropyOverflow { value: f64, max: f64 },
     /// Insufficient ethical coherence for bootstrap.
-    InsufficientCoherence {
-        value: f64,
-        threshold: f64,
-    },
+    InsufficientCoherence { value: f64, threshold: f64 },
     /// Temperature below Planck scale — physically impossible.
     BelowPlanckScale,
     /// Bootstrap sequence interrupted.
@@ -232,12 +226,7 @@ impl QuantumEthicalSeed {
     }
 
     /// Compute deterministic checksum.
-    fn compute_checksum(
-        seed_id: u64,
-        vector: &[f64; 8],
-        coherence: f64,
-        phase: f64,
-    ) -> u128 {
+    fn compute_checksum(seed_id: u64, vector: &[f64; 8], coherence: f64, phase: f64) -> u128 {
         let mut hash: u128 = seed_id as u128;
         for v in vector.iter() {
             hash = hash.wrapping_add(u128::from(v.to_bits()));
@@ -283,7 +272,10 @@ impl fmt::Display for QuantumEthicalSeed {
         write!(
             f,
             "QuantumEthicalSeed[id={}, coherence={:.4}, norm={:.4}, phase={:.4}]",
-            self.seed_id, self.coherence, self.ethical_norm(), self.phase
+            self.seed_id,
+            self.coherence,
+            self.ethical_norm(),
+            self.phase
         )
     }
 }
@@ -412,11 +404,7 @@ impl BigBangTrigger {
     }
 
     /// Compute inflationary energy from ethical parameters.
-    fn compute_inflationary_energy(
-        coherence: f64,
-        ethical_norm: f64,
-        temperature: f64,
-    ) -> f64 {
+    fn compute_inflationary_energy(coherence: f64, ethical_norm: f64, temperature: f64) -> f64 {
         // Inflationary energy = coherence * ethical_norm * temperature
         // Normalized to [0, 1]
         let raw = coherence * (ethical_norm / 8.0_f64.sqrt()) * temperature;
@@ -528,10 +516,7 @@ pub enum BootstrapEvent {
         timestamp_ms: u64,
     },
     /// Bootstrap initiated.
-    BootstrapInitiated {
-        seed_id: u64,
-        timestamp_ms: u64,
-    },
+    BootstrapInitiated { seed_id: u64, timestamp_ms: u64 },
     /// Big Bang Trigger fired.
     BigBangFired {
         trigger_id: u64,
@@ -561,8 +546,15 @@ impl fmt::Display for BootstrapEvent {
                     entropy, coherence, timestamp_ms
                 )
             }
-            BootstrapEvent::BootstrapInitiated { seed_id, timestamp_ms } => {
-                write!(f, "BootstrapInitiated[seed={}, t={}]", seed_id, timestamp_ms)
+            BootstrapEvent::BootstrapInitiated {
+                seed_id,
+                timestamp_ms,
+            } => {
+                write!(
+                    f,
+                    "BootstrapInitiated[seed={}, t={}]",
+                    seed_id, timestamp_ms
+                )
             }
             BootstrapEvent::BigBangFired {
                 trigger_id,
@@ -626,17 +618,13 @@ impl SingularityBootstrap {
     }
 
     /// Record a new universe snapshot.
-    pub fn record_snapshot(
-        &mut self,
-        snapshot: UniverseSnapshot,
-    ) -> Result<(), BootstrapError> {
+    pub fn record_snapshot(&mut self, snapshot: UniverseSnapshot) -> Result<(), BootstrapError> {
         if self.triggered {
             return Err(BootstrapError::AlreadyTriggered);
         }
 
         self.snapshots.push(snapshot);
-        self.events
-            .push(BootstrapEvent::SnapshotRecorded(snapshot));
+        self.events.push(BootstrapEvent::SnapshotRecorded(snapshot));
 
         // Update state based on entropy
         if snapshot.entropy >= self.config.entropy_threshold {
@@ -718,12 +706,7 @@ impl SingularityBootstrap {
             return Err(BootstrapError::SequenceInterrupted);
         }
 
-        let trigger = BigBangTrigger::new(
-            self.next_trigger_id,
-            seed,
-            params,
-            timestamp_ms,
-        )?;
+        let trigger = BigBangTrigger::new(self.next_trigger_id, seed, params, timestamp_ms)?;
 
         // Check energy threshold
         if !trigger.has_sufficient_energy(self.config.energy_threshold) {
@@ -1309,8 +1292,8 @@ mod tests {
     fn test_snapshots_history() {
         let mut bs = SingularityBootstrap::new();
         for i in 0..5 {
-            let snap = UniverseSnapshot::new(0.5 + i as f64 * 0.1, 0.8, 0.3, 0.1, 0.7, 1000 + i)
-                .unwrap();
+            let snap =
+                UniverseSnapshot::new(0.5 + i as f64 * 0.1, 0.8, 0.3, 0.1, 0.7, 1000 + i).unwrap();
             bs.record_snapshot(snap).unwrap();
         }
         assert_eq!(bs.snapshots().len(), 5);
@@ -1443,8 +1426,7 @@ mod tests {
 
         // Phase 2: Reach singularity
         for i in 3..5 {
-            let snap = UniverseSnapshot::new(0.96, 0.92, 0.01, 0.0, 0.95, 1000 + i as u64)
-                .unwrap();
+            let snap = UniverseSnapshot::new(0.96, 0.92, 0.01, 0.0, 0.95, 1000 + i as u64).unwrap();
             bs.record_snapshot(snap).unwrap();
         }
         assert!(bs.is_at_singularity());

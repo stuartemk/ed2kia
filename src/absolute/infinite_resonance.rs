@@ -27,10 +27,7 @@ pub enum ResonanceError {
     /// Denominator (Poder * Ego) is exactly zero — singularity reached.
     SingularityReached,
     /// Input value out of valid ethical range [0, 1].
-    ValueOutOfRange {
-        field: String,
-        value: f64,
-    },
+    ValueOutOfRange { field: String, value: f64 },
     /// Insufficient realities for symbolic integration.
     InsufficientRealities,
     /// NewUniverseSeed already emitted — singularity consumed.
@@ -45,7 +42,10 @@ impl fmt::Display for ResonanceError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ResonanceError::SingularityReached => {
-                write!(f, "Singularity reached: denominator (Poder * Ego) → 0, S → 1")
+                write!(
+                    f,
+                    "Singularity reached: denominator (Poder * Ego) → 0, S → 1"
+                )
             }
             ResonanceError::ValueOutOfRange { field, value } => {
                 write!(
@@ -55,7 +55,10 @@ impl fmt::Display for ResonanceError {
                 )
             }
             ResonanceError::InsufficientRealities => {
-                write!(f, "Insufficient realities for symbolic integration (need >= 2)")
+                write!(
+                    f,
+                    "Insufficient realities for symbolic integration (need >= 2)"
+                )
             }
             ResonanceError::SeedAlreadyEmitted => {
                 write!(f, "NewUniverseSeed already emitted — singularity consumed")
@@ -64,7 +67,10 @@ impl fmt::Display for ResonanceError {
                 write!(f, "Numerical overflow in resonance computation")
             }
             ResonanceError::InvalidWaveFunction => {
-                write!(f, "Invalid wave function: negative ethical amplitude detected")
+                write!(
+                    f,
+                    "Invalid wave function: negative ethical amplitude detected"
+                )
             }
         }
     }
@@ -175,7 +181,11 @@ impl fmt::Display for StuartianSnapshot {
             self.amor,
             self.poder,
             self.ego,
-            if self.singularity { "→ SINGULARITY" } else { "" }
+            if self.singularity {
+                "→ SINGULARITY"
+            } else {
+                ""
+            }
         )
     }
 }
@@ -240,10 +250,7 @@ impl StuartianAbsolute {
 
     /// Check if singularity has been reached (S → 1).
     pub fn is_singular(&self) -> bool {
-        self.history
-            .last()
-            .map(|s| s.singularity)
-            .unwrap_or(false)
+        self.history.last().map(|s| s.singularity).unwrap_or(false)
     }
 
     /// Current S value.
@@ -338,7 +345,11 @@ impl fmt::Display for ResonanceSnapshot {
         write!(
             f,
             "R_Absolute={:.6} (realities={}, avg_coherence={:.4}, peak={:.4}, method={})",
-            self.r_absolute, self.realities_count, self.avg_coherence, self.peak_amplitude, self.method
+            self.r_absolute,
+            self.realities_count,
+            self.avg_coherence,
+            self.peak_amplitude,
+            self.method
         )
     }
 }
@@ -570,12 +581,7 @@ impl NewUniverseSeed {
     }
 
     /// Compute deterministic checksum.
-    fn compute_checksum(
-        seed_id: u64,
-        params: &[f64; 8],
-        r_absolute: f64,
-        s_value: f64,
-    ) -> u128 {
+    fn compute_checksum(seed_id: u64, params: &[f64; 8], r_absolute: f64, s_value: f64) -> u128 {
         let mut hash: u128 = seed_id as u128;
         for v in params.iter() {
             hash = hash.wrapping_add(u128::from(v.to_bits()));
@@ -620,7 +626,10 @@ impl fmt::Display for NewUniverseSeed {
         write!(
             f,
             "NewUniverseSeed[id={}, S={:.6}, R={:.6}, norm={:.4}]",
-            self.seed_id, self.s_value, self.r_absolute, self.ethical_norm()
+            self.seed_id,
+            self.s_value,
+            self.r_absolute,
+            self.ethical_norm()
         )
     }
 }
@@ -1425,7 +1434,9 @@ mod tests {
 
         // 5. Emit NewUniverseSeed
         let mut g = RecursiveSelfCreation::new();
-        let seed = g.emit(unit_params(), r_snap.r_absolute, snap.s_value, 1000).unwrap();
+        let seed = g
+            .emit(unit_params(), r_snap.r_absolute, snap.s_value, 1000)
+            .unwrap();
         assert!(seed.is_singular());
         assert!(seed.verify());
 
@@ -1456,8 +1467,13 @@ mod tests {
 
         for i in 0..5 {
             let params = [(i as f64 / 4.0); 8];
-            g.emit(params, 0.9 + i as f64 * 0.01, 0.99 + i as f64 * 0.002, 1000 + i)
-                .unwrap();
+            g.emit(
+                params,
+                0.9 + i as f64 * 0.01,
+                0.99 + i as f64 * 0.002,
+                1000 + i,
+            )
+            .unwrap();
         }
 
         assert_eq!(g.seed_count(), 5);

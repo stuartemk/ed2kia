@@ -26,7 +26,7 @@
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Sprint identifier for build tracking
-pub const SPRINT_IDENTIFIER: &str = "v1.6.0-stable";
+pub const SPRINT_IDENTIFIER: &str = "v9.4.0-sprint68";
 
 // ============================================================================
 // Fase 1: Core Modules (P2P, SAE, Bridge)
@@ -356,26 +356,31 @@ pub mod monitoring {
 
 /// Runtime optimization — Tokio tuning, task scheduling, worker pools
 /// Runtime v3.0 — WASM sandbox, secure messaging, privacy enforcement
-#[cfg(any(feature = "v1.4-sprint1", feature = "v3.0-wasm-runtime", feature = "v3.0-pillar-messaging", feature = "v3.0-privacy-guard"))]
+#[cfg(any(
+    feature = "v1.4-sprint1",
+    feature = "v3.0-wasm-runtime",
+    feature = "v3.0-pillar-messaging",
+    feature = "v3.0-privacy-guard"
+))]
 pub mod runtime {
-    #[cfg(feature = "v1.4-sprint1")]
-    #[path = "../runtime/task_scheduler.rs"]
-    pub mod task_scheduler;
-    #[cfg(feature = "v1.4-sprint1")]
-    #[path = "../runtime/tokio_optimizer.rs"]
-    pub mod tokio_optimizer;
-    #[cfg(feature = "v1.4-sprint1")]
-    #[path = "../runtime/worker_pool.rs"]
-    pub mod worker_pool;
-    #[cfg(feature = "v3.0-wasm-runtime")]
-    #[path = "../runtime/wasm_sandbox.rs"]
-    pub mod wasm_sandbox;
     #[cfg(feature = "v3.0-pillar-messaging")]
     #[path = "../runtime/pillar_messaging.rs"]
     pub mod pillar_messaging;
     #[cfg(feature = "v3.0-privacy-guard")]
     #[path = "../runtime/privacy_enforcer.rs"]
     pub mod privacy_enforcer;
+    #[cfg(feature = "v1.4-sprint1")]
+    #[path = "../runtime/task_scheduler.rs"]
+    pub mod task_scheduler;
+    #[cfg(feature = "v1.4-sprint1")]
+    #[path = "../runtime/tokio_optimizer.rs"]
+    pub mod tokio_optimizer;
+    #[cfg(feature = "v3.0-wasm-runtime")]
+    #[path = "../runtime/wasm_sandbox.rs"]
+    pub mod wasm_sandbox;
+    #[cfg(feature = "v1.4-sprint1")]
+    #[path = "../runtime/worker_pool.rs"]
+    pub mod worker_pool;
 }
 
 /// Storage — LZ4 compression, checkpoint cache, gradient archive
@@ -1148,6 +1153,18 @@ pub mod orchestration;
 pub mod pillars;
 
 // ============================================================================
+// Sprint 68: Academic Formalization & Validation Layer (v9.4.0)
+// ============================================================================
+
+/// Metrics — Cooperative objective and ethical loss functions.
+#[cfg(feature = "v9.4-validation-layer")]
+pub mod metrics;
+
+/// SCT — Stuartian Coherence Tensor Z-axis calibration.
+#[cfg(feature = "v9.4-validation-layer")]
+pub mod sct;
+
+// ============================================================================
 // Feature Detection Utilities
 // ============================================================================
 
@@ -1233,8 +1250,8 @@ pub mod proof_of_comprehension;
 #[cfg(feature = "v2.1-stuartian-filter")]
 pub mod stuartian_filter;
 
-/// Async Gossip with CRDTs — Partition-tolerant GossipSub (Sprint16)
-/// **Stuartian Law 5:** Async, tolerancia a particiones, CRDTs, eventual consistency.
+// Async Gossip with CRDTs — Partition-tolerant GossipSub (Sprint16)
+// **Stuartian Law 5:** Async, tolerancia a particiones, CRDTs, eventual consistency.
 // async_gossip is already defined inline above (line ~626) with feature-gated submodules
 
 // ============================================================================

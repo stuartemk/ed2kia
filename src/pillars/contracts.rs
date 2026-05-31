@@ -31,11 +31,19 @@ pub enum PillarError {
 impl std::fmt::Display for PillarError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            PillarError::InsufficientCE => write!(f, "Insufficient Existential Credit for operation"),
-            PillarError::EthicalRejection(z) => write!(f, "SCT ethical rejection: Z = {:.3} < 0", z),
+            PillarError::InsufficientCE => {
+                write!(f, "Insufficient Existential Credit for operation")
+            }
+            PillarError::EthicalRejection(z) => {
+                write!(f, "SCT ethical rejection: Z = {:.3} < 0", z)
+            }
             PillarError::WasmExecution(msg) => write!(f, "WASM execution error: {}", msg),
-            PillarError::TelemetryViolation => write!(f, "Telemetry violation: data must remain LOCAL_ONLY"),
-            PillarError::UnsupportedResource => write!(f, "Resource type not supported by this pillar"),
+            PillarError::TelemetryViolation => {
+                write!(f, "Telemetry violation: data must remain LOCAL_ONLY")
+            }
+            PillarError::UnsupportedResource => {
+                write!(f, "Resource type not supported by this pillar")
+            }
         }
     }
 }
@@ -144,7 +152,10 @@ pub trait CEExchangeTrait {
     ///
     /// Returns a `CEVoucher` signed with Ed25519 for cooperative verification.
     /// The voucher is non-transferable and expires after atomic execution.
-    fn request_physical_resource(&self, resource_type: ResourceType) -> Result<CEVoucher, PillarError>;
+    fn request_physical_resource(
+        &self,
+        resource_type: ResourceType,
+    ) -> Result<CEVoucher, PillarError>;
 
     /// Redeem compute credits (CE) for distributed scientific computation.
     ///

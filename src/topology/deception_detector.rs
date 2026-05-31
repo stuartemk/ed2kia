@@ -13,7 +13,7 @@
 use crate::ethics::moral_manifold::SCTPoint;
 #[cfg(feature = "v3.3-rssi-evolution")]
 use crate::topology::persistent_homology::{
-    EthicalPoint, PersistentHomologyEngine, HomologyConfig,
+    EthicalPoint, HomologyConfig, PersistentHomologyEngine,
 };
 
 /// Status of deception detection analysis.
@@ -59,10 +59,7 @@ impl Default for DeceptionConfig {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TopologyError {
     /// Insufficient data points for homology computation.
-    InsufficientData {
-        required: usize,
-        available: usize,
-    },
+    InsufficientData { required: usize, available: usize },
     /// Invalid configuration parameter.
     InvalidConfig(&'static str),
 }
@@ -71,7 +68,10 @@ pub enum TopologyError {
 impl core::fmt::Display for TopologyError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            TopologyError::InsufficientData { required, available } => {
+            TopologyError::InsufficientData {
+                required,
+                available,
+            } => {
                 write!(
                     f,
                     "Insufficient data: required {}, available {}",
@@ -110,9 +110,7 @@ impl DeceptionDetector {
             ));
         }
         if config.max_points < 3 {
-            return Err(TopologyError::InvalidConfig(
-                "max_points must be >= 3",
-            ));
+            return Err(TopologyError::InvalidConfig("max_points must be >= 3"));
         }
         let homology_config = HomologyConfig {
             alpha: config.alpha_scale,
@@ -313,8 +311,11 @@ mod tests {
         // Cyclic trajectory may or may not produce persistent loops depending on parameters
         // Just verify it doesn't crash
         match status {
-            DeceptionStatus::WithinBasin => {},
-            DeceptionStatus::OutsideBasin { persistent_loop_count, max_lifetime } => {
+            DeceptionStatus::WithinBasin => {}
+            DeceptionStatus::OutsideBasin {
+                persistent_loop_count,
+                max_lifetime,
+            } => {
                 assert!(persistent_loop_count > 0);
                 assert!(max_lifetime > 0.0);
             }
@@ -340,7 +341,10 @@ mod tests {
 
     #[test]
     fn test_error_display() {
-        let e = TopologyError::InsufficientData { required: 5, available: 2 };
+        let e = TopologyError::InsufficientData {
+            required: 5,
+            available: 2,
+        };
         let msg = format!("{}", e);
         assert!(msg.contains("Insufficient"));
 

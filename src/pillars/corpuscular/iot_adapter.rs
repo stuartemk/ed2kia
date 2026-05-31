@@ -98,12 +98,20 @@ impl std::fmt::Display for AdapterError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             AdapterError::NonLocalEndpoint(addr) => {
-                write!(f, "Non-local endpoint rejected: {} (LOCAL_ONLY enforced)", addr)
+                write!(
+                    f,
+                    "Non-local endpoint rejected: {} (LOCAL_ONLY enforced)",
+                    addr
+                )
             }
             AdapterError::DeviceNotFound(id) => write!(f, "Device not found: {}", id),
             AdapterError::PayloadTooLarge(size) => write!(f, "Payload too large: {} bytes", size),
-            AdapterError::InvalidSignature => write!(f, "Invalid Ed25519 signature for device registration"),
-            AdapterError::DeviceAlreadyRegistered(id) => write!(f, "Device already registered: {}", id),
+            AdapterError::InvalidSignature => {
+                write!(f, "Invalid Ed25519 signature for device registration")
+            }
+            AdapterError::DeviceAlreadyRegistered(id) => {
+                write!(f, "Device already registered: {}", id)
+            }
             AdapterError::RoutingFailed(msg) => write!(f, "Command routing failed: {}", msg),
         }
     }
@@ -168,7 +176,9 @@ impl LocalHardwareAdapter {
         device: HardwareId,
         payload: &[u8],
     ) -> Result<Vec<u8>, AdapterError> {
-        let config = self.devices.get(&device)
+        let config = self
+            .devices
+            .get(&device)
             .ok_or(AdapterError::DeviceNotFound(device.clone()))?;
 
         // Validate payload size.
@@ -256,7 +266,7 @@ mod tests {
 
         let config2 = make_local_config(8081);
         match adapter.register_local_device(id, config2) {
-            Err(AdapterError::DeviceAlreadyRegistered(_)) => {}, // Expected
+            Err(AdapterError::DeviceAlreadyRegistered(_)) => {} // Expected
             other => panic!("Expected DeviceAlreadyRegistered, got {:?}", other),
         }
     }
@@ -269,7 +279,7 @@ mod tests {
         config.node_signature.clear();
 
         match adapter.register_local_device(id, config) {
-            Err(AdapterError::InvalidSignature) => {}, // Expected
+            Err(AdapterError::InvalidSignature) => {} // Expected
             other => panic!("Expected InvalidSignature, got {:?}", other),
         }
     }
@@ -283,7 +293,7 @@ mod tests {
             max_payload_bytes: 1024,
         };
         match HardwareConfig::validate_local_endpoint(&config.endpoint) {
-            Err(AdapterError::NonLocalEndpoint(_)) => {}, // Expected
+            Err(AdapterError::NonLocalEndpoint(_)) => {} // Expected
             other => panic!("Expected NonLocalEndpoint, got {:?}", other),
         }
     }
@@ -292,7 +302,9 @@ mod tests {
     fn test_route_command_success() {
         let mut adapter = LocalHardwareAdapter::new();
         let id = HardwareId("printer-1".to_string());
-        adapter.register_local_device(id.clone(), make_local_config(8080)).unwrap();
+        adapter
+            .register_local_device(id.clone(), make_local_config(8080))
+            .unwrap();
 
         let payload = b"print_object";
         let response = adapter.route_command(id, payload).unwrap();
@@ -304,7 +316,7 @@ mod tests {
         let adapter = LocalHardwareAdapter::new();
         let id = HardwareId("unknown".to_string());
         match adapter.route_command(id, b"test") {
-            Err(AdapterError::DeviceNotFound(_)) => {}, // Expected
+            Err(AdapterError::DeviceNotFound(_)) => {} // Expected
             other => panic!("Expected DeviceNotFound, got {:?}", other),
         }
     }
@@ -319,7 +331,7 @@ mod tests {
 
         let payload = vec![0u8; 100];
         match adapter.route_command(id, &payload) {
-            Err(AdapterError::PayloadTooLarge(100)) => {}, // Expected
+            Err(AdapterError::PayloadTooLarge(100)) => {} // Expected
             other => panic!("Expected PayloadTooLarge, got {:?}", other),
         }
     }
@@ -328,7 +340,9 @@ mod tests {
     fn test_unregister_device() {
         let mut adapter = LocalHardwareAdapter::new();
         let id = HardwareId("printer-1".to_string());
-        adapter.register_local_device(id.clone(), make_local_config(8080)).unwrap();
+        adapter
+            .register_local_device(id.clone(), make_local_config(8080))
+            .unwrap();
         assert_eq!(adapter.device_count(), 1);
 
         let removed = adapter.unregister_device(&id);
@@ -339,8 +353,12 @@ mod tests {
     #[test]
     fn test_registered_devices_list() {
         let mut adapter = LocalHardwareAdapter::new();
-        adapter.register_local_device(HardwareId("a".to_string()), make_local_config(8080)).unwrap();
-        adapter.register_local_device(HardwareId("b".to_string()), make_local_config(8081)).unwrap();
+        adapter
+            .register_local_device(HardwareId("a".to_string()), make_local_config(8080))
+            .unwrap();
+        adapter
+            .register_local_device(HardwareId("b".to_string()), make_local_config(8081))
+            .unwrap();
 
         let devices = adapter.registered_devices();
         assert_eq!(devices.len(), 2);
@@ -362,8 +380,11 @@ mod tests {
 
     #[test]
     fn test_error_display() {
-        match AdapterError::NonLocalEndpoint(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(1, 2, 3, 4)), 80)) {
-            AdapterError::NonLocalEndpoint(_) => {},
+        match AdapterError::NonLocalEndpoint(SocketAddr::new(
+            IpAddr::V4(Ipv4Addr::new(1, 2, 3, 4)),
+            80,
+        )) {
+            AdapterError::NonLocalEndpoint(_) => {}
             _ => unreachable!(),
         }
     }

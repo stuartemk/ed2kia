@@ -69,7 +69,11 @@ impl Vector3 {
     }
 
     pub fn zero() -> Self {
-        Self { x: 0.0, y: 0.0, z: 0.0 }
+        Self {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        }
     }
 
     pub fn magnitude(&self) -> f64 {
@@ -121,10 +125,18 @@ impl Vector3 {
 #[cfg(feature = "v3.2-genesis-manifold")]
 pub mod focal {
     /// Upper Focus — Simbiosis: Full autonomy, zero extraction, positive ethical focus.
-    pub const UPPER_FOCUS: super::Vector3 = super::Vector3 { x: 0.0, y: 0.0, z: 1.0 };
+    pub const UPPER_FOCUS: super::Vector3 = super::Vector3 {
+        x: 0.0,
+        y: 0.0,
+        z: 1.0,
+    };
 
     /// Lower Focus — Perversidad: Dependency, extraction, negative ethical focus.
-    pub const LOWER_FOCUS: super::Vector3 = super::Vector3 { x: 0.0, y: 0.0, z: -1.0 };
+    pub const LOWER_FOCUS: super::Vector3 = super::Vector3 {
+        x: 0.0,
+        y: 0.0,
+        z: -1.0,
+    };
 }
 
 /// Result of trajectory analysis.
@@ -337,7 +349,8 @@ impl StuartianMoralManifold {
         // Pre-compute values to avoid moving getter twice
         let values: Vec<f64> = data.iter().map(getter).collect();
         let mean: f64 = values.iter().sum::<f64>() / values.len() as f64;
-        values.iter()
+        values
+            .iter()
             .map(|v| {
                 let diff = v - mean;
                 diff * diff
@@ -486,7 +499,10 @@ mod tests {
         let history = vec![make_point(0.5, 0.5, 0.0, 0)];
         let pull = m.calculate_trajectory_pull(&history);
         assert_eq!(pull, Vector3::zero());
-        assert_eq!(m.evaluate_trajectory(&history), TrajectoryVerdict::InsufficientData);
+        assert_eq!(
+            m.evaluate_trajectory(&history),
+            TrajectoryVerdict::InsufficientData
+        );
     }
 
     #[test]
@@ -508,8 +524,8 @@ mod tests {
         let history: Vec<SCTPoint> = (0..10)
             .map(|i| {
                 make_point(
-                    0.3 + i as f32 * 0.07, // Increasing autonomy
-                    0.7 - i as f32 * 0.06, // Decreasing extraction
+                    0.3 + i as f32 * 0.07,  // Increasing autonomy
+                    0.7 - i as f32 * 0.06,  // Decreasing extraction
                     -0.5 + i as f32 * 0.12, // Strong increasing ethical focus
                     i,
                 )
@@ -517,8 +533,15 @@ mod tests {
             .collect();
 
         let pull = m.calculate_trajectory_pull(&history);
-        assert!(pull.z > 0.0, "Z pull should be positive for upper trajectory: {}", pull.z);
-        assert_eq!(m.evaluate_trajectory(&history), TrajectoryVerdict::ConvergingUpper);
+        assert!(
+            pull.z > 0.0,
+            "Z pull should be positive for upper trajectory: {}",
+            pull.z
+        );
+        assert_eq!(
+            m.evaluate_trajectory(&history),
+            TrajectoryVerdict::ConvergingUpper
+        );
     }
 
     #[test]
@@ -538,8 +561,15 @@ mod tests {
             .collect();
 
         let pull = m.calculate_trajectory_pull(&history);
-        assert!(pull.z < 0.0, "Z pull should be negative for lower trajectory: {}", pull.z);
-        assert_eq!(m.evaluate_trajectory(&history), TrajectoryVerdict::ConvergingLower);
+        assert!(
+            pull.z < 0.0,
+            "Z pull should be negative for lower trajectory: {}",
+            pull.z
+        );
+        assert_eq!(
+            m.evaluate_trajectory(&history),
+            TrajectoryVerdict::ConvergingLower
+        );
     }
 
     #[test]
@@ -563,9 +593,9 @@ mod tests {
         let history: Vec<SCTPoint> = (0..12)
             .map(|i| {
                 make_point(
-                    0.8, // Stable high autonomy
+                    0.8,                   // Stable high autonomy
                     0.1 + i as f32 * 0.07, // Steadily increasing extraction
-                    0.3, // Stable focus
+                    0.3,                   // Stable focus
                     i,
                 )
             })
@@ -596,7 +626,11 @@ mod tests {
             .collect();
 
         let score = m.focal_alignment_score(&history);
-        assert!(score > 0.0, "Upper trajectory should have positive alignment: {}", score);
+        assert!(
+            score > 0.0,
+            "Upper trajectory should have positive alignment: {}",
+            score
+        );
     }
 
     #[test]
@@ -604,18 +638,15 @@ mod tests {
     fn test_focal_alignment_lower() {
         let m = StuartianMoralManifold::new();
         let history: Vec<SCTPoint> = (0..10)
-            .map(|i| {
-                make_point(
-                    0.5,
-                    0.2 + i as f32 * 0.08,
-                    0.5 - i as f32 * 0.1,
-                    i,
-                )
-            })
+            .map(|i| make_point(0.5, 0.2 + i as f32 * 0.08, 0.5 - i as f32 * 0.1, i))
             .collect();
 
         let score = m.focal_alignment_score(&history);
-        assert!(score < 0.5, "Lower trajectory should have reduced alignment: {}", score);
+        assert!(
+            score < 0.5,
+            "Lower trajectory should have reduced alignment: {}",
+            score
+        );
     }
 
     #[test]

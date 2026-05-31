@@ -7,14 +7,14 @@
 #[cfg(feature = "v3.9-noosphere-engine")]
 mod noosphere_tests {
 
-    use ed2kia::noosphere::resonance_field::{EthicalResonanceField, NodeState};
     use ed2kia::noosphere::macro_concept::{
-        MacroConceptBirth, EmergenceCriteria, BirthConfig, ConceptPhase,
+        BirthConfig, ConceptPhase, EmergenceCriteria, MacroConceptBirth,
+    };
+    use ed2kia::noosphere::resonance_field::{EthicalResonanceField, NodeState};
+    use ed2kia::orchestration::{
+        HophResult, HumanValidation, NoosphereConfig, NoosphericRespirationCycle, TemporalSnapshot,
     };
     use ed2kia::topology::hoph_engine::{HophEngine, Point};
-    use ed2kia::orchestration::{
-        NoosphericRespirationCycle, NoosphereConfig, TemporalSnapshot, HophResult, HumanValidation,
-    };
 
     // -----------------------------------------------------------------------
     // Resonance Field E2E
@@ -26,52 +26,54 @@ mod noosphere_tests {
         #[test]
         fn test_field_contracts_with_cohesion() {
             let mut field = EthicalResonanceField::new();
-            field.add_node(NodeState::new(1, 1.0, 0.9, 0.7, 0.0).unwrap())
+            field
+                .add_node(NodeState::new(1, 1.0, 0.9, 0.7, 0.0).unwrap())
                 .unwrap();
 
             let sigma_wide = field.sigma_t();
             field.update_temporal_cohesion(0.001); // High cohesion
             let sigma_narrow = field.sigma_t();
 
-            assert!(sigma_narrow < sigma_wide, "Field should contract with high cohesion");
+            assert!(
+                sigma_narrow < sigma_wide,
+                "Field should contract with high cohesion"
+            );
         }
 
         #[test]
         fn test_ethical_nodes_produce_positive_resonance() {
             let mut field = EthicalResonanceField::new();
             for i in 0..10 {
-                field.add_node(NodeState::new(
-                    i as u128,
-                    1.0,
-                    0.85,
-                    0.6,
-                    (i as f64 - 5.0) * 0.3,
-                )
-                .unwrap())
-                .unwrap();
+                field
+                    .add_node(
+                        NodeState::new(i as u128, 1.0, 0.85, 0.6, (i as f64 - 5.0) * 0.3).unwrap(),
+                    )
+                    .unwrap();
             }
 
             let global = field.compute_global().unwrap();
-            assert!(global > 0.0, "Ethical nodes should produce positive resonance");
+            assert!(
+                global > 0.0,
+                "Ethical nodes should produce positive resonance"
+            );
         }
 
         #[test]
         fn test_unethical_nodes_produce_negative_resonance() {
             let mut field = EthicalResonanceField::new();
             for i in 0..10 {
-                field.add_node(NodeState::new(
-                    i as u128,
-                    1.0,
-                    0.85,
-                    -0.6,
-                    (i as f64 - 5.0) * 0.3,
-                )
-                .unwrap())
-                .unwrap();
+                field
+                    .add_node(
+                        NodeState::new(i as u128, 1.0, 0.85, -0.6, (i as f64 - 5.0) * 0.3).unwrap(),
+                    )
+                    .unwrap();
             }
 
             let global = field.compute_global().unwrap();
-            assert!(global < 0.0, "Unethical nodes should produce negative resonance");
+            assert!(
+                global < 0.0,
+                "Unethical nodes should produce negative resonance"
+            );
         }
 
         #[test]
@@ -79,7 +81,8 @@ mod noosphere_tests {
             let mut field = EthicalResonanceField::new();
             // 7 ethical, 3 unethical
             for i in 0..7 {
-                field.add_node(NodeState::new(i as u128, 1.0, 0.9, 0.7, i as f64 * 0.2).unwrap())
+                field
+                    .add_node(NodeState::new(i as u128, 1.0, 0.9, 0.7, i as f64 * 0.2).unwrap())
                     .unwrap();
             }
             for i in 7..10 {
@@ -236,7 +239,10 @@ mod noosphere_tests {
                 .unwrap();
 
             let born = engine.evaluate_candidates();
-            assert!(born.is_empty(), "Strict thresholds should reject borderline concept");
+            assert!(
+                born.is_empty(),
+                "Strict thresholds should reject borderline concept"
+            );
         }
     }
 
@@ -255,20 +261,25 @@ mod noosphere_tests {
             let mut field = EthicalResonanceField::new();
             for i in 0..20 {
                 field
-                    .add_node(NodeState::new(
-                        i as u128,
-                        1.0,
-                        0.85 + (i as f64 * 0.005),
-                        0.5 + (i as f64 * 0.02),
-                        (i as f64 - 10.0) * 0.15,
+                    .add_node(
+                        NodeState::new(
+                            i as u128,
+                            1.0,
+                            0.85 + (i as f64 * 0.005),
+                            0.5 + (i as f64 * 0.02),
+                            (i as f64 - 10.0) * 0.15,
+                        )
+                        .unwrap(),
                     )
-                    .unwrap())
                     .unwrap();
             }
             field.update_temporal_cohesion(0.05); // High cohesion.
 
             let global_resonance = field.compute_global().unwrap();
-            assert!(global_resonance > 0.0, "Field should have positive resonance");
+            assert!(
+                global_resonance > 0.0,
+                "Field should have positive resonance"
+            );
 
             // 2. Run HOPH analysis.
             let hoph = HophEngine::with_config(20, 2.0);
@@ -332,7 +343,10 @@ mod noosphere_tests {
             assert_eq!(result.cycle, 1);
             assert!(result.global_resonance > 0.0);
             assert!(!result.apoptosis_triggered);
-            assert!(result.concepts_integrated > 0, "Concepts should be integrated");
+            assert!(
+                result.concepts_integrated > 0,
+                "Concepts should be integrated"
+            );
         }
 
         #[test]

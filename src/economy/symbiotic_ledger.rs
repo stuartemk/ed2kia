@@ -644,8 +644,16 @@ mod tests {
     fn test_negative_z_score_rejection() {
         let mut ledger = GlobalSymbioticLedger::new(1);
         let tx = CETransaction::new(
-            1001, 2, 1, 10.0, make_timestamp(1000, 2),
-            [None, None], [0u8; 64], -1.0, 0.8, Vec::new(),
+            1001,
+            2,
+            1,
+            10.0,
+            make_timestamp(1000, 2),
+            [None, None],
+            [0u8; 64],
+            -1.0,
+            0.8,
+            Vec::new(),
         );
         let result = ledger.submit_transaction(tx);
         assert!(result.is_err());
@@ -655,8 +663,16 @@ mod tests {
     fn test_unstable_gei_rejection() {
         let mut ledger = GlobalSymbioticLedger::new(1);
         let tx = CETransaction::new(
-            1001, 2, 1, 10.0, make_timestamp(1000, 2),
-            [None, None], [0u8; 64], 1.0, 0.2, Vec::new(),
+            1001,
+            2,
+            1,
+            10.0,
+            make_timestamp(1000, 2),
+            [None, None],
+            [0u8; 64],
+            1.0,
+            0.2,
+            Vec::new(),
         );
         let result = ledger.submit_transaction(tx);
         assert!(result.is_err());
@@ -666,8 +682,16 @@ mod tests {
     fn test_invalid_ce_amount_rejection() {
         let mut ledger = GlobalSymbioticLedger::new(1);
         let tx = CETransaction::new(
-            1001, 2, 1, -5.0, make_timestamp(1000, 2),
-            [None, None], [0u8; 64], 1.0, 0.8, Vec::new(),
+            1001,
+            2,
+            1,
+            -5.0,
+            make_timestamp(1000, 2),
+            [None, None],
+            [0u8; 64],
+            1.0,
+            0.8,
+            Vec::new(),
         );
         let result = ledger.submit_transaction(tx);
         assert!(result.is_err());
@@ -798,10 +822,7 @@ mod tests {
 
     #[test]
     fn test_validation_result_equality() {
-        assert_eq!(
-            ValidationResult::Valid,
-            ValidationResult::Valid
-        );
+        assert_eq!(ValidationResult::Valid, ValidationResult::Valid);
     }
 
     #[test]
@@ -814,10 +835,7 @@ mod tests {
             let parents = if i < 2 {
                 [None, None]
             } else {
-                [
-                    Some(hashes[i - 2]),
-                    Some(hashes[i - 1]),
-                ]
+                [Some(hashes[i - 2]), Some(hashes[i - 1])]
             };
             let tx = make_child_tx(
                 1001 + i as u128,

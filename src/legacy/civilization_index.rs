@@ -15,7 +15,6 @@
 //! Also implements **Amplificación Simbiótica (A_sym)** with logistic decay
 //! to stabilize human reasoning growth over time.
 
-
 // ---------------------------------------------------------------------------
 // Errors
 // ---------------------------------------------------------------------------
@@ -44,7 +43,10 @@ impl std::fmt::Display for NciError {
             NciError::WeightSumExceeded(sum) => {
                 write!(f, "Weight sum {} exceeds maximum allowed (2.0)", sum)
             }
-            NciError::InsufficientData { required, available } => {
+            NciError::InsufficientData {
+                required,
+                available,
+            } => {
                 write!(
                     f,
                     "Insufficient data: required {}, available {}",
@@ -87,6 +89,7 @@ pub struct NciSnapshot {
 
 impl NciSnapshot {
     /// Create a new snapshot with computed NCI.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         timestamp_ms: u64,
         z_avg: f64,
@@ -170,7 +173,12 @@ impl NciWeights {
             return Err(NciError::WeightSumExceeded(sum));
         }
 
-        Ok(Self { w_z, w_phi, w_h, w_i })
+        Ok(Self {
+            w_z,
+            w_phi,
+            w_h,
+            w_i,
+        })
     }
 
     /// Standard Stuartian weights: balanced distribution.
@@ -310,10 +318,7 @@ impl NciCalculator {
     }
 
     /// Create with custom weights and A_sym config.
-    pub fn with_config(
-        weights: NciWeights,
-        a_sym_config: ASymConfig,
-    ) -> Result<Self, NciError> {
+    pub fn with_config(weights: NciWeights, a_sym_config: ASymConfig) -> Result<Self, NciError> {
         // Validate weights
         if weights.w_z < 0.0 {
             return Err(NciError::NegativeWeight("w_z".to_string()));
@@ -359,7 +364,16 @@ impl NciCalculator {
         let a_sym = self.a_sym_config.compute(nci);
         let nci_amplified = nci * (1.0 + a_sym);
 
-        NciSnapshot::new(timestamp_ms, z_avg, phi_ph, h_sym, i_human, nci, a_sym, nci_amplified)
+        NciSnapshot::new(
+            timestamp_ms,
+            z_avg,
+            phi_ph,
+            h_sym,
+            i_human,
+            nci,
+            a_sym,
+            nci_amplified,
+        )
     }
 
     /// Record a new snapshot in history.
@@ -458,11 +472,7 @@ impl NciCalculator {
     }
 
     /// Get snapshots within a time range.
-    pub fn range(
-        &self,
-        start_ms: u64,
-        end_ms: u64,
-    ) -> Vec<&NciSnapshot> {
+    pub fn range(&self, start_ms: u64, end_ms: u64) -> Vec<&NciSnapshot> {
         self.history
             .iter()
             .filter(|s| s.timestamp_ms >= start_ms && s.timestamp_ms <= end_ms)
@@ -525,10 +535,12 @@ impl NciCalculator {
     /// Compute the projected NCI after a given number of steps assuming
     /// current trend continues.
     pub fn project_nci(&self, steps: usize) -> Result<f64, NciError> {
-        let current = self.latest_nci_amplified().ok_or(NciError::InsufficientData {
-            required: 1,
-            available: 0,
-        })?;
+        let current = self
+            .latest_nci_amplified()
+            .ok_or(NciError::InsufficientData {
+                required: 1,
+                available: 0,
+            })?;
         let slope = self.trend(10)?;
         let projected = current + slope * steps as f64;
         // Clamp to valid range

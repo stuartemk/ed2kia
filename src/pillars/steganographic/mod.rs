@@ -26,21 +26,29 @@
 use crate::orchestration::PillarId;
 use crate::pillars::{PillarError, PillarInterface};
 
-pub mod traffic_masker;
 pub mod chaffing_engine;
-pub mod transport_rotator;
 #[cfg(feature = "v3.6-aegis-resonance")]
 pub mod harmonic_flow;
 #[cfg(feature = "v3.0-omni-integration")]
 pub mod migration_protocol;
+pub mod traffic_masker;
+pub mod transport_rotator;
 
-pub use traffic_masker::{TrafficMasker, MaskingError, MaskerConfig, SrtpHeader};
-pub use chaffing_engine::{ChaffingEngine, ChaffingError, ChaffConfig, TaggedPacket};
-pub use transport_rotator::{TransportRotator, RotationError, RotatorConfig, TransportType, TransportHealth};
+pub use chaffing_engine::{ChaffConfig, ChaffingEngine, ChaffingError, TaggedPacket};
 #[cfg(feature = "v3.6-aegis-resonance")]
-pub use harmonic_flow::{HarmonicFlow, HarmonicFlowConfig, HarmonicFlowError, HarmonicFrame, ObfuscatedStream, DeobfuscatedPayload};
+pub use harmonic_flow::{
+    DeobfuscatedPayload, HarmonicFlow, HarmonicFlowConfig, HarmonicFlowError, HarmonicFrame,
+    ObfuscatedStream,
+};
 #[cfg(feature = "v3.0-omni-integration")]
-pub use migration_protocol::{MigrationHandshake, MigrationToken, MigrationNegotiator, MigrationError, MigrationRecord, MigrationStatus};
+pub use migration_protocol::{
+    MigrationError, MigrationHandshake, MigrationNegotiator, MigrationRecord, MigrationStatus,
+    MigrationToken,
+};
+pub use traffic_masker::{MaskerConfig, MaskingError, SrtpHeader, TrafficMasker};
+pub use transport_rotator::{
+    RotationError, RotatorConfig, TransportHealth, TransportRotator, TransportType,
+};
 
 /// Obfuscation pipeline result: (SRTP frames, chaffed packets, selected transport).
 pub type ObfuscationResult = Result<(Vec<Vec<u8>>, Vec<TaggedPacket>, TransportType), String>;
@@ -89,13 +97,11 @@ impl SteganographicEngine {
     /// Full obfuscation pipeline: mask → chaff → select transport.
     ///
     /// Returns: (masked_frames, chaffed_packets, selected_transport)
-    pub fn obfuscate(
-        &mut self,
-        payload: &[u8],
-        session_id: &str,
-    ) -> ObfuscationResult {
+    pub fn obfuscate(&mut self, payload: &[u8], session_id: &str) -> ObfuscationResult {
         // Step 1: Traffic Masking (SRTP frames)
-        let frames = self.masker.mask_payload(payload)
+        let frames = self
+            .masker
+            .mask_payload(payload)
             .map_err(|e| format!("Masking failed: {}", e))?;
 
         // Step 2: Chaffing & Winnowing (noise injection)
@@ -105,11 +111,15 @@ impl SteganographicEngine {
             flattened.extend_from_slice(frame);
         }
 
-        let chaffed = self.chaffing.inject_chaff(&flattened, session_id)
+        let chaffed = self
+            .chaffing
+            .inject_chaff(&flattened, session_id)
             .map_err(|e| format!("Chaffing failed: {}", e))?;
 
         // Step 3: Transport Selection
-        let transport = self.rotator.select_best()
+        let transport = self
+            .rotator
+            .select_best()
             .unwrap_or_else(|| self.rotator.current_transport().clone());
 
         Ok((frames, chaffed, transport))
@@ -122,7 +132,9 @@ impl SteganographicEngine {
         session_id: &str,
     ) -> Result<Vec<u8>, String> {
         // Step 1: Winnowing (remove noise)
-        let stream = self.chaffing.winnow(chaffed, session_id)
+        let stream = self
+            .chaffing
+            .winnow(chaffed, session_id)
             .map_err(|e| format!("Winnowing failed: {}", e))?;
 
         // Note: Full unmasking requires frame boundaries which are lost after chaffing.
@@ -226,7 +238,7 @@ mod tests {
     fn test_consume_ce_zero_rejected() {
         let engine = SteganographicEngine::new();
         match engine.consume_ce(0.0) {
-            Err(PillarError::InsufficientCE) => {},
+            Err(PillarError::InsufficientCE) => {}
             other => panic!("Expected InsufficientCE, got {:?}", other),
         }
     }
@@ -235,7 +247,7 @@ mod tests {
     fn test_consume_ce_negative_rejected() {
         let engine = SteganographicEngine::new();
         match engine.consume_ce(-1.0) {
-            Err(PillarError::InsufficientCE) => {},
+            Err(PillarError::InsufficientCE) => {}
             other => panic!("Expected InsufficientCE, got {:?}", other),
         }
     }
@@ -251,7 +263,9 @@ mod tests {
         let mut engine = SteganographicEngine::new();
         // Register session key for chaffing
         let key = ChaffingEngine::generate_session_key(b"test-session");
-        engine.chaffing.register_session_key("test".to_string(), key);
+        engine
+            .chaffing
+            .register_session_key("test".to_string(), key);
 
         let payload = b"cooperative network preservation";
         let result = engine.obfuscate(payload, "test");

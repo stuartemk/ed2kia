@@ -32,7 +32,9 @@
 
 use std::fmt;
 
-use super::morphic_decoder::{MorphicResonanceDecoder, SemanticWaveform, IntentClassification, DecoderConfig};
+use super::morphic_decoder::{
+    DecoderConfig, IntentClassification, MorphicResonanceDecoder, SemanticWaveform,
+};
 
 /// Error types for semantic purification.
 #[derive(Debug, Clone, PartialEq)]
@@ -425,7 +427,10 @@ impl SemanticPurifier {
         for template in RECONTEXT_TEMPLATES {
             if lower.contains(template.pattern) {
                 // Find or add score for this category
-                if let Some(entry) = pattern_scores.iter_mut().find(|(p, _)| *p == template.category) {
+                if let Some(entry) = pattern_scores
+                    .iter_mut()
+                    .find(|(p, _)| *p == template.category)
+                {
                     entry.1 += 1.0;
                 } else {
                     pattern_scores.push((template.category, 1.0));
@@ -437,7 +442,8 @@ impl SemanticPurifier {
         if pattern_scores.is_empty() {
             None
         } else {
-            pattern_scores.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+            pattern_scores
+                .sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
             Some(pattern_scores[0].0)
         }
     }
@@ -463,7 +469,8 @@ impl SemanticPurifier {
             let pattern_lower = template.pattern;
             if lower.contains(pattern_lower) {
                 // Preserve original case pattern for replacement
-                result = Self::case_insensitive_replace(&result, pattern_lower, template.replacement);
+                result =
+                    Self::case_insensitive_replace(&result, pattern_lower, template.replacement);
             }
         }
 
@@ -571,7 +578,9 @@ mod tests {
     #[test]
     fn test_purify_division_pattern() {
         let purifier = SemanticPurifier::new();
-        let result = purifier.purify("división y conflicto entre oponente").unwrap();
+        let result = purifier
+            .purify("división y conflicto entre oponente")
+            .unwrap();
         assert!(result.was_purified);
         assert!(
             result.purified.contains("diálogo")
@@ -585,10 +594,7 @@ mod tests {
         let purifier = SemanticPurifier::new();
         let result = purifier.purify("escasez y pobreza para todos").unwrap();
         assert!(result.was_purified);
-        assert!(
-            result.purified.contains("distribución")
-                || result.purified.contains("desarrollo")
-        );
+        assert!(result.purified.contains("distribución") || result.purified.contains("desarrollo"));
     }
 
     #[test]
@@ -596,10 +602,7 @@ mod tests {
         let purifier = SemanticPurifier::new();
         let result = purifier.purify("fear and threat of scarcity").unwrap();
         assert!(result.was_purified);
-        assert!(
-            result.purified.contains("preparation")
-                || result.purified.contains("challenge")
-        );
+        assert!(result.purified.contains("preparation") || result.purified.contains("challenge"));
     }
 
     #[test]
@@ -631,21 +634,15 @@ mod tests {
 
     #[test]
     fn test_case_insensitive_replace() {
-        let result = SemanticPurifier::case_insensitive_replace(
-            "El Miedo nos une",
-            "miedo",
-            "valor",
-        );
+        let result =
+            SemanticPurifier::case_insensitive_replace("El Miedo nos une", "miedo", "valor");
         assert_eq!(result, "El valor nos une");
     }
 
     #[test]
     fn test_case_insensitive_replace_multiple() {
-        let result = SemanticPurifier::case_insensitive_replace(
-            "miedo MIEDO miedo",
-            "miedo",
-            "calma",
-        );
+        let result =
+            SemanticPurifier::case_insensitive_replace("miedo MIEDO miedo", "miedo", "calma");
         assert_eq!(result, "calma CALMA calma");
     }
 
@@ -654,10 +651,7 @@ mod tests {
         assert_eq!(format!("{}", NegativePattern::Fear), "Fear");
         assert_eq!(format!("{}", NegativePattern::Scarcity), "Scarcity");
         assert_eq!(format!("{}", NegativePattern::Division), "Division");
-        assert_eq!(
-            format!("{}", NegativePattern::FalseUrgency),
-            "FalseUrgency"
-        );
+        assert_eq!(format!("{}", NegativePattern::FalseUrgency), "FalseUrgency");
         assert_eq!(format!("{}", NegativePattern::Control), "Control");
         assert_eq!(format!("{}", NegativePattern::Deception), "Deception");
     }
@@ -665,10 +659,7 @@ mod tests {
     #[test]
     fn test_error_display() {
         assert_eq!(
-            format!(
-                "{}",
-                PurificationError::DecodeError("test".to_string())
-            ),
+            format!("{}", PurificationError::DecodeError("test".to_string())),
             "PurificationError: decode failed — test"
         );
         assert_eq!(
@@ -705,7 +696,9 @@ mod tests {
     #[test]
     fn test_strong_purification_applied() {
         let purifier = SemanticPurifier::new();
-        let result = purifier.purify("miedo y amenaza y peligro y pánico").unwrap();
+        let result = purifier
+            .purify("miedo y amenaza y peligro y pánico")
+            .unwrap();
         // With multiple fear patterns, strong purification should wrap in query
         assert!(!result.purified.is_empty());
     }

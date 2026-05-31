@@ -8,18 +8,26 @@
 //!
 //! **Feature Gate:** `v3.0-resonance-interface`
 
-use thiserror::Error;
 use crate::pillars::resonance::biometric_analyzer::BiometricState;
-use crate::pillars::resonance::homeostasis_engine::{HomeostasisDelta, EngineError};
+use crate::pillars::resonance::homeostasis_engine::{EngineError, HomeostasisDelta};
+use thiserror::Error;
 
 /// Errors specific to resonance generation.
 #[derive(Debug, Error, Clone)]
 pub enum ResonanceError {
     #[error("Invalid frequency: {freq_hz:.1} Hz (expected range [{min_hz}, {max_hz}])")]
-    InvalidFrequency { freq_hz: f32, min_hz: f32, max_hz: f32 },
+    InvalidFrequency {
+        freq_hz: f32,
+        min_hz: f32,
+        max_hz: f32,
+    },
 
     #[error("Invalid duration: {duration_s:.2}s (expected range [{min_s}, {max_s}])")]
-    InvalidDuration { duration_s: f32, min_s: f32, max_s: f32 },
+    InvalidDuration {
+        duration_s: f32,
+        min_s: f32,
+        max_s: f32,
+    },
 
     #[error("Invalid amplitude: {amp} (expected range [{min}, {max}])")]
     InvalidAmplitude { amp: f32, min: f32, max: f32 },
@@ -112,15 +120,15 @@ impl BinauralBeat {
     /// Determine the brainwave band for this beat frequency.
     pub fn brainwave_band(&self) -> &'static str {
         if self.beat_freq_hz < 4.0 {
-            "delta"    // Deep sleep, healing
+            "delta" // Deep sleep, healing
         } else if self.beat_freq_hz < 8.0 {
-            "theta"    // Meditation, creativity
+            "theta" // Meditation, creativity
         } else if self.beat_freq_hz < 14.0 {
-            "alpha"    // Relaxation, calm focus
+            "alpha" // Relaxation, calm focus
         } else if self.beat_freq_hz < 30.0 {
-            "beta"     // Active thinking, alertness
+            "beta" // Active thinking, alertness
         } else {
-            "gamma"    // High-level cognition, insight
+            "gamma" // High-level cognition, insight
         }
     }
 }
@@ -209,7 +217,12 @@ pub struct SemanticResponse {
 
 impl SemanticResponse {
     /// Create a validated semantic response.
-    pub fn new(text: String, sct_z: f32, brainwave_band: String, confidence: f32) -> Result<Self, ResonanceError> {
+    pub fn new(
+        text: String,
+        sct_z: f32,
+        brainwave_band: String,
+        confidence: f32,
+    ) -> Result<Self, ResonanceError> {
         if sct_z < 0.0 {
             return Err(ResonanceError::SctRejection { z: sct_z });
         }
@@ -223,8 +236,16 @@ impl SemanticResponse {
 
         // Prohibited word check
         let prohibited = [
-            "diplomacia", "vencer", "atacar", "revolución", "destruir",
-            "enemigo", "guerra", "dominar", "esconderse", "evadir",
+            "diplomacia",
+            "vencer",
+            "atacar",
+            "revolución",
+            "destruir",
+            "enemigo",
+            "guerra",
+            "dominar",
+            "esconderse",
+            "evadir",
         ];
         let text_lower = text.to_lowercase();
         for word in &prohibited {
@@ -419,12 +440,12 @@ impl ResonanceGenerator {
     /// Convert brainwave band name to target frequency (Hz).
     fn band_to_frequency(&self, band: &str) -> f32 {
         match band {
-            "delta" => 2.0,    // Deep sleep
-            "theta" => 6.0,    // Meditation
-            "alpha" => 10.0,   // Relaxation
-            "beta"  => 20.0,   // Alertness
-            "gamma" => 40.0,   // Insight
-            _       => 10.0,   // Default alpha
+            "delta" => 2.0,  // Deep sleep
+            "theta" => 6.0,  // Meditation
+            "alpha" => 10.0, // Relaxation
+            "beta" => 20.0,  // Alertness
+            "gamma" => 40.0, // Insight
+            _ => 10.0,       // Default alpha
         }
     }
 
@@ -438,16 +459,16 @@ impl ResonanceGenerator {
         let text = self.construct_semantic_text(delta, state, band);
         let confidence = self.calculate_confidence(delta, state);
 
-        SemanticResponse::new(
-            text,
-            delta.sct_z,
-            band.to_string(),
-            confidence,
-        )
+        SemanticResponse::new(text, delta.sct_z, band.to_string(), confidence)
     }
 
     /// Construct constructive semantic text based on biometric state.
-    fn construct_semantic_text(&self, _delta: &HomeostasisDelta, state: &BiometricState, band: &str) -> String {
+    fn construct_semantic_text(
+        &self,
+        _delta: &HomeostasisDelta,
+        state: &BiometricState,
+        band: &str,
+    ) -> String {
         // Build response based on current state needs
         let mut parts = Vec::new();
 
@@ -467,7 +488,9 @@ impl ResonanceGenerator {
 
         // Address valence
         if state.valence < -0.3 {
-            parts.push("La resonancia actual promueve la transformación hacia estados de mayor bienestar.");
+            parts.push(
+                "La resonancia actual promueve la transformación hacia estados de mayor bienestar.",
+            );
         } else if state.valence > 0.3 {
             parts.push("Los indicadores emocionales muestran una tendencia constructiva.");
         }
@@ -476,10 +499,10 @@ impl ResonanceGenerator {
         match band {
             "alpha" => parts.push("Ondas alfa para relajación y enfoque sereno."),
             "theta" => parts.push("Ondas theta para relajación profunda y renovación interna."),
-            "beta"  => parts.push("Ondas beta para claridad mental y atención activa."),
+            "beta" => parts.push("Ondas beta para claridad mental y atención activa."),
             "gamma" => parts.push("Ondas gamma para integración cognitiva y percepción ampliada."),
             "delta" => parts.push("Ondas delta para restauración profunda y recuperación."),
-            _       => parts.push("Frecuencia de resonancia activa."),
+            _ => parts.push("Frecuencia de resonancia activa."),
         }
 
         parts.join(" ")
@@ -640,19 +663,15 @@ mod tests {
             0.5,
             "alpha".to_string(),
             0.8,
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(resp.sct_z, 0.5);
         assert_eq!(resp.confidence, 0.8);
     }
 
     #[test]
     fn test_semantic_sct_rejection() {
-        match SemanticResponse::new(
-            "Texto.".to_string(),
-            -0.5,
-            "alpha".to_string(),
-            0.8,
-        ) {
+        match SemanticResponse::new("Texto.".to_string(), -0.5, "alpha".to_string(), 0.8) {
             Err(ResonanceError::SctRejection { z }) => assert_eq!(z, -0.5),
             _ => panic!("Expected SctRejection"),
         }
@@ -767,7 +786,8 @@ mod tests {
         let response = ResonanceResponse {
             binaural: None,
             isochronic: None,
-            semantic: SemanticResponse::new("OK".to_string(), 0.5, "alpha".to_string(), 0.8).unwrap(),
+            semantic: SemanticResponse::new("OK".to_string(), 0.5, "alpha".to_string(), 0.8)
+                .unwrap(),
             homeostasis_target: 0.7,
             sct_z: 0.5,
         };
@@ -779,7 +799,8 @@ mod tests {
         let response = ResonanceResponse {
             binaural: None,
             isochronic: None,
-            semantic: SemanticResponse::new("OK".to_string(), 0.5, "alpha".to_string(), 0.8).unwrap(),
+            semantic: SemanticResponse::new("OK".to_string(), 0.5, "alpha".to_string(), 0.8)
+                .unwrap(),
             homeostasis_target: 0.7,
             sct_z: -0.5,
         };

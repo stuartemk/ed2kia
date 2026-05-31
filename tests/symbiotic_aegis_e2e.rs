@@ -10,13 +10,13 @@
 #![cfg(feature = "v3.6-aegis-resonance")]
 
 mod symbiotic_aegis_tests {
-    use ed2kia::pillars::steganographic::harmonic_flow::{
-        HarmonicFlow, HarmonicFlowConfig, HarmonicFlowError,
-    };
+    use ed2kia::orchestration::aegis_healer::{AegisConfig, AegisHealer, SymbioticState};
     use ed2kia::pillars::resonance::biofeedback_engine::{
         BiofeedbackConfig, BiofeedbackEngine, BiofeedbackError,
     };
-    use ed2kia::orchestration::aegis_healer::{AegisConfig, AegisHealer, SymbioticState};
+    use ed2kia::pillars::steganographic::harmonic_flow::{
+        HarmonicFlow, HarmonicFlowConfig, HarmonicFlowError,
+    };
 
     // -----------------------------------------------------------------------
     // Test Helpers
@@ -160,12 +160,16 @@ mod symbiotic_aegis_tests {
         let expr = make_expressions(128);
 
         // Calibrate.
-        let baseline = engine.calibrate(&rppg, &voice, &expr).expect("Calibration failed");
+        let baseline = engine
+            .calibrate(&rppg, &voice, &expr)
+            .expect("Calibration failed");
         assert!(engine.get_stats().calibrated);
         assert!(baseline.homeostasis_score() > 0.0);
 
         // Process cycle.
-        let result = engine.process_cycle(&rppg, &voice, &expr).expect("Cycle failed");
+        let result = engine
+            .process_cycle(&rppg, &voice, &expr)
+            .expect("Cycle failed");
         assert!(result.homeostasis_score >= 0.0 && result.homeostasis_score <= 1.0);
     }
 
@@ -178,7 +182,9 @@ mod symbiotic_aegis_tests {
         let voice = make_voice(128);
         let expr = make_expressions(128);
 
-        engine.calibrate(&rppg, &voice, &expr).expect("Calibration failed");
+        engine
+            .calibrate(&rppg, &voice, &expr)
+            .expect("Calibration failed");
 
         for _ in 0..10 {
             let result = engine.process_cycle(&rppg, &voice, &expr);
@@ -200,7 +206,9 @@ mod symbiotic_aegis_tests {
         let voice = make_voice(128);
         let expr = make_expressions(128);
 
-        engine.calibrate(&rppg, &voice, &expr).expect("Calibration failed");
+        engine
+            .calibrate(&rppg, &voice, &expr)
+            .expect("Calibration failed");
 
         // If SCT rejects, we should get SCTRejected error.
         let result = engine.process_cycle(&rppg, &voice, &expr);
@@ -221,17 +229,20 @@ mod symbiotic_aegis_tests {
             max_adapt_steps: 3,
             ..BiofeedbackConfig::default()
         };
-        let mut engine =
-            BiofeedbackEngine::with_config(config).expect("Config should be valid");
+        let mut engine = BiofeedbackEngine::with_config(config).expect("Config should be valid");
         let rppg = make_rppg(128);
         let voice = make_voice(128);
         let expr = make_expressions(128);
 
-        engine.calibrate(&rppg, &voice, &expr).expect("Calibration failed");
+        engine
+            .calibrate(&rppg, &voice, &expr)
+            .expect("Calibration failed");
 
         // Run more cycles than max_adapt_steps.
         for _ in 0..5 {
-            engine.process_cycle(&rppg, &voice, &expr).expect("Cycle failed");
+            engine
+                .process_cycle(&rppg, &voice, &expr)
+                .expect("Cycle failed");
         }
 
         // Adaptation should stop at max_adapt_steps.
@@ -398,8 +409,7 @@ mod symbiotic_aegis_tests {
             min_homeostasis: 0.5,
             ..AegisConfig::default()
         };
-        let mut healer =
-            AegisHealer::with_config(config).expect("Config should be valid");
+        let mut healer = AegisHealer::with_config(config).expect("Config should be valid");
 
         // Set low health scores to trigger healing.
         healer.update_network_health(0.3);
@@ -415,8 +425,7 @@ mod symbiotic_aegis_tests {
             min_homeostasis: 0.5,
             ..AegisConfig::default()
         };
-        let mut healer =
-            AegisHealer::with_config(config).expect("Config should be valid");
+        let mut healer = AegisHealer::with_config(config).expect("Config should be valid");
 
         // Set high health scores for harmony.
         healer.update_network_health(0.9);
@@ -454,10 +463,14 @@ mod symbiotic_aegis_tests {
         let voice = make_voice(128);
         let expr = make_expressions(128);
 
-        engine.calibrate(&rppg, &voice, &expr).expect("Calibration failed");
+        engine
+            .calibrate(&rppg, &voice, &expr)
+            .expect("Calibration failed");
 
         for _ in 0..50 {
-            engine.process_cycle(&rppg, &voice, &expr).expect("Cycle failed");
+            engine
+                .process_cycle(&rppg, &voice, &expr)
+                .expect("Cycle failed");
         }
 
         assert_eq!(engine.get_stats().total_cycles, 50);

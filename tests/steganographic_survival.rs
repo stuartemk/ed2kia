@@ -3,11 +3,9 @@
 //! Validates the complete Pillar 3 implementation: Traffic Masking,
 //! Chaffing & Winnowing, and Transport Rotation.
 
-#[cfg(all(
-    feature = "v3.0-steganographic-survival",
-))]
+#[cfg(all(feature = "v3.0-steganographic-survival",))]
 mod traffic_masking_tests {
-    use ed2kia::pillars::steganographic::{TrafficMasker, MaskerConfig};
+    use ed2kia::pillars::steganographic::{MaskerConfig, TrafficMasker};
 
     #[test]
     fn test_srtp_masking_integrity() {
@@ -76,11 +74,9 @@ mod traffic_masking_tests {
     }
 }
 
-#[cfg(all(
-    feature = "v3.0-steganographic-survival",
-))]
+#[cfg(all(feature = "v3.0-steganographic-survival",))]
 mod chaffing_winnowing_tests {
-    use ed2kia::pillars::steganographic::{ChaffingEngine, ChaffConfig};
+    use ed2kia::pillars::steganographic::{ChaffConfig, ChaffingEngine};
 
     fn setup_engine() -> ChaffingEngine {
         let mut engine = ChaffingEngine::new();
@@ -148,11 +144,9 @@ mod chaffing_winnowing_tests {
     }
 }
 
-#[cfg(all(
-    feature = "v3.0-steganographic-survival",
-))]
+#[cfg(all(feature = "v3.0-steganographic-survival",))]
 mod transport_rotation_tests {
-    use ed2kia::pillars::steganographic::{TransportRotator, TransportType, TransportHealth};
+    use ed2kia::pillars::steganographic::{TransportHealth, TransportRotator, TransportType};
 
     #[test]
     fn test_transport_rotation_resilience() {
@@ -204,12 +198,10 @@ mod transport_rotation_tests {
     }
 }
 
-#[cfg(all(
-    feature = "v3.0-steganographic-survival",
-))]
+#[cfg(all(feature = "v3.0-steganographic-survival",))]
 mod orchestrator_integration_tests {
     use ed2kia::pillars::steganographic::{
-        SteganographicEngine, ChaffingEngine, TransportHealth, TransportType,
+        ChaffingEngine, SteganographicEngine, TransportHealth, TransportType,
     };
     use ed2kia::pillars::PillarInterface;
 
@@ -226,7 +218,9 @@ mod orchestrator_integration_tests {
 
         // Register session key
         let key = ChaffingEngine::generate_session_key(b"pipeline-test");
-        engine.chaffing_engine_mut().register_session_key("pipeline".to_string(), key);
+        engine
+            .chaffing_engine_mut()
+            .register_session_key("pipeline".to_string(), key);
 
         // Update health to prefer QUIC
         let health = TransportHealth::new(TransportType::Quic, 20.0, 0.0, 1_500_000.0);
@@ -238,7 +232,11 @@ mod orchestrator_integration_tests {
         // Verify pipeline output
         assert!(!frames.is_empty(), "Should produce SRTP frames");
         assert!(!chaffed.is_empty(), "Should produce chaffed packets");
-        assert_eq!(transport, TransportType::Quic, "Should select best transport");
+        assert_eq!(
+            transport,
+            TransportType::Quic,
+            "Should select best transport"
+        );
     }
 
     #[test]
@@ -261,13 +259,13 @@ mod orchestrator_integration_tests {
 
         // Zero CE rejected
         match engine.consume_ce(0.0) {
-            Err(_) => {}, // Expected
+            Err(_) => {} // Expected
             Ok(_) => panic!("Zero CE should be rejected"),
         }
 
         // Negative CE rejected
         match engine.consume_ce(-1.0) {
-            Err(_) => {}, // Expected
+            Err(_) => {} // Expected
             Ok(_) => panic!("Negative CE should be rejected"),
         }
     }

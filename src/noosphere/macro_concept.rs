@@ -46,10 +46,18 @@ impl std::fmt::Display for MacroConceptError {
             MacroConceptError::DuplicateConcept(id) => write!(f, "Duplicate concept {}", id),
             MacroConceptError::ConceptNotFound(id) => write!(f, "Concept {} not found", id),
             MacroConceptError::InsufficientPersistence { actual, threshold } => {
-                write!(f, "PH₂ persistence {:.4} < threshold {:.4}", actual, threshold)
+                write!(
+                    f,
+                    "PH₂ persistence {:.4} < threshold {:.4}",
+                    actual, threshold
+                )
             }
             MacroConceptError::DivergingLyapunov { actual, threshold } => {
-                write!(f, "Lyapunov {:.4} >= threshold {:.4} (diverging)", actual, threshold)
+                write!(
+                    f,
+                    "Lyapunov {:.4} >= threshold {:.4} (diverging)",
+                    actual, threshold
+                )
             }
             MacroConceptError::InsufficientHumanCorrelation { actual, threshold } => {
                 write!(
@@ -170,10 +178,7 @@ impl MacroConcept {
     }
 
     /// Promote candidate → Born if criteria are met.
-    pub fn promote(
-        &mut self,
-        config: &BirthConfig,
-    ) -> Result<(), MacroConceptError> {
+    pub fn promote(&mut self, config: &BirthConfig) -> Result<(), MacroConceptError> {
         self.criteria.meets_birth_requirements(config)?;
         self.birth_score = self.criteria.emergence_score(config);
         self.phase = ConceptPhase::Born;
@@ -389,7 +394,9 @@ mod tests {
     #[test]
     fn test_submit_candidate() {
         let mut engine = MacroConceptBirth::new();
-        let id = engine.submit_candidate("test concept".into(), valid_criteria()).unwrap();
+        let id = engine
+            .submit_candidate("test concept".into(), valid_criteria())
+            .unwrap();
         assert_eq!(id, 1);
         let concept = engine.get(id).unwrap();
         assert_eq!(concept.phase, ConceptPhase::Candidate);
@@ -398,7 +405,9 @@ mod tests {
     #[test]
     fn test_promote_valid_candidate() {
         let mut engine = MacroConceptBirth::new();
-        let id = engine.submit_candidate("strong concept".into(), valid_criteria()).unwrap();
+        let id = engine
+            .submit_candidate("strong concept".into(), valid_criteria())
+            .unwrap();
         let born = engine.evaluate_candidates();
         assert_eq!(born, vec![id]);
         assert_eq!(engine.get(id).unwrap().phase, ConceptPhase::Born);
@@ -407,7 +416,9 @@ mod tests {
     #[test]
     fn test_dissolve_failing_candidate() {
         let mut engine = MacroConceptBirth::new();
-        let id = engine.submit_candidate("weak concept".into(), failing_criteria()).unwrap();
+        let id = engine
+            .submit_candidate("weak concept".into(), failing_criteria())
+            .unwrap();
         let born = engine.evaluate_candidates();
         assert!(born.is_empty());
         assert_eq!(engine.get(id).unwrap().phase, ConceptPhase::Dissolved);
@@ -416,7 +427,9 @@ mod tests {
     #[test]
     fn test_mature_after_three_cycles() {
         let mut engine = MacroConceptBirth::new();
-        let id = engine.submit_candidate("enduring".into(), valid_criteria()).unwrap();
+        let id = engine
+            .submit_candidate("enduring".into(), valid_criteria())
+            .unwrap();
         engine.evaluate_candidates();
         assert_eq!(engine.get(id).unwrap().phase, ConceptPhase::Born);
         engine.advance_cycles(); // cycle 2
@@ -449,7 +462,7 @@ mod tests {
         };
         let config = BirthConfig::default();
         match criteria.meets_birth_requirements(&config) {
-            Err(MacroConceptError::InsufficientPersistence { .. }) => {},
+            Err(MacroConceptError::InsufficientPersistence { .. }) => {}
             other => panic!("Expected InsufficientPersistence, got {:?}", other),
         }
     }
@@ -463,7 +476,7 @@ mod tests {
         };
         let config = BirthConfig::default();
         match criteria.meets_birth_requirements(&config) {
-            Err(MacroConceptError::DivergingLyapunov { .. }) => {},
+            Err(MacroConceptError::DivergingLyapunov { .. }) => {}
             other => panic!("Expected DivergingLyapunov, got {:?}", other),
         }
     }
@@ -477,7 +490,7 @@ mod tests {
         };
         let config = BirthConfig::default();
         match criteria.meets_birth_requirements(&config) {
-            Err(MacroConceptError::InsufficientHumanCorrelation { .. }) => {},
+            Err(MacroConceptError::InsufficientHumanCorrelation { .. }) => {}
             other => panic!("Expected InsufficientHumanCorrelation, got {:?}", other),
         }
     }
@@ -485,8 +498,12 @@ mod tests {
     #[test]
     fn test_active_count() {
         let mut engine = MacroConceptBirth::new();
-        engine.submit_candidate("a".into(), valid_criteria()).unwrap();
-        engine.submit_candidate("b".into(), valid_criteria()).unwrap();
+        engine
+            .submit_candidate("a".into(), valid_criteria())
+            .unwrap();
+        engine
+            .submit_candidate("b".into(), valid_criteria())
+            .unwrap();
         engine.evaluate_candidates();
         assert_eq!(engine.active_count(), 2);
     }
@@ -494,7 +511,9 @@ mod tests {
     #[test]
     fn test_dissolved_count() {
         let mut engine = MacroConceptBirth::new();
-        engine.submit_candidate("weak".into(), failing_criteria()).unwrap();
+        engine
+            .submit_candidate("weak".into(), failing_criteria())
+            .unwrap();
         engine.evaluate_candidates();
         assert_eq!(engine.dissolved_count(), 1);
     }
@@ -502,7 +521,9 @@ mod tests {
     #[test]
     fn test_remove_concept() {
         let mut engine = MacroConceptBirth::new();
-        let id = engine.submit_candidate("temp".into(), valid_criteria()).unwrap();
+        let id = engine
+            .submit_candidate("temp".into(), valid_criteria())
+            .unwrap();
         let removed = engine.remove(id).unwrap();
         assert_eq!(removed.id, id);
         assert!(engine.get(id).is_none());
@@ -511,7 +532,9 @@ mod tests {
     #[test]
     fn test_reset() {
         let mut engine = MacroConceptBirth::new();
-        engine.submit_candidate("x".into(), valid_criteria()).unwrap();
+        engine
+            .submit_candidate("x".into(), valid_criteria())
+            .unwrap();
         engine.reset();
         assert_eq!(engine.active_count(), 0);
         assert_eq!(engine.dissolved_count(), 0);
@@ -535,8 +558,12 @@ mod tests {
     #[test]
     fn test_iter() {
         let mut engine = MacroConceptBirth::new();
-        engine.submit_candidate("a".into(), valid_criteria()).unwrap();
-        engine.submit_candidate("b".into(), valid_criteria()).unwrap();
+        engine
+            .submit_candidate("a".into(), valid_criteria())
+            .unwrap();
+        engine
+            .submit_candidate("b".into(), valid_criteria())
+            .unwrap();
         assert_eq!(engine.iter().count(), 2);
     }
 
@@ -561,7 +588,9 @@ mod tests {
     #[test]
     fn test_birth_score_recorded() {
         let mut engine = MacroConceptBirth::new();
-        let id = engine.submit_candidate("scored".into(), valid_criteria()).unwrap();
+        let id = engine
+            .submit_candidate("scored".into(), valid_criteria())
+            .unwrap();
         engine.evaluate_candidates();
         let concept = engine.get(id).unwrap();
         assert!(concept.birth_score > 0.0);

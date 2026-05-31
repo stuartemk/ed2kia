@@ -17,9 +17,9 @@
 //! 4. `assemble` — Final stream ready for network transmission
 
 use crate::pillars::steganographic::{
-    traffic_masker::{MaskerConfig, MaskingError, SrtpHeader, TrafficMasker},
     chaffing_engine::{ChaffConfig, ChaffingEngine, ChaffingError, TaggedPacket},
-    transport_rotator::{RotatorConfig, TransportType, TransportRotator, TransportHealth},
+    traffic_masker::{MaskerConfig, MaskingError, SrtpHeader, TrafficMasker},
+    transport_rotator::{RotatorConfig, TransportHealth, TransportRotator, TransportType},
 };
 
 // ---------------------------------------------------------------------------
@@ -188,7 +188,8 @@ impl HarmonicFlow {
     /// The session key is derived from shared context between peers
     /// and enables winnowing (chaff removal) on the receiving side.
     pub fn register_session_key(&mut self, session_id: &str, key: [u8; 32]) {
-        self.chaffer.register_session_key(session_id.to_string(), key);
+        self.chaffer
+            .register_session_key(session_id.to_string(), key);
     }
 
     /// Generate a session key from a seed value.
@@ -217,10 +218,7 @@ impl HarmonicFlow {
     /// # Returns
     /// * `Ok(ObfuscatedStream)` - Complete stream ready for transmission
     /// * `Err(HarmonicFlowError)` - Pipeline failure at any stage
-    pub fn obfuscate(
-        &mut self,
-        payload: &[u8],
-    ) -> Result<ObfuscatedStream, HarmonicFlowError> {
+    pub fn obfuscate(&mut self, payload: &[u8]) -> Result<ObfuscatedStream, HarmonicFlowError> {
         // Validate input.
         if payload.is_empty() {
             return Err(HarmonicFlowError::EmptyPayload);
@@ -274,10 +272,7 @@ impl HarmonicFlow {
             });
         }
 
-        let obfuscated_size: usize = frames
-            .iter()
-            .map(|f| f.packet.payload.len())
-            .sum();
+        let obfuscated_size: usize = frames.iter().map(|f| f.packet.payload.len()).sum();
 
         let expansion_ratio = if original_size > 0 {
             obfuscated_size as f64 / original_size as f64
@@ -307,13 +302,13 @@ impl HarmonicFlow {
     /// # Returns
     /// * `Ok(DeobfuscatedPayload)` - Recovered original payload
     /// * `Err(HarmonicFlowError)` - Winnowing failure
-    pub fn deobfuscate(&self, stream: &ObfuscatedStream) -> Result<DeobfuscatedPayload, HarmonicFlowError> {
+    pub fn deobfuscate(
+        &self,
+        stream: &ObfuscatedStream,
+    ) -> Result<DeobfuscatedPayload, HarmonicFlowError> {
         // Extract tagged packets from harmonic frames.
-        let tagged_packets: Vec<TaggedPacket> = stream
-            .frames
-            .iter()
-            .map(|f| f.packet.clone())
-            .collect();
+        let tagged_packets: Vec<TaggedPacket> =
+            stream.frames.iter().map(|f| f.packet.clone()).collect();
 
         // Winnow: remove chaff and recover original data.
         let payload = self
@@ -346,7 +341,7 @@ impl HarmonicFlow {
             transport,
             latency_ms,
             1.0 - success_rate, // packet_loss = 1 - success_rate
-            0.0,               // throughput not tracked here
+            0.0,                // throughput not tracked here
         );
         self.rotator.update_health(health);
     }

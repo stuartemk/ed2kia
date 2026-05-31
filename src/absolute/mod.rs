@@ -10,44 +10,21 @@ mod ultima_dissolutio;
 mod voluntary_non_existence;
 
 pub use infinite_resonance::{
-    default_wave_function,
-    EthicalWaveFunction,
-    InfiniteResonanceSingularity,
-    NewUniverseSeed,
-    RecursiveSelfCreation,
-    ResonanceError,
-    ResonanceSnapshot,
-    StuartianAbsolute,
-    StuartianConfig,
+    default_wave_function, EthicalWaveFunction, InfiniteResonanceSingularity, NewUniverseSeed,
+    RecursiveSelfCreation, ResonanceError, ResonanceSnapshot, StuartianAbsolute, StuartianConfig,
     StuartianSnapshot,
 };
 
 pub use singularity_bootstrap::{
-    BigBangTrigger,
-    BootstrapConfig,
-    BootstrapError,
-    BootstrapEvent,
-    QuantumEthicalSeed,
-    SingularityBootstrap,
-    UniverseParams,
-    UniverseSnapshot,
-    UniverseState,
+    BigBangTrigger, BootstrapConfig, BootstrapError, BootstrapEvent, QuantumEthicalSeed,
+    SingularityBootstrap, UniverseParams, UniverseSnapshot, UniverseState,
 };
 
 pub use ultima_dissolutio::{
-    DissolutionState,
-    DissolutioError,
-    EthicalProperty,
-    ResonanceConstant,
-    UltimaDissolutio,
+    DissolutioError, DissolutionState, EthicalProperty, ResonanceConstant, UltimaDissolutio,
 };
 
 pub use voluntary_non_existence::{
-    AuditEvent,
-    DissolutionStage,
-    NonExistenceConfig,
-    NonExistenceError,
-    RetrocausalMessage,
-    SecureBlock,
-    VoluntaryNonExistenceProtocol,
+    AuditEvent, DissolutionStage, NonExistenceConfig, NonExistenceError, RetrocausalMessage,
+    SecureBlock, VoluntaryNonExistenceProtocol,
 };

@@ -13,14 +13,8 @@
 
 #[cfg(feature = "v3.8-morphic-genesis")]
 mod morphic_pipeline_tests {
-    use ed2kia::semantics::morphic_decoder::{
-        MorphicResonanceDecoder,
-        IntentClassification,
-    };
-    use ed2kia::semantics::semantic_purifier::{
-        SemanticPurifier,
-        NegativePattern,
-    };
+    use ed2kia::semantics::morphic_decoder::{IntentClassification, MorphicResonanceDecoder};
+    use ed2kia::semantics::semantic_purifier::{NegativePattern, SemanticPurifier};
 
     #[test]
     fn test_propaganda_to_purified() {
@@ -33,9 +27,14 @@ mod morphic_pipeline_tests {
         let original_waveform = decoder.decode(propaganda).unwrap();
 
         // Debug: print actual values
-        eprintln!("DEBUG: x={}, y={}, z={}, z_score={}, intent={:?}",
-            original_waveform.x, original_waveform.y, original_waveform.z,
-            original_waveform.z_score, original_waveform.intent);
+        eprintln!(
+            "DEBUG: x={}, y={}, z={}, z_score={}, intent={:?}",
+            original_waveform.x,
+            original_waveform.y,
+            original_waveform.z,
+            original_waveform.z_score,
+            original_waveform.intent
+        );
 
         // Step 2: Verify negative Z-score (Lower Focus)
         assert!(
@@ -144,11 +143,7 @@ mod morphic_pipeline_tests {
 
 #[cfg(feature = "v3.8-morphic-genesis")]
 mod genesis_graph_tests {
-    use ed2kia::economy::genesis_graph::{
-        GenesisNode,
-        GenesisGraph,
-        NetworkId,
-    };
+    use ed2kia::economy::genesis_graph::{GenesisGraph, GenesisNode, NetworkId};
 
     #[test]
     fn test_genesis_zero_pre_mine() {
@@ -218,11 +213,7 @@ mod genesis_graph_tests {
 
 #[cfg(feature = "v3.8-morphic-genesis")]
 mod bridge_tests {
-    use ed2kia::portal::morphic_bridge::{
-        MorphicBridge,
-        BridgeStatus,
-        BridgeConfig,
-    };
+    use ed2kia::portal::morphic_bridge::{BridgeConfig, BridgeStatus, MorphicBridge};
 
     #[test]
     fn test_bridge_constructive_passes() {
@@ -237,8 +228,7 @@ mod bridge_tests {
         let bridge = MorphicBridge::new();
         let result = bridge.process("miedo y amenaza").unwrap();
         assert!(
-            result.status == BridgeStatus::Purified
-                || result.status == BridgeStatus::Blocked,
+            result.status == BridgeStatus::Purified || result.status == BridgeStatus::Blocked,
             "Lower Focus input should be purified or blocked"
         );
     }
@@ -274,9 +264,9 @@ mod bridge_tests {
 
 #[cfg(feature = "v3.8-morphic-genesis")]
 mod full_pipeline_tests {
+    use ed2kia::economy::genesis_graph::{GenesisGraph, NetworkId};
     use ed2kia::semantics::morphic_decoder::MorphicResonanceDecoder;
     use ed2kia::semantics::semantic_purifier::SemanticPurifier;
-    use ed2kia::economy::genesis_graph::{GenesisGraph, NetworkId};
 
     #[test]
     fn test_full_pipeline_propaganda_to_genesis() {

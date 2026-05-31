@@ -48,7 +48,7 @@ mod local_hardware_tests {
         };
 
         match HardwareConfig::validate_local_endpoint(&config.endpoint) {
-            Err(AdapterError::NonLocalEndpoint(_)) => {}, // Expected — LOCAL_ONLY enforced.
+            Err(AdapterError::NonLocalEndpoint(_)) => {} // Expected — LOCAL_ONLY enforced.
             other => panic!("Expected NonLocalEndpoint, got {:?}", other),
         }
     }
@@ -57,7 +57,9 @@ mod local_hardware_tests {
     fn test_command_routing_local_only() {
         let mut adapter = LocalHardwareAdapter::new();
         let id = HardwareId("printer-1".to_string());
-        adapter.register_local_device(id.clone(), make_local_config(8080)).unwrap();
+        adapter
+            .register_local_device(id.clone(), make_local_config(8080))
+            .unwrap();
 
         let payload = b"print_layer_1";
         let response = adapter.route_command(id, payload).unwrap();
@@ -68,10 +70,12 @@ mod local_hardware_tests {
     fn test_duplicate_registration_rejected() {
         let mut adapter = LocalHardwareAdapter::new();
         let id = HardwareId("device-1".to_string());
-        assert!(adapter.register_local_device(id.clone(), make_local_config(8080)).is_ok());
+        assert!(adapter
+            .register_local_device(id.clone(), make_local_config(8080))
+            .is_ok());
 
         match adapter.register_local_device(id, make_local_config(8081)) {
-            Err(AdapterError::DeviceAlreadyRegistered(_)) => {}, // Expected
+            Err(AdapterError::DeviceAlreadyRegistered(_)) => {} // Expected
             other => panic!("Expected DeviceAlreadyRegistered, got {:?}", other),
         }
     }
@@ -84,15 +88,13 @@ mod local_hardware_tests {
         config.node_signature.clear();
 
         match adapter.register_local_device(id, config) {
-            Err(AdapterError::InvalidSignature) => {}, // Expected
+            Err(AdapterError::InvalidSignature) => {} // Expected
             other => panic!("Expected InvalidSignature, got {:?}", other),
         }
     }
 }
 
-#[cfg(all(
-    feature = "v3.0-corpuscular-bridge",
-))]
+#[cfg(all(feature = "v3.0-corpuscular-bridge",))]
 mod ce_voucher_tests {
     use ed2kia::pillars::corpuscular::ce_exchange::{CEExchangeEngine, ExchangeError};
     use ed2kia::pillars::ResourceType;
@@ -102,12 +104,7 @@ mod ce_voucher_tests {
         let mut engine = CEExchangeEngine::new();
 
         // Mint voucher with valid CE and positive Z.
-        let voucher = engine.mint_voucher(
-            15.0,
-            ResourceType::Print3DHours(3.0),
-            0.7,
-            42,
-        );
+        let voucher = engine.mint_voucher(15.0, ResourceType::Print3DHours(3.0), 0.7, 42);
         assert!(voucher.is_ok());
         let voucher = voucher.unwrap();
         assert_eq!(voucher.ce_amount, 15.0);
@@ -125,7 +122,7 @@ mod ce_voucher_tests {
     fn test_mint_zero_ce_rejected() {
         let mut engine = CEExchangeEngine::new();
         match engine.mint_voucher(0.0, ResourceType::SolarEnergyKwh(1.0), 0.5, 1) {
-            Err(ExchangeError::InvalidCEAmount(0.0)) => {}, // Expected
+            Err(ExchangeError::InvalidCEAmount(0.0)) => {} // Expected
             other => panic!("Expected InvalidCEAmount, got {:?}", other),
         }
     }
@@ -134,7 +131,7 @@ mod ce_voucher_tests {
     fn test_mint_negative_z_rejected() {
         let mut engine = CEExchangeEngine::new();
         match engine.mint_voucher(10.0, ResourceType::SolarEnergyKwh(1.0), -0.5, 1) {
-            Err(ExchangeError::NegativeZScore(z)) if z < 0.0 => {}, // Expected
+            Err(ExchangeError::NegativeZScore(z)) if z < 0.0 => {} // Expected
             other => panic!("Expected NegativeZScore, got {:?}", other),
         }
     }
@@ -148,15 +145,13 @@ mod ce_voucher_tests {
             signature: vec![],
         };
         match engine.redeem_physical_resource(&voucher, vec![]) {
-            Err(ExchangeError::InvalidSignature) => {}, // Expected
+            Err(ExchangeError::InvalidSignature) => {} // Expected
             other => panic!("Expected InvalidSignature, got {:?}", other),
         }
     }
 }
 
-#[cfg(all(
-    feature = "v3.0-corpuscular-bridge",
-))]
+#[cfg(all(feature = "v3.0-corpuscular-bridge",))]
 mod replay_protection_tests {
     use ed2kia::pillars::corpuscular::ce_exchange::CEExchangeEngine;
     use ed2kia::pillars::ResourceType;
@@ -166,8 +161,12 @@ mod replay_protection_tests {
         let mut engine = CEExchangeEngine::new();
 
         // Mint and redeem first voucher.
-        let voucher = engine.mint_voucher(10.0, ResourceType::Print3DHours(1.0), 0.5, 100).unwrap();
-        assert!(engine.redeem_physical_resource(&voucher, b"ok".to_vec()).is_ok());
+        let voucher = engine
+            .mint_voucher(10.0, ResourceType::Print3DHours(1.0), 0.5, 100)
+            .unwrap();
+        assert!(engine
+            .redeem_physical_resource(&voucher, b"ok".to_vec())
+            .is_ok());
 
         // Attempt to redeem the same voucher again — should be detected as replay.
         match engine.redeem_physical_resource(&voucher, b"ok".to_vec()) {
@@ -183,11 +182,19 @@ mod replay_protection_tests {
         let mut engine = CEExchangeEngine::new();
 
         // Two different vouchers (different CE amounts = different surrogate nonce).
-        let v1 = engine.mint_voucher(10.0, ResourceType::Print3DHours(1.0), 0.5, 1).unwrap();
-        let v2 = engine.mint_voucher(20.0, ResourceType::SolarEnergyKwh(2.0), 0.5, 2).unwrap();
+        let v1 = engine
+            .mint_voucher(10.0, ResourceType::Print3DHours(1.0), 0.5, 1)
+            .unwrap();
+        let v2 = engine
+            .mint_voucher(20.0, ResourceType::SolarEnergyKwh(2.0), 0.5, 2)
+            .unwrap();
 
-        assert!(engine.redeem_physical_resource(&v1, b"ok1".to_vec()).is_ok());
-        assert!(engine.redeem_physical_resource(&v2, b"ok2".to_vec()).is_ok());
+        assert!(engine
+            .redeem_physical_resource(&v1, b"ok1".to_vec())
+            .is_ok());
+        assert!(engine
+            .redeem_physical_resource(&v2, b"ok2".to_vec())
+            .is_ok());
     }
 
     #[test]
@@ -204,7 +211,9 @@ mod replay_protection_tests {
 
         // Try to mint 1 more CE — should exceed window limit.
         match engine.mint_voucher(1.0, ResourceType::Print3DHours(1.0), 0.5, 3) {
-            Err(ed2kia::pillars::corpuscular::ce_exchange::ExchangeError::CEWindowLimitExceeded) => {
+            Err(
+                ed2kia::pillars::corpuscular::ce_exchange::ExchangeError::CEWindowLimitExceeded,
+            ) => {
                 // Expected — window limit enforced.
             }
             other => panic!("Expected CEWindowLimitExceeded, got {:?}", other),
@@ -218,9 +227,9 @@ mod replay_protection_tests {
     feature = "v3.0-orchestration"
 ))]
 mod orchestrator_routing_tests {
+    use ed2kia::orchestration::PillarId;
     use ed2kia::pillars::corpuscular::CorpuscularEngine;
     use ed2kia::pillars::PillarInterface;
-    use ed2kia::orchestration::PillarId;
     use ed2kia::runtime::pillar_messaging::PillarMessage;
 
     fn make_message(pillar_id: PillarId, ce_weight: f64, payload: Vec<u8>) -> PillarMessage {
@@ -229,7 +238,7 @@ mod orchestrator_routing_tests {
             vec![0xAB, 0xCD], // Signature.
             pillar_id,
             1_000_000, // Timestamp.
-            1, // Nonce.
+            1,         // Nonce.
             ce_weight,
         )
     }
@@ -237,11 +246,7 @@ mod orchestrator_routing_tests {
     #[test]
     fn test_orchestrator_routing_valid_message() {
         let mut engine = CorpuscularEngine::new();
-        let msg = make_message(
-            PillarId::CorpuscularBridge,
-            5.0,
-            b"route_test".to_vec(),
-        );
+        let msg = make_message(PillarId::CorpuscularBridge, 5.0, b"route_test".to_vec());
 
         let response = engine.handle_request(&msg);
         assert!(response.is_ok());
@@ -260,7 +265,7 @@ mod orchestrator_routing_tests {
         );
 
         match engine.handle_request(&msg) {
-            Err(ed2kia::pillars::PillarError::UnsupportedResource) => {}, // Expected
+            Err(ed2kia::pillars::PillarError::UnsupportedResource) => {} // Expected
             other => panic!("Expected UnsupportedResource, got {:?}", other),
         }
     }
@@ -275,7 +280,7 @@ mod orchestrator_routing_tests {
         );
 
         match engine.handle_request(&msg) {
-            Err(ed2kia::pillars::PillarError::InsufficientCE) => {}, // Expected
+            Err(ed2kia::pillars::PillarError::InsufficientCE) => {} // Expected
             other => panic!("Expected InsufficientCE, got {:?}", other),
         }
     }

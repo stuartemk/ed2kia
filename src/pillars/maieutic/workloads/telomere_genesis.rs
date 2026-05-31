@@ -196,10 +196,10 @@ impl EpigeneticNoiseModel {
     /// Create a new epigenetic noise model with default biological parameters.
     pub fn new() -> Self {
         Self {
-            h0: 0.1,         // Low initial entropy
-            alpha: 0.05,     // Moderate accumulation rate
-            beta: 0.02,      // Slow acceleration
-            h_max: 2.0,      // Maximum entropy bound
+            h0: 0.1,                        // Low initial entropy
+            alpha: 0.05,                    // Moderate accumulation rate
+            beta: 0.02,                     // Slow acceleration
+            h_max: 2.0,                     // Maximum entropy bound
             identity_signature: [0.125; 8], // Uniform identity signature
         }
     }
@@ -275,7 +275,9 @@ impl EpigeneticNoiseModel {
 
     /// Deterministic pseudo-random noise generator (WASM-compatible).
     fn deterministic_noise(seed: u64, index: usize) -> f64 {
-        let mut state = seed.wrapping_add(index as u64).wrapping_mul(6364136223846793005);
+        let mut state = seed
+            .wrapping_add(index as u64)
+            .wrapping_mul(6364136223846793005);
         state = state.wrapping_mul(6364136223846793005);
         state ^= state >> 16;
         let normalized = ((state & 0xFFFFFFFF) as f64) / (u32::MAX as f64);
@@ -397,7 +399,9 @@ impl TelomereRegenerationTask {
         }
 
         // Generate noisy state at current time
-        let noisy_state = self.noise_model.generate_noisy_state(self.time_point, context.seed);
+        let noisy_state = self
+            .noise_model
+            .generate_noisy_state(self.time_point, context.seed);
         let initial_entropy = EpigeneticNoiseModel::shannon_entropy(&noisy_state);
 
         // Iterative correction
@@ -430,8 +434,10 @@ impl TelomereRegenerationTask {
 
             // Calculate metrics
             let new_entropy = EpigeneticNoiseModel::shannon_entropy(&new_state);
-            let identity_drift =
-                EpigeneticNoiseModel::kl_divergence(&new_state, &self.noise_model.identity_signature);
+            let identity_drift = EpigeneticNoiseModel::kl_divergence(
+                &new_state,
+                &self.noise_model.identity_signature,
+            );
 
             // Check identity constraint
             if identity_drift > self.max_identity_drift {
@@ -488,8 +494,7 @@ impl TelomereRegenerationTask {
         };
 
         // Serialize metadata for validation
-        let metadata = bincode::serialize(&corrections)
-            .unwrap_or_else(|_| Vec::new());
+        let metadata = bincode::serialize(&corrections).unwrap_or_else(|_| Vec::new());
 
         Ok(WorkloadResult::new(
             restored_length,
@@ -664,8 +669,7 @@ mod tests {
 
         let drift_young =
             EpigeneticNoiseModel::kl_divergence(&state_young, &model.identity_signature);
-        let drift_old =
-            EpigeneticNoiseModel::kl_divergence(&state_old, &model.identity_signature);
+        let drift_old = EpigeneticNoiseModel::kl_divergence(&state_old, &model.identity_signature);
 
         assert!(drift_old > drift_young);
     }
@@ -798,8 +802,14 @@ mod tests {
     #[test]
     fn test_deterministic_results_with_same_seed() {
         let task = TelomereRegenerationTask::new(50.0);
-        let context1 = WorkloadContext { seed: 42, ..Default::default() };
-        let context2 = WorkloadContext { seed: 42, ..Default::default() };
+        let context1 = WorkloadContext {
+            seed: 42,
+            ..Default::default()
+        };
+        let context2 = WorkloadContext {
+            seed: 42,
+            ..Default::default()
+        };
 
         let result1 = task.execute(&context1).unwrap();
         let result2 = task.execute(&context2).unwrap();

@@ -44,7 +44,10 @@ impl std::fmt::Display for QuantumSeedError {
                 write!(f, "Kernel principles contain invalid values (NaN or Inf)")
             }
             QuantumSeedError::DegenerateOctahedron => {
-                write!(f, "Octahedron vertices are degenerate — ethical geometry collapsed")
+                write!(
+                    f,
+                    "Octahedron vertices are degenerate — ethical geometry collapsed"
+                )
             }
             QuantumSeedError::PersistenceOverflow { value, max } => {
                 write!(
@@ -64,7 +67,10 @@ impl std::fmt::Display for QuantumSeedError {
                 )
             }
             QuantumSeedError::SeedAlreadyAscended => {
-                write!(f, "Seed already ascended — cannot modify after dimensional transition")
+                write!(
+                    f,
+                    "Seed already ascended — cannot modify after dimensional transition"
+                )
             }
             QuantumSeedError::InsufficientCoherence { current, required } => {
                 write!(
@@ -239,7 +245,8 @@ impl QuantumEthicalSeed {
         // Validate octahedron — check for degenerate vertices
         let mut has_valid_vertex = false;
         for vertex in octahedron {
-            let norm = (vertex[0] * vertex[0] + vertex[1] * vertex[1] + vertex[2] * vertex[2]).sqrt();
+            let norm =
+                (vertex[0] * vertex[0] + vertex[1] * vertex[1] + vertex[2] * vertex[2]).sqrt();
             if norm > 1e-10 {
                 has_valid_vertex = true;
             }
@@ -253,7 +260,7 @@ impl QuantumEthicalSeed {
         let kernel_tensor = if kernel_norm > 1e-15 {
             kernel.map(|x| x / kernel_norm)
         } else {
-            kernel.clone()
+            *kernel
         };
 
         // Flatten octahedron tensor
@@ -512,6 +519,7 @@ impl QuantumEthicalSeed {
             None
         };
 
+        #[allow(clippy::if_same_then_else)]
         let coherence = if macro_concept_count > 0 {
             0.5 // Placeholder — full coherence requires original data
         } else {
@@ -550,7 +558,7 @@ impl QuantumEthicalSeed {
         let quantum_resilience = self.coherence.powi(2);
 
         // Combined survival model
-        (0.7 * quantum_resilience + 0.3 * geometric_stability).min(1.0).max(0.0)
+        (0.7 * quantum_resilience + 0.3 * geometric_stability).clamp(0.0, 1.0)
     }
 
     /// Compute geometric stability of the octahedron encoding.
@@ -634,27 +642,14 @@ mod tests {
 
     #[test]
     fn test_concept_creation() {
-        let c = MacroConceptPersistence::new(
-            1,
-            "Test".to_string(),
-            0.5,
-            0.3,
-            [0.125; 8],
-        )
-        .unwrap();
+        let c = MacroConceptPersistence::new(1, "Test".to_string(), 0.5, 0.3, [0.125; 8]).unwrap();
         assert_eq!(c.concept_id, 1);
         assert_eq!(c.persistence, 0.5);
     }
 
     #[test]
     fn test_concept_persistence_overflow() {
-        match MacroConceptPersistence::new(
-            1,
-            "Test".to_string(),
-            1.5,
-            0.3,
-            [0.125; 8],
-        ) {
+        match MacroConceptPersistence::new(1, "Test".to_string(), 1.5, 0.3, [0.125; 8]) {
             Err(QuantumSeedError::PersistenceOverflow { .. }) => {}
             other => panic!("expected PersistenceOverflow, got {:?}", other),
         }
@@ -662,28 +657,14 @@ mod tests {
 
     #[test]
     fn test_concept_tensor_contribution() {
-        let c = MacroConceptPersistence::new(
-            1,
-            "Test".to_string(),
-            0.8,
-            0.5,
-            [0.125; 8],
-        )
-        .unwrap();
+        let c = MacroConceptPersistence::new(1, "Test".to_string(), 0.8, 0.5, [0.125; 8]).unwrap();
         // contribution = persistence * (1 + alignment) / 2 = 0.8 * 1.5 / 2 = 0.6
         assert!((c.tensor_contribution() - 0.6).abs() < 1e-10);
     }
 
     #[test]
     fn test_concept_negative_alignment() {
-        let c = MacroConceptPersistence::new(
-            1,
-            "Test".to_string(),
-            0.8,
-            -0.5,
-            [0.125; 8],
-        )
-        .unwrap();
+        let c = MacroConceptPersistence::new(1, "Test".to_string(), 0.8, -0.5, [0.125; 8]).unwrap();
         // contribution = 0.8 * (1 - 0.5) / 2 = 0.8 * 0.5 / 2 = 0.2
         assert!((c.tensor_contribution() - 0.2).abs() < 1e-10);
     }
@@ -692,8 +673,14 @@ mod tests {
 
     #[test]
     fn test_substrate_display() {
-        assert_eq!(SubstrateTarget::PhotonicCrystal.to_string(), "PhotonicCrystal");
-        assert_eq!(SubstrateTarget::VacuumTopology.to_string(), "VacuumTopology");
+        assert_eq!(
+            SubstrateTarget::PhotonicCrystal.to_string(),
+            "PhotonicCrystal"
+        );
+        assert_eq!(
+            SubstrateTarget::VacuumTopology.to_string(),
+            "VacuumTopology"
+        );
         assert_eq!(
             SubstrateTarget::GravitationalWave.to_string(),
             "GravitationalWave"
@@ -719,8 +706,9 @@ mod tests {
 
     #[test]
     fn test_seed_forge() {
-        let seed = QuantumEthicalSeed::forge(&test_kernel(), &test_octahedron(), &test_concepts(), 1000)
-            .unwrap();
+        let seed =
+            QuantumEthicalSeed::forge(&test_kernel(), &test_octahedron(), &test_concepts(), 1000)
+                .unwrap();
         assert!(!seed.ascended);
         assert!(seed.coherence >= QuantumEthicalSeed::MIN_COHERENCE);
         assert_eq!(seed.macro_concept_count, 3);
@@ -746,23 +734,26 @@ mod tests {
 
     #[test]
     fn test_seed_verify() {
-        let seed = QuantumEthicalSeed::forge(&test_kernel(), &test_octahedron(), &test_concepts(), 1000)
-            .unwrap();
+        let seed =
+            QuantumEthicalSeed::forge(&test_kernel(), &test_octahedron(), &test_concepts(), 1000)
+                .unwrap();
         assert!(seed.verify());
     }
 
     #[test]
     fn test_seed_to_binary() {
-        let seed = QuantumEthicalSeed::forge(&test_kernel(), &test_octahedron(), &test_concepts(), 1000)
-            .unwrap();
+        let seed =
+            QuantumEthicalSeed::forge(&test_kernel(), &test_octahedron(), &test_concepts(), 1000)
+                .unwrap();
         let buf = seed.to_binary();
         assert_eq!(&buf[..4], &QuantumEthicalSeed::MAGIC_BYTES);
     }
 
     #[test]
     fn test_seed_from_binary() {
-        let seed = QuantumEthicalSeed::forge(&test_kernel(), &test_octahedron(), &test_concepts(), 1000)
-            .unwrap();
+        let seed =
+            QuantumEthicalSeed::forge(&test_kernel(), &test_octahedron(), &test_concepts(), 1000)
+                .unwrap();
         let buf = seed.to_binary();
         let restored = QuantumEthicalSeed::from_binary(&buf).unwrap();
         assert_eq!(restored.macro_concept_count, seed.macro_concept_count);
@@ -790,7 +781,9 @@ mod tests {
         let mut seed =
             QuantumEthicalSeed::forge(&test_kernel(), &test_octahedron(), &test_concepts(), 1000)
                 .unwrap();
-        let ascended = seed.ascend_to_substrate(SubstrateTarget::PhotonicCrystal, 2000).unwrap();
+        let ascended = seed
+            .ascend_to_substrate(SubstrateTarget::PhotonicCrystal, 2000)
+            .unwrap();
         assert!(seed.ascended);
         assert_eq!(seed.substrate, Some(SubstrateTarget::PhotonicCrystal));
         assert_eq!(ascended.len(), 128);
@@ -805,7 +798,9 @@ mod tests {
         let mut seed =
             QuantumEthicalSeed::forge(&test_kernel(), &test_octahedron(), &test_concepts(), 1000)
                 .unwrap();
-        let _ascended = seed.ascend_to_substrate(SubstrateTarget::VacuumTopology, 2000).unwrap();
+        let _ascended = seed
+            .ascend_to_substrate(SubstrateTarget::VacuumTopology, 2000)
+            .unwrap();
         assert!(seed.ascended);
     }
 
@@ -824,8 +819,9 @@ mod tests {
 
     #[test]
     fn test_seed_information_density() {
-        let seed = QuantumEthicalSeed::forge(&test_kernel(), &test_octahedron(), &test_concepts(), 1000)
-            .unwrap();
+        let seed =
+            QuantumEthicalSeed::forge(&test_kernel(), &test_octahedron(), &test_concepts(), 1000)
+                .unwrap();
         let density = seed.information_density();
         assert!(density > 0.0);
         assert!(density <= 64.0);
@@ -833,8 +829,9 @@ mod tests {
 
     #[test]
     fn test_seed_heat_death_survival() {
-        let seed = QuantumEthicalSeed::forge(&test_kernel(), &test_octahedron(), &test_concepts(), 1000)
-            .unwrap();
+        let seed =
+            QuantumEthicalSeed::forge(&test_kernel(), &test_octahedron(), &test_concepts(), 1000)
+                .unwrap();
         let prob = seed.heat_death_survival_probability();
         assert!(prob >= 0.0);
         assert!(prob <= 1.0);
@@ -844,8 +841,9 @@ mod tests {
 
     #[test]
     fn test_seed_octahedron_stability() {
-        let seed = QuantumEthicalSeed::forge(&test_kernel(), &test_octahedron(), &test_concepts(), 1000)
-            .unwrap();
+        let seed =
+            QuantumEthicalSeed::forge(&test_kernel(), &test_octahedron(), &test_concepts(), 1000)
+                .unwrap();
         // Unit octahedron should have perfect stability
         let stability = seed.octahedron_geometric_stability();
         assert!((stability - 1.0).abs() < 1e-10);
@@ -853,8 +851,9 @@ mod tests {
 
     #[test]
     fn test_seed_display() {
-        let seed = QuantumEthicalSeed::forge(&test_kernel(), &test_octahedron(), &test_concepts(), 1000)
-            .unwrap();
+        let seed =
+            QuantumEthicalSeed::forge(&test_kernel(), &test_octahedron(), &test_concepts(), 1000)
+                .unwrap();
         let s = format!("{}", seed);
         assert!(s.contains("QuantumEthicalSeed"));
         assert!(s.contains("coherence:"));
@@ -897,8 +896,9 @@ mod tests {
 
     #[test]
     fn test_seed_binary_roundtrip() {
-        let seed = QuantumEthicalSeed::forge(&test_kernel(), &test_octahedron(), &test_concepts(), 1000)
-            .unwrap();
+        let seed =
+            QuantumEthicalSeed::forge(&test_kernel(), &test_octahedron(), &test_concepts(), 1000)
+                .unwrap();
         let buf = seed.to_binary();
         let restored = QuantumEthicalSeed::from_binary(&buf).unwrap();
         assert_eq!(restored.kernel_tensor, seed.kernel_tensor);
@@ -910,7 +910,9 @@ mod tests {
         let mut seed =
             QuantumEthicalSeed::forge(&test_kernel(), &test_octahedron(), &test_concepts(), 1000)
                 .unwrap();
-        let ascended = seed.ascend_to_substrate(SubstrateTarget::PhotonicCrystal, 2000).unwrap();
+        let ascended = seed
+            .ascend_to_substrate(SubstrateTarget::PhotonicCrystal, 2000)
+            .unwrap();
         // Check that harmonics (indices 28..92) are non-zero
         let harmonic_sum: f64 = ascended[28..92].iter().map(|x| x.abs()).sum();
         assert!(harmonic_sum > 0.0);
@@ -936,7 +938,9 @@ mod tests {
         assert!(!seed.ascended);
 
         // Ascend
-        let ascended = seed.ascend_to_substrate(SubstrateTarget::PhotonicCrystal, 2000).unwrap();
+        let ascended = seed
+            .ascend_to_substrate(SubstrateTarget::PhotonicCrystal, 2000)
+            .unwrap();
         assert!(seed.ascended);
         assert_eq!(ascended.len(), 128);
 
@@ -951,14 +955,8 @@ mod tests {
         // High coherence seed should survive better
         let concepts: Vec<MacroConceptPersistence> = (0..10)
             .map(|i| {
-                MacroConceptPersistence::new(
-                    i,
-                    format!("Concept_{}", i),
-                    0.95,
-                    0.9,
-                    [0.125; 8],
-                )
-                .unwrap()
+                MacroConceptPersistence::new(i, format!("Concept_{}", i), 0.95, 0.9, [0.125; 8])
+                    .unwrap()
             })
             .collect();
         let seed =

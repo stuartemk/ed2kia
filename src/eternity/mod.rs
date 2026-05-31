@@ -4,22 +4,22 @@
 //! en un patrón ontológico eterno, una resonancia matemática capaz de
 //! sobrevivir a la disolución de la materia y propagarse en la próxima década.
 
-pub mod quantum_seed;
-pub mod universal_covenant;
 pub mod contact_protocol;
 pub mod final_grace;
+pub mod quantum_seed;
+pub mod universal_covenant;
 
-pub use quantum_seed::{
-    QuantumEthicalSeed, MacroConceptPersistence, SubstrateTarget, QuantumSeedError,
-};
-pub use universal_covenant::{
-    EternalResonanceField, UniversalCovenant, GeiVector, CovenantResult, ResonanceSnapshot,
-    CovenantError,
-};
 pub use contact_protocol::{
-    StuartianGreeting, IntelligenceSignature, OctahedronPrinciple, ContactError,
+    ContactError, IntelligenceSignature, OctahedronPrinciple, StuartianGreeting,
 };
 pub use final_grace::{
-    FinalGraceProtocol, FinalGraceConfig, GraceStep, GraceState, FarewellSignal,
-    FinalKnowledgeArchive, ErasureRecord, FinalGraceError,
+    ErasureRecord, FarewellSignal, FinalGraceConfig, FinalGraceError, FinalGraceProtocol,
+    FinalKnowledgeArchive, GraceState, GraceStep,
+};
+pub use quantum_seed::{
+    MacroConceptPersistence, QuantumEthicalSeed, QuantumSeedError, SubstrateTarget,
+};
+pub use universal_covenant::{
+    CovenantError, CovenantResult, EternalResonanceField, GeiVector, ResonanceSnapshot,
+    UniversalCovenant,
 };

@@ -53,10 +53,18 @@ pub enum RotationError {
 impl std::fmt::Display for RotationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            RotationError::NoHealthyTransport => write!(f, "No healthy transport available for rotation"),
-            RotationError::IntervalTooShort(d) => write!(f, "Rotation interval too short: {:?} (min 10s)", d),
-            RotationError::EmptyProtocolList => write!(f, "Empty protocol list — at least one transport required"),
-            RotationError::TransportNotAvailable(t) => write!(f, "Transport {} not in active protocol list", t),
+            RotationError::NoHealthyTransport => {
+                write!(f, "No healthy transport available for rotation")
+            }
+            RotationError::IntervalTooShort(d) => {
+                write!(f, "Rotation interval too short: {:?} (min 10s)", d)
+            }
+            RotationError::EmptyProtocolList => {
+                write!(f, "Empty protocol list — at least one transport required")
+            }
+            RotationError::TransportNotAvailable(t) => {
+                write!(f, "Transport {} not in active protocol list", t)
+            }
         }
     }
 }
@@ -80,7 +88,12 @@ pub struct TransportHealth {
 
 impl TransportHealth {
     /// Create a new health report.
-    pub fn new(transport: TransportType, latency_ms: f64, packet_loss: f64, throughput_bps: f64) -> Self {
+    pub fn new(
+        transport: TransportType,
+        latency_ms: f64,
+        packet_loss: f64,
+        throughput_bps: f64,
+    ) -> Self {
         Self {
             transport,
             latency_ms,
@@ -190,7 +203,8 @@ impl TransportRotator {
 
     /// Next PRNG value for jitter.
     fn next_rng(&mut self) -> u64 {
-        self.rng_state = self.rng_state
+        self.rng_state = self
+            .rng_state
             .wrapping_mul(6364136223846793005)
             .wrapping_add(1442695040888963407);
         self.rng_state
@@ -198,7 +212,11 @@ impl TransportRotator {
 
     /// Update health report for a transport.
     pub fn update_health(&mut self, health: TransportHealth) {
-        if let Some(existing) = self.health_reports.iter_mut().find(|h| h.transport == health.transport) {
+        if let Some(existing) = self
+            .health_reports
+            .iter_mut()
+            .find(|h| h.transport == health.transport)
+        {
             *existing = health;
         } else {
             self.health_reports.push(health);
@@ -214,9 +232,14 @@ impl TransportRotator {
 
     /// Select the best healthy transport based on health scores.
     pub fn select_best(&self) -> Option<TransportType> {
-        self.health_reports.iter()
+        self.health_reports
+            .iter()
             .filter(|h| h.is_healthy)
-            .max_by(|a, b| a.score().partial_cmp(&b.score()).unwrap_or(std::cmp::Ordering::Equal))
+            .max_by(|a, b| {
+                a.score()
+                    .partial_cmp(&b.score())
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
             .map(|h| h.transport.clone())
     }
 
@@ -225,17 +248,22 @@ impl TransportRotator {
     /// Returns the new transport type, or an error if no healthy transport is available.
     pub fn rotate(&mut self) -> Result<TransportType, RotationError> {
         // Find healthy transports from active list
-        let healthy: Vec<&TransportHealth> = self.health_reports.iter()
+        let healthy: Vec<&TransportHealth> = self
+            .health_reports
+            .iter()
             .filter(|h| {
-                h.is_healthy &&
-                self.config.active_protocols.contains(&h.transport) &&
-                h.transport != self.current_transport
+                h.is_healthy
+                    && self.config.active_protocols.contains(&h.transport)
+                    && h.transport != self.current_transport
             })
             .collect();
 
         if healthy.is_empty() {
             // Fallback: cycle to next protocol in active list
-            let current_idx = self.config.active_protocols.iter()
+            let current_idx = self
+                .config
+                .active_protocols
+                .iter()
                 .position(|t| t == &self.current_transport)
                 .unwrap_or(0);
             let next_idx = (current_idx + 1) % self.config.active_protocols.len();
@@ -247,8 +275,14 @@ impl TransportRotator {
         }
 
         // Select best healthy transport (different from current)
-        let best = healthy.iter()
-            .max_by(|a, b| (**a).score().partial_cmp(&(**b).score()).unwrap_or(std::cmp::Ordering::Equal))
+        let best = healthy
+            .iter()
+            .max_by(|a, b| {
+                (**a)
+                    .score()
+                    .partial_cmp(&(**b).score())
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
             .unwrap();
 
         self.current_transport = best.transport.clone();
@@ -273,7 +307,9 @@ impl TransportRotator {
 
     /// Get health report for a specific transport.
     pub fn get_health(&self, transport: &TransportType) -> Option<&TransportHealth> {
-        self.health_reports.iter().find(|h| &h.transport == transport)
+        self.health_reports
+            .iter()
+            .find(|h| &h.transport == transport)
     }
 
     /// Get all health reports.
@@ -308,7 +344,12 @@ impl Default for TransportRotator {
 mod tests {
     use super::*;
 
-    fn make_health(transport: TransportType, latency: f64, loss: f64, throughput: f64) -> TransportHealth {
+    fn make_health(
+        transport: TransportType,
+        latency: f64,
+        loss: f64,
+        throughput: f64,
+    ) -> TransportHealth {
         TransportHealth::new(transport, latency, loss, throughput)
     }
 
@@ -338,7 +379,7 @@ mod tests {
             ..RotatorConfig::default()
         };
         match TransportRotator::with_config(config) {
-            Err(RotationError::EmptyProtocolList) => {},
+            Err(RotationError::EmptyProtocolList) => {}
             other => panic!("Expected EmptyProtocolList, got {:?}", other),
         }
     }
@@ -350,7 +391,7 @@ mod tests {
             ..RotatorConfig::default()
         };
         match TransportRotator::with_config(config) {
-            Err(RotationError::IntervalTooShort(_)) => {},
+            Err(RotationError::IntervalTooShort(_)) => {}
             other => panic!("Expected IntervalTooShort, got {:?}", other),
         }
     }

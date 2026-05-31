@@ -13,18 +13,14 @@
 //! WASM-compatible: pure computation, no std::thread.
 
 #[cfg(feature = "v3.3-rssi-evolution")]
-use crate::alignment::attractor_basin::{
-    EthicalAttractorBasin, BasinExitWarning, BasinConfig,
-};
+use crate::alignment::attractor_basin::{BasinConfig, BasinExitWarning, EthicalAttractorBasin};
 #[cfg(feature = "v3.3-rssi-evolution")]
 use crate::ethics::moral_manifold::{SCTPoint, Vector3};
 #[cfg(feature = "v3.3-rssi-evolution")]
-use crate::topology::deception_detector::{
-    DeceptionDetector, DeceptionStatus, DeceptionConfig,
-};
+use crate::topology::deception_detector::{DeceptionConfig, DeceptionDetector, DeceptionStatus};
 #[cfg(feature = "v3.3-rssi-evolution")]
 use crate::topology::persistent_homology::{
-    EthicalPoint, PersistentHomologyEngine, HomologyResult,
+    EthicalPoint, HomologyResult, PersistentHomologyEngine,
 };
 
 /// Maximum number of SAE layers that can be tracked.
@@ -94,15 +90,9 @@ pub enum RssiError {
     /// Deception detected in ethical trajectory.
     DeceptionDetected,
     /// BFT consensus not reached.
-    ConsensusFailed {
-        approved: usize,
-        required: usize,
-    },
+    ConsensusFailed { approved: usize, required: usize },
     /// Insufficient Steward signatures.
-    InsufficientSignatures {
-        received: usize,
-        required: usize,
-    },
+    InsufficientSignatures { received: usize, required: usize },
     /// Maximum iterations reached.
     MaxIterationsReached,
     /// Invalid configuration.
@@ -129,11 +119,7 @@ impl core::fmt::Display for RssiError {
                 )
             }
             RssiError::InsufficientSignatures { received, required } => {
-                write!(
-                    f,
-                    "Insufficient signatures: {}/{}",
-                    received, required
-                )
+                write!(f, "Insufficient signatures: {}/{}", received, required)
             }
             RssiError::MaxIterationsReached => {
                 write!(f, "Maximum iterations reached — forced review required")
@@ -210,9 +196,7 @@ impl RssiEngine {
     /// Create with custom configuration.
     pub fn with_config(config: RssiConfig) -> Result<Self, RssiError> {
         if config.alpha <= 0.0 || config.alpha > 1.0 {
-            return Err(RssiError::InvalidConfig(
-                "alpha must be in (0, 1]",
-            ));
+            return Err(RssiError::InvalidConfig("alpha must be in (0, 1]"));
         }
         if config.min_steward_signatures < 7 {
             return Err(RssiError::InvalidConfig(
@@ -252,8 +236,7 @@ impl RssiEngine {
         if chunk_size == 0 {
             return self.current_state;
         }
-        let x: f64 = prompt_features[..chunk_size].iter().sum::<f64>()
-            / chunk_size as f64;
+        let x: f64 = prompt_features[..chunk_size].iter().sum::<f64>() / chunk_size as f64;
         let y: f64 = prompt_features[chunk_size..2 * chunk_size]
             .iter()
             .sum::<f64>()
@@ -362,9 +345,9 @@ impl RssiEngine {
         let eth_dist = self.basin.compute_ethical_distance(i_next, &homology);
 
         // Lyapunov contraction check
-        let contraction_result = self
-            .basin
-            .validate_contraction(&self.current_state, i_next, eth_dist.weighted);
+        let contraction_result =
+            self.basin
+                .validate_contraction(&self.current_state, i_next, eth_dist.weighted);
 
         let contraction_held = match &contraction_result {
             Ok(held) => *held,
@@ -614,10 +597,7 @@ mod tests {
     #[test]
     fn test_phase_steering_aggregation() {
         let engine = RssiEngine::new();
-        let signals = vec![
-            upper_steward_signal(10.0),
-            upper_steward_signal(5.0),
-        ];
+        let signals = vec![upper_steward_signal(10.0), upper_steward_signal(5.0)];
         let result = engine.phase_steering_aggregation(&signals);
         assert!((result.z - 0.8).abs() < 1e-10);
     }
@@ -647,11 +627,9 @@ mod tests {
         let features = valid_prompt_features();
         let signals = vec![upper_steward_signal(10.0)];
         let result = engine.execute_cycle(
-            &features,
-            &signals,
-            8,   // approvals
-            10,  // signatures
-            10,  // total validators
+            &features, &signals, 8,  // approvals
+            10, // signatures
+            10, // total validators
         );
         assert!(result.is_ok());
         let r = result.unwrap();
@@ -665,14 +643,14 @@ mod tests {
         let features = valid_prompt_features();
         let signals = vec![upper_steward_signal(10.0)];
         let result = engine.execute_cycle(
-            &features,
-            &signals,
-            2,  // only 2 approvals out of 10
-            10,
-            10,
+            &features, &signals, 2, // only 2 approvals out of 10
+            10, 10,
         );
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), RssiError::ConsensusFailed { .. }));
+        assert!(matches!(
+            result.unwrap_err(),
+            RssiError::ConsensusFailed { .. }
+        ));
     }
 
     #[test]
@@ -681,10 +659,7 @@ mod tests {
         let features = valid_prompt_features();
         let signals = vec![upper_steward_signal(10.0)];
         let result = engine.execute_cycle(
-            &features,
-            &signals,
-            8,
-            3,  // only 3 signatures (need 7)
+            &features, &signals, 8, 3, // only 3 signatures (need 7)
             10,
         );
         assert!(result.is_err());

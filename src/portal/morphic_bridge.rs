@@ -25,17 +25,9 @@
 use wasm_bindgen::prelude::*;
 
 #[cfg(feature = "v3.8-morphic-genesis")]
-use crate::semantics::morphic_decoder::{
-    MorphicResonanceDecoder,
-    SemanticWaveform,
-    DecoderConfig,
-};
+use crate::semantics::morphic_decoder::{DecoderConfig, MorphicResonanceDecoder, SemanticWaveform};
 #[cfg(feature = "v3.8-morphic-genesis")]
-use crate::semantics::semantic_purifier::{
-    SemanticPurifier,
-    PurifierConfig,
-    NegativePattern,
-};
+use crate::semantics::semantic_purifier::{NegativePattern, PurifierConfig, SemanticPurifier};
 
 /// Result of the morphic bridge pipeline.
 #[cfg(feature = "v3.8-morphic-genesis")]
@@ -89,10 +81,7 @@ pub enum BridgeError {
     /// Purification failed after all attempts.
     PurificationFailed(String),
     /// Purified output still scores below threshold.
-    ThresholdNotMet {
-        z_score: f64,
-        threshold: f64,
-    },
+    ThresholdNotMet { z_score: f64, threshold: f64 },
 }
 
 #[cfg(feature = "v3.8-morphic-genesis")]
@@ -440,10 +429,7 @@ mod tests {
     fn test_process_lower_focus_input() {
         let bridge = MorphicBridge::new();
         let result = bridge.process("miedo y amenaza").unwrap();
-        assert!(
-            result.status == BridgeStatus::Purified
-                || result.status == BridgeStatus::Blocked
-        );
+        assert!(result.status == BridgeStatus::Purified || result.status == BridgeStatus::Blocked);
     }
 
     #[test]
@@ -499,17 +485,11 @@ mod tests {
     #[test]
     fn test_error_display() {
         assert_eq!(
-            format!(
-                "{}",
-                BridgeError::DecodeError("test".to_string())
-            ),
+            format!("{}", BridgeError::DecodeError("test".to_string())),
             "BridgeError: decode failed — test"
         );
         assert_eq!(
-            format!(
-                "{}",
-                BridgeError::PurificationFailed("test".to_string())
-            ),
+            format!("{}", BridgeError::PurificationFailed("test".to_string())),
             "BridgeError: purification failed — test"
         );
         let err = BridgeError::ThresholdNotMet {
@@ -559,9 +539,6 @@ mod tests {
         let bridge = MorphicBridge::with_config(config);
         // Even "cooperación" might not reach 0.5 threshold
         let result = bridge.process("cooperación").unwrap();
-        assert!(
-            result.status == BridgeStatus::Passed
-                || result.status == BridgeStatus::Purified
-        );
+        assert!(result.status == BridgeStatus::Passed || result.status == BridgeStatus::Purified);
     }
 }

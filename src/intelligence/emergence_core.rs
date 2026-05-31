@@ -244,15 +244,15 @@ impl EmergentInsight {
             .unwrap_or("general");
         format!(
             "Emergent insight in {} domain ({}) from {} nodes",
-            domain,
-            problem_type,
-            tensor.node_id
+            domain, problem_type, tensor.node_id
         )
     }
 
     /// Score compuesto de calidad del insight.
     pub fn quality_score(&self) -> f64 {
-        0.4 * self.novelty_score + 0.4 * self.utility_score + 0.2 * (self.sct_z_score.max(0.0) + 1.0) * 0.5
+        0.4 * self.novelty_score
+            + 0.4 * self.utility_score
+            + 0.2 * (self.sct_z_score.max(0.0) + 1.0) * 0.5
     }
 }
 
@@ -495,9 +495,9 @@ impl CrossTensorFusion {
                 let prob_sim = target.problem_similarity(c);
                 let sol_sim = target.solution_similarity(c);
                 let eth_align = ethical_alignment(&target.ethical_direction, &c.ethical_direction);
-                let combined =
-                    self.problem_weight * prob_sim + self.solution_weight * sol_sim
-                        + self.ethical_weight * eth_align;
+                let combined = self.problem_weight * prob_sim
+                    + self.solution_weight * sol_sim
+                    + self.ethical_weight * eth_align;
                 (c.node_id, combined)
             })
             .filter(|(_, score)| *score >= self.similarity_threshold)
@@ -514,16 +514,18 @@ impl CrossTensorFusion {
         let n = tensors.len() as f64;
 
         // Promedio ponderado de características de problema
-        let problem_refs: Vec<_> = tensors.iter().map(|t| t.problem_features.as_slice()).collect();
-        let fused_problem = weighted_average_features(
-            &problem_refs,
-        );
+        let problem_refs: Vec<_> = tensors
+            .iter()
+            .map(|t| t.problem_features.as_slice())
+            .collect();
+        let fused_problem = weighted_average_features(&problem_refs);
 
         // Promedio ponderado de características de solución
-        let solution_refs: Vec<_> = tensors.iter().map(|t| t.solution_features.as_slice()).collect();
-        let fused_solution = weighted_average_features(
-            &solution_refs,
-        );
+        let solution_refs: Vec<_> = tensors
+            .iter()
+            .map(|t| t.solution_features.as_slice())
+            .collect();
+        let fused_solution = weighted_average_features(&solution_refs);
 
         // Dirección ética fusionada (promedio en espacio Octahedron)
         let fused_ethical = {
@@ -732,7 +734,11 @@ impl StuartianEmergenceEngine {
             // Encontrar candidatos a fusión
             let candidates = self.fusion.find_fusion_candidates(
                 tensor,
-                &tensors.iter().filter(|c| c.node_id != tensor.node_id).cloned().collect::<Vec<_>>(),
+                &tensors
+                    .iter()
+                    .filter(|c| c.node_id != tensor.node_id)
+                    .cloned()
+                    .collect::<Vec<_>>(),
             );
 
             if candidates.is_empty() {
@@ -748,10 +754,7 @@ impl StuartianEmergenceEngine {
             }
 
             // Evitar procesar el mismo conjunto múltiples veces
-            let pair_key: Vec<u128> = fusion_set
-                .iter()
-                .map(|t| t.node_id)
-                .collect::<Vec<_>>();
+            let pair_key: Vec<u128> = fusion_set.iter().map(|t| t.node_id).collect::<Vec<_>>();
             if processed_pairs.contains(&pair_key) {
                 continue;
             }
@@ -932,9 +935,7 @@ fn weighted_average_features(features_list: &[&[f64]]) -> Vec<f64> {
 /// Calcula la distancia euclidiana entre dos vectores de características.
 fn feature_distance(a: &[f64], b: &[f64]) -> f64 {
     let min_len = a.len().min(b.len());
-    let sum: f64 = (0..min_len)
-        .map(|i| (a[i] - b[i]).powi(2))
-        .sum();
+    let sum: f64 = (0..min_len).map(|i| (a[i] - b[i]).powi(2)).sum();
     sum.sqrt()
 }
 
@@ -945,11 +946,8 @@ fn solution_coherence_score(features: &[f64]) -> f64 {
     }
 
     let mean: f64 = features.iter().sum::<f64>() / features.len() as f64;
-    let variance: f64 = features
-        .iter()
-        .map(|f| (f - mean).powi(2))
-        .sum::<f64>()
-        / features.len() as f64;
+    let variance: f64 =
+        features.iter().map(|f| (f - mean).powi(2)).sum::<f64>() / features.len() as f64;
 
     // Coherencia = 1 / (1 + sqrt(variance))
     1.0 / (1.0 + variance.sqrt())
@@ -978,8 +976,12 @@ mod tests {
 
     fn make_tensor_with_metadata(node_id: u128, z: f64, domain: &str) -> NodeTensor {
         let mut tensor = make_tensor(node_id, z);
-        tensor.metadata.insert("domain".to_string(), domain.to_string());
-        tensor.metadata.insert("problem_type".to_string(), "fragment".to_string());
+        tensor
+            .metadata
+            .insert("domain".to_string(), domain.to_string());
+        tensor
+            .metadata
+            .insert("problem_type".to_string(), "fragment".to_string());
         tensor
     }
 
@@ -1121,13 +1123,7 @@ mod tests {
     #[test]
     fn test_sct_guard_validate_passed() {
         let mut guard = SCTGuard::new();
-        let insight = EmergentInsight::new(
-            1,
-            vec![1, 2],
-            make_tensor(1, 0.5),
-            0.8,
-            0.9,
-        );
+        let insight = EmergentInsight::new(1, vec![1, 2], make_tensor(1, 0.5), 0.8, 0.9);
         let result = guard.validate(&insight);
         assert!(result.is_valid());
         assert_eq!(guard.validations_passed, 1);
@@ -1136,13 +1132,7 @@ mod tests {
     #[test]
     fn test_sct_guard_validate_rejected() {
         let mut guard = SCTGuard::new();
-        let insight = EmergentInsight::new(
-            1,
-            vec![1, 2],
-            make_tensor(1, -0.5),
-            0.8,
-            0.9,
-        );
+        let insight = EmergentInsight::new(1, vec![1, 2], make_tensor(1, -0.5), 0.8, 0.9);
         let result = guard.validate(&insight);
         assert!(!result.is_valid());
         assert_eq!(guard.validations_failed, 1);
@@ -1151,13 +1141,7 @@ mod tests {
     #[test]
     fn test_sct_guard_warning() {
         let mut guard = SCTGuard::with_thresholds(0.0, 0.1);
-        let insight = EmergentInsight::new(
-            1,
-            vec![1, 2],
-            make_tensor(1, 0.05),
-            0.8,
-            0.9,
-        );
+        let insight = EmergentInsight::new(1, vec![1, 2], make_tensor(1, 0.05), 0.8, 0.9);
         let result = guard.validate(&insight);
         assert_eq!(result, SCTValidationResult::Warning(0.05));
     }
@@ -1507,7 +1491,9 @@ mod tests {
         for i in 0..100 {
             let z = 0.3 + (i % 10) as f64 * 0.05; // Z between 0.3 and 0.75
             let mut tensor = make_tensor(i, z);
-            tensor.metadata.insert("domain".to_string(), "test".to_string());
+            tensor
+                .metadata
+                .insert("domain".to_string(), "test".to_string());
             engine.register_tensor(tensor);
         }
         let events = engine.run_emergence_cycle();
@@ -1552,8 +1538,12 @@ mod tests {
                 _ => "fragment_c",
             };
             let mut tensor = make_tensor(i, z);
-            tensor.metadata.insert("domain".to_string(), domain.to_string());
-            tensor.metadata.insert("fragment".to_string(), domain.to_string());
+            tensor
+                .metadata
+                .insert("domain".to_string(), domain.to_string());
+            tensor
+                .metadata
+                .insert("fragment".to_string(), domain.to_string());
             engine.register_tensor(tensor);
         }
 

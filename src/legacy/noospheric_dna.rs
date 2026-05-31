@@ -31,7 +31,9 @@ impl fmt::Display for DnaError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             DnaError::ImmutableDna => write!(f, "Noospheric DNA is sealed and immutable"),
-            DnaError::InvalidGenesis => write!(f, "Genesis block verification failed during resurrection"),
+            DnaError::InvalidGenesis => {
+                write!(f, "Genesis block verification failed during resurrection")
+            }
             DnaError::QuorumNotReached { current, required } => write!(
                 f,
                 "Quorum not reached for generational testament: current={:.2}, required={:.2}",
@@ -175,7 +177,12 @@ pub struct TestamentProposal {
 }
 
 impl TestamentProposal {
-    pub fn new(proposal_id: u64, principle: String, total_stewards: u64, created_at_ms: u64) -> Self {
+    pub fn new(
+        proposal_id: u64,
+        principle: String,
+        total_stewards: u64,
+        created_at_ms: u64,
+    ) -> Self {
         Self {
             proposal_id,
             principle,
@@ -328,7 +335,11 @@ impl NoosphericDna {
 
     /// Retrieve stable macro-concepts (converged + human-aligned).
     pub fn stable_concepts(&self) -> Vec<MacroConceptRecord> {
-        self.macro_concepts.iter().filter(|c| c.is_stable()).cloned().collect()
+        self.macro_concepts
+            .iter()
+            .filter(|c| c.is_stable())
+            .cloned()
+            .collect()
     }
 
     // ---- Ethical Field Snapshots ----
@@ -515,10 +526,18 @@ impl fmt::Display for NoosphericDna {
         writeln!(f, "  Stable Concepts:  {}", self.stable_concepts().len())?;
         writeln!(f, "  Field Snapshots:  {}", self.field_snapshots.len())?;
         writeln!(f, "  Testament Props:  {}", self.testament_proposals.len())?;
-        writeln!(f, "  Integrated:       {}", self.integrated_principles.len())?;
+        writeln!(
+            f,
+            "  Integrated:       {}",
+            self.integrated_principles.len()
+        )?;
         writeln!(f, "  Peak Nodes:       {}", self.peak_nodes)?;
         writeln!(f, "  Current Nodes:    {}", self.current_nodes)?;
-        writeln!(f, "  Node Loss:        {:.2}%", self.node_loss_ratio() * 100.0)?;
+        writeln!(
+            f,
+            "  Node Loss:        {:.2}%",
+            self.node_loss_ratio() * 100.0
+        )?;
         writeln!(f, "  Sealed:           {}", self.sealed)
     }
 }
@@ -640,7 +659,10 @@ mod tests {
     fn test_record_rejected_when_sealed() {
         let mut dna = NoosphericDna::forge(GENESIS_HASH);
         dna.seal();
-        assert_eq!(dna.record_macro_concept(make_stable_concept(1)), Err(DnaError::ImmutableDna));
+        assert_eq!(
+            dna.record_macro_concept(make_stable_concept(1)),
+            Err(DnaError::ImmutableDna)
+        );
     }
 
     #[test]
@@ -747,7 +769,9 @@ mod tests {
     #[test]
     fn test_propose_testament() {
         let mut dna = NoosphericDna::forge(GENESIS_HASH);
-        let id = dna.propose_testament("New Principle".to_string(), 100, 6000).unwrap();
+        let id = dna
+            .propose_testament("New Principle".to_string(), 100, 6000)
+            .unwrap();
         assert_eq!(id, 1);
         assert_eq!(dna.testament_proposals.len(), 1);
     }
@@ -765,7 +789,8 @@ mod tests {
     #[test]
     fn test_vote_and_approve() {
         let mut dna = NoosphericDna::forge(GENESIS_HASH);
-        dna.propose_testament("Cooperation First".to_string(), 100, 7000).unwrap();
+        dna.propose_testament("Cooperation First".to_string(), 100, 7000)
+            .unwrap();
         for _ in 0..75 {
             dna.vote_testament(1).unwrap();
         }
@@ -776,20 +801,25 @@ mod tests {
     #[test]
     fn test_integrate_approved_testaments() {
         let mut dna = NoosphericDna::forge(GENESIS_HASH);
-        dna.propose_testament("Principle A".to_string(), 100, 8000).unwrap();
+        dna.propose_testament("Principle A".to_string(), 100, 8000)
+            .unwrap();
         for _ in 0..80 {
             dna.vote_testament(1).unwrap();
         }
         let integrated = dna.integrate_approved_testaments();
         assert_eq!(integrated, 1);
         assert_eq!(dna.integrated_principles.len(), 1);
-        assert_eq!(dna.testament_proposals[0].status, TestamentStatus::Integrated);
+        assert_eq!(
+            dna.testament_proposals[0].status,
+            TestamentStatus::Integrated
+        );
     }
 
     #[test]
     fn test_check_quorum() {
         let mut dna = NoosphericDna::forge(GENESIS_HASH);
-        dna.propose_testament("Test".to_string(), 100, 9000).unwrap();
+        dna.propose_testament("Test".to_string(), 100, 9000)
+            .unwrap();
         for _ in 0..50 {
             dna.vote_testament(1).unwrap();
         }
@@ -815,7 +845,10 @@ mod tests {
         let mut dna = NoosphericDna::forge(GENESIS_HASH);
         dna.seal();
         assert!(dna.sealed);
-        assert_eq!(dna.snapshot_field(EthicalFieldSnapshot::new(0.0, 0, 0.0, 0.0, 0)), Err(DnaError::ImmutableDna));
+        assert_eq!(
+            dna.snapshot_field(EthicalFieldSnapshot::new(0.0, 0, 0.0, 0.0, 0)),
+            Err(DnaError::ImmutableDna)
+        );
     }
 
     #[test]
@@ -870,7 +903,10 @@ mod tests {
 
     #[test]
     fn test_quorum_not_reached_display() {
-        let e = DnaError::QuorumNotReached { current: 0.5, required: 0.7 };
+        let e = DnaError::QuorumNotReached {
+            current: 0.5,
+            required: 0.7,
+        };
         let s = format!("{}", e);
         assert!(s.contains("0.50"));
         assert!(s.contains("0.70"));

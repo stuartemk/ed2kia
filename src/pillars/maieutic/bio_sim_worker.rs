@@ -209,9 +209,7 @@ impl BioSimWorker {
         // Verlet integration loop.
         for &byte in input.iter() {
             if iterations >= self.config.max_iterations {
-                return Err(SimError::MaxIterationsExceeded(
-                    self.config.max_iterations,
-                ));
+                return Err(SimError::MaxIterationsExceeded(self.config.max_iterations));
             }
 
             // Simulate particle position from input data.
@@ -265,17 +263,15 @@ impl BioSimWorker {
 
         for &byte in input.iter() {
             if iterations >= self.config.max_iterations {
-                return Err(SimError::MaxIterationsExceeded(
-                    self.config.max_iterations,
-                ));
+                return Err(SimError::MaxIterationsExceeded(self.config.max_iterations));
             }
 
             // Amino acid residue energy contribution.
             let residue_energy = match byte % 20 {
-                0..=4 => 0.8, // Hydrophobic
-                5..=9 => 0.5, // Polar
+                0..=4 => 0.8,   // Hydrophobic
+                5..=9 => 0.5,   // Polar
                 10..=14 => 0.3, // Charged
-                _ => 0.6, // Aromatic/other
+                _ => 0.6,       // Aromatic/other
             };
 
             // Temperature-scaled energy.
@@ -311,9 +307,7 @@ impl BioSimWorker {
 
         for &byte in input.iter() {
             if iterations >= self.config.max_iterations {
-                return Err(SimError::MaxIterationsExceeded(
-                    self.config.max_iterations,
-                ));
+                return Err(SimError::MaxIterationsExceeded(self.config.max_iterations));
             }
 
             // Simulate CpG site methylation level.
@@ -351,9 +345,7 @@ impl BioSimWorker {
 
         for &byte in input.iter() {
             if iterations >= self.config.max_iterations {
-                return Err(SimError::MaxIterationsExceeded(
-                    self.config.max_iterations,
-                ));
+                return Err(SimError::MaxIterationsExceeded(self.config.max_iterations));
             }
 
             let temp_anomaly = (byte as f64 - 128.0) / 128.0;
@@ -386,9 +378,7 @@ impl BioSimWorker {
 
         for &byte in input.iter() {
             if iterations >= self.config.max_iterations {
-                return Err(SimError::MaxIterationsExceeded(
-                    self.config.max_iterations,
-                ));
+                return Err(SimError::MaxIterationsExceeded(self.config.max_iterations));
             }
 
             let lattice_param = byte as f64 / 255.0;
@@ -421,9 +411,7 @@ impl BioSimWorker {
 
         for &byte in input.iter() {
             if iterations >= self.config.max_iterations {
-                return Err(SimError::MaxIterationsExceeded(
-                    self.config.max_iterations,
-                ));
+                return Err(SimError::MaxIterationsExceeded(self.config.max_iterations));
             }
 
             energy += (byte as f64 / 255.0) * self.config.precision;
@@ -532,8 +520,8 @@ mod tests {
 
     #[test]
     fn test_max_iterations_exceeded() {
-        let config = SimConfig::new(Domain::MolecularDynamics, "w".to_string())
-            .with_max_iterations(2);
+        let config =
+            SimConfig::new(Domain::MolecularDynamics, "w".to_string()).with_max_iterations(2);
         let mut worker = BioSimWorker::new(config).unwrap();
         // Input longer than max_iterations should trigger the limit.
         let result = worker.execute(&[100, 150, 200, 250, 50]);
@@ -550,16 +538,14 @@ mod tests {
 
     #[test]
     fn test_invalid_precision() {
-        let config = SimConfig::new(Domain::Epigenetics, "w".to_string())
-            .with_precision(0.0);
+        let config = SimConfig::new(Domain::Epigenetics, "w".to_string()).with_precision(0.0);
         let result = BioSimWorker::new(config);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_invalid_max_iterations() {
-        let config = SimConfig::new(Domain::Epigenetics, "w".to_string())
-            .with_max_iterations(0);
+        let config = SimConfig::new(Domain::Epigenetics, "w".to_string()).with_max_iterations(0);
         let result = BioSimWorker::new(config);
         assert!(result.is_err());
     }
