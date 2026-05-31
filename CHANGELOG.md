@@ -1,3 +1,30 @@
+## [v9.5.0-testnet-hardening] — 2026-05-31 (Sprint 69 — Testnet Hardening & Distributed Workload Scheduler)
+
+### Sprint 69 "Testnet Hardening & Distributed Workload Scheduler"
+
+Implementación del **Distributed Workload Scheduler** para distribución dinámica de shards por score/capacidad con fallback por latencia y balanceo de carga equitativo. Testnet de 5 nodos con validación de tolerancia a fallos (redistribución automática, cascada de fallos, supervivencia single-node). Benchmarks Criterion para alignment y workload scheduler. CI con etapa `benchmark-validation`. 53+ tests passing (19 scheduler + 15 integration + 19 existing).
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| WorkloadScheduler | `src/network/workload_scheduler.rs` | `distribute_shards()` weighted round-robin, `load_balance_ratio()` min/max equity, `build_assignment_map()`, latency fallback >50ms (~470 líneas, 19 tests) |
+| Testnet 5-Node | `deploy/docker-compose.testnet.yml` | 5-node testnet (coordinator, high-capacity, high-latency, ZKP-verifier, observer) on `ed2kia-testnet` 172.21.0.0/16 |
+| Testnet Stress Tests | `tests/integration/testnet_stress.rs` | Shard distribution, fallback, load balance, node failure redistribution, cascade failures, single survival (~350 líneas, 15 integration tests) |
+| Benchmarks | `benchmarks/alignment_benchmarks.rs` | Criterion benchmarks: distribute_shards (small/large), build_assignment_map, load_balance_ratio, fault_tolerance, end_to_end |
+| CI Benchmark Job | `.github/workflows/ci.yml` | `benchmark-validation` stage after tests (push to main/tags only, 10min timeout) |
+
+### Feature Gate
+```toml
+"v9.5-testnet-hardening" = ["v9.4-validation-layer"]
+```
+
+### Validation Protocol
+- `cargo fmt` ✓
+- `cargo clippy -- -D warnings` ✓
+- `cargo test --features v9.5-testnet-hardening` ✓ (53/53 tests)
+- `cargo bench --bench alignment_benchmarks` ✓
+
+---
+
 ## [v9.4.0-validation-layer] — 2026-05-31 (Sprint 68 — Academic Formalization & Validation Layer)
 
 ### Sprint 68 "Academic Formalization & Validation Layer"

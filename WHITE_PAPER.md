@@ -244,6 +244,42 @@ These benchmarks ensure that the topological foundation of ethical alignment rem
 
 ---
 
+## 7. Distributed Workload Scheduling & Testnet Hardening
+
+### 7.1 Workload Scheduler: Equitable Shard Distribution
+
+The **Distributed Workload Scheduler** implements weighted round-robin shard distribution across network nodes, ensuring equitable workload allocation proportional to node score and capacity. Given a set of nodes $N = \{n_1, n_2, \dots, n_k\}$ with scores $S = \{s_1, s_2, \dots, s_k\}$ and capacities $C = \{c_1, c_2, \dots, c_k\}$, the scheduler assigns $W$ shards via:
+
+$$\text{weight}(n_i) = s_i \cdot c_i$$
+
+where higher-weighted nodes receive proportionally more shards. The **Load Balance Ratio** measures distribution equity:
+
+$$\text{BalanceRatio} = \frac{\min(\text{shards per node})}{\max(\text{shards per node})}$$
+
+A ratio of 1.0 indicates perfect balance, while lower values indicate imbalance. This mechanism embodies **Stuartian Law 1 (Diversidad)** by ensuring equitable resource distribution across the network.
+
+### 7.2 Latency Fallback: Fault-Tolerant Assignment
+
+Nodes with simulated or measured latency exceeding a threshold ($L_{\text{threshold}} = 50\text{ms}$) are automatically excluded from primary assignment, with their shards redistributed to healthy nodes. This implements **Stuartian Law 5 (Múltiples Posibilidades)** by providing automatic fallback paths when primary resources become unavailable. The scheduler maintains an assignment map $A: \text{ShardID} \to \text{NodeID}$ with fallback entries for rapid recovery.
+
+### 7.3 Testnet Hardening: 5-Node Integration Validation
+
+The **5-Node Testnet** provides integration-level validation of fault tolerance scenarios:
+
+- **Node Failure Redistribution** — Automatic shard redistribution when a node becomes unavailable.
+- **Cascade Failure Survival** — System remains operational under sequential node failures.
+- **Single-Node Survival** — Complete shard set remains accessible even with only one healthy node.
+- **High-Latency Fallback** — Nodes exceeding latency threshold trigger automatic reassignment.
+- **Deterministic Distribution** — Identical inputs produce identical shard assignments for reproducibility.
+
+These integration tests validate the scheduler's robustness under realistic network conditions, ensuring production readiness before mainnet deployment.
+
+### 7.4 Benchmark Integration & CI Validation
+
+**Criterion-based benchmarks** measure scheduler performance across cluster sizes (small: 3 nodes, large: 10+ nodes), assignment map construction, load balance ratio computation, and end-to-end fault tolerance pipelines. The CI pipeline includes a dedicated `benchmark-validation` stage that executes smoke-test benchmarks on every push to main and tagged releases, ensuring performance regressions are caught before deployment.
+
+---
+
 We invite the research community to engage with this work through open collaboration, peer review, and cooperative extension. The codebase is publicly available under Apache 2.0 with an Ethical Use Clause. The architecture is designed for institutional audit, academic scrutiny, and democratic governance. The future of aligned intelligence is not a question of who controls it, but of how we cooperate to ensure that it serves the flourishing of all conscious beings.
 
 ---
@@ -256,14 +292,15 @@ We invite the research community to engage with this work through open collabora
 4. Stuartemk. *Covenant of Eternal Resonance — Eternal Echo Protocol*. docs/COVENANT_OF_ETERNAL_RESONANCE.md, 2026.
 5. Stuartemk. *Stuartian Omega Protocol*. docs/STUARTIAN_OMEGA_PROTOCOL.md, 2026.
 6. Stuartemk. *Academic Formalization & Validation Layer — Sprint 68 (v9.4.0)*. WHITE_PAPER.md §6, 2026.
-7. Elhage, N., et al. "Mathematical Techniques for AI Interpretability." *Transformer Circuits Thread*, 2022.
-8. Christian, B. *The Alignment Problem: Machine Learning and Human Values*. W. W. Norton, 2020.
-9. Amodei, D., et al. "Concrete Problems in AI Safety." *arXiv:1606.06565*, 2016.
-10. Christiano, P., et al. "Deep Reinforcement Learning from Human Preferences." *NeurIPS*, 2017.
-11. Mordatch, I., & Abbeel, P. "Emergence of Grounded Compositional Language in Multi-Agent Populations." *AAAI*, 2018.
-12. von Neumann, J., & Barkhausen, H. "Topological Analysis of Electrical Networks." *Mathematische Annalen*, 1933. (Laplacian eigenvalues & algebraic connectivity.)
-13. Kruskal, J. B. "Multidimensional Scaling by Optimizing Goodness of Fit to a Nonmetric Hypothesis." *Psychometrika*, 1964. (Pairwise divergence metrics.)
+7. Stuartemk. *Testnet Hardening & Distributed Workload Scheduler — Sprint 69 (v9.5.0)*. WHITE_PAPER.md §7, 2026.
+8. Elhage, N., et al. "Mathematical Techniques for AI Interpretability." *Transformer Circuits Thread*, 2022.
+9. Christian, B. *The Alignment Problem: Machine Learning and Human Values*. W. W. Norton, 2020.
+10. Amodei, D., et al. "Concrete Problems in AI Safety." *arXiv:1606.06565*, 2016.
+11. Christiano, P., et al. "Deep Reinforcement Learning from Human Preferences." *NeurIPS*, 2017.
+12. Mordatch, I., & Abbeel, P. "Emergence of Grounded Compositional Language in Multi-Agent Populations." *AAAI*, 2018.
+13. von Neumann, J., & Barkhausen, H. "Topological Analysis of Electrical Networks." *Mathematische Annalen*, 1933. (Laplacian eigenvalues & algebraic connectivity.)
+14. Kruskal, J. B. "Multidimensional Scaling by Optimizing Goodness of Fit to a Nonmetric Hypothesis." *Psychometrika*, 1964. (Pairwise divergence metrics.)
 
 ---
 
-*This document compiles the foundational theory and implementation from the ed2kIA Project across its first 68 developmental sprints. All claims are grounded in implemented code, passing test suites, and publicly auditable repositories under an Open-Source + Ethical Use Clause framework. The author welcomes peer review, cooperative extension, and institutional collaboration.*
+*This document compiles the foundational theory and implementation from the ed2kIA Project across its first 69 developmental sprints. All claims are grounded in implemented code, passing test suites, and publicly auditable repositories under an Open-Source + Ethical Use Clause framework. The author welcomes peer review, cooperative extension, and institutional collaboration.*

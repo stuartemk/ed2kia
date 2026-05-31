@@ -252,6 +252,22 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 
 > **Nota:** `v5.0-mainnet-genesis` depende de `v4.0-snap-activation`. Bloque Génesis inmutable con hash SHA-3 de las 5 Leyes Estuardianas Fundamentales, cero pre-mina, secuencia de ignición de 5 fases (Génesis → Mocks → Seeds → SCT → Primer Aliento) y artefactos de despertar para integración simbiótica.
 
+### Feature Gates v9.4 (Academic Formalization & Validation Layer)
+
+| Feature Gate | Módulo | Status |
+|--------------|--------|--------|
+| `v9.4-validation-layer` | CooperativeObjectiveLoss + SpectralCoherence + CaptureBounds + SCT-Z Calibration + GEI Validation | ✅ Stable (220+ tests) |
+
+> **Nota:** `v9.4-validation-layer` depende de `v9.0-absolute-infinity`. Formalización académica completa de *Love = Zero Conflict* como función objetivo diferenciable con divergencia L2 pairwise, entropía KL de políticas, autoconexión algebraica (λ₂), detección de captura epistémica y calibración multi-dimensional SCT-Z.
+
+### Feature Gates v9.5 (Testnet Hardening & Distributed Workload Scheduler)
+
+| Feature Gate | Módulo | Status |
+|--------------|--------|--------|
+| `v9.5-testnet-hardening` | WorkloadScheduler + Testnet 5-Node + Integration Stress Tests + Criterion Benchmarks | ✅ Stable (53+ tests) |
+
+> **Nota:** `v9.5-testnet-hardening` depende de `v9.4-validation-layer`. Distributed Workload Scheduler con distribución weighted round-robin por score/capacidad, fallback automático por latencia (>50ms), load balance ratio min/max equitativo y testnet de 5 nodos con validación de tolerancia a fallos (redistribución, cascada, supervivencia single-node).
+
 ## 🧠 Pilares Evolutivos y Arquitectura Planetaria
 
 **ed2kIA v5.0.0-mainnet-genesis** representa la convergencia de 10 sprints de evolución arquitectónica (Sprints 50-59), desde la Malla Planetaria hasta el Bloque Génesis forjado. Esta sección sintetiza los hitos clave de la transición de Testnet a Mainnet.

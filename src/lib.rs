@@ -26,7 +26,7 @@
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Sprint identifier for build tracking
-pub const SPRINT_IDENTIFIER: &str = "v9.4.0-sprint68";
+pub const SPRINT_IDENTIFIER: &str = "v9.5.0-sprint69";
 
 // ============================================================================
 // Fase 1: Core Modules (P2P, SAE, Bridge)

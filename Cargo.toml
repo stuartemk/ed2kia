@@ -815,6 +815,10 @@ test-mocks = []
 # tests/benchmarks/gei_validation.rs: GEI topological validation — Vietoris-Rips β₀, β₁
 "v9.4-validation-layer" = ["v9.0-absolute-infinity"]
 
+# Sprint 69: Testnet Hardening & Distributed Alignment Workloads (v9.5.0)
+# src/network/workload_scheduler.rs: Dynamic shard distribution, latency fallback, load balance ratio
+"v9.5-testnet-hardening" = ["v9.4-validation-layer"]
+
 # Sprint 50 Test: Moral Manifold Behavior
 [[test]]
 name = "moral_manifold_behavior"
@@ -844,6 +848,12 @@ required-features = ["v3.5-planetary-emergence"]
 name = "symbiotic_aegis_e2e"
 path = "tests/symbiotic_aegis_e2e.rs"
 required-features = ["v3.6-aegis-resonance"]
+
+# Sprint 69: Testnet Stress Tests — Fault tolerance, shard redistribution, workload scheduler
+[[test]]
+name = "testnet_stress"
+path = "tests/integration/testnet_stress.rs"
+required-features = ["v9.5-testnet-hardening"]
 
 # Sprint 43: Corpuscular Bridge Implementation & IoT/CE Exchange Protocol
 # src/pillars/corpuscular/iot_adapter.rs: LocalHardwareAdapter — LOCAL_ONLY device registry
@@ -1206,3 +1216,9 @@ required-features = ["v3.8-morphic-genesis"]
 name = "noosphere_emergence_e2e"
 path = "tests/noosphere_emergence_e2e.rs"
 required-features = ["v3.9-noosphere-engine"]
+
+# Sprint 69: Alignment & Workload Scheduler Benchmarks
+[[bench]]
+name = "alignment_benchmarks"
+path = "benchmarks/alignment_benchmarks.rs"
+harness = false

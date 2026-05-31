@@ -62,3 +62,12 @@ pub use spectral_coherence::{
     algebraic_connectivity, compute_spectral_coherence, cross_correlation, pearson_correlation,
     sync_rate, SpectralCoherenceResult,
 };
+
+#[cfg(feature = "v9.5-testnet-hardening")]
+pub mod workload_scheduler;
+
+#[cfg(feature = "v9.5-testnet-hardening")]
+pub use workload_scheduler::{
+    build_assignment_map, distribute_shards, load_balance_ratio, NodeTier, SchedulerState,
+    ShardAssignment, LATENCY_THRESHOLD_MS,
+};
