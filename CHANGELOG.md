@@ -1,3 +1,30 @@
+## [v9.9.0-pragmatic-pivot] — 2026-06-01 (Sprint 73 — Pragmatic Pivot & Asymptotic Hardening)
+
+### Sprint 73 "Pragmatic Pivot & Asymptotic Hardening"
+
+Respuesta arquitectónica a 5 críticas fundamentales de revisión externa: **Lightweight GEI Proxy** (Betti-1 suave con muestreo estratificado O(n log n), proxy topológico ligero para WASM), **Tiered Verification** (Merkle-DAG + Ed25519 en Edge, SNARK batch en Core/Prover Nodes), **Speculative Symbolic Filter** (decodificación especulativa + filtro simbólico asíncrono post-hoc con fallback autorregresivo en TTFT timeout), **Sybil-Hardened CE** (PoUW anclado a hash SAE + decaimiento exponencial + vouching + diversidad Shannon), **Topology-Ethics Reframe** (GEI como proxy de anomalía/estabilidad estructural, no oráculo moral, con guardrails SCT-Z) y **Graceful Apoptosis** (cuarentena acotada en ventanas temporales, reintegración ε-tolerante, prevención de cascada). 110 tests passing.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| Lightweight GEI Proxy | `src/topology/lightweight_gei_proxy.rs` | Soft Betti-1 with stratified sampling, Union-Find Vietoris-Rips, surrogate gradients (~550 líneas, 22 tests) |
+| Tiered Verification | `src/crypto/tiered_verification.rs` | Edge (Merkle/Ed25519) vs Core (SNARK batch) verification tiers, proof depth validation (~590 líneas, 24 tests) |
+| Speculative Symbolic Filter | `src/inference/speculative_symbolic_filter.rs` | Async post-hoc symbolic filter, speculative decoding, GEI alignment, autoregressive fallback (~630 líneas, 21 tests) |
+| Sybil-Hardened CE | `src/consensus/sybil_hardened_ce.rs` | PoUW + exponential CE decay + Shannon diversity + vouching + BFT ε-tolerant consensus (~665 líneas, 22 tests) |
+| Topology-Ethics Reframe | `src/alignment/topology_ethics_reframe.rs` | GEI as anomaly proxy, SCT-Z calibration, benchmark deviation tracking, guardrail system (~530 líneas, 21 tests) |
+| Graceful Apoptosis | `src/network/graceful_apoptosis.rs` | Bounded quarantine windows, ε-tolerant reintegration, cascade prevention, state machine (~710 líneas, 20 tests) |
+
+### Feature Gate
+```toml
+"v9.9-pragmatic-pivot" = ["v9.8-asymptotic-hardening"]
+```
+
+### Validation Protocol
+- `cargo fmt` ✓
+- `cargo check --features v9.9-pragmatic-pivot` ✓
+- `cargo test --features v9.9-pragmatic-pivot --lib` ✓ (110/110 tests across 6 modules)
+
+---
+
 ## [v9.8.0-asymptotic-hardening] — 2026-06-01 (Sprint 72 — Asymptotic Optimization & Hard Sybil Resistance)
 
 ### Sprint 72 "Asymptotic Optimization & Hard Sybil Resistance"

@@ -1,6 +1,6 @@
 [package]
 name = "ed2kia"
-version = "9.8.0-sprint72"
+version = "9.9.0-sprint73"
 edition = "2021"
 description = "Descentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
 license = "Apache-2.0"
@@ -844,6 +844,15 @@ test-mocks = []
 # src/consensus/sybil_resistance.rs: Proof-of-Useful-Work + CE decay + diversity weighting, BFT ε-tolerant
 # src/inference/streaming_symbolic_filter.rs: Async rejection sampling, priority queue, autoregressive fallback
 "v9.8-asymptotic-hardening" = ["v9.7-bootstrap-resilience"]
+
+# Sprint 73: Pragmatic Pivot & Asymptotic Hardening (v9.9.0)
+# src/topology/lightweight_gei_proxy.rs: GEI proxy via soft Betti + stratified sampling, O(n log n), no heavy ZKP on Edge
+# src/crypto/tiered_verification.rs: Tiered verification — Edge (Merkle/Ed25519) vs Core (SNARKs batch)
+# src/inference/speculative_symbolic_filter.rs: Async post-hoc symbolic filter + speculative decoding + autoregressive fallback
+# src/consensus/sybil_hardened_ce.rs: PoUW + exponential CE decay + diversity weighting + vouching layer
+# src/alignment/topology_ethics_reframe.rs: GEI reframed as anomaly/stability proxy, ethics via explicit guardrails + SCT-Z
+# src/network/graceful_apoptosis.rs: Bounded quarantine windows, ε-tolerant reintegration, cascade prevention
+"v9.9-pragmatic-pivot" = ["v9.8-asymptotic-hardening"]
 
 # Sprint 50 Test: Moral Manifold Behavior
 [[test]]

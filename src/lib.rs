@@ -26,7 +26,7 @@
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Sprint identifier for build tracking
-pub const SPRINT_IDENTIFIER: &str = "v9.8.0-sprint72";
+pub const SPRINT_IDENTIFIER: &str = "v9.9.0-sprint73";
 
 // ============================================================================
 // Fase 1: Core Modules (P2P, SAE, Bridge)
@@ -788,6 +788,40 @@ pub mod tiered_execution;
 #[cfg(feature = "v9.8-asymptotic-hardening")]
 #[path = "inference/streaming_symbolic_filter.rs"]
 pub mod streaming_symbolic_filter;
+
+// ============================================================================
+// Sprint 73: Pragmatic Pivot & Asymptotic Hardening (v9.9.0)
+// ============================================================================
+
+/// Lightweight GEI Proxy — Soft Betti + stratified sampling, O(n log n) (Sprint73)
+#[cfg(feature = "v9.9-pragmatic-pivot")]
+#[path = "topology/lightweight_gei_proxy.rs"]
+pub mod lightweight_gei_proxy;
+
+/// Tiered Verification — Edge (Merkle/Ed25519) vs Core (SNARKs batch) (Sprint73)
+#[cfg(feature = "v9.9-pragmatic-pivot")]
+#[path = "crypto/tiered_verification.rs"]
+pub mod tiered_verification;
+
+/// Speculative Symbolic Filter — Async post-hoc + autoregressive fallback (Sprint73)
+#[cfg(feature = "v9.9-pragmatic-pivot")]
+#[path = "inference/speculative_symbolic_filter.rs"]
+pub mod speculative_symbolic_filter;
+
+/// Sybil-Hardened CE — PoUW + decay + diversity + vouching (Sprint73)
+#[cfg(feature = "v9.9-pragmatic-pivot")]
+#[path = "consensus/sybil_hardened_ce.rs"]
+pub mod sybil_hardened_ce;
+
+/// Topology-Ethics Reframe — GEI as anomaly proxy, ethics via guardrails (Sprint73)
+#[cfg(feature = "v9.9-pragmatic-pivot")]
+#[path = "alignment/topology_ethics_reframe.rs"]
+pub mod topology_ethics_reframe;
+
+/// Graceful Apoptosis — Bounded quarantine, ε-reintegration, cascade prevention (Sprint73)
+#[cfg(feature = "v9.9-pragmatic-pivot")]
+#[path = "network/graceful_apoptosis.rs"]
+pub mod graceful_apoptosis;
 
 /// Async Gossip with CRDTs — Partition-tolerant GossipSub mesh (Sprint16.4)
 #[cfg(any(
