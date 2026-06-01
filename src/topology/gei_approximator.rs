@@ -127,8 +127,7 @@ impl Default for ApproxConfig {
 // ============================================================================
 
 /// Record of a single GEI approximation result.
-#[derive(Debug, Clone)]
-#[derive(PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ApproxRecord {
     /// Approximated β₁ (number of 1D holes).
     pub betti_1: u32,

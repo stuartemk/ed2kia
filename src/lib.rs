@@ -26,7 +26,7 @@
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Sprint identifier for build tracking
-pub const SPRINT_IDENTIFIER: &str = "v9.7.0-sprint71";
+pub const SPRINT_IDENTIFIER: &str = "v9.8.0-sprint72";
 
 // ============================================================================
 // Fase 1: Core Modules (P2P, SAE, Bridge)
@@ -220,6 +220,11 @@ pub mod consensus {
     #[cfg(feature = "v9.7-bootstrap-resilience")]
     #[path = "../consensus/bootstrap_consensus.rs"]
     pub mod bootstrap_consensus;
+
+    // ─── Sprint72: Sybil Resistance (PoUW + CE decay + diversity, BFT ε-tolerant) ───
+    #[cfg(feature = "v9.8-asymptotic-hardening")]
+    #[path = "../consensus/sybil_resistance.rs"]
+    pub mod sybil_resistance;
 }
 
 // ============================================================================
@@ -630,13 +635,18 @@ pub mod alignment {
     pub mod attractor_basin;
     #[cfg(feature = "v3.3-rssi-evolution")]
     pub mod rssi_engine;
+
+    // ─── Sprint72: Topology-Ethics Mapping (GEI as structural stability proxy) ───
+    #[cfg(feature = "v9.8-asymptotic-hardening")]
+    pub mod topology_ethics_mapping;
 }
 
 /// Topological Fingerprinting — Persistent Homology for GEI (Sprint49) + Deception Detection (Sprint51)
 #[cfg(any(
     feature = "v3.1-gei-topology",
     feature = "v3.3-rssi-evolution",
-    feature = "v9.7-bootstrap-resilience"
+    feature = "v9.7-bootstrap-resilience",
+    feature = "v9.8-asymptotic-hardening"
 ))]
 pub mod topology {
     #[cfg(feature = "v3.1-gei-topology")]
@@ -657,6 +667,11 @@ pub mod topology {
     #[cfg(feature = "v9.7-bootstrap-resilience")]
     #[path = "../topology/gei_approximator.rs"]
     pub mod gei_approximator;
+
+    // ─── Sprint72: Differentiable GEI (soft Betti, surrogate gradients, O(n log n)) ───
+    #[cfg(feature = "v9.8-asymptotic-hardening")]
+    #[path = "../topology/differentiable_gei.rs"]
+    pub mod differentiable_gei;
 }
 
 /// Stuartian Moral Manifold — Trajectory-based Ethical Evaluation (Sprint50)
@@ -758,6 +773,21 @@ pub mod intelligence;
     feature = "v3.8-morphic-genesis"
 ))]
 pub mod portal;
+
+/// Lightweight Crypto Verification — Merkle-DAG + Ed25519 (Sprint72)
+#[cfg(feature = "v9.8-asymptotic-hardening")]
+#[path = "crypto/lightweight_verification.rs"]
+pub mod lightweight_verification;
+
+/// Tiered Hardware Execution — WASM tiering, memory pooling, quantization (Sprint72)
+#[cfg(feature = "v9.8-asymptotic-hardening")]
+#[path = "hardware/tiered_execution.rs"]
+pub mod tiered_execution;
+
+/// Streaming Symbolic Filter — Async rejection sampling, priority queue (Sprint72)
+#[cfg(feature = "v9.8-asymptotic-hardening")]
+#[path = "inference/streaming_symbolic_filter.rs"]
+pub mod streaming_symbolic_filter;
 
 /// Async Gossip with CRDTs — Partition-tolerant GossipSub mesh (Sprint16.4)
 #[cfg(any(

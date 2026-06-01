@@ -225,8 +225,7 @@ impl fmt::Display for TrustGraph {
 }
 
 /// Record of a successful bootstrap validation.
-#[derive(Debug, Clone)]
-#[derive(PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct BootstrapRecord {
     pub node_id: u64,
     pub pow_nonce: u64,

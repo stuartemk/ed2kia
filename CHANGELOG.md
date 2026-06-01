@@ -1,3 +1,30 @@
+## [v9.8.0-asymptotic-hardening] — 2026-06-01 (Sprint 72 — Asymptotic Optimization & Hard Sybil Resistance)
+
+### Sprint 72 "Asymptotic Optimization & Hard Sybil Resistance"
+
+Optimización asintótica y resistencia Sybil hard para producción a escala planetaria: **Differentiable GEI Proxy** (suavizado Betti-1 con gradientes sustitutos, O(n log n)), **Lightweight Verification** (Merkle-DAG + Ed25519 para reemplazar ZKP pesado), **Topology-Ethics Mapping** (GEI como proxy de estabilidad estructural, no oráculo moral), **Tiered Execution** (WASM tiering Edge vs Core, memory pooling, cuantización INT4/FP8), **Sybil Resistance** (Proof-of-Useful-Work + decaimiento CE + ponderación diversidad, BFT ε-tolerante) y **Streaming Symbolic Filter** (muestreo rechazo asíncrono, cola prioridad, fallback autorregresivo). 231 tests passing.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| Differentiable GEI | `src/topology/differentiable_gei.rs` | Soft Betti-1 proxy, surrogate gradients, O(n log n) complexity (~540 líneas, 23 tests) |
+| Lightweight Verification | `src/crypto/lightweight_verification.rs` | Merkle-DAG + Ed25519 verification, DAG pruning, hash variants (~1000 líneas, 45 tests) |
+| Topology-Ethics Mapping | `src/alignment/topology_ethics_mapping.rs` | GEI as structural stability proxy, drift detection, ethical authorization (~950 líneas, 55 tests) |
+| Tiered Execution | `src/hardware/tiered_execution.rs` | WASM tiering (Edge/Core/Hybrid), memory pooling, INT4/FP8/Fp16/Fp32 quantization (~980 líneas, 54 tests) |
+| Sybil Resistance | `src/consensus/sybil_resistance.rs` | Proof-of-Useful-Work, CE decay, Shannon diversity entropy, BFT ε-tolerant (~1145 líneas, 54 tests) |
+| Streaming Symbolic Filter | `src/inference/streaming_symbolic_filter.rs` | Async rejection sampling, priority queue, GEI alignment, autoregressive fallback (~1028 líneas, 50 tests) |
+
+### Feature Gate
+```toml
+"v9.8-asymptotic-hardening" = ["v9.7-bootstrap-resilience"]
+```
+
+### Validation Protocol
+- `cargo fmt` ✓
+- `cargo check --features v9.8-asymptotic-hardening` ✓
+- `cargo test --features v9.8-asymptotic-hardening --lib` ✓ (231/231 tests)
+
+---
+
 ## [v9.7.0-bootstrap-resilience] — 2026-06-01 (Sprint 71 — Global Bootstrap & Critical Bottleneck Resolution)
 
 ### Sprint 71 "Global Bootstrap & Critical Bottleneck Resolution"

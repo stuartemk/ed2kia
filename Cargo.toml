@@ -1,6 +1,6 @@
 [package]
 name = "ed2kia"
-version = "9.4.0-sprint68"
+version = "9.8.0-sprint72"
 edition = "2021"
 description = "Descentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
 license = "Apache-2.0"
@@ -835,6 +835,15 @@ test-mocks = []
 # src/bridge/iot_microkernel.rs: IoT microkernel with watchdog, last-GEI cache, async→sync bridge
 # src/network/global_bootstrap.rs: Stealth ignition, seed rotation, geo-diversity, Sybil detection
 "v9.7-bootstrap-resilience" = ["v9.6-civilization-scale"]
+
+# Sprint 72: Asymptotic Optimization & Hard Sybil Resistance (v9.8.0)
+# src/topology/differentiable_gei.rs: Differentiable GEI proxy (soft Betti, surrogate gradients, O(n log n))
+# src/crypto/lightweight_verification.rs: Merkle-DAG + Ed25519 lightweight verification (replace heavy ZKP)
+# src/alignment/topology_ethics_mapping.rs: GEI as structural stability proxy, not moral oracle
+# src/hardware/tiered_execution.rs: WASM tiering (Edge vs Core), memory pooling, INT4/FP8 quantization
+# src/consensus/sybil_resistance.rs: Proof-of-Useful-Work + CE decay + diversity weighting, BFT ε-tolerant
+# src/inference/streaming_symbolic_filter.rs: Async rejection sampling, priority queue, autoregressive fallback
+"v9.8-asymptotic-hardening" = ["v9.7-bootstrap-resilience"]
 
 # Sprint 50 Test: Moral Manifold Behavior
 [[test]]
