@@ -294,10 +294,9 @@ impl GracefulApoptosis {
                 ),
                 "quarantine_evaluation".to_string(),
             ),
-            ApoptosisState::Apoptosing => (
-                ApoptosisState::Removed,
-                "apoptosis_complete".to_string(),
-            ),
+            ApoptosisState::Apoptosing => {
+                (ApoptosisState::Removed, "apoptosis_complete".to_string())
+            }
             ApoptosisState::Reintegrating => (
                 Self::evaluate_reintegrating_values(
                     &self.config,
@@ -386,8 +385,8 @@ impl GracefulApoptosis {
     ) -> ApoptosisState {
         // ε-tolerant consensus for reintegration
         let required_votes = if neighbor_count >= config.min_reintegration_neighbors {
-            let threshold = neighbor_count as f64
-                * (2.0 / 3.0 * (1.0 - config.reintegration_epsilon));
+            let threshold =
+                neighbor_count as f64 * (2.0 / 3.0 * (1.0 - config.reintegration_epsilon));
             threshold as usize
         } else {
             neighbor_count

@@ -173,7 +173,11 @@ pub struct FilterResult {
 
 impl fmt::Display for FilterResult {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let token_id = self.accepted_token.as_ref().map(|t| t.token_id).unwrap_or(0);
+        let token_id = self
+            .accepted_token
+            .as_ref()
+            .map(|t| t.token_id)
+            .unwrap_or(0);
         write!(
             f,
             "FilterResult {{ token: {}, fallback: {}, rejections: {}, ms: {} }}",

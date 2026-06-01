@@ -273,12 +273,8 @@ impl SybilHardenedCe {
             HardenedNodeState::new(proof.node_id, geo_region.clone(), semantic_fingerprint)
         });
 
-        node.ce_score = Self::compute_ce_score(
-            &proof,
-            diversity,
-            vouches,
-            &self.config.score_weights,
-        );
+        node.ce_score =
+            Self::compute_ce_score(&proof, diversity, vouches, &self.config.score_weights);
         node.vouches = vouches;
         node.last_update_ms = current_ms;
 

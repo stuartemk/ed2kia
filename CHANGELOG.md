@@ -1,3 +1,29 @@
+## [v9.10.0-distributed-hardening] — 2026-06-01 (Sprint 74 — Distributed Systems Hardening & Second-Order Resolution)
+
+### Sprint 74 "Distributed Systems Hardening & Second-Order Resolution"
+
+Respuesta arquitectónica a 4 críticas fundamentales de Google AI sobre sistemas distribuidos: **Data Availability Sampling** (verificación probabilística O(log n) con muestreo estratificado por capas de norma, sin descargar DAG completo), **KZG State Pruning** (compromisos polinomiales KZG con verificación O(1) para pruning criptográfico de estado expirado), **Collaborative SNARK Generation** (particionamiento de circuitos + agregación umbral t-of-k para descentralizar generación de pruebas), **Speculative Decoding** (decodificación especulativa con validación topológica paralela para TTFT competitivo) y **Topological Reconciliation** (CRDT + fusión ponderada CE para reconciliación post-partición asíncrona sin split-brain). 97 tests passing.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| DAS Sampler | `src/ledger/das_sampler.rs` | Stratified Data Availability Sampling, O(log n) verification, confidence estimation (~430 líneas, 24 tests) |
+| KZG State Pruning | `src/ledger/kzg_state_pruning.rs` | KZG polynomial commitments, O(1) verification, cryptographic state pruning (~430 líneas, 22 tests) |
+| Collaborative SNARK | `src/crypto/collaborative_snark.rs` | Circuit partitioning, threshold aggregation (t-of-k), distributed proving (~480 líneas, 18 tests) |
+| Speculative Decoder | `src/inference/speculative_decoder.rs` | Parallel topological validation, competitive TTFT, GEI alignment (~480 líneas, 18 tests) |
+| Topological Reconciliation | `src/network/topological_reconciliation.rs` | CRDT-based post-partition reconciliation, CE-weighted fusion, divergence detection (~530 líneas, 15 tests) |
+
+### Feature Gate
+```toml
+"v9.10-distributed-hardening" = ["v9.9-pragmatic-pivot"]
+```
+
+### Validation Protocol
+- `cargo fmt` ✓
+- `cargo check --features v9.10-distributed-hardening` ✓
+- `cargo test --features v9.10-distributed-hardening --lib` ✓ (97/97 tests across 5 modules)
+
+---
+
 ## [v9.9.0-pragmatic-pivot] — 2026-06-01 (Sprint 73 — Pragmatic Pivot & Asymptotic Hardening)
 
 ### Sprint 73 "Pragmatic Pivot & Asymptotic Hardening"

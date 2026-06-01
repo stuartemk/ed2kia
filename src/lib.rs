@@ -26,7 +26,7 @@
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Sprint identifier for build tracking
-pub const SPRINT_IDENTIFIER: &str = "v9.9.0-sprint73";
+pub const SPRINT_IDENTIFIER: &str = "v9.10.0-sprint74";
 
 // ============================================================================
 // Fase 1: Core Modules (P2P, SAE, Bridge)
@@ -822,6 +822,31 @@ pub mod topology_ethics_reframe;
 #[cfg(feature = "v9.9-pragmatic-pivot")]
 #[path = "network/graceful_apoptosis.rs"]
 pub mod graceful_apoptosis;
+
+/// Data Availability Sampling (DAS) — Probabilistic verification O(log n) (Sprint74)
+#[cfg(feature = "v9.10-distributed-hardening")]
+#[path = "ledger/das_sampler.rs"]
+pub mod das_sampler;
+
+/// KZG State Pruning — Polynomial commitments for cryptographic pruning (Sprint74)
+#[cfg(feature = "v9.10-distributed-hardening")]
+#[path = "ledger/kzg_state_pruning.rs"]
+pub mod kzg_state_pruning;
+
+/// Collaborative SNARK Generation — Circuit partitioning + threshold aggregation (Sprint74)
+#[cfg(feature = "v9.10-distributed-hardening")]
+#[path = "crypto/collaborative_snark.rs"]
+pub mod collaborative_snark;
+
+/// Speculative Decoding — Parallel topological validation for competitive TTFT (Sprint74)
+#[cfg(feature = "v9.10-distributed-hardening")]
+#[path = "inference/speculative_decoder.rs"]
+pub mod speculative_decoder;
+
+/// Topological Reconciliation — CRDT-based post-partition healing (Sprint74)
+#[cfg(feature = "v9.10-distributed-hardening")]
+#[path = "network/topological_reconciliation.rs"]
+pub mod topological_reconciliation;
 
 /// Async Gossip with CRDTs — Partition-tolerant GossipSub mesh (Sprint16.4)
 #[cfg(any(

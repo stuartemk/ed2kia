@@ -1,6 +1,6 @@
 [package]
 name = "ed2kia"
-version = "9.9.0-sprint73"
+version = "9.10.0-sprint74"
 edition = "2021"
 description = "Descentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
 license = "Apache-2.0"
@@ -853,6 +853,14 @@ test-mocks = []
 # src/alignment/topology_ethics_reframe.rs: GEI reframed as anomaly/stability proxy, ethics via explicit guardrails + SCT-Z
 # src/network/graceful_apoptosis.rs: Bounded quarantine windows, ε-tolerant reintegration, cascade prevention
 "v9.9-pragmatic-pivot" = ["v9.8-asymptotic-hardening"]
+
+# Sprint 74: Distributed Systems Hardening & Second-Order Resolution
+# src/ledger/das_sampler.rs: Data Availability Sampling (DAS) + stratified verification O(log n)
+# src/ledger/kzg_state_pruning.rs: KZG polynomial commitments for cryptographic state pruning
+# src/crypto/collaborative_snark.rs: Collaborative SNARK generation - circuit partitioning + threshold aggregation
+# src/inference/speculative_decoder.rs: Speculative decoding with parallel topological validation (TTFT competitive)
+# src/network/topological_reconciliation.rs: CRDT-based post-partition reconciliation + CE-weighted manifold fusion
+"v9.10-distributed-hardening" = ["v9.9-pragmatic-pivot"]
 
 # Sprint 50 Test: Moral Manifold Behavior
 [[test]]
