@@ -26,7 +26,7 @@
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Sprint identifier for build tracking
-pub const SPRINT_IDENTIFIER: &str = "v9.5.0-sprint69";
+pub const SPRINT_IDENTIFIER: &str = "v9.6.0-sprint70";
 
 // ============================================================================
 // Fase 1: Core Modules (P2P, SAE, Bridge)
@@ -1163,6 +1163,28 @@ pub mod metrics;
 /// SCT — Stuartian Coherence Tensor Z-axis calibration.
 #[cfg(feature = "v9.4-validation-layer")]
 pub mod sct;
+
+// ============================================================================
+// Sprint 70: Civilization-Scale Architecture & Verification Pipeline (v9.6.0)
+// ============================================================================
+
+/// Universal Feature Dictionary — FedAvg merge, Lyapunov stability, contrastive disentanglement.
+#[cfg(feature = "v9.6-civilization-scale")]
+pub mod dictionary;
+
+/// Activation hooking and ZKP verification for frontier models.
+#[cfg(feature = "v9.6-civilization-scale")]
+pub mod auditing;
+
+/// Symbolic+Geometric Alignment — proof generation and moral attractor.
+#[cfg(feature = "v9.6-civilization-scale")]
+#[path = "alignment/mod.rs"]
+pub mod civilization_alignment;
+
+/// Anti-capture mechanisms — geo-diversity, anti-Sybil, chaos engineering.
+#[cfg(feature = "v9.6-civilization-scale")]
+#[path = "security/mod.rs"]
+pub mod civilization_security;
 
 // ============================================================================
 // Feature Detection Utilities

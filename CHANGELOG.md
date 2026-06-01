@@ -1,3 +1,32 @@
+## [v9.6.0-civilization-scale] — 2026-05-31 (Sprint 70 — Civilization-Scale Architecture & Verification Pipeline)
+
+### Sprint 70 "Civilization-Scale Architecture & Verification Pipeline"
+
+Arquitectura completa para escalado a nivel civilizacional con **Universal Feature Dictionary** (FedAvg merge con estabilidad Lyapunov y desentrelazamiento contrastivo), **Auditing Frontier** (activation hooking en capas transformer + verificación ZKP vía Merkle-DAG), **Alignment Simbólico-Geométrico** (generación de pruebas Lean4/Isabelle + Moral Manifold como cuenca de atracción Lyapunov), **Gossip Jerárquico** (comités electorales, FedAvg con decaimiento por antigüedad, privacidad diferencial ε=1.0) y **Anti-Capture** (peso geo-diverso máx 30%/región, anti-Sybil vía PoW + fingerprinting, inyección de caos). ROADMAP_CIVILIZATION_SCALE.md con North Star 2030, ChatGPT Moment demo, y 3 Technical Breakthroughs. 117 tests passing.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| Universal Feature Dict | `src/dictionary/universal_feature_dict.rs` | FedAvg merge CE×Z, Lyapunov γ<0.95, contrastive disentanglement (~300 líneas, 12 tests) |
+| Frontier Hook | `src/auditing/frontier_hook.rs` | Activation hooking attention/MLP/RMSNorm (~250 líneas, 10 tests) |
+| ZKP Verification | `src/auditing/zkp_verification.rs` | Merkle-DAG proof aggregation, validity windows (~250 líneas, 11 tests) |
+| Proof Generator | `src/alignment/proof_generator.rs` | Lean4/Isabelle proof generation from GEI features (~350 líneas, 20 tests) |
+| Moral Attractor | `src/alignment/moral_attractor.rs` | Lyapunov attractor basin, ethical attention masking (~400 líneas, 25 tests) |
+| Hierarchical Gossip | `src/network/hierarchical_gossip.rs` | Committee election, staleness-aware FedAvg, DP noise (~500 líneas, 20 tests) |
+| Anti-Capture | `src/security/anti_capture.rs` | Geo-diversity, anti-Sybil, chaos engineering (~450 líneas, 15 tests) |
+| Civilization Roadmap | `docs/ROADMAP_CIVILIZATION_SCALE.md` | North Star 2030, ChatGPT Moment, 3 breakthroughs, adoption strategy (~450 líneas) |
+
+### Feature Gate
+```toml
+"v9.6-civilization-scale" = ["v9.5-testnet-hardening"]
+```
+
+### Validation Protocol
+- `cargo fmt` ✓
+- `cargo check --features v9.6-civilization-scale` ✓
+- `cargo test --features v9.6-civilization-scale --lib` ✓ (117/117 tests)
+
+---
+
 ## [v9.5.0-testnet-hardening] — 2026-05-31 (Sprint 69 — Testnet Hardening & Distributed Workload Scheduler)
 
 ### Sprint 69 "Testnet Hardening & Distributed Workload Scheduler"

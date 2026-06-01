@@ -71,3 +71,11 @@ pub use workload_scheduler::{
     build_assignment_map, distribute_shards, load_balance_ratio, NodeTier, SchedulerState,
     ShardAssignment, LATENCY_THRESHOLD_MS,
 };
+
+#[cfg(feature = "v9.6-civilization-scale")]
+pub mod hierarchical_gossip;
+
+#[cfg(feature = "v9.6-civilization-scale")]
+pub use hierarchical_gossip::{
+    Committee, GossipConfig, GossipError, GossipNode, GossipUpdate, HierarchicalGossip,
+};

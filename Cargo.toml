@@ -819,6 +819,16 @@ test-mocks = []
 # src/network/workload_scheduler.rs: Dynamic shard distribution, latency fallback, load balance ratio
 "v9.5-testnet-hardening" = ["v9.4-validation-layer"]
 
+# Sprint 70: Civilization-Scale Architecture & Verification Pipeline (v9.6.0)
+# src/dictionary/universal_feature_dict.rs: Universal Feature Dictionary — FedAvg merge, Lyapunov stability, contrastive disentanglement
+# src/auditing/frontier_hook.rs: Activation hooking on transformer layers (attention, MLP, RMSNorm)
+# src/auditing/zkp_verification.rs: ZKP verification via arkworks circuits, Merkle-DAG proof aggregation
+# src/alignment/proof_generator.rs: Lean4/Isabelle proof generation from interpretable features
+# src/alignment/moral_attractor.rs: Moral Manifold as Lyapunov attractor basin, ethical attention masking
+# src/network/hierarchical_gossip.rs: Committee-based gossip, staleness-aware FedAvg, differential privacy
+# src/security/anti_capture.rs: Geo-diversity weighting, anti-Sybil, chaos engineering fault injection
+"v9.6-civilization-scale" = ["v9.5-testnet-hardening"]
+
 # Sprint 50 Test: Moral Manifold Behavior
 [[test]]
 name = "moral_manifold_behavior"
