@@ -829,6 +829,13 @@ test-mocks = []
 # src/security/anti_capture.rs: Geo-diversity weighting, anti-Sybil, chaos engineering fault injection
 "v9.6-civilization-scale" = ["v9.5-testnet-hardening"]
 
+# Sprint 71: Global Bootstrap & Critical Bottleneck Resolution (v9.7.0)
+# src/topology/gei_approximator.rs: GEI approximation via stratified sampling + Vietoris-Rips + ZKP verification
+# src/consensus/bootstrap_consensus.rs: Cold Start consensus (Micro-PoW + Web of Trust + Morphic Decoder)
+# src/bridge/iot_microkernel.rs: IoT microkernel with watchdog, last-GEI cache, async→sync bridge
+# src/network/global_bootstrap.rs: Stealth ignition, seed rotation, geo-diversity, Sybil detection
+"v9.7-bootstrap-resilience" = ["v9.6-civilization-scale"]
+
 # Sprint 50 Test: Moral Manifold Behavior
 [[test]]
 name = "moral_manifold_behavior"

@@ -1,3 +1,28 @@
+## [v9.7.0-bootstrap-resilience] — 2026-06-01 (Sprint 71 — Global Bootstrap & Critical Bottleneck Resolution)
+
+### Sprint 71 "Global Bootstrap & Critical Bottleneck Resolution"
+
+Resolución de cuellos de botella críticos identificados en análisis técnico: **GEI Approximator** (aproximación simplicial con muestreo estratificado + Vietoris-Rips + verificación ZKP), **Bootstrap Consensus** (Micro-PoW adaptativo + Web of Trust + Decodificador Morfico para Cold Start), **IoT Microkernel** (watchdog + caché last-GEI + bridge async→sync con límites éticos) y **Global Bootstrap Protocol** (ignición stealth, rotación de seeds, diversidad geo-Shannon, detección Sybil). 85 tests passing.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| GEI Approximator | `src/topology/gei_approximator.rs` | Stratified sampling by norm quantiles, Vietoris-Rips complex, β₁ approximation via union-find, error bound O(1/√n), ZKP proof hash (~710 líneas, 24 tests) |
+| Bootstrap Consensus | `src/consensus/bootstrap_consensus.rs` | Adaptive Micro-PoW (difficulty scales with network), TrustGraph (endorsement graph), Morphic Resonance Decoder (semantic fingerprint similarity) (~550 líneas, 20 tests) |
+| IoT Microkernel | `src/bridge/iot_microkernel.rs` | Watchdog timer with safe mode, last-valid GEI cache (offline fallback), priority queue async→sync bridge, ethical bounds checking (~500 líneas, 22 tests) |
+| Global Bootstrap | `src/network/global_bootstrap.rs` | Phased ignition (Stealth→Seed→Growth→Mature), seed rotation, Shannon entropy diversity index, behavioral Sybil detection (~810 líneas, 18 tests) |
+
+### Feature Gate
+```toml
+"v9.7-bootstrap-resilience" = ["v9.6-civilization-scale"]
+```
+
+### Validation Protocol
+- `cargo fmt` ✓
+- `cargo check --features v9.7-bootstrap-resilience` ✓
+- `cargo test --features v9.7-bootstrap-resilience --lib` ✓ (85/85 tests)
+
+---
+
 ## [v9.6.0-civilization-scale] — 2026-05-31 (Sprint 70 — Civilization-Scale Architecture & Verification Pipeline)
 
 ### Sprint 70 "Civilization-Scale Architecture & Verification Pipeline"

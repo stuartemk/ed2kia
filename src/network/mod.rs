@@ -79,3 +79,12 @@ pub mod hierarchical_gossip;
 pub use hierarchical_gossip::{
     Committee, GossipConfig, GossipError, GossipNode, GossipUpdate, HierarchicalGossip,
 };
+
+#[cfg(feature = "v9.7-bootstrap-resilience")]
+pub mod global_bootstrap;
+
+#[cfg(feature = "v9.7-bootstrap-resilience")]
+pub use global_bootstrap::{
+    run_ignition_sequence, BootstrapError, BootstrapNode, BootstrapPhase, BootstrapProtocolConfig,
+    BootstrapState, GlobalBootstrap,
+};

@@ -26,7 +26,7 @@
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Sprint identifier for build tracking
-pub const SPRINT_IDENTIFIER: &str = "v9.6.0-sprint70";
+pub const SPRINT_IDENTIFIER: &str = "v9.7.0-sprint71";
 
 // ============================================================================
 // Fase 1: Core Modules (P2P, SAE, Bridge)
@@ -171,6 +171,11 @@ pub mod bridge {
     #[path = "../bridge/relay_manager.rs"]
     pub mod relay_manager;
     pub mod tensor_flow;
+
+    // ─── Sprint71: IoT Microkernel (watchdog, last-GEI cache, async→sync bridge) ───
+    #[cfg(feature = "v9.7-bootstrap-resilience")]
+    #[path = "../bridge/iot_microkernel.rs"]
+    pub mod iot_microkernel;
 }
 
 // ============================================================================
@@ -210,6 +215,11 @@ pub mod interpret {
 pub mod consensus {
     pub mod merkle;
     pub mod validator;
+
+    // ─── Sprint71: Bootstrap Consensus (Micro-PoW + Web of Trust + Morphic Decoder) ───
+    #[cfg(feature = "v9.7-bootstrap-resilience")]
+    #[path = "../consensus/bootstrap_consensus.rs"]
+    pub mod bootstrap_consensus;
 }
 
 // ============================================================================
@@ -623,7 +633,11 @@ pub mod alignment {
 }
 
 /// Topological Fingerprinting — Persistent Homology for GEI (Sprint49) + Deception Detection (Sprint51)
-#[cfg(any(feature = "v3.1-gei-topology", feature = "v3.3-rssi-evolution"))]
+#[cfg(any(
+    feature = "v3.1-gei-topology",
+    feature = "v3.3-rssi-evolution",
+    feature = "v9.7-bootstrap-resilience"
+))]
 pub mod topology {
     #[cfg(feature = "v3.1-gei-topology")]
     #[path = "../topology/persistent_homology.rs"]
@@ -638,6 +652,11 @@ pub mod topology {
     #[cfg(feature = "v3.9-noosphere-engine")]
     #[path = "../topology/hoph_engine.rs"]
     pub mod hoph_engine;
+
+    // ─── Sprint71: GEI Approximator (simplicial approximation + ZKP verification) ───
+    #[cfg(feature = "v9.7-bootstrap-resilience")]
+    #[path = "../topology/gei_approximator.rs"]
+    pub mod gei_approximator;
 }
 
 /// Stuartian Moral Manifold — Trajectory-based Ethical Evaluation (Sprint50)
