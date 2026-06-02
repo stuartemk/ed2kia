@@ -26,7 +26,7 @@
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Sprint identifier for build tracking
-pub const SPRINT_IDENTIFIER: &str = "v9.11.0-sprint75";
+pub const SPRINT_IDENTIFIER: &str = "v9.12.0-sprint76";
 
 // ============================================================================
 // Fase 1: Core Modules (P2P, SAE, Bridge)
@@ -1317,6 +1317,35 @@ pub mod civilization_alignment;
 #[cfg(feature = "v9.6-civilization-scale")]
 #[path = "security/mod.rs"]
 pub mod civilization_security;
+
+// ============================================================================
+// Sprint 76: Ontological Debugging & Thermodynamic Pivots (v9.12.0)
+// ============================================================================
+
+/// Symbiotic Diversity Loss — Pareto optimization: L = max(Diversidad) - λ·Conflicto_Destructivo (Sprint76)
+#[cfg(feature = "v9.12-ontological-debugging")]
+#[path = "metrics/symbiotic_diversity_loss.rs"]
+pub mod symbiotic_diversity_loss;
+
+/// Evolutionary Quarantine — Dynamic attractor ethics, sandboxing for Z<0 nodes (Sprint76)
+#[cfg(feature = "v9.12-ontological-debugging")]
+#[path = "network/evolutionary_quarantine.rs"]
+pub mod evolutionary_quarantine;
+
+/// Optimistic Edge + Fraud Proofs — Ed25519 at edge, heavy ZKP only if challenged (Sprint76)
+#[cfg(feature = "v9.12-ontological-debugging")]
+#[path = "crypto/optimistic_edge.rs"]
+pub mod optimistic_edge;
+
+/// Fractal Pruning (Stuartian Forgetting) — 72h GC, Merkle accumulation, macro-wisdom retention (Sprint76)
+#[cfg(feature = "v9.12-ontological-debugging")]
+#[path = "ledger/fractal_pruning.rs"]
+pub mod fractal_pruning;
+
+/// Hardware Role Asymmetry — WASM=SAE+Routing, Native=LLM Inference (Sprint76)
+#[cfg(feature = "v9.12-ontological-debugging")]
+#[path = "hardware/role_asymmetry.rs"]
+pub mod role_asymmetry;
 
 // ============================================================================
 // Feature Detection Utilities

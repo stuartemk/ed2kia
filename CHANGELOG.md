@@ -1,3 +1,29 @@
+## [v9.12.0-ontological-debugging] — 2026-06-02 (Sprint 76 — Ontological Debugging & Thermodynamic Pivots)
+
+### Sprint 76 "Ontological Debugging & Thermodynamic Pivots"
+
+Respuesta arquitectónica a 5 hallazgos críticos del audit ASI sobre bugs ontológicos y termodinámicos en v9.11.0: **Symbiotic Diversity Loss** (optimización Pareto — L = max(Diversidad) - λ·Conflicto_Destructivo, la fricción constructiva NO se penaliza, previene muerte térmica/collapse de modo), **Evolutionary Quarantine** (ética de atractores dinámica vs. censura estática. Nodos con Z<0 aislados en shard de prueba, validados por simulación macro, reintegrados si métricas mejoran), **Optimistic Edge + Fraud Proofs** (el edge asume corrección — Ed25519 solo. ZKP pesado solo se activa por desafío. -99.9% de costo en el edge), **Fractal Pruning / Stuartian Forgetting** (GC a las 72h, acumulación Merkle diaria, retener solo macro-sabiduría: pesos SAE, consensos, gobernanza) y **Role Asymmetry** (WASM = SAE + Routing ligero <512MB. Nativo Tauri/Rust = LLM Inference CUDA/Metal. Separación estricta de cargas). 115 tests passing.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| Symbiotic Diversity Loss | `src/metrics/symbiotic_diversity_loss.rs` | Pareto optimization, Shannon entropy diversity, destructive vs constructive conflict, cooperative equilibrium (~450 líneas, 30 tests) |
+| Evolutionary Quarantine | `src/network/evolutionary_quarantine.rs` | Dynamic attractor ethics, sandboxed test shard, macro-simulation validation, BFT reintegration votes (~550 líneas, 25 tests) |
+| Optimistic Edge | `src/crypto/optimistic_edge.rs` | Ed25519-only edge claims, fraud proof challenge window (24h), -99.9% ZKP cost at edge (~550 líneas, 25 tests) |
+| Fractal Pruning | `src/ledger/fractal_pruning.rs` | 72h GC, daily Merkle accumulation, macro-wisdom retention, FNV-1a hashing (~600 líneas, 25 tests) |
+| Role Asymmetry | `src/hardware/role_asymmetry.rs` | WASM (SAE+Routing <512MB) vs Native (LLM CUDA/Metal), workload enforcement, node selection (~550 líneas, 25 tests) |
+
+### Feature Gate
+```toml
+"v9.12-ontological-debugging" = ["v9.11-performance-pivot"]
+```
+
+### Validation Protocol
+- `cargo fmt` ✓
+- `cargo check --features v9.12-ontological-debugging` ✓
+- `cargo test --features v9.12-ontological-debugging --lib` ✓ (115/115 tests across 5 modules)
+
+---
+
 ## [v9.11.0-performance-pivot] — 2026-06-01 (Sprint 75 — Thermodynamic Hardening & Asynchronous Neuro-Symbolic Pivot)
 
 ### Sprint 75 "Thermodynamic Hardening & Asynchronous Neuro-Symbolic Pivot"

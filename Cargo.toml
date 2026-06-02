@@ -1,6 +1,6 @@
 [package]
 name = "ed2kia"
-version = "9.11.0-sprint75"
+version = "9.12.0-sprint76"
 edition = "2021"
 description = "Descentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
 license = "Apache-2.0"
@@ -869,6 +869,14 @@ test-mocks = []
 # src/network/distributed_seed_mesh.rs: Geographic/ISP diverse seed mesh with cryptographic key rotation, Shannon diversity index
 # benchmarks/wasm_homology_latency.rs: WASM homology benchmark on 4096-dim tensors, validates <50ms sidecar latency budget
 "v9.11-performance-pivot" = ["v9.10-distributed-hardening"]
+
+# Sprint 76: Ontological Debugging & Thermodynamic Pivots (v9.12.0)
+# src/metrics/symbiotic_diversity_loss.rs: Pareto optimization — L = max(Diversidad) - λ·Conflicto_Destructivo, constructive friction non-penalized
+# src/network/evolutionary_quarantine.rs: Evolutionary quarantine (sandboxing) — nodes Z<0 isolated in test shard, dynamic attractor ethics
+# src/crypto/optimistic_edge.rs: Optimistic Edge + Fraud Proofs — Ed25519 at edge, heavy ZKP on validators only if challenged (-99.9% cost)
+# src/ledger/fractal_pruning.rs: Stuartian Forgetting — 72h GC, daily Merkle accumulation, retain only macro-wisdom (SAE/consensus/governance)
+# src/hardware/role_asymmetry.rs: Hardware role asymmetry — WASM=SAE+Routing, Native=LLM Inference (CUDA/Metal), strict load separation
+"v9.12-ontological-debugging" = ["v9.11-performance-pivot"]
 
 # Sprint 50 Test: Moral Manifold Behavior
 [[test]]
