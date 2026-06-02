@@ -1,6 +1,6 @@
 [package]
 name = "ed2kia"
-version = "9.10.0-sprint74"
+version = "9.11.0-sprint75"
 edition = "2021"
 description = "Descentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
 license = "Apache-2.0"
@@ -861,6 +861,14 @@ test-mocks = []
 # src/inference/speculative_decoder.rs: Speculative decoding with parallel topological validation (TTFT competitive)
 # src/network/topological_reconciliation.rs: CRDT-based post-partition reconciliation + CE-weighted manifold fusion
 "v9.10-distributed-hardening" = ["v9.9-pragmatic-pivot"]
+
+# Sprint 75: Thermodynamic Hardening & Asynchronous Neuro-Symbolic Pivot (v9.11.0)
+# src/inference/async_symbolic_sidecar.rs: Async post-hoc validation — LLM generates locally, ed2kIA validates in parallel thread with SAE weights
+# src/topology/gei_proxy_distillation.rs: PCA-based proxy network for β₁ approximation in <5ms, heavy homology delegated async
+# src/consensus/thermodynamic_ce.rs: CE credits anchored to Micro-PoW + ZKP proof verification with exponential decay
+# src/network/distributed_seed_mesh.rs: Geographic/ISP diverse seed mesh with cryptographic key rotation, Shannon diversity index
+# benchmarks/wasm_homology_latency.rs: WASM homology benchmark on 4096-dim tensors, validates <50ms sidecar latency budget
+"v9.11-performance-pivot" = ["v9.10-distributed-hardening"]
 
 # Sprint 50 Test: Moral Manifold Behavior
 [[test]]

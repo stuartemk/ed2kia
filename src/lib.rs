@@ -26,7 +26,7 @@
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Sprint identifier for build tracking
-pub const SPRINT_IDENTIFIER: &str = "v9.10.0-sprint74";
+pub const SPRINT_IDENTIFIER: &str = "v9.11.0-sprint75";
 
 // ============================================================================
 // Fase 1: Core Modules (P2P, SAE, Bridge)
@@ -225,6 +225,11 @@ pub mod consensus {
     #[cfg(feature = "v9.8-asymptotic-hardening")]
     #[path = "../consensus/sybil_resistance.rs"]
     pub mod sybil_resistance;
+
+    // ─── Sprint75: Thermodynamic CE (Micro-PoW + ZKP anchored CE credits) ───
+    #[cfg(feature = "v9.11-performance-pivot")]
+    #[path = "../consensus/thermodynamic_ce.rs"]
+    pub mod thermodynamic_ce;
 }
 
 // ============================================================================
@@ -847,6 +852,25 @@ pub mod speculative_decoder;
 #[cfg(feature = "v9.10-distributed-hardening")]
 #[path = "network/topological_reconciliation.rs"]
 pub mod topological_reconciliation;
+
+// ============================================================================
+// Sprint 75: Thermodynamic Hardening & Asynchronous Neuro-Symbolic Pivot (v9.11.0)
+// ============================================================================
+
+/// Async Symbolic Sidecar — Post-hoc SAE validation in parallel thread (Sprint75)
+#[cfg(feature = "v9.11-performance-pivot")]
+#[path = "inference/async_symbolic_sidecar.rs"]
+pub mod async_symbolic_sidecar;
+
+/// GEI Proxy Distillation — PCA-based β₁ approximation in <5ms (Sprint75)
+#[cfg(feature = "v9.11-performance-pivot")]
+#[path = "topology/gei_proxy_distillation.rs"]
+pub mod gei_proxy_distillation;
+
+/// Distributed Seed Mesh — Geographic/ISP diverse mesh with key rotation (Sprint75)
+#[cfg(feature = "v9.11-performance-pivot")]
+#[path = "network/distributed_seed_mesh.rs"]
+pub mod distributed_seed_mesh;
 
 /// Async Gossip with CRDTs — Partition-tolerant GossipSub mesh (Sprint16.4)
 #[cfg(any(

@@ -262,7 +262,7 @@ impl SpeculativeSymbolicFilter {
         }
 
         let mut rejection_count = 0;
-        let mut accepted = None;
+        let accepted = None;
 
         // Try candidates in priority order
         let mut temp_queue = Vec::new();
