@@ -26,7 +26,7 @@
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Sprint identifier for build tracking
-pub const SPRINT_IDENTIFIER: &str = "v9.14.0-sprint78";
+pub const SPRINT_IDENTIFIER: &str = "v9.15.0-sprint79";
 
 // ============================================================================
 // Fase 1: Core Modules (P2P, SAE, Bridge)
@@ -241,18 +241,37 @@ pub mod consensus {
 // Sprint 78: Invariant Architecture & Planetary-Scale Resilience
 // ============================================================================
 
-/// Recursive SNARKs — Sprint 78: DAG compression to ~22KB
-#[cfg(feature = "v9.14-invariant-architecture")]
+/// Crypto — Sprint 78: Recursive SNARKs + Sprint 79: Post-Quantum STARKs
+#[cfg(any(feature = "v9.14-invariant-architecture", feature = "v9.15-quantum-physical-bridge"))]
 pub mod crypto {
+    #[cfg(feature = "v9.14-invariant-architecture")]
     #[path = "../crypto/recursive_snark.rs"]
     pub mod recursive_snark;
+
+    // ─── Sprint79: Post-Quantum STARKs (zk-STARK hash-based, no trusted setup) ───
+    #[cfg(feature = "v9.15-quantum-physical-bridge")]
+    #[path = "../crypto/post_quantum_starks.rs"]
+    pub mod post_quantum_starks;
 }
 
-/// Differential Privacy — Sprint 78: Holographic noise injection
-#[cfg(feature = "v9.14-invariant-architecture")]
+/// Privacy — Sprint 78: Differential Holographic Noise + Sprint 79: FHE-Ready WASM
+#[cfg(any(feature = "v9.14-invariant-architecture", feature = "v9.15-quantum-physical-bridge"))]
 pub mod privacy {
+    #[cfg(feature = "v9.14-invariant-architecture")]
     #[path = "../privacy/differential_holographic_noise.rs"]
     pub mod differential_holographic_noise;
+
+    // ─── Sprint79: FHE-Ready WASM (side-channel mitigation) ───
+    #[cfg(feature = "v9.15-quantum-physical-bridge")]
+    #[path = "../privacy/fhe_ready_wasm.rs"]
+    pub mod fhe_ready_wasm;
+}
+
+/// Physical TEE Bridge — Sprint 79: TEE oracles with thermodynamic proof-of-work
+#[cfg(feature = "v9.15-quantum-physical-bridge")]
+pub mod oracle {
+    #[path = "../oracle/physical_tee_bridge.rs"]
+    pub mod physical_tee_bridge;
 }
 
 // ============================================================================
@@ -625,8 +644,8 @@ pub mod api {
 // Fase 7: Continuous Alignment, Cross-Net Federation, Dynamic Trust
 // ============================================================================
 
-/// Continuous alignment engine
-#[cfg(feature = "stable")]
+/// Continuous alignment engine + Sprint79: Shadow Persona Sandbox
+#[cfg(any(feature = "stable", feature = "v9.15-quantum-physical-bridge"))]
 pub mod alignment {
     pub mod confidence_calculator;
     #[cfg(feature = "phase8-sprint2")]
@@ -674,6 +693,11 @@ pub mod alignment {
     // ─── Sprint72: Topology-Ethics Mapping (GEI as structural stability proxy) ───
     #[cfg(feature = "v9.8-asymptotic-hardening")]
     pub mod topology_ethics_mapping;
+
+    // ─── Sprint79: Shadow Persona Sandbox (adversarial isolation + cryptographic muzzle) ───
+    #[cfg(feature = "v9.15-quantum-physical-bridge")]
+    #[path = "../alignment/shadow_persona_sandbox.rs"]
+    pub mod shadow_persona_sandbox;
 }
 
 /// Topological Fingerprinting — Persistent Homology for GEI (Sprint49) + Deception Detection (Sprint51)
@@ -727,11 +751,17 @@ pub mod ethics {
     pub mod global_safeguards;
 }
 
-/// Temporal Cohesion — Distributed Time Synchronization (Sprint52)
-#[cfg(feature = "v3.4-macro-symbiosis")]
+/// Temporal Cohesion — Distributed Time Synchronization (Sprint52) + Sprint79: Useful VDFs
+#[cfg(any(feature = "v3.4-macro-symbiosis", feature = "v9.15-quantum-physical-bridge"))]
 pub mod time {
+    #[cfg(feature = "v3.4-macro-symbiosis")]
     #[path = "../time/temporal_cohesion.rs"]
     pub mod temporal_cohesion;
+
+    // ─── Sprint79: Useful VDFs (SAE-entangled, ASIC-resistant) ───
+    #[cfg(feature = "v9.15-quantum-physical-bridge")]
+    #[path = "../time/useful_vdf.rs"]
+    pub mod useful_vdf;
 }
 
 /// Global Symbiotic Economy — DAG-based CE Ledger (Sprint52)
