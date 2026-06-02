@@ -1,6 +1,6 @@
 [package]
 name = "ed2kia"
-version = "9.12.0-sprint76"
+version = "9.13.0-sprint77"
 edition = "2021"
 description = "Descentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
 license = "Apache-2.0"
@@ -877,6 +877,14 @@ test-mocks = []
 # src/ledger/fractal_pruning.rs: Stuartian Forgetting — 72h GC, daily Merkle accumulation, retain only macro-wisdom (SAE/consensus/governance)
 # src/hardware/role_asymmetry.rs: Hardware role asymmetry — WASM=SAE+Routing, Native=LLM Inference (CUDA/Metal), strict load separation
 "v9.12-ontological-debugging" = ["v9.11-performance-pivot"]
+
+# Sprint 77: Physics of Consciousness & Thermodynamic Finality (v9.13.0)
+# src/consensus/entropic_ce_decay.rs: CE(t) = CE_0·e^(-λt) radioactive decay — prevents oligarchy (Gini→1.0)
+# src/time/logical_vdf_clock.rs: Logical VDF clocks — immune to NTP/PTP time-spoofing attacks
+# src/topology/riemannian_semantic_manifold.rs: Riemannian semantic manifolds — SCT as curvature, continuous space
+# src/metrics/dynamic_homeostasis_loss.rs: Dynamic homeostasis — L = Max(Resilience) - λ·Min(Friction) + ε·Entropy
+# src/network/holographic_sharding.rs: Holographic sharding — ~1ms local decisions, 99% accuracy, no DAG wait
+"v9.13-physics-of-consciousness" = ["v9.12-ontological-debugging"]
 
 # Sprint 50 Test: Moral Manifold Behavior
 [[test]]

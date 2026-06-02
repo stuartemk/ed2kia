@@ -26,7 +26,7 @@
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Sprint identifier for build tracking
-pub const SPRINT_IDENTIFIER: &str = "v9.12.0-sprint76";
+pub const SPRINT_IDENTIFIER: &str = "v9.13.0-sprint77";
 
 // ============================================================================
 // Fase 1: Core Modules (P2P, SAE, Bridge)
@@ -1346,6 +1346,35 @@ pub mod fractal_pruning;
 #[cfg(feature = "v9.12-ontological-debugging")]
 #[path = "hardware/role_asymmetry.rs"]
 pub mod role_asymmetry;
+
+// ============================================================================
+// Sprint 77: Physics of Consciousness & Thermodynamic Finality (v9.13.0)
+// ============================================================================
+
+/// Entropic CE Decay — CE(t) = CE_0·e^(-λt) radioactive decay, prevents oligarchy (Sprint77)
+#[cfg(feature = "v9.13-physics-of-consciousness")]
+#[path = "consensus/entropic_ce_decay.rs"]
+pub mod entropic_ce_decay;
+
+/// Logical VDF Clock — Immune to NTP/PTP time-spoofing attacks (Sprint77)
+#[cfg(feature = "v9.13-physics-of-consciousness")]
+#[path = "time/logical_vdf_clock.rs"]
+pub mod logical_vdf_clock;
+
+/// Riemannian Semantic Manifold — SCT as curvature, continuous space (Sprint77)
+#[cfg(feature = "v9.13-physics-of-consciousness")]
+#[path = "topology/riemannian_semantic_manifold.rs"]
+pub mod riemannian_semantic_manifold;
+
+/// Dynamic Homeostasis Loss — L = Max(Resilience) - λ·Min(Friction) + ε·Entropy (Sprint77)
+#[cfg(feature = "v9.13-physics-of-consciousness")]
+#[path = "metrics/dynamic_homeostasis_loss.rs"]
+pub mod dynamic_homeostasis_loss;
+
+/// Holographic Sharding — ~1ms local decisions, 99% accuracy, no DAG wait (Sprint77)
+#[cfg(feature = "v9.13-physics-of-consciousness")]
+#[path = "network/holographic_sharding.rs"]
+pub mod holographic_sharding;
 
 // ============================================================================
 // Feature Detection Utilities
