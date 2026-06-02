@@ -1,6 +1,6 @@
 [package]
 name = "ed2kia"
-version = "9.13.0-sprint77"
+version = "9.14.0-sprint78"
 edition = "2021"
 description = "Descentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
 license = "Apache-2.0"
@@ -885,6 +885,12 @@ test-mocks = []
 # src/metrics/dynamic_homeostasis_loss.rs: Dynamic homeostasis — L = Max(Resilience) - λ·Min(Friction) + ε·Entropy
 # src/network/holographic_sharding.rs: Holographic sharding — ~1ms local decisions, 99% accuracy, no DAG wait
 "v9.13-physics-of-consciousness" = ["v9.12-ontological-debugging"]
+# src/consensus/relativistic_entropy.rs: Relativistic entropy with cryosleep mode
+# src/crypto/recursive_snark.rs: Recursive SNARK compression (~22KB DAG history)
+# src/privacy/differential_holographic_noise.rs: Differential privacy noise injection
+# src/topology/ethical_anchors.rs: Invariant ethical anchors (Stuartian Laws)
+# src/network/progressive_weight_streaming.rs: Progressive weight streaming (<500ms boot)
+"v9.14-invariant-architecture" = ["v9.13-physics-of-consciousness"]
 
 # Sprint 50 Test: Moral Manifold Behavior
 [[test]]

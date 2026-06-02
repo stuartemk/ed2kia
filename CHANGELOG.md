@@ -1,3 +1,36 @@
+## [v9.14.0-invariant-architecture] — 2026-06-02 (Sprint 78 — Invariant Architecture & Planetary-Scale Resilience)
+
+### Sprint 78 "Invariant Architecture & Planetary-Scale Resilience"
+
+Arquitectura de invarianzas para resiliencia planetaria: **Relativistic Entropy** (λ congela criptográficamente si peer_density < partition_threshold, cryosleep preserva CE durante blackouts geopolíticos, factor exponencial ramp configurable), **Recursive SNARKs** (compresión DAG O(log n) vs O(n), polynomial commitments FNV-256, proof chain verificable), **Differential Holographic Noise** (calibración Laplace/Gaussian con GEI preservation weight, budget tracking ε/δ, sensibilidad L1/L2 configurable), **Ethical Anchors** (coordenadas inmutables en manifold, damping exponencial de curvatura, BFT reintegration votes) y **Progressive Weight Streaming** (chunked transfers con peer selection óptima, bandwidth estimation, timeout recovery). 160+ tests passing.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| Relativistic Entropy | `src/consensus/relativistic_entropy.rs` | λ freezes cryptographically during partitions, cryosleep preserves CE, exponential ramp factor (~689 líneas, 30 tests) |
+| Recursive SNARKs | `src/crypto/recursive_snark.rs` | O(log n) DAG compression, polynomial commitments, verifiable proof chains (~663 líneas, 30 tests) |
+| Differential Holographic Noise | `src/privacy/differential_holographic_noise.rs` | Laplace/Gaussian calibration, GEI preservation weight, ε/δ budget tracking (~641 líneas, 25 tests) |
+| Ethical Anchors | `src/topology/ethical_anchors.rs` | Immutable manifold coordinates, exponential curvature damping, drift bounds enforcement (~842 líneas, 35 tests) |
+| Progressive Weight Streaming | `src/network/progressive_weight_streaming.rs` | Chunked transfers, optimal peer selection, bandwidth estimation, timeout recovery (~977 líneas, 40 tests) |
+
+### Bugfixes
+- `FnvRng::new(seed=0)` → state degeneración (all-zero output). Fix: `seed | 0x9E3779B97F4A7C15` asegura estado no-nulo
+- `sample_laplace()` → `ln(negative)` producía NaN. Fix: Inverse CDF correcto `scale * ln(2u)` / `-scale * ln(2(1-u))`
+- `sample_gaussian()` → `sqrt(2 * ln(u1))` con u1∈(0,1) da NaN. Fix: `sqrt(-2 * ln(u1))` (Box-Muller correcto)
+- `apply_relativistic_decay()` → `ce_0` no se actualizaba post-decay. Fix: `self.ce_0 = self.current_ce` para compounding
+- `is_cryosleep` threshold → `f64::EPSILON` (~2.2e-16) demasiado estricto. Fix: `base_lambda * 0.001` (relativo)
+
+### Feature Gate
+```toml
+"v9.14-invariant-architecture" = ["v9.13-physics-of-consciousness"]
+```
+
+### Validation Protocol
+- `cargo fmt` ✓
+- `cargo check --features v9.14-invariant-architecture` ✓
+- `cargo test --features v9.14-invariant-architecture --lib` ✓ (160/160 tests across 5 modules)
+
+---
+
 ## [v9.13.0-physics-of-consciousness] — 2026-06-02 (Sprint 77 — Physics of Consciousness & Thermodynamic Finality)
 
 ### Sprint 77 "Physics of Consciousness & Thermodynamic Finality"

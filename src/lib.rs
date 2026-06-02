@@ -26,7 +26,7 @@
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Sprint identifier for build tracking
-pub const SPRINT_IDENTIFIER: &str = "v9.13.0-sprint77";
+pub const SPRINT_IDENTIFIER: &str = "v9.14.0-sprint78";
 
 // ============================================================================
 // Fase 1: Core Modules (P2P, SAE, Bridge)
@@ -230,6 +230,29 @@ pub mod consensus {
     #[cfg(feature = "v9.11-performance-pivot")]
     #[path = "../consensus/thermodynamic_ce.rs"]
     pub mod thermodynamic_ce;
+
+    // ─── Sprint78: Relativistic Entropy (λ freezes during partitions, cryosleep mode) ───
+    #[cfg(feature = "v9.14-invariant-architecture")]
+    #[path = "../consensus/relativistic_entropy.rs"]
+    pub mod relativistic_entropy;
+}
+
+// ============================================================================
+// Sprint 78: Invariant Architecture & Planetary-Scale Resilience
+// ============================================================================
+
+/// Recursive SNARKs — Sprint 78: DAG compression to ~22KB
+#[cfg(feature = "v9.14-invariant-architecture")]
+pub mod crypto {
+    #[path = "../crypto/recursive_snark.rs"]
+    pub mod recursive_snark;
+}
+
+/// Differential Privacy — Sprint 78: Holographic noise injection
+#[cfg(feature = "v9.14-invariant-architecture")]
+pub mod privacy {
+    #[path = "../privacy/differential_holographic_noise.rs"]
+    pub mod differential_holographic_noise;
 }
 
 // ============================================================================
@@ -341,6 +364,13 @@ pub mod scaling {
     pub mod cross_model;
     pub mod peer_manager;
     pub mod predictive_balancer;
+}
+
+/// Progressive Weight Streaming — Sprint 78: <500ms cold start
+#[cfg(feature = "v9.14-invariant-architecture")]
+pub mod streaming {
+    #[path = "../network/progressive_weight_streaming.rs"]
+    pub mod progressive_weight_streaming;
 }
 
 /// RLHF training loop and feedback store
@@ -677,6 +707,11 @@ pub mod topology {
     #[cfg(feature = "v9.8-asymptotic-hardening")]
     #[path = "../topology/differentiable_gei.rs"]
     pub mod differentiable_gei;
+
+    // ─── Sprint78: Ethical Anchors (invariant points of infinite mass) ───
+    #[cfg(feature = "v9.14-invariant-architecture")]
+    #[path = "../topology/ethical_anchors.rs"]
+    pub mod ethical_anchors;
 }
 
 /// Stuartian Moral Manifold — Trajectory-based Ethical Evaluation (Sprint50)
