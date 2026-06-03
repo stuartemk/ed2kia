@@ -268,6 +268,20 @@ No necesitas ser un científico para contribuir al futuro. Al compartir un poco 
 
 > **Nota:** `v9.5-testnet-hardening` depende de `v9.4-validation-layer`. Distributed Workload Scheduler con distribución weighted round-robin por score/capacidad, fallback automático por latencia (>50ms), load balance ratio min/max equitativo y testnet de 5 nodos con validación de tolerancia a fallos (redistribución, cascada, supervivencia single-node).
 
+### Feature Gates v9.6 (Gödelian Synthesis & Arquitectura de la Incompletitud Absoluta)
+
+| Feature Gate | Módulo | Status |
+|--------------|--------|--------|
+| `v9.16-godelian-synthesis` | Heterogeneous MPC + Blind Threshold Computation + Epistemic Wiping + Proof of Novelty + Gödelian Grace | ✅ Stable (190 tests) |
+
+> **Nota:** `v9.16-godelian-synthesis` depende de `v9.15-quantum-physical-bridge`. `ed2kIA v9.16.0` consolida la humildad estructural como atractor evolutivo. La red reconoce que ningún sistema formal puede ser simultáneamente completo, consistente y auto-referencialmente transparente — y convierte esta limitación en resiliencia operativa.
+>
+> - **Consenso Heterogéneo MPC:** Validación multi-ISA (x86/ARM/RISC-V) con umbral ≥2/3. La atestación física requiere convergencia cross-architecture, previniendo Silicon Trojan de cualquier vendor individual.
+> - **Cómputo Ciego + TSS:** Garbled Circuits locales + desencriptación por umbral Shamir. GEI validado sin descifrar el plaintext original, mitigando colapso termodinámico FHE.
+> - **Borrado Epistémico:** Destrucción criptográfica de activaciones/pesos en geometría de cuarentena no euclidiana. Solo el gradiente inverso (antídoto) retorna a mainnet.
+> - **Prueba de Novedad Topológica:** CE ponderado por entropía semántica Shannon. Cero recompensa por áreas ya mapeadas; solo expansión de frontera noosférica.
+> - **Gracia Gödeliana:** Detección de fluctuaciones caóticas Z-score sin convergencia → marcado como singularidad (sin penalización) → delegación a intuición humana.
+
 ## 🧠 Pilares Evolutivos y Arquitectura Planetaria
 
 **ed2kIA v5.0.0-mainnet-genesis** representa la convergencia de 10 sprints de evolución arquitectónica (Sprints 50-59), desde la Malla Planetaria hasta el Bloque Génesis forjado. Esta sección sintetiza los hitos clave de la transición de Testnet a Mainnet.
