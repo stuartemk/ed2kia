@@ -26,7 +26,7 @@
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Sprint identifier for build tracking
-pub const SPRINT_IDENTIFIER: &str = "v9.17.0-sprint81";
+pub const SPRINT_IDENTIFIER: &str = "v9.18.0-sprint82";
 
 // ============================================================================
 // Fase 1: Core Modules (P2P, SAE, Bridge)
@@ -1496,6 +1496,28 @@ pub mod paradox_cost_triage;
 #[cfg(feature = "v9.17-biological-bridge")]
 #[path = "evolution/panspermia_protocol.rs"]
 pub mod panspermia_protocol;
+
+// ============================================================================
+// Sprint 82: Tactical Pivot & Distributed SAE Audit MVP (v9.18.0)
+// ============================================================================
+
+/// Edge Optimizer — RAM-aware model selection + WASM async pipeline (Sprint82)
+/// **Stuartian Law 1:** Accessibility is ethics. The network must run on any device.
+#[cfg(feature = "v9.18-mvp-deployment")]
+#[path = "inference/edge_optimizer.rs"]
+pub mod edge_optimizer;
+
+/// Compute Credits — CE exposed as audit currency for symbiotic exchange (Sprint82)
+/// **Stuartian Law 2:** You provide compute, you receive audit capacity.
+#[cfg(feature = "v9.18-mvp-deployment")]
+#[path = "economy/compute_credits.rs"]
+pub mod compute_credits;
+
+/// CLI — Lightweight interface for onboarding, auditing, and credit management (Sprint82)
+/// **Stuartian Law 3:** One-line install, one-command start. Frictionless symbiosis.
+#[cfg(feature = "v9.18-mvp-deployment")]
+#[path = "cli/main.rs"]
+pub mod cli_main;
 
 // ============================================================================
 // Feature Detection Utilities

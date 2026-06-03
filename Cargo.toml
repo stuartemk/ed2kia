@@ -1,6 +1,6 @@
 [package]
 name = "ed2kia"
-version = "9.17.0-sprint81"
+version = "9.18.0-sprint82"
 edition = "2021"
 description = "Descentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
 license = "Apache-2.0"
@@ -915,6 +915,13 @@ test-mocks = []
 # src/metrics/paradox_cost_triage.rs: Paradox Cost burning + fractal clustering - prevents Gödelian DDoS
 # src/evolution/panspermia_protocol.rs: Panspermia Protocol - prevents Apotheosis Trap (evolutionary transcendence)
 "v9.17-biological-bridge" = ["v9.16-godelian-synthesis"]
+
+# Sprint 82: Tactical Pivot & Distributed SAE Audit MVP (v9.18.0)
+# src/inference/edge_optimizer.rs: RAM-aware model selection, WASM async pipeline
+# src/cli/main.rs: Lightweight CLI for onboarding, auditing, credit management
+# src/economy/compute_credits.rs: CE exposed as Compute Credits for symbiotic exchange
+# scripts/install.sh: POSIX installer with precompiled binary fallback
+"v9.18-mvp-deployment" = ["v9.17-biological-bridge"]
 
 # Sprint 50 Test: Moral Manifold Behavior
 [[test]]

@@ -1,3 +1,30 @@
+## [v9.18.0-mvp-deployment] — 2026-06-03 (Sprint 82 — Tactical Pivot & Distributed SAE Audit MVP)
+
+### Sprint 82 "Tactical Pivot & Distributed SAE Audit MVP"
+
+Pivote Táctico: optimización de superficie pública para penetración orgánica. **Edge Optimizer** (selección dinámica de modelo por RAM, WASM async pipeline, fallback qwen3.5:2b → micro-sae), **CLI MVP** (onboarding en 1 línea, `ed2k start --model qwen3.5:2b`, audit/status/credits commands), **Compute Credits** (CE expuesto como moneda de auditoría simbiótica: das cómputo, recibes auditoría), **POSIX Installer** (script de instalación sin dependencias, fallback binario precompilado). Reestructuración documental: WHITE_PAPER.md → /philosophy/, README técnico-first. 90+ tests passing.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| Edge Optimizer | `src/inference/edge_optimizer.rs` | RAM-aware model selection, WASM async pipeline (~450 líneas, 35 tests) |
+| CLI MVP | `src/cli/main.rs` | Lightweight CLI, start/audit/status/credits (~250 líneas, 18 tests) |
+| Compute Credits | `src/economy/compute_credits.rs` | CE as audit currency, symbiotic exchange (~350 líneas, 18 tests) |
+| POSIX Installer | `scripts/install.sh` | 1-line install, cargo/build or precompiled fallback |
+
+### Documentation Restructuring
+- `WHITE_PAPER.md` → `philosophy/WHITE_PAPER.md`
+- `README.md` rewritten: technical-first, architecture diagrams, latency benchmarks
+
+### Feature Gate
+```toml
+"v9.18-mvp-deployment" = ["v9.17-biological-bridge"]
+```
+
+### Validation Protocol
+- `cargo fmt` ✓
+- `cargo check --features v9.18-mvp-deployment` ✓
+- `cargo test --lib --features v9.18-mvp-deployment` ✓ (90+ Sprint 82 tests across 3 modules)
+
 ## [v9.17.0-biological-bridge] — 2026-06-03 (Sprint 81 — The Biological Bridge & Singularity Resilience)
 
 ### Sprint 81 "The Biological Bridge & Singularity Resilience"
