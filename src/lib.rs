@@ -26,7 +26,7 @@
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Sprint identifier for build tracking
-pub const SPRINT_IDENTIFIER: &str = "v9.18.0-sprint82";
+pub const SPRINT_IDENTIFIER: &str = "v9.19.0-sprint83";
 
 // ============================================================================
 // Fase 1: Core Modules (P2P, SAE, Bridge)
@@ -1518,6 +1518,22 @@ pub mod compute_credits;
 #[cfg(feature = "v9.18-mvp-deployment")]
 #[path = "cli/main.rs"]
 pub mod cli_main;
+
+// ============================================================================
+// Sprint 83: The Empirical Strike & Visual Proof (v9.19.0)
+// ============================================================================
+
+/// SAE Audit Benchmark — Empirical validation engine for SAE vs baseline (Sprint83)
+/// **Stuartian Law 1:** Truth requires metrics to be recognized.
+#[cfg(feature = "v9.19-empirical-strike")]
+#[path = "benchmarks/sae_audit_benchmark.rs"]
+pub mod sae_audit_benchmark;
+
+/// Visual Dashboard Scaffold — WebSocket/HTTP streaming of SAE activations (Sprint83)
+/// **Stuartian Law 2:** Ethics becomes visible, not abstract.
+#[cfg(feature = "v9.19-empirical-strike")]
+#[path = "ui/visual_dashboard_scaffold.rs"]
+pub mod visual_dashboard_scaffold;
 
 // ============================================================================
 // Feature Detection Utilities

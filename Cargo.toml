@@ -1,6 +1,6 @@
 [package]
 name = "ed2kia"
-version = "9.18.0-sprint82"
+version = "9.19.0-sprint83"
 edition = "2021"
 description = "Descentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
 license = "Apache-2.0"
@@ -922,6 +922,11 @@ test-mocks = []
 # src/economy/compute_credits.rs: CE exposed as Compute Credits for symbiotic exchange
 # scripts/install.sh: POSIX installer with precompiled binary fallback
 "v9.18-mvp-deployment" = ["v9.17-biological-bridge"]
+
+# Sprint 83: The Empirical Strike & Visual Proof (v9.19.0)
+# src/benchmarks/sae_audit_benchmark.rs: SAE vs baseline benchmark engine, TCM Z-axis, CSV/JSON export
+# src/ui/visual_dashboard_scaffold.rs: WebSocket/HTTP streaming of SAE activations, 3D manifold placeholder
+"v9.19-empirical-strike" = ["v9.18-mvp-deployment"]
 
 # Sprint 50 Test: Moral Manifold Behavior
 [[test]]
