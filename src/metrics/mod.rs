@@ -11,3 +11,13 @@ pub use cooperative_objective::{
     compute_love_metric_loss, kl_divergence_entropy, pairwise_l2_divergence, BenchmarkScore,
     EPSILON, LAMBDA, MU,
 };
+
+// ─── Sprint80: Gödelian Grace (paradox detection + singularity marking) ───
+#[cfg(feature = "v9.16-godelian-synthesis")]
+pub mod godelian_grace;
+
+#[cfg(feature = "v9.16-godelian-synthesis")]
+pub use godelian_grace::{
+    detect_godelian_paradox, invoke_godelian_grace, GraceConfig, GodelianGrace, GraceRecord,
+    GraceState, GodelianNode, NodeId,
+};

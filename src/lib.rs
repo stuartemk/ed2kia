@@ -26,7 +26,7 @@
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Sprint identifier for build tracking
-pub const SPRINT_IDENTIFIER: &str = "v9.15.0-sprint79";
+pub const SPRINT_IDENTIFIER: &str = "v9.16.0-sprint80";
 
 // ============================================================================
 // Fase 1: Core Modules (P2P, SAE, Bridge)
@@ -235,14 +235,19 @@ pub mod consensus {
     #[cfg(feature = "v9.14-invariant-architecture")]
     #[path = "../consensus/relativistic_entropy.rs"]
     pub mod relativistic_entropy;
+
+    // ─── Sprint80: Proof of Novelty (topological novelty proof - anti semantic DDoS) ───
+    #[cfg(feature = "v9.16-godelian-synthesis")]
+    #[path = "../consensus/proof_of_novelty.rs"]
+    pub mod proof_of_novelty;
 }
 
 // ============================================================================
 // Sprint 78: Invariant Architecture & Planetary-Scale Resilience
 // ============================================================================
 
-/// Crypto — Sprint 78: Recursive SNARKs + Sprint 79: Post-Quantum STARKs
-#[cfg(any(feature = "v9.14-invariant-architecture", feature = "v9.15-quantum-physical-bridge"))]
+/// Crypto — Sprint 78: Recursive SNARKs + Sprint 79: Post-Quantum STARKs + Sprint 80: Blind Threshold
+#[cfg(any(feature = "v9.14-invariant-architecture", feature = "v9.15-quantum-physical-bridge", feature = "v9.16-godelian-synthesis"))]
 pub mod crypto {
     #[cfg(feature = "v9.14-invariant-architecture")]
     #[path = "../crypto/recursive_snark.rs"]
@@ -252,6 +257,11 @@ pub mod crypto {
     #[cfg(feature = "v9.15-quantum-physical-bridge")]
     #[path = "../crypto/post_quantum_starks.rs"]
     pub mod post_quantum_starks;
+
+    // ─── Sprint80: Blind Threshold Computation (Garbled Circuits + TSS) ───
+    #[cfg(feature = "v9.16-godelian-synthesis")]
+    #[path = "../crypto/blind_threshold_computation.rs"]
+    pub mod blind_threshold_computation;
 }
 
 /// Privacy — Sprint 78: Differential Holographic Noise + Sprint 79: FHE-Ready WASM
@@ -267,11 +277,17 @@ pub mod privacy {
     pub mod fhe_ready_wasm;
 }
 
-/// Physical TEE Bridge — Sprint 79: TEE oracles with thermodynamic proof-of-work
-#[cfg(feature = "v9.15-quantum-physical-bridge")]
+/// Physical TEE Bridge — Sprint 79: TEE oracles + Sprint 80: Heterogeneous MPC
+#[cfg(any(feature = "v9.15-quantum-physical-bridge", feature = "v9.16-godelian-synthesis"))]
 pub mod oracle {
+    #[cfg(feature = "v9.15-quantum-physical-bridge")]
     #[path = "../oracle/physical_tee_bridge.rs"]
     pub mod physical_tee_bridge;
+
+    // ─── Sprint80: Heterogeneous MPC (multi-ISA consensus - x86/ARM/RISC-V) ───
+    #[cfg(feature = "v9.16-godelian-synthesis")]
+    #[path = "../oracle/heterogeneous_mpc.rs"]
+    pub mod heterogeneous_mpc;
 }
 
 // ============================================================================
@@ -698,6 +714,11 @@ pub mod alignment {
     #[cfg(feature = "v9.15-quantum-physical-bridge")]
     #[path = "../alignment/shadow_persona_sandbox.rs"]
     pub mod shadow_persona_sandbox;
+
+    // ─── Sprint80: Epistemic Wiping (ontological air-gap + cryptographic wiping) ───
+    #[cfg(feature = "v9.16-godelian-synthesis")]
+    #[path = "../alignment/epistemic_wiping.rs"]
+    pub mod epistemic_wiping;
 }
 
 /// Topological Fingerprinting — Persistent Homology for GEI (Sprint49) + Deception Detection (Sprint51)

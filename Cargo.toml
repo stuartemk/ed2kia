@@ -1,6 +1,6 @@
 [package]
 name = "ed2kia"
-version = "9.15.0-sprint79"
+version = "9.16.0-sprint80"
 edition = "2021"
 description = "Descentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
 license = "Apache-2.0"
@@ -899,6 +899,14 @@ test-mocks = []
 # src/alignment/shadow_persona_sandbox.rs: Adversarial sandboxing with cryptographic muzzle
 # src/privacy/fhe_ready_wasm.rs: FHE-ready WASM architecture for side-channel mitigation
 "v9.15-quantum-physical-bridge" = ["v9.14-invariant-architecture"]
+
+# Sprint 80: Gödelian Synthesis & Architecture of Absolute Incompleteness (v9.16.0)
+# src/oracle/heterogeneous_mpc.rs: Multi-ISA consensus validation (x86/ARM/RISC-V) - prevents Silicon Trojan attacks
+# src/crypto/blind_threshold_computation.rs: Garbled Circuits + TSS for blind GEI validation without FHE collapse
+# src/alignment/epistemic_wiping.rs: Ontological air-gapping + cryptographic epistemic wiping for shadow personas
+# src/consensus/proof_of_novelty.rs: Topological novelty proof to prevent semantic DDoS/uVDF farming
+# src/metrics/godelian_grace.rs: Gödelian paradox detection and graceful handling via singularity marking
+"v9.16-godelian-synthesis" = ["v9.15-quantum-physical-bridge"]
 
 # Sprint 50 Test: Moral Manifold Behavior
 [[test]]

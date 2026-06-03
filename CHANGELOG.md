@@ -1,3 +1,40 @@
+## [v9.16.0-godelian-synthesis] — 2026-06-03 (Sprint 80 — Gödelian Synthesis & Architecture of Absolute Incompleteness)
+
+### Sprint 80 "Gödelian Synthesis & Architecture of Absolute Incompleteness"
+
+Sintesis Gödeliana para la arquitectura de la incompletitud absoluta: **Heterogeneous MPC** (validación de consenso multi-ISA x86/ARM/RISC-V, detección Silicon Trojan, attestation proofs con FNV-1a hashing, validación umbral ≥2/3), **Blind Threshold Computation** (Garbled Circuits + TSS para validación ciega GEI sin colapso FHE, Shamir polynomial sharing, anti-collusion detection), **Epistemic Wiping** (air-gapping ontológico + borrado criptográfico epistémico, quarantine hiperbólico no-Euclidiano, contagion risk monitoring), **Proof of Novelty** (prueba topológica de novedad contra DDoS semántico/uVDF farming, coverage maps, Shannon entropy, Haversine distance) y **Gödelian Grace** (detección de paradojas Gödelianas vía Z-score history chaos, singularity marking, human delegation queue). 190+ tests passing.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| Heterogeneous MPC | `src/oracle/heterogeneous_mpc.rs` | Multi-ISA consensus validation (x86/ARM/RISC-V), Silicon Trojan prevention, FNV-1a attestation (~827 líneas, 35 tests) |
+| Blind Threshold Computation | `src/crypto/blind_threshold_computation.rs` | Garbled Circuits + TSS, blind GEI validation, Shamir sharing, anti-collusion (~882 líneas, 41 tests) |
+| Epistemic Wiping | `src/alignment/epistemic_wiping.rs` | Ontological air-gapping, hyperbolic quarantine, cryptographic weight destruction (~839 líneas, 37 tests) |
+| Proof of Novelty | `src/consensus/proof_of_novelty.rs` | Topological novelty proof, coverage maps, Shannon entropy, semantic DDoS protection (~800 líneas, 35 tests) |
+| Gödelian Grace | `src/metrics/godelian_grace.rs` | Z-score chaos detection, singularity marking, human delegation queue (~944 líneas, 42 tests) |
+
+### Bugfixes
+- `MpcRecord::fmt()` → `Vec<&str>` no puede construirse desde `Iterator<Item=String>`. Fix: `Vec<String>` tipo correcto
+- `TSSSignature` → `PartialEq` missing para `assert_eq!`. Fix: `#[derive(PartialEq)]` agregado
+- `BlindError` → `PartialEq`/`Debug` missing. Fix: `#[derive(Debug, Clone, PartialEq)]`
+- `register_circuit()` → `circuit` moved antes de size check. Fix: extract `size` antes del if-check
+- `WipeResult` → `PartialEq` missing. Fix: `#[derive(PartialEq)]`
+- `destroy_weights()` → `Vec<u32>` vs `Vec<u8>` type mismatch en `fnv_hash_256`. Fix: `.to_le_bytes()` conversión
+- `perform_epistemic_wipe()` → borrow checker conflict self.nodes. Fix: split validate/extract scopes
+- `observe()` → borrow checker conflict self.nodes + self.escalate_node. Fix: extract data before mutable borrow
+- `mark_singularity()` → borrow checker conflict self.nodes + self.generate_paradox_signature. Fix: extract z_history before mutable borrow
+
+### Feature Gate
+```toml
+"v9.16-godelian-synthesis" = ["v9.15-quantum-physical-bridge"]
+```
+
+### Validation Protocol
+- `cargo fmt` ✓
+- `cargo check --features v9.16-godelian-synthesis` ✓
+- `cargo test --lib --features v9.16-godelian-synthesis` ✓ (190/190 tests across 5 modules)
+
+---
+
 ## [v9.15.0-quantum-physical-bridge] — 2026-06-02 (Sprint 79 — Quantum-Physical Bridge & God-Level Resilience)
 
 ### Sprint 79 "Quantum-Physical Bridge & God-Level Resilience"
