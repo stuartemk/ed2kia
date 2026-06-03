@@ -21,3 +21,13 @@ pub use godelian_grace::{
     detect_godelian_paradox, invoke_godelian_grace, GraceConfig, GodelianGrace, GraceRecord,
     GraceState, GodelianNode, NodeId,
 };
+
+// ─── Sprint81: Paradox Cost & Fractal Triage (CE burning + anti-DDoS Gödelian) ───
+#[cfg(feature = "v9.17-biological-bridge")]
+pub mod paradox_cost_triage;
+
+#[cfg(feature = "v9.17-biological-bridge")]
+pub use paradox_cost_triage::{
+    apply_paradox_cost, cluster_paradoxes, CEBurnResult, MetaParadox, ParadoxCostTriage,
+    TriageConfig,
+};

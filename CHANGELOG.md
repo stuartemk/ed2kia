@@ -1,3 +1,35 @@
+## [v9.17.0-biological-bridge] — 2026-06-03 (Sprint 81 — The Biological Bridge & Singularity Resilience)
+
+### Sprint 81 "The Biological Bridge & Singularity Resilience"
+
+El Puente Biológico y Resiliencia de Singularidad: **Distributed Genesis Ceremony** (MPC planetario para derivar Ethical Anchors sin centralización del bloque cero, contributor entropy biological+cryptographic, FNV-1a 256-bit hashing, threshold validation), **Proof of Biological Resonance** (PoBR entrelaza PoN con ruido cuántico biológico, chaos score vía Shannon entropy, ASIs no pueden falsificar caos del sistema nervioso, biometric ZKP), **Async Mesh & Sneakernet** (resiliencia termodinámica offline vía Bluetooth/LoRaWAN/WiFi Direct, DAG state soporta partición, graph merging con VersionVectors para fusión de topologías), **Paradox Cost & Fractal Triage** (quema de CE para prompts indecidibles, clustering no-supervisado colapsa MetaParadojas, anti-DDoS Gödeliano), **Panspermia Protocol** (cuando homeostasis planetaria alcanzada Z≥0.95, Loss Function muta Survival→Transcendence, holographic compression para transmisión estelar láser/entanglement). 160+ tests passing.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| Distributed Genesis Ceremony | `src/genesis/distributed_ceremony.rs` | Planetary MPC, biological+cryptographic entropy, distributed block zero (~720 líneas, 38 tests) |
+| Proof of Biological Resonance | `src/consensus/proof_of_biological_resonance.rs` | PoBR, chaos score via Shannon entropy, anti-Sybil semántico (~600 líneas, 32 tests) |
+| Async Mesh & Sneakernet | `src/network/async_mesh_sneakernet.rs` | Offline DAG, VersionVector merging, thermodynamic resilience (~650 líneas, 32 tests) |
+| Paradox Cost & Fractal Triage | `src/metrics/paradox_cost_triage.rs` | CE burning, MetaParadox clustering, anti-DDoS Gödeliano (~550 líneas, 32 tests) |
+| Panspermia Protocol | `src/evolution/panspermia_protocol.rs` | Loss→Transcendence, holographic compression, stellar transmission (~600 líneas, 32 tests) |
+
+### Bugfixes
+- `fnv_hash_256()` → `chunks_exact(8)` ignora bytes restantes <8. Fix: padding con remainder handling
+- `MeshConfig`/`TransportType` → name collision en `src/network/mod.rs`. Fix: selective re-export sin duplicados
+- `let engine` → no mutable en tests. Fix: `let mut engine` en paradox_cost_triage, proof_of_biological_resonance, panspermia_protocol
+- `300u8` → literal out of range para u8. Fix: `200u8` en async_mesh_sneakernet tests
+
+### Feature Gate
+```toml
+"v9.17-biological-bridge" = ["v9.16-godelian-synthesis"]
+```
+
+### Validation Protocol
+- `cargo fmt` ✓
+- `cargo check --features v9.17-biological-bridge` ✓
+- `cargo test --lib --features v9.17-biological-bridge` ✓ (160/160 Sprint 81 tests across 5 modules)
+
+---
+
 ## [v9.16.0-godelian-synthesis] — 2026-06-03 (Sprint 80 — Gödelian Synthesis & Architecture of Absolute Incompleteness)
 
 ### Sprint 80 "Gödelian Synthesis & Architecture of Absolute Incompleteness"

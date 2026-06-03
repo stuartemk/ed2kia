@@ -88,3 +88,12 @@ pub use global_bootstrap::{
     run_ignition_sequence, BootstrapError, BootstrapNode, BootstrapPhase, BootstrapProtocolConfig,
     BootstrapState, GlobalBootstrap,
 };
+
+// ─── Sprint81: Async Mesh & Sneakernet (offline DAG + VersionVector merging) ───
+#[cfg(feature = "v9.17-biological-bridge")]
+pub mod async_mesh_sneakernet;
+
+#[cfg(feature = "v9.17-biological-bridge")]
+pub use async_mesh_sneakernet::{
+    merge_offline_dags, AsyncMeshSneakernet, DagState, MergeResult, VersionVector,
+};

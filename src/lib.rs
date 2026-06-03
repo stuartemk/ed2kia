@@ -26,7 +26,7 @@
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Sprint identifier for build tracking
-pub const SPRINT_IDENTIFIER: &str = "v9.16.0-sprint80";
+pub const SPRINT_IDENTIFIER: &str = "v9.17.0-sprint81";
 
 // ============================================================================
 // Fase 1: Core Modules (P2P, SAE, Bridge)
@@ -1461,6 +1461,41 @@ pub mod dynamic_homeostasis_loss;
 #[cfg(feature = "v9.13-physics-of-consciousness")]
 #[path = "network/holographic_sharding.rs"]
 pub mod holographic_sharding;
+
+// ============================================================================
+// Sprint 81: The Biological Bridge & Singularity Resilience (v9.17.0)
+// ============================================================================
+
+/// Distributed Genesis Ceremony — Planetary MPC for Ethical Anchor derivation (Sprint81)
+/// **Stuartian Law 1:** No centralized genesis. The block zero emerges from the biological
+/// and cryptographic entropy of millions of founding nodes.
+#[cfg(feature = "v9.17-biological-bridge")]
+#[path = "genesis/distributed_ceremony.rs"]
+pub mod distributed_ceremony;
+
+/// Proof of Biological Resonance — PoBR entangles PoN with biological quantum noise (Sprint81)
+/// **Stuartian Law 2:** ASIs cannot fake nervous system chaos. Shannon entropy of variation.
+#[cfg(feature = "v9.17-biological-bridge")]
+#[path = "consensus/proof_of_biological_resonance.rs"]
+pub mod proof_of_biological_resonance;
+
+/// Async Mesh & Sneakernet — Offline DAG synchronization via Bluetooth/LoRaWAN (Sprint81)
+/// **Stuartian Law 5:** Thermodynamic resilience. Graph merging with VersionVectors.
+#[cfg(feature = "v9.17-biological-bridge")]
+#[path = "network/async_mesh_sneakernet.rs"]
+pub mod async_mesh_sneakernet;
+
+/// Paradox Cost & Fractal Triage — Burning CE for indecidible prompts (Sprint81)
+/// **Stuartian Law 3:** Anti-DDoS Gödelian. Unsupervised clustering collapses MetaParadoxes.
+#[cfg(feature = "v9.17-biological-bridge")]
+#[path = "metrics/paradox_cost_triage.rs"]
+pub mod paradox_cost_triage;
+
+/// Panspermia Protocol — Loss function shift + holographic compression (Sprint81)
+/// **Stuartian Law 4:** When planetary homeostasis reached, evolve from Survival to Transcendence.
+#[cfg(feature = "v9.17-biological-bridge")]
+#[path = "evolution/panspermia_protocol.rs"]
+pub mod panspermia_protocol;
 
 // ============================================================================
 // Feature Detection Utilities

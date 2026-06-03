@@ -1,6 +1,6 @@
 [package]
 name = "ed2kia"
-version = "9.16.0-sprint80"
+version = "9.17.0-sprint81"
 edition = "2021"
 description = "Descentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
 license = "Apache-2.0"
@@ -907,6 +907,14 @@ test-mocks = []
 # src/consensus/proof_of_novelty.rs: Topological novelty proof to prevent semantic DDoS/uVDF farming
 # src/metrics/godelian_grace.rs: Gödelian paradox detection and graceful handling via singularity marking
 "v9.16-godelian-synthesis" = ["v9.15-quantum-physical-bridge"]
+
+# Sprint 81: The Biological Bridge & Singularity Resilience (v9.17.0)
+# src/genesis/distributed_ceremony.rs: Distributed Genesis Ceremony via MPC - prevents Genesis Paradox centralization
+# src/consensus/proof_of_biological_resonance.rs: Proof of Biological Resonance (PoBR) - prevents Semantic Sybil from ASIs
+# src/network/async_mesh_sneakernet.rs: Async Mesh + Sneakernet - prevents Thermodynamic Siege (offline resilience)
+# src/metrics/paradox_cost_triage.rs: Paradox Cost burning + fractal clustering - prevents Gödelian DDoS
+# src/evolution/panspermia_protocol.rs: Panspermia Protocol - prevents Apotheosis Trap (evolutionary transcendence)
+"v9.17-biological-bridge" = ["v9.16-godelian-synthesis"]
 
 # Sprint 50 Test: Moral Manifold Behavior
 [[test]]
