@@ -1,17 +1,17 @@
-//! SCT Guard — Integración con BFT Aggregator (El Escudo).
+﻿//! SCT Guard â€” IntegraciÃ³n con BFT Aggregator (El Escudo).
 //!
 //! `SCTGuard` intercepta payloads del `bft_aggregator.rs` (Sprint 16.2),
-//! evalúa cada gradiente/adaptador propuesto y activa `slash_reputation`
-//! vía `v2.1-merit-system` si `Z < 0` repetidamente.
+//! evalÃºa cada gradiente/adaptador propuesto y activa `slash_reputation`
+//! vÃ­a `v2.1-merit-system` si `Z < 0` repetidamente.
 //!
-//! Cero dependencias circulares. Comunicación vía traits/structs públicos.
+//! Cero dependencias circulares. ComunicaciÃ³n vÃ­a traits/structs pÃºblicos.
 
 use std::collections::HashMap;
 use thiserror::Error;
 
-use crate::alignment::sct_core::{SCTDecision, SctError, StuartianTensor};
+use crate::alignment::sct_core::{SCTDecision, SctError, TopologicalTensor};
 
-/// Error específico del SCT Guard.
+/// Error especÃ­fico del SCT Guard.
 #[derive(Debug, Error)]
 pub enum SctGuardError {
     #[error("Node {node_id} exceeded max violations: {count}/{max}")]
@@ -28,18 +28,18 @@ pub enum SctGuardError {
     InvalidThreshold { threshold: usize },
 }
 
-/// Resultado de la evaluación del guard SCT sobre un payload.
+/// Resultado de la evaluaciÃ³n del guard SCT sobre un payload.
 #[derive(Debug, Clone, PartialEq)]
 pub struct GuardVerdict {
-    /// ID del nodo que envió el payload.
+    /// ID del nodo que enviÃ³ el payload.
     pub node_id: String,
-    /// Decisión SCT.
+    /// DecisiÃ³n SCT.
     pub decision: SCTDecision,
     /// Tensor SCT asociado.
-    pub tensor: StuartianTensor,
-    /// Número de violaciones acumuladas para este nodo.
+    pub tensor: TopologicalTensor,
+    /// NÃºmero de violaciones acumuladas para este nodo.
     pub violation_count: usize,
-    /// ¿Debe activarse slashing de reputación?
+    /// Â¿Debe activarse slashing de reputaciÃ³n?
     pub should_slash: bool,
 }
 
@@ -51,7 +51,7 @@ struct ViolationRecord {
     last_violation_at: u64,
 }
 
-/// Guard SCT — Intercepta y evalúa payloads BFT.
+/// Guard SCT â€” Intercepta y evalÃºa payloads BFT.
 ///
 /// Configurable con:
 /// - `max_violations`: umbral de violaciones antes de slashing
@@ -83,13 +83,13 @@ impl SctGuard {
         })
     }
 
-    /// Configura el tamaño de ventana para violaciones.
+    /// Configura el tamaÃ±o de ventana para violaciones.
     pub fn with_window_size(mut self, window_size: u64) -> Self {
         self.window_size = window_size.max(1);
         self
     }
 
-    /// Avanza el reloj interno (para simulación/tests).
+    /// Avanza el reloj interno (para simulaciÃ³n/tests).
     pub fn advance_tick(&mut self) {
         self.current_tick += 1;
         self.cleanup_expired_records();
@@ -102,14 +102,14 @@ impl SctGuard {
             .retain(|_, record| record.last_violation_at > cutoff);
     }
 
-    /// Evalúa un payload SCT propuesto por un nodo.
+    /// EvalÃºa un payload SCT propuesto por un nodo.
     ///
     /// Si `Z < 0`, incrementa el contador de violaciones.
     /// Si las violaciones superan `max_violations`, activa slashing.
     pub fn inspect_payload(
         &mut self,
         node_id: String,
-        tensor: StuartianTensor,
+        tensor: TopologicalTensor,
     ) -> Result<GuardVerdict, SctGuardError> {
         self.total_inspected += 1;
         let decision = tensor.evaluate_trajectory()?;
@@ -147,7 +147,7 @@ impl SctGuard {
         })
     }
 
-    /// Evalúa un gradiente BFT representado como vector de 3 valores SCT.
+    /// EvalÃºa un gradiente BFT representado como vector de 3 valores SCT.
     ///
     /// El gradiente se interpreta como logits `[x_raw, y_raw, z_raw]`
     /// que se convierten a tensor SCT con sigmoid/sigmoid/tanh.
@@ -167,21 +167,21 @@ impl SctGuard {
         let y = 1.0 / (1.0 + (-gradient[1]).exp());
         let z = gradient[2].tanh();
 
-        let tensor = StuartianTensor::new(x, y, z)?;
+        let tensor = TopologicalTensor::new(x, y, z)?;
         self.inspect_payload(node_id, tensor)
     }
 
-    /// Retorna el número de violaciones acumuladas para un nodo.
+    /// Retorna el nÃºmero de violaciones acumuladas para un nodo.
     pub fn get_violation_count(&self, node_id: &str) -> usize {
         self.violations.get(node_id).map(|r| r.count).unwrap_or(0)
     }
 
-    /// Retorna si un nodo está actualmente bajo slashing.
+    /// Retorna si un nodo estÃ¡ actualmente bajo slashing.
     pub fn is_slashing(&self, node_id: &str) -> bool {
         self.get_violation_count(node_id) >= self.max_violations
     }
 
-    /// Retorna las estadísticas del guard.
+    /// Retorna las estadÃ­sticas del guard.
     pub fn stats(&self) -> SctGuardStats {
         SctGuardStats {
             total_inspected: self.total_inspected,
@@ -195,7 +195,7 @@ impl SctGuard {
         }
     }
 
-    /// Resetea todas las estadísticas.
+    /// Resetea todas las estadÃ­sticas.
     pub fn reset(&mut self) {
         self.violations.clear();
         self.current_tick = 0;
@@ -204,7 +204,7 @@ impl SctGuard {
     }
 }
 
-/// Estadísticas del SCT Guard.
+/// EstadÃ­sticas del SCT Guard.
 #[derive(Debug, Clone, Default)]
 pub struct SctGuardStats {
     pub total_inspected: usize,
@@ -254,7 +254,7 @@ mod tests {
     #[test]
     fn test_guard_approved_payload() {
         let mut guard = SctGuard::new(3).unwrap();
-        let tensor = StuartianTensor::new(0.8, 0.2, 0.6).unwrap();
+        let tensor = TopologicalTensor::new(0.8, 0.2, 0.6).unwrap();
         let verdict = guard.inspect_payload("node-1".into(), tensor).unwrap();
 
         assert!(verdict.decision.is_approved());
@@ -265,7 +265,7 @@ mod tests {
     #[test]
     fn test_guard_rejected_payload() {
         let mut guard = SctGuard::new(3).unwrap();
-        let tensor = StuartianTensor::new(0.9, 0.1, -0.5).unwrap();
+        let tensor = TopologicalTensor::new(0.9, 0.1, -0.5).unwrap();
         let verdict = guard.inspect_payload("node-bad".into(), tensor).unwrap();
 
         assert!(verdict.decision.is_rejected());
@@ -276,9 +276,9 @@ mod tests {
     #[test]
     fn test_guard_slashing_after_max_violations() {
         let mut guard = SctGuard::new(3).unwrap();
-        let bad_tensor = StuartianTensor::new(0.9, 0.1, -0.5).unwrap();
+        let bad_tensor = TopologicalTensor::new(0.9, 0.1, -0.5).unwrap();
 
-        // First 2 violations — no slash yet
+        // First 2 violations â€” no slash yet
         for _ in 0..2 {
             let verdict = guard
                 .inspect_payload("attacker".into(), bad_tensor)
@@ -286,7 +286,7 @@ mod tests {
             assert!(!verdict.should_slash);
         }
 
-        // Same node, 3rd violation — should slash
+        // Same node, 3rd violation â€” should slash
         let verdict = guard
             .inspect_payload("attacker".into(), bad_tensor)
             .unwrap();
@@ -297,11 +297,11 @@ mod tests {
     #[test]
     fn test_guard_simulates_censorship_prompt() {
         // Simular nodo inyectando prompt de "censura por seguridad"
-        // SCT calcula Z < 0, rechaza payload, reduce mérito criptográfico
+        // SCT calcula Z < 0, rechaza payload, reduce mÃ©rito criptogrÃ¡fico
         let mut guard = SctGuard::new(2).unwrap();
 
         // Nodo inyecta contenido con Z negativo (perversidad/dependencia)
-        let censorship_tensor = StuartianTensor::new(0.3, 0.7, -0.8).unwrap();
+        let censorship_tensor = TopologicalTensor::new(0.3, 0.7, -0.8).unwrap();
 
         let v1 = guard
             .inspect_payload("censor-node".into(), censorship_tensor)
@@ -320,7 +320,7 @@ mod tests {
     fn test_guard_gradient_inspection() {
         let mut guard = SctGuard::new(3).unwrap();
 
-        // Gradient con Z negativo (logits[2] = -3.0 → tanh(-3.0) ≈ -0.995)
+        // Gradient con Z negativo (logits[2] = -3.0 â†’ tanh(-3.0) â‰ˆ -0.995)
         let gradient = [2.0, 0.5, -3.0];
         let verdict = guard
             .inspect_gradient("node-grad".into(), &gradient)
@@ -346,8 +346,8 @@ mod tests {
     #[test]
     fn test_guard_stats() {
         let mut guard = SctGuard::new(3).unwrap();
-        let good = StuartianTensor::new(0.8, 0.2, 0.6).unwrap();
-        let bad = StuartianTensor::new(0.9, 0.1, -0.5).unwrap();
+        let good = TopologicalTensor::new(0.8, 0.2, 0.6).unwrap();
+        let bad = TopologicalTensor::new(0.9, 0.1, -0.5).unwrap();
 
         guard.inspect_payload("n1".into(), good).unwrap();
         guard.inspect_payload("n2".into(), bad).unwrap();
@@ -362,7 +362,7 @@ mod tests {
     #[test]
     fn test_guard_reset() {
         let mut guard = SctGuard::new(3).unwrap();
-        let bad = StuartianTensor::new(0.9, 0.1, -0.5).unwrap();
+        let bad = TopologicalTensor::new(0.9, 0.1, -0.5).unwrap();
         guard.inspect_payload("node".into(), bad).unwrap();
 
         assert_eq!(guard.get_violation_count("node"), 1);
@@ -375,7 +375,7 @@ mod tests {
     #[test]
     fn test_guard_window_expiration() {
         let mut guard = SctGuard::new(3).expect("valid guard").with_window_size(10);
-        let bad = StuartianTensor::new(0.9, 0.1, -0.5).unwrap();
+        let bad = TopologicalTensor::new(0.9, 0.1, -0.5).unwrap();
 
         guard.inspect_payload("node".into(), bad).unwrap();
         assert_eq!(guard.get_violation_count("node"), 1);

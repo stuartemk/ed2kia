@@ -1,7 +1,7 @@
-//! Sybil-Hardened CE — Sprint 73: Pragmatic Pivot & Asymptotic Hardening
+﻿//! Sybil-Hardened CE â€” Sprint 73: Pragmatic Pivot & Asymptotic Hardening
 //!
 //! Proof-of-Useful-Work (PoUW) anclado a hash SAE + decaimiento exponencial CE
-//! + ponderación diversidad geográfica/semántica + capa de vouching inicial.
+//! + ponderaciÃ³n diversidad geogrÃ¡fica/semÃ¡ntica + capa de vouching inicial.
 
 use std::collections::HashMap;
 use std::fmt;
@@ -61,7 +61,7 @@ pub struct HardenedCeConfig {
 }
 
 impl HardenedCeConfig {
-    pub fn default_stuartian() -> Self {
+    pub fn default_Topological() -> Self {
         Self {
             max_nodes: 10000,
             ce_decay_rate: 0.00001,
@@ -92,7 +92,7 @@ impl HardenedCeConfig {
 
 impl Default for HardenedCeConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -215,7 +215,7 @@ pub struct SybilHardenedCe {
 impl SybilHardenedCe {
     pub fn new() -> Self {
         Self {
-            config: HardenedCeConfig::default_stuartian(),
+            config: HardenedCeConfig::default_Topological(),
             nodes: HashMap::new(),
             proofs: HashMap::new(),
             consensus_history: Vec::new(),
@@ -493,7 +493,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = HardenedCeConfig::default_stuartian();
+        let config = HardenedCeConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 

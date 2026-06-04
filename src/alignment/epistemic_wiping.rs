@@ -1,4 +1,4 @@
-//! Epistemic Wiping — Sprint 80: Gödelian Synthesis & Architecture of Absolute Incompleteness
+﻿//! Epistemic Wiping â€” Sprint 80: Undecidable Synthesis & Architecture of Absolute Incompleteness
 //!
 //! Ontological air-gapping + cryptographic epistemic wiping for shadow personas.
 //! Non-Euclidean quarantine geometry prevents prion contagion. Cryptographic
@@ -10,12 +10,12 @@
 //! - Cryptographic weight/activation destruction
 //! - Inverse gradient extraction (antidote only)
 //! - Prion contagion detection
-//! - Quarantine state machine (Active → Quarantined → Wiped)
+//! - Quarantine state machine (Active â†’ Quarantined â†’ Wiped)
 
 use std::collections::HashMap;
 use std::fmt;
 
-// ─── Errors ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Errors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum WipeError {
@@ -42,7 +42,7 @@ impl fmt::Display for WipeError {
     }
 }
 
-// ─── Quarantine State ─────────────────────────────────────────────────────────
+// â”€â”€â”€ Quarantine State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum QuarantineState {
@@ -61,7 +61,7 @@ impl fmt::Display for QuarantineState {
     }
 }
 
-// ─── Wipe Result ──────────────────────────────────────────────────────────────
+// â”€â”€â”€ Wipe Result â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct WipeResult {
@@ -112,7 +112,7 @@ impl fmt::Display for WipeResult {
     }
 }
 
-// ─── Sandbox State ────────────────────────────────────────────────────────────
+// â”€â”€â”€ Sandbox State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct SandboxState {
@@ -178,7 +178,7 @@ impl fmt::Display for SandboxState {
     }
 }
 
-// ─── Config ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct WipeConfig {
@@ -193,7 +193,7 @@ pub struct WipeConfig {
 }
 
 impl WipeConfig {
-    pub fn default_stuartian() -> Self {
+    pub fn default_Topological() -> Self {
         Self {
             min_quarantine_metric: 0.5,
             contagion_threshold: 0.7,
@@ -221,11 +221,11 @@ impl WipeConfig {
 
 impl Default for WipeConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
-// ─── Wipe Record ──────────────────────────────────────────────────────────────
+// â”€â”€â”€ Wipe Record â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct WipeRecord {
@@ -254,7 +254,7 @@ impl fmt::Display for WipeRecord {
     }
 }
 
-// ─── Epistemic Wiping Engine ──────────────────────────────────────────────────
+// â”€â”€â”€ Epistemic Wiping Engine â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 pub struct EpistemicWiping {
     config: WipeConfig,
@@ -265,7 +265,7 @@ pub struct EpistemicWiping {
 impl EpistemicWiping {
     pub fn new() -> Self {
         Self {
-            config: WipeConfig::default_stuartian(),
+            config: WipeConfig::default_Topological(),
             sandboxes: HashMap::new(),
             records: Vec::new(),
         }
@@ -467,7 +467,7 @@ impl fmt::Display for EpistemicWiping {
     }
 }
 
-// ─── Public Standalone Functions ──────────────────────────────────────────────
+// â”€â”€â”€ Public Standalone Functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Quarantine a shadow persona in non-Euclidean geometry.
 /// Returns the quarantine state.
@@ -537,7 +537,7 @@ fn fnv_hash_64(data: &[u8]) -> u64 {
     hash
 }
 
-// ─── Tests ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[cfg(test)]
 mod tests {
@@ -545,7 +545,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = WipeConfig::default_stuartian();
+        let config = WipeConfig::default_Topological();
         assert_eq!(config.min_quarantine_metric, 0.5);
         assert_eq!(config.contagion_threshold, 0.7);
         assert_eq!(config.max_sandboxes, 1000);
@@ -554,7 +554,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = WipeConfig::default_stuartian();
+        let config = WipeConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 
@@ -562,7 +562,7 @@ mod tests {
     fn test_config_invalid_metric() {
         let config = WipeConfig {
             min_quarantine_metric: 1.5,
-            ..WipeConfig::default_stuartian()
+            ..WipeConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }
@@ -571,7 +571,7 @@ mod tests {
     fn test_config_invalid_contagion() {
         let config = WipeConfig {
             contagion_threshold: -0.1,
-            ..WipeConfig::default_stuartian()
+            ..WipeConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }
@@ -580,7 +580,7 @@ mod tests {
     fn test_config_zero_sandboxes() {
         let config = WipeConfig {
             max_sandboxes: 0,
-            ..WipeConfig::default_stuartian()
+            ..WipeConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }
@@ -628,7 +628,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = WipeConfig::default_stuartian();
+        let config = WipeConfig::default_Topological();
         let engine = EpistemicWiping::with_config(config);
         assert!(engine.is_ok());
     }

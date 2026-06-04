@@ -1,4 +1,4 @@
-//! Thermodynamic CE — Sprint 75: Thermodynamic Hardening & Asynchronous Neuro-Symbolic Pivot
+//! Thermodynamic CE â€” Sprint 75: Thermodynamic Hardening & Asynchronous Neuro-Symbolic Pivot
 //!
 //! CE credits only issued after valid Micro-PoW + ZKP proof verification.
 //! Hard Sybil resistance via thermodynamic cost (energy/computation).
@@ -41,7 +41,7 @@ pub struct ThermodynamicConfig {
 }
 
 impl ThermodynamicConfig {
-    pub fn default_stuartian() -> Self {
+    pub fn default_Topological() -> Self {
         Self {
             min_difficulty: 4,
             max_difficulty: 16,
@@ -68,7 +68,7 @@ impl ThermodynamicConfig {
 
 impl Default for ThermodynamicConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -152,7 +152,7 @@ pub struct ThermodynamicCe {
 impl ThermodynamicCe {
     pub fn new() -> Self {
         Self {
-            config: ThermodynamicConfig::default_stuartian(),
+            config: ThermodynamicConfig::default_Topological(),
             nodes: HashMap::new(),
             records: Vec::new(),
             total_issued: 0.0,
@@ -353,19 +353,21 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = ThermodynamicConfig::default_stuartian();
+        let config = ThermodynamicConfig::default_Topological();
         assert_eq!(config.min_difficulty, 4);
         assert_eq!(config.decay_rate, 0.95);
     }
 
     #[test]
     fn test_config_validate_ok() {
-        assert!(ThermodynamicConfig::default_stuartian().validate().is_ok());
+        assert!(ThermodynamicConfig::default_Topological()
+            .validate()
+            .is_ok());
     }
 
     #[test]
     fn test_config_zero_difficulty() {
-        let mut config = ThermodynamicConfig::default_stuartian();
+        let mut config = ThermodynamicConfig::default_Topological();
         config.min_difficulty = 0;
         assert!(config.validate().is_err());
     }
@@ -388,7 +390,7 @@ mod tests {
 
     #[test]
     fn test_verify_zkp_valid() {
-        // Proof with even XOR checksum: all zeros → XOR = 0 (even)
+        // Proof with even XOR checksum: all zeros â†’ XOR = 0 (even)
         let proof = vec![0u8; 32];
         assert!(ThermodynamicCe::verify_zkp_proof(&proof));
     }

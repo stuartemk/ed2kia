@@ -1,11 +1,11 @@
-//! Topology-Ethics Mapping — Sprint 72: Asymptotic Optimization & Hard Sybil Resistance
+﻿//! Topology-Ethics Mapping â€” Sprint 72: Asymptotic Optimization & Hard Sybil Resistance
 //!
 //! GEI as structural stability proxy, not moral oracle.
 //! Maps topological invariants (Betti numbers, persistence, coherence) to ethical metrics.
 
 use std::fmt;
 
-// ─── Error Types ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ Error Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum MappingError {
@@ -46,7 +46,7 @@ impl fmt::Display for MappingError {
 
 impl std::error::Error for MappingError {}
 
-// ─── Configuration ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ Configuration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct MappingConfig {
@@ -65,7 +65,7 @@ pub struct MappingConfig {
 }
 
 impl MappingConfig {
-    pub fn default_stuartian() -> Self {
+    pub fn default_Topological() -> Self {
         Self {
             max_drift: 0.3,
             min_coherence: 0.7,
@@ -98,11 +98,11 @@ impl MappingConfig {
 
 impl Default for MappingConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
-// ─── Topological Snapshot ──────────────────────────────────────────────────────
+// â”€â”€â”€ Topological Snapshot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TopoSnapshot {
@@ -159,7 +159,7 @@ impl fmt::Display for TopoSnapshot {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "TopoSnapshot(t={}, β₁={}, β₀={}, persist={:.4}, coh={:.4}, ent={:.4})",
+            "TopoSnapshot(t={}, Î²â‚={}, Î²â‚€={}, persist={:.4}, coh={:.4}, ent={:.4})",
             self.timestamp_ms,
             self.betti_1,
             self.betti_0,
@@ -170,7 +170,7 @@ impl fmt::Display for TopoSnapshot {
     }
 }
 
-// ─── Ethics Mapping Record ─────────────────────────────────────────────────────
+// â”€â”€â”€ Ethics Mapping Record â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct EthicsRecord {
@@ -202,7 +202,7 @@ impl fmt::Display for EthicsRecord {
     }
 }
 
-// ─── Topology-Ethics Mapper ────────────────────────────────────────────────────
+// â”€â”€â”€ Topology-Ethics Mapper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, PartialEq)]
 pub struct TopologyEthicsMapper {
@@ -215,7 +215,7 @@ pub struct TopologyEthicsMapper {
 impl TopologyEthicsMapper {
     pub fn new() -> Self {
         Self {
-            config: MappingConfig::default_stuartian(),
+            config: MappingConfig::default_Topological(),
             history: Vec::new(),
             last_snapshot: None,
             smoothed_drift: 0.0,
@@ -409,7 +409,7 @@ impl fmt::Display for TopologyEthicsMapper {
     }
 }
 
-// ─── Public Utility Functions ──────────────────────────────────────────────────
+// â”€â”€â”€ Public Utility Functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Compute structural stability from GEI + Betti numbers (standalone)
 pub fn compute_structural_stability(
@@ -452,7 +452,7 @@ pub fn coherence_to_authorization(coherence: f64, threshold: f64) -> bool {
     coherence >= threshold
 }
 
-// ─── Tests ─────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[cfg(test)]
 mod tests {
@@ -466,11 +466,11 @@ mod tests {
         TopoSnapshot::new(t, gei, betti_1, betti_1 + 1, 0.8, coherence, 0.5).unwrap()
     }
 
-    // ─── Config Tests ──────────────────────────────────────────────────────────
+    // â”€â”€â”€ Config Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_config_default() {
-        let config = MappingConfig::default_stuartian();
+        let config = MappingConfig::default_Topological();
         assert_eq!(config.max_drift, 0.3);
         assert_eq!(config.min_coherence, 0.7);
         assert!(config.mapping_enabled);
@@ -478,7 +478,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = MappingConfig::default_stuartian();
+        let config = MappingConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 
@@ -486,7 +486,7 @@ mod tests {
     fn test_config_invalid_drift() {
         let config = MappingConfig {
             max_drift: -0.1,
-            ..MappingConfig::default_stuartian()
+            ..MappingConfig::default_Topological()
         };
         assert_eq!(config.validate(), Err(MappingError::InvalidThreshold(-0.1)));
     }
@@ -495,7 +495,7 @@ mod tests {
     fn test_config_invalid_coherence() {
         let config = MappingConfig {
             min_coherence: 1.5,
-            ..MappingConfig::default_stuartian()
+            ..MappingConfig::default_Topological()
         };
         assert_eq!(config.validate(), Err(MappingError::InvalidThreshold(1.5)));
     }
@@ -504,12 +504,12 @@ mod tests {
     fn test_config_zero_decay() {
         let config = MappingConfig {
             drift_decay: 0.0,
-            ..MappingConfig::default_stuartian()
+            ..MappingConfig::default_Topological()
         };
         assert_eq!(config.validate(), Err(MappingError::InvalidThreshold(0.0)));
     }
 
-    // ─── Snapshot Tests ────────────────────────────────────────────────────────
+    // â”€â”€â”€ Snapshot Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_snapshot_creation() {
@@ -563,10 +563,10 @@ mod tests {
         let snap = make_snapshot(1000, [1.0; 8], 5, 0.9);
         let s = format!("{}", snap);
         assert!(s.contains("TopoSnapshot"));
-        assert!(s.contains("β₁=5"));
+        assert!(s.contains("Î²â‚=5"));
     }
 
-    // ─── Mapper Creation Tests ─────────────────────────────────────────────────
+    // â”€â”€â”€ Mapper Creation Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_mapper_creation() {
@@ -577,7 +577,7 @@ mod tests {
 
     #[test]
     fn test_mapper_with_config() {
-        let config = MappingConfig::default_stuartian();
+        let config = MappingConfig::default_Topological();
         let mapper = TopologyEthicsMapper::with_config(config).unwrap();
         assert!(mapper.history().is_empty());
     }
@@ -586,7 +586,7 @@ mod tests {
     fn test_mapper_with_bad_config() {
         let config = MappingConfig {
             max_drift: 0.0,
-            ..MappingConfig::default_stuartian()
+            ..MappingConfig::default_Topological()
         };
         assert_eq!(
             TopologyEthicsMapper::with_config(config),
@@ -594,7 +594,7 @@ mod tests {
         );
     }
 
-    // ─── Mapping Tests ─────────────────────────────────────────────────────────
+    // â”€â”€â”€ Mapping Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_map_first_snapshot() {
@@ -661,7 +661,7 @@ mod tests {
         assert_eq!(mapper.history().len(), 2);
     }
 
-    // ─── Drift Tests ───────────────────────────────────────────────────────────
+    // â”€â”€â”€ Drift Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_compute_drift_no_previous() {
@@ -689,7 +689,7 @@ mod tests {
         assert!(drift <= 1.0);
     }
 
-    // ─── GEI Distance Tests ────────────────────────────────────────────────────
+    // â”€â”€â”€ GEI Distance Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_gei_distance_identical() {
@@ -714,7 +714,7 @@ mod tests {
         assert!((d1 - d2).abs() < 1e-10);
     }
 
-    // ─── Authorization Tests ───────────────────────────────────────────────────
+    // â”€â”€â”€ Authorization Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_is_authorized_no_history() {
@@ -738,7 +738,7 @@ mod tests {
         assert!(!mapper.is_authorized(Some(0.95))); // Score below 0.95
     }
 
-    // ─── Statistics Tests ──────────────────────────────────────────────────────
+    // â”€â”€â”€ Statistics Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_average_ethical_score_empty() {
@@ -769,7 +769,7 @@ mod tests {
         assert!((rate - 0.5) < 1e-10); // 1/2 authorized
     }
 
-    // ─── Reset Tests ───────────────────────────────────────────────────────────
+    // â”€â”€â”€ Reset Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_reset() {
@@ -782,7 +782,7 @@ mod tests {
         assert_eq!(mapper.smoothed_drift, 0.0);
     }
 
-    // ─── Display Tests ─────────────────────────────────────────────────────────
+    // â”€â”€â”€ Display Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_mapper_display() {
@@ -806,7 +806,7 @@ mod tests {
         assert!(s.contains("EthicsRecord"));
     }
 
-    // ─── Error Display Tests ───────────────────────────────────────────────────
+    // â”€â”€â”€ Error Display Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_error_display_dimension() {
@@ -829,7 +829,7 @@ mod tests {
         assert!(format!("{}", e).contains("overflow"));
     }
 
-    // ─── Utility Function Tests ────────────────────────────────────────────────
+    // â”€â”€â”€ Utility Function Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_compute_structural_stability() {
@@ -883,7 +883,7 @@ mod tests {
         assert!(coherence_to_authorization(0.7, 0.7));
     }
 
-    // ─── Ethics Record Tests ───────────────────────────────────────────────────
+    // â”€â”€â”€ Ethics Record Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_ethics_record_valid() {
@@ -913,7 +913,7 @@ mod tests {
         assert!(!record.is_valid());
     }
 
-    // ─── Workflow Tests ────────────────────────────────────────────────────────
+    // â”€â”€â”€ Workflow Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_full_mapping_workflow() {

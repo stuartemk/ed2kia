@@ -1,17 +1,17 @@
-//! Differential Holographic Noise — Sprint 78: Invariant Architecture & Planetary-Scale Resilience
+﻿//! Differential Holographic Noise â€” Sprint 78: Invariant Architecture & Planetary-Scale Resilience
 //!
-//! Resuelve el bug terminal: Fuga de privacidad en sharding holográfico.
+//! Resuelve el bug terminal: Fuga de privacidad en sharding hologrÃ¡fico.
 //!
-//! Implementa ruido diferencial estuardiano: inyección de Laplace/Gaussiana
-//! calibrada en actualizaciones topológicas. Preserva GEI macro, protege
+//! Implementa ruido diferencial estuardiano: inyecciÃ³n de Laplace/Gaussiana
+//! calibrada en actualizaciones topolÃ³gicas. Preserva GEI macro, protege
 //! prompts micro. Imposible reconstruir prompt individual desde embedding.
 //!
-//! # Garantías
+//! # GarantÃ­as
 //!
-//! - Privacidad: (ε, δ)-diferencial en cada actualización
-//! - Utilidad: GEI macro preservado vía peso de preservación
+//! - Privacidad: (Îµ, Î´)-diferencial en cada actualizaciÃ³n
+//! - Utilidad: GEI macro preservado vÃ­a peso de preservaciÃ³n
 //! - Ruido: Laplace para sensibilidad L1, Gaussiana para L2
-//! - Calibración: ruido ∝ 1/ε (menor ε = mayor privacidad = más ruido)
+//! - CalibraciÃ³n: ruido âˆ 1/Îµ (menor Îµ = mayor privacidad = mÃ¡s ruido)
 
 use std::fmt;
 
@@ -77,8 +77,8 @@ pub struct NoiseConfig {
 }
 
 impl NoiseConfig {
-    /// Default Stuartian configuration.
-    pub fn default_stuartian() -> Self {
+    /// Default Topological configuration.
+    pub fn default_Topological() -> Self {
         Self {
             epsilon: 1.0,
             delta: 0.000_1,
@@ -111,7 +111,7 @@ impl NoiseConfig {
 
 impl Default for NoiseConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -138,7 +138,7 @@ impl fmt::Display for NoiseRecord {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Noise[dim={}, ε={:.4}, δ={:.6}, scale={:.6}, noise_L2={:.6}]",
+            "Noise[dim={}, Îµ={:.4}, Î´={:.6}, scale={:.6}, noise_L2={:.6}]",
             self.dimension, self.epsilon, self.delta, self.noise_scale, self.noise_l2_norm
         )
     }
@@ -158,10 +158,10 @@ pub struct DifferentialHolographicNoise {
 }
 
 impl DifferentialHolographicNoise {
-    /// Create with default Stuartian config.
+    /// Create with default Topological config.
     pub fn new() -> Self {
         Self {
-            config: NoiseConfig::default_stuartian(),
+            config: NoiseConfig::default_Topological(),
             total_epsilon_consumed: 0.0,
             query_count: 0,
             noise_history: Vec::new(),
@@ -189,7 +189,7 @@ impl DifferentialHolographicNoise {
             return Err(NoiseError::EmptyInput);
         }
 
-        let noisy = inject_stuartian_noise(
+        let noisy = inject_Topological_noise(
             topological_update,
             self.config.epsilon,
             self.config.delta,
@@ -250,7 +250,7 @@ impl fmt::Display for DifferentialHolographicNoise {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "DiffNoise[queries={}, ε_total={:.4}, budget_ok={}]",
+            "DiffNoise[queries={}, Îµ_total={:.4}, budget_ok={}]",
             self.query_count,
             self.total_epsilon_consumed,
             !self.is_budget_exhausted(10.0)
@@ -260,11 +260,11 @@ impl fmt::Display for DifferentialHolographicNoise {
 
 // -- Standalone public functions --
 
-/// Inject Stuartian differential privacy noise into a topological update.
+/// Inject Topological differential privacy noise into a topological update.
 ///
 /// Calibrates Laplace/Gaussian noise to preserve GEI macro while
 /// protecting individual prompts from reconstruction attacks.
-pub fn inject_stuartian_noise(
+pub fn inject_Topological_noise(
     topological_update: &[f32],
     epsilon: f64,
     delta: f64,
@@ -277,7 +277,7 @@ pub fn inject_stuartian_noise(
     let use_laplace = epsilon < delta; // Laplace for stronger per-query privacy
     let sensitivity = 1.0;
 
-    inject_stuartian_noise_internal(
+    inject_Topological_noise_internal(
         topological_update,
         epsilon,
         delta,
@@ -289,7 +289,7 @@ pub fn inject_stuartian_noise(
 }
 
 /// Internal noise injection with full parameters.
-fn inject_stuartian_noise_internal(
+fn inject_Topological_noise_internal(
     topological_update: &[f32],
     epsilon: f64,
     delta: f64,
@@ -428,34 +428,34 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = NoiseConfig::default_stuartian();
+        let config = NoiseConfig::default_Topological();
         assert!(config.epsilon > 0.0);
         assert!(config.delta >= 0.0 && config.delta <= 1.0);
     }
 
     #[test]
     fn test_config_validate_ok() {
-        let config = NoiseConfig::default_stuartian();
+        let config = NoiseConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 
     #[test]
     fn test_config_invalid_epsilon() {
-        let mut config = NoiseConfig::default_stuartian();
+        let mut config = NoiseConfig::default_Topological();
         config.epsilon = 0.0;
         assert!(config.validate().is_err());
     }
 
     #[test]
     fn test_config_invalid_delta() {
-        let mut config = NoiseConfig::default_stuartian();
+        let mut config = NoiseConfig::default_Topological();
         config.delta = 1.5;
         assert!(config.validate().is_err());
     }
 
     #[test]
     fn test_config_invalid_preservation() {
-        let mut config = NoiseConfig::default_stuartian();
+        let mut config = NoiseConfig::default_Topological();
         config.gei_preservation_weight = -0.1;
         assert!(config.validate().is_err());
     }
@@ -469,7 +469,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = NoiseConfig::default_stuartian();
+        let config = NoiseConfig::default_Topological();
         let engine = DifferentialHolographicNoise::with_config(config).unwrap();
         assert_eq!(engine.query_count, 0);
     }
@@ -576,13 +576,13 @@ mod tests {
     #[test]
     fn test_standalone_inject() {
         let data = vec![1.0f32, 2.0, 3.0];
-        let noisy = inject_stuartian_noise(&data, 1.0, 0.0001, 0.7);
+        let noisy = inject_Topological_noise(&data, 1.0, 0.0001, 0.7);
         assert_eq!(noisy.len(), data.len());
     }
 
     #[test]
     fn test_standalone_inject_empty() {
-        let noisy = inject_stuartian_noise(&[], 1.0, 0.0001, 0.7);
+        let noisy = inject_Topological_noise(&[], 1.0, 0.0001, 0.7);
         assert!(noisy.is_empty());
     }
 

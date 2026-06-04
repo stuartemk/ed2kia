@@ -1,4 +1,4 @@
-//! Telomere Regeneration Workload — Distributed Bio-Mathematical Simulation.
+﻿//! Telomere Regeneration Workload â€” Distributed Bio-Mathematical Simulation.
 //!
 //! **Sprint 50:** Implements the Genesis Telomere Workload as a `DistributedWorkload`
 //! that models cellular aging as epigenetic noise (information theory of aging).
@@ -10,16 +10,16 @@
 //! - **Distributed Workload:** BFT-consensus-ready task distribution for WASM nodes.
 //!
 //! **Mathematical Foundation:**
-//! - Shannon entropy measures information loss: `H(X) = -Σ p(x) log2(p(x))`
-//! - Kullback-Leibler divergence measures identity drift: `D_KL(P||Q) = Σ P(x) log(P(x)/Q(x))`
-//! - Telomere length modeled as information capacity: `L(t) = L_0 * exp(-λ * t)`
+//! - Shannon entropy measures information loss: `H(X) = -Î£ p(x) log2(p(x))`
+//! - Kullback-Leibler divergence measures identity drift: `D_KL(P||Q) = Î£ P(x) log(P(x)/Q(x))`
+//! - Telomere length modeled as information capacity: `L(t) = L_0 * exp(-Î» * t)`
 //! - Regeneration score: `R = (H_initial - H_current) / H_initial`
 //!
 //! **WASM Compatibility:** Pure Rust, no native dependencies, platform-agnostic.
 //!
 //! **Feature Gate:** `v3.2-genesis-manifold`
 //!
-//! **Reference:** Sprint 50 — The Stuartian Moral Manifold & Genesis Telomere Workload
+//! **Reference:** Sprint 50 â€” The Topological Moral Manifold & Genesis Telomere Workload
 
 use serde::{Deserialize, Serialize};
 
@@ -171,13 +171,13 @@ impl core::fmt::Display for WorkloadError {
 /// Models epigenetic noise as information-theoretic degradation of cellular state.
 ///
 /// **Theory:** Cellular aging results from progressive accumulation of epigenetic
-/// noise — random deviations from the optimal gene expression pattern. This is
+/// noise â€” random deviations from the optimal gene expression pattern. This is
 /// modeled as increasing Shannon entropy in the cellular information channel.
 ///
 /// **Mathematical Model:**
 /// - Initial state: Low entropy (high information fidelity)
-/// - Aging: Entropy increases as `H(t) = H_0 + α * log(1 + β * t)`
-/// - Telomere length correlates with information capacity: `L ∝ (H_max - H_current)`
+/// - Aging: Entropy increases as `H(t) = H_0 + Î± * log(1 + Î² * t)`
+/// - Telomere length correlates with information capacity: `L âˆ (H_max - H_current)`
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EpigeneticNoiseModel {
     /// Initial entropy level (young cell).
@@ -215,7 +215,7 @@ impl EpigeneticNoiseModel {
         }
     }
 
-    /// Calculate entropy at time t: `H(t) = H_0 + α * log(1 + β * t)`
+    /// Calculate entropy at time t: `H(t) = H_0 + Î± * log(1 + Î² * t)`
     pub fn entropy_at_time(&self, t: f64) -> f64 {
         self.h0 + self.alpha * (1.0 + self.beta * t).ln().max(0.0)
     }
@@ -236,7 +236,7 @@ impl EpigeneticNoiseModel {
             .sum()
     }
 
-    /// Calculate Kullback-Leibler divergence: `D_KL(P||Q) = Σ P(x) log(P(x)/Q(x))`
+    /// Calculate Kullback-Leibler divergence: `D_KL(P||Q) = Î£ P(x) log(P(x)/Q(x))`
     /// Measures how much the current distribution diverges from the identity.
     pub fn kl_divergence(p: &[f64], q: &[f64]) -> f64 {
         p.iter()
@@ -295,7 +295,7 @@ impl Default for EpigeneticNoiseModel {
 // Syntax Correction Sequence
 // ---------------------------------------------------------------------------
 
-/// Represents a syntax correction sequence — simulated cellular reprogramming
+/// Represents a syntax correction sequence â€” simulated cellular reprogramming
 /// that restores information clarity without altering cellular identity.
 ///
 /// **Process:**
@@ -441,7 +441,7 @@ impl TelomereRegenerationTask {
 
             // Check identity constraint
             if identity_drift > self.max_identity_drift {
-                // Correction would compromise identity — stop
+                // Correction would compromise identity â€” stop
                 corrections.push(SyntaxCorrection {
                     iteration: iter,
                     entropy_before: current_entropy,

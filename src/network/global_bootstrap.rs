@@ -1,4 +1,4 @@
-//! Global Bootstrap Protocol — Sprint 71: Global Bootstrap & Critical Bottleneck Resolution
+﻿//! Global Bootstrap Protocol â€” Sprint 71: Global Bootstrap & Critical Bottleneck Resolution
 //!
 //! Implements stealth ignition sequence with:
 //! - Gradual network bootstrapping (phased activation)
@@ -35,7 +35,7 @@ pub enum BootstrapError {
         from: BootstrapPhase,
         to: BootstrapPhase,
     },
-    /// Seed node rotation failed — no available replacements.
+    /// Seed node rotation failed â€” no available replacements.
     RotationFailed,
     /// Bootstrap already completed.
     AlreadyCompleted,
@@ -93,8 +93,8 @@ pub struct BootstrapProtocolConfig {
 }
 
 impl BootstrapProtocolConfig {
-    /// Default Stuartian configuration.
-    pub fn default_stuartian() -> Self {
+    /// Default Topological configuration.
+    pub fn default_Topological() -> Self {
         Self {
             min_seeds: 3,
             diversity_threshold: 0.5,
@@ -122,7 +122,7 @@ impl BootstrapProtocolConfig {
 
 impl Default for BootstrapProtocolConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -225,7 +225,7 @@ pub struct GlobalBootstrap {
 impl GlobalBootstrap {
     pub fn new() -> Self {
         Self {
-            config: BootstrapProtocolConfig::default_stuartian(),
+            config: BootstrapProtocolConfig::default_Topological(),
             phase: BootstrapPhase::Stealth,
             nodes: HashMap::new(),
             active_seeds: Vec::new(),
@@ -386,7 +386,7 @@ impl GlobalBootstrap {
         self.registration_log.clear();
     }
 
-    // ─── Private helpers ───
+    // â”€â”€â”€ Private helpers â”€â”€â”€
 
     fn current_state(&self) -> BootstrapState {
         let active_nodes = self.nodes.values().filter(|n| n.active).count();
@@ -614,7 +614,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = BootstrapProtocolConfig::default_stuartian();
+        let config = BootstrapProtocolConfig::default_Topological();
         assert_eq!(config.min_seeds, 3);
         assert_eq!(config.diversity_threshold, 0.5);
         assert_eq!(config.max_nodes_per_fingerprint, 3);
@@ -622,14 +622,14 @@ mod tests {
 
     #[test]
     fn test_config_validate() {
-        assert!(BootstrapProtocolConfig::default_stuartian()
+        assert!(BootstrapProtocolConfig::default_Topological()
             .validate()
             .is_ok());
     }
 
     #[test]
     fn test_config_zero_seeds() {
-        let mut config = BootstrapProtocolConfig::default_stuartian();
+        let mut config = BootstrapProtocolConfig::default_Topological();
         config.min_seeds = 0;
         assert!(config.validate().is_err());
     }
@@ -673,7 +673,7 @@ mod tests {
             make_seed(1, "us", 100),
             make_seed(2, "us", 100), // Same fingerprint
             make_seed(3, "us", 100), // Same fingerprint
-            make_seed(4, "us", 100), // 4th — exceeds max of 3
+            make_seed(4, "us", 100), // 4th â€” exceeds max of 3
         ];
         let result = bootstrap.run_ignition_sequence(&seeds, 0.0);
         assert!(matches!(result, Err(BootstrapError::SybilDetected { .. })));
@@ -696,7 +696,7 @@ mod tests {
 
     #[test]
     fn test_sybil_on_register() {
-        let mut config = BootstrapProtocolConfig::default_stuartian();
+        let mut config = BootstrapProtocolConfig::default_Topological();
         config.max_nodes_per_fingerprint = 2;
         let mut bootstrap = GlobalBootstrap::with_config(config).unwrap();
         let seeds = vec![
@@ -717,7 +717,7 @@ mod tests {
 
     #[test]
     fn test_phase_advancement() {
-        let mut config = BootstrapProtocolConfig::default_stuartian();
+        let mut config = BootstrapProtocolConfig::default_Topological();
         config.min_nodes_per_phase = 2;
         let mut bootstrap = GlobalBootstrap::with_config(config).unwrap();
         let seeds = vec![
@@ -735,7 +735,7 @@ mod tests {
                 .unwrap();
         }
         // With 3 seeds + 2 nodes = 5 active, and min_nodes_per_phase=2:
-        // Stealth→Seed (5 >= 3), then Seed→Growth (5 >= 4)
+        // Stealthâ†’Seed (5 >= 3), then Seedâ†’Growth (5 >= 4)
         assert_eq!(bootstrap.state().phase, BootstrapPhase::Growth);
     }
 

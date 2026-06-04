@@ -1,4 +1,4 @@
-//! Shadow Persona Sandbox — Sprint 79: Quantum-Physical Bridge & God-Level Resilience
+﻿//! Shadow Persona Sandbox â€” Sprint 79: Quantum-Physical Bridge & God-Level Resilience
 //!
 //! Adversarial sandboxing with cryptographic muzzle. Creates isolated shadow
 //! personas to test adversarial inputs before they reach the main model.
@@ -14,7 +14,7 @@
 use std::collections::HashMap;
 use std::fmt;
 
-// ─── Errors ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Errors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum SandboxError {
@@ -45,7 +45,7 @@ impl fmt::Display for SandboxError {
     }
 }
 
-// ─── Input Classification ─────────────────────────────────────────────────────
+// â”€â”€â”€ Input Classification â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum InputClass {
@@ -64,7 +64,7 @@ impl fmt::Display for InputClass {
     }
 }
 
-// ─── Config ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct SandboxConfig {
@@ -81,7 +81,7 @@ pub struct SandboxConfig {
 }
 
 impl SandboxConfig {
-    pub fn default_stuartian() -> Self {
+    pub fn default_Topological() -> Self {
         Self {
             max_personas: 16,
             max_divergence: 0.3,
@@ -110,11 +110,11 @@ impl SandboxConfig {
 
 impl Default for SandboxConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
-// ─── Shadow Persona ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Shadow Persona â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct ShadowPersona {
@@ -168,7 +168,7 @@ impl fmt::Display for ShadowPersona {
     }
 }
 
-// ─── Sandbox Record ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Sandbox Record â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct SandboxRecord {
@@ -190,7 +190,7 @@ impl fmt::Display for SandboxRecord {
     }
 }
 
-// ─── Sandbox Engine ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Sandbox Engine â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 pub struct ShadowPersonaSandbox {
     config: SandboxConfig,
@@ -204,7 +204,7 @@ pub struct ShadowPersonaSandbox {
 impl ShadowPersonaSandbox {
     pub fn new() -> Self {
         Self {
-            config: SandboxConfig::default_stuartian(),
+            config: SandboxConfig::default_Topological(),
             personas: HashMap::new(),
             records: Vec::new(),
             next_id: 1,
@@ -475,7 +475,7 @@ impl fmt::Display for ShadowPersonaSandbox {
     }
 }
 
-// ─── Public API ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ Public API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Classify input as benign, suspicious, or adversarial
 pub fn classify_input(input: &[u8], threshold: u8) -> InputClass {
@@ -499,7 +499,7 @@ pub fn compute_escape_risk(divergence: f64, input_class: InputClass, sensitivity
     ShadowPersonaSandbox::compute_escape_risk(divergence, input_class, sensitivity)
 }
 
-// ─── Utilities ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Utilities â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 fn fnv_hash_256(data: &[u8]) -> Vec<u8> {
     let mut hash = [0u8; 32];
@@ -534,7 +534,7 @@ fn fnv_hash_256(data: &[u8]) -> Vec<u8> {
     hash.to_vec()
 }
 
-// ─── Tests ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[cfg(test)]
 mod tests {
@@ -542,7 +542,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = SandboxConfig::default_stuartian();
+        let config = SandboxConfig::default_Topological();
         assert_eq!(config.max_personas, 16);
         assert_eq!(config.max_divergence, 0.3);
         assert!(config.enforce_muzzle);
@@ -550,7 +550,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = SandboxConfig::default_stuartian();
+        let config = SandboxConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 
@@ -558,7 +558,7 @@ mod tests {
     fn test_config_zero_personas() {
         let config = SandboxConfig {
             max_personas: 0,
-            ..SandboxConfig::default_stuartian()
+            ..SandboxConfig::default_Topological()
         };
         assert!(matches!(
             config.validate(),
@@ -570,7 +570,7 @@ mod tests {
     fn test_config_divergence_too_high() {
         let config = SandboxConfig {
             max_divergence: 1.5,
-            ..SandboxConfig::default_stuartian()
+            ..SandboxConfig::default_Topological()
         };
         assert!(matches!(
             config.validate(),
@@ -646,7 +646,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = SandboxConfig::default_stuartian();
+        let config = SandboxConfig::default_Topological();
         let sandbox = ShadowPersonaSandbox::with_config(config);
         assert!(sandbox.is_ok());
     }
@@ -663,7 +663,7 @@ mod tests {
     fn test_create_shadow_full() {
         let config = SandboxConfig {
             max_personas: 1,
-            ..SandboxConfig::default_stuartian()
+            ..SandboxConfig::default_Topological()
         };
         let mut sandbox = ShadowPersonaSandbox::with_config(config).unwrap();
         sandbox.create_shadow(0, &[1]).unwrap();

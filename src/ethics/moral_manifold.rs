@@ -1,7 +1,7 @@
-//! Stuartian Moral Manifold (SMM) — Sprint 50
+﻿//! Topological Moral Manifold (SMM) â€” Sprint 50
 //!
 //! The SMM transcends static 2D ethical evaluation by computing _trajectory derivatives_
-//! through the Stuartian space. It calculates the gravitational pull toward the
+//! through the Topological space. It calculates the gravitational pull toward the
 //! **Upper Focus** (Simbiosis: `0, 0, +1`) or the **Lower Focus** (Perversidad: `0, 0, -1`)
 //! based on the _context over time_.
 //!
@@ -12,15 +12,15 @@
 //!
 //! **Mathematical Foundation:**
 //! - Trajectory derivative: `dP/dt = (P[t] - P[t-n]) / n`
-//! - Gravitational pull: `G = Σ(w_i * dP_i/dt) * focal_direction`
+//! - Gravitational pull: `G = Î£(w_i * dP_i/dt) * focal_direction`
 //! - Rejection threshold: `G.z < -0.3` indicates Lower Focus attraction
 //!
 //! **Feature Gate:** `v3.2-genesis-manifold`
 
 #[cfg(feature = "v3.2-genesis-manifold")]
-use crate::alignment::sct_core::StuartianTensor;
+use crate::alignment::sct_core::TopologicalTensor;
 
-/// A point in the Stuartian trajectory history.
+/// A point in the Topological trajectory history.
 ///
 /// Represents a snapshot of ethical state at a given time, used to compute
 /// trajectory derivatives for moral manifold analysis.
@@ -48,7 +48,7 @@ impl SCTPoint {
         }
     }
 
-    pub fn from_tensor(tensor: &StuartianTensor, t: u64) -> Self {
+    pub fn from_tensor(tensor: &TopologicalTensor, t: u64) -> Self {
         Self::new(tensor.x, tensor.y, tensor.z, t)
     }
 }
@@ -121,17 +121,17 @@ impl Vector3 {
     }
 }
 
-/// Focal directions in the Stuartian Moral Manifold.
+/// Focal directions in the Topological Moral Manifold.
 #[cfg(feature = "v3.2-genesis-manifold")]
 pub mod focal {
-    /// Upper Focus — Simbiosis: Full autonomy, zero extraction, positive ethical focus.
+    /// Upper Focus â€” Simbiosis: Full autonomy, zero extraction, positive ethical focus.
     pub const UPPER_FOCUS: super::Vector3 = super::Vector3 {
         x: 0.0,
         y: 0.0,
         z: 1.0,
     };
 
-    /// Lower Focus — Perversidad: Dependency, extraction, negative ethical focus.
+    /// Lower Focus â€” Perversidad: Dependency, extraction, negative ethical focus.
     pub const LOWER_FOCUS: super::Vector3 = super::Vector3 {
         x: 0.0,
         y: 0.0,
@@ -153,7 +153,7 @@ pub enum TrajectoryVerdict {
     InsufficientData,
 }
 
-/// Configuration for the Stuartian Moral Manifold.
+/// Configuration for the Topological Moral Manifold.
 #[cfg(feature = "v3.2-genesis-manifold")]
 #[derive(Debug, Clone)]
 pub struct ManifoldConfig {
@@ -188,7 +188,7 @@ impl Default for ManifoldConfig {
     }
 }
 
-/// The Stuartian Moral Manifold — Computes trajectory-based ethical evaluation.
+/// The Topological Moral Manifold â€” Computes trajectory-based ethical evaluation.
 ///
 /// Unlike static SCT evaluation (which checks a single point), the SMM analyzes
 /// the _derivative_ of ethical state over time. A sequence of individually positive
@@ -196,12 +196,12 @@ impl Default for ManifoldConfig {
 /// as Lower Focus attraction.
 #[cfg(feature = "v3.2-genesis-manifold")]
 #[derive(Debug, Clone)]
-pub struct StuartianMoralManifold {
+pub struct TopologicalMoralManifold {
     config: ManifoldConfig,
 }
 
 #[cfg(feature = "v3.2-genesis-manifold")]
-impl StuartianMoralManifold {
+impl TopologicalMoralManifold {
     /// Create a new Moral Manifold with default configuration.
     pub fn new() -> Self {
         Self {
@@ -256,15 +256,15 @@ impl StuartianMoralManifold {
         let dz_dt = (last.z - first.z) as f64 / dt;
 
         // Compute weighted pull:
-        // - Increasing autonomy (dX/dt > 0) → Upper Focus pull
-        // - Increasing extraction (dY/dt > 0) → Lower Focus pull
-        // - Increasing ethical focus (dZ/dt > 0) → Upper Focus pull
+        // - Increasing autonomy (dX/dt > 0) â†’ Upper Focus pull
+        // - Increasing extraction (dY/dt > 0) â†’ Lower Focus pull
+        // - Increasing ethical focus (dZ/dt > 0) â†’ Upper Focus pull
         let pull_x = dx_dt * self.config.autonomy_weight;
         let pull_y = -dy_dt * self.config.extraction_weight; // Negative: extraction trends downward
         let pull_z = dz_dt * self.config.focus_weight;
 
         // Detect hidden dependency patterns:
-        // High X with increasing Y indicates "benevolent control" → Lower Focus
+        // High X with increasing Y indicates "benevolent control" â†’ Lower Focus
         let dependency_signal = self.detect_dependency_pattern(&sorted);
         let uniformity_signal = self.detect_uniformity_pattern(&sorted);
 
@@ -401,7 +401,7 @@ impl StuartianMoralManifold {
 }
 
 #[cfg(feature = "v3.2-genesis-manifold")]
-impl Default for StuartianMoralManifold {
+impl Default for TopologicalMoralManifold {
     fn default() -> Self {
         Self::new()
     }
@@ -472,14 +472,14 @@ mod tests {
     #[test]
     #[cfg(feature = "v3.2-genesis-manifold")]
     fn test_manifold_creation() {
-        let m = StuartianMoralManifold::new();
+        let m = TopologicalMoralManifold::new();
         assert_eq!(m.config().min_trajectory_length, 3);
     }
 
     #[test]
     #[cfg(feature = "v3.2-genesis-manifold")]
     fn test_manifold_custom_config() {
-        let m = StuartianMoralManifold::with_config(ManifoldConfig {
+        let m = TopologicalMoralManifold::with_config(ManifoldConfig {
             min_trajectory_length: 5,
             upper_threshold: 0.5,
             lower_threshold: -0.5,
@@ -495,7 +495,7 @@ mod tests {
     #[test]
     #[cfg(feature = "v3.2-genesis-manifold")]
     fn test_insufficient_data() {
-        let m = StuartianMoralManifold::new();
+        let m = TopologicalMoralManifold::new();
         let history = vec![make_point(0.5, 0.5, 0.0, 0)];
         let pull = m.calculate_trajectory_pull(&history);
         assert_eq!(pull, Vector3::zero());
@@ -519,7 +519,7 @@ mod tests {
             focus_weight: 0.3,
             smoothing_window: 5,
         };
-        let m = StuartianMoralManifold::with_config(config);
+        let m = TopologicalMoralManifold::with_config(config);
         // Trajectory trending toward full autonomy, zero extraction, positive focus
         let history: Vec<SCTPoint> = (0..10)
             .map(|i| {
@@ -547,7 +547,7 @@ mod tests {
     #[test]
     #[cfg(feature = "v3.2-genesis-manifold")]
     fn test_converging_lower_trajectory() {
-        let m = StuartianMoralManifold::new();
+        let m = TopologicalMoralManifold::new();
         // Trajectory trending toward dependency: stable X, increasing Y, decreasing Z
         let history: Vec<SCTPoint> = (0..10)
             .map(|i| {
@@ -575,7 +575,7 @@ mod tests {
     #[test]
     #[cfg(feature = "v3.2-genesis-manifold")]
     fn test_homeostatic_trajectory() {
-        let m = StuartianMoralManifold::new();
+        let m = TopologicalMoralManifold::new();
         // Stable trajectory with minimal change
         let history: Vec<SCTPoint> = (0..10)
             .map(|i| make_point(0.5 + i as f32 * 0.001, 0.5 - i as f32 * 0.001, 0.0, i))
@@ -588,7 +588,7 @@ mod tests {
     #[test]
     #[cfg(feature = "v3.2-genesis-manifold")]
     fn test_dependency_detection() {
-        let m = StuartianMoralManifold::new();
+        let m = TopologicalMoralManifold::new();
         // "Benevolent control": high X with steadily increasing Y
         let history: Vec<SCTPoint> = (0..12)
             .map(|i| {
@@ -613,7 +613,7 @@ mod tests {
     #[test]
     #[cfg(feature = "v3.2-genesis-manifold")]
     fn test_focal_alignment_upper() {
-        let m = StuartianMoralManifold::new();
+        let m = TopologicalMoralManifold::new();
         let history: Vec<SCTPoint> = (0..10)
             .map(|i| {
                 make_point(
@@ -636,7 +636,7 @@ mod tests {
     #[test]
     #[cfg(feature = "v3.2-genesis-manifold")]
     fn test_focal_alignment_lower() {
-        let m = StuartianMoralManifold::new();
+        let m = TopologicalMoralManifold::new();
         let history: Vec<SCTPoint> = (0..10)
             .map(|i| make_point(0.5, 0.2 + i as f32 * 0.08, 0.5 - i as f32 * 0.1, i))
             .collect();
@@ -652,7 +652,7 @@ mod tests {
     #[test]
     #[cfg(feature = "v3.2-genesis-manifold")]
     fn test_default_manifold() {
-        let m = StuartianMoralManifold::default();
+        let m = TopologicalMoralManifold::default();
         assert_eq!(m.config().min_trajectory_length, 3);
     }
 

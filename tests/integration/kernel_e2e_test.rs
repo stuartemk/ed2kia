@@ -1,15 +1,15 @@
-//! Kernel E2E Cross-Validation Test — Sprint17
+﻿//! Kernel E2E Cross-Validation Test â€” Sprint17
 //!
 //! Validates the full kernel pipeline end-to-end:
-//! GGUF load → QLoRA forward → PoC task → SCT evaluation → BFT median aggregation
-//! → CRDT merge → Async cache sync
+//! GGUF load â†’ QLoRA forward â†’ PoC task â†’ SCT evaluation â†’ BFT median aggregation
+//! â†’ CRDT merge â†’ Async cache sync
 //!
-//! This test verifies all 5 Stuartian Laws are integrated as a coherent organism:
-//! - Ley 1 (P2P) → Async Gossip Mesh
-//! - Ley 2 (SCT+BFT) → SCT Guard + BFT Aggregator
-//! - Ley 3 (QLoRA/GGUF+CRDTs) → QLoRA Adapter + CRDT convergence
-//! - Ley 4 (WASM/Edge) → Mock WASM compatibility
-//! - Ley 5 (Async Gossip) → GossipSub + Offline Cache + CRDT merge
+//! This test verifies all 5 Topological Laws are integrated as a coherent organism:
+//! - Ley 1 (P2P) â†’ Async Gossip Mesh
+//! - Ley 2 (SCT+BFT) â†’ SCT Guard + BFT Aggregator
+//! - Ley 3 (QLoRA/GGUF+CRDTs) â†’ QLoRA Adapter + CRDT convergence
+//! - Ley 4 (WASM/Edge) â†’ Mock WASM compatibility
+//! - Ley 5 (Async Gossip) â†’ GossipSub + Offline Cache + CRDT merge
 
 #[cfg(test)]
 mod kernel_e2e {
@@ -21,7 +21,7 @@ mod kernel_e2e {
     use ed2kia::federated::bft_aggregator::BftAggregator;
 
     // SCT Guard
-    use ed2kia::alignment::sct_core::{SCTDecision, StuartianTensor};
+    use ed2kia::alignment::sct_core::{SCTDecision, TopologicalTensor};
     use ed2kia::alignment::sct_guard::SctGuard;
 
     // QLoRA/GGUF
@@ -32,17 +32,17 @@ mod kernel_e2e {
     // Proof of Comprehension
     use ed2kia::proof_of_comprehension::task::ComprehensionTask;
 
-    // Stuartian Filter
-    use ed2kia::stuartian_filter::divergence::{DivergenceChecker, DivergenceError};
-    use ed2kia::stuartian_filter::slashing::{AlignmentSlasher, SlashingError};
+    // Topological Filter
+    use ed2kia::Topological_filter::divergence::{DivergenceChecker, DivergenceError};
+    use ed2kia::Topological_filter::slashing::{AlignmentSlasher, SlashingError};
 
     // Chaos Engine
     use ed2kia::chaos::engine::{ChaosConfig, ChaosEngine};
 
-    /// ──────────────────────────────────────────────
+    /// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     /// STAGE 1: GGUF Loader Validation
-    /// Ley 3: Zero computational waste — validate before load
-    /// ──────────────────────────────────────────────
+    /// Ley 3: Zero computational waste â€” validate before load
+    /// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     #[test]
     fn stage1_gguf_loader_validates_integrity() {
         let loader = GgufLoader::new();
@@ -57,10 +57,10 @@ mod kernel_e2e {
         assert!(result.is_err(), "Should reject even with SHA256 constraint");
     }
 
-    /// ──────────────────────────────────────────────
+    /// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     /// STAGE 2: QLoRA Adapter Forward Pass
     /// Ley 3: Apply quantized LoRA diff over GGUF base
-    /// ──────────────────────────────────────────────
+    /// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     #[test]
     fn stage2_qlora_adapter_forward_pass() {
         use candle_core::{DType, Device, Tensor};
@@ -104,10 +104,10 @@ mod kernel_e2e {
         assert!(delta.is_ok(), "Delta computation should succeed");
     }
 
-    /// ──────────────────────────────────────────────
+    /// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     /// STAGE 3: QLoRA Payload Compression for GossipSub
     /// Ley 1: Compress for P2P distribution
-    /// ──────────────────────────────────────────────
+    /// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     #[test]
     fn stage3_qlora_payload_compress_for_gossipsub() {
         let payload_data = vec![0u8; 1024]; // 1KB test payload
@@ -140,10 +140,10 @@ mod kernel_e2e {
         );
     }
 
-    /// ──────────────────────────────────────────────
+    /// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     /// STAGE 4: PoC Task Generation & Verification
     /// Ley 2: Cryptographic proof of useful work
-    /// ──────────────────────────────────────────────
+    /// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     #[test]
     fn stage4_poc_task_lifecycle() {
         // Create a valid ComprehensionTask
@@ -167,16 +167,16 @@ mod kernel_e2e {
         assert!(bad_task.is_err(), "Empty batch should fail");
     }
 
-    /// ──────────────────────────────────────────────
-    /// STAGE 5: SCT Guard — Ethical Payload Inspection
+    /// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    /// STAGE 5: SCT Guard â€” Ethical Payload Inspection
     /// Ley 2: Intercept and evaluate before BFT aggregation
-    /// ──────────────────────────────────────────────
+    /// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     #[test]
     fn stage5_sct_guard_approves_ethical_payload() {
         let mut guard = SctGuard::new(3).expect("Valid guard creation");
 
-        // Ethical payload — Z > 0 means approved
-        let tensor = StuartianTensor::new(0.8, 0.2, 0.5).unwrap();
+        // Ethical payload â€” Z > 0 means approved
+        let tensor = TopologicalTensor::new(0.8, 0.2, 0.5).unwrap();
         let verdict = guard.inspect_payload("node-ethical".into(), tensor);
         assert!(verdict.is_ok(), "Ethical payload should pass inspection");
 
@@ -191,8 +191,8 @@ mod kernel_e2e {
     fn stage5_sct_guard_blocks_malicious_payload() {
         let mut guard = SctGuard::new(2).expect("Valid guard creation");
 
-        // Malicious payload — Z < 0 means rejected
-        let bad_tensor = StuartianTensor::new(0.1, 0.9, -0.5).unwrap();
+        // Malicious payload â€” Z < 0 means rejected
+        let bad_tensor = TopologicalTensor::new(0.1, 0.9, -0.5).unwrap();
         for _ in 0..3 {
             let _verdict = guard.inspect_payload("node-malicious".into(), bad_tensor);
         }
@@ -213,20 +213,20 @@ mod kernel_e2e {
         );
     }
 
-    /// ──────────────────────────────────────────────
+    /// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     /// STAGE 6: BFT Median Aggregation
     /// Ley 2: Coordinate-wise median + Multi-Krum
-    /// ──────────────────────────────────────────────
+    /// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     #[test]
     fn stage6_bft_aggregation_rejects_byzantine() {
         let aggregator = BftAggregator::with_defaults();
 
-        // Honest gradients — all close to [1.0, 2.0, 3.0]
+        // Honest gradients â€” all close to [1.0, 2.0, 3.0]
         let honest1 = vec![1.0, 2.0, 3.0];
         let honest2 = vec![1.1, 2.1, 3.1];
         let honest3 = vec![0.9, 1.9, 2.9];
 
-        // Byzantine gradient — extreme outlier
+        // Byzantine gradient â€” extreme outlier
         let byzantine = vec![1000.0, 2000.0, 3000.0];
 
         let gradients = vec![honest1, honest2, honest3, byzantine];
@@ -266,10 +266,10 @@ mod kernel_e2e {
         assert!((median[2] - 3.5).abs() < 0.01, "Median[2] should be 3.5");
     }
 
-    /// ──────────────────────────────────────────────
-    /// STAGE 7: CRDT Convergence — Reputation State
+    /// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    /// STAGE 7: CRDT Convergence â€” Reputation State
     /// Ley 5: Conflict-free merge without locks
-    /// ──────────────────────────────────────────────
+    /// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     #[test]
     fn stage7_crdt_reputation_convergence() {
         // 3 nodes update reputation concurrently
@@ -282,7 +282,7 @@ mod kernel_e2e {
         crdt_b.update("node-x", 0.87, "node-b");
         crdt_c.update("node-x", 0.92, "node-c");
 
-        // Merge A → B → C (round 1)
+        // Merge A â†’ B â†’ C (round 1)
         crdt_b.merge(&crdt_a);
         crdt_c.merge(&crdt_b);
 
@@ -318,7 +318,7 @@ mod kernel_e2e {
         gc_a.increment("node-1", 5);
         gc_b.increment("node-2", 3);
 
-        // Merge A → B: takes max per node → node-1=5, node-2=3 → total=8
+        // Merge A â†’ B: takes max per node â†’ node-1=5, node-2=3 â†’ total=8
         gc_b.merge(&gc_a);
         assert_eq!(
             gc_b.value(),
@@ -353,10 +353,10 @@ mod kernel_e2e {
         assert!(set_b.contains("feature-y"), "feature-y should exist");
     }
 
-    /// ──────────────────────────────────────────────
-    /// STAGE 8: Async Gossip Mesh — Message Flow
+    /// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    /// STAGE 8: Async Gossip Mesh â€” Message Flow
     /// Ley 1: GossipSub with partition tolerance
-    /// ──────────────────────────────────────────────
+    /// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     #[test]
     fn stage8_gossip_mesh_publish_and_inject() {
         let mut mesh = GossipMesh::default_mesh();
@@ -391,10 +391,10 @@ mod kernel_e2e {
     fn stage8_gossip_mesh_health_check() {
         let mut mesh = GossipMesh::default_mesh();
 
-        // Empty mesh — not healthy (no meshed peers)
+        // Empty mesh â€” not healthy (no meshed peers)
         assert!(!mesh.is_healthy(), "Empty mesh should not be healthy");
 
-        // Add peers — becomes healthy
+        // Add peers â€” becomes healthy
         for i in 0..6 {
             mesh.add_peer(format!("peer-{}", i));
         }
@@ -403,10 +403,10 @@ mod kernel_e2e {
         assert!(meshed.len() > 0, "Should have meshed peers after adding 6");
     }
 
-    /// ──────────────────────────────────────────────
-    /// STAGE 9: Offline Cache — Store, Sync, Backoff
+    /// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    /// STAGE 9: Offline Cache â€” Store, Sync, Backoff
     /// Ley 5: Store offline, sync on reconnect
-    /// ──────────────────────────────────────────────
+    /// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     #[test]
     fn stage9_cache_store_and_sync() {
         let mut cache = GossipCache::new(100);
@@ -475,10 +475,10 @@ mod kernel_e2e {
         );
     }
 
-    /// ──────────────────────────────────────────────
-    /// STAGE 10: Version Vector — Causal Ordering
+    /// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    /// STAGE 10: Version Vector â€” Causal Ordering
     /// Ley 5: Track causal dependencies across partitions
-    /// ──────────────────────────────────────────────
+    /// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     #[test]
     fn stage10_version_vector_causal_ordering() {
         let mut vv_a = VersionVector::new();
@@ -487,7 +487,7 @@ mod kernel_e2e {
         vv_a.increment("node-a");
         vv_b.increment("node-b");
 
-        // Concurrent — different nodes, so not causally related
+        // Concurrent â€” different nodes, so not causally related
         // VersionVector::compare checks if one dominates the other
         // After merge, vv_a should contain both nodes
         vv_a.merge(&vv_b);
@@ -497,7 +497,7 @@ mod kernel_e2e {
             "Merged vector should contain both nodes"
         );
 
-        // Merge — combines both
+        // Merge â€” combines both
         vv_a.merge(&vv_b);
 
         // vv_a now dominates vv_b (has both node-a and node-b, vv_b only has node-b)
@@ -507,7 +507,7 @@ mod kernel_e2e {
             "Merged vector should dominate original"
         );
 
-        // Idempotent merge — count nodes before
+        // Idempotent merge â€” count nodes before
         let nodes_before_count = vv_a.nodes().len();
         vv_a.merge(&vv_b);
         let nodes_after_count = vv_a.nodes().len();
@@ -517,15 +517,15 @@ mod kernel_e2e {
         );
     }
 
-    /// ──────────────────────────────────────────────
-    /// STAGE 11: Divergence Detection — KL Monitor
+    /// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    /// STAGE 11: Divergence Detection â€” KL Monitor
     /// Ley 2: Detect distributional drift
-    /// ──────────────────────────────────────────────
+    /// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     #[test]
     fn stage11_divergence_detection() {
         let checker = DivergenceChecker::new(0.5).expect("Valid checker");
 
-        // Similar distributions — low divergence
+        // Similar distributions â€” low divergence
         let dist_a = vec![0.33, 0.33, 0.34];
         let dist_b = vec![0.34, 0.33, 0.33];
 
@@ -558,31 +558,31 @@ mod kernel_e2e {
         );
     }
 
-    /// ──────────────────────────────────────────────
-    /// STAGE 12: Alignment Slashing — Penalty Application
+    /// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    /// STAGE 12: Alignment Slashing â€” Penalty Application
     /// Ley 2: Deterministic penalty for misalignment
-    /// ──────────────────────────────────────────────
+    /// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     #[test]
     fn stage12_slashing_penalty() {
         let slasher = AlignmentSlasher::new(0.5, 0.1).unwrap();
 
-        // Create a slashing record (currently returns None — TODO stub)
+        // Create a slashing record (currently returns None â€” TODO stub)
         let record = slasher.evaluate("node-bad", -0.8);
-        // Currently returns None (TODO stub) — verify it doesn't panic
+        // Currently returns None (TODO stub) â€” verify it doesn't panic
         assert!(
             record.is_none() || record.is_some(),
             "Evaluate should not panic"
         );
 
-        // Apply penalty (currently returns Err — TODO stub)
+        // Apply penalty (currently returns Err â€” TODO stub)
         let _penalty_result = slasher.apply_penalty("node-bad");
-        // Currently returns NodeNotFound (TODO stub) — verify it handles gracefully
+        // Currently returns NodeNotFound (TODO stub) â€” verify it handles gracefully
     }
 
-    /// ──────────────────────────────────────────────
-    /// STAGE 13: Chaos Engine — Controlled Fault Injection
+    /// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    /// STAGE 13: Chaos Engine â€” Controlled Fault Injection
     /// Ley 5: Resilience testing
-    /// ──────────────────────────────────────────────
+    /// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     #[test]
     fn stage13_chaos_engine_config_validation() {
         let config = ChaosConfig::default();
@@ -611,11 +611,11 @@ mod kernel_e2e {
 
         let (engine, _events) = ChaosEngine::new(config);
 
-        // Initial status — no active scenario
+        // Initial status â€” no active scenario
         let status = engine.status().await;
         assert!(status.is_none(), "No active scenario initially");
 
-        // Rollback without active scenario — should handle gracefully
+        // Rollback without active scenario â€” should handle gracefully
         let rollback = engine.rollback().await;
         assert!(
             rollback.is_err(),
@@ -623,10 +623,10 @@ mod kernel_e2e {
         );
     }
 
-    /// ──────────────────────────────────────────────
-    /// STAGE 14: PNCounter — Bounded Reputation
+    /// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    /// STAGE 14: PNCounter â€” Bounded Reputation
     /// Ley 5: Bounded CRDT for reputation with min/max
-    /// ──────────────────────────────────────────────
+    /// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     #[test]
     fn stage14_pncounter_bounded_reputation() {
         let mut counter = PNCounter::new(0, 100).unwrap();
@@ -639,7 +639,7 @@ mod kernel_e2e {
         counter.decrement("node-a", 5);
         assert_eq!(counter.value(), 5);
 
-        // Bounded — cannot go below min
+        // Bounded â€” cannot go below min
         counter.decrement("node-a", 100);
         assert!(
             counter.value() >= 0,
@@ -647,7 +647,7 @@ mod kernel_e2e {
             counter.value()
         );
 
-        // Bounded — cannot go above max
+        // Bounded â€” cannot go above max
         counter.increment("node-a", 200);
         assert!(
             counter.value() <= 100,
@@ -656,16 +656,16 @@ mod kernel_e2e {
         );
     }
 
-    /// ──────────────────────────────────────────────
-    /// STAGE 15: FULL PIPELINE — End-to-End Integration
-    /// All 5 Stuartian Laws in sequence
-    /// ──────────────────────────────────────────────
+    /// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    /// STAGE 15: FULL PIPELINE â€” End-to-End Integration
+    /// All 5 Topological Laws in sequence
+    /// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     #[test]
     fn stage15_full_kernel_pipeline() {
         use candle_core::{DType, Device, Tensor};
         use ed2kia::qlora_gguf::adapter::{AdapterInfo, QuantizationType};
 
-        // ── Phase 1: GGUF + QLoRA (Ley 3) ──
+        // â”€â”€ Phase 1: GGUF + QLoRA (Ley 3) â”€â”€
         let loader = GgufLoader::new();
         assert!(
             loader.validate("/nonexistent.gguf").is_err(),
@@ -687,15 +687,15 @@ mod kernel_e2e {
         let adapter = QloraAdapter::new(info, matrix_a, matrix_b, 0.5).unwrap();
         assert!(adapter.validate().is_ok(), "QLoRA adapter valid");
 
-        // ── Phase 2: Compress for P2P (Ley 1) ──
+        // â”€â”€ Phase 2: Compress for P2P (Ley 1) â”€â”€
         let payload = QloraPayload::compress("pipeline-test".into(), &vec![0u8; 256]);
         assert!(payload.is_ok(), "Compression succeeds");
         let compressed = payload.unwrap();
         assert!(compressed.validate().is_ok(), "Payload valid");
 
-        // ── Phase 3: SCT Guard Inspection (Ley 2) ──
+        // â”€â”€ Phase 3: SCT Guard Inspection (Ley 2) â”€â”€
         let mut guard = SctGuard::new(5).unwrap();
-        let tensor = StuartianTensor::new(0.8, 0.2, 0.5).unwrap();
+        let tensor = TopologicalTensor::new(0.8, 0.2, 0.5).unwrap();
         let verdict = guard.inspect_payload("pipeline-node".into(), tensor);
         assert!(
             verdict.is_ok()
@@ -703,13 +703,13 @@ mod kernel_e2e {
             "SCT approves"
         );
 
-        // ── Phase 4: BFT Aggregation (Ley 2) ──
+        // â”€â”€ Phase 4: BFT Aggregation (Ley 2) â”€â”€
         let bft = BftAggregator::with_defaults();
         let gradients = vec![vec![1.0, 2.0], vec![1.1, 2.1], vec![0.9, 1.9]];
         let aggregated = bft.aggregate(&gradients);
         assert!(aggregated.is_ok(), "BFT aggregation succeeds");
 
-        // ── Phase 5: CRDT Merge (Ley 5) ──
+        // â”€â”€ Phase 5: CRDT Merge (Ley 5) â”€â”€
         let mut crdt_a = ReputationCrdt::new();
         let mut crdt_b = ReputationCrdt::new();
         crdt_a.update("pipeline-node", 0.95, "node-a");
@@ -720,14 +720,14 @@ mod kernel_e2e {
             "CRDT converges to max"
         );
 
-        // ── Phase 6: Gossip Mesh (Ley 1) ──
+        // â”€â”€ Phase 6: Gossip Mesh (Ley 1) â”€â”€
         let mut mesh = GossipMesh::default_mesh();
         mesh.add_peer("peer-a".into());
         mesh.add_peer("peer-b".into());
         let msg = mesh.publish(compressed.to_gossipsub_bytes());
         assert!(msg.is_ok(), "Mesh publishes compressed payload");
 
-        // ── Phase 7: Offline Cache (Ley 5) ──
+        // â”€â”€ Phase 7: Offline Cache (Ley 5) â”€â”€
         let mut cache = GossipCache::new(50);
         assert!(
             cache
@@ -741,7 +741,7 @@ mod kernel_e2e {
         );
         assert_eq!(cache.pending_sync().len(), 1, "Entry pending sync");
 
-        // ── Phase 8: Version Vector (Ley 5) ──
+        // â”€â”€ Phase 8: Version Vector (Ley 5) â”€â”€
         let mut vv = VersionVector::new();
         vv.increment("pipeline-node");
         let nodes = vv.nodes();
@@ -750,36 +750,36 @@ mod kernel_e2e {
             "VV tracks node"
         );
 
-        // Pipeline complete — all phases passed
-        println!("[KERNEL E2E] Full pipeline validated: GGUF→QLoRA→SCT→BFT→CRDT→Gossip→Cache→VV");
+        // Pipeline complete â€” all phases passed
+        println!("[KERNEL E2E] Full pipeline validated: GGUFâ†’QLoRAâ†’SCTâ†’BFTâ†’CRDTâ†’Gossipâ†’Cacheâ†’VV");
     }
 
-    /// ──────────────────────────────────────────────
-    /// STAGE 16: Error Handling — Graceful Degradation
+    /// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    /// STAGE 16: Error Handling â€” Graceful Degradation
     /// Verify all modules fail safely
-    /// ──────────────────────────────────────────────
+    /// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     #[test]
     fn stage16_error_handling_graceful() {
-        // GGUF loader error — nonexistent file returns FileNotFound
+        // GGUF loader error â€” nonexistent file returns FileNotFound
         let loader_err = GgufLoader::new().validate("/bad/path.gguf");
         assert!(matches!(loader_err, Err(GgufLoaderError::FileNotFound(_))));
 
-        // SCT Guard error — threshold must be > 0
+        // SCT Guard error â€” threshold must be > 0
         let guard_err = SctGuard::new(0);
         assert!(matches!(
             guard_err,
             Err(ed2kia::alignment::sct_guard::SctGuardError::InvalidThreshold { .. })
         ));
 
-        // Divergence error — threshold must be >= 0
+        // Divergence error â€” threshold must be >= 0
         let div_err = DivergenceChecker::new(-1.0);
         assert!(matches!(div_err, Err(DivergenceError::InvalidThreshold(_))));
 
-        // Slashing error — penalty must be in [0, 1]
+        // Slashing error â€” penalty must be in [0, 1]
         let slash_err = AlignmentSlasher::new(0.5, 1.5);
         assert!(matches!(slash_err, Err(SlashingError::InvalidThreshold(_))));
 
-        // PNCounter error — min must be <= max
+        // PNCounter error â€” min must be <= max
         let pn_err = PNCounter::new(100, 0); // min > max
         assert!(pn_err.is_err(), "PNCounter rejects invalid range");
 

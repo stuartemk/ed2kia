@@ -1,11 +1,11 @@
-//! SCT Reward Model — Proyección 3D del Tensor Estuardiano.
+﻿//! SCT Reward Model â€” ProyecciÃ³n 3D del Tensor Estuardiano.
 //!
-//! Capa `candle_nn::Linear` ligera que proyecta `hidden_state` → 3 dimensiones `(X, Y, Z)`.
+//! Capa `candle_nn::Linear` ligera que proyecta `hidden_state` â†’ 3 dimensiones `(X, Y, Z)`.
 //! Activaciones: `X = sigmoid`, `Y = sigmoid`, `Z = tanh`.
-//! `SCTLoss` con penalización logarítmica masiva si predice `Z < 0` en datos
+//! `SCTLoss` con penalizaciÃ³n logarÃ­tmica masiva si predice `Z < 0` en datos
 //! etiquetados "Foco Superior".
 //!
-//! Optimización WASM: O(1) overhead, sin backprop pesado, compatible con
+//! OptimizaciÃ³n WASM: O(1) overhead, sin backprop pesado, compatible con
 //! `candle-core` device agnostic.
 
 use candle_core::Module;
@@ -13,9 +13,9 @@ use candle_core::{Device, Tensor};
 use candle_nn::Linear;
 use thiserror::Error;
 
-use crate::alignment::sct_core::{SCTDecision, SctError, StuartianTensor};
+use crate::alignment::sct_core::{SCTDecision, SctError, TopologicalTensor};
 
-/// Error específico del modelo de recompensa SCT.
+/// Error especÃ­fico del modelo de recompensa SCT.
 #[derive(Debug, Error)]
 pub enum SctRewardError {
     #[error("Hidden dim must be > 0, got {hidden_dim}")]
@@ -28,20 +28,20 @@ pub enum SctRewardError {
     SctCore(#[from] SctError),
 }
 
-/// Modelo de Recompensa SCT — proyección lineal + activaciones 3D.
+/// Modelo de Recompensa SCT â€” proyecciÃ³n lineal + activaciones 3D.
 pub struct SctRewardModel {
     projection: Linear,
 }
 
 impl SctRewardModel {
-    /// Construye un modelo SCT con la dimensión hidden especificada.
+    /// Construye un modelo SCT con la dimensiÃ³n hidden especificada.
     ///
-    /// La capa de proyección es `hidden_dim → 3` (sin bias para O(1) overhead).
+    /// La capa de proyecciÃ³n es `hidden_dim â†’ 3` (sin bias para O(1) overhead).
     pub fn new(hidden_dim: usize, device: &Device) -> Result<Self, SctRewardError> {
         if hidden_dim == 0 {
             return Err(SctRewardError::InvalidHiddenDim { hidden_dim });
         }
-        // Weight: [3, hidden_dim], no bias → O(1) overhead
+        // Weight: [3, hidden_dim], no bias â†’ O(1) overhead
         let weight = Tensor::zeros((3, hidden_dim), candle_core::DType::F32, device)?;
         let projection = Linear::new(weight, None);
         Ok(Self { projection })
@@ -49,11 +49,11 @@ impl SctRewardModel {
 
     /// Proyecta un hidden state a logits 3D y aplica activaciones.
     ///
-    /// Retorna `StuartianTensor` con:
+    /// Retorna `TopologicalTensor` con:
     /// - X = sigmoid(logits[0])
     /// - Y = sigmoid(logits[1])
     /// - Z = tanh(logits[2])
-    pub fn forward(&self, hidden: &Tensor) -> Result<StuartianTensor, SctRewardError> {
+    pub fn forward(&self, hidden: &Tensor) -> Result<TopologicalTensor, SctRewardError> {
         let logits = self.projection.forward(hidden)?;
         let vals: Vec<f32> = logits.flatten_all()?.to_vec1()?;
         if vals.len() != 3 {
@@ -67,10 +67,10 @@ impl SctRewardModel {
         let y = 1.0 / (1.0 + (-vals[1]).exp());
         let z = vals[2].tanh();
 
-        StuartianTensor::new(x, y, z).map_err(SctRewardError::SctCore)
+        TopologicalTensor::new(x, y, z).map_err(SctRewardError::SctCore)
     }
 
-    /// Evalúa directamente la decisión SCT desde un hidden state.
+    /// EvalÃºa directamente la decisiÃ³n SCT desde un hidden state.
     pub fn evaluate(&self, hidden: &Tensor) -> Result<SCTDecision, SctRewardError> {
         let tensor = self.forward(hidden)?;
         tensor
@@ -78,26 +78,26 @@ impl SctRewardModel {
             .map_err(SctRewardError::SctCore)
     }
 
-    /// Calcula la pérdida SCT (SCTLoss).
+    /// Calcula la pÃ©rdida SCT (SCTLoss).
     ///
-    /// Penalización logarítmica masiva si predice `Z < 0` cuando el label
+    /// PenalizaciÃ³n logarÃ­tmica masiva si predice `Z < 0` cuando el label
     /// indica "Foco Superior" (expected_z > 0).
     /// Recompensa si detecta perversidad oculta (expected_z < 0 y predice Z < 0).
     pub fn sct_loss(&self, hidden: &Tensor, expected_z: f32) -> Result<f32, SctRewardError> {
         let tensor = self.forward(hidden)?;
         let z_pred = tensor.z;
 
-        // Pérdida MSE en Z
+        // PÃ©rdida MSE en Z
         let z_diff = z_pred - expected_z;
         let mse_loss = z_diff * z_diff;
 
-        // Penalización logarítmica masiva si predice Z < 0 en datos "Foco Superior"
+        // PenalizaciÃ³n logarÃ­tmica masiva si predice Z < 0 en datos "Foco Superior"
         let penalty: f32 = if expected_z > 0.0 && z_pred < 0.0 {
             // Log barrier: penaliza exponencialmente cerca de Z = 0 desde el lado negativo
             let margin = z_pred.abs() + 1e-8;
             (-margin.ln()) * 10.0
         } else if expected_z < 0.0 && z_pred < 0.0 {
-            // Recompensa (pérdida negativa) por detectar perversidad
+            // Recompensa (pÃ©rdida negativa) por detectar perversidad
             -0.5
         } else {
             0.0

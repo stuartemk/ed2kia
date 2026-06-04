@@ -1,4 +1,4 @@
-//! Dynamic Homeostasis Loss — Sprint 77: Physics of Consciousness & Thermodynamic Finality
+﻿//! Dynamic Homeostasis Loss â€” Sprint 77: Physics of Consciousness & Thermodynamic Finality
 //!
 //! Resolves **Bug 4: Paradoja Zero Conflict** from ASI audit of v9.12.0.
 //!
@@ -8,15 +8,15 @@
 //!
 //! Core formula:
 //! ```text
-//! L = Max(Resilience) - λ · Min(Destructive_Friction) + ε · Baseline_Entropy
+//! L = Max(Resilience) - Î» Â· Min(Destructive_Friction) + Îµ Â· Baseline_Entropy
 //! ```
 //!
 //! Where:
 //! - `Resilience` = ability to recover from perturbations
 //! - `Destructive_Friction` = harmful conflict that degrades performance
 //! - `Baseline_Entropy` = minimal gradient injection to prevent stagnation
-//! - `λ` = friction penalty weight
-//! - `ε` = entropy injection rate
+//! - `Î»` = friction penalty weight
+//! - `Îµ` = entropy injection rate
 
 use std::collections::HashMap;
 use std::fmt;
@@ -65,9 +65,9 @@ impl fmt::Display for HomeostasisError {
 /// Configuration for dynamic homeostasis loss.
 #[derive(Debug, Clone)]
 pub struct HomeostasisConfig {
-    /// Friction penalty weight λ (recommended: 0.3).
+    /// Friction penalty weight Î» (recommended: 0.3).
     pub friction_weight: f64,
-    /// Entropy injection rate ε (recommended: 0.05).
+    /// Entropy injection rate Îµ (recommended: 0.05).
     pub entropy_injection_rate: f64,
     /// Maximum entropy budget per cycle.
     pub max_entropy_budget: f64,
@@ -82,8 +82,8 @@ pub struct HomeostasisConfig {
 }
 
 impl HomeostasisConfig {
-    /// Default Stuartian configuration tuned for asymptotic homeostasis.
-    pub fn default_stuartian() -> Self {
+    /// Default Topological configuration tuned for asymptotic homeostasis.
+    pub fn default_Topological() -> Self {
         Self {
             friction_weight: 0.3,
             entropy_injection_rate: 0.05,
@@ -138,7 +138,7 @@ impl HomeostasisConfig {
 
 impl Default for HomeostasisConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -224,7 +224,7 @@ impl fmt::Display for AdjustmentRecord {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Adjustment(node={}, loss={:.4}, entropy={:.4}, resilience {:.4}→{:.4})",
+            "Adjustment(node={}, loss={:.4}, entropy={:.4}, resilience {:.4}â†’{:.4})",
             self.node_id,
             self.loss,
             self.entropy_injected,
@@ -251,9 +251,9 @@ pub struct DynamicHomeostasisLoss {
 }
 
 impl DynamicHomeostasisLoss {
-    /// Create a new engine with default Stuartian configuration.
+    /// Create a new engine with default Topological configuration.
     pub fn new() -> Self {
-        Self::with_config(HomeostasisConfig::default_stuartian())
+        Self::with_config(HomeostasisConfig::default_Topological())
             .expect("default config should be valid")
     }
 
@@ -296,7 +296,7 @@ impl DynamicHomeostasisLoss {
 
     /// Compute the dynamic homeostasis loss for a node.
     ///
-    /// L = Max(Resilience) - λ · Min(Destructive_Friction) + ε · Baseline_Entropy
+    /// L = Max(Resilience) - Î» Â· Min(Destructive_Friction) + Îµ Â· Baseline_Entropy
     pub fn compute_loss(&self, node_id: u64) -> Result<f64, HomeostasisError> {
         let node = self.nodes.get(&node_id).ok_or_else(|| {
             HomeostasisError::InvalidConfig(format!("Node {} not registered", node_id))
@@ -327,7 +327,7 @@ impl DynamicHomeostasisLoss {
 
         // Check for zero-conflict paradox
         if node.last_conflict < 1e-10 && node.resilience > 0.95 {
-            // System is too stable — inject entropy to maintain gradients
+            // System is too stable â€” inject entropy to maintain gradients
             if self.current_entropy_budget < self.config.baseline_entropy_floor {
                 return Err(HomeostasisError::EntropyBudgetExceeded);
             }
@@ -492,7 +492,7 @@ impl fmt::Display for DynamicHomeostasisLoss {
 
 /// Compute the dynamic homeostasis loss.
 ///
-/// L = Resilience - λ · Friction + ε · Baseline_Entropy
+/// L = Resilience - Î» Â· Friction + Îµ Â· Baseline_Entropy
 pub fn compute_homeostasis_loss(
     resilience: f64,
     destructive_friction: f64,
@@ -541,7 +541,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = HomeostasisConfig::default_stuartian();
+        let config = HomeostasisConfig::default_Topological();
         assert_eq!(config.friction_weight, 0.3);
         assert_eq!(config.entropy_injection_rate, 0.05);
         assert_eq!(config.max_entropy_budget, 0.5);
@@ -553,7 +553,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = HomeostasisConfig::default_stuartian();
+        let config = HomeostasisConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 
@@ -561,7 +561,7 @@ mod tests {
     fn test_config_zero_friction_weight() {
         let config = HomeostasisConfig {
             friction_weight: 0.0,
-            ..HomeostasisConfig::default_stuartian()
+            ..HomeostasisConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }
@@ -570,7 +570,7 @@ mod tests {
     fn test_config_friction_weight_too_high() {
         let config = HomeostasisConfig {
             friction_weight: 1.1,
-            ..HomeostasisConfig::default_stuartian()
+            ..HomeostasisConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }
@@ -579,7 +579,7 @@ mod tests {
     fn test_config_zero_entropy_rate() {
         let config = HomeostasisConfig {
             entropy_injection_rate: 0.0,
-            ..HomeostasisConfig::default_stuartian()
+            ..HomeostasisConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }
@@ -588,7 +588,7 @@ mod tests {
     fn test_config_zero_budget() {
         let config = HomeostasisConfig {
             max_entropy_budget: 0.0,
-            ..HomeostasisConfig::default_stuartian()
+            ..HomeostasisConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }
@@ -597,7 +597,7 @@ mod tests {
     fn test_config_zero_history() {
         let config = HomeostasisConfig {
             max_history_entries: 0,
-            ..HomeostasisConfig::default_stuartian()
+            ..HomeostasisConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }
@@ -641,7 +641,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = HomeostasisConfig::default_stuartian();
+        let config = HomeostasisConfig::default_Topological();
         let engine = DynamicHomeostasisLoss::with_config(config);
         assert!(engine.is_ok());
     }

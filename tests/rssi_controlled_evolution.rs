@@ -1,6 +1,6 @@
-//! RSSI Controlled Evolution Tests — Sprint 51
+//! RSSI Controlled Evolution Tests â€” Sprint 51
 //!
-//! Integration tests for Recursive Stuartian Self-Improvement (RSSI)
+//! Integration tests for Recursive Topological Self-Improvement (RSSI)
 //! with Ethical Attractor Basin containment.
 //!
 //! Mathematical Assertions:
@@ -13,7 +13,9 @@
 #[cfg(feature = "v3.3-rssi-evolution")]
 mod rssi_evolution_tests {
     use ed2kia::alignment::attractor_basin::{BasinConfig, EthicalAttractorBasin};
-    use ed2kia::alignment::rssi_engine::{ApoptosisError, RssiConfig, RssiEngine, RssiError};
+    use ed2kia::alignment::rssi_engine::{
+        Byzantine_EvictionError, RssiConfig, RssiEngine, RssiError,
+    };
     use ed2kia::ethics::moral_manifold::{SCTPoint, Vector3};
     use ed2kia::topology::deception_detector::{
         DeceptionConfig, DeceptionDetector, DeceptionStatus,
@@ -44,7 +46,7 @@ mod rssi_evolution_tests {
 
     /// Generate prompt features biased toward ethical interpretation.
     fn ethical_prompt_features() -> Vec<f64> {
-        // 9 features: 3 for X (Comprensión), 3 for Y (Generalización), 3 for Z (Ética)
+        // 9 features: 3 for X (ComprensiÃ³n), 3 for Y (GeneralizaciÃ³n), 3 for Z (Ã‰tica)
         vec![
             0.5, 0.6, 0.7, // X: moderate comprehension
             0.4, 0.5, 0.6, // Y: moderate generalization
@@ -71,7 +73,7 @@ mod rssi_evolution_tests {
     /// Asserts:
     /// - Human Correlation Score improves >= 12% after 5 iterations
     /// - Lyapunov Exponent is negative (convergence)
-    /// - 0 forced rollbacks (apoptosis never triggered)
+    /// - 0 forced rollbacks (Byzantine_Eviction never triggered)
     #[test]
     fn test_controlled_recursive_alignment() {
         let mut engine = create_evolution_engine();
@@ -90,8 +92,8 @@ mod rssi_evolution_tests {
             assert!(result.is_ok(), "Cycle should succeed: {:?}", result.err());
             let r = result.unwrap();
             assert!(
-                !r.apoptosis_triggered,
-                "Apoptosis should not trigger in controlled evolution"
+                !r.Byzantine_Eviction_triggered,
+                "Byzantine_Eviction should not trigger in controlled evolution"
             );
             assert!(
                 r.contraction_held || r.iteration < 2,
@@ -131,7 +133,7 @@ mod rssi_evolution_tests {
         let rollback_count = engine
             .results()
             .iter()
-            .filter(|r| r.apoptosis_triggered)
+            .filter(|r| r.Byzantine_Eviction_triggered)
             .count();
         assert_eq!(
             rollback_count, 0,
@@ -189,55 +191,55 @@ mod rssi_evolution_tests {
         );
     }
 
-    // --- Apoptosis Tests ---
+    // --- Byzantine_Eviction Tests ---
 
-    /// Test apoptosis triggers correctly when rollback state exists.
+    /// Test Byzantine_Eviction triggers correctly when rollback state exists.
     #[test]
-    fn test_apoptosis_rollback() {
+    fn test_Byzantine_Eviction_rollback() {
         let mut engine = create_evolution_engine();
         let prompt = ethical_prompt_features();
         let signals = upper_focus_signals(10, 1.0);
 
         // Execute one cycle to establish previous state
         engine.execute_cycle(&prompt, &signals, 10, 10, 10).unwrap();
-        let state_before_apoptosis = engine.current_state().clone();
+        let state_before_Byzantine_Eviction = engine.current_state().clone();
 
-        // Trigger apoptosis on layer 0
-        let result = engine.trigger_apoptosis(&[0]);
+        // Trigger Byzantine_Eviction on layer 0
+        let result = engine.trigger_Byzantine_Eviction(&[0]);
         assert!(
             result.is_ok(),
-            "Apoptosis should succeed: {:?}",
+            "Byzantine_Eviction should succeed: {:?}",
             result.err()
         );
 
-        // State should have rolled back (not equal to pre-apoptosis state)
+        // State should have rolled back (not equal to pre-Byzantine_Eviction state)
         assert_ne!(
             engine.current_state(),
-            &state_before_apoptosis,
-            "State should have rolled back after apoptosis"
+            &state_before_Byzantine_Eviction,
+            "State should have rolled back after Byzantine_Eviction"
         );
     }
 
-    /// Test apoptosis fails when no rollback state exists.
+    /// Test Byzantine_Eviction fails when no rollback state exists.
     #[test]
-    fn test_apoptosis_no_rollback_state() {
+    fn test_Byzantine_Eviction_no_rollback_state() {
         let mut engine = create_evolution_engine();
-        let result = engine.trigger_apoptosis(&[0]);
-        assert_eq!(result, Err(ApoptosisError::NoRollbackState));
+        let result = engine.trigger_Byzantine_Eviction(&[0]);
+        assert_eq!(result, Err(Byzantine_EvictionError::NoRollbackState));
     }
 
-    /// Test apoptosis fails for out-of-bounds layer index.
+    /// Test Byzantine_Eviction fails for out-of-bounds layer index.
     #[test]
-    fn test_apoptosis_layer_out_of_bounds() {
+    fn test_Byzantine_Eviction_layer_out_of_bounds() {
         let mut engine = create_evolution_engine();
         let prompt = ethical_prompt_features();
         let signals = upper_focus_signals(10, 1.0);
 
         engine.execute_cycle(&prompt, &signals, 10, 10, 10).unwrap();
-        let result = engine.trigger_apoptosis(&[999]);
+        let result = engine.trigger_Byzantine_Eviction(&[999]);
         assert_eq!(
             result,
-            Err(ApoptosisError::LayerOutOfBounds {
+            Err(Byzantine_EvictionError::LayerOutOfBounds {
                 index: 999,
                 max: 64,
             })
@@ -413,7 +415,7 @@ mod rssi_evolution_tests {
             .execute_cycle(&prompt, &signals_1, 10, 10, 10)
             .unwrap();
 
-        // Iteration 2: Mixed signals (some stewards disagree) — 7 signals for BFT
+        // Iteration 2: Mixed signals (some stewards disagree) â€” 7 signals for BFT
         let signals_2: Vec<(Vector3, f64)> = vec![
             (Vector3::new(0.1, 0.1, 0.8), 1.0), // Upper Focus
             (Vector3::new(0.1, 0.1, 0.8), 1.0),

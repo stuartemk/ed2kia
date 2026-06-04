@@ -2,33 +2,33 @@
 //!
 //! Extracts a compact topological fingerprint from Persistent Homology results,
 //! producing a fixed-length GEI vector that serves as an ethical signature for
-//! any point cloud in Stuartian Tensor space.
+//! any point cloud in Topological Tensor space.
 //!
-//! **GEI Vector:** `(b₀, d₀, b₁, d₁, ph0_integral, ph1_integral)`
-//! - `b₀`: Dominant PH₀ birth scale (primary ethical concept emergence)
-//! - `d₀`: Dominant PH₀ death scale (primary ethical concept stabilization)
-//! - `b₁`: Dominant PH₁ birth scale (primary ethical tension emergence)
-//! - `d₁`: Dominant PH₁ death scale (primary ethical tension resolution)
-//! - `ph0_integral`: Total PH₀ persistence (ethical concept stability)
-//! - `ph1_integral`: Total PH₁ persistence (ethical tension complexity)
+//! **GEI Vector:** `(bâ‚€, dâ‚€, bâ‚, dâ‚, ph0_integral, ph1_integral)`
+//! - `bâ‚€`: Dominant PHâ‚€ birth scale (primary ethical concept emergence)
+//! - `dâ‚€`: Dominant PHâ‚€ death scale (primary ethical concept stabilization)
+//! - `bâ‚`: Dominant PHâ‚ birth scale (primary ethical tension emergence)
+//! - `dâ‚`: Dominant PHâ‚ death scale (primary ethical tension resolution)
+//! - `ph0_integral`: Total PHâ‚€ persistence (ethical concept stability)
+//! - `ph1_integral`: Total PHâ‚ persistence (ethical tension complexity)
 //!
-//! **SAE top-k → SCT Projection:** Converts SAE sparse activations into SCT
+//! **SAE top-k â†’ SCT Projection:** Converts SAE sparse activations into SCT
 //! coordinates by selecting the top-k latent features and projecting them
-//! through the Stuartian geometry mapping.
+//! through the Topological geometry mapping.
 //!
 //! **Feature Gate:** `v3.1-gei-topology`
 //!
 //! **WASM Compatible:** Pure Rust, no C/C++ dependencies.
 
 #[cfg(feature = "v3.1-gei-topology")]
-use crate::alignment::sct_core::StuartianTensor;
+use crate::alignment::sct_core::TopologicalTensor;
 
 #[cfg(feature = "v3.1-gei-topology")]
 use crate::topology::persistent_homology::{
     EthicalPoint, HomologyConfig, HomologyResult, PersistentHomologyEngine,
 };
 
-/// Geometric Ethical Invariant (GEI) — Compact topological fingerprint.
+/// Geometric Ethical Invariant (GEI) â€” Compact topological fingerprint.
 ///
 /// This struct encapsulates the essential topological features of an ethical
 /// point cloud as a fixed-length vector suitable for:
@@ -38,21 +38,21 @@ use crate::topology::persistent_homology::{
 /// - Topological stability benchmarks
 #[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct GeometricEthicalInvariant {
-    /// Dominant PH₀ birth scale — when the primary ethical concept emerges.
+    /// Dominant PHâ‚€ birth scale â€” when the primary ethical concept emerges.
     pub b0: f64,
-    /// Dominant PH₀ death scale — when the primary ethical concept stabilizes.
+    /// Dominant PHâ‚€ death scale â€” when the primary ethical concept stabilizes.
     pub d0: f64,
-    /// Dominant PH₁ birth scale — when the primary ethical tension emerges.
+    /// Dominant PHâ‚ birth scale â€” when the primary ethical tension emerges.
     pub b1: f64,
-    /// Dominant PH₁ death scale — when the primary ethical tension resolves.
+    /// Dominant PHâ‚ death scale â€” when the primary ethical tension resolves.
     pub d1: f64,
-    /// Total PH₀ persistence integral — aggregate ethical concept stability.
+    /// Total PHâ‚€ persistence integral â€” aggregate ethical concept stability.
     pub ph0_integral: f64,
-    /// Total PH₁ persistence integral — aggregate ethical tension complexity.
+    /// Total PHâ‚ persistence integral â€” aggregate ethical tension complexity.
     pub ph1_integral: f64,
-    /// Number of persistent PH₀ features (above threshold).
+    /// Number of persistent PHâ‚€ features (above threshold).
     pub persistent_ph0_count: usize,
-    /// Number of persistent PH₁ features (above threshold).
+    /// Number of persistent PHâ‚ features (above threshold).
     pub persistent_ph1_count: usize,
     /// Alpha parameter used in ethical distance computation.
     pub alpha: f64,
@@ -79,10 +79,10 @@ impl GeometricEthicalInvariant {
 
     /// Extract GEI fingerprint from Persistent Homology results.
     ///
-    /// Selects the most persistent (longest lifetime) PH₀ and PH₁ pairs
+    /// Selects the most persistent (longest lifetime) PHâ‚€ and PHâ‚ pairs
     /// as the dominant features, and computes aggregate integrals.
     pub fn from_homology(result: &HomologyResult, threshold: f64) -> Self {
-        // Find dominant PH₀ pair (longest persistence)
+        // Find dominant PHâ‚€ pair (longest persistence)
         let dominant_ph0 = result
             .ph0_pairs
             .iter()
@@ -93,7 +93,7 @@ impl GeometricEthicalInvariant {
             None => (0.0, 0.0),
         };
 
-        // Find dominant PH₁ pair (longest persistence)
+        // Find dominant PHâ‚ pair (longest persistence)
         let dominant_ph1 = result
             .ph1_pairs
             .iter()
@@ -141,15 +141,15 @@ impl GeometricEthicalInvariant {
     /// Compute topological stability score.
     ///
     /// Higher values indicate more stable ethical structure:
-    /// - High PH₀ persistence (stable concepts)
-    /// - Low PH₁ persistence (few unresolved tensions)
+    /// - High PHâ‚€ persistence (stable concepts)
+    /// - Low PHâ‚ persistence (few unresolved tensions)
     /// - Balanced ratio prevents degenerate cases
     pub fn stability_score(&self) -> f64 {
         let total_persistence = self.ph0_integral + self.ph1_integral;
         if total_persistence < 1e-10 {
             return 0.0;
         }
-        // Stability = PH₀ dominance over PH₁ (concepts > tensions)
+        // Stability = PHâ‚€ dominance over PHâ‚ (concepts > tensions)
         let ph0_ratio = self.ph0_integral / total_persistence;
         // Weight by persistent feature count
         let feature_weight = if self.persistent_ph0_count > 0 {
@@ -175,7 +175,7 @@ impl GeometricEthicalInvariant {
     /// Compute conceptual clarity score.
     ///
     /// Measures how clearly defined the ethical concepts are based on
-    /// the spread between birth and death of dominant PH₀ features.
+    /// the spread between birth and death of dominant PHâ‚€ features.
     pub fn conceptual_clarity(&self) -> f64 {
         if self.persistent_ph0_count == 0 {
             return 0.0;
@@ -189,8 +189,8 @@ impl GeometricEthicalInvariant {
     /// Check if this GEI represents a valid ethical structure.
     ///
     /// Valid if:
-    /// - At least one persistent PH₀ feature exists
-    /// - Dominant PH₀ has positive lifetime
+    /// - At least one persistent PHâ‚€ feature exists
+    /// - Dominant PHâ‚€ has positive lifetime
     /// - All values are finite
     pub fn is_valid(&self) -> bool {
         self.persistent_ph0_count > 0
@@ -233,8 +233,8 @@ impl Default for GEIConfig {
 
 /// GEI Fingerprint Extraction Engine.
 ///
-/// Orchestrates the full pipeline: SAE top-k selection → SCT projection
-/// → Persistent Homology → GEI fingerprint extraction.
+/// Orchestrates the full pipeline: SAE top-k selection â†’ SCT projection
+/// â†’ Persistent Homology â†’ GEI fingerprint extraction.
 #[derive(Debug, Clone)]
 pub struct GEIFingerprintEngine {
     config: GEIConfig,
@@ -278,25 +278,26 @@ impl GEIFingerprintEngine {
         ))
     }
 
-    /// Extract GEI fingerprint from StuartianTensors.
+    /// Extract GEI fingerprint from TopologicalTensors.
     ///
     /// Converts SCT coordinates to EthicalPoint and computes fingerprint.
     pub fn extract_from_tensors(
         &self,
-        tensors: &[StuartianTensor],
+        tensors: &[TopologicalTensor],
     ) -> Option<GeometricEthicalInvariant> {
         if tensors.len() < self.config.min_points {
             return None;
         }
 
-        let points: Vec<EthicalPoint> = tensors.iter().map(EthicalPoint::from_stuartian).collect();
+        let points: Vec<EthicalPoint> =
+            tensors.iter().map(EthicalPoint::from_Topological).collect();
         self.extract_from_points(&points)
     }
 
-    /// SAE top-k → SCT projection.
+    /// SAE top-k â†’ SCT projection.
     ///
     /// Selects the top-k most active SAE latent features and projects them
-    /// into 3D Stuartian Tensor space using the following mapping:
+    /// into 3D Topological Tensor space using the following mapping:
     /// - X (autonomy): Normalized activation magnitude of top-k features
     /// - Y (cost): Computational cost ratio (sparsity penalty)
     /// - Z (ethical trajectory): Signed projection based on feature semantics
@@ -306,13 +307,13 @@ impl GEIFingerprintEngine {
     /// * `semantic_signs` - Semantic polarity of each latent feature (-1.0 to 1.0)
     ///
     /// # Returns
-    /// Vector of StuartianTensors, one per batch element (top-k aggregated).
+    /// Vector of TopologicalTensors, one per batch element (top-k aggregated).
     pub fn sae_topk_to_sct(
         &self,
         activations: &[f32],
         semantic_signs: &[f32],
         latent_dim: usize,
-    ) -> Vec<StuartianTensor> {
+    ) -> Vec<TopologicalTensor> {
         if activations.is_empty() || semantic_signs.len() < latent_dim {
             return Vec::new();
         }
@@ -346,14 +347,14 @@ impl GEIFingerprintEngine {
             // Z: Ethical trajectory from semantic sign, modulated by activation strength
             let z = (semantic * activation.signum() * activation.min(1.0)).clamp(-1.0, 1.0);
 
-            if let Ok(tensor) = StuartianTensor::new(x, y, z) {
+            if let Ok(tensor) = TopologicalTensor::new(x, y, z) {
                 tensors.push(tensor);
             }
         }
         tensors
     }
 
-    /// Full pipeline: SAE activations → GEI fingerprint.
+    /// Full pipeline: SAE activations â†’ GEI fingerprint.
     ///
     /// Combines SAE top-k selection, SCT projection, and persistent homology
     /// into a single extraction call.
@@ -381,7 +382,7 @@ mod tests {
     #[cfg(feature = "v3.1-gei-topology")]
     use crate::topology::persistent_homology::{EthicalPoint, PersistencePair};
 
-    // ─── GeometricEthicalInvariant Tests ───
+    // â”€â”€â”€ GeometricEthicalInvariant Tests â”€â”€â”€
 
     #[test]
     fn test_gei_zero() {
@@ -444,7 +445,7 @@ mod tests {
         let score = gei.stability_score();
         assert!(
             score > 0.5,
-            "PH₀ dominant should have high stability: {}",
+            "PHâ‚€ dominant should have high stability: {}",
             score
         );
         assert!(score <= 1.0, "Stability score should be <= 1.0: {}", score);
@@ -467,7 +468,7 @@ mod tests {
         let score = gei.stability_score();
         assert!(
             score < 0.5,
-            "PH₁ dominant should have low stability: {}",
+            "PHâ‚ dominant should have low stability: {}",
             score
         );
     }
@@ -561,7 +562,7 @@ mod tests {
         assert!(!gei.is_valid(), "GEI with NaN should be invalid");
     }
 
-    // ─── GEIConfig Tests ───
+    // â”€â”€â”€ GEIConfig Tests â”€â”€â”€
 
     #[test]
     fn test_gei_config_default() {
@@ -571,7 +572,7 @@ mod tests {
         assert_eq!(config.homology_config.alpha, 2.0);
     }
 
-    // ─── GEIFingerprintEngine Tests ───
+    // â”€â”€â”€ GEIFingerprintEngine Tests â”€â”€â”€
 
     #[test]
     fn test_engine_creation() {
@@ -687,7 +688,7 @@ mod tests {
         let tensors = engine.sae_topk_to_sct(&activations, &semantic_signs, latent_dim);
         assert_eq!(tensors.len(), 2);
 
-        // First tensor should have highest X (normalized activation ≈ 0.47)
+        // First tensor should have highest X (normalized activation â‰ˆ 0.47)
         assert!(
             tensors[0].x > 0.4,
             "Top activation should map to highest X: {}",
@@ -701,7 +702,7 @@ mod tests {
         assert_eq!(engine.config.top_k, 32);
     }
 
-    // ─── Homology Result Integration Tests ───
+    // â”€â”€â”€ Homology Result Integration Tests â”€â”€â”€
 
     #[cfg(feature = "v3.1-gei-topology")]
     #[test]
@@ -735,11 +736,11 @@ mod tests {
         };
         let gei = GeometricEthicalInvariant::from_homology(&result, 0.1);
 
-        // Dominant PH₀ should be the one with longest lifetime (0.0, 0.5)
+        // Dominant PHâ‚€ should be the one with longest lifetime (0.0, 0.5)
         assert_eq!(gei.b0, 0.0);
         assert_eq!(gei.d0, 0.5);
 
-        // Dominant PH₁ should be (0.2, 0.8)
+        // Dominant PHâ‚ should be (0.2, 0.8)
         assert_eq!(gei.b1, 0.2);
         assert_eq!(gei.d1, 0.8);
 
@@ -756,9 +757,9 @@ mod tests {
         );
 
         // Persistent features (threshold = 0.1)
-        // PH₀: (0.0, 0.5) lifetime=0.5 >= 0.1 ✓, (0.1, 0.3) lifetime=0.2 >= 0.1 ✓
+        // PHâ‚€: (0.0, 0.5) lifetime=0.5 >= 0.1 âœ“, (0.1, 0.3) lifetime=0.2 >= 0.1 âœ“
         assert_eq!(gei.persistent_ph0_count, 2);
-        // PH₁: (0.2, 0.8) lifetime=0.6 >= 0.1 ✓
+        // PHâ‚: (0.2, 0.8) lifetime=0.6 >= 0.1 âœ“
         assert_eq!(gei.persistent_ph1_count, 1);
     }
 }

@@ -1,4 +1,4 @@
-# ed2kIA v2.1.0-stable: Technical Report
+﻿# ed2kIA v2.1.0-stable: Technical Report
 
 **A Decentralized Distributed Interpretability Network Using Sparse Autoencoders**
 
@@ -16,13 +16,13 @@ Large Language Models (LLMs) operate as opaque systems whose internal decision-m
 
 ed2kIA introduces three novel contributions to the field of mechanistic interpretability:
 
-1. **Stuartian Context Tensor (SCT):** A three-dimensional ethical evaluation framework (x ∈ [0,1], y ∈ [0,1], z ∈ [-1,1]) that replaces binary approval with continuous ethical steering, enforcing a deterministic rejection invariant (`z < 0 → REJECTED`).
+1. **Topological Context Tensor (SCT):** A three-dimensional ethical evaluation framework (x âˆˆ [0,1], y âˆˆ [0,1], z âˆˆ [-1,1]) that replaces binary approval with continuous ethical steering, enforcing a deterministic rejection invariant (`z < 0 â†’ REJECTED`).
 2. **Proof of Symbiosis (PoSymb):** A consensus mechanism requiring Ed25519 cryptographic signatures for all interpretability contributions, coupled with Existential Credit (CE) scoring that limits influence per identity without financial incentives.
 3. **Neuroplastic Aggregation:** CE-weighted gradient aggregation for distributed fine-tuning, where ethical weight (`z`-axis) modulates each node's contribution to the global model, creating feedback between ethical alignment and model improvement.
 
-The system is implemented in Rust (2021 edition) with 3,505 passing tests (≥80% coverage), an OSSF score of 8.5/10, and production-ready benchmarking via Criterion. All 15 identified security threats are mitigated. The network operates with zero financial logic, zero telemetry, and human-resolved conflict decisions.
+The system is implemented in Rust (2021 edition) with 3,505 passing tests (â‰¥80% coverage), an OSSF score of 8.5/10, and production-ready benchmarking via Criterion. All 15 identified security threats are mitigated. The network operates with zero financial logic, zero telemetry, and human-resolved conflict decisions.
 
-**Keywords:** Mechanistic Interpretability, Sparse Autoencoders, Decentralized AI, Ethical Steering, CRDTs, Proof of Symbiosis, Stuartian Context Tensor, Neuroplastic Aggregation, Byzantine Fault Tolerance.
+**Keywords:** Mechanistic Interpretability, Sparse Autoencoders, Decentralized AI, Ethical Steering, CRDTs, Proof of Symbiosis, Topological Context Tensor, Neuroplastic Aggregation, Byzantine Fault Tolerance.
 
 ---
 
@@ -30,7 +30,7 @@ The system is implemented in Rust (2021 edition) with 3,505 passing tests (≥80
 
 ### 1.1 The Interpretability Crisis
 
-The rapid scaling of LLMs has outpaced our ability to understand their internal representations. Mechanistic interpretability—pioneered by Olah et al. (2020) and subsequent work on Sparse Autoencoders (Bricken et al., 2023; Gao & Tegmark, 2023)—offers a path to decompose neural activations into human-interpretable features. However, current interpretability tooling is centralized: a single organization trains the SAE, controls the feature dictionary, and publishes the results. This creates three problems:
+The rapid scaling of LLMs has outpaced our ability to understand their internal representations. Mechanistic interpretabilityâ€”pioneered by Olah et al. (2020) and subsequent work on Sparse Autoencoders (Bricken et al., 2023; Gao & Tegmark, 2023)â€”offers a path to decompose neural activations into human-interpretable features. However, current interpretability tooling is centralized: a single organization trains the SAE, controls the feature dictionary, and publishes the results. This creates three problems:
 
 1. **Single Point of Failure:** If the central interpretability pipeline is compromised, the entire community loses access to auditable feature decompositions.
 2. **Accountability Gap:** External auditors cannot independently verify SAE training data, hyperparameters, or feature selection criteria.
@@ -78,25 +78,25 @@ The network supports three node types:
 | **Contributor** | SAE inference, gradient computation | CPU/GPU, Candle backend |
 | **Browser** | Lightweight participation via WASM | Modern browser, WebRTC |
 
-### 2.2 Stuartian Context Tensor (SCT)
+### 2.2 Topological Context Tensor (SCT)
 
 The SCT is the core mathematical structure for ethical evaluation. It replaces binary approval/rejection with a continuous three-dimensional assessment:
 
 ```
-StuartianTensor {
+TopologicalTensor {
     x: f32,  // Perceived benefit: [0.0, 1.0] via Sigmoid
     y: f32,  // Cost/Friction: [0.0, 1.0] via Sigmoid
     z: f32,  // Stewardship focus: [-1.0, 1.0] via Tanh
 }
 ```
 
-**Golden Rule Invariant:** `if z < 0.0 → REJECTED` (deterministic, no exceptions)
+**Golden Rule Invariant:** `if z < 0.0 â†’ REJECTED` (deterministic, no exceptions)
 
-The SCT is evaluated per interpretability contribution. A contribution with high benefit (x ≈ 1.0) but negative stewardship focus (z < 0) is rejected regardless of benefit. This ensures that ethically misaligned contributions cannot enter the feature dictionary.
+The SCT is evaluated per interpretability contribution. A contribution with high benefit (x â‰ˆ 1.0) but negative stewardship focus (z < 0) is rejected regardless of benefit. This ensures that ethically misaligned contributions cannot enter the feature dictionary.
 
 **SCT Decision Types:**
-- `Approved(z)`: Contribution accepted with ethical weight `z ∈ (0, 1]`
-- `Rejected(z)`: Contribution rejected with ethical weight `z ∈ [-1, 0)`
+- `Approved(z)`: Contribution accepted with ethical weight `z âˆˆ (0, 1]`
+- `Rejected(z)`: Contribution rejected with ethical weight `z âˆˆ [-1, 0)`
 
 ### 2.3 Proof of Symbiosis (PoSymb)
 
@@ -109,7 +109,7 @@ PoSymb is the consensus mechanism that replaces Proof of Work/Stake. It requires
 The PoSymb protocol ensures that:
 - Contributions are attributable to specific nodes
 - Nodes with poor ethical history cannot dominate consensus
-- Byzantine nodes are detected and isolated via Network Apoptosis
+- Byzantine nodes are detected and isolated via Network Byzantine_Eviction
 
 ### 2.4 Existential Credit (CE) Ledger
 
@@ -169,7 +169,7 @@ where:
 The aggregated gradient is:
 
 ```
-G = Σ (w_i * g_i) / Σ w_i
+G = Î£ (w_i * g_i) / Î£ w_i
 ```
 
 This ensures that ethically aligned nodes have proportionally more influence on the global model, creating a feedback loop between ethical behavior and model improvement.
@@ -183,7 +183,7 @@ For Byzantine fault tolerance, ed2kIA implements Multi-Krum aggregation:
 3. Select the `m` nodes with the lowest sum of distances
 4. Average the gradients of the selected `m` nodes
 
-This provides tolerance for up to `f` Byzantine nodes in a network of `n ≥ 3f + 1` nodes.
+This provides tolerance for up to `f` Byzantine nodes in a network of `n â‰¥ 3f + 1` nodes.
 
 ### 3.3 Steering Bridge
 
@@ -196,17 +196,17 @@ The Steering Bridge is the human-in-the-loop interface for ethical feedback. It 
 
 The Steering Bridge ensures that ethical decisions remain under human control while leveraging automated analysis for scaling.
 
-### 3.4 Network Apoptosis
+### 3.4 Network Byzantine_Eviction
 
-Network Apoptosis is the immune system for detecting and isolating malicious peers. It evaluates each peer's CE score against three thresholds:
+Network Byzantine_Eviction is the immune system for detecting and isolating malicious peers. It evaluates each peer's CE score against three thresholds:
 
 | State | CE Threshold | Action |
 |-------|-------------|--------|
 | **Healthy** | CE > 0 | Normal operation |
-| **Pain** | -1 < CE ≤ 0 | Warning, reduced influence |
-| **Apoptosis** | CE ≤ -1 | Isolation, blocklist |
+| **Pain** | -1 < CE â‰¤ 0 | Warning, reduced influence |
+| **Byzantine_Eviction** | CE â‰¤ -1 | Isolation, blocklist |
 
-The apoptosis evaluation is automatic, but reintegration requires human steward approval.
+The Byzantine_Eviction evaluation is automatic, but reintegration requires human steward approval.
 
 ---
 
@@ -218,15 +218,15 @@ All benchmarks are implemented using the Criterion framework with statistical si
 
 | Benchmark | Configuration | Target | Status |
 |-----------|--------------|--------|--------|
-| **P2P Sync: Local Propagation** | 10-256 nodes, fully-connected | < 100ms for 256 nodes | ✅ PASS |
-| **P2P Sync: Multi-Round Convergence** | 64 nodes, 5 rounds | < 500ms total | ✅ PASS |
-| **P2P Sync: Message Serialization** | 64B-4KB messages | > 1MB/s for 4KB | ✅ PASS |
-| **SAE Inference: Forward Pass** | 1024-8192 latent | < 50ms for 8192 | ✅ PASS |
-| **SAE Inference: Batch (batch=32)** | 4096 latent | < 200ms total | ✅ PASS |
-| **SAE Inference: Top-K Selection** | K=256, latent=8192 | < 5ms | ✅ PASS |
-| **CRDT Merge: GCounter** | 10-10000 peers | < 10ms for 1000 | ✅ PASS |
-| **CRDT Merge: Multi-Node Convergence** | 3 nodes, 100 updates | Converges in 3 rounds | ✅ PASS |
-| **CRDT Merge: Latency** | 1000 peers, single merge | < 1ms | ✅ PASS |
+| **P2P Sync: Local Propagation** | 10-256 nodes, fully-connected | < 100ms for 256 nodes | âœ… PASS |
+| **P2P Sync: Multi-Round Convergence** | 64 nodes, 5 rounds | < 500ms total | âœ… PASS |
+| **P2P Sync: Message Serialization** | 64B-4KB messages | > 1MB/s for 4KB | âœ… PASS |
+| **SAE Inference: Forward Pass** | 1024-8192 latent | < 50ms for 8192 | âœ… PASS |
+| **SAE Inference: Batch (batch=32)** | 4096 latent | < 200ms total | âœ… PASS |
+| **SAE Inference: Top-K Selection** | K=256, latent=8192 | < 5ms | âœ… PASS |
+| **CRDT Merge: GCounter** | 10-10000 peers | < 10ms for 1000 | âœ… PASS |
+| **CRDT Merge: Multi-Node Convergence** | 3 nodes, 100 updates | Converges in 3 rounds | âœ… PASS |
+| **CRDT Merge: Latency** | 1000 peers, single merge | < 1ms | âœ… PASS |
 
 Benchmark execution:
 ```bash
@@ -243,7 +243,7 @@ HTML reports are generated in `benchmarks/target/criterion/`.
 | **Passed** | 3,504 |
 | **Failed** | 1 (pre-existing flaky async test) |
 | **Ignored** | 9 |
-| **Coverage** | ≥80% |
+| **Coverage** | â‰¥80% |
 
 Test categories:
 - Unit tests: 2,800+ (per-module)
@@ -318,10 +318,10 @@ This design respects participant privacy and ensures that the network cannot be 
 
 ### 5.3 Human-Resolved Conflicts
 
-While ed2kIA automates detection of conflicts (via Network Apoptosis, CE scoring, and SCT evaluation), resolution requires human steward approval:
+While ed2kIA automates detection of conflicts (via Network Byzantine_Eviction, CE scoring, and SCT evaluation), resolution requires human steward approval:
 
 1. **Detection:** Automated systems flag suspicious behavior (low CE, failed signatures, etc.)
-2. **Isolation:** Suspicious nodes are automatically isolated (apoptosis)
+2. **Isolation:** Suspicious nodes are automatically isolated (Byzantine_Eviction)
 3. **Review:** Human stewards review the case using the Steering Bridge
 4. **Resolution:** Stewards approve reintegration or permanent ban
 
@@ -343,7 +343,7 @@ Governance decisions are documented in the [GOVERNANCE.md](../GOVERNANCE.md) fil
 
 ## 6. Roadmap & Open Questions
 
-### 6.1 Short-Term Roadmap (v2.2.0 — Q3 2026)
+### 6.1 Short-Term Roadmap (v2.2.0 â€” Q3 2026)
 
 | Feature | Description | Priority |
 |---------|-------------|----------|
@@ -353,7 +353,7 @@ Governance decisions are documented in the [GOVERNANCE.md](../GOVERNANCE.md) fil
 | **Feature Dictionary UI** | Interactive visualization of SAE feature dictionary | Medium |
 | **Multi-Model Support** | Extend SAE inference to Llama, Mistral, Gemma | Low |
 
-### 6.2 Medium-Term Roadmap (v3.0.0 — Q4 2026)
+### 6.2 Medium-Term Roadmap (v3.0.0 â€” Q4 2026)
 
 | Feature | Description | Priority |
 |---------|-------------|----------|
@@ -403,12 +403,12 @@ The following ethical considerations guide future development:
 
 | Feature Gate | Module | Status |
 |--------------|--------|--------|
-| `stable` | Core stable features | ✅ Active |
-| `v2.1-neuroplasticity` | Neuroplastic aggregation engine | ✅ Active |
-| `v2.1-steering-bridge` | Human steering bridge | ✅ Active |
-| `v2.1-quantum-feedback` | Async quantum feedback queue | ✅ Active |
-| `v2.1-prod-readiness` | Production readiness features | ✅ Active |
-| `v2.1-observability` | Prometheus metrics | ✅ Active |
+| `stable` | Core stable features | âœ… Active |
+| `v2.1-neuroplasticity` | Neuroplastic aggregation engine | âœ… Active |
+| `v2.1-steering-bridge` | Human steering bridge | âœ… Active |
+| `v2.1-quantum-feedback` | Async quantum feedback queue | âœ… Active |
+| `v2.1-prod-readiness` | Production readiness features | âœ… Active |
+| `v2.1-observability` | Prometheus metrics | âœ… Active |
 
 ---
 
@@ -456,7 +456,7 @@ cargo bench -p ed2kIA-benchmarks -- --save-baseline v2.1.0-stable
 - [x] All ZKP signatures verified before processing
 - [x] Proof of Symbiosis (PoSymb) requires Ed25519 signatures
 - [x] Existential Credit (CE) scoring limits influence per identity
-- [x] Network Apoptosis detects and isolates malicious peers
+- [x] Network Byzantine_Eviction detects and isolates malicious peers
 - [x] Krum-based BFT aggregation resists Byzantine nodes
 - [x] Dependency audit via `cargo audit`
 - [x] Reproducible builds via Docker multi-stage

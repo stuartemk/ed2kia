@@ -1,17 +1,17 @@
-//! Relativistic Entropy — Sprint 78: Invariant Architecture & Planetary-Scale Resilience
+﻿//! Relativistic Entropy â€” Sprint 78: Invariant Architecture & Planetary-Scale Resilience
 //!
-//! Resuelve el bug terminal: Trampa de liquidez CE durante particiones geopolíticas.
+//! Resuelve el bug terminal: Trampa de liquidez CE durante particiones geopolÃ­ticas.
 //!
-//! Implementa entropía relativista: λ se congela criptográficamente si
+//! Implementa entropÃ­a relativista: Î» se congela criptogrÃ¡ficamente si
 //! `peer_density < partition_threshold`. El CE no decae durante apagones
-//! geopolíticos (cryosleep mode). La red protege el mérito de nodos aislados.
+//! geopolÃ­ticos (cryosleep mode). La red protege el mÃ©rito de nodos aislados.
 //!
-//! # Garantías
+//! # GarantÃ­as
 //!
 //! - Decaimiento: O(1) por nodo, adaptativo a densidad de peers
-//! - Cryosleep: λ → 0 cuando peer_density < threshold (congelamiento total)
-//! - Transición suave: rampa exponencial entre λ_base y λ_cryosleep
-//! - Partición: nodos aislados conservan CE hasta reconexión
+//! - Cryosleep: Î» â†’ 0 cuando peer_density < threshold (congelamiento total)
+//! - TransiciÃ³n suave: rampa exponencial entre Î»_base y Î»_cryosleep
+//! - ParticiÃ³n: nodos aislados conservan CE hasta reconexiÃ³n
 
 use std::collections::HashMap;
 use std::fmt;
@@ -63,9 +63,9 @@ impl std::error::Error for RelativisticError {}
 /// Configuration for Relativistic Entropy.
 #[derive(Debug, Clone)]
 pub struct RelativisticConfig {
-    /// Base decay constant λ (default 0.000_01)
+    /// Base decay constant Î» (default 0.000_01)
     pub base_lambda: f64,
-    /// Partition threshold: below this, λ → 0 (default 0.15)
+    /// Partition threshold: below this, Î» â†’ 0 (default 0.15)
     pub partition_threshold: f64,
     /// Maximum CE a node can hold
     pub max_ce: f64,
@@ -76,8 +76,8 @@ pub struct RelativisticConfig {
 }
 
 impl RelativisticConfig {
-    /// Default Stuartian configuration.
-    pub fn default_stuartian() -> Self {
+    /// Default Topological configuration.
+    pub fn default_Topological() -> Self {
         Self {
             base_lambda: 0.000_01,
             partition_threshold: 0.15,
@@ -109,7 +109,7 @@ impl RelativisticConfig {
 
 impl Default for RelativisticConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -232,7 +232,7 @@ impl fmt::Display for DecayRecord {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Decay[{}]: {:.4} -> {:.4} (λ={:.8}, cryosleep={})",
+            "Decay[{}]: {:.4} -> {:.4} (Î»={:.8}, cryosleep={})",
             self.node_id, self.ce_before, self.ce_after, self.effective_lambda, self.was_cryosleep
         )
     }
@@ -250,10 +250,10 @@ pub struct RelativisticEntropy {
 }
 
 impl RelativisticEntropy {
-    /// Create with default Stuartian config.
+    /// Create with default Topological config.
     pub fn new() -> Self {
         Self {
-            config: RelativisticConfig::default_stuartian(),
+            config: RelativisticConfig::default_Topological(),
             nodes: HashMap::new(),
             decay_history: Vec::new(),
         }
@@ -404,7 +404,7 @@ pub fn compute_effective_lambda(
     if peer_density >= partition_threshold {
         return base_lambda;
     }
-    // Exponential ramp: as density drops below threshold, lambda → 0
+    // Exponential ramp: as density drops below threshold, lambda â†’ 0
     let ratio = peer_density / partition_threshold;
     base_lambda * (-ramp_factor * (1.0 - ratio)).exp()
 }
@@ -442,7 +442,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = RelativisticConfig::default_stuartian();
+        let config = RelativisticConfig::default_Topological();
         assert!(config.base_lambda > 0.0);
         assert!(config.partition_threshold > 0.0);
         assert!(config.max_ce > 0.0);
@@ -450,20 +450,20 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = RelativisticConfig::default_stuartian();
+        let config = RelativisticConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 
     #[test]
     fn test_config_invalid_lambda() {
-        let mut config = RelativisticConfig::default_stuartian();
+        let mut config = RelativisticConfig::default_Topological();
         config.base_lambda = 0.0;
         assert!(config.validate().is_err());
     }
 
     #[test]
     fn test_config_invalid_threshold() {
-        let mut config = RelativisticConfig::default_stuartian();
+        let mut config = RelativisticConfig::default_Topological();
         config.partition_threshold = 0.0;
         assert!(config.validate().is_err());
     }
@@ -523,7 +523,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = RelativisticConfig::default_stuartian();
+        let config = RelativisticConfig::default_Topological();
         let engine = RelativisticEntropy::with_config(config).unwrap();
         assert_eq!(engine.nodes.len(), 0);
     }

@@ -1,9 +1,9 @@
-# Production Threat Model — ed2kIA v2.1.0-stable
+﻿# Production Threat Model â€” ed2kIA v2.1.0-stable
 
 **Date:** 2026-05-22
 **Version:** v2.1.0-stable
-**Sprint:** 33 — "Production Readiness, Benchmarking & Mainnet Launch Protocol"
-**Status:** ✅ AUDIT COMPLETE
+**Sprint:** 33 â€” "Production Readiness, Benchmarking & Mainnet Launch Protocol"
+**Status:** âœ… AUDIT COMPLETE
 
 ---
 
@@ -31,11 +31,11 @@ This document provides the production threat model for ed2kIA v2.1.0-stable, cov
 - **Attack Vector:** Flood of P2P connections, oversized messages, or rapid gossipsub propagation
 - **Impact:** Node unavailability, network partition
 - **Mitigation:**
-  - ✅ Connection limits per peer (max 25 concurrent)
-  - ✅ Message size limits (max 4MB per message)
-  - ✅ Rate limiting on gossipsub (max 100 msgs/sec)
-  - ✅ Resource limits in Docker (CPU/memory quotas)
-  - ✅ Health checks with automatic restart
+  - âœ… Connection limits per peer (max 25 concurrent)
+  - âœ… Message size limits (max 4MB per message)
+  - âœ… Rate limiting on gossipsub (max 100 msgs/sec)
+  - âœ… Resource limits in Docker (CPU/memory quotas)
+  - âœ… Health checks with automatic restart
 
 ### THREAT-002: Man-in-the-Middle (MITM)
 - **Severity:** Critical
@@ -43,10 +43,10 @@ This document provides the production threat model for ed2kIA v2.1.0-stable, cov
 - **Attack Vector:** Interception of P2P traffic between nodes
 - **Impact:** Data tampering, identity spoofing
 - **Mitigation:**
-  - ✅ libp2p Noise protocol for TLS-equivalent encryption
-  - ✅ Ed25519 node identity verification
-  - ✅ Certificate pinning for bootstrap peers
-  - ✅ All ZKP signatures verified before processing
+  - âœ… libp2p Noise protocol for TLS-equivalent encryption
+  - âœ… Ed25519 node identity verification
+  - âœ… Certificate pinning for bootstrap peers
+  - âœ… All ZKP signatures verified before processing
 
 ### THREAT-003: Sybil Attack
 - **Severity:** High
@@ -54,10 +54,10 @@ This document provides the production threat model for ed2kIA v2.1.0-stable, cov
 - **Attack Vector:** Creation of many fake nodes to influence consensus
 - **Impact:** Consensus manipulation, reputation inflation
 - **Mitigation:**
-  - ✅ Proof of Symbiosis (PoSymb) requires Ed25519 signatures
-  - ✅ Existential Credit (CE) scoring limits influence per identity
-  - ✅ Network Apoptosis detects and isolates malicious peers
-  - ✅ Krum-based BFT aggregation resists Byzantine nodes
+  - âœ… Proof of Symbiosis (PoSymb) requires Ed25519 signatures
+  - âœ… Existential Credit (CE) scoring limits influence per identity
+  - âœ… Network Byzantine_Eviction detects and isolates malicious peers
+  - âœ… Krum-based BFT aggregation resists Byzantine nodes
 
 ---
 
@@ -69,9 +69,9 @@ This document provides the production threat model for ed2kIA v2.1.0-stable, cov
 - **Attack Vector:** Side-channel analysis of Ed25519 signature verification
 - **Impact:** Key recovery, signature forgery
 - **Mitigation:**
-  - ✅ `ed25519-dalek` uses constant-time comparison
-  - ✅ `ark-ec` ZKP circuits use constant-time arithmetic
-  - ✅ No custom cryptographic primitives
+  - âœ… `ed25519-dalek` uses constant-time comparison
+  - âœ… `ark-ec` ZKP circuits use constant-time arithmetic
+  - âœ… No custom cryptographic primitives
 
 ### THREAT-005: Weak Random Number Generation
 - **Severity:** High
@@ -79,9 +79,9 @@ This document provides the production threat model for ed2kIA v2.1.0-stable, cov
 - **Attack Vector:** Predictable randomness in key generation or nonce creation
 - **Impact:** Key compromise, replay attacks
 - **Mitigation:**
-  - ✅ `getrandom` crate (OS CSPRNG) for all randomness
-  - ✅ Ed25519 key generation uses `SigningKey::generate(&mut Csprng)`
-  - ✅ No custom RNG implementations
+  - âœ… `getrandom` crate (OS CSPRNG) for all randomness
+  - âœ… Ed25519 key generation uses `SigningKey::generate(&mut Csprng)`
+  - âœ… No custom RNG implementations
 
 ### THREAT-006: Key Leakage
 - **Severity:** High
@@ -89,10 +89,10 @@ This document provides the production threat model for ed2kIA v2.1.0-stable, cov
 - **Attack Vector:** Private key exposure through logs, memory dumps, or insecure storage
 - **Impact:** Node impersonation, signature forgery
 - **Mitigation:**
-  - ✅ Keys stored in encrypted keystore (AES-256-GCM)
-  - ✅ No private keys in logs or metrics
-  - ✅ `#[derive(Debug)]` excluded from key structs
-  - ✅ Memory zeroing on key destruction (where applicable)
+  - âœ… Keys stored in encrypted keystore (AES-256-GCM)
+  - âœ… No private keys in logs or metrics
+  - âœ… `#[derive(Debug)]` excluded from key structs
+  - âœ… Memory zeroing on key destruction (where applicable)
 
 ---
 
@@ -104,21 +104,21 @@ This document provides the production threat model for ed2kIA v2.1.0-stable, cov
 - **Attack Vector:** Malformed CRDT state injection to cause merge failures
 - **Impact:** State divergence, consensus failure
 - **Mitigation:**
-  - ✅ CRDT merge is commutative, associative, idempotent (mathematically proven)
-  - ✅ Input validation on all deserialized CRDT states
-  - ✅ Version vector validation before merge
-  - ✅ Automatic state recovery from peers on corruption detection
+  - âœ… CRDT merge is commutative, associative, idempotent (mathematically proven)
+  - âœ… Input validation on all deserialized CRDT states
+  - âœ… Version vector validation before merge
+  - âœ… Automatic state recovery from peers on corruption detection
 
 ### THREAT-008: SCT Manipulation
 - **Severity:** Medium
 - **Likelihood:** Medium
-- **Attack Vector:** Injection of malicious Stuartian Context Tensors to influence model behavior
+- **Attack Vector:** Injection of malicious Topological Context Tensors to influence model behavior
 - **Impact:** Model poisoning, ethical bypass
 - **Mitigation:**
-  - ✅ SCT values bounded: x ∈ [0, 1], y ∈ [0, 1], z ∈ [-1, 1]
-  - ✅ Ed25519 signature required on all SCT updates
-  - ✅ Committee consensus (Proof of Symbiosis) required for SCT adoption
-  - ✅ Ethical attention masking filters negative-z trajectories
+  - âœ… SCT values bounded: x âˆˆ [0, 1], y âˆˆ [0, 1], z âˆˆ [-1, 1]
+  - âœ… Ed25519 signature required on all SCT updates
+  - âœ… Committee consensus (Proof of Symbiosis) required for SCT adoption
+  - âœ… Ethical attention masking filters negative-z trajectories
 
 ### THREAT-009: Existential Credit Manipulation
 - **Severity:** Medium
@@ -126,10 +126,10 @@ This document provides the production threat model for ed2kIA v2.1.0-stable, cov
 - **Attack Vector:** Artificial inflation of CE scores through self-transactions
 - **Impact:** Reputation manipulation, governance attack
 - **Mitigation:**
-  - ✅ CE emit requires positive z-score validation
-  - ✅ CE burn on destructive feedback (negative z)
-  - ✅ Commutative merge prevents double-spending
-  - ✅ Network Apoptosis triggers on CE score anomalies
+  - âœ… CE emit requires positive z-score validation
+  - âœ… CE burn on destructive feedback (negative z)
+  - âœ… Commutative merge prevents double-spending
+  - âœ… Network Byzantine_Eviction triggers on CE score anomalies
 
 ### THREAT-010: WASM Sandbox Escape
 - **Severity:** Medium
@@ -137,10 +137,10 @@ This document provides the production threat model for ed2kIA v2.1.0-stable, cov
 - **Attack Vector:** Exploitation of WASM runtime to execute arbitrary code
 - **Impact:** Host compromise, data exfiltration
 - **Mitigation:**
-  - ✅ `wasmtime::Config` with memory limit (256MB)
-  - ✅ All syscalls blocked (no host access)
-  - ✅ WASI disabled for untrusted modules
-  - ✅ CPU time limit (10s per execution)
+  - âœ… `wasmtime::Config` with memory limit (256MB)
+  - âœ… All syscalls blocked (no host access)
+  - âœ… WASI disabled for untrusted modules
+  - âœ… CPU time limit (10s per execution)
 
 ### THREAT-011: Deserialization Vulnerabilities
 - **Severity:** Medium
@@ -148,10 +148,10 @@ This document provides the production threat model for ed2kIA v2.1.0-stable, cov
 - **Attack Vector:** Malformed bincode/serde data causing RCE or DoS
 - **Impact:** Remote code execution, denial of service
 - **Mitigation:**
-  - ✅ Size limits on all deserialized inputs (max 16MB)
-  - ✅ Type-safe deserialization (no `any` types)
-  - ✅ `serde` with bounded recursion depth
-  - ✅ Input validation before deserialization
+  - âœ… Size limits on all deserialized inputs (max 16MB)
+  - âœ… Type-safe deserialization (no `any` types)
+  - âœ… `serde` with bounded recursion depth
+  - âœ… Input validation before deserialization
 
 ---
 
@@ -163,11 +163,11 @@ This document provides the production threat model for ed2kIA v2.1.0-stable, cov
 - **Attack Vector:** Exploitation of Docker runtime for host access
 - **Impact:** Host compromise
 - **Mitigation:**
-  - ✅ Non-root user (`ed2kia:ed2kia`) in container
-  - ✅ Read-only filesystem where possible
-  - ✅ No privileged capabilities
-  - ✅ Seccomp profile (default Docker profile)
-  - ✅ Resource limits (CPU, memory, PIDs)
+  - âœ… Non-root user (`ed2kia:ed2kia`) in container
+  - âœ… Read-only filesystem where possible
+  - âœ… No privileged capabilities
+  - âœ… Seccomp profile (default Docker profile)
+  - âœ… Resource limits (CPU, memory, PIDs)
 
 ### THREAT-013: Supply Chain Attack
 - **Severity:** Low
@@ -175,10 +175,10 @@ This document provides the production threat model for ed2kIA v2.1.0-stable, cov
 - **Attack Vector:** Compromised Cargo dependency
 - **Impact:** Backdoor injection, data exfiltration
 - **Mitigation:**
-  - ✅ `cargo audit` in CI pipeline
-  - ✅ `cargo deny` for license and vulnerability checks
-  - ✅ Locked dependencies (`Cargo.lock`)
-  - ✅ Minimal dependency surface
+  - âœ… `cargo audit` in CI pipeline
+  - âœ… `cargo deny` for license and vulnerability checks
+  - âœ… Locked dependencies (`Cargo.lock`)
+  - âœ… Minimal dependency surface
 
 ### THREAT-014: Configuration Drift
 - **Severity:** Low
@@ -186,10 +186,10 @@ This document provides the production threat model for ed2kIA v2.1.0-stable, cov
 - **Attack Vector:** Unauthorized configuration changes
 - **Impact:** Security bypass, misconfiguration
 - **Mitigation:**
-  - ✅ Immutable config in production (sealed volumes)
-  - ✅ Config validation on startup
-  - ✅ GitOps for config management
-  - ✅ Audit logging for config changes
+  - âœ… Immutable config in production (sealed volumes)
+  - âœ… Config validation on startup
+  - âœ… GitOps for config management
+  - âœ… Audit logging for config changes
 
 ---
 
@@ -203,7 +203,7 @@ $ cargo audit
 
 | CVE | Package | Severity | Mitigation |
 |-----|---------|----------|------------|
-| N/A | — | — | No critical CVEs found in current dependency tree |
+| N/A | â€” | â€” | No critical CVEs found in current dependency tree |
 
 ### cargo deny (License + Vulnerability)
 ```bash
@@ -251,15 +251,15 @@ $ cargo deny check
 | Metric | Threshold | Alert |
 |--------|-----------|-------|
 | Failed signature verifications | > 10/min | Warning |
-| Apoptosis triggers | > 5/hour | Critical |
+| Byzantine_Eviction triggers | > 5/hour | Critical |
 | Connection rate | > 100/sec | Warning |
 | Message size anomalies | > 1MB avg | Warning |
-| CE score anomalies | > 3σ deviation | Critical |
+| CE score anomalies | > 3Ïƒ deviation | Critical |
 
 ### Incident Response
-1. **Detection:** Prometheus alerts → Grafana dashboard
+1. **Detection:** Prometheus alerts â†’ Grafana dashboard
 2. **Triage:** Security team evaluates severity
-3. **Containment:** Network Apoptosis isolates affected peers
+3. **Containment:** Network Byzantine_Eviction isolates affected peers
 4. **Eradication:** Node restart with clean state
 5. **Recovery:** Re-sync from trusted peers
 6. **Post-mortem:** Document root cause and fix
@@ -268,12 +268,12 @@ $ cargo deny check
 
 ## 8. Compliance & Ethics
 
-- [x] **Zero financial logic** — No economic manipulation possible
-- [x] **Transparent audit trail** — All CE transactions logged
-- [x] **Human oversight** — Critical decisions require human approval
-- [x] **Zero telemetry** — No external data collection
-- [x] **Open source** — Full code auditability
-- [x] **Apache-2.0 + Ethical Use** — License compliance verified
+- [x] **Zero financial logic** â€” No economic manipulation possible
+- [x] **Transparent audit trail** â€” All CE transactions logged
+- [x] **Human oversight** â€” Critical decisions require human approval
+- [x] **Zero telemetry** â€” No external data collection
+- [x] **Open source** â€” Full code auditability
+- [x] **Apache-2.0 + Ethical Use** â€” License compliance verified
 
 ---
 

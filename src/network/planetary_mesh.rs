@@ -1,11 +1,11 @@
-//! Planetary Mesh — WAN-Scale Routing with Kademlia DHT, AutoNAT & Circuit Relay.
+﻿//! Planetary Mesh â€” WAN-Scale Routing with Kademlia DHT, AutoNAT & Circuit Relay.
 //!
-//! **Stuartian Law 1 (Diversidad):** Descubrimiento orgánico de pares a escala global.
-//! **Stuartian Law 5 (Múltiples Posibilidades):** Tolerancia a particiones WAN, convergencia eventual.
+//! **Topological Law 1 (Diversidad):** Descubrimiento orgÃ¡nico de pares a escala global.
+//! **Topological Law 5 (MÃºltiples Posibilidades):** Tolerancia a particiones WAN, convergencia eventual.
 //!
-//! Este módulo proporciona la capa de enrutamiento para conectividad planetaria:
+//! Este mÃ³dulo proporciona la capa de enrutamiento para conectividad planetaria:
 //! - **Kademlia DHT:** Descubrimiento de pares y almacenamiento distribuido de rutas.
-//! - **AutoNAT:** Detección automática de dirección pública para nodos detrás de NAT.
+//! - **AutoNAT:** DetecciÃ³n automÃ¡tica de direcciÃ³n pÃºblica para nodos detrÃ¡s de NAT.
 //! - **Circuit Relay v2 / DCutR:** Hole punching para conexiones directas entre nodos
 //!   en firewalls estrictos y navegadores WASM.
 //!
@@ -16,7 +16,7 @@ use std::collections::HashMap;
 use std::fmt;
 
 // ============================================================================
-// Kademlia DHT — Distributed Hash Table for Peer Discovery
+// Kademlia DHT â€” Distributed Hash Table for Peer Discovery
 // ============================================================================
 
 /// Distancia XOR entre dos identificadores de nodo (Kademlia metric).
@@ -25,15 +25,15 @@ pub fn kademlia_distance(a: u128, b: u128) -> u128 {
     a ^ b
 }
 
-/// Bucket de Kademlia para un rango k-ary específico.
-/// Cada bucket almacena hasta `k` pares ordenados por última actividad.
+/// Bucket de Kademlia para un rango k-ary especÃ­fico.
+/// Cada bucket almacena hasta `k` pares ordenados por Ãºltima actividad.
 #[derive(Debug, Clone)]
 pub struct KademliaBucket {
     /// Rango k-ary de este bucket (ej. 2^160..2^161 para alpha=160).
     pub k_range: u8,
-    /// Pares en este bucket, ordenados por última actividad (primero = más reciente).
+    /// Pares en este bucket, ordenados por Ãºltima actividad (primero = mÃ¡s reciente).
     pub peers: Vec<PeerEntry>,
-    /// Capacidad máxima del bucket (típicamente k=20 en Kademlia estándar).
+    /// Capacidad mÃ¡xima del bucket (tÃ­picamente k=20 en Kademlia estÃ¡ndar).
     pub max_size: usize,
 }
 
@@ -47,10 +47,10 @@ impl KademliaBucket {
     }
 
     /// Agrega o actualiza un par en el bucket.
-    /// Si el bucket está lleno y el par no existe, se intenta split.
+    /// Si el bucket estÃ¡ lleno y el par no existe, se intenta split.
     pub fn add_or_update(&mut self, peer: PeerEntry) -> BucketAction {
         if let Some(pos) = self.peers.iter().position(|p| p.node_id == peer.node_id) {
-            // Mover al frente (más reciente).
+            // Mover al frente (mÃ¡s reciente).
             self.peers.remove(pos);
             self.peers.insert(0, peer);
             BucketAction::Updated
@@ -62,7 +62,7 @@ impl KademliaBucket {
         }
     }
 
-    /// Obtiene los `n` pares más cercanos a un target dentro de este bucket.
+    /// Obtiene los `n` pares mÃ¡s cercanos a un target dentro de este bucket.
     pub fn closest(&self, target: u128, n: usize) -> Vec<&PeerEntry> {
         let mut scored: Vec<(&PeerEntry, u128)> = self
             .peers
@@ -79,7 +79,7 @@ impl KademliaBucket {
     }
 }
 
-/// Acción resultante de agregar un par al bucket.
+/// AcciÃ³n resultante de agregar un par al bucket.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BucketAction {
     Added,
@@ -99,7 +99,7 @@ pub struct PeerEntry {
 /// Capacidades de un nodo en la malla planetaria.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct NodeCapabilities {
-    /// Capacidad de cómputo (0 = ligero/WASM, 1 = estándar, 2 = GPU).
+    /// Capacidad de cÃ³mputo (0 = ligero/WASM, 1 = estÃ¡ndar, 2 = GPU).
     pub compute_tier: u8,
     /// Soporte para relay de circuitos.
     pub can_relay: bool,
@@ -107,7 +107,7 @@ pub struct NodeCapabilities {
     pub can_hole_punch: bool,
     /// Ancho de banda estimado en Mbps.
     pub bandwidth_mbps: f64,
-    /// Crédito de Existencia disponible para incentivos de enrutamiento.
+    /// CrÃ©dito de Existencia disponible para incentivos de enrutamiento.
     pub ce_balance: f64,
 }
 
@@ -125,7 +125,7 @@ impl KTable {
         Self {
             local_id,
             buckets: HashMap::new(),
-            k_size: 20, // Kademlia estándar k=20
+            k_size: 20, // Kademlia estÃ¡ndar k=20
             alpha_bits,
         }
     }
@@ -150,7 +150,7 @@ impl KTable {
         bucket.add_or_update(peer)
     }
 
-    /// Encuentra los `n` pares más cercanos a un target en toda la tabla.
+    /// Encuentra los `n` pares mÃ¡s cercanos a un target en toda la tabla.
     pub fn find_closest(&self, target: u128, n: usize) -> Vec<&PeerEntry> {
         let mut all_peers: Vec<(&PeerEntry, u128)> = self
             .buckets
@@ -165,7 +165,7 @@ impl KTable {
         all_peers.into_iter().take(n).map(|(p, _)| p).collect()
     }
 
-    /// Elimina pares inactivos por más de `timeout_ms`.
+    /// Elimina pares inactivos por mÃ¡s de `timeout_ms`.
     pub fn prune_inactive(&mut self, now_ms: u64, timeout_ms: u64) -> usize {
         let mut pruned = 0;
         for bucket in self.buckets.values_mut() {
@@ -178,21 +178,21 @@ impl KTable {
 }
 
 // ============================================================================
-// AutoNAT — Detección de Dirección Pública
+// AutoNAT â€” DetecciÃ³n de DirecciÃ³n PÃºblica
 // ============================================================================
 
-/// Estado de detección AutoNAT para un nodo.
+/// Estado de detecciÃ³n AutoNAT para un nodo.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AutoNatStatus {
-    /// Aún no se ha determinado la dirección pública.
+    /// AÃºn no se ha determinado la direcciÃ³n pÃºblica.
     Unknown,
-    /// El nodo es alcanzable públicamente (puerto abierto).
+    /// El nodo es alcanzable pÃºblicamente (puerto abierto).
     Public(String),
-    /// El nodo está detrás de NAT y necesita relay.
+    /// El nodo estÃ¡ detrÃ¡s de NAT y necesita relay.
     Private,
 }
 
-/// Motor de detección AutoNAT.
+/// Motor de detecciÃ³n AutoNAT.
 #[derive(Debug)]
 pub struct AutoNatEngine {
     status: AutoNatStatus,
@@ -254,7 +254,7 @@ impl Default for AutoNatEngine {
 }
 
 // ============================================================================
-// Circuit Relay v2 / DCutR — Hole Punching
+// Circuit Relay v2 / DCutR â€” Hole Punching
 // ============================================================================
 
 /// Estado de un circuito de relay.
@@ -266,7 +266,7 @@ pub enum CircuitState {
     Failed,
 }
 
-/// Circuito de relay entre dos nodos a través de un relay intermedio.
+/// Circuito de relay entre dos nodos a travÃ©s de un relay intermedio.
 #[derive(Debug)]
 pub struct RelayCircuit {
     pub circuit_id: u64,
@@ -303,7 +303,7 @@ impl RelayCircuit {
         }
     }
 
-    /// Verifica si el circuito expiró.
+    /// Verifica si el circuito expirÃ³.
     pub fn is_expired(&self) -> bool {
         Self::now_ms() > self.expires_at
     }
@@ -340,7 +340,7 @@ impl fmt::Display for MeshError {
     }
 }
 
-/// Estadísticas de la malla planetaria.
+/// EstadÃ­sticas de la malla planetaria.
 #[derive(Debug, Clone)]
 pub struct MeshStats {
     pub total_peers: usize,
@@ -372,7 +372,7 @@ impl Default for MeshStats {
     }
 }
 
-/// Configuración de la malla planetaria.
+/// ConfiguraciÃ³n de la malla planetaria.
 #[derive(Debug, Clone)]
 pub struct MeshConfig {
     pub k_bucket_size: usize,
@@ -400,7 +400,7 @@ impl Default for MeshConfig {
     }
 }
 
-/// Router de Malla Planetaria — Orquesta Kademlia DHT, AutoNAT y Circuit Relay.
+/// Router de Malla Planetaria â€” Orquesta Kademlia DHT, AutoNAT y Circuit Relay.
 pub struct PlanetaryMesh {
     local_id: u128,
     k_table: KTable,
@@ -442,7 +442,7 @@ impl PlanetaryMesh {
         action
     }
 
-    /// Busca los `n` pares más cercanos a un target (Kademlia find_node).
+    /// Busca los `n` pares mÃ¡s cercanos a un target (Kademlia find_node).
     pub fn find_closest_peers(&mut self, target: u128, n: usize) -> Vec<&PeerEntry> {
         self.stats.dht_lookups += 1;
         let closest = self.k_table.find_closest(target, n);
@@ -452,11 +452,11 @@ impl PlanetaryMesh {
         closest
     }
 
-    /// Búsqueda iterativa de alpha (α) pares más cercanos.
-    /// Simula α rondas de consulta Kademlia para convergencia.
+    /// BÃºsqueda iterativa de alpha (Î±) pares mÃ¡s cercanos.
+    /// Simula Î± rondas de consulta Kademlia para convergencia.
     pub fn iterative_find_node(&mut self, target: u128, alpha: usize) -> Vec<&PeerEntry> {
-        // En una implementación real con libp2p, esto haría α consultas concurrentes.
-        // Aquí simulamos la convergencia local.
+        // En una implementaciÃ³n real con libp2p, esto harÃ­a Î± consultas concurrentes.
+        // AquÃ­ simulamos la convergencia local.
         let mut candidates = self.k_table.find_closest(target, alpha * 3);
         candidates.truncate(alpha);
         candidates
@@ -480,7 +480,7 @@ impl PlanetaryMesh {
         }
     }
 
-    /// Simula detección AutoNAT desde múltiples servidores.
+    /// Simula detecciÃ³n AutoNAT desde mÃºltiples servidores.
     pub fn simulate_autonat_discovery(&mut self, servers: &[(bool, &str)]) {
         for (can_reach, addr) in servers {
             self.autonat.simulate_server_dial(*can_reach, addr);

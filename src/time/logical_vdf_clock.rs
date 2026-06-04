@@ -1,14 +1,14 @@
-//! Logical VDF Clock — Sprint 77: Physics of Consciousness & Thermodynamic Finality
+﻿//! Logical VDF Clock â€” Sprint 77: Physics of Consciousness & Thermodynamic Finality
 //!
-//! Resuelve el bug ontológico: dependencia de NTP/PTP vulnerable a Time-Spoofing.
+//! Resuelve el bug ontolÃ³gico: dependencia de NTP/PTP vulnerable a Time-Spoofing.
 //!
-//! Implementa Relojes Lógicos + Verifiable Delay Functions (VDFs).
-//! Tiempo relativo al cómputo, no a servidores externos. Inmune a spoofing.
+//! Implementa Relojes LÃ³gicos + Verifiable Delay Functions (VDFs).
+//! Tiempo relativo al cÃ³mputo, no a servidores externos. Inmune a spoofing.
 //!
-//! # Garantías
+//! # GarantÃ­as
 //!
 //! - VDF Generation: O(n) secuencial (no paralelizable)
-//! - VDF Verification: O(log n) con shortcut (simulado aquí)
+//! - VDF Verification: O(log n) con shortcut (simulado aquÃ­)
 //! - Inmunidad: sin dependencia de NTP/PTP
 
 use std::collections::HashMap;
@@ -36,7 +36,7 @@ impl fmt::Display for VdfError {
             VdfError::EmptySeed => write!(f, "Empty seed"),
             VdfError::VerificationFailed => write!(f, "VDF verification failed"),
             VdfError::ClockRegression(old, new) => {
-                write!(f, "Clock regression: {} → {}", old, new)
+                write!(f, "Clock regression: {} â†’ {}", old, new)
             }
             VdfError::InvalidParams => write!(f, "Invalid public parameters"),
         }
@@ -59,7 +59,7 @@ pub struct VdfConfig {
 }
 
 impl VdfConfig {
-    pub fn default_stuartian() -> Self {
+    pub fn default_Topological() -> Self {
         Self {
             default_iterations: 1000,
             min_iterations: 100,
@@ -81,7 +81,7 @@ impl VdfConfig {
 
 impl Default for VdfConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -179,7 +179,7 @@ pub struct LogicalVdfClock {
 impl LogicalVdfClock {
     pub fn new() -> Self {
         Self {
-            config: VdfConfig::default_stuartian(),
+            config: VdfConfig::default_Topological(),
             clocks: HashMap::new(),
             public_params: 0xDEAD_BEEF_CAFE_BABE,
         }
@@ -273,7 +273,7 @@ impl LogicalVdfClock {
         self.clocks.clear();
     }
 
-    // ─── Internal VDF Implementation ───
+    // â”€â”€â”€ Internal VDF Implementation â”€â”€â”€
 
     /// Generate VDF proof (sequential computation).
     pub fn generate_vdf_proof(seed: u64, iterations: u64) -> VDFProof {
@@ -331,7 +331,7 @@ impl fmt::Display for LogicalVdfClock {
     }
 }
 
-// ─── Public Standalone Functions ─────────────────────────────────────────────
+// â”€â”€â”€ Public Standalone Functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Generate a VDF proof (standalone).
 pub fn generate_vdf_proof(seed: &[u8], iterations: u64) -> VDFProof {
@@ -345,7 +345,7 @@ pub fn verify_vdf_proof(proof: &VDFProof, _public_params: &[u8]) -> bool {
     proof.output == expected
 }
 
-// ─── Tests ─────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[cfg(test)]
 mod tests {
@@ -353,7 +353,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = VdfConfig::default_stuartian();
+        let config = VdfConfig::default_Topological();
         assert!(config.validate().is_ok());
         assert_eq!(config.default_iterations, 1000);
     }
@@ -362,7 +362,7 @@ mod tests {
     fn test_config_invalid_min() {
         let config = VdfConfig {
             min_iterations: 0,
-            ..VdfConfig::default_stuartian()
+            ..VdfConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }
@@ -372,7 +372,7 @@ mod tests {
         let config = VdfConfig {
             max_iterations: 50,
             min_iterations: 100,
-            ..VdfConfig::default_stuartian()
+            ..VdfConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }
@@ -580,7 +580,7 @@ mod tests {
         // Check synchronization
         assert!(engine.are_synchronized(1, 2));
 
-        // Different iterations → different timestamps
+        // Different iterations â†’ different timestamps
         engine.generate_vdf(2, &[7, 8, 9], Some(5000)).unwrap();
         assert!(!engine.are_synchronized(1, 2));
     }

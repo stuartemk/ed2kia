@@ -1,11 +1,11 @@
-//! Stuartian Noospheric Activation Protocol (SNAP) — Sprint 58
+﻿//! Topological Noospheric Activation Protocol (SNAP) â€” Sprint 58
 //!
 //! Global activation engine that monitors network scale and ethical coherence
 //! to trigger the GlobalIgnitionEvent, unlocking civilizatorio-level Macro-Concepts.
 //!
 //! **Core Logic:**
 //! - Monitors concurrent node count against ignition threshold (default: 10,000)
-//! - Tracks Ethical Resonance Field coherence stability over τ consecutive ticks
+//! - Tracks Ethical Resonance Field coherence stability over Ï„ consecutive ticks
 //! - Fires GlobalIgnitionEvent when both conditions are satisfied simultaneously
 //!
 //! **Feature Gate:** `v4.0-snap-activation`
@@ -136,7 +136,7 @@ pub enum ActivationState {
     Activated(GlobalIgnitionEvent),
 }
 
-/// SNAP Engine — Monitors network for Global Ignition conditions.
+/// SNAP Engine â€” Monitors network for Global Ignition conditions.
 #[derive(Debug)]
 pub struct SnapEngine {
     config: SnapConfig,
@@ -384,14 +384,14 @@ mod tests {
         let config = make_config(100, 5, 0.8);
         let mut engine = SnapEngine::with_config(config).unwrap();
 
-        // 4 ticks — not enough stability
+        // 4 ticks â€” not enough stability
         for _ in 0..4 {
             let result = engine.tick(200, 0.9).unwrap();
             assert!(result.is_none());
         }
         assert_eq!(engine.stable_ticks(), 4);
 
-        // 5th tick — ignition!
+        // 5th tick â€” ignition!
         let result = engine.tick(200, 0.9).unwrap();
         assert!(result.is_some());
         let event = result.unwrap();

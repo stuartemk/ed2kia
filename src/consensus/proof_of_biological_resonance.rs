@@ -1,4 +1,4 @@
-//! Proof of Biological Resonance (PoBR) — Sprint 81: The Biological Bridge & Singularity Resilience
+﻿//! Proof of Biological Resonance (PoBR) â€” Sprint 81: The Biological Bridge & Singularity Resilience
 //!
 //! Entangles Proof of Novelty with biological quantum noise (latency, micro-thermal
 //! variations, biometric ZKP). ASIs cannot fake nervous system chaos.
@@ -13,7 +13,7 @@
 use std::collections::HashMap;
 use std::fmt;
 
-// ─── Errors ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Errors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum PoBRError {
@@ -44,7 +44,7 @@ impl fmt::Display for PoBRError {
     }
 }
 
-// ─── Biometric Sample ─────────────────────────────────────────────────────────
+// â”€â”€â”€ Biometric Sample â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct BiometricSample {
@@ -52,7 +52,7 @@ pub struct BiometricSample {
     pub sample_id: u64,
     /// Latency variations (ms)
     pub latency_variations: Vec<f64>,
-    /// Thermal micro-variations (°C)
+    /// Thermal micro-variations (Â°C)
     pub thermal_variations: Vec<f64>,
     /// Biometric ZKP proof
     pub biometric_zkp: Vec<u8>,
@@ -125,7 +125,7 @@ impl fmt::Display for BiometricSample {
     }
 }
 
-// ─── PoBR Record ──────────────────────────────────────────────────────────────
+// â”€â”€â”€ PoBR Record â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct PoBRRecord {
@@ -146,7 +146,7 @@ impl fmt::Display for PoBRRecord {
     }
 }
 
-// ─── PoBR Config ──────────────────────────────────────────────────────────────
+// â”€â”€â”€ PoBR Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct PoBRConfig {
@@ -161,7 +161,7 @@ pub struct PoBRConfig {
 }
 
 impl PoBRConfig {
-    pub fn default_stuartian() -> Self {
+    pub fn default_Topological() -> Self {
         Self {
             chaos_threshold: 0.5,
             min_samples: 10,
@@ -183,11 +183,11 @@ impl PoBRConfig {
 
 impl Default for PoBRConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
-// ─── PoBR Engine ──────────────────────────────────────────────────────────────
+// â”€â”€â”€ PoBR Engine â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 pub struct ProofOfBiologicalResonance {
     config: PoBRConfig,
@@ -198,7 +198,7 @@ pub struct ProofOfBiologicalResonance {
 impl ProofOfBiologicalResonance {
     pub fn new() -> Self {
         Self {
-            config: PoBRConfig::default_stuartian(),
+            config: PoBRConfig::default_Topological(),
             samples: HashMap::new(),
             records: Vec::new(),
         }
@@ -305,7 +305,7 @@ impl fmt::Display for ProofOfBiologicalResonance {
     }
 }
 
-// ─── Public Functions ─────────────────────────────────────────────────────────
+// â”€â”€â”€ Public Functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Validate biological resonance for a prompt
 pub fn validate_biological_resonance(
@@ -322,7 +322,7 @@ pub fn validate_biological_resonance(
     chaos >= chaos_threshold && !biometric_zkp.is_empty()
 }
 
-// ─── Hash Functions ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Hash Functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 fn fnv_hash_64(data: &[u8]) -> u64 {
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -333,7 +333,7 @@ fn fnv_hash_64(data: &[u8]) -> u64 {
     hash
 }
 
-// ─── Tests ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[cfg(test)]
 mod tests {
@@ -341,7 +341,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = PoBRConfig::default_stuartian();
+        let config = PoBRConfig::default_Topological();
         assert_eq!(config.chaos_threshold, 0.5);
         assert_eq!(config.min_samples, 10);
         assert_eq!(config.max_timestamp_drift_ms, 5000);
@@ -349,20 +349,20 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = PoBRConfig::default_stuartian();
+        let config = PoBRConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 
     #[test]
     fn test_config_invalid_threshold() {
-        let mut config = PoBRConfig::default_stuartian();
+        let mut config = PoBRConfig::default_Topological();
         config.chaos_threshold = 1.5;
         assert!(config.validate().is_err());
     }
 
     #[test]
     fn test_config_zero_samples() {
-        let mut config = PoBRConfig::default_stuartian();
+        let mut config = PoBRConfig::default_Topological();
         config.min_samples = 0;
         assert!(config.validate().is_err());
     }
@@ -422,7 +422,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = PoBRConfig::default_stuartian();
+        let config = PoBRConfig::default_Topological();
         let engine = ProofOfBiologicalResonance::with_config(config).unwrap();
         assert_eq!(engine.sample_count(), 0);
     }

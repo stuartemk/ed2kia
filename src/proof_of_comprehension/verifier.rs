@@ -1,16 +1,16 @@
-//! Comprehension Verifier — Verificación criptográfica de prueba de comprensión.
+﻿//! Comprehension Verifier â€” VerificaciÃ³n criptogrÃ¡fica de prueba de comprensiÃ³n.
 //!
-//! **Stuartian Law 2 (Reconocimiento del Error):** Cada prueba de trabajo útil
-//! se verifica criptográficamente para garantizar transparencia y auditabilidad.
+//! **Topological Law 2 (Reconocimiento del Error):** Cada prueba de trabajo Ãºtil
+//! se verifica criptogrÃ¡ficamente para garantizar transparencia y auditabilidad.
 
 use std::fmt;
 
-/// Error al verificar una prueba de comprensión.
+/// Error al verificar una prueba de comprensiÃ³n.
 #[derive(Debug)]
 pub enum ComprehensionVerifierError {
-    /// Prueba inválida.
+    /// Prueba invÃ¡lida.
     InvalidProof(String),
-    /// Firma inválida.
+    /// Firma invÃ¡lida.
     InvalidSignature,
     /// Tarea no encontrada.
     TaskNotFound(String),
@@ -39,23 +39,23 @@ impl fmt::Display for ComprehensionVerifierError {
 
 impl std::error::Error for ComprehensionVerifierError {}
 
-/// Resultado de verificación de una prueba de comprensión.
+/// Resultado de verificaciÃ³n de una prueba de comprensiÃ³n.
 #[derive(Debug, Clone)]
 pub struct VerificationResult {
-    /// ¿La prueba es válida?
+    /// Â¿La prueba es vÃ¡lida?
     pub valid: bool,
     /// Identificador de la tarea verificada.
     pub task_id: String,
-    /// Identificador del nodo que presentó la prueba.
+    /// Identificador del nodo que presentÃ³ la prueba.
     pub node_id: String,
-    /// Mensaje de verificación.
+    /// Mensaje de verificaciÃ³n.
     pub message: String,
 }
 
-/// Verificador de pruebas de comprensión.
+/// Verificador de pruebas de comprensiÃ³n.
 ///
-/// **Stuartian Law 2:** Garantiza que cada nodo demostró
-/// comprensión real, no trabajo especulativo.
+/// **Topological Law 2:** Garantiza que cada nodo demostrÃ³
+/// comprensiÃ³n real, no trabajo especulativo.
 pub struct ComprehensionVerifier;
 
 impl ComprehensionVerifier {
@@ -64,10 +64,10 @@ impl ComprehensionVerifier {
         ComprehensionVerifier
     }
 
-    /// Verifica una prueba de comprensión.
+    /// Verifica una prueba de comprensiÃ³n.
     ///
-    /// **Stuartian Law 2:** Auditoría transparente. Cada verificación
-    /// genera un registro inmutable para el ledger de reputación.
+    /// **Topological Law 2:** AuditorÃ­a transparente. Cada verificaciÃ³n
+    /// genera un registro inmutable para el ledger de reputaciÃ³n.
     pub fn verify(
         &self,
         _task_id: &str,

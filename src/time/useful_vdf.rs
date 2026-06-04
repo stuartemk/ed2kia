@@ -1,4 +1,4 @@
-//! Useful VDFs (uVDFs) — Sprint 79: Quantum-Physical Bridge & God-Level Resilience
+﻿//! Useful VDFs (uVDFs) â€” Sprint 79: Quantum-Physical Bridge & God-Level Resilience
 //!
 //! Useful Verifiable Delay Functions: The verifiable delay is a byproduct of
 //! SAE inference + semantic audit. Pure ASICs are useless because the computation
@@ -57,8 +57,8 @@ pub struct VdfConfig {
 }
 
 impl VdfConfig {
-    /// Default Stuartian configuration.
-    pub fn default_stuartian() -> Self {
+    /// Default Topological configuration.
+    pub fn default_Topological() -> Self {
         Self {
             max_iterations: 1_000_000,
             sae_dim: 256,
@@ -87,7 +87,7 @@ impl VdfConfig {
 
 impl Default for VdfConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -186,7 +186,7 @@ impl UsefulVdf {
     /// Create with default configuration.
     pub fn new() -> Self {
         Self {
-            config: VdfConfig::default_stuartian(),
+            config: VdfConfig::default_Topological(),
             computation_counter: 0,
             records: Vec::new(),
             verified_cache: HashMap::new(),
@@ -440,14 +440,14 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = VdfConfig::default_stuartian();
+        let config = VdfConfig::default_Topological();
         assert!(config.max_iterations > 0);
         assert!(config.sae_dim > 0);
     }
 
     #[test]
     fn test_config_validate_ok() {
-        let config = VdfConfig::default_stuartian();
+        let config = VdfConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 
@@ -455,7 +455,7 @@ mod tests {
     fn test_config_zero_iterations() {
         let config = VdfConfig {
             max_iterations: 0,
-            ..VdfConfig::default_stuartian()
+            ..VdfConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }
@@ -464,7 +464,7 @@ mod tests {
     fn test_config_zero_dim() {
         let config = VdfConfig {
             sae_dim: 0,
-            ..VdfConfig::default_stuartian()
+            ..VdfConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }
@@ -477,7 +477,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = VdfConfig::default_stuartian();
+        let config = VdfConfig::default_Topological();
         let engine = UsefulVdf::with_config(config);
         assert!(engine.is_ok());
     }

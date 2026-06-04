@@ -1,4 +1,4 @@
-//! FHE-Ready WASM — Sprint 79: Quantum-Physical Bridge & God-Level Resilience
+﻿//! FHE-Ready WASM â€” Sprint 79: Quantum-Physical Bridge & God-Level Resilience
 //!
 //! Fully Homomorphic Encryption (FHE)-ready WebAssembly architecture.
 //! Provides side-channel mitigation through encrypted computation in WASM.
@@ -14,7 +14,7 @@
 use std::collections::HashMap;
 use std::fmt;
 
-// ─── Errors ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Errors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum FheError {
@@ -49,7 +49,7 @@ impl fmt::Display for FheError {
     }
 }
 
-// ─── FHE Scheme ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ FHE Scheme â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FheScheme {
@@ -68,7 +68,7 @@ impl fmt::Display for FheScheme {
     }
 }
 
-// ─── Config ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct FheWasmConfig {
@@ -87,7 +87,7 @@ pub struct FheWasmConfig {
 }
 
 impl FheWasmConfig {
-    pub fn default_stuartian() -> Self {
+    pub fn default_Topological() -> Self {
         Self {
             security_level: 128,
             max_noise_budget: 40,
@@ -117,11 +117,11 @@ impl FheWasmConfig {
 
 impl Default for FheWasmConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
-// ─── FHE Key ──────────────────────────────────────────────────────────────────
+// â”€â”€â”€ FHE Key â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct FheKey {
@@ -215,7 +215,7 @@ impl fmt::Display for FheKey {
     }
 }
 
-// ─── Encrypted WASM Module ────────────────────────────────────────────────────
+// â”€â”€â”€ Encrypted WASM Module â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct EncryptedModule {
@@ -248,7 +248,7 @@ impl fmt::Display for EncryptedModule {
     }
 }
 
-// ─── Computation Record ───────────────────────────────────────────────────────
+// â”€â”€â”€ Computation Record â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct FheRecord {
@@ -270,7 +270,7 @@ impl fmt::Display for FheRecord {
     }
 }
 
-// ─── FHE-WASM Engine ──────────────────────────────────────────────────────────
+// â”€â”€â”€ FHE-WASM Engine â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 pub struct FheReadyWasm {
     config: FheWasmConfig,
@@ -286,7 +286,7 @@ pub struct FheReadyWasm {
 impl FheReadyWasm {
     pub fn new() -> Self {
         Self {
-            config: FheWasmConfig::default_stuartian(),
+            config: FheWasmConfig::default_Topological(),
             keys: HashMap::new(),
             modules: HashMap::new(),
             records: Vec::new(),
@@ -587,7 +587,7 @@ impl fmt::Display for FheReadyWasm {
     }
 }
 
-// ─── Public API ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ Public API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Generate FHE key pair standalone
 pub fn generate_fhe_key(
@@ -609,7 +609,7 @@ pub fn decrypt_fhe(ciphertext: &[u8], secret_key: &[u8]) -> Vec<u8> {
     FheReadyWasm::decrypt_bytes(ciphertext, secret_key)
 }
 
-// ─── Utilities ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Utilities â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 fn fnv_hash_64(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
@@ -653,7 +653,7 @@ fn fnv_hash_256(data: &[u8]) -> Vec<u8> {
     hash.to_vec()
 }
 
-// ─── Tests ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[cfg(test)]
 mod tests {
@@ -661,7 +661,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = FheWasmConfig::default_stuartian();
+        let config = FheWasmConfig::default_Topological();
         assert_eq!(config.security_level, 128);
         assert_eq!(config.max_noise_budget, 40);
         assert_eq!(config.scheme, FheScheme::Bfv);
@@ -669,7 +669,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = FheWasmConfig::default_stuartian();
+        let config = FheWasmConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 
@@ -677,7 +677,7 @@ mod tests {
     fn test_config_invalid_security() {
         let config = FheWasmConfig {
             security_level: 32,
-            ..FheWasmConfig::default_stuartian()
+            ..FheWasmConfig::default_Topological()
         };
         assert!(matches!(
             config.validate(),
@@ -689,7 +689,7 @@ mod tests {
     fn test_config_zero_noise() {
         let config = FheWasmConfig {
             max_noise_budget: 0,
-            ..FheWasmConfig::default_stuartian()
+            ..FheWasmConfig::default_Topological()
         };
         assert_eq!(config.validate(), Err(FheError::NoiseBudgetExhausted));
     }
@@ -698,7 +698,7 @@ mod tests {
     fn test_config_zero_module_size() {
         let config = FheWasmConfig {
             max_module_size: 0,
-            ..FheWasmConfig::default_stuartian()
+            ..FheWasmConfig::default_Topological()
         };
         assert!(matches!(
             config.validate(),
@@ -763,7 +763,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = FheWasmConfig::default_stuartian();
+        let config = FheWasmConfig::default_Topological();
         let engine = FheReadyWasm::with_config(config);
         assert!(engine.is_ok());
     }
@@ -799,7 +799,7 @@ mod tests {
     fn test_encrypt_module_too_large() {
         let config = FheWasmConfig {
             max_module_size: 10,
-            ..FheWasmConfig::default_stuartian()
+            ..FheWasmConfig::default_Topological()
         };
         let mut engine = FheReadyWasm::with_config(config).unwrap();
         engine.generate_key_pair(60_000).unwrap();

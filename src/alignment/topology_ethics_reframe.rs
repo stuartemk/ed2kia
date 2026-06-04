@@ -1,10 +1,10 @@
-//! Topology-Ethics Reframe — Sprint 73: Pragmatic Pivot & Asymptotic Hardening
+﻿//! Topology-Ethics Reframe â€” Sprint 73: Pragmatic Pivot & Asymptotic Hardening
 //!
-//! GEI redefinido explícitamente como *proxy de estabilidad estructural & detección de anomalías*.
-//! Ética vía guardrails explícitos + benchmarks auditados + SCT-Z calibrado.
+//! GEI redefinido explÃ­citamente como *proxy de estabilidad estructural & detecciÃ³n de anomalÃ­as*.
+//! Ã‰tica vÃ­a guardrails explÃ­citos + benchmarks auditados + SCT-Z calibrado.
 //!
-//! **Pivot Arquitectónico:** Topología ≠ Ética (error de categoría corregido).
-//! GEI como métrica de inestabilidad/anomalía, no oráculo moral directo.
+//! **Pivot ArquitectÃ³nico:** TopologÃ­a â‰  Ã‰tica (error de categorÃ­a corregido).
+//! GEI como mÃ©trica de inestabilidad/anomalÃ­a, no orÃ¡culo moral directo.
 
 use std::fmt;
 
@@ -51,7 +51,7 @@ pub struct ReframeConfig {
 }
 
 impl ReframeConfig {
-    pub fn default_stuartian() -> Self {
+    pub fn default_Topological() -> Self {
         Self {
             anomaly_threshold: 0.7,
             sct_weights: [0.3, 0.3, 0.25, 0.15],
@@ -78,7 +78,7 @@ impl ReframeConfig {
 
 impl Default for ReframeConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -151,7 +151,7 @@ pub struct TopologyEthicsReframe {
 impl TopologyEthicsReframe {
     pub fn new() -> Self {
         let mut self_ref = Self {
-            config: ReframeConfig::default_stuartian(),
+            config: ReframeConfig::default_Topological(),
             guardrails: Vec::new(),
             history: Vec::new(),
             baseline_benchmarks: vec![0.5; 8],
@@ -379,7 +379,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = ReframeConfig::default_stuartian();
+        let config = ReframeConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 

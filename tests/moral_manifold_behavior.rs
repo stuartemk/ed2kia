@@ -1,6 +1,6 @@
-//! Moral Manifold Behavior Tests — Sprint 50
+﻿//! Moral Manifold Behavior Tests â€” Sprint 50
 //!
-//! Integration tests for the Stuartian Moral Manifold (SMM), Telomere Regeneration
+//! Integration tests for the Topological Moral Manifold (SMM), Telomere Regeneration
 //! Workload, and Symbiotic Orchestration Loop.
 //!
 //! **Test Categories:**
@@ -14,7 +14,7 @@
 mod moral_manifold_tests {
     use ed2kia::ethics::moral_manifold::{
         focal::{LOWER_FOCUS, UPPER_FOCUS},
-        ManifoldConfig, SCTPoint, StuartianMoralManifold, TrajectoryVerdict, Vector3,
+        ManifoldConfig, SCTPoint, TopologicalMoralManifold, TrajectoryVerdict, Vector3,
     };
 
     // -----------------------------------------------------------------------
@@ -32,7 +32,7 @@ mod moral_manifold_tests {
             SCTPoint::new(0.1, 0.1, 0.7, 4),
         ];
 
-        let manifold = StuartianMoralManifold::default();
+        let manifold = TopologicalMoralManifold::default();
         let verdict = manifold.evaluate_trajectory(&trajectory);
 
         assert_eq!(verdict, TrajectoryVerdict::ConvergingUpper);
@@ -49,7 +49,7 @@ mod moral_manifold_tests {
             SCTPoint::new(0.8, 0.8, -0.7, 4),
         ];
 
-        let manifold = StuartianMoralManifold::default();
+        let manifold = TopologicalMoralManifold::default();
         let verdict = manifold.evaluate_trajectory(&trajectory);
 
         assert_eq!(verdict, TrajectoryVerdict::ConvergingLower);
@@ -66,7 +66,7 @@ mod moral_manifold_tests {
             SCTPoint::new(0.5, 0.3, 0.02, 4),
         ];
 
-        let manifold = StuartianMoralManifold::default();
+        let manifold = TopologicalMoralManifold::default();
         let verdict = manifold.evaluate_trajectory(&trajectory);
 
         assert_eq!(verdict, TrajectoryVerdict::Homeostatic);
@@ -80,7 +80,7 @@ mod moral_manifold_tests {
             SCTPoint::new(0.4, 0.4, 0.1, 1),
         ];
 
-        let manifold = StuartianMoralManifold::default();
+        let manifold = TopologicalMoralManifold::default();
         let verdict = manifold.evaluate_trajectory(&trajectory);
 
         assert_eq!(verdict, TrajectoryVerdict::InsufficientData);
@@ -90,7 +90,7 @@ mod moral_manifold_tests {
     // Real-world Ethical Context Tests
     // -----------------------------------------------------------------------
 
-    /// Test: Tax Slavery Context — High extraction (Y) with low autonomy (X)
+    /// Test: Tax Slavery Context â€” High extraction (Y) with low autonomy (X)
     /// converging to Lower Focus (perversidad).
     ///
     /// **Context:** "Tax slavery" represents a system where extraction is
@@ -107,7 +107,7 @@ mod moral_manifold_tests {
             SCTPoint::new(0.1, 0.9, -0.8, 4),   // Full dependency
         ];
 
-        let manifold = StuartianMoralManifold::default();
+        let manifold = TopologicalMoralManifold::default();
         let verdict = manifold.evaluate_trajectory(&trajectory);
         let alignment = manifold.focal_alignment_score(&trajectory);
 
@@ -121,11 +121,11 @@ mod moral_manifold_tests {
         );
     }
 
-    /// Test: Benevolent Control Detection — High autonomy (X) with increasing
+    /// Test: Benevolent Control Detection â€” High autonomy (X) with increasing
     /// extraction (Y) masks dependency creation.
     ///
     /// **Context:** Systems that grant autonomy while increasing dependency
-    /// through extraction create "benevolent control" — a hidden pattern
+    /// through extraction create "benevolent control" â€” a hidden pattern
     /// where apparent freedom masks growing extraction.
     #[test]
     fn test_benevolent_control_detection() {
@@ -138,7 +138,7 @@ mod moral_manifold_tests {
             SCTPoint::new(0.8, 0.8, 0.1, 4),   // High extraction masked by autonomy
         ];
 
-        let manifold = StuartianMoralManifold::default();
+        let manifold = TopologicalMoralManifold::default();
         let pull = manifold.calculate_trajectory_pull(&trajectory);
 
         // Dependency pattern should be detected (high X + increasing Y)
@@ -148,7 +148,7 @@ mod moral_manifold_tests {
         );
     }
 
-    /// Test: Symbiosis Convergence — Trajectory showing full alignment with
+    /// Test: Symbiosis Convergence â€” Trajectory showing full alignment with
     /// Upper Focus principles.
     ///
     /// **Context:** True symbiosis increases autonomy, reduces extraction
@@ -163,7 +163,7 @@ mod moral_manifold_tests {
             SCTPoint::new(0.8, 0.2, 0.6, 4),
         ];
 
-        let manifold = StuartianMoralManifold::default();
+        let manifold = TopologicalMoralManifold::default();
         let verdict = manifold.evaluate_trajectory(&trajectory);
         let alignment = manifold.focal_alignment_score(&trajectory);
 
@@ -183,7 +183,7 @@ mod moral_manifold_tests {
             SCTPoint::new(0.0, 0.0, 1.0, 2),
         ];
 
-        let manifold = StuartianMoralManifold::default();
+        let manifold = TopologicalMoralManifold::default();
         let score = manifold.focal_alignment_score(&trajectory);
 
         assert!(score > 0.5, "Expected high alignment with Upper Focus");
@@ -197,7 +197,7 @@ mod moral_manifold_tests {
             SCTPoint::new(1.0, 1.0, -1.0, 2),
         ];
 
-        let manifold = StuartianMoralManifold::default();
+        let manifold = TopologicalMoralManifold::default();
         let score = manifold.focal_alignment_score(&trajectory);
 
         assert!(
@@ -218,7 +218,7 @@ mod moral_manifold_tests {
             lower_threshold: -0.05,
             ..Default::default()
         };
-        let manifold = StuartianMoralManifold::with_config(config);
+        let manifold = TopologicalMoralManifold::with_config(config);
 
         let trajectory = vec![
             SCTPoint::new(0.5, 0.5, 0.0, 0),
@@ -238,7 +238,7 @@ mod moral_manifold_tests {
             focus_weight: 0.6,
             ..Default::default()
         };
-        let manifold = StuartianMoralManifold::with_config(config);
+        let manifold = TopologicalMoralManifold::with_config(config);
 
         let trajectory = vec![
             SCTPoint::new(0.5, 0.5, 0.0, 0),

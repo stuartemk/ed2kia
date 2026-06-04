@@ -1,16 +1,16 @@
-//! Optimistic Edge + Fraud Proofs — Sprint 76: Ontological Debugging & Thermodynamic Pivots
+﻿//! Optimistic Edge + Fraud Proofs â€” Sprint 76: Ontological Debugging & Thermodynamic Pivots
 //!
-//! Resuelve el bug ontológico: ZKP en WASM → drenaje de batería.
+//! Resuelve el bug ontolÃ³gico: ZKP en WASM â†’ drenaje de baterÃ­a.
 //!
 //! El edge asume que las transacciones son correctas (firma Ed25519 ligera).
-//! Solo si hay desafío (fraud proof), los validadores ejecutan la verificación
-//! pesada. Reducción de costo en borde: -99.9%.
+//! Solo si hay desafÃ­o (fraud proof), los validadores ejecutan la verificaciÃ³n
+//! pesada. ReducciÃ³n de costo en borde: -99.9%.
 //!
-//! # Garantías
+//! # GarantÃ­as
 //!
 //! - Edge: O(1) firma Ed25519 simulada, sin ZKP
-//! - Challenge: O(n) verificación completa en validadores
-//! - Ventana de desafío: configurable (default 24h)
+//! - Challenge: O(n) verificaciÃ³n completa en validadores
+//! - Ventana de desafÃ­o: configurable (default 24h)
 //! - Costo edge: <1ms vs ~500ms para ZKP completo
 
 use std::collections::HashMap;
@@ -27,7 +27,7 @@ pub enum CryptoError {
     ClaimNotFound(u64),
     /// Challenge window expired
     ChallengeExpired,
-    /// Challenge failed — fraud detected
+    /// Challenge failed â€” fraud detected
     FraudDetected(u64),
     /// Data hash mismatch
     HashMismatch,
@@ -56,13 +56,13 @@ impl std::error::Error for CryptoError {}
 /// Claim state in the optimistic system.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ClaimState {
-    /// Pending — awaiting challenge window
+    /// Pending â€” awaiting challenge window
     Pending,
-    /// Challenged — under verification
+    /// Challenged â€” under verification
     Challenged,
-    /// Finalized — no challenge, accepted
+    /// Finalized â€” no challenge, accepted
     Finalized,
-    /// Rejected — fraud proven
+    /// Rejected â€” fraud proven
     Rejected,
 }
 
@@ -91,8 +91,8 @@ pub struct OptimisticConfig {
 }
 
 impl OptimisticConfig {
-    /// Default Stuartian configuration.
-    pub fn default_stuartian() -> Self {
+    /// Default Topological configuration.
+    pub fn default_Topological() -> Self {
         Self {
             challenge_window_ms: 86_400_000, // 24 hours
             max_pending_claims: 10_000,
@@ -115,7 +115,7 @@ impl OptimisticConfig {
 
 impl Default for OptimisticConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -164,9 +164,9 @@ pub struct ChallengeRecord {
 /// Result of a fraud proof challenge.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ChallengeResult {
-    /// Claim validated — no fraud
+    /// Claim validated â€” no fraud
     Validated,
-    /// Fraud proven — claim rejected
+    /// Fraud proven â€” claim rejected
     FraudProven,
 }
 
@@ -195,10 +195,10 @@ pub struct OptimisticEdge {
 }
 
 impl OptimisticEdge {
-    /// Create a new engine with default Stuartian configuration.
+    /// Create a new engine with default Topological configuration.
     pub fn new() -> Self {
         Self {
-            config: OptimisticConfig::default_stuartian(),
+            config: OptimisticConfig::default_Topological(),
             claims: HashMap::new(),
             next_claim_id: 1,
             challenges: Vec::new(),
@@ -405,7 +405,7 @@ impl fmt::Display for OptimisticEdge {
     }
 }
 
-// ─── Public Standalone Functions ───────────────────────────────────────────────
+// â”€â”€â”€ Public Standalone Functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Submit an optimistic claim (standalone).
 pub fn submit_optimistic_claim(
@@ -429,7 +429,7 @@ pub fn verify_ed25519(node_id: u64, data_hash: &[u8], signature: &[u8; 64]) -> b
     signature == &expected
 }
 
-// ─── Tests ─────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[cfg(test)]
 mod tests {
@@ -441,7 +441,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = OptimisticConfig::default_stuartian();
+        let config = OptimisticConfig::default_Topological();
         assert!(config.validate().is_ok());
         assert_eq!(config.challenge_window_ms, 86_400_000);
     }
@@ -450,7 +450,7 @@ mod tests {
     fn test_config_zero_window() {
         let config = OptimisticConfig {
             challenge_window_ms: 0,
-            ..OptimisticConfig::default_stuartian()
+            ..OptimisticConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }

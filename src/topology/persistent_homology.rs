@@ -1,8 +1,8 @@
-//! Persistent Homology Engine — Geometric Ethical Invariants (GEI)
+﻿//! Persistent Homology Engine â€” Geometric Ethical Invariants (GEI)
 //!
 //! Implements lightweight Vietoris-Rips complex computation over 3D point clouds
-//! in the Stuartian Context Tensor (SCT) space. Computes PH₀ (connected components,
-//! stable ethical concepts) and PH₁ (persistent loops, ethical tensions/dilemmas).
+//! in the Topological Context Tensor (SCT) space. Computes PHâ‚€ (connected components,
+//! stable ethical concepts) and PHâ‚ (persistent loops, ethical tensions/dilemmas).
 //!
 //! **Distance Metric:** Ethical proximity weighted by Z-axis (ethical focus):
 //! `d(p, q) = ||p - q||_2 * exp(-alpha * Z_avg)`
@@ -12,7 +12,7 @@
 //! **WASM Compatible:** Pure Rust, no C/C++ dependencies.
 
 #[cfg(feature = "v3.1-gei-topology")]
-use crate::alignment::sct_core::StuartianTensor;
+use crate::alignment::sct_core::TopologicalTensor;
 
 /// A point in 3D ethical space (SCT coordinates).
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -30,8 +30,8 @@ impl EthicalPoint {
         Self { x, y, z }
     }
 
-    /// Convert from StuartianTensor.
-    pub fn from_stuartian(tensor: &StuartianTensor) -> Self {
+    /// Convert from TopologicalTensor.
+    pub fn from_Topological(tensor: &TopologicalTensor) -> Self {
         Self {
             x: tensor.x as f64,
             y: tensor.y as f64,
@@ -51,7 +51,7 @@ impl EthicalPoint {
 /// Ethical distance metric weighted by Z-axis proximity to the Ethical Focus.
 /// `d(p, q) = ||p - q||_2 * exp(-alpha * Z_avg)`
 ///
-/// Higher Z_avg (more ethical) → lower effective distance → stronger topological connection.
+/// Higher Z_avg (more ethical) â†’ lower effective distance â†’ stronger topological connection.
 /// This encodes the principle that ethically aligned concepts are topologically closer.
 pub fn ethical_distance(p: &EthicalPoint, q: &EthicalPoint, alpha: f64) -> f64 {
     let euclidean = p.euclidean_distance(q);
@@ -60,8 +60,8 @@ pub fn ethical_distance(p: &EthicalPoint, q: &EthicalPoint, alpha: f64) -> f64 {
 }
 
 /// A persistence pair (birth, death) representing a topological feature.
-/// - PH₀: birth = component creation, death = component merge.
-/// - PH₁: birth = loop creation, death = loop filling.
+/// - PHâ‚€: birth = component creation, death = component merge.
+/// - PHâ‚: birth = loop creation, death = loop filling.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PersistencePair {
     pub birth: f64,
@@ -93,7 +93,7 @@ struct Edge {
     distance: f64,
 }
 
-/// Union-Find (Disjoint Set Union) for efficient PH₀ computation.
+/// Union-Find (Disjoint Set Union) for efficient PHâ‚€ computation.
 #[derive(Debug, Clone)]
 struct UnionFind {
     parent: Vec<usize>,
@@ -150,10 +150,10 @@ impl UnionFind {
 /// Persistent Homology computation result.
 #[derive(Debug, Clone)]
 pub struct HomologyResult {
-    /// PH₀ persistence pairs (connected components).
+    /// PHâ‚€ persistence pairs (connected components).
     /// Each pair represents an ethical concept cluster and its merge scale.
     pub ph0_pairs: Vec<PersistencePair>,
-    /// PH₁ persistence pairs (loops/cycles).
+    /// PHâ‚ persistence pairs (loops/cycles).
     /// Each pair represents an ethical tension or dilemma cycle.
     pub ph1_pairs: Vec<PersistencePair>,
     /// Number of input points.
@@ -165,13 +165,13 @@ pub struct HomologyResult {
 }
 
 impl HomologyResult {
-    /// Calculate the persistence landscape integral for PH₀.
+    /// Calculate the persistence landscape integral for PHâ‚€.
     /// Sum of all persistence lifetimes, representing total ethical concept stability.
     pub fn ph0_integral(&self) -> f64 {
         self.ph0_pairs.iter().map(|p| p.lifetime()).sum()
     }
 
-    /// Calculate the persistence landscape integral for PH₁.
+    /// Calculate the persistence landscape integral for PHâ‚.
     /// Sum of all persistence lifetimes, representing total ethical tension complexity.
     pub fn ph1_integral(&self) -> f64 {
         self.ph1_pairs.iter().map(|p| p.lifetime()).sum()
@@ -193,8 +193,8 @@ impl HomologyResult {
     }
 
     /// Betti numbers at a given filtration scale.
-    /// β₀ = number of connected components at scale ε.
-    /// β₁ = number of loops at scale ε.
+    /// Î²â‚€ = number of connected components at scale Îµ.
+    /// Î²â‚ = number of loops at scale Îµ.
     pub fn betti_numbers_at_scale(&self, epsilon: f64) -> (usize, usize) {
         let b0 = self
             .ph0_pairs
@@ -214,7 +214,7 @@ impl HomologyResult {
 #[derive(Debug, Clone)]
 pub struct HomologyConfig {
     /// Alpha parameter for ethical distance weighting.
-    /// Higher alpha → stronger Z-axis influence on topological connections.
+    /// Higher alpha â†’ stronger Z-axis influence on topological connections.
     pub alpha: f64,
     /// Maximum filtration scale. Edges beyond this are ignored.
     pub max_scale: f64,
@@ -256,13 +256,13 @@ impl PersistentHomologyEngine {
 
     /// Compute persistent homology for a cloud of ethical points.
     ///
-    /// Returns PH₀ (connected components) and PH₁ (loops) persistence pairs.
+    /// Returns PHâ‚€ (connected components) and PHâ‚ (loops) persistence pairs.
     ///
     /// **Algorithm:**
     /// 1. Build Vietoris-Rips complex with ethical distance metric.
     /// 2. Sort edges by filtration value (distance).
-    /// 3. Compute PH₀ using Union-Find (merge tree).
-    /// 4. Compute PH₁ using boundary matrix reduction (over GF(2)).
+    /// 3. Compute PHâ‚€ using Union-Find (merge tree).
+    /// 4. Compute PHâ‚ using boundary matrix reduction (over GF(2)).
     pub fn compute(&self, points: &[EthicalPoint]) -> HomologyResult {
         let n = points.len().min(self.config.max_points);
         if n < 2 {
@@ -282,10 +282,10 @@ impl PersistentHomologyEngine {
 
         let num_edges = edges.len();
 
-        // Step 2: Compute PH₀ using Union-Find
+        // Step 2: Compute PHâ‚€ using Union-Find
         let ph0_pairs = self.compute_ph0(&edges, n);
 
-        // Step 3: Compute PH₁ using boundary matrix reduction
+        // Step 3: Compute PHâ‚ using boundary matrix reduction
         let ph1_pairs = self.compute_ph1(&edges, &points[..n]);
 
         HomologyResult {
@@ -317,10 +317,10 @@ impl PersistentHomologyEngine {
         edges
     }
 
-    /// Compute PH₀ persistence pairs using Union-Find.
+    /// Compute PHâ‚€ persistence pairs using Union-Find.
     ///
     /// Each point starts as its own component (birth = 0).
-    /// When two components merge at scale ε, the smaller dies (death = ε).
+    /// When two components merge at scale Îµ, the smaller dies (death = Îµ).
     fn compute_ph0(&self, edges: &[Edge], n: usize) -> Vec<PersistencePair> {
         let mut uf = UnionFind::new(n);
         let mut pairs = Vec::new();
@@ -365,7 +365,7 @@ impl PersistentHomologyEngine {
         pairs
     }
 
-    /// Compute PH₁ persistence pairs using boundary matrix reduction over GF(2).
+    /// Compute PHâ‚ persistence pairs using boundary matrix reduction over GF(2).
     ///
     /// Simplified implementation using edge triangulation detection:
     /// A 1-cycle (loop) is born when a triangle's third edge is added,
@@ -536,7 +536,7 @@ mod tests {
 
         let result = engine.compute(&points);
         assert_eq!(result.num_points, 10);
-        // Should have PH₀ pairs from component merges
+        // Should have PHâ‚€ pairs from component merges
         assert!(!result.ph0_pairs.is_empty());
     }
 
@@ -551,7 +551,7 @@ mod tests {
         ];
         let result = engine.compute(&points);
         assert_eq!(result.num_points, 3);
-        // Triangle should create at least one PH₁ pair
+        // Triangle should create at least one PHâ‚ pair
         assert!(!result.ph1_pairs.is_empty());
     }
 
@@ -615,10 +615,10 @@ mod tests {
     }
 
     #[test]
-    fn test_from_stuartian_tensor() {
-        let tensor = StuartianTensor::new(0.6, 0.3, 0.5).unwrap();
-        let point = EthicalPoint::from_stuartian(&tensor);
-        // f32→f64 conversion introduces precision loss; use 1e-6 tolerance
+    fn test_from_Topological_tensor() {
+        let tensor = TopologicalTensor::new(0.6, 0.3, 0.5).unwrap();
+        let point = EthicalPoint::from_Topological(&tensor);
+        // f32â†’f64 conversion introduces precision loss; use 1e-6 tolerance
         assert!((point.x - 0.6).abs() < 1e-6);
         assert!((point.y - 0.3).abs() < 1e-6);
         assert!((point.z - 0.5).abs() < 1e-6);
@@ -683,7 +683,7 @@ mod tests {
             make_point(0.5, 0.5, 0.5),
         ];
         let result = engine.compute(&points);
-        // All points at same location → distance 0 → immediate merge
+        // All points at same location â†’ distance 0 â†’ immediate merge
         assert_eq!(result.num_points, 3);
     }
 

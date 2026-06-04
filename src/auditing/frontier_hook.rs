@@ -1,4 +1,4 @@
-//! Frontier Model Activation Hooking — Sprint 70: Civilization-Scale Architecture
+﻿//! Frontier Model Activation Hooking â€” Sprint 70: Civilization-Scale Architecture
 //!
 //! Intercepts transformer layer activations (attention, MLP, RMSNorm)
 //! for real-time SAE feature extraction and ethical analysis.
@@ -48,7 +48,7 @@ pub struct HookConfig {
 }
 
 impl HookConfig {
-    pub fn default_stuartian() -> Self {
+    pub fn default_Topological() -> Self {
         Self {
             max_hooks: 64,
             activation_threshold: 0.1,
@@ -61,7 +61,7 @@ impl HookConfig {
 
 impl Default for HookConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -78,7 +78,7 @@ pub struct ActivationCapture {
     pub model_id: String,
 }
 
-/// Activation Hook — intercepts transformer layer outputs.
+/// Activation Hook â€” intercepts transformer layer outputs.
 #[derive(Debug, Clone)]
 pub struct ActivationHook {
     config: HookConfig,

@@ -1,20 +1,20 @@
-//! Comprehension Task — Tareas de validación de comprensión vía SAE activations.
+﻿//! Comprehension Task â€” Tareas de validaciÃ³n de comprensiÃ³n vÃ­a SAE activations.
 //!
-//! **Stuartian Law 2 (Reconocimiento del Error):** Los nodos deben demostrar
-//! comprensión real procesando batches de activaciones SAE y validando gradientes.
+//! **Topological Law 2 (Reconocimiento del Error):** Los nodos deben demostrar
+//! comprensiÃ³n real procesando batches de activaciones SAE y validando gradientes.
 
 use std::fmt;
 
-/// Error al crear o procesar una tarea de comprensión.
+/// Error al crear o procesar una tarea de comprensiÃ³n.
 #[derive(Debug)]
 pub enum ComprehensionTaskError {
-    /// Batch de activaciones vacío.
+    /// Batch de activaciones vacÃ­o.
     EmptyActivationBatch,
     /// Dimensiones incompatibles.
     IncompatibleDimensions(String),
     /// Tarea expirada.
     TaskExpired,
-    /// Error de serialización.
+    /// Error de serializaciÃ³n.
     Serialization(String),
 }
 
@@ -39,10 +39,10 @@ impl fmt::Display for ComprehensionTaskError {
 
 impl std::error::Error for ComprehensionTaskError {}
 
-/// Estado de una tarea de comprensión.
+/// Estado de una tarea de comprensiÃ³n.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TaskState {
-    /// Tarea pendiente de asignación.
+    /// Tarea pendiente de asignaciÃ³n.
     Pending,
     /// Tarea asignada a un nodo.
     Assigned,
@@ -66,26 +66,26 @@ impl fmt::Display for TaskState {
     }
 }
 
-/// Tarea de comprensión para validar trabajo útil.
+/// Tarea de comprensiÃ³n para validar trabajo Ãºtil.
 ///
-/// **Stuartian Law 2:** En lugar de PoW (hash vacío), los nodos
-/// procesan activaciones SAE reales y demuestran comprensión.
+/// **Topological Law 2:** En lugar de PoW (hash vacÃ­o), los nodos
+/// procesan activaciones SAE reales y demuestran comprensiÃ³n.
 #[derive(Debug, Clone)]
 pub struct ComprehensionTask {
-    /// Identificador único de la tarea.
+    /// Identificador Ãºnico de la tarea.
     pub task_id: String,
     /// Estado actual.
     pub state: TaskState,
-    /// Dimensión de las activaciones SAE.
+    /// DimensiÃ³n de las activaciones SAE.
     pub activation_dim: usize,
-    /// Número de muestras en el batch.
+    /// NÃºmero de muestras en el batch.
     pub batch_size: usize,
     /// Timeout en segundos.
     pub timeout_secs: u64,
 }
 
 impl ComprehensionTask {
-    /// Crea una nueva tarea de comprensión.
+    /// Crea una nueva tarea de comprensiÃ³n.
     pub fn new(
         task_id: String,
         activation_dim: usize,

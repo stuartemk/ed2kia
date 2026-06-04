@@ -1,4 +1,4 @@
-//! Post-Quantum zk-STARKs — Sprint 79: Quantum-Physical Bridge & God-Level Resilience
+﻿//! Post-Quantum zk-STARKs â€” Sprint 79: Quantum-Physical Bridge & God-Level Resilience
 //!
 //! zk-STARK (Zero-Knowledge Scalable Transparent ARgument of Knowledge) implementation
 //! using hash-based commitments resistant to quantum attacks (Shor's algorithm).
@@ -60,8 +60,8 @@ pub struct StarkConfig {
 }
 
 impl StarkConfig {
-    /// Default Stuartian configuration optimized for edge/WASM deployment.
-    pub fn default_stuartian() -> Self {
+    /// Default Topological configuration optimized for edge/WASM deployment.
+    pub fn default_Topological() -> Self {
         Self {
             fri_rate: 2,
             query_rounds: 40,
@@ -90,7 +90,7 @@ impl StarkConfig {
 
 impl Default for StarkConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -192,7 +192,7 @@ impl PostQuantumStarks {
     /// Create a new STARK engine with default configuration.
     pub fn new() -> Self {
         Self {
-            config: StarkConfig::default_stuartian(),
+            config: StarkConfig::default_Topological(),
             proof_counter: 0,
             records: Vec::new(),
             verified_cache: HashMap::new(),
@@ -457,14 +457,14 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = StarkConfig::default_stuartian();
+        let config = StarkConfig::default_Topological();
         assert!(config.fri_rate >= 2);
         assert!(config.query_rounds >= 20);
     }
 
     #[test]
     fn test_config_validate_ok() {
-        let config = StarkConfig::default_stuartian();
+        let config = StarkConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 
@@ -472,7 +472,7 @@ mod tests {
     fn test_config_invalid_fri_rate() {
         let config = StarkConfig {
             fri_rate: 3, // Not power of 2
-            ..StarkConfig::default_stuartian()
+            ..StarkConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }
@@ -481,7 +481,7 @@ mod tests {
     fn test_config_low_query_rounds() {
         let config = StarkConfig {
             query_rounds: 5,
-            ..StarkConfig::default_stuartian()
+            ..StarkConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }
@@ -510,7 +510,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = StarkConfig::default_stuartian();
+        let config = StarkConfig::default_Topological();
         let engine = PostQuantumStarks::with_config(config);
         assert!(engine.is_ok());
     }

@@ -1,4 +1,4 @@
-//! Federated Plasticity Integration Tests — Sprint 30
+//! Federated Plasticity Integration Tests â€” Sprint 30
 //!
 //! Tests for Neuroplastic Aggregation, Steering Bridge and Async Feedback Queue.
 //! Validates CE+Z weighted aggregation, human feedback flow and conflict resolution.
@@ -10,7 +10,7 @@
 ))]
 mod neuroplastic_aggregation_tests {
     use candle_core::Tensor;
-    use ed2kia::alignment::sct_core::StuartianTensor;
+    use ed2kia::alignment::sct_core::TopologicalTensor;
     use ed2kia::async_gossip::crdt_symbols::SymbolRegistry;
     use ed2kia::economics::existential_credit::ExistentialCreditLedger;
     use ed2kia::federation::neuroplastic_engine::NeuroplasticAggregator;
@@ -23,12 +23,20 @@ mod neuroplastic_aggregation_tests {
         // High CE + positive Z peer
         ce.emit_credit("ethical-peer", 0.9, 200.0).unwrap(); // CE = 180
         let token_a = NeuroplasticAggregator::peer_id_to_token("ethical-peer");
-        sct.insert_symbol(token_a, StuartianTensor::new(0.6, 0.4, 0.5).unwrap(), 1000);
+        sct.insert_symbol(
+            token_a,
+            TopologicalTensor::new(0.6, 0.4, 0.5).unwrap(),
+            1000,
+        );
 
         // Low CE + negative Z peer
         ce.emit_credit("weak-peer", 0.1, 50.0).unwrap(); // CE = 5
         let token_b = NeuroplasticAggregator::peer_id_to_token("weak-peer");
-        sct.insert_symbol(token_b, StuartianTensor::new(0.3, 0.2, -0.4).unwrap(), 1000);
+        sct.insert_symbol(
+            token_b,
+            TopologicalTensor::new(0.3, 0.2, -0.4).unwrap(),
+            1000,
+        );
 
         let agg = NeuroplasticAggregator::new(ce, sct);
 
@@ -122,7 +130,7 @@ mod steering_bridge_tests {
 
         // Process constructive feedback
         let event = bridge
-            .process_feedback("human-1", "reforzar autonomía ética", 42)
+            .process_feedback("human-1", "reforzar autonomÃ­a Ã©tica", 42)
             .unwrap();
 
         // Verify event structure
@@ -130,7 +138,7 @@ mod steering_bridge_tests {
         assert_eq!(event.peer_id, "human-1");
         assert!(
             event.delta_sct.2 > 0.0,
-            "ΔZ should be positive for constructive feedback"
+            "Î”Z should be positive for constructive feedback"
         );
         assert!(!event.signature.is_empty(), "Signature should not be empty");
         assert!(event.timestamp > 0, "Timestamp should be > 0");
@@ -171,7 +179,7 @@ mod steering_bridge_tests {
 
         // Process destructive feedback
         bridge
-            .process_feedback("human-2", "rechazar manipulación", 99)
+            .process_feedback("human-2", "rechazar manipulaciÃ³n", 99)
             .unwrap();
 
         // CE should be reduced
@@ -235,11 +243,11 @@ mod async_feedback_tests {
 
         let mut queue = AsyncFeedbackQueue::new("node-1", ce);
 
-        // Low priority event first (CE=5, Z=0.2 → priority=1.0)
+        // Low priority event first (CE=5, Z=0.2 â†’ priority=1.0)
         let event_low = make_event(42, "peer-low", 0.2, 1000);
         queue.enqueue(event_low).unwrap();
 
-        // High priority event (CE=180, Z=0.3 → priority=54.0)
+        // High priority event (CE=180, Z=0.3 â†’ priority=54.0)
         let event_high = make_event(42, "peer-high", 0.3, 2000);
         queue.enqueue(event_high).unwrap();
 
@@ -260,7 +268,7 @@ mod async_feedback_tests {
 
         let mut queue = AsyncFeedbackQueue::new("node-1", ce);
 
-        // Same peer, same Z → same priority
+        // Same peer, same Z â†’ same priority
         let event1 = make_event(42, "peer-a", 0.2, 1000);
         queue.enqueue(event1).unwrap();
 
@@ -333,7 +341,7 @@ mod async_feedback_tests {
             .enqueue(make_event(42, "peer-high", 0.3, 1000))
             .unwrap();
 
-        // Sync B into A — B's entry should win
+        // Sync B into A â€” B's entry should win
         queue_a.sync_with_peer(&queue_b);
 
         let entry = queue_a.get(42).unwrap();

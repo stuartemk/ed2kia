@@ -1,10 +1,10 @@
-//! Homeostasis Engine — Local Physiological Equilibrium Manager.
+﻿//! Homeostasis Engine â€” Local Physiological Equilibrium Manager.
 //!
 //! Maintains baseline biometric state and calculates deviation deltas
 //! for homeostasis restoration. Integrates SCT Guard for ethical validation
 //! of homeostasis corrections.
 //!
-//! **Ethical Invariant:** SCT Guard (Stuartian Context Tensor) validates all
+//! **Ethical Invariant:** SCT Guard (Topological Context Tensor) validates all
 //! homeostasis corrections. If Z < 0 (ethical rejection), the engine returns
 //! `EthicalRejection` and suggests local recalibration.
 //!
@@ -19,7 +19,7 @@ pub enum EngineError {
     #[error("Baseline not calibrated: call `calibrate_baseline()` first")]
     BaselineNotCalibrated,
 
-    #[error("Ethical rejection: SCT Z = {z:.3} (threshold 0.0) — recalibrate locally")]
+    #[error("Ethical rejection: SCT Z = {z:.3} (threshold 0.0) â€” recalibrate locally")]
     EthicalRejection { z: f32 },
 
     #[error("Invalid adaptation rate: {rate} (expected range [0.0, 1.0])")]
@@ -35,7 +35,7 @@ pub enum EngineError {
     TelemetryViolation,
 }
 
-/// Homeostasis deviation delta — difference between current state and baseline.
+/// Homeostasis deviation delta â€” difference between current state and baseline.
 ///
 /// Represents the physiological and ethical deviation from the calibrated baseline.
 /// Used to determine resonance correction magnitude and direction.
@@ -91,7 +91,7 @@ pub struct HomeostasisConfig {
     pub adaptation_rate: f32,
     /// SCT Z-axis threshold for ethical approval (default 0.0).
     pub sct_z_threshold: f32,
-    /// Correction threshold — delta magnitude above which correction is triggered.
+    /// Correction threshold â€” delta magnitude above which correction is triggered.
     pub correction_threshold: f32,
     /// Maximum baseline drift allowed before recalibration is required.
     pub max_baseline_drift: f32,
@@ -109,12 +109,12 @@ impl Default for HomeostasisConfig {
     }
 }
 
-/// Homeostasis Engine — maintains physiological equilibrium 100% locally.
+/// Homeostasis Engine â€” maintains physiological equilibrium 100% locally.
 ///
 /// Tracks baseline biometric state and calculates deviations for resonance correction.
 /// Integrates SCT Guard to ensure ethical validation of all corrections.
 ///
-/// **⚠️ LOCAL_ONLY:** All homeostasis data processed and discarded locally.
+/// **âš ï¸ LOCAL_ONLY:** All homeostasis data processed and discarded locally.
 pub struct HomeostasisEngine {
     config: HomeostasisConfig,
     baseline: Option<BiometricState>,

@@ -1,14 +1,14 @@
-//! QLoRA Adapter — Aplicación de diffs QLoRA sobre modelos base GGUF.
+﻿//! QLoRA Adapter â€” AplicaciÃ³n de diffs QLoRA sobre modelos base GGUF.
 //!
-//! **Stuartian Law 3 (Inteligencia Holística):** Cero desperdicio computacional.
+//! **Topological Law 3 (Inteligencia HolÃ­stica):** Cero desperdicio computacional.
 //! En lugar de distribuir modelos completos (GB), se distribuyen diffs QLoRA (KB/MB).
 //!
-//! **Matemática fundamental:** W' = W + B @ A
+//! **MatemÃ¡tica fundamental:** W' = W + B @ A
 //! Donde:
 //! - W: Pesos base del modelo (inmutables)
-//! - A: Matriz de proyección (r x d_model)
-//! - B: Matriz de reconstrucción (d_model x r)
-//! - r: Rank (r << d_model), típicamente r ∈ [4, 64]
+//! - A: Matriz de proyecciÃ³n (r x d_model)
+//! - B: Matriz de reconstrucciÃ³n (d_model x r)
+//! - r: Rank (r << d_model), tÃ­picamente r âˆˆ [4, 64]
 
 use std::fmt;
 
@@ -17,15 +17,15 @@ use candle_core::{DType, Device, Result as CandleResult, Tensor};
 /// Error al crear o aplicar un QLoRA Adapter.
 #[derive(Debug)]
 pub enum QloraAdapterError {
-    /// Rank inválido (debe ser 0 < r << d_model).
+    /// Rank invÃ¡lido (debe ser 0 < r << d_model).
     InvalidRank(String),
     /// Dimensiones incompatibles.
     DimensionMismatch(String),
-    /// Error de serialización.
+    /// Error de serializaciÃ³n.
     SerializationError(String),
     /// Error de Candle (tensor operation).
     CandleError(String),
-    /// Data corrupta o inválida.
+    /// Data corrupta o invÃ¡lida.
     CorruptedData(String),
 }
 
@@ -56,32 +56,32 @@ impl From<candle_core::Error> for QloraAdapterError {
 /// Metadata del adapter QLoRA.
 #[derive(Debug, Clone)]
 pub struct AdapterInfo {
-    /// Identificador único del adapter.
+    /// Identificador Ãºnico del adapter.
     pub adapter_id: String,
     /// Modelo base al que aplica (SHA256).
     pub base_model_sha256: String,
     /// Rank del adapter (r << d_model).
     pub rank: usize,
-    /// Dimensión del modelo base (d_model).
+    /// DimensiÃ³n del modelo base (d_model).
     pub d_model: usize,
-    /// Dimensión SAE (d_sae, si aplica).
+    /// DimensiÃ³n SAE (d_sae, si aplica).
     pub d_sae: Option<usize>,
-    /// Número de capas afectadas.
+    /// NÃºmero de capas afectadas.
     pub layers_count: usize,
-    /// Tipo de cuantización (INT8, FP8, FP16, FP32).
+    /// Tipo de cuantizaciÃ³n (INT8, FP8, FP16, FP32).
     pub quantization: QuantizationType,
 }
 
-/// Tipo de cuantización para las matrices A y B.
+/// Tipo de cuantizaciÃ³n para las matrices A y B.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum QuantizationType {
-    /// INT8 — 8-bit integer (lazy dequantization).
+    /// INT8 â€” 8-bit integer (lazy dequantization).
     Int8,
-    /// FP8 — 8-bit float (experimental).
+    /// FP8 â€” 8-bit float (experimental).
     Fp8,
-    /// FP16 — 16-bit float (standard).
+    /// FP16 â€” 16-bit float (standard).
     Fp16,
-    /// FP32 — 32-bit float (full precision).
+    /// FP32 â€” 32-bit float (full precision).
     Fp32,
 }
 
@@ -108,23 +108,23 @@ impl QuantizationType {
     }
 }
 
-/// Adapter QLoRA — Matrices A y B para fine-tuning de bajo rank.
+/// Adapter QLoRA â€” Matrices A y B para fine-tuning de bajo rank.
 ///
-/// **Fórmula:** W' = W + B @ A
+/// **FÃ³rmula:** W' = W + B @ A
 ///
 /// Donde A: (r x d_model) y B: (d_model x r).
 /// El adapter se aplica como: output = x @ W + x @ A @ B
 /// Lo cual es equivalente a: output = x @ (W + A @ B)
-/// Pero la forma canónica QLoRA es W' = W + B @ A para compatibilidad.
+/// Pero la forma canÃ³nica QLoRA es W' = W + B @ A para compatibilidad.
 pub struct QloraAdapter {
     /// Metadata del adapter.
     pub info: AdapterInfo,
-    /// Matriz A (proyección): shape (d_model x r)
-    /// En QLoRA estándar: A proyecta d_model -> r
+    /// Matriz A (proyecciÃ³n): shape (d_model x r)
+    /// En QLoRA estÃ¡ndar: A proyecta d_model -> r
     pub matrix_a: Tensor,
-    /// Matriz B (reconstrucción): shape (r x d_model)
-    /// En QLoRA estándar: B proyecta r -> d_model
-    /// La combinación B @ A produce (r x d_model) @ (d_model x r) = (r x r)
+    /// Matriz B (reconstrucciÃ³n): shape (r x d_model)
+    /// En QLoRA estÃ¡ndar: B proyecta r -> d_model
+    /// La combinaciÃ³n B @ A produce (r x d_model) @ (d_model x r) = (r x r)
     /// Pero la forma correcta es alpha * (B @ A) donde alpha es escala
     pub matrix_b: Tensor,
     /// Escala del adapter (alpha parameter).
@@ -157,7 +157,7 @@ impl QloraAdapter {
     ///
     /// # Errors
     /// Retorna `QloraAdapterError::DimensionMismatch` si las dimensiones
-    /// no son compatibles con la fórmula W' = W + B @ A.
+    /// no son compatibles con la fÃ³rmula W' = W + B @ A.
     pub fn new(
         info: AdapterInfo,
         matrix_a: Tensor,
@@ -242,7 +242,7 @@ impl QloraAdapter {
 
     /// Serializa el adapter a bytes (bincode).
     ///
-    /// Retorna los bytes listos para distribución P2P.
+    /// Retorna los bytes listos para distribuciÃ³n P2P.
     pub fn to_bytes(&self) -> Result<Vec<u8>, QloraAdapterError> {
         // TODO(Sprint16.2): Implement full bincode serialization.
         // For now, create a basic representation.
@@ -280,7 +280,7 @@ impl QloraAdapter {
     /// Verifica:
     /// - Rank > 0 y rank << d_model
     /// - Dimensiones de A y B son compatibles
-    /// - Alpha en rango válido [0.0, 1.0]
+    /// - Alpha en rango vÃ¡lido [0.0, 1.0]
     pub fn validate(&self) -> Result<(), QloraAdapterError> {
         if self.info.rank == 0 {
             return Err(QloraAdapterError::InvalidRank("Rank must be > 0".into()));
@@ -305,12 +305,12 @@ impl QloraAdapter {
 
     /// Aplica el adapter QLoRA a un input tensor.
     ///
-    /// **Fórmula:** output = x + (alpha / rank) * (x @ A) @ B
+    /// **FÃ³rmula:** output = x + (alpha / rank) * (x @ A) @ B
     ///
     /// Donde:
     /// - x: input tensor (batch_size x d_model)
-    /// - A: (d_model x r) — proyección
-    /// - B: (r x d_model) — reconstrucción
+    /// - A: (d_model x r) â€” proyecciÃ³n
+    /// - B: (r x d_model) â€” reconstrucciÃ³n
     ///
     /// Esto es equivalente a aplicar el delta W_delta = B @ A
     /// tal que W' = W + W_delta.
@@ -492,7 +492,7 @@ mod tests {
             layers_count: 1,
             quantization: QuantizationType::Fp32,
         };
-        // A: (4096 x 8), B: (16 x 4096) — rank mismatch
+        // A: (4096 x 8), B: (16 x 4096) â€” rank mismatch
         let matrix_a = Tensor::ones((4096, 8), DType::F32, &device).unwrap();
         let matrix_b = Tensor::ones((16, 4096), DType::F32, &device).unwrap();
 

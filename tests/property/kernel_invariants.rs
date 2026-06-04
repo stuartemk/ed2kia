@@ -1,10 +1,10 @@
-//! Kernel Invariants — Property-Based Tests (Sprint 26)
+﻿//! Kernel Invariants â€” Property-Based Tests (Sprint 26)
 //!
-//! Validates mathematical invariants of the Stuartian Kernel using `proptest`:
-//! - SCT: Z ∈ [-1.0, 1.0], Z < 0 → Rejected, Z > 0 → Approved
-//! - BFT: Median converges to truth with ≤30% outliers, zero divergence on valid inputs
+//! Validates mathematical invariants of the Topological Kernel using `proptest`:
+//! - SCT: Z âˆˆ [-1.0, 1.0], Z < 0 â†’ Rejected, Z > 0 â†’ Approved
+//! - BFT: Median converges to truth with â‰¤30% outliers, zero divergence on valid inputs
 //! - CRDTs: Commutativity, Associativity, Idempotency on merge()
-//! - QLoRA: W' = W + B @ A with tolerance 1e-5, payloads ≤ MB
+//! - QLoRA: W' = W + B @ A with tolerance 1e-5, payloads â‰¤ MB
 //!
 //! **CI Config:** `proptest::config::FuzzyConfig::default().with_cases(500)`, `--test-threads=2`
 //!
@@ -20,7 +20,7 @@
 
 #[cfg(feature = "v2.1-formal-validation")]
 mod sct_invariants {
-    use ed2kia::alignment::sct_core::{SCTDecision, StuartianTensor};
+    use ed2kia::alignment::sct_core::{SCTDecision, TopologicalTensor};
     use proptest::prelude::*;
 
     proptest! {
@@ -34,7 +34,7 @@ mod sct_invariants {
 
         #[test]
         fn sct_negative_z_rejects(x in 0.0..=1.0_f32, y in 0.0..=1.0_f32, z in -1.0..0.0_f32) {
-            let tensor = StuartianTensor::new(x, y, z).expect("Valid tensor creation");
+            let tensor = TopologicalTensor::new(x, y, z).expect("Valid tensor creation");
             let decision = tensor.evaluate_trajectory().expect("Valid trajectory evaluation");
             match decision {
                 SCTDecision::Rejected(_) => { /* Expected */ }
@@ -46,7 +46,7 @@ mod sct_invariants {
 
         #[test]
         fn sct_positive_z_approves(x in 0.0..=1.0_f32, y in 0.0..=1.0_f32, z in 0.0..=1.0_f32) {
-            let tensor = StuartianTensor::new(x, y, z).expect("Valid tensor creation");
+            let tensor = TopologicalTensor::new(x, y, z).expect("Valid tensor creation");
             let decision = tensor.evaluate_trajectory().expect("Valid trajectory evaluation");
             match decision {
                 SCTDecision::Approved(_) => { /* Expected */ }
@@ -58,9 +58,9 @@ mod sct_invariants {
 
         #[test]
         fn sct_stewardship_score_bounded(x in 0.0..=1.0_f32, y in 0.0..=1.0_f32, z in -1.0..=1.0_f32) {
-            let tensor = StuartianTensor::new(x, y, z).expect("Valid tensor creation");
+            let tensor = TopologicalTensor::new(x, y, z).expect("Valid tensor creation");
             let score = tensor.stewardship_score();
-            // score = x - y + z, where x ∈ [0,1], y ∈ [0,1], z ∈ [-1,1]
+            // score = x - y + z, where x âˆˆ [0,1], y âˆˆ [0,1], z âˆˆ [-1,1]
             // min = 0 - 1 + (-1) = -2, max = 1 - 0 + 1 = 2
             prop_assert!(
                 (-2.0..=2.0).contains(&score),
@@ -70,19 +70,19 @@ mod sct_invariants {
 
         #[test]
         fn sct_constructor_rejects_invalid_x(x in 1.001..=2.0_f32, y in 0.0..=1.0_f32, z in -1.0..=1.0_f32) {
-            let result = StuartianTensor::new(x, y, z);
+            let result = TopologicalTensor::new(x, y, z);
             prop_assert!(result.is_err(), "X={} should be rejected", x);
         }
 
         #[test]
         fn sct_constructor_rejects_invalid_y(x in 0.0..=1.0_f32, y in 1.001..=2.0_f32, z in -1.0..=1.0_f32) {
-            let result = StuartianTensor::new(x, y, z);
+            let result = TopologicalTensor::new(x, y, z);
             prop_assert!(result.is_err(), "Y={} should be rejected", y);
         }
 
         #[test]
         fn sct_constructor_rejects_invalid_z(x in 0.0..=1.0_f32, y in 0.0..=1.0_f32, z in 1.001..=2.0_f32) {
-            let result = StuartianTensor::new(x, y, z);
+            let result = TopologicalTensor::new(x, y, z);
             prop_assert!(result.is_err(), "Z={} should be rejected", z);
         }
     }
@@ -140,7 +140,7 @@ mod bft_invariants {
             dim in 1..=16_usize,
             center in 0.0..=50.0_f32
         ) {
-            // Generate 10 valid gradients + 3 outliers (≤30% Byzantine)
+            // Generate 10 valid gradients + 3 outliers (â‰¤30% Byzantine)
             let mut gradients: Vec<Vec<f32>> = (0..10)
                 .map(|_| vec![center; dim])
                 .collect();
@@ -254,13 +254,13 @@ mod crdt_invariants {
                 c.increment(&format!("node_{}", i + 20), amounts);
             }
 
-            // (a ∪ b) ∪ c
+            // (a âˆª b) âˆª c
             let mut ab = a.clone().clone_or_default();
             ab.merge(&b);
             let mut abc_left = ab.clone().clone_or_default();
             abc_left.merge(&c);
 
-            // a ∪ (b ∪ c)
+            // a âˆª (b âˆª c)
             let mut bc = b.clone().clone_or_default();
             bc.merge(&c);
             let mut abc_right = a.clone().clone_or_default();
@@ -268,7 +268,7 @@ mod crdt_invariants {
 
             prop_assert_eq!(
                 abc_left.value(), abc_right.value(),
-                "GCounter merge not associative: (a∪b)∪c={} != a∪(b∪c)={}",
+                "GCounter merge not associative: (aâˆªb)âˆªc={} != aâˆª(bâˆªc)={}",
                 abc_left.value(), abc_right.value()
             );
         }
@@ -341,7 +341,7 @@ mod qlora_invariants {
         ) {
             // Payload size = 2 * d_model * rank * 4 bytes (f32)
             let payload_bytes = 2 * d_model * rank * 4;
-            // Should be ≤ 1MB for reasonable dimensions
+            // Should be â‰¤ 1MB for reasonable dimensions
             prop_assert!(
                 payload_bytes <= 1_048_576,
                 "QLoRA payload {} bytes exceeds 1MB limit",

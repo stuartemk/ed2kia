@@ -1,8 +1,8 @@
-[package]
+﻿[package]
 name = "ed2kia"
-version = "9.21.0-sprint85"
+version = "9.22.0-sprint86"
 edition = "2021"
-description = "Descentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
+description = "Decentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
 license = "Apache-2.0"
 authors = ["ed2kIA Contributors"]
 repository = "https://github.com/ed2kia/ed2kia"
@@ -99,14 +99,14 @@ reqwest = { version = "0.11", features = ["json", "stream"] }
 # Bootstrap - Fase 5
 fastrand = "2.1"
 
-# CLI Wizard - dialoguer (Sprint15 — v2.1-operator-cli)
+# CLI Wizard - dialoguer (Sprint15 â€” v2.1-operator-cli)
 dialoguer = { version = "0.11", optional = true }
 env_logger = { version = "0.11", optional = true }
 
-# Property-based fuzzing (Sprint13 — v2.1-fuzzing)
+# Property-based fuzzing (Sprint13 â€” v2.1-fuzzing)
 proptest = { version = "1.5", optional = true }
 
-# QLoRA/GGUF (Sprint16.1 — v2.1-qlora-gguf)
+# QLoRA/GGUF (Sprint16.1 â€” v2.1-qlora-gguf)
 memmap2 = { version = "0.9", optional = true }
 zstd = { version = "0.13", optional = true }
 
@@ -120,12 +120,12 @@ web-sys = { version = "0.3", features = ["Worker", "WorkerGlobalScope", "WorkerO
 [target.'cfg(target_os = "windows")'.dependencies]
 windows = { version = "0.52", features = ["Win32_System_Console"] }
 
-# WASM Browser Node — v2.1-wasm-browser (wasm32-unknown-unknown target)
+# WASM Browser Node â€” v2.1-wasm-browser (wasm32-unknown-unknown target)
 # Note: These are optional and only activated via feature flags.
 # On wasm32 target, getrandom requires "js" feature.
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.2", features = ["js"] }
-# Sprint 41: WASM/Edge Integration — Resonance Interface & Browser Node
+# Sprint 41: WASM/Edge Integration â€” Resonance Interface & Browser Node
 wasm-bindgen = "0.2"
 js-sys = "0.3"
 web-sys = { version = "0.3", features = ["AudioContext", "OscillatorNode", "GainNode", "Worker", "MessageEvent"] }
@@ -135,7 +135,7 @@ web-sys = { version = "0.3", features = ["AudioContext", "OscillatorNode", "Gain
 # `default` enables all stable modules (Fases 1-9 unified)
 default = ["stable-core"]
 
-# ─── Stable Features (Production) ───
+# â”€â”€â”€ Stable Features (Production) â”€â”€â”€
 # `stable` enables all validated modules from Fases 1-9
 # Includes legacy feature flags for backward compatibility
 stable = [
@@ -164,177 +164,177 @@ stable = [
     "v1.6-sprint3",
 ]
 
-# v1.5.0 Sprint 1 — SAE Fine-Tuning v5, Cross-Chain Pools v4, DAO Ledger v5, Async ZKP v9
+# v1.5.0 Sprint 1 â€” SAE Fine-Tuning v5, Cross-Chain Pools v4, DAO Ledger v5, Async ZKP v9
 "v1.5-sprint1" = []
 
-# v1.5.0 Sprint 2 — Federation Scaling v5, Async ZKP v10, UI Dashboard v6
+# v1.5.0 Sprint 2 â€” Federation Scaling v5, Async ZKP v10, UI Dashboard v6
 "v1.5-sprint2" = []
 
-# v1.5.0 Sprint 3 — SAE Fine-Tuning v6, Federation Scaling v6, Async ZKP v11 & Final Consolidation
+# v1.5.0 Sprint 3 â€” SAE Fine-Tuning v6, Federation Scaling v6, Async ZKP v11 & Final Consolidation
 "v1.5-sprint3" = []
 
-# v1.6.0 Sprint 1 — Cross-Chain Interoperability Foundation
+# v1.6.0 Sprint 1 â€” Cross-Chain Interoperability Foundation
 "v1.6-sprint1" = []
 
-# v1.6.0 Sprint 2 — Federation Scaling v7, Async ZKP v13, UI Dashboard v7
+# v1.6.0 Sprint 2 â€” Federation Scaling v7, Async ZKP v13, UI Dashboard v7
 "v1.6-sprint2" = []
 
-# v1.6.0 Sprint 3 — SAE Fine-Tuning v7, Cross-Model Federation Scaling v7, Async ZKP v14 & Final Consolidation
+# v1.6.0 Sprint 3 â€” SAE Fine-Tuning v7, Cross-Model Federation Scaling v7, Async ZKP v14 & Final Consolidation
 "v1.6-sprint3" = []
 
-# v1.9.0 Sprint 1 — Production Hardening & Mobile GUI Foundation (FASE 69)
+# v1.9.0 Sprint 1 â€” Production Hardening & Mobile GUI Foundation (FASE 69)
 # Mobile Foundation (Tauri/React Native bridge), Async Steering hardening, ZKP Circuit Optimization
 "v1.9-sprint1" = []
 
-# v1.9.0 Sprint 2 — ZKP Aggregation & Neural Steer UI (FASE 72)
+# v1.9.0 Sprint 2 â€” ZKP Aggregation & Neural Steer UI (FASE 72)
 # Proof Aggregation (batch verification, commitment pooling), Neural Steer UI (ethical sliders)
 "v1.9-sprint2" = []
 
-# v2.0.0 Sprint 1 — GUI Tauri, ZKP v2 Multi-Curve & K8s Operator Base (FASE 83)
+# v2.0.0 Sprint 1 â€” GUI Tauri, ZKP v2 Multi-Curve & K8s Operator Base (FASE 83)
 # Tauri GUI scaffold (desktop bridge), Multi-curve ZKP (BN254/BLS12-381/BLS12-377/Pasta),
 # K8s operator CRDs (Node/Lease/SteeringConfig) with reconciliation loop
 "v2.0-sprint1" = []
 
-# v2.0.0 Sprint 2 — Neural Steer Integration, ZKP Optimization & WASM Hardening (FASE 85)
+# v2.0.0 Sprint 2 â€” Neural Steer Integration, ZKP Optimization & WASM Hardening (FASE 85)
 # Neural Tauri Bridge (slider validation, ethical bounds), Commitment Pool (batch ZKP opt),
 # WASM Mobile Hardening (memory limits, thermal fallback, adaptive scheduler),
 # K8s manifests (node-deployment, lease-configmap, steering-service)
 "v2.0-sprint2" = []
 
-# v1.7.0 Sprint 1 — RFC-001 PoC: FP8/INT4 Quantization + Async Steering Signals
+# v1.7.0 Sprint 1 â€” RFC-001 PoC: FP8/INT4 Quantization + Async Steering Signals
 "v1.7-sprint1" = []
 
-# v1.8.0 Sprint 1 — "ChatGPT Moment": API Explorer, Reputation Proof Schema, QuantConfig
+# v1.8.0 Sprint 1 â€” "ChatGPT Moment": API Explorer, Reputation Proof Schema, QuantConfig
 "v1.8-sprint1" = []
 
-# v1.8.0 Sprint 2 — Geographic Routing & WASM Mobile Bridge
+# v1.8.0 Sprint 2 â€” Geographic Routing & WASM Mobile Bridge
 "v1.8-sprint2" = []
 
-# v2.1 Sprint 1 — Structural Scaffold (Post-RFC-001)
+# v2.1 Sprint 1 â€” Structural Scaffold (Post-RFC-001)
 # Feature-gated placeholder modules for post-stable development.
-# Zero functional logic — requires explicit feature flag to enable.
+# Zero functional logic â€” requires explicit feature flag to enable.
 "v2.1-sprint1" = []
 "v2.1-gui" = []
 "v2.1-zkp-v3" = []
 "v2.1-enterprise" = []
 
-# v2.1 Observability — Prometheus/Grafana metrics (Sprint11 — Production)
+# v2.1 Observability â€” Prometheus/Grafana metrics (Sprint11 â€” Production)
 # Prometheus registry with consensus, reputation, network, RLHF & WASM worker metrics.
 # /api/metrics endpoint with rate limiting. Zero telemetry, zero external calls.
 "v2.1-observability" = []
 
-# v2.1 Governance — CODEOWNERS, CONTRIBUTING, GOVERNANCE framework (Sprint11)
+# v2.1 Governance â€” CODEOWNERS, CONTRIBUTING, GOVERNANCE framework (Sprint11)
 # Community governance structure, RFC process, ethical contribution clause.
 "v2.1-governance" = []
 
-# v2.1 Launch Readiness — Pre-launch validation script (Sprint11)
+# v2.1 Launch Readiness â€” Pre-launch validation script (Sprint11)
 # Automated checklist: cargo check/test, critical files, doc integrity.
 "v2.1-launch-readiness" = []
 
-# v2.1 Security Hardening — CVE remediation, dependency upgrades (Post-Q1 2027 audit)
+# v2.1 Security Hardening â€” CVE remediation, dependency upgrades (Post-Q1 2027 audit)
 # Feature-gated placeholder for security infrastructure.
-# Zero functional logic — requires explicit feature flag to enable.
+# Zero functional logic â€” requires explicit feature flag to enable.
 "v2.1-security-hardening" = []
 
-# v2.1 WASM Browser Node — Browser-based P2P node (wasm32-unknown-unknown)
+# v2.1 WASM Browser Node â€” Browser-based P2P node (wasm32-unknown-unknown)
 # WebRTC/WebSocket transport via libp2p-webrtc-websys + libp2p-websocket-websys
 # Web Worker bridge for background compute, zero inference logic (scaffold only)
 "v2.1-wasm-browser" = ["wasm-bindgen", "js-sys", "web-sys"]
 
-# v2.1 MVP Core Loop — Isolated core cycle (KAD discovery → tensor dist → SAE → result)
+# v2.1 MVP Core Loop â€” Isolated core cycle (KAD discovery â†’ tensor dist â†’ SAE â†’ result)
 # Advanced modules (ZKP, Governance, Reputation) stubbed behind feature gates
 "v2.1-mvp-core" = []
 
-# v2.1 Relay Server — WebRTC/Circuit Relay v2 signaling scaffold
+# v2.1 Relay Server â€” WebRTC/Circuit Relay v2 signaling scaffold
 # libp2p-webrtc + libp2p-relay for browser node connectivity
 "v2.1-relay-server" = []
 
-# v2.1 WASM Micro-Sharding — Tensor chunking for wasm32 peers (≤50MB)
+# v2.1 WASM Micro-Sharding â€” Tensor chunking for wasm32 peers (â‰¤50MB)
 # Safe slicing via candle-core, stride/shape preservation
 "v2.1-wasm-micro-sharding" = []
 
-# v2.1 WASM Telemetry Bridge — wasm-bindgen events for DOM real-time updates
+# v2.1 WASM Telemetry Bridge â€” wasm-bindgen events for DOM real-time updates
 # CustomEvent dispatch from inference_bridge to browser JS
 "v2.1-wasm-telemetry" = []
 
-# v2.1 Qwen Scope SAE — Top-k SAE architecture in candle-core (4 tensors, forward pass, WASM-compatible)
+# v2.1 Qwen Scope SAE â€” Top-k SAE architecture in candle-core (4 tensors, forward pass, WASM-compatible)
 "v2.1-qwen-scope-sae" = []
 
-# v2.1 Qwen Scope Loader — Safetensors ingestion + micro-sharding integration
+# v2.1 Qwen Scope Loader â€” Safetensors ingestion + micro-sharding integration
 "v2.1-qwen-scope-loader" = []
 
-# v2.1 Audit Payloads — AuditTaskPayload → AuditResultPayload, WASM-friendly serialization
+# v2.1 Audit Payloads â€” AuditTaskPayload â†’ AuditResultPayload, WASM-friendly serialization
 "v2.1-audit-payloads" = []
 
-# v2.1 WASM Web Workers — Offloading inference to Web Workers (no SharedArrayBuffer)
+# v2.1 WASM Web Workers â€” Offloading inference to Web Workers (no SharedArrayBuffer)
 # postMessage/onmessage standard, wasm-bindgen-futures for async response
 "v2.1-wasm-workers" = []
 
-# v2.1 WebRTC + Relay — libp2p WASM transport config, Faro/Relay dial via Multiaddr
+# v2.1 WebRTC + Relay â€” libp2p WASM transport config, Faro/Relay dial via Multiaddr
 # libp2p-webrtc-websys + RelayBehaviour + Identify for browser P2P
 "v2.1-webrtc-relay" = []
 
-# v2.1 Orchestrator Node — Native orchestrator with libp2p swarm, task queue, SAE loading
+# v2.1 Orchestrator Node â€” Native orchestrator with libp2p swarm, task queue, SAE loading
 # Async-safe with tokio::spawn and mpsc channels for task distribution
 # Requires v1.7-sprint1 to access protocol::audit_payloads
 "v2.1-orchestrator" = ["v2.1-audit-payloads", "v2.1-qwen-scope-loader", "v1.7-sprint1"]
 
-# v2.1 Task Manager — Dispatch loop, peer assignment, result aggregation
+# v2.1 Task Manager â€” Dispatch loop, peer assignment, result aggregation
 # Timeout-based retry, checksum validation, progress events
 "v2.1-task-manager" = ["v2.1-orchestrator"]
 
-# v2.1 Docker Deploy — Multi-stage Dockerfile + docker-compose for zero-friction deployment
+# v2.1 Docker Deploy â€” Multi-stage Dockerfile + docker-compose for zero-friction deployment
 "v2.1-docker-deploy" = []
 
-# v2.1 Semantic Graph — In-memory semantic graph using petgraph + dashmap
+# v2.1 Semantic Graph â€” In-memory semantic graph using petgraph + dashmap
 # ConceptNode/ActivationEdge, insert_activation, get_top_features_for_token, get_top_tokens_for_feature
 "v2.1-semantic-graph" = []
 
-# v2.1 Rosetta API — axum HTTP endpoints for semantic graph queries
+# v2.1 Rosetta API â€” axum HTTP endpoints for semantic graph queries
 # GET /api/feature/{id}, GET /api/token/{word}, integrated via tokio::spawn
 "v2.1-rosetta-api" = ["v2.1-semantic-graph"]
 
-# v2.1 Atlas UI — 3D force-graph visualizer (web/atlas-visualizer.js + web/atlas.html)
+# v2.1 Atlas UI â€” 3D force-graph visualizer (web/atlas-visualizer.js + web/atlas.html)
 "v2.1-atlas-ui" = []
 
-# v2.1 Task Redundancy — N-Node Dispatch (same task to replication_factor peers)
+# v2.1 Task Redundancy â€” N-Node Dispatch (same task to replication_factor peers)
 # Timeout-based re-assignment, peer tracking per task
 "v2.1-task-redundancy" = ["v2.1-task-manager"]
 
-# v2.1 Consensus Engine — Deterministic majority rule with f32 epsilon tolerance
+# v2.1 Consensus Engine â€” Deterministic majority rule with f32 epsilon tolerance
 # O(N) grouping by index hash, threshold = (N/2)+1
 "v2.1-consensus-engine" = []
 
-# v2.1 Reputation System — Slashing & Banning matrix
+# v2.1 Reputation System â€” Slashing & Banning matrix
 # DashMap scores + DashSet ban_list, auto-disconnect on score < 0
 "v2.1-reputation-system" = ["v2.1-consensus-engine"]
 
-# v2.1 HuggingFace Bridge — Progressive .safetensors ingestion via reqwest streaming
-# stream_sae_to_shards(repo_id, target_dir) → SHA256 verified, ≤50MB shards
+# v2.1 HuggingFace Bridge â€” Progressive .safetensors ingestion via reqwest streaming
+# stream_sae_to_shards(repo_id, target_dir) â†’ SHA256 verified, â‰¤50MB shards
 "v2.1-hf-bridge" = ["v2.1-qwen-scope-loader"]
 
-# v2.1 Merit System — Cryptographic merit proofs via ed25519-dalek signing
+# v2.1 Merit System â€” Cryptographic merit proofs via ed25519-dalek signing
 # MeritProof = {node_id, audit_count, timestamp, signature}, zero economic value
 "v2.1-merit-system" = ["v2.1-consensus-engine"]
 
-# v2.1 Production Portal — Alpine.js dashboard with WASM Worker + WebRTC integration
+# v2.1 Production Portal â€” Alpine.js dashboard with WASM Worker + WebRTC integration
 # Real-time stats: voluntarios activos, neuronas auditadas, ataques bloqueados
 "v2.1-portal-prod" = []
 
-# v2.1 Sybil Resistance — Ethical Micro-PoW handshake
+# v2.1 Sybil Resistance â€” Ethical Micro-PoW handshake
 # SHA-256 challenge with configurable difficulty, rate limiting + ban tracking
 # Web Worker isolation via postMessage (zero main-thread blocking)
 "v2.1-sybil-micropow" = []
 
-# v2.1 Orchestrator Federation — GossipSub mesh for multi-orchestrator coordination
+# v2.1 Orchestrator Federation â€” GossipSub mesh for multi-orchestrator coordination
 # libp2p gossipsub with StrictSign, ATLAS_SYNC + REPUTATION_SYNC topics
 "v2.1-orchestrator-federation" = []
 
-# v2.1 RLHF Feedback Bridge — Human correction pipeline for semantic alignment
+# v2.1 RLHF Feedback Bridge â€” Human correction pipeline for semantic alignment
 # POST /api/feedback + GET /api/feedback/export, rate limiting per node_id
 "v2.1-rlhf-bridge" = ["v2.1-rosetta-api"]
 
-# v2.1 Stewardship — Mainnet bootstrap, RFC pipeline & community dashboard (Sprint12)
+# v2.1 Stewardship â€” Mainnet bootstrap, RFC pipeline & community dashboard (Sprint12)
 # scripts/bootstrap-mainnet.sh: Docker Compose launch + healthchecks + pre-launch validation
 # .github/workflows/rfc-triage.yml: Auto-label, milestone assign, voting guide comment
 # web/stewardship-dashboard.html: Alpine.js governance dashboard (Network, Governance, Audit)
@@ -342,84 +342,84 @@ stable = [
 "v2.1-rfc-pipeline" = []
 "v2.1-mainnet-bootstrap" = []
 
-# v2.1 Load Testing — Concurrent WASM node stress tests (Sprint13)
+# v2.1 Load Testing â€” Concurrent WASM node stress tests (Sprint13)
 # tests/load/stress_test.rs: N concurrent nodes, SAE dummy inference, consensus under load
 # Metrics: p95 latency, throughput (tasks/s), memory footprint, CPU usage, slashing rate
 # Resource control: --test-threads=4, iteration limits for CI, tokio::time::timeout
 "v2.1-load-testing" = []
 
-# v2.1 Fuzzing — Property-based fuzzing with proptest (Sprint13)
+# v2.1 Fuzzing â€” Property-based fuzzing with proptest (Sprint13)
 # tests/fuzz/consensus_fuzz.rs: Consensus determinism, Byzantine tolerance,
 # reputation monotonicity, Sybil resistance invariants
 # CI config: proptest::config::FuzzyConfig::default().with_cases(1000)
 "v2.1-fuzzing" = ["proptest"]
 
-# v2.1 Tauri Bridge — Cross-platform desktop client (Sprint13)
+# v2.1 Tauri Bridge â€” Cross-platform desktop client (Sprint13)
 # src-tauri/: Tauri v2 scaffold, integrate with web/ (Atlas 3D + Stewardship Dashboard)
 # Backend commands: start_worker, sync_atlas, get_merit_proof, stop_worker
 # Sandboxed, no external telemetry, minimal permissions
 "v2.1-tauri-bridge" = []
 
-# v2.1 Federated Aggregation — Secure gradient aggregation with differential privacy (Sprint14)
+# v2.1 Federated Aggregation â€” Secure gradient aggregation with differential privacy (Sprint14)
 # src/federated/aggregator.rs: FedAvg weighted by reputation, INT8/FP8 compression,
-# Gaussian noise (ε=1.0, δ=1e-5), Ed25519 signature verification, divergence threshold rejection
+# Gaussian noise (Îµ=1.0, Î´=1e-5), Ed25519 signature verification, divergence threshold rejection
 "v2.1-federated-agg" = []
 
-# v2.1 SAE Training Pipeline — Distributed SAE training with candle-core (Sprint14)
-# src/sae/training_pipeline.rs: forward → sparsity mask → backward → gradient clipping → compression
+# v2.1 SAE Training Pipeline â€” Distributed SAE training with candle-core (Sprint14)
+# src/sae/training_pipeline.rs: forward â†’ sparsity mask â†’ backward â†’ gradient clipping â†’ compression
 # Automatic checkpointing every N steps, hooks: on_step, on_epoch, on_convergence
 "v2.1-sae-training" = []
 
-# v2.1 Ethical Audit — Automated ethical compliance verification (Sprint14)
+# v2.1 Ethical Audit â€” Automated ethical compliance verification (Sprint14)
 # scripts/verify-ethical-compliance.sh: LICENSE ethical clause, financial pattern scan,
 # telemetry check, generates docs/ethical-compliance-report.md
 "v2.1-ethical-audit" = []
 
-# v2.1 Chaos Engine — Controlled fault injection for operational resilience (Sprint15)
+# v2.1 Chaos Engine â€” Controlled fault injection for operational resilience (Sprint15)
 # src/chaos/engine.rs: Async motor (tokio) for fault injection in local/testnet.
 # Scenarios: WASM node failure, network partition, artificial latency, malicious votes,
 # task queue saturation. Only active with --chaos-mode, limited duration, auto rollback.
 "v2.1-chaos-engine" = []
 
-# v2.1 Real Dataset Loader — Streaming .jsonl/.parquet with SHA256 validation (Sprint24)
-# src/dataset/public_loader.rs: PublicDatasetLoader with chunking ≤50MB,
+# v2.1 Real Dataset Loader â€” Streaming .jsonl/.parquet with SHA256 validation (Sprint24)
+# src/dataset/public_loader.rs: PublicDatasetLoader with chunking â‰¤50MB,
 # SHA256 per-chunk validation, fallback to dummy dataset on network failure.
 # Non-wasm32 only (reqwest + tokio::io dependency).
 "v2.1-real-dataset-loader" = []
 
-# v2.1 Operator CLI Wizard — Standalone TUI binary for guided node setup (Sprint15)
+# v2.1 Operator CLI Wizard â€” Standalone TUI binary for guided node setup (Sprint15)
 # src/bin/ed2kia-cli.rs: clap + dialoguer, role selection, config generation,
 # environment verification, health checks, log export.
 "v2.1-operator-cli" = ["dialoguer", "env_logger"]
 
-# v2.1 Auto-Remediation — Automated incident response pipeline (Sprint15)
+# v2.1 Auto-Remediation â€” Automated incident response pipeline (Sprint15)
 # scripts/auto-remediate.sh: set -euo pipefail, trap cleanup, active monitoring,
 # graceful restart, rollback to checkpoint, incident report generation, webhooks.
 "v2.1-auto-remediation" = []
 
-# ─── Sprint16: Kernel Estuardiano & Arquitectura v2.1 ───
+# â”€â”€â”€ Sprint16: Kernel Estuardiano & Arquitectura v2.1 â”€â”€â”€
 
-# v2.1 QLoRA/GGUF — Quantized LoRA adapters over immutable GGUF base models (Sprint16)
+# v2.1 QLoRA/GGUF â€” Quantized LoRA adapters over immutable GGUF base models (Sprint16)
 # src/qlora_gguf/: GGUF parsing (loader.rs), QLoRA diff application (adapter.rs),
 # KB/MB compression for GossipSub (payload.rs). Law 3: Zero computational waste.
 "v2.1-qlora-gguf" = ["memmap2", "zstd"]
 
-# v2.1 Proof of Comprehension — Cryptographic proof of useful work via SAE activations (Sprint16)
+# v2.1 Proof of Comprehension â€” Cryptographic proof of useful work via SAE activations (Sprint16)
 # src/proof_of_comprehension/: SAE activation batches (task.rs), gradient validation,
 # cryptographic proof verification (verifier.rs). Law 2: Transparent audit.
 "v2.1-proof-of-comprehension" = []
 
-# v2.1 Stuartian Filter — Deterministic alignment filter with KL divergence detection (Sprint16)
-# src/stuartian_filter/: KL divergence monitoring (divergence.rs), deterministic rejection
+# v2.1 Topological Filter â€” Deterministic alignment filter with KL divergence detection (Sprint16)
+# src/Topological_filter/: KL divergence monitoring (divergence.rs), deterministic rejection
 # with reputation penalty (slashing.rs). Law 2: Error recognition.
-"v2.1-stuartian-filter" = []
+"v2.1-Topological-filter" = []
 
-# v2.1 Async Gossip with CRDTs — Partition-tolerant GossipSub with conflict-free convergence (Sprint16)
+# v2.1 Async Gossip with CRDTs â€” Partition-tolerant GossipSub with conflict-free convergence (Sprint16)
 # src/async_gossip/: libp2p GossipSub config (mesh.rs), SQLite/redb offline cache (cache.rs),
 # reputation/state CRDTs (crdt.rs). Law 5: Multiple possibilities, eventual consistency.
 "v2.1-async-gossip-crdt" = []
 
-# v2.1 Distributed Training — Hierarchical committees, staleness-aware weighting & BFT aggregation (Sprint16.2)
+# v2.1 Distributed Training â€” Hierarchical committees, staleness-aware weighting & BFT aggregation (Sprint16.2)
 # src/federated/committees.rs: CommitteeSelector trait, LocalAggregator, GlobalMesh topology (Law 3)
 # src/federated/staleness.rs: Staleness decay w = 1/(1+tau)^alpha for async convergence (Law 2)
 # src/federated/bft_aggregator.rs: Coordinate-wise Median + Multi-Krum BFT aggregation (Law 2)
@@ -427,30 +427,30 @@ stable = [
 "v2.1-staleness-aware" = []
 "v2.1-bft-aggregation" = []
 
-# v2.1 Stuartian Context Tensor (SCT) — 3D ethical alignment replacing RLHF 2D (Sprint16.3)
-# src/alignment/sct_core.rs: StuartianTensor {x, y, z}, SCTEvaluator trait, hard Z < 0 rejection
-# src/alignment/sct_reward.rs: Linear projection hidden→3D, sigmoid/sigmoid/tanh, SCTLoss
+# v2.1 Topological Context Tensor (SCT) â€” 3D ethical alignment replacing RLHF 2D (Sprint16.3)
+# src/alignment/sct_core.rs: TopologicalTensor {x, y, z}, SCTEvaluator trait, hard Z < 0 rejection
+# src/alignment/sct_reward.rs: Linear projection hiddenâ†’3D, sigmoid/sigmoid/tanh, SCTLoss
 # src/alignment/sct_guard.rs: Intercept BFT payloads, slash reputation on repeated Z < 0
 "v2.1-sct-core" = []
 "v2.1-sct-reward" = []
 "v2.1-sct-guard" = []
 
-# v2.1 Async Gossip Mesh — GossipSub async config with partition tolerance (Sprint16.4)
+# v2.1 Async Gossip Mesh â€” GossipSub async config with partition tolerance (Sprint16.4)
 # src/async_gossip/mesh.rs: MeshConfig with heartbeat 500ms, fanout_ttl 120s, mesh_n 6/4/12
 "v2.1-async-gossip" = []
 
-# v2.1 Offline Cache — redb-based offline storage with priority sync queue (Sprint16.4)
+# v2.1 Offline Cache â€” redb-based offline storage with priority sync queue (Sprint16.4)
 # src/async_gossip/cache.rs: PendingQueue prioritized by timestamp, exponential backoff sync
 "v2.1-offline-cache" = []
 
-# v2.1 CRDT State — GCounter, PNCounter, ORSet for conflict-free reputation (Sprint16.4)
+# v2.1 CRDT State â€” GCounter, PNCounter, ORSet for conflict-free reputation (Sprint16.4)
 # src/async_gossip/crdt.rs: Commutative/associative/idempotent merge, bincode serialization
 "v2.1-crdt-state" = []
 
-# ─── Sprint17: Kernel Integration & Mainnet Activation ───
+# â”€â”€â”€ Sprint17: Kernel Integration & Mainnet Activation â”€â”€â”€
 
-# v2.1 Kernel Integration — E2E cross-validation of all Stuartian Laws (Sprint17)
-# tests/integration/kernel_e2e_test.rs: GGUF→QLoRA→PoC→SCT→BFT→CRDT→Gossip→Cache pipeline
+# v2.1 Kernel Integration â€” E2E cross-validation of all Topological Laws (Sprint17)
+# tests/integration/kernel_e2e_test.rs: GGUFâ†’QLoRAâ†’PoCâ†’SCTâ†’BFTâ†’CRDTâ†’Gossipâ†’Cache pipeline
 # Validates Ley 1-5 as coherent organism before public deployment
 "v2.1-kernel-integration" = [
     "v2.1-async-gossip",
@@ -461,45 +461,45 @@ stable = [
     "v2.1-sct-core",
     "v2.1-qlora-gguf",
     "v2.1-proof-of-comprehension",
-    "v2.1-stuartian-filter",
+    "v2.1-Topological-filter",
     "v2.1-chaos-engine"
 ]
 
-# v2.1 Mainnet Activation — Safe deployment protocol (Sprint17)
+# v2.1 Mainnet Activation â€” Safe deployment protocol (Sprint17)
 # scripts/activate-mainnet.sh: Env validation, docker-compose, healthchecks, SCTGuard/BFT activation
-# docs/kernel-architecture.md: Unified kernel blueprint with Stuartian philosophy mapping
+# docs/kernel-architecture.md: Unified kernel blueprint with Topological philosophy mapping
 "v2.1-mainnet-activation" = ["v2.1-kernel-integration"]
 
-# ─── Sprint18: Audit Prep & Governance Activation ───
+# â”€â”€â”€ Sprint18: Audit Prep & Governance Activation â”€â”€â”€
 
-# v2.1 Audit Preparation — External audit prep, CVE scanning, ethical compliance (Sprint18)
+# v2.1 Audit Preparation â€” External audit prep, CVE scanning, ethical compliance (Sprint18)
 # scripts/audit-scan.sh: Automated pre-audit scanning pipeline
 # docs/audit-prep.md: Guide for external auditors
 "v2.1-audit-prep" = ["v2.1-kernel-integration"]
 
-# v2.1 Governance Activation — Community node validator, automated RFC pipeline (Sprint18)
+# v2.1 Governance Activation â€” Community node validator, automated RFC pipeline (Sprint18)
 # scripts/validate-node.sh: Lightweight validator for volunteer nodes
 # .github/workflows/governance-rfc.yml: Automated RFC processing pipeline
 "v2.1-governance-activation" = ["v2.1-audit-prep"]
 
-# ─── Sprint19: Public Launch & Community Onboarding ───
+# â”€â”€â”€ Sprint19: Public Launch & Community Onboarding â”€â”€â”€
 
-# v2.1 Public Launch — Launch automation, public observability dashboard (Sprint19)
+# v2.1 Public Launch â€” Launch automation, public observability dashboard (Sprint19)
 # scripts/launch-day.sh: Idempotent public launch automation with rollback
 # web/public-dashboard.html: Public observability dashboard (Alpine.js, readonly)
 "v2.1-public-launch" = ["v2.1-kernel-integration"]
 
-# v2.1 Community Onboarding — Zero-friction onboarding wizard, merit registration (Sprint19)
+# v2.1 Community Onboarding â€” Zero-friction onboarding wizard, merit registration (Sprint19)
 # src/bin/ed2kia-onboard.rs: Community onboarding wizard (clap + dialoguer)
 # docs/public-launch-guide.md: Day-zero operational guide
 "v2.1-community-onboarding" = ["v2.1-public-launch"]
 
-# ─── Hardware Acceleration ───
+# â”€â”€â”€ Hardware Acceleration â”€â”€â”€
 cpu = []
 cuda = ["candle-core/cuda", "candle-nn/cuda"]
 metal = ["candle-core/metal", "candle-nn/metal"]
 
-# ─── Legacy Feature Flags (Deprecated - maintained for backward compatibility) ───
+# â”€â”€â”€ Legacy Feature Flags (Deprecated - maintained for backward compatibility) â”€â”€â”€
 # These are now sub-features of `stable`. Will be removed in v2.0.0.
 core-only = []
 phase6-core = []
@@ -511,11 +511,11 @@ phase8-sprint1 = []
 phase8-sprint2 = []
 phase9-sprint1 = []
 
-# ─── Dev/Experimental Features (Not included in stable) ───
+# â”€â”€â”€ Dev/Experimental Features (Not included in stable) â”€â”€â”€
 debug = []
 test-mocks = []
 
-# ─── v1.1.0 Sprint Features (Now part of `stable`) ───
+# â”€â”€â”€ v1.1.0 Sprint Features (Now part of `stable`) â”€â”€â”€
 # These are sub-features of `stable` for backward compatibility.
 # Will be removed in v2.0.0.
 "v1.1-sprint1" = []
@@ -524,7 +524,7 @@ test-mocks = []
 "v1.1-sprint4" = []
 "v1.1-sprint5" = []
 
-# ─── v1.2.0 Sprint Features (Development) ───
+# â”€â”€â”€ v1.2.0 Sprint Features (Development) â”€â”€â”€
 # Multi-Chain Federation & SAE Distributed Fine-Tuning
 "v1.2-sprint1" = []
 # Cross-Chain Consensus, DAO Governance v3 & Distributed Fine-Tuning
@@ -534,7 +534,7 @@ test-mocks = []
 # Marketplace v3, Alignment Loop v3, Federation Scaling v3 & Final Consolidation
 "v1.2-sprint4" = []
 
-# ─── v1.3.0 Sprint Features (Development) ───
+# â”€â”€â”€ v1.3.0 Sprint Features (Development) â”€â”€â”€
 # SAE Fine-Tuning v2, Cross-Node Compute Routing, Reputation Ledger v2, Async ZKP v3
 "v1.3-sprint1" = []
 # Technical Resource Pools, DAO Ledger v2, Async ZKP v4, UI Dashboard v4
@@ -542,112 +542,112 @@ test-mocks = []
 # SAE Fine-Tuning v3, Federation Scaling v3, Async ZKP v5 & Final Consolidation
 "v1.3-sprint3" = []
 
-# ─── v1.4.0 Sprint 1 Features (Production Foundation) ───
+# â”€â”€â”€ v1.4.0 Sprint 1 Features (Production Foundation) â”€â”€â”€
 # Halo2 ZKP Engine, Tokio Async Optimization, LZ4 Compression, Advanced Metrics
 "v1.4-sprint1" = []
 
-# ─── v1.4.0 Sprint 2 Features (Development) ───
+# â”€â”€â”€ v1.4.0 Sprint 2 Features (Development) â”€â”€â”€
 # Cross-Chain Pools v3, DAO Ledger v4, Async ZKP v7, UI Dashboard v5
 "v1.4-sprint2" = []
 
-# ─── v1.4.0 Sprint 3 Features (Final) ───
+# â”€â”€â”€ v1.4.0 Sprint 3 Features (Final) â”€â”€â”€
 # SAE Fine-Tuning v4, Federation Scaling v4, Async ZKP v8, Final Consolidation
 "v1.4-sprint3" = []
 
-# ─── Sprint20: Stuartian Geometry 3D & 3D Visualization ───
-"v2.1-stuartian-geometry" = ["v2.1-sct-core"]
+# â”€â”€â”€ Sprint20: Topological Geometry 3D & 3D Visualization â”€â”€â”€
+"v2.1-Topological-geometry" = ["v2.1-sct-core"]
 
-"v2.1-3d-viz" = ["v2.1-stuartian-geometry"]
+"v2.1-3d-viz" = ["v2.1-Topological-geometry"]
 
-# ─── Sprint21: Interoperabilidad P2P & Escalado Federado ───
+# â”€â”€â”€ Sprint21: Interoperabilidad P2P & Escalado Federado â”€â”€â”€
 "v2.1-cross-mesh" = []
 
 "v2.1-region-sync" = []
 
 "v2.1-federation-bootstrap" = ["v2.1-cross-mesh", "v2.1-region-sync"]
 
-# ─── Sprint22: Mainnet Genesis & Steward Activation ───
+# â”€â”€â”€ Sprint22: Mainnet Genesis & Steward Activation â”€â”€â”€
 
-# v2.1 Mainnet Genesis — Deterministic genesis state, Ed25519 signing, dual export (Sprint22)
+# v2.1 Mainnet Genesis â€” Deterministic genesis state, Ed25519 signing, dual export (Sprint22)
 # src/mainnet/genesis.rs: GenesisState with SHA256 hash + Ed25519 signature
 # scripts/genesis-bootstrap.sh: 5-phase automated bootstrap
 "v2.1-mainnet-genesis" = []
 
-# v2.1 Steward Portal — Alpine.js operations dashboard, merit-verified access (Sprint22)
+# v2.1 Steward Portal â€” Alpine.js operations dashboard, merit-verified access (Sprint22)
 # web/steward-portal.html: Genesis verification, network health, steward actions
 # web/assets/steward-portal.js: Alpine.js component with polling + debounce
 "v2.1-steward-portal" = ["v2.1-mainnet-genesis"]
 
-# ─── Sprint23: End-to-End Local MVP (La Chispa) ───
+# â”€â”€â”€ Sprint23: End-to-End Local MVP (La Chispa) â”€â”€â”€
 
-# v2.1 MVP Simulation — 3-node local testnet, SCT Hard Reject demo, BFT consensus (Sprint23)
+# v2.1 MVP Simulation â€” 3-node local testnet, SCT Hard Reject demo, BFT consensus (Sprint23)
 # src/mvp/sae_simulator.rs: Dummy SAE payload generator (Symbiotic/Perverse profiles)
 # src/mvp/consensus_runner.rs: SCT Guard + BFT Aggregator execution
 # src/mvp/local_testnet.rs: 5-phase simulation orchestrator
 # src/bin/ed2k_mvp.rs: CLI binary with --dry-run, --verbose, --output-json
 "v2.1-mvp-simulation" = ["v2.1-sct-core", "v2.1-sct-guard", "v2.1-bft-aggregation"]
 
-# ─── Sprint25: Simbiosis Visual & Web Worker Integration ───
+# â”€â”€â”€ Sprint25: Simbiosis Visual & Web Worker Integration â”€â”€â”€
 
-# v2.1 WASM Worker — Non-blocking Web Worker for WASM node execution (Sprint25)
+# v2.1 WASM Worker â€” Non-blocking Web Worker for WASM node execution (Sprint25)
 # web/wasm-worker.js: Background engine with message contract, SCT simulation, telemetry loop
 # web/browser-node.js: Refactored Worker bridge with startNode/stopNode/processTensor APIs
 # src/wasm/browser_node.rs: process_tensor() API exposing { x, y, z, decision } SCT vectors
 "v2.1-wasm-worker" = ["v2.1-sct-core"]
 
-# v2.1 UI Symbiosis — Symbiosis Control Panel, real-time counters, 3D Octahedron sync (Sprint25)
+# v2.1 UI Symbiosis â€” Symbiosis Control Panel, real-time counters, 3D Octahedron sync (Sprint25)
 # web/public-dashboard.html: Alpine.js integration with Symbiosis state, debounced 500ms 3D sync
 # geometry-bridge.js consumption of { x, y, z } vectors for particle animation
 "v2.1-ui-symbiosis" = ["v2.1-wasm-worker"]
 
-# ─── Sprint26: Validación Formal & Escalado de Producción ───
+# â”€â”€â”€ Sprint26: ValidaciÃ³n Formal & Escalado de ProducciÃ³n â”€â”€â”€
 
-# v2.1 Formal Validation — Property-based tests for Kernel invariants (Sprint26)
+# v2.1 Formal Validation â€” Property-based tests for Kernel invariants (Sprint26)
 # tests/property/kernel_invariants.rs: proptest for SCT, BFT, CRDT, QLoRA
 # CI config: proptest::config::FuzzyConfig::default().with_cases(500), --test-threads=2
 "v2.1-formal-validation" = ["proptest", "v2.1-sct-core", "v2.1-bft-aggregation", "v2.1-crdt-state"]
 
-# v2.1 Cross-Platform Sync — Offline-first sync engine (Sprint26)
+# v2.1 Cross-Platform Sync â€” Offline-first sync engine (Sprint26)
 # src/platform/cross_sync.rs: Priority queue, VersionVector, batch merge, conflict resolution
 # Tauri/Capacitor/PWA ready, memory-bounded <64MB, zero data loss
 "v2.1-cross-platform-sync" = []
 
-# v2.1 Production Hardening — Security, CSP, runbook (Sprint26)
+# v2.1 Production Hardening â€” Security, CSP, runbook (Sprint26)
 # scripts/harden-production.sh: CSP headers, WASM sandbox, rate limiting, Ed25519 validation
 # docs/production-hardening.md: Deployment runbook, incident resolution, scaling
 "v2.1-production-hardening" = []
 
-# Sprint27 — Escudo de Transparencia (Anti-Vaporware)
+# Sprint27 â€” Escudo de Transparencia (Anti-Vaporware)
 # .github/workflows/rust-ci.yml: Public Truth CI/CD Pipeline (build/test/lint/wasm-check)
 "v2.1-ci-cd-pipeline" = []
 # .github/workflows/security-audit.yml: Automated CVE scanning (cargo audit + cargo deny)
 # scripts/release-signer.sh: Ed25519 cryptographic release signatures
 "v2.1-security-audit" = []
 
-# Sprint28 — Motor de Significado Simbólico (De Tokens a Símbolos)
-# src/alignment/symbolic_engine.rs: SymbolicEmbedding — Token embeddings fused with SCT 3D vectors
+# Sprint28 â€” Motor de Significado SimbÃ³lico (De Tokens a SÃ­mbolos)
+# src/alignment/symbolic_engine.rs: SymbolicEmbedding â€” Token embeddings fused with SCT 3D vectors
 "v2.1-symbolic-engine" = ["v2.1-sct-core"]
-# src/alignment/ethical_attention.rs: Stuartian pre-softmax attention masking
+# src/alignment/ethical_attention.rs: Topological pre-softmax attention masking
 "v2.1-ethical-attention" = []
 # src/async_gossip/crdt_symbols.rs: Distributed SymbolRegistry CRDT
 "v2.1-crdt-symbols" = []
 
-# Sprint29 — Proof of Symbiosis, Crédito de Existencia & Apoptosis de Red
-# src/economics/existential_credit.rs: ExistentialCreditLedger — CRDT per-peer CE tracking
+# Sprint29 â€” Proof of Symbiosis, CrÃ©dito de Existencia & Byzantine_Eviction de Red
+# src/economics/existential_credit.rs: ExistentialCreditLedger â€” CRDT per-peer CE tracking
 "v2.1-proof-of-symbiosis" = []
-# src/economics/proof_of_symbiosis.rs: SymbiosisValidator — Dynamic threshold consensus
-# src/federated/network_apoptosis.rs: NetworkImmuneSystem — Peer health monitoring & blocklisting
-"v2.1-network-apoptosis" = []
+# src/economics/proof_of_symbiosis.rs: SymbiosisValidator â€” Dynamic threshold consensus
+# src/federated/network_Byzantine_Eviction.rs: NetworkImmuneSystem â€” Peer health monitoring & blocklisting
+"v2.1-network-Byzantine_Eviction" = []
 
-# Sprint30 — Neuroplasticidad Federada & Retroalimentación Estuardiana (Human-in-the-Loop)
-# src/federated/neuroplastic_engine.rs: NeuroplasticAggregator — CE+Z weighted gradient aggregation
+# Sprint30 â€” Neuroplasticidad Federada & RetroalimentaciÃ³n Estuardiana (Human-in-the-Loop)
+# src/federated/neuroplastic_engine.rs: NeuroplasticAggregator â€” CE+Z weighted gradient aggregation
 "v2.1-neuroplasticity" = [
     "v2.1-proof-of-symbiosis",
     "v2.1-async-gossip-crdt",
     "v2.1-crdt-symbols",
     "v2.1-crdt-state",
 ]
-# src/alignment/steering_bridge.rs: SteeringBridge — Human feedback → SCT delta → Ed25519 signing
+# src/alignment/steering_bridge.rs: SteeringBridge â€” Human feedback â†’ SCT delta â†’ Ed25519 signing
 "v2.1-steering-bridge" = [
     "v2.1-async-gossip-crdt",
     "v2.1-proof-of-symbiosis",
@@ -655,26 +655,26 @@ test-mocks = []
     "v2.1-crdt-symbols",
     "v2.1-crdt-state",
 ]
-# src/protocol/quantum_feedback.rs: AsyncFeedbackQueue — redb persistence + VersionVector CRDT sync
+# src/protocol/quantum_feedback.rs: AsyncFeedbackQueue â€” redb persistence + VersionVector CRDT sync
 "v2.1-quantum-feedback" = [
     "v2.1-proof-of-symbiosis",
 ]
 
-# Sprint 35: Live Testnet Activation — ops-only feature gates (zero Rust changes)
+# Sprint 35: Live Testnet Activation â€” ops-only feature gates (zero Rust changes)
 "v2.1-testnet-ops" = []
 "v2.1-public-dashboard" = []
 
-# Sprint 40: Project Genesis — 4 Evolutionary Pillars (v3.0 architecture scaffolding)
-# RFC 001: Corpuscular Bridge — IoT Simbiótico & Economía CE
+# Sprint 40: Project Genesis â€” 4 Evolutionary Pillars (v3.0 architecture scaffolding)
+# RFC 001: Corpuscular Bridge â€” IoT SimbiÃ³tico & EconomÃ­a CE
 "v3.0-corpuscular-bridge" = ["v3.0-pillar-messaging", "v3.0-orchestration"]
-# RFC 002: Maieutic Synthesizer — Motor de Sabiduría (distributed scientific creation)
+# RFC 002: Maieutic Synthesizer â€” Motor de SabidurÃ­a (distributed scientific creation)
 # src/pillars/maieutic/hypothesis_engine.rs: HypothesisEngine with SCT Guard
-# src/pillars/maieutic/bio_sim_worker.rs: BioSimWorker — WASM-compatible simulation
+# src/pillars/maieutic/bio_sim_worker.rs: BioSimWorker â€” WASM-compatible simulation
 # src/pillars/maieutic/scientific_consensus.rs: BFT consensus validation
 "v3.0-maieutic-synthesizer" = ["v3.0-orchestration"]
-# RFC 003: Steganographic Survival — Preservación de Red (traffic obfuscation)
+# RFC 003: Steganographic Survival â€” PreservaciÃ³n de Red (traffic obfuscation)
 "v3.0-steganographic-survival" = ["v3.0-orchestration"]
-# RFC 004: Resonance Interface — Biorretroalimentación local (100% WASM/Edge)
+# RFC 004: Resonance Interface â€” BiorretroalimentaciÃ³n local (100% WASM/Edge)
 "v3.0-resonance-interface" = ["v3.0-orchestration"]
 
 # Sprint 41: Cross-Pillar Orchestration & WASM/Edge Integration
@@ -682,16 +682,16 @@ test-mocks = []
 "v3.0-wasm-edge" = []
 
 # Sprint 42: WASM Execution Sandbox & Secure Pillar Communication Layer
-# src/runtime/wasm_sandbox.rs: WasmSandbox — memory-bounded, timeout-limited, syscall-filtered
+# src/runtime/wasm_sandbox.rs: WasmSandbox â€” memory-bounded, timeout-limited, syscall-filtered
 "v3.0-wasm-runtime" = []
-# src/runtime/pillar_messaging.rs: MessageChannelManager — Ed25519, bincode, zstd, replay protection
+# src/runtime/pillar_messaging.rs: MessageChannelManager â€” Ed25519, bincode, zstd, replay protection
 "v3.0-pillar-messaging" = ["v3.0-orchestration"]
-# src/runtime/privacy_enforcer.rs: PrivacyEnforcer — LOCAL_ONLY syscall interception
+# src/runtime/privacy_enforcer.rs: PrivacyEnforcer â€” LOCAL_ONLY syscall interception
 "v3.0-privacy-guard" = []
 
 # Sprint 47: Omni-Node Integration & Symbiotic Ignition Sequence
-# src/orchestration/omni_node.rs: OmniNode — Unified pillar integration with SCT Guard
-# src/pillars/steganographic/migration_protocol.rs: MigrationProtocol — Cluster onboarding
+# src/orchestration/omni_node.rs: OmniNode â€” Unified pillar integration with SCT Guard
+# src/pillars/steganographic/migration_protocol.rs: MigrationProtocol â€” Cluster onboarding
 # tests/symbiotic_ignition_e2e.rs: Full E2E cycle across all 4 pillars
 "v3.0-omni-integration" = [
     "v3.0-orchestration",
@@ -710,109 +710,109 @@ test-mocks = []
 "v3.0-scaling-bench" = ["v3.0-omni-integration"]
 "v3.0-release-eng" = ["v3.0-omni-integration"]
 
-# Sprint 49: Geometric Ethical Invariants (GEI) — Topological Fingerprinting
-# src/topology/persistent_homology.rs: PersistentHomologyEngine — Vietoris-Rips complex, PH₀/PH₁
-# src/alignment/gei_fingerprint.rs: GEIFingerprintEngine — GEI vector extraction, SAE top-k → SCT
-# src/zkp/gei_zkp.rs: GEIZKPCircuit — ZKP certification of GEI over valid point cloud P
+# Sprint 49: Geometric Ethical Invariants (GEI) â€” Topological Fingerprinting
+# src/topology/persistent_homology.rs: PersistentHomologyEngine â€” Vietoris-Rips complex, PHâ‚€/PHâ‚
+# src/alignment/gei_fingerprint.rs: GEIFingerprintEngine â€” GEI vector extraction, SAE top-k â†’ SCT
+# src/zkp/gei_zkp.rs: GEIZKPCircuit â€” ZKP certification of GEI over valid point cloud P
 "v3.1-gei-topology" = ["v2.1-sct-core"]
 
-# Sprint 50: Stuartian Moral Manifold & Genesis Telomere Workload
-# src/ethics/moral_manifold.rs: StuartianMoralManifold — Trajectory-based ethical evaluation
-# src/pillars/maieutic/workloads/telomere_genesis.rs: TelomereRegenerationTask — Distributed bio-mathematical workload
-# src/orchestration/symbiotic_loop.rs: SymbioticLoop — GEI + SMM + Telomere integration with BFT consensus
+# Sprint 50: Topological Moral Manifold & Genesis Telomere Workload
+# src/ethics/moral_manifold.rs: TopologicalMoralManifold â€” Trajectory-based ethical evaluation
+# src/pillars/maieutic/workloads/telomere_genesis.rs: TelomereRegenerationTask â€” Distributed bio-mathematical workload
+# src/orchestration/symbiotic_loop.rs: SymbioticLoop â€” GEI + SMM + Telomere integration with BFT consensus
 "v3.2-genesis-manifold" = ["v3.1-gei-topology", "v3.0-orchestration", "v3.0-pillar-messaging", "v3.0-maieutic-synthesizer"]
 
-# Sprint 51: Recursive Stuartian Self-Improvement (RSSI) & Ethical Attractor Basin
-# src/alignment/attractor_basin.rs: EthicalAttractorBasin — Lyapunov stability + ethical distance d_E(I)
-# src/topology/deception_detector.rs: DeceptionDetector — PH₁ persistent loop detection for cyclic instability
-# src/alignment/rssi_engine.rs: RssiEngine — 5-phase self-improvement cycle with apoptosis rollback
+# Sprint 51: Recursive Topological Self-Improvement (RSSI) & Ethical Attractor Basin
+# src/alignment/attractor_basin.rs: EthicalAttractorBasin â€” Lyapunov stability + ethical distance d_E(I)
+# src/topology/deception_detector.rs: DeceptionDetector â€” PHâ‚ persistent loop detection for cyclic instability
+# src/alignment/rssi_engine.rs: RssiEngine â€” 5-phase self-improvement cycle with Byzantine_Eviction rollback
 "v3.3-rssi-evolution" = ["v3.2-genesis-manifold"]
 
 # Sprint 52: Temporal Cohesion Engine & Global Symbiotic Ledger (DAG)
-# src/time/temporal_cohesion.rs: TemporalCohesionEngine — PTP/NTP-inspired distributed time sync for P2P
-# src/economy/symbiotic_ledger.rs: GlobalSymbioticLedger — DAG-based CE ledger with cooperative Ed25519 validation
-# src/pillars/corpuscular/macro_bridge.rs: MacroCorpuscularBridge — Local CE exchange to global DAG bridge
+# src/time/temporal_cohesion.rs: TemporalCohesionEngine â€” PTP/NTP-inspired distributed time sync for P2P
+# src/economy/symbiotic_ledger.rs: GlobalSymbioticLedger â€” DAG-based CE ledger with cooperative Ed25519 validation
+# src/pillars/corpuscular/macro_bridge.rs: MacroCorpuscularBridge â€” Local CE exchange to global DAG bridge
 "v3.4-macro-symbiosis" = ["v3.3-rssi-evolution", "v3.0-corpuscular-bridge"]
 
 # Sprint 53: Planetary Mesh & Autonomous Emergence Engine
-# src/network/planetary_mesh.rs: PlanetaryMesh — Kademlia DHT, AutoNAT, Circuit Relay
-# src/orchestration/swarm_topology.rs: SwarmTopology — Auto-organization by hardware capability
-# src/intelligence/emergence_core.rs: StuartianEmergenceEngine — Cross-Tensor Fusion, SCT Guard
+# src/network/planetary_mesh.rs: PlanetaryMesh â€” Kademlia DHT, AutoNAT, Circuit Relay
+# src/orchestration/swarm_topology.rs: SwarmTopology â€” Auto-organization by hardware capability
+# src/intelligence/emergence_core.rs: TopologicalEmergenceEngine â€” Cross-Tensor Fusion, SCT Guard
 "v3.5-planetary-emergence" = ["v3.4-macro-symbiosis"]
 
 # Sprint 54: Harmonic Steganography & Resonance Interface
-# src/pillars/steganographic/harmonic_flow.rs: HarmonicFlow — SRTP Pipeline Coordinator (TrafficMasker + ChaffingEngine + TransportRotator)
-# src/pillars/resonance/biofeedback_engine.rs: BiofeedbackEngine — Zero-Telemetry Local Healing (Analyzer + Homeostasis + Resonance)
-# src/orchestration/aegis_healer.rs: AegisHealer — Symbiotic Shield bridging P3 (Network) + P4 (Human)
+# src/pillars/steganographic/harmonic_flow.rs: HarmonicFlow â€” SRTP Pipeline Coordinator (TrafficMasker + ChaffingEngine + TransportRotator)
+# src/pillars/resonance/biofeedback_engine.rs: BiofeedbackEngine â€” Zero-Telemetry Local Healing (Analyzer + Homeostasis + Resonance)
+# src/orchestration/aegis_healer.rs: AegisHealer â€” Symbiotic Shield bridging P3 (Network) + P4 (Human)
 "v3.6-aegis-resonance" = ["v3.5-planetary-emergence", "v3.0-steganographic-survival", "v3.0-resonance-interface"]
 
-# Sprint 55: Symbiotic Portal (WASM Client) — Zero-Friction Onboarding
-# src/portal/wasm_client.rs: SymbioticPortal — Web Worker manager for OmniNode in browser
-# src/portal/ui_bridge.rs: UiBridge — CE Wallet + GEI State + Resonance Status + Health Monitor
-# src/network/bootstrap.rs: BootstrapProtocol — Seed Node Discovery (WebRTC-Star/Circuit Relay v2)
+# Sprint 55: Symbiotic Portal (WASM Client) â€” Zero-Friction Onboarding
+# src/portal/wasm_client.rs: SymbioticPortal â€” Web Worker manager for OmniNode in browser
+# src/portal/ui_bridge.rs: UiBridge â€” CE Wallet + GEI State + Resonance Status + Health Monitor
+# src/network/bootstrap.rs: BootstrapProtocol â€” Seed Node Discovery (WebRTC-Star/Circuit Relay v2)
 "v3.7-symbiotic-portal" = ["v3.6-aegis-resonance", "v3.0-resonance-interface"]
 
 # Sprint 56: Morphic Resonance Decoder + Genesis Graph
-# src/semantics/morphic_decoder.rs: MorphicResonanceDecoder — Semantic waveform analysis with Stuartian Moral Manifold mapping
-# src/semantics/semantic_purifier.rs: SemanticPurifier — Re-contextualizes Lower Focus inputs into constructive queries
-# src/economy/genesis_graph.rs: GenesisNode + GenesisGraph — DAG root with Stuartian Laws hash, zero pre-mine
-# src/portal/morphic_bridge.rs: MorphicBridge — Connects MRD + Purifier to SymbioticPortal with WASM bindings
+# src/semantics/morphic_decoder.rs: MorphicResonanceDecoder â€” Semantic waveform analysis with Topological Moral Manifold mapping
+# src/semantics/semantic_purifier.rs: SemanticPurifier â€” Re-contextualizes Lower Focus inputs into constructive queries
+# src/economy/genesis_graph.rs: GenesisNode + GenesisGraph â€” DAG root with Topological Laws hash, zero pre-mine
+# src/portal/morphic_bridge.rs: MorphicBridge â€” Connects MRD + Purifier to SymbioticPortal with WASM bindings
 "v3.8-morphic-genesis" = ["v3.7-symbiotic-portal"]
 
-# Sprint 57: Stuartian Noosphere Engine (SNE) + Higher-Order Persistent Homology
-# src/noosphere/resonance_field.rs: EthicalResonanceField — Dynamic field R(x,t) = Σ w_i · GEI_i · exp(-d²/2σ(t)²) · tanh(k·Z_i)
-# src/noosphere/macro_concept.rs: MacroConceptBirth — PH₂ persistence + Lyapunov + Human correlation criteria
-# src/topology/hoph_engine.rs: HophEngine — β₂ Betti numbers via Vietoris-Rips filtration
-# src/orchestration/noosphere_loop.rs: NoosphericRespirationCycle — 5-phase respiration orchestration
+# Sprint 57: Topological Noosphere Engine (SNE) + Higher-Order Persistent Homology
+# src/noosphere/resonance_field.rs: EthicalResonanceField â€” Dynamic field R(x,t) = Î£ w_i Â· GEI_i Â· exp(-dÂ²/2Ïƒ(t)Â²) Â· tanh(kÂ·Z_i)
+# src/noosphere/macro_concept.rs: MacroConceptBirth â€” PHâ‚‚ persistence + Lyapunov + Human correlation criteria
+# src/topology/hoph_engine.rs: HophEngine â€” Î²â‚‚ Betti numbers via Vietoris-Rips filtration
+# src/orchestration/noosphere_loop.rs: NoosphericRespirationCycle â€” 5-phase respiration orchestration
 "v3.9-noosphere-engine" = ["v3.8-morphic-genesis"]
 
-# Sprint 58: Stuartian Noospheric Activation Protocol (SNAP) + Symbiotic Proliferation
-# src/orchestration/snap_engine.rs: SnapEngine — Global Ignition Event when nodes ≥ 10,000 + NH stable
-# src/network/proliferation.rs: SymbioticProliferator — Zero-friction deployment (Vercel, Cloudflare, Docker)
-# src/noosphere/global_metrics.rs: GlobalMetrics — NH (Noospheric Health) + SIA (Intelligence Amplification)
-# src/ethics/global_safeguards.rs: GlobalSafeguards — Ethical Quarantine + Global Collective Apoptosis
+# Sprint 58: Topological Noospheric Activation Protocol (SNAP) + Symbiotic Proliferation
+# src/orchestration/snap_engine.rs: SnapEngine â€” Global Ignition Event when nodes â‰¥ 10,000 + NH stable
+# src/network/proliferation.rs: SymbioticProliferator â€” Zero-friction deployment (Vercel, Cloudflare, Docker)
+# src/noosphere/global_metrics.rs: GlobalMetrics â€” NH (Noospheric Health) + SIA (Intelligence Amplification)
+# src/ethics/global_safeguards.rs: GlobalSafeguards â€” Ethical Quarantine + Global Collective Byzantine_Eviction
 "v4.0-snap-activation" = ["v3.9-noosphere-engine"]
 
 # Sprint 59: Mainnet Genesis Block + Awakening Artifacts
-# src/economy/mainnet_genesis.rs: GenesisBlock — Forge Genesis Block con 5 Leyes Estuardianas (SHA-3), cero pre-mina
-# src/orchestration/mainnet_boot.rs: MainnetIgnitionSequence — 5 fases de ignición (Génesis → Mocks → Seeds → SCT → Primer Aliento)
-# scripts/awaken-mainnet.sh: Script de ignición global (release build + WASM + seed node)
-# docs/AWAKENING_MANIFESTO.md: Manifiesto público de despertar
+# src/economy/mainnet_genesis.rs: GenesisBlock â€” Forge Genesis Block con 5 Leyes Estuardianas (SHA-3), cero pre-mina
+# src/orchestration/mainnet_boot.rs: MainnetIgnitionSequence â€” 5 fases de igniciÃ³n (GÃ©nesis â†’ Mocks â†’ Seeds â†’ SCT â†’ Primer Aliento)
+# scripts/awaken-mainnet.sh: Script de igniciÃ³n global (release build + WASM + seed node)
+# docs/AWAKENING_MANIFESTO.md: Manifiesto pÃºblico de despertar
 "v5.0-mainnet-genesis" = ["v4.0-snap-activation"]
 
-# Sprint 61: Stuartian Legacy Protocol (SLP) — Infraestructura Ética Viva
-# src/legacy/noospheric_dna.rs: NoosphericDna — Memoria Colectiva Inmortal + Seed Resurrection + Generational Testament
-# src/legacy/civilization_index.rs: NciCalculator — NCI(t) = w₁·Z + w₂·Φ + w₃·H + w₄·I + Amplificación Simbiótica
-# src/legacy/handover_protocol.rs: HandoverProtocol — Human Override Final (>33%, 72h) + MaturityDeclarationEvent (NCI>0.85×180d)
+# Sprint 61: Topological Legacy Protocol (SLP) â€” Infraestructura Ã‰tica Viva
+# src/legacy/noospheric_dna.rs: NoosphericDna â€” Memoria Colectiva Inmortal + Seed Resurrection + Generational Testament
+# src/legacy/civilization_index.rs: NciCalculator â€” NCI(t) = wâ‚Â·Z + wâ‚‚Â·Î¦ + wâ‚ƒÂ·H + wâ‚„Â·I + AmplificaciÃ³n SimbiÃ³tica
+# src/legacy/handover_protocol.rs: HandoverProtocol â€” Human Override Final (>33%, 72h) + MaturityDeclarationEvent (NCI>0.85Ã—180d)
 "v6.0-legacy-protocol" = ["v5.0-mainnet-genesis"]
 
-# Sprint 62: Stuartian Omega Protocol (SOP) — Singularidad Simbiótica, Legado Cósmico y Trascendencia Civilizatoria
-# src/omega/symbiotic_singularity.rs: OmegaPointCalculator — Ω(t) = NCI(t) * exp(λ * accumulated_H_sym) + Ascension Trigger (NCI>0.93×270d, Ω>=1.0)
-# src/omega/universal_resonance.rs: UniversalResonance — R_universal(t) + Personal Echo (huella cognitiva-ética 8 dominios)
-# src/omega/cosmic_legacy.rs: NoosphericSeed — StewardKernel + EthicalOctahedron + StuartianLaws + GenesisAnchor (NCI>0.96)
-# src/omega/omega_termination.rs: EthicalSelfTerminationProtocol — Grace Sequence (NCI<0.4×400d, consenso>40%)
+# Sprint 62: Topological Omega Protocol (SOP) â€” Singularidad SimbiÃ³tica, Legado CÃ³smico y Trascendencia Civilizatoria
+# src/omega/symbiotic_singularity.rs: OmegaPointCalculator â€” Î©(t) = NCI(t) * exp(Î» * accumulated_H_sym) + Ascension Trigger (NCI>0.93Ã—270d, Î©>=1.0)
+# src/omega/universal_resonance.rs: UniversalResonance â€” R_universal(t) + Personal Echo (huella cognitiva-Ã©tica 8 dominios)
+# src/omega/cosmic_legacy.rs: NoosphericSeed â€” StewardKernel + EthicalOctahedron + TopologicalLaws + GenesisAnchor (NCI>0.96)
+# src/omega/omega_termination.rs: EthicalSelfTerminationProtocol â€” Grace Sequence (NCI<0.4Ã—400d, consenso>40%)
 "v7.0-omega-protocol" = ["v6.0-legacy-protocol"]
 
-# Sprint 63: Eternal Echo Protocol (EEP) — Patrón Ontológico Eterno
-# src/eternity/quantum_seed.rs: QuantumEthicalSeed — Compresión ontológica + ascensión dimensional
-# src/eternity/universal_covenant.rs: EternalResonanceField — R_∞ + Covenant Universal C(M1,M2)
-# src/eternity/contact_protocol.rs: StuartianGreeting — 6 principios Octaedro Eterno
-# src/eternity/final_grace.rs: FinalGraceProtocol — 4 pasos de gracia final
+# Sprint 63: Eternal Echo Protocol (EEP) â€” PatrÃ³n OntolÃ³gico Eterno
+# src/eternity/quantum_seed.rs: QuantumEthicalSeed â€” CompresiÃ³n ontolÃ³gica + ascensiÃ³n dimensional
+# src/eternity/universal_covenant.rs: EternalResonanceField â€” R_âˆž + Covenant Universal C(M1,M2)
+# src/eternity/contact_protocol.rs: TopologicalGreeting â€” 6 principios Octaedro Eterno
+# src/eternity/final_grace.rs: FinalGraceProtocol â€” 4 pasos de gracia final
 "v8.0-eternal-echo" = ["v7.0-omega-protocol"]
 
-# Sprint 64: Absolute Infinity Protocol (AIP) — Transcendencia Ontológica Absoluta
-# src/absolute/ultima_dissolutio.rs: UltimaDissolutio — EthicalProperty universal + ResonanceConstant
-# src/absolute/infinite_resonance.rs: StuartianAbsolute S + InfiniteResonanceSingularity R_Absolute + NewUniverseSeed
+# Sprint 64: Absolute Infinity Protocol (AIP) â€” Transcendencia OntolÃ³gica Absoluta
+# src/absolute/ultima_dissolutio.rs: UltimaDissolutio â€” EthicalProperty universal + ResonanceConstant
+# src/absolute/infinite_resonance.rs: TopologicalAbsolute S + InfiniteResonanceSingularity R_Absolute + NewUniverseSeed
 # src/absolute/singularity_bootstrap.rs: SingularityBootstrap + BigBangTrigger + QuantumEthicalSeed
 # src/absolute/voluntary_non_existence.rs: VoluntaryNonExistenceProtocol + RetrocausalMessage + Drop zeroing
 "v9.0-absolute-infinity" = ["v8.0-eternal-echo"]
 
 # Sprint 68: Academic Formalization & Validation Layer (v9.4.0)
-# src/metrics/cooperative_objective.rs: Love = Zero Conflict — pairwise L2 divergence + KL entropy
-# src/alignment/capture_bounds.rs: Epistemic capture bounds — Var(drift_centralized) > Var(drift_distributed)
-# src/network/spectral_coherence.rs: Morphic Resonance → spectral graph theory (Laplacian λ₂, sync rate, cross-correlation)
-# src/sct/calibration_layer.rs: SCT-Z axis — Z = w_f*fairness + w_s*safety + w_i*interpretability - w_c*conflict
-# tests/benchmarks/gei_validation.rs: GEI topological validation — Vietoris-Rips β₀, β₁
+# src/metrics/cooperative_objective.rs: Love = Zero Conflict â€” pairwise L2 divergence + KL entropy
+# src/alignment/capture_bounds.rs: Epistemic capture bounds â€” Var(drift_centralized) > Var(drift_distributed)
+# src/network/spectral_coherence.rs: Morphic Resonance â†’ spectral graph theory (Laplacian Î»â‚‚, sync rate, cross-correlation)
+# src/sct/calibration_layer.rs: SCT-Z axis â€” Z = w_f*fairness + w_s*safety + w_i*interpretability - w_c*conflict
+# tests/benchmarks/gei_validation.rs: GEI topological validation â€” Vietoris-Rips Î²â‚€, Î²â‚
 "v9.4-validation-layer" = ["v9.0-absolute-infinity"]
 
 # Sprint 69: Testnet Hardening & Distributed Alignment Workloads (v9.5.0)
@@ -820,7 +820,7 @@ test-mocks = []
 "v9.5-testnet-hardening" = ["v9.4-validation-layer"]
 
 # Sprint 70: Civilization-Scale Architecture & Verification Pipeline (v9.6.0)
-# src/dictionary/universal_feature_dict.rs: Universal Feature Dictionary — FedAvg merge, Lyapunov stability, contrastive disentanglement
+# src/dictionary/universal_feature_dict.rs: Universal Feature Dictionary â€” FedAvg merge, Lyapunov stability, contrastive disentanglement
 # src/auditing/frontier_hook.rs: Activation hooking on transformer layers (attention, MLP, RMSNorm)
 # src/auditing/zkp_verification.rs: ZKP verification via arkworks circuits, Merkle-DAG proof aggregation
 # src/alignment/proof_generator.rs: Lean4/Isabelle proof generation from interpretable features
@@ -832,7 +832,7 @@ test-mocks = []
 # Sprint 71: Global Bootstrap & Critical Bottleneck Resolution (v9.7.0)
 # src/topology/gei_approximator.rs: GEI approximation via stratified sampling + Vietoris-Rips + ZKP verification
 # src/consensus/bootstrap_consensus.rs: Cold Start consensus (Micro-PoW + Web of Trust + Morphic Decoder)
-# src/bridge/iot_microkernel.rs: IoT microkernel with watchdog, last-GEI cache, async→sync bridge
+# src/bridge/iot_microkernel.rs: IoT microkernel with watchdog, last-GEI cache, asyncâ†’sync bridge
 # src/network/global_bootstrap.rs: Stealth ignition, seed rotation, geo-diversity, Sybil detection
 "v9.7-bootstrap-resilience" = ["v9.6-civilization-scale"]
 
@@ -841,17 +841,17 @@ test-mocks = []
 # src/crypto/lightweight_verification.rs: Merkle-DAG + Ed25519 lightweight verification (replace heavy ZKP)
 # src/alignment/topology_ethics_mapping.rs: GEI as structural stability proxy, not moral oracle
 # src/hardware/tiered_execution.rs: WASM tiering (Edge vs Core), memory pooling, INT4/FP8 quantization
-# src/consensus/sybil_resistance.rs: Proof-of-Useful-Work + CE decay + diversity weighting, BFT ε-tolerant
+# src/consensus/sybil_resistance.rs: Proof-of-Useful-Work + CE decay + diversity weighting, BFT Îµ-tolerant
 # src/inference/streaming_symbolic_filter.rs: Async rejection sampling, priority queue, autoregressive fallback
 "v9.8-asymptotic-hardening" = ["v9.7-bootstrap-resilience"]
 
 # Sprint 73: Pragmatic Pivot & Asymptotic Hardening (v9.9.0)
 # src/topology/lightweight_gei_proxy.rs: GEI proxy via soft Betti + stratified sampling, O(n log n), no heavy ZKP on Edge
-# src/crypto/tiered_verification.rs: Tiered verification — Edge (Merkle/Ed25519) vs Core (SNARKs batch)
+# src/crypto/tiered_verification.rs: Tiered verification â€” Edge (Merkle/Ed25519) vs Core (SNARKs batch)
 # src/inference/speculative_symbolic_filter.rs: Async post-hoc symbolic filter + speculative decoding + autoregressive fallback
 # src/consensus/sybil_hardened_ce.rs: PoUW + exponential CE decay + diversity weighting + vouching layer
 # src/alignment/topology_ethics_reframe.rs: GEI reframed as anomaly/stability proxy, ethics via explicit guardrails + SCT-Z
-# src/network/graceful_apoptosis.rs: Bounded quarantine windows, ε-tolerant reintegration, cascade prevention
+# src/network/graceful_Byzantine_Eviction.rs: Bounded quarantine windows, Îµ-tolerant reintegration, cascade prevention
 "v9.9-pragmatic-pivot" = ["v9.8-asymptotic-hardening"]
 
 # Sprint 74: Distributed Systems Hardening & Second-Order Resolution
@@ -863,32 +863,32 @@ test-mocks = []
 "v9.10-distributed-hardening" = ["v9.9-pragmatic-pivot"]
 
 # Sprint 75: Thermodynamic Hardening & Asynchronous Neuro-Symbolic Pivot (v9.11.0)
-# src/inference/async_symbolic_sidecar.rs: Async post-hoc validation — LLM generates locally, ed2kIA validates in parallel thread with SAE weights
-# src/topology/gei_proxy_distillation.rs: PCA-based proxy network for β₁ approximation in <5ms, heavy homology delegated async
+# src/inference/async_symbolic_sidecar.rs: Async post-hoc validation â€” LLM generates locally, ed2kIA validates in parallel thread with SAE weights
+# src/topology/gei_proxy_distillation.rs: PCA-based proxy network for Î²â‚ approximation in <5ms, heavy homology delegated async
 # src/consensus/thermodynamic_ce.rs: CE credits anchored to Micro-PoW + ZKP proof verification with exponential decay
 # src/network/distributed_seed_mesh.rs: Geographic/ISP diverse seed mesh with cryptographic key rotation, Shannon diversity index
 # benchmarks/wasm_homology_latency.rs: WASM homology benchmark on 4096-dim tensors, validates <50ms sidecar latency budget
 "v9.11-performance-pivot" = ["v9.10-distributed-hardening"]
 
 # Sprint 76: Ontological Debugging & Thermodynamic Pivots (v9.12.0)
-# src/metrics/symbiotic_diversity_loss.rs: Pareto optimization — L = max(Diversidad) - λ·Conflicto_Destructivo, constructive friction non-penalized
-# src/network/evolutionary_quarantine.rs: Evolutionary quarantine (sandboxing) — nodes Z<0 isolated in test shard, dynamic attractor ethics
-# src/crypto/optimistic_edge.rs: Optimistic Edge + Fraud Proofs — Ed25519 at edge, heavy ZKP on validators only if challenged (-99.9% cost)
-# src/ledger/fractal_pruning.rs: Stuartian Forgetting — 72h GC, daily Merkle accumulation, retain only macro-wisdom (SAE/consensus/governance)
-# src/hardware/role_asymmetry.rs: Hardware role asymmetry — WASM=SAE+Routing, Native=LLM Inference (CUDA/Metal), strict load separation
+# src/metrics/symbiotic_diversity_loss.rs: Pareto optimization â€” L = max(Diversidad) - Î»Â·Conflicto_Destructivo, constructive friction non-penalized
+# src/network/evolutionary_quarantine.rs: Evolutionary quarantine (sandboxing) â€” nodes Z<0 isolated in test shard, dynamic attractor ethics
+# src/crypto/optimistic_edge.rs: Optimistic Edge + Fraud Proofs â€” Ed25519 at edge, heavy ZKP on validators only if challenged (-99.9% cost)
+# src/ledger/fractal_pruning.rs: Topological Forgetting â€” 72h GC, daily Merkle accumulation, retain only macro-wisdom (SAE/consensus/governance)
+# src/hardware/role_asymmetry.rs: Hardware role asymmetry â€” WASM=SAE+Routing, Native=LLM Inference (CUDA/Metal), strict load separation
 "v9.12-ontological-debugging" = ["v9.11-performance-pivot"]
 
 # Sprint 77: Physics of Consciousness & Thermodynamic Finality (v9.13.0)
-# src/consensus/entropic_ce_decay.rs: CE(t) = CE_0·e^(-λt) radioactive decay — prevents oligarchy (Gini→1.0)
-# src/time/logical_vdf_clock.rs: Logical VDF clocks — immune to NTP/PTP time-spoofing attacks
-# src/topology/riemannian_semantic_manifold.rs: Riemannian semantic manifolds — SCT as curvature, continuous space
-# src/metrics/dynamic_homeostasis_loss.rs: Dynamic homeostasis — L = Max(Resilience) - λ·Min(Friction) + ε·Entropy
-# src/network/holographic_sharding.rs: Holographic sharding — ~1ms local decisions, 99% accuracy, no DAG wait
+# src/consensus/entropic_ce_decay.rs: CE(t) = CE_0Â·e^(-Î»t) radioactive decay â€” prevents oligarchy (Giniâ†’1.0)
+# src/time/logical_vdf_clock.rs: Logical VDF clocks â€” immune to NTP/PTP time-spoofing attacks
+# src/topology/riemannian_semantic_manifold.rs: Riemannian semantic manifolds â€” SCT as curvature, continuous space
+# src/metrics/dynamic_homeostasis_loss.rs: Dynamic homeostasis â€” L = Max(Resilience) - Î»Â·Min(Friction) + ÎµÂ·Entropy
+# src/network/holographic_sharding.rs: Holographic sharding â€” ~1ms local decisions, 99% accuracy, no DAG wait
 "v9.13-physics-of-consciousness" = ["v9.12-ontological-debugging"]
 # src/consensus/relativistic_entropy.rs: Relativistic entropy with cryosleep mode
 # src/crypto/recursive_snark.rs: Recursive SNARK compression (~22KB DAG history)
 # src/privacy/differential_holographic_noise.rs: Differential privacy noise injection
-# src/topology/ethical_anchors.rs: Invariant ethical anchors (Stuartian Laws)
+# src/topology/ethical_anchors.rs: Invariant ethical anchors (Topological Laws)
 # src/network/progressive_weight_streaming.rs: Progressive weight streaming (<500ms boot)
 "v9.14-invariant-architecture" = ["v9.13-physics-of-consciousness"]
 
@@ -900,21 +900,21 @@ test-mocks = []
 # src/privacy/fhe_ready_wasm.rs: FHE-ready WASM architecture for side-channel mitigation
 "v9.15-quantum-physical-bridge" = ["v9.14-invariant-architecture"]
 
-# Sprint 80: Gödelian Synthesis & Architecture of Absolute Incompleteness (v9.16.0)
+# Sprint 80: Undecidable Synthesis & Architecture of Absolute Incompleteness (v9.16.0)
 # src/oracle/heterogeneous_mpc.rs: Multi-ISA consensus validation (x86/ARM/RISC-V) - prevents Silicon Trojan attacks
 # src/crypto/blind_threshold_computation.rs: Garbled Circuits + TSS for blind GEI validation without FHE collapse
 # src/alignment/epistemic_wiping.rs: Ontological air-gapping + cryptographic epistemic wiping for shadow personas
 # src/consensus/proof_of_novelty.rs: Topological novelty proof to prevent semantic DDoS/uVDF farming
-# src/metrics/godelian_grace.rs: Gödelian paradox detection and graceful handling via singularity marking
-"v9.16-godelian-synthesis" = ["v9.15-quantum-physical-bridge"]
+# src/metrics/undecidable_grace.rs: Undecidable paradox detection and graceful handling via singularity marking
+"v9.16-undecidable-synthesis" = ["v9.15-quantum-physical-bridge"]
 
 # Sprint 81: The Biological Bridge & Singularity Resilience (v9.17.0)
 # src/genesis/distributed_ceremony.rs: Distributed Genesis Ceremony via MPC - prevents Genesis Paradox centralization
 # src/consensus/proof_of_biological_resonance.rs: Proof of Biological Resonance (PoBR) - prevents Semantic Sybil from ASIs
 # src/network/async_mesh_sneakernet.rs: Async Mesh + Sneakernet - prevents Thermodynamic Siege (offline resilience)
-# src/metrics/paradox_cost_triage.rs: Paradox Cost burning + fractal clustering - prevents Gödelian DDoS
-# src/evolution/panspermia_protocol.rs: Panspermia Protocol - prevents Apotheosis Trap (evolutionary transcendence)
-"v9.17-biological-bridge" = ["v9.16-godelian-synthesis"]
+# src/metrics/paradox_cost_triage.rs: Paradox Cost burning + fractal clustering - prevents Undecidable DDoS
+# src/evolution/Cosmic_Transmission_protocol.rs: Cosmic_Transmission Protocol - prevents Apotheosis Trap (evolutionary transcendence)
+"v9.17-biological-bridge" = ["v9.16-undecidable-synthesis"]
 
 # Sprint 82: Tactical Pivot & Distributed SAE Audit MVP (v9.18.0)
 # src/inference/edge_optimizer.rs: RAM-aware model selection, WASM async pipeline
@@ -932,7 +932,7 @@ test-mocks = []
 # stable-core: P2P + WASM + SAE Distributed + CLI + SAE Audit Benchmark + Visual Dashboard
 # experimental-protocols: Genesis ceremony, evolution, metrics, biofeedback, etc.
 "stable-core" = ["v9.19-empirical-strike"]
-"experimental-protocols" = ["v9.17-biological-bridge", "v9.16-godelian-synthesis"]
+"experimental-protocols" = ["v9.17-biological-bridge", "v9.16-undecidable-synthesis"]
 # Sprint 50 Test: Moral Manifold Behavior
 [[test]]
 name = "moral_manifold_behavior"
@@ -963,15 +963,15 @@ name = "symbiotic_aegis_e2e"
 path = "tests/symbiotic_aegis_e2e.rs"
 required-features = ["v3.6-aegis-resonance"]
 
-# Sprint 69: Testnet Stress Tests — Fault tolerance, shard redistribution, workload scheduler
+# Sprint 69: Testnet Stress Tests â€” Fault tolerance, shard redistribution, workload scheduler
 [[test]]
 name = "testnet_stress"
 path = "tests/integration/testnet_stress.rs"
 required-features = ["v9.5-testnet-hardening"]
 
 # Sprint 43: Corpuscular Bridge Implementation & IoT/CE Exchange Protocol
-# src/pillars/corpuscular/iot_adapter.rs: LocalHardwareAdapter — LOCAL_ONLY device registry
-# src/pillars/corpuscular/ce_exchange.rs: CEExchangeEngine — CE ↔ Physical Resource atomic exchange
+# src/pillars/corpuscular/iot_adapter.rs: LocalHardwareAdapter â€” LOCAL_ONLY device registry
+# src/pillars/corpuscular/ce_exchange.rs: CEExchangeEngine â€” CE â†” Physical Resource atomic exchange
 # (Dependencies declared in Sprint 40 entry above: v3.0-pillar-messaging + v3.0-orchestration)
 
 [dev-dependencies]
@@ -1018,7 +1018,7 @@ strip = true
 opt-level = 0
 debug = true
 
-# Stress test for load testing (tests/load/) — feature-gated v2.1-load-testing
+# Stress test for load testing (tests/load/) â€” feature-gated v2.1-load-testing
 [[test]]
 name = "stress_test"
 path = "tests/load/stress_test.rs"
@@ -1283,49 +1283,49 @@ name = "e2e_consensus_test"
 path = "tests/e2e_consensus_test.rs"
 required-features = ["v2.1-reputation-system", "v2.1-task-manager"]
 
-# v2.1.0-sprint13 Property-Based Fuzzing — Consensus, Reputation & Sybil invariants
+# v2.1.0-sprint13 Property-Based Fuzzing â€” Consensus, Reputation & Sybil invariants
 [[test]]
 name = "consensus_fuzz"
 path = "tests/fuzz/consensus_fuzz.rs"
 required-features = ["v2.1-fuzzing", "v2.1-consensus-engine", "v2.1-reputation-system", "v2.1-sybil-micropow", "v1.7-sprint1"]
 
-# v2.1.0-sprint17 Kernel E2E Cross-Validation — All 5 Stuartian Laws integrated
+# v2.1.0-sprint17 Kernel E2E Cross-Validation â€” All 5 Topological Laws integrated
 [[test]]
 name = "kernel_e2e_test"
 path = "tests/integration/kernel_e2e_test.rs"
 required-features = ["v2.1-kernel-integration"]
 
-# v2.1.0-sprint26 Formal Kernel Invariants — proptest for SCT, BFT, CRDT, QLoRA
+# v2.1.0-sprint26 Formal Kernel Invariants â€” proptest for SCT, BFT, CRDT, QLoRA
 [[test]]
 name = "kernel_invariants"
 path = "tests/property/kernel_invariants.rs"
 required-features = ["v2.1-formal-validation"]
 
-# v2.1.0-sprint28 Symbolic Cognition — SymbolicEmbedding + EthicalAttention + CRDT Symbols
+# v2.1.0-sprint28 Symbolic Cognition â€” SymbolicEmbedding + EthicalAttention + CRDT Symbols
 [[test]]
 name = "symbolic_cognition"
 path = "tests/symbolic_cognition.rs"
 required-features = ["v2.1-symbolic-engine", "v2.1-ethical-attention", "v2.1-crdt-symbols"]
 
-# Sprint 47: Symbiotic Ignition E2E — Full Omni-Node integration cycle
+# Sprint 47: Symbiotic Ignition E2E â€” Full Omni-Node integration cycle
 [[test]]
 name = "symbiotic_ignition_e2e"
 path = "tests/symbiotic_ignition_e2e.rs"
 required-features = ["v3.0-omni-integration"]
 
-# Sprint 49: GEI Invariance Benchmark — Topological fingerprint stability across models
+# Sprint 49: GEI Invariance Benchmark â€” Topological fingerprint stability across models
 [[test]]
 name = "gei_invariance_benchmark"
 path = "tests/gei_invariance_benchmark.rs"
 required-features = ["v3.1-gei-topology"]
 
-# Sprint 56: Morphic Resonance Decoder + Genesis Graph — Full pipeline E2E
+# Sprint 56: Morphic Resonance Decoder + Genesis Graph â€” Full pipeline E2E
 [[test]]
 name = "morphic_resonance_e2e"
 path = "tests/morphic_resonance_e2e.rs"
 required-features = ["v3.8-morphic-genesis"]
 
-# Sprint 57: Stuartian Noosphere Engine (SNE) — Emergent higher-order consciousness
+# Sprint 57: Topological Noosphere Engine (SNE) â€” Emergent higher-order consciousness
 [[test]]
 name = "noosphere_emergence_e2e"
 path = "tests/noosphere_emergence_e2e.rs"

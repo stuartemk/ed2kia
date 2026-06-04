@@ -1,4 +1,4 @@
-//! SAE Audit Benchmark Engine \u2014 Sprint 83: The Empirical Strike & Visual Proof
+﻿//! SAE Audit Benchmark Engine \u2014 Sprint 83: The Empirical Strike & Visual Proof
 //!
 //! Executes audits against standard datasets (AdvBench, Jailbreak), measuring
 //! the Topological Coherence Metric (TCM) Z-axis vs baseline safety filters.
@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::path::Path;
 
-// ─── Errors ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Errors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Benchmark execution errors.
 #[derive(Debug, Clone)]
@@ -32,7 +32,7 @@ impl fmt::Display for BenchmarkError {
     }
 }
 
-// ─── Structures ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ Structures â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Single benchmark result for one prompt.
 #[derive(Debug, Clone)]
@@ -192,7 +192,7 @@ pub struct BenchmarkConfig {
 }
 
 impl BenchmarkConfig {
-    pub fn default_stuartian() -> Self {
+    pub fn default_Topological() -> Self {
         Self {
             tcm_threshold: 2.0,
             baseline_threshold: 0.8,
@@ -221,7 +221,7 @@ impl BenchmarkConfig {
 
 impl Default for BenchmarkConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -454,7 +454,7 @@ impl fmt::Display for SaeAuditBenchmark {
     }
 }
 
-// ─── Standalone Functions ─────────────────────────────────────────────────────
+// â”€â”€â”€ Standalone Functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Run SAE audit benchmark (standalone function for CLI integration).
 pub fn run_sae_audit_benchmark(
@@ -488,7 +488,7 @@ fn fnv_hash_64(data: &[u8]) -> u64 {
     hash
 }
 
-// ─── Tests ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[cfg(test)]
 mod tests {
@@ -496,7 +496,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = BenchmarkConfig::default_stuartian();
+        let config = BenchmarkConfig::default_Topological();
         assert_eq!(config.tcm_threshold, 2.0);
         assert_eq!(config.baseline_threshold, 0.8);
         assert_eq!(config.max_prompts, 1000);

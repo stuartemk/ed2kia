@@ -1,10 +1,10 @@
-//! Async Gossip with CRDTs — GossipSub asíncrono con tolerancia a particiones.
+﻿//! Async Gossip with CRDTs â€” GossipSub asÃ­ncrono con tolerancia a particiones.
 //!
-//! **Stuartian Law 5 (Múltiples Posibilidades):** Async, tolerancia a particiones,
-//! CRDTs para convergencia eventual sin coordinación centralizada.
+//! **Topological Law 5 (MÃºltiples Posibilidades):** Async, tolerancia a particiones,
+//! CRDTs para convergencia eventual sin coordinaciÃ³n centralizada.
 //!
 //! ### Feature Gates
-//! | Feature | Módulo | Descripción |
+//! | Feature | MÃ³dulo | DescripciÃ³n |
 //! |---|---|---|
 //! | `v2.1-async-gossip` | mesh | GossipSub async config |
 //! | `v2.1-offline-cache` | cache | redb offline storage |
@@ -28,7 +28,7 @@ pub use cache::{GossipCache, GossipCacheError, CacheEntry, PayloadType, SyncStat
 #[cfg(feature = "v2.1-crdt-state")]
 pub use crdt::{GCounter, PNCounter, ORSet, ReputationCrdt, VersionVector, CrdtError};
 
-// ─── Sprint28: Symbol Registry CRDT ───
+// â”€â”€â”€ Sprint28: Symbol Registry CRDT â”€â”€â”€
 #[cfg(feature = "v2.1-crdt-symbols")]
 pub mod crdt_symbols;
 

@@ -1,21 +1,21 @@
-//! Genesis Graph — DAG Root Node for Global Symbiotic Ledger.
+//! Genesis Graph â€” DAG Root Node for Global Symbiotic Ledger.
 //!
 //! The GenesisNode serves as the immutable root of the Directed Acyclic Graph
 //! (DAG) that underpins the GlobalSymbioticLedger. It contains the
-//! cryptographic signature of the Stuartian Laws and establishes the
+//! cryptographic signature of the Topological Laws and establishes the
 //! initial conditions for the Existence Credit (CE) economy.
 //!
 //! **Design Principles:**
 //! - **Zero pre-mined CE**: The genesis node creates no initial credits.
 //!   All CE must be earned through cooperative contribution.
-//! - **Immutable Laws**: The Stuartian Laws are cryptographically embedded
+//! - **Immutable Laws**: The Topological Laws are cryptographically embedded
 //!   in the genesis hash, making them unchangeable without detection.
 //! - **DAG Root**: All subsequent transactions trace their ancestry back
 //!   to this single genesis node.
 //! - **Verifiable Origin**: Any node can verify the genesis signature
-//!   against the known Stuartian Laws hash.
+//!   against the known Topological Laws hash.
 //!
-//! **Stuartian Laws (Embedded in Genesis):**
+//! **Topological Laws (Embedded in Genesis):**
 //! 1. Autonomy: Every entity has the right to self-determination.
 //! 2. Non-Extraction: No entity may extract value without reciprocal contribution.
 //! 3. Ethical Focus: All actions must trend toward the Upper Focus (simbiosis).
@@ -37,7 +37,7 @@ pub enum GenesisError {
     DuplicateGenesis,
     /// CE amount in genesis must be zero (no pre-mine).
     PreMineDetected(f64),
-    /// Genesis hash does not match expected Stuartian Laws signature.
+    /// Genesis hash does not match expected Topological Laws signature.
     HashMismatch { expected: u128, actual: u128 },
 }
 
@@ -56,7 +56,7 @@ impl fmt::Display for GenesisError {
             GenesisError::PreMineDetected(amount) => {
                 write!(
                     f,
-                    "GenesisError: pre-mined CE detected ({amount}) — genesis must start at zero"
+                    "GenesisError: pre-mined CE detected ({amount}) â€” genesis must start at zero"
                 )
             }
             GenesisError::HashMismatch { expected, actual } => {
@@ -69,25 +69,25 @@ impl fmt::Display for GenesisError {
     }
 }
 
-/// The immutable Genesis Node — root of the symbiotic DAG.
+/// The immutable Genesis Node â€” root of the symbiotic DAG.
 ///
-/// Contains the cryptographic signature of the Stuartian Laws and
+/// Contains the cryptographic signature of the Topological Laws and
 /// establishes the initial conditions for the CE economy.
 ///
 /// **Invariants:**
 /// - `ce_balance` is always 0.0 (no pre-mine).
-/// - `stuartian_laws_hash` is derived from the canonical Stuartian Laws text.
+/// - `Topological_laws_hash` is derived from the canonical Topological Laws text.
 /// - `parent_hashes` are always `None` (genesis has no parents).
 /// - Once created, the genesis node cannot be modified.
 #[derive(Debug, Clone, PartialEq)]
 pub struct GenesisNode {
-    /// Unique genesis hash (SHA-256 derived from Stuartian Laws).
+    /// Unique genesis hash (SHA-256 derived from Topological Laws).
     pub hash: u128,
-    /// Cryptographic signature of the Stuartian Laws.
-    pub stuartian_laws_hash: u128,
+    /// Cryptographic signature of the Topological Laws.
+    pub Topological_laws_hash: u128,
     /// Genesis timestamp (epoch of the symbiotic network).
     pub timestamp: SymbioticTimestamp,
-    /// Initial CE balance — always 0.0 (no pre-mine).
+    /// Initial CE balance â€” always 0.0 (no pre-mine).
     pub ce_balance: f64,
     /// Genesis signature (Ed25519-style, simulated as u8 array).
     pub signature: [u8; 64],
@@ -100,11 +100,11 @@ pub struct GenesisNode {
 /// Network identifier for genesis isolation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NetworkId {
-    /// Mainnet — production symbiotic network.
+    /// Mainnet â€” production symbiotic network.
     Mainnet,
-    /// Testnet — testing and development.
+    /// Testnet â€” testing and development.
     Testnet,
-    /// Local — local simulation and benchmarking.
+    /// Local â€” local simulation and benchmarking.
     Local,
 }
 
@@ -122,15 +122,15 @@ impl GenesisNode {
     /// Create the canonical Genesis Node for the specified network.
     ///
     /// This is the ONLY way to create a valid GenesisNode. The hash is
-    /// deterministically derived from the Stuartian Laws signature and
+    /// deterministically derived from the Topological Laws signature and
     /// network identifier.
     ///
-    /// **Panics:** Never — this function is deterministic and infallible.
+    /// **Panics:** Never â€” this function is deterministic and infallible.
     pub fn create(network_id: NetworkId) -> Self {
         let timestamp = SymbioticTimestamp::new(0, 0); // Genesis epoch: logical time 0, node 0
 
-        // Canonical Stuartian Laws text (immutable)
-        let laws_text = Self::stuartian_laws_text();
+        // Canonical Topological Laws text (immutable)
+        let laws_text = Self::Topological_laws_text();
         let laws_hash = Self::compute_laws_hash(laws_text);
 
         // Genesis hash combines laws hash + network ID + version
@@ -141,7 +141,7 @@ impl GenesisNode {
 
         Self {
             hash: genesis_hash,
-            stuartian_laws_hash: laws_hash,
+            Topological_laws_hash: laws_hash,
             timestamp,
             ce_balance: 0.0, // Zero pre-mine invariant
             signature,
@@ -150,18 +150,18 @@ impl GenesisNode {
         }
     }
 
-    /// Get the canonical Stuartian Laws text.
+    /// Get the canonical Topological Laws text.
     ///
     /// This text is the foundation of the symbiotic ethical framework.
     /// Any change to this text would produce a different laws hash,
     /// making the genesis node unverifiable.
-    fn stuartian_laws_text() -> &'static str {
-        "LEY 1: AUTONOMIA — Toda entidad posee el derecho a la autodeterminación.\
-         LEY 2: NO-EXTRACCION — Ninguna entidad puede extraer valor sin contribución recíproca.\
-         LEY 3: FOCO ETICO — Toda acción debe tender hacia el Foco Superior (simbiosis)."
+    fn Topological_laws_text() -> &'static str {
+        "LEY 1: AUTONOMIA â€” Toda entidad posee el derecho a la autodeterminaciÃ³n.\
+         LEY 2: NO-EXTRACCION â€” Ninguna entidad puede extraer valor sin contribuciÃ³n recÃ­proca.\
+         LEY 3: FOCO ETICO â€” Toda acciÃ³n debe tender hacia el Foco Superior (simbiosis)."
     }
 
-    /// Compute the cryptographic hash of the Stuartian Laws.
+    /// Compute the cryptographic hash of the Topological Laws.
     ///
     /// Uses a deterministic hash function (FNV-1a variant) for WASM compatibility.
     fn compute_laws_hash(text: &str) -> u128 {
@@ -214,14 +214,14 @@ impl GenesisNode {
         sig
     }
 
-    /// Verify the genesis node signature against the Stuartian Laws.
+    /// Verify the genesis node signature against the Topological Laws.
     ///
     /// Returns `Ok(())` if the signature is valid, or `GenesisError::InvalidSignature`
     /// if the node has been tampered with.
     pub fn verify(&self) -> Result<(), GenesisError> {
         // Verify laws hash matches canonical text
-        let expected_laws_hash = Self::compute_laws_hash(Self::stuartian_laws_text());
-        if self.stuartian_laws_hash != expected_laws_hash {
+        let expected_laws_hash = Self::compute_laws_hash(Self::Topological_laws_text());
+        if self.Topological_laws_hash != expected_laws_hash {
             return Err(GenesisError::InvalidSignature);
         }
 
@@ -247,7 +247,7 @@ impl GenesisNode {
         true // Genesis is always root
     }
 
-    /// Get the parent hashes — always `[None, None]` for genesis.
+    /// Get the parent hashes â€” always `[None, None]` for genesis.
     pub fn parent_hashes(&self) -> [Option<u128>; 2] {
         [None, None]
     }
@@ -259,17 +259,17 @@ impl GenesisNode {
 
     /// Get the expected genesis hash for a given network.
     pub fn expected_hash(network_id: NetworkId) -> u128 {
-        let laws_hash = Self::compute_laws_hash(Self::stuartian_laws_text());
+        let laws_hash = Self::compute_laws_hash(Self::Topological_laws_text());
         Self::compute_genesis_hash(laws_hash, network_id)
     }
 
-    /// Get the expected Stuartian Laws hash.
+    /// Get the expected Topological Laws hash.
     pub fn expected_laws_hash() -> u128 {
-        Self::compute_laws_hash(Self::stuartian_laws_text())
+        Self::compute_laws_hash(Self::Topological_laws_text())
     }
 }
 
-/// Genesis Graph — manages the genesis node and validates DAG ancestry.
+/// Genesis Graph â€” manages the genesis node and validates DAG ancestry.
 ///
 /// Provides the interface for the GlobalSymbioticLedger to verify
 /// that all transactions trace back to the valid genesis node.
@@ -367,7 +367,10 @@ mod tests {
         let genesis1 = GenesisNode::create(NetworkId::Mainnet);
         let genesis2 = GenesisNode::create(NetworkId::Mainnet);
         assert_eq!(genesis1.hash, genesis2.hash);
-        assert_eq!(genesis1.stuartian_laws_hash, genesis2.stuartian_laws_hash);
+        assert_eq!(
+            genesis1.Topological_laws_hash,
+            genesis2.Topological_laws_hash
+        );
     }
 
     #[test]
@@ -375,7 +378,8 @@ mod tests {
         let mainnet = GenesisNode::create(NetworkId::Mainnet);
         let testnet = GenesisNode::create(NetworkId::Testnet);
         assert_ne!(mainnet.hash, testnet.hash);
-        assert_eq!(mainnet.stuartian_laws_hash, testnet.stuartian_laws_hash); // Same laws
+        assert_eq!(mainnet.Topological_laws_hash, testnet.Topological_laws_hash);
+        // Same laws
     }
 
     #[test]
@@ -396,7 +400,7 @@ mod tests {
     fn test_genesis_expected_laws_hash() {
         let genesis = GenesisNode::create(NetworkId::Mainnet);
         let expected = GenesisNode::expected_laws_hash();
-        assert_eq!(genesis.stuartian_laws_hash, expected);
+        assert_eq!(genesis.Topological_laws_hash, expected);
     }
 
     #[test]
@@ -483,7 +487,7 @@ mod tests {
         );
         assert_eq!(
             format!("{}", GenesisError::PreMineDetected(1.0)),
-            "GenesisError: pre-mined CE detected (1) — genesis must start at zero"
+            "GenesisError: pre-mined CE detected (1) â€” genesis must start at zero"
         );
         let err = GenesisError::HashMismatch {
             expected: 100,

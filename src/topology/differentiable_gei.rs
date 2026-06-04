@@ -1,11 +1,11 @@
-//! Differentiable GEI Proxy — Sprint 72: Asymptotic Optimization & Hard Sybil Resistance
+﻿//! Differentiable GEI Proxy â€” Sprint 72: Asymptotic Optimization & Hard Sybil Resistance
 //!
 //! Soft Betti approximation via differentiable distance smoothing and surrogate gradients.
 //! Replaces NP-hard homology computation with O(n log n) stratified sampling + soft assignments.
 
 use std::fmt;
 
-// ─── Errors ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Errors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Errors in differentiable GEI approximation.
 #[derive(Debug, PartialEq)]
@@ -37,7 +37,7 @@ impl fmt::Display for DiffGeiError {
 
 impl std::error::Error for DiffGeiError {}
 
-// ─── Config ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Configuration for differentiable GEI proxy.
 pub struct DiffGeiConfig {
@@ -52,7 +52,7 @@ pub struct DiffGeiConfig {
 }
 
 impl DiffGeiConfig {
-    pub fn default_stuartian() -> Self {
+    pub fn default_Topological() -> Self {
         Self {
             smoothing: 0.1,
             max_simplices: 2048,
@@ -77,18 +77,18 @@ impl DiffGeiConfig {
 
 impl Default for DiffGeiConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
-// ─── Record ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Record â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Record of a soft Betti computation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SoftBettiRecord {
-    /// Soft β₁ approximation.
+    /// Soft Î²â‚ approximation.
     pub soft_betti_1: f32,
-    /// Soft β₀ (connected components).
+    /// Soft Î²â‚€ (connected components).
     pub soft_betti_0: f32,
     /// Surrogate gradient norm.
     pub gradient_norm: f32,
@@ -102,13 +102,13 @@ impl fmt::Display for SoftBettiRecord {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "SoftBetti(β₁={:.4}, β₀={:.4}, ∇={:.4}, n={})",
+            "SoftBetti(Î²â‚={:.4}, Î²â‚€={:.4}, âˆ‡={:.4}, n={})",
             self.soft_betti_1, self.soft_betti_0, self.gradient_norm, self.sample_count
         )
     }
 }
 
-// ─── Differentiable GEI Proxy ─────────────────────────────────────────────────
+// â”€â”€â”€ Differentiable GEI Proxy â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Differentiable GEI proxy for stable homology approximation.
 pub struct DifferentiableGei {
@@ -119,7 +119,7 @@ pub struct DifferentiableGei {
 impl DifferentiableGei {
     pub fn new() -> Self {
         Self {
-            config: DiffGeiConfig::default_stuartian(),
+            config: DiffGeiConfig::default_Topological(),
             records: Vec::new(),
         }
     }
@@ -226,14 +226,14 @@ impl fmt::Display for DifferentiableGei {
     }
 }
 
-// ─── Public Utilities ─────────────────────────────────────────────────────────
+// â”€â”€â”€ Public Utilities â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-/// Differentiable approximation of β₁ using soft distance smoothing.
+/// Differentiable approximation of Î²â‚ using soft distance smoothing.
 ///
-/// Instead of hard thresholding (distance < epsilon → edge), uses sigmoid-based
+/// Instead of hard thresholding (distance < epsilon â†’ edge), uses sigmoid-based
 /// soft assignment: w = 1 / (1 + exp(-k * (epsilon - d))).
 ///
-/// Complexity: O(n²) for pairwise distances, reduced to O(n log n) with sampling.
+/// Complexity: O(nÂ²) for pairwise distances, reduced to O(n log n) with sampling.
 pub fn soft_betti_1(activations: &[f32], epsilon: f32) -> f32 {
     if activations.is_empty() || epsilon <= 0.0 {
         return 0.0;
@@ -317,13 +317,13 @@ fn soft_betti_computation(
         }
     }
 
-    // Soft cycle counting for β₁
+    // Soft cycle counting for Î²â‚
     let mut soft_cycles = 0.0f32;
     for &(i, j, weight) in &edges {
         let root_i = find(&parent, i);
         let root_j = find(&parent, j);
         if root_i == root_j {
-            // Edge creates a cycle — weighted contribution
+            // Edge creates a cycle â€” weighted contribution
             soft_cycles += weight;
         }
     }
@@ -351,7 +351,7 @@ pub fn euclidean_distance(a: &[f32; 8], b: &[f32; 8]) -> f32 {
         .sqrt()
 }
 
-// ─── Tests ─────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[cfg(test)]
 mod tests {
@@ -363,7 +363,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = DiffGeiConfig::default_stuartian();
+        let config = DiffGeiConfig::default_Topological();
         assert!(config.smoothing > 0.0);
         assert!(config.max_simplices > 0);
         assert!(config.gradients_enabled);
@@ -371,7 +371,7 @@ mod tests {
 
     #[test]
     fn test_config_validate() {
-        let config = DiffGeiConfig::default_stuartian();
+        let config = DiffGeiConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 
@@ -379,7 +379,7 @@ mod tests {
     fn test_config_invalid_smoothing() {
         let config = DiffGeiConfig {
             smoothing: -0.1,
-            ..DiffGeiConfig::default_stuartian()
+            ..DiffGeiConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }
@@ -388,7 +388,7 @@ mod tests {
     fn test_config_zero_simplices() {
         let config = DiffGeiConfig {
             max_simplices: 0,
-            ..DiffGeiConfig::default_stuartian()
+            ..DiffGeiConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }
@@ -401,7 +401,7 @@ mod tests {
 
     #[test]
     fn test_proxy_with_config() {
-        let config = DiffGeiConfig::default_stuartian();
+        let config = DiffGeiConfig::default_Topological();
         let proxy = DifferentiableGei::with_config(config).unwrap();
         assert_eq!(proxy.records.len(), 0);
     }
@@ -434,7 +434,7 @@ mod tests {
     fn test_approximation_with_gradients() {
         let config = DiffGeiConfig {
             gradients_enabled: true,
-            ..DiffGeiConfig::default_stuartian()
+            ..DiffGeiConfig::default_Topological()
         };
         let mut proxy = DifferentiableGei::with_config(config).unwrap();
         let activations = make_activations(10, 8);

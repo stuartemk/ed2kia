@@ -1,4 +1,4 @@
-//! Lightweight Verification — Sprint 72: Asymptotic Optimization & Hard Sybil Resistance
+﻿//! Lightweight Verification â€” Sprint 72: Asymptotic Optimization & Hard Sybil Resistance
 //!
 //! Replaces heavy ZKP with Merkle-DAG + Ed25519 signatures for non-critical aggregation.
 //! ZKP reserved only for critical layer aggregation.
@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-// ─── Error Types ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ Error Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum VerificationError {
@@ -44,7 +44,7 @@ impl fmt::Display for VerificationError {
 
 impl std::error::Error for VerificationError {}
 
-// ─── Configuration ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ Configuration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct LightweightVerifierConfig {
@@ -61,7 +61,7 @@ pub struct LightweightVerifierConfig {
 }
 
 impl LightweightVerifierConfig {
-    pub fn default_stuartian() -> Self {
+    pub fn default_Topological() -> Self {
         Self {
             max_depth: 32,
             validity_window_ms: 3600_000, // 1 hour
@@ -90,11 +90,11 @@ impl LightweightVerifierConfig {
 
 impl Default for LightweightVerifierConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
-// ─── Merkle Proof ──────────────────────────────────────────────────────────────
+// â”€â”€â”€ Merkle Proof â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct MerkleProof {
@@ -151,7 +151,7 @@ impl fmt::Display for MerkleProof {
     }
 }
 
-// ─── Merkle DAG Node ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Merkle DAG Node â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct MerkleDagNode {
@@ -209,7 +209,7 @@ impl fmt::Display for MerkleDagNode {
     }
 }
 
-// ─── Verification Record ──────────────────────────────────────────────────────
+// â”€â”€â”€ Verification Record â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct VerificationRecord {
@@ -229,7 +229,7 @@ impl fmt::Display for VerificationRecord {
     }
 }
 
-// ─── Lightweight Verifier ──────────────────────────────────────────────────────
+// â”€â”€â”€ Lightweight Verifier â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, PartialEq)]
 pub struct LightweightVerifier {
@@ -242,7 +242,7 @@ pub struct LightweightVerifier {
 impl LightweightVerifier {
     pub fn new() -> Self {
         Self {
-            config: LightweightVerifierConfig::default_stuartian(),
+            config: LightweightVerifierConfig::default_Topological(),
             dag_nodes: HashMap::new(),
             verification_history: Vec::new(),
             next_proof_id: 1,
@@ -408,7 +408,7 @@ impl LightweightVerifier {
         self.next_proof_id = 1;
     }
 
-    // ─── Internal Utilities ────────────────────────────────────────────────────
+    // â”€â”€â”€ Internal Utilities â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     fn current_timestamp_ms() -> u64 {
         SystemTime::now()
@@ -482,7 +482,7 @@ impl fmt::Display for LightweightVerifier {
     }
 }
 
-// ─── Public Utility Functions ──────────────────────────────────────────────────
+// â”€â”€â”€ Public Utility Functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Verify a Merkle proof against a root hash (standalone function)
 pub fn verify_merkle_proof(root: &[u8], proof: &MerkleProof, data_hash: &[u8]) -> bool {
@@ -546,7 +546,7 @@ pub fn compute_merkle_root(leaves: &[u128]) -> Option<u128> {
     current.first().copied()
 }
 
-// ─── Tests ─────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[cfg(test)]
 mod tests {
@@ -556,11 +556,11 @@ mod tests {
         (0..n).map(|i| i as u8).collect()
     }
 
-    // ─── Config Tests ──────────────────────────────────────────────────────────
+    // â”€â”€â”€ Config Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_config_default() {
-        let config = LightweightVerifierConfig::default_stuartian();
+        let config = LightweightVerifierConfig::default_Topological();
         assert_eq!(config.max_depth, 32);
         assert_eq!(config.validity_window_ms, 3600_000);
         assert!(config.ed25519_enabled);
@@ -568,7 +568,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = LightweightVerifierConfig::default_stuartian();
+        let config = LightweightVerifierConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 
@@ -576,7 +576,7 @@ mod tests {
     fn test_config_zero_depth() {
         let config = LightweightVerifierConfig {
             max_depth: 0,
-            ..LightweightVerifierConfig::default_stuartian()
+            ..LightweightVerifierConfig::default_Topological()
         };
         assert_eq!(config.validate(), Err(VerificationError::InvalidConfig));
     }
@@ -585,7 +585,7 @@ mod tests {
     fn test_config_depth_too_high() {
         let config = LightweightVerifierConfig {
             max_depth: 65,
-            ..LightweightVerifierConfig::default_stuartian()
+            ..LightweightVerifierConfig::default_Topological()
         };
         assert_eq!(config.validate(), Err(VerificationError::InvalidConfig));
     }
@@ -594,12 +594,12 @@ mod tests {
     fn test_config_zero_validity() {
         let config = LightweightVerifierConfig {
             validity_window_ms: 0,
-            ..LightweightVerifierConfig::default_stuartian()
+            ..LightweightVerifierConfig::default_Topological()
         };
         assert_eq!(config.validate(), Err(VerificationError::InvalidConfig));
     }
 
-    // ─── Verifier Creation Tests ───────────────────────────────────────────────
+    // â”€â”€â”€ Verifier Creation Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_verifier_creation() {
@@ -610,7 +610,7 @@ mod tests {
 
     #[test]
     fn test_verifier_with_config() {
-        let config = LightweightVerifierConfig::default_stuartian();
+        let config = LightweightVerifierConfig::default_Topological();
         let verifier = LightweightVerifier::with_config(config).unwrap();
         assert_eq!(verifier.dag_node_count(), 0);
     }
@@ -619,7 +619,7 @@ mod tests {
     fn test_verifier_with_bad_config() {
         let config = LightweightVerifierConfig {
             max_depth: 0,
-            ..LightweightVerifierConfig::default_stuartian()
+            ..LightweightVerifierConfig::default_Topological()
         };
         assert_eq!(
             LightweightVerifier::with_config(config),
@@ -627,7 +627,7 @@ mod tests {
         );
     }
 
-    // ─── Proof Building Tests ──────────────────────────────────────────────────
+    // â”€â”€â”€ Proof Building Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_build_proof() {
@@ -665,7 +665,7 @@ mod tests {
         assert!(proof.depth() <= 32);
     }
 
-    // ─── Proof Verification Tests ──────────────────────────────────────────────
+    // â”€â”€â”€ Proof Verification Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_verify_proof_success() {
@@ -723,7 +723,7 @@ mod tests {
         }
     }
 
-    // ─── Ed25519 Signature Tests ───────────────────────────────────────────────
+    // â”€â”€â”€ Ed25519 Signature Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_ed25519_verify_valid() {
@@ -744,7 +744,7 @@ mod tests {
         assert!(!LightweightVerifier::verify_ed25519(99, 0xABCD, &sig));
     }
 
-    // ─── DAG Tests ─────────────────────────────────────────────────────────────
+    // â”€â”€â”€ DAG Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_add_dag_node() {
@@ -784,7 +784,7 @@ mod tests {
         assert!(!child.is_root());
     }
 
-    // ─── Merkle Root Tests ─────────────────────────────────────────────────────
+    // â”€â”€â”€ Merkle Root Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_compute_merkle_root_single() {
@@ -812,7 +812,7 @@ mod tests {
         assert!(root.is_some());
     }
 
-    // ─── Standalone verify_merkle_proof Tests ──────────────────────────────────
+    // â”€â”€â”€ Standalone verify_merkle_proof Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_standalone_verify_success() {
@@ -841,7 +841,7 @@ mod tests {
         assert!(!verify_merkle_proof(&[1], &proof, &[]));
     }
 
-    // ─── Pruning Tests ─────────────────────────────────────────────────────────
+    // â”€â”€â”€ Pruning Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_prune_expired_nodes() {
@@ -862,7 +862,7 @@ mod tests {
         assert!(pruned >= 1); // At least the old node should be pruned
     }
 
-    // ─── Reset Tests ───────────────────────────────────────────────────────────
+    // â”€â”€â”€ Reset Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_reset() {
@@ -876,7 +876,7 @@ mod tests {
         assert_eq!(verifier.next_proof_id, 1);
     }
 
-    // ─── Display Tests ─────────────────────────────────────────────────────────
+    // â”€â”€â”€ Display Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_verifier_display() {
@@ -913,7 +913,7 @@ mod tests {
         assert!(s.contains("VerificationRecord"));
     }
 
-    // ─── Error Display Tests ───────────────────────────────────────────────────
+    // â”€â”€â”€ Error Display Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_error_display_invalid_proof() {
@@ -949,7 +949,7 @@ mod tests {
         assert!(s.contains("10"));
     }
 
-    // ─── Workflow Tests ────────────────────────────────────────────────────────
+    // â”€â”€â”€ Workflow Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_full_verification_workflow() {

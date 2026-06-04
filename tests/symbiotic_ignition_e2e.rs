@@ -1,4 +1,4 @@
-//! Symbiotic Ignition E2E Tests — Sprint 47
+﻿//! Symbiotic Ignition E2E Tests â€” Sprint 47
 //!
 //! Full end-to-end test cycle demonstrating the complete Omni-Node integration:
 //! 1. Migration Handshake (Steganographic Pillar)
@@ -9,12 +9,12 @@
 //!
 //! **Symbiotic Ignition Sequence:**
 //! ```text
-//! Migration → Hypothesis → Consensus → Exchange → Homeostasis
+//! Migration â†’ Hypothesis â†’ Consensus â†’ Exchange â†’ Homeostasis
 //! ```
 
 #[cfg(all(feature = "v3.0-omni-integration",))]
 mod omni_node_tests {
-    use ed2kia::alignment::sct_core::StuartianTensor;
+    use ed2kia::alignment::sct_core::TopologicalTensor;
     use ed2kia::orchestration::{
         ExistentialCreditLedger, OmniNode, PillarId, PillarMessage, PillarRegistry, PillarStatus,
         RoutingError, SymbiosisValidator,
@@ -31,8 +31,8 @@ mod omni_node_tests {
         )
     }
 
-    fn make_valid_tensor(z: f32) -> StuartianTensor {
-        StuartianTensor { x: 0.7, y: 0.3, z }
+    fn make_valid_tensor(z: f32) -> TopologicalTensor {
+        TopologicalTensor { x: 0.7, y: 0.3, z }
     }
 
     #[test]
@@ -61,7 +61,7 @@ mod omni_node_tests {
         let mut node = OmniNode::new();
         node.initialize_pillars(200.0);
 
-        // Phase 1: Migration → Hypothesis (Steganographic → Maieutic)
+        // Phase 1: Migration â†’ Hypothesis (Steganographic â†’ Maieutic)
         let msg1 = make_message(PillarId::MaieuticSynthesizer, 10.0);
         let tensor1 = make_valid_tensor(0.8);
         let result1 = node.route_message(
@@ -73,7 +73,7 @@ mod omni_node_tests {
         assert!(result1.is_ok());
         assert_eq!(result1.unwrap().status, PillarStatus::Success);
 
-        // Phase 2: Hypothesis → Consensus (Maieutic → Corpuscular)
+        // Phase 2: Hypothesis â†’ Consensus (Maieutic â†’ Corpuscular)
         let msg2 = make_message(PillarId::CorpuscularBridge, 15.0);
         let tensor2 = make_valid_tensor(0.6);
         let result2 = node.route_message(
@@ -84,7 +84,7 @@ mod omni_node_tests {
         );
         assert!(result2.is_ok());
 
-        // Phase 3: Consensus → Homeostasis (Corpuscular → Resonance)
+        // Phase 3: Consensus â†’ Homeostasis (Corpuscular â†’ Resonance)
         let msg3 = make_message(PillarId::ResonanceInterface, 20.0);
         let tensor3 = make_valid_tensor(0.9);
         let result3 = node.route_message(
@@ -203,7 +203,7 @@ mod omni_node_tests {
 
 #[cfg(all(feature = "v3.0-omni-integration",))]
 mod migration_tests {
-    use ed2kia::alignment::sct_core::StuartianTensor;
+    use ed2kia::alignment::sct_core::TopologicalTensor;
     use ed2kia::pillars::steganographic::transport_rotator::TransportType;
     use ed2kia::pillars::steganographic::{
         MigrationError, MigrationHandshake, MigrationNegotiator, MigrationStatus, MigrationToken,
@@ -220,8 +220,8 @@ mod migration_tests {
         .unwrap()
     }
 
-    fn make_valid_tensor(z: f32) -> StuartianTensor {
-        StuartianTensor { x: 0.7, y: 0.3, z }
+    fn make_valid_tensor(z: f32) -> TopologicalTensor {
+        TopologicalTensor { x: 0.7, y: 0.3, z }
     }
 
     #[test]
@@ -315,7 +315,7 @@ mod migration_tests {
         let mut negotiator = MigrationNegotiator::new();
         let tensor = make_valid_tensor(0.7);
 
-        // Simulate a "Gran Migración" with multiple clusters
+        // Simulate a "Gran MigraciÃ³n" with multiple clusters
         let clusters = vec![
             ("cluster-alpha", 3000, 35.0),
             ("cluster-beta", 4000, 40.0),
@@ -335,7 +335,7 @@ mod migration_tests {
 
 #[cfg(all(feature = "v3.0-omni-integration",))]
 mod integration_tests {
-    use ed2kia::alignment::sct_core::StuartianTensor;
+    use ed2kia::alignment::sct_core::TopologicalTensor;
     use ed2kia::orchestration::{OmniNode, PillarId, PillarMessage, PillarStatus};
     use ed2kia::pillars::steganographic::transport_rotator::TransportType;
     use ed2kia::pillars::steganographic::{MigrationHandshake, MigrationNegotiator};
@@ -351,8 +351,8 @@ mod integration_tests {
         )
     }
 
-    fn make_valid_tensor(z: f32) -> StuartianTensor {
-        StuartianTensor { x: 0.7, y: 0.3, z }
+    fn make_valid_tensor(z: f32) -> TopologicalTensor {
+        TopologicalTensor { x: 0.7, y: 0.3, z }
     }
 
     #[test]
@@ -367,7 +367,7 @@ mod integration_tests {
             40.0,
         )
         .unwrap();
-        let migration_tensor = StuartianTensor {
+        let migration_tensor = TopologicalTensor {
             x: 0.8,
             y: 0.2,
             z: 0.9,

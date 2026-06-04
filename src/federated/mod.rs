@@ -1,9 +1,9 @@
-//! Federated Learning — Aprendizaje federado seguro con privacidad diferencial.
+﻿//! Federated Learning â€” Aprendizaje federado seguro con privacidad diferencial.
 //!
 //! Sprint16.2: Entrenamiento Distribuido 100% & Robustez BFT
-//! - `committees`: Agregación jerárquica dinámica (Law 3)
-//! - `staleness`: Ponderación por obsolescencia asíncrona (Law 2)
-//! - `bft_aggregator`: Agregación tolerante a fallas bizantinas (Law 2)
+//! - `committees`: AgregaciÃ³n jerÃ¡rquica dinÃ¡mica (Law 3)
+//! - `staleness`: PonderaciÃ³n por obsolescencia asÃ­ncrona (Law 2)
+//! - `bft_aggregator`: AgregaciÃ³n tolerante a fallas bizantinas (Law 2)
 
 #[cfg(feature = "v2.1-federated-agg")]
 pub mod aggregator;
@@ -17,5 +17,5 @@ pub mod staleness;
 #[cfg(feature = "v2.1-bft-aggregation")]
 pub mod bft_aggregator;
 
-#[cfg(feature = "v2.1-network-apoptosis")]
-pub mod network_apoptosis;
+#[cfg(feature = "v2.1-network-byzantine_eviction")]
+pub mod network_byzantine_eviction;

@@ -1,13 +1,13 @@
-//! Morphic Resonance E2E Tests — Sprint 56
+﻿//! Morphic Resonance E2E Tests â€” Sprint 56
 //!
 //! End-to-end tests for the Morphic Resonance Decoder, Semantic Purifier
 //! and Genesis Graph pipeline.
 //!
 //! **Test Scenarios:**
-//! 1. Propaganda input → negative Z-score → purified output Z >= 0.
-//! 2. GenesisNode creation → zero pre-mine → valid signature.
+//! 1. Propaganda input â†’ negative Z-score â†’ purified output Z >= 0.
+//! 2. GenesisNode creation â†’ zero pre-mine â†’ valid signature.
 //! 3. First transaction accepted by Genesis Graph.
-//! 4. Full pipeline: Input → Decode → Purify → Genesis Validation.
+//! 4. Full pipeline: Input â†’ Decode â†’ Purify â†’ Genesis Validation.
 //!
 //! **Feature Gate:** `v3.8-morphic-genesis`
 
@@ -18,7 +18,7 @@ mod morphic_pipeline_tests {
 
     #[test]
     fn test_propaganda_to_purified() {
-        // Scenario: Propaganda input → negative Z-score → purified output Z >= 0
+        // Scenario: Propaganda input â†’ negative Z-score â†’ purified output Z >= 0
         let decoder = MorphicResonanceDecoder::new();
         let purifier = SemanticPurifier::new();
 
@@ -72,14 +72,14 @@ mod morphic_pipeline_tests {
         let decoder = MorphicResonanceDecoder::new();
         let purifier = SemanticPurifier::new();
 
-        let divisive = "división y conflicto entre oponente";
+        let divisive = "divisiÃ³n y conflicto entre oponente";
         let original = decoder.decode(divisive).unwrap();
         assert_eq!(original.intent, IntentClassification::LowerFocus);
 
         let result = purifier.purify(divisive).unwrap();
         assert!(result.was_purified);
         assert_eq!(result.detected_pattern, Some(NegativePattern::Division));
-        assert!(result.purified.contains("diálogo") || result.purified.contains("resolución"));
+        assert!(result.purified.contains("diÃ¡logo") || result.purified.contains("resoluciÃ³n"));
     }
 
     #[test]
@@ -87,7 +87,7 @@ mod morphic_pipeline_tests {
         let decoder = MorphicResonanceDecoder::new();
         let purifier = SemanticPurifier::new();
 
-        let constructive = "cooperación y armonía para la evolución";
+        let constructive = "cooperaciÃ³n y armonÃ­a para la evoluciÃ³n";
         let waveform = decoder.decode(constructive).unwrap();
         assert_eq!(waveform.intent, IntentClassification::UpperFocus);
 
@@ -123,12 +123,12 @@ mod morphic_pipeline_tests {
         let decoder = MorphicResonanceDecoder::new();
 
         // Mixed input with both positive and negative patterns
-        // "el miedo puede llevar a la cooperación" — fear can lead to cooperation
+        // "el miedo puede llevar a la cooperaciÃ³n" â€” fear can lead to cooperation
         // is a constructive message (Upper Focus) since it advocates cooperation
-        let mixed = "el miedo puede llevar a la cooperación";
+        let mixed = "el miedo puede llevar a la cooperaciÃ³n";
         let waveform = decoder.decode(mixed).unwrap();
 
-        // With lowered thresholds (±0.10), constructive "cooperación" dominates
+        // With lowered thresholds (Â±0.10), constructive "cooperaciÃ³n" dominates
         // over "miedo", so this can be UpperFocus, Neutral, or LowerFocus
         // depending on exact weighting. All are valid for mixed input.
         assert!(
@@ -179,7 +179,7 @@ mod genesis_graph_tests {
         let mainnet = GenesisNode::create(NetworkId::Mainnet);
         let testnet = GenesisNode::create(NetworkId::Testnet);
         assert_ne!(mainnet.hash, testnet.hash);
-        assert_eq!(mainnet.stuartian_laws_hash, testnet.stuartian_laws_hash);
+        assert_eq!(mainnet.Topological_laws_hash, testnet.Topological_laws_hash);
     }
 
     #[test]
@@ -218,7 +218,7 @@ mod bridge_tests {
     #[test]
     fn test_bridge_constructive_passes() {
         let bridge = MorphicBridge::new();
-        let result = bridge.process("cooperación y armonía").unwrap();
+        let result = bridge.process("cooperaciÃ³n y armonÃ­a").unwrap();
         assert_eq!(result.status, BridgeStatus::Passed);
         assert!(!result.was_purified);
     }
@@ -236,14 +236,14 @@ mod bridge_tests {
     #[test]
     fn test_bridge_quick_check() {
         let bridge = MorphicBridge::new();
-        assert!(bridge.is_constructive("cooperación y evolución"));
+        assert!(bridge.is_constructive("cooperaciÃ³n y evoluciÃ³n"));
         assert!(!bridge.is_constructive("miedo y amenaza y peligro"));
     }
 
     #[test]
     fn test_bridge_z_score() {
         let bridge = MorphicBridge::new();
-        let score = bridge.get_z_score("cooperación y armonía");
+        let score = bridge.get_z_score("cooperaciÃ³n y armonÃ­a");
         assert!(score.is_some());
         assert!(score.unwrap() > 0.0);
     }
@@ -270,7 +270,7 @@ mod full_pipeline_tests {
 
     #[test]
     fn test_full_pipeline_propaganda_to_genesis() {
-        // Full pipeline: Input → Decode → Purify → Genesis Validation
+        // Full pipeline: Input â†’ Decode â†’ Purify â†’ Genesis Validation
         let decoder = MorphicResonanceDecoder::new();
         let purifier = SemanticPurifier::new();
         let graph = GenesisGraph::new(NetworkId::Mainnet);
@@ -299,7 +299,7 @@ mod full_pipeline_tests {
         let graph = GenesisGraph::new(NetworkId::Mainnet);
 
         // Constructive input passes directly
-        let input = "cooperación y armonía para la evolución";
+        let input = "cooperaciÃ³n y armonÃ­a para la evoluciÃ³n";
         let waveform = decoder.decode(input).unwrap();
         assert!(waveform.z_score >= 0.0);
 
@@ -311,7 +311,7 @@ mod full_pipeline_tests {
 
     #[test]
     fn test_pipeline_integrity_chain() {
-        // Verify the full chain: Laws → Genesis → Transaction
+        // Verify the full chain: Laws â†’ Genesis â†’ Transaction
         let graph = GenesisGraph::new(NetworkId::Mainnet);
 
         // Genesis is valid

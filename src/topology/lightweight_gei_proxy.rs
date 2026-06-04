@@ -1,10 +1,10 @@
-//! Lightweight GEI Proxy — Sprint 73: Pragmatic Pivot & Asymptotic Hardening
+﻿//! Lightweight GEI Proxy â€” Sprint 73: Pragmatic Pivot & Asymptotic Hardening
 //!
-//! Approximación diferenciable de β₁ con muestreo estratificado.
+//! ApproximaciÃ³n diferenciable de Î²â‚ con muestreo estratificado.
 //! O(n log n) esperado. Sin ZKP pesado en WASM/Edge.
 //!
-//! **Pivot Arquitectónico:** GEI como proxy de estabilidad estructural,
-//! no oráculo ético directo. Delegación ZKP a Prover Nodes.
+//! **Pivot ArquitectÃ³nico:** GEI como proxy de estabilidad estructural,
+//! no orÃ¡culo Ã©tico directo. DelegaciÃ³n ZKP a Prover Nodes.
 
 use std::cmp::Ordering;
 use std::fmt;
@@ -58,8 +58,8 @@ pub struct ProxyConfig {
 }
 
 impl ProxyConfig {
-    /// Default Stuartian configuration
-    pub fn default_stuartian() -> Self {
+    /// Default Topological configuration
+    pub fn default_Topological() -> Self {
         Self {
             max_simplices: 4096,
             sample_rate: 0.5,
@@ -85,14 +85,14 @@ impl ProxyConfig {
 
 impl Default for ProxyConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
 /// Record of a soft Betti computation
 #[derive(Debug, Clone)]
 pub struct SoftBettiRecord {
-    /// Computed soft β₁ value
+    /// Computed soft Î²â‚ value
     pub soft_betti_1: f32,
     /// Number of simplices processed
     pub simplices_count: usize,
@@ -106,23 +106,23 @@ impl fmt::Display for SoftBettiRecord {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "SoftBettiRecord {{ β₁: {:.4}, simplices: {}, rate: {:.2}, ts: {} }}",
+            "SoftBettiRecord {{ Î²â‚: {:.4}, simplices: {}, rate: {:.2}, ts: {} }}",
             self.soft_betti_1, self.simplices_count, self.sample_rate, self.timestamp_ms
         )
     }
 }
 
-/// Lightweight GEI Proxy — Soft Betti with stratified sampling
+/// Lightweight GEI Proxy â€” Soft Betti with stratified sampling
 pub struct LightweightGeiProxy {
     config: ProxyConfig,
     records: Vec<SoftBettiRecord>,
 }
 
 impl LightweightGeiProxy {
-    /// Create a new proxy with default Stuartian config
+    /// Create a new proxy with default Topological config
     pub fn new() -> Self {
         Self {
-            config: ProxyConfig::default_stuartian(),
+            config: ProxyConfig::default_Topological(),
             records: Vec::new(),
         }
     }
@@ -136,7 +136,7 @@ impl LightweightGeiProxy {
         })
     }
 
-    /// Approximate soft β₁ with stratified sampling
+    /// Approximate soft Î²â‚ with stratified sampling
     ///
     /// Complexity: O(n log n) expected with sampling
     pub fn approximate(
@@ -237,7 +237,7 @@ impl LightweightGeiProxy {
         self.records.last()
     }
 
-    /// Compute average soft β₁ across all records
+    /// Compute average soft Î²â‚ across all records
     pub fn average_soft_betti_1(&self) -> Option<f32> {
         if self.records.is_empty() {
             return None;
@@ -392,7 +392,7 @@ mod tests {
 
     #[test]
     fn test_config_validate() {
-        let config = ProxyConfig::default_stuartian();
+        let config = ProxyConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 
@@ -422,7 +422,7 @@ mod tests {
 
     #[test]
     fn test_proxy_with_config() {
-        let config = ProxyConfig::default_stuartian();
+        let config = ProxyConfig::default_Topological();
         let proxy = LightweightGeiProxy::with_config(config);
         assert!(proxy.is_ok());
     }

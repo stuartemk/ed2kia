@@ -1,16 +1,16 @@
-//! Recursive SNARKs — Sprint 78: Invariant Architecture & Planetary-Scale Resilience
+﻿//! Recursive SNARKs â€” Sprint 78: Invariant Architecture & Planetary-Scale Resilience
 //!
-//! Resuelve el bug terminal: Límite de Bekenstein del DAG (colapso de almacenamiento).
+//! Resuelve el bug terminal: LÃ­mite de Bekenstein del DAG (colapso de almacenamiento).
 //!
 //! Implementa SNARKs recursivos: cada estado prueba validez del anterior,
-//! comprimiendo la historia completa del DAG a ~22KB. Verificación O(1)
+//! comprimiendo la historia completa del DAG a ~22KB. VerificaciÃ³n O(1)
 //! en Edge/WASM sin necesidad de descargar el historial completo.
 //!
-//! # Garantías
+//! # GarantÃ­as
 //!
-//! - Compresión: O(n) para generar, O(1) para verificar
-//! - Tamaño: ~22KB por prueba recursiva (independiente de historia)
-//! - Verificación: ligera suficiente para WASM/Edge
+//! - CompresiÃ³n: O(n) para generar, O(1) para verificar
+//! - TamaÃ±o: ~22KB por prueba recursiva (independiente de historia)
+//! - VerificaciÃ³n: ligera suficiente para WASM/Edge
 //! - Cadena: cada prueba incluye hash del anterior (inmutable)
 
 use std::collections::VecDeque;
@@ -66,8 +66,8 @@ pub struct SnarkConfig {
 }
 
 impl SnarkConfig {
-    /// Default Stuartian configuration.
-    pub fn default_stuartian() -> Self {
+    /// Default Topological configuration.
+    pub fn default_Topological() -> Self {
         Self {
             polynomial_degree: 64,
             max_recursion_depth: 1024,
@@ -96,7 +96,7 @@ impl SnarkConfig {
 
 impl Default for SnarkConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -206,10 +206,10 @@ pub struct RecursiveSnark {
 }
 
 impl RecursiveSnark {
-    /// Create with default Stuartian config.
+    /// Create with default Topological config.
     pub fn new() -> Self {
         Self {
-            config: SnarkConfig::default_stuartian(),
+            config: SnarkConfig::default_Topological(),
             state_history: VecDeque::new(),
             proof_chain: Vec::new(),
             compression_records: Vec::new(),
@@ -421,27 +421,27 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = SnarkConfig::default_stuartian();
+        let config = SnarkConfig::default_Topological();
         assert_eq!(config.polynomial_degree, 64);
         assert_eq!(config.max_recursion_depth, 1024);
     }
 
     #[test]
     fn test_config_validate_ok() {
-        let config = SnarkConfig::default_stuartian();
+        let config = SnarkConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 
     #[test]
     fn test_config_invalid_degree() {
-        let mut config = SnarkConfig::default_stuartian();
+        let mut config = SnarkConfig::default_Topological();
         config.polynomial_degree = 0;
         assert!(config.validate().is_err());
     }
 
     #[test]
     fn test_config_zero_proof_size() {
-        let mut config = SnarkConfig::default_stuartian();
+        let mut config = SnarkConfig::default_Topological();
         config.target_proof_size = 0;
         assert!(config.validate().is_err());
     }
@@ -481,7 +481,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = SnarkConfig::default_stuartian();
+        let config = SnarkConfig::default_Topological();
         let engine = RecursiveSnark::with_config(config).unwrap();
         assert_eq!(engine.chain_depth(), 0);
     }

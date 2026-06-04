@@ -1,4 +1,4 @@
-//! Streaming Symbolic Filter — Sprint 72: Asymptotic Optimization & Hard Sybil Resistance
+﻿//! Streaming Symbolic Filter â€” Sprint 72: Asymptotic Optimization & Hard Sybil Resistance
 //!
 //! Async rejection sampling, priority queue, autoregressive fallback.
 //! Post-hoc filtering with GEI alignment bounds.
@@ -7,7 +7,7 @@ use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 use std::fmt;
 
-// ─── Error Types ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ Error Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum FilterError {
@@ -42,7 +42,7 @@ impl fmt::Display for FilterError {
 
 impl std::error::Error for FilterError {}
 
-// ─── Configuration ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ Configuration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct FilterConfig {
@@ -63,7 +63,7 @@ pub struct FilterConfig {
 }
 
 impl FilterConfig {
-    pub fn default_stuartian() -> Self {
+    pub fn default_Topological() -> Self {
         Self {
             alignment_threshold: 0.3,
             max_queue_size: 256,
@@ -103,11 +103,11 @@ impl FilterConfig {
 
 impl Default for FilterConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
-// ─── Candidate Token ──────────────────────────────────────────────────────────
+// â”€â”€â”€ Candidate Token â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct CandidateToken {
@@ -183,7 +183,7 @@ impl PartialOrd for CandidateToken {
     }
 }
 
-// ─── Filter Result ────────────────────────────────────────────────────────────
+// â”€â”€â”€ Filter Result â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct FilterResult {
@@ -207,7 +207,7 @@ impl fmt::Display for FilterResult {
     }
 }
 
-// ─── Streaming Symbolic Filter ────────────────────────────────────────────────
+// â”€â”€â”€ Streaming Symbolic Filter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug)]
 pub struct StreamingSymbolicFilter {
@@ -223,7 +223,7 @@ pub struct StreamingSymbolicFilter {
 impl StreamingSymbolicFilter {
     pub fn new() -> Self {
         Self {
-            config: FilterConfig::default_stuartian(),
+            config: FilterConfig::default_Topological(),
             queue: BinaryHeap::new(),
             gei_cache: [0.0; 8],
             gei_timestamp_ms: 0,
@@ -340,7 +340,7 @@ impl StreamingSymbolicFilter {
             }
             best.clone()
         } else {
-            // All rejected — restore and fallback
+            // All rejected â€” restore and fallback
             for c in &candidates {
                 self.enqueue(c.clone()).ok();
             }
@@ -472,7 +472,7 @@ impl fmt::Display for StreamingSymbolicFilter {
     }
 }
 
-// ─── Public Utility Functions ──────────────────────────────────────────────────
+// â”€â”€â”€ Public Utility Functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Compute combined score from symbolic and statistical components
 pub fn compute_combined_score(
@@ -501,7 +501,7 @@ pub fn acceptance_probability(gei_alignment: f64, threshold: f64, temperature: f
     (1.0 / (1.0 + (-x).exp())).min(1.0).max(0.0)
 }
 
-// ─── Tests ─────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[cfg(test)]
 mod tests {
@@ -517,18 +517,18 @@ mod tests {
         CandidateToken::new(id, logit, alignment, symbolic, statistical, 1000)
     }
 
-    // ─── Config Tests ──────────────────────────────────────────────────────────
+    // â”€â”€â”€ Config Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_config_default() {
-        let config = FilterConfig::default_stuartian();
+        let config = FilterConfig::default_Topological();
         assert_eq!(config.alignment_threshold, 0.3);
         assert!(config.autoregressive_fallback);
     }
 
     #[test]
     fn test_config_validate_ok() {
-        let config = FilterConfig::default_stuartian();
+        let config = FilterConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 
@@ -536,7 +536,7 @@ mod tests {
     fn test_config_invalid_threshold() {
         let config = FilterConfig {
             alignment_threshold: 1.5,
-            ..FilterConfig::default_stuartian()
+            ..FilterConfig::default_Topological()
         };
         assert_eq!(config.validate(), Err(FilterError::InvalidThreshold(1.5)));
     }
@@ -545,7 +545,7 @@ mod tests {
     fn test_config_zero_queue() {
         let config = FilterConfig {
             max_queue_size: 0,
-            ..FilterConfig::default_stuartian()
+            ..FilterConfig::default_Topological()
         };
         assert_eq!(config.validate(), Err(FilterError::InvalidConfig));
     }
@@ -555,12 +555,12 @@ mod tests {
         let config = FilterConfig {
             symbolic_weight: 0.8,
             statistical_weight: 0.8,
-            ..FilterConfig::default_stuartian()
+            ..FilterConfig::default_Topological()
         };
         assert_eq!(config.validate(), Err(FilterError::InvalidConfig));
     }
 
-    // ─── Candidate Token Tests ─────────────────────────────────────────────────
+    // â”€â”€â”€ Candidate Token Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_candidate_creation() {
@@ -598,7 +598,7 @@ mod tests {
         assert!(c1 > c2);
     }
 
-    // ─── Filter Creation Tests ─────────────────────────────────────────────────
+    // â”€â”€â”€ Filter Creation Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_filter_new() {
@@ -608,7 +608,7 @@ mod tests {
 
     #[test]
     fn test_filter_with_config() {
-        let config = FilterConfig::default_stuartian();
+        let config = FilterConfig::default_Topological();
         let filter = StreamingSymbolicFilter::with_config(config).unwrap();
         assert_eq!(filter.queue_size(), 0);
     }
@@ -617,13 +617,13 @@ mod tests {
     fn test_filter_with_bad_config() {
         let config = FilterConfig {
             max_queue_size: 0,
-            ..FilterConfig::default_stuartian()
+            ..FilterConfig::default_Topological()
         };
         let result = StreamingSymbolicFilter::with_config(config);
         assert!(matches!(result, Err(FilterError::InvalidConfig)));
     }
 
-    // ─── GEI Cache Tests ───────────────────────────────────────────────────────
+    // â”€â”€â”€ GEI Cache Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_update_gei_cache() {
@@ -649,7 +649,7 @@ mod tests {
         assert!(alignment.abs() < 1e-10);
     }
 
-    // ─── Enqueue Tests ─────────────────────────────────────────────────────────
+    // â”€â”€â”€ Enqueue Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_enqueue() {
@@ -688,7 +688,7 @@ mod tests {
         assert_eq!(filter.queue_size(), 2); // Oldest removed
     }
 
-    // ─── Filter Application Tests ──────────────────────────────────────────────
+    // â”€â”€â”€ Filter Application Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_apply_filter_accepts() {
@@ -775,7 +775,7 @@ mod tests {
         assert_eq!(result.accepted_token.token_id, 1);
     }
 
-    // ─── Stats Tests ───────────────────────────────────────────────────────────
+    // â”€â”€â”€ Stats Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_stats_initial() {
@@ -844,7 +844,7 @@ mod tests {
         assert!(filter.fallback_rate().is_none());
     }
 
-    // ─── Reset Tests ───────────────────────────────────────────────────────────
+    // â”€â”€â”€ Reset Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_reset() {
@@ -859,7 +859,7 @@ mod tests {
         assert_eq!(filter.stats(), (0, 0, 0));
     }
 
-    // ─── Display Tests ─────────────────────────────────────────────────────────
+    // â”€â”€â”€ Display Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_filter_display() {
@@ -881,7 +881,7 @@ mod tests {
         assert!(s.contains("FilterResult"));
     }
 
-    // ─── Error Display Tests ───────────────────────────────────────────────────
+    // â”€â”€â”€ Error Display Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_error_display_empty() {
@@ -909,7 +909,7 @@ mod tests {
         assert!(s.contains("256"));
     }
 
-    // ─── Utility Function Tests ────────────────────────────────────────────────
+    // â”€â”€â”€ Utility Function Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_compute_combined_score() {
@@ -956,7 +956,7 @@ mod tests {
         assert!((p - 0.5).abs() < 0.01); // Sigmoid at 0 = 0.5
     }
 
-    // ─── Cosine Similarity Tests ───────────────────────────────────────────────
+    // â”€â”€â”€ Cosine Similarity Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_cosine_similarity_identical() {
@@ -980,7 +980,7 @@ mod tests {
         assert!((sim + 1.0).abs() < 1e-10);
     }
 
-    // ─── Workflow Tests ────────────────────────────────────────────────────────
+    // â”€â”€â”€ Workflow Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_full_filtering_workflow() {

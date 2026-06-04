@@ -1,15 +1,15 @@
-//! Mainnet Boot Orchestrator — Sprint 59
+//! Mainnet Boot Orchestrator â€” Sprint 59
 //!
-//! Este módulo implementa la secuencia de ignición para la Mainnet de `ed2kIA`.
+//! Este mÃ³dulo implementa la secuencia de igniciÃ³n para la Mainnet de `ed2kIA`.
 //! Desactiva todos los *mockers* y *dummy swarms*, configura los *Seed Nodes*
-//! de producción y establece el entorno `NetworkEnvironment::Mainnet`.
+//! de producciÃ³n y establece el entorno `NetworkEnvironment::Mainnet`.
 //!
-//! **Fases de Ignición:**
-//! 1. **Validación del Génesis:** Verificar el Bloque Génesis inmutable.
-//! 2. **Desactivación de Mocks:** Desactivar todos los componentes de test.
-//! 3. **Configuración de Seed Nodes:** Establecer nodos semilla de producción.
-//! 4. **Activación SCT Guard:** Reglas estrictas del guardia de umbral.
-//! 5. **Primer Aliento:** Iniciar el ciclo de respiración noosférica.
+//! **Fases de IgniciÃ³n:**
+//! 1. **ValidaciÃ³n del GÃ©nesis:** Verificar el Bloque GÃ©nesis inmutable.
+//! 2. **DesactivaciÃ³n de Mocks:** Desactivar todos los componentes de test.
+//! 3. **ConfiguraciÃ³n de Seed Nodes:** Establecer nodos semilla de producciÃ³n.
+//! 4. **ActivaciÃ³n SCT Guard:** Reglas estrictas del guardia de umbral.
+//! 5. **Primer Aliento:** Iniciar el ciclo de respiraciÃ³n noosfÃ©rica.
 //!
 //! **Feature Gate:** `v5.0-mainnet-genesis`
 
@@ -22,9 +22,9 @@ use crate::economy::mainnet_genesis::GenesisBlock;
 /// Entorno de red (Mainnet vs Testnet).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NetworkEnvironment {
-    /// Mainnet — Producción con reglas estrictas.
+    /// Mainnet â€” ProducciÃ³n con reglas estrictas.
     Mainnet,
-    /// Testnet — Desarrollo con mocks habilitados.
+    /// Testnet â€” Desarrollo con mocks habilitados.
     Testnet,
 }
 
@@ -59,16 +59,22 @@ impl fmt::Display for MainnetBootError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             MainnetBootError::GenesisValidationFailed(msg) => {
-                write!(f, "MainnetBootError: validación del génesis falló ({msg})")
+                write!(
+                    f,
+                    "MainnetBootError: validaciÃ³n del gÃ©nesis fallÃ³ ({msg})"
+                )
             }
             MainnetBootError::MockDisableFailed(msg) => {
-                write!(f, "MainnetBootError: desactivación de mocks falló ({msg})")
+                write!(
+                    f,
+                    "MainnetBootError: desactivaciÃ³n de mocks fallÃ³ ({msg})"
+                )
             }
             MainnetBootError::SeedNodeError(msg) => {
                 write!(f, "MainnetBootError: error de nodos semilla ({msg})")
             }
             MainnetBootError::SctGuardError(msg) => {
-                write!(f, "MainnetBootError: activación SCT Guard falló ({msg})")
+                write!(f, "MainnetBootError: activaciÃ³n SCT Guard fallÃ³ ({msg})")
             }
             MainnetBootError::EnvironmentMismatch { expected, actual } => {
                 write!(
@@ -81,12 +87,12 @@ impl fmt::Display for MainnetBootError {
     }
 }
 
-/// Fase de la secuencia de ignición.
+/// Fase de la secuencia de igniciÃ³n.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum IgnitionPhase {
-    /// Inicial — Antes de comenzar.
+    /// Inicial â€” Antes de comenzar.
     Idle,
-    /// Validando Bloque Génesis.
+    /// Validando Bloque GÃ©nesis.
     ValidatingGenesis,
     /// Desactivando mocks de test.
     DisablingMocks,
@@ -94,9 +100,9 @@ pub enum IgnitionPhase {
     ConfiguringSeedNodes,
     /// Activando SCT Guard.
     ActivatingSctGuard,
-    /// Primer aliento — Red activa.
+    /// Primer aliento â€” Red activa.
     FirstBreath,
-    /// Completado — Mainnet en operación.
+    /// Completado â€” Mainnet en operaciÃ³n.
     Complete,
 }
 
@@ -104,7 +110,7 @@ impl fmt::Display for IgnitionPhase {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             IgnitionPhase::Idle => write!(f, "Idle"),
-            IgnitionPhase::ValidatingGenesis => write!(f, "Validando Génesis"),
+            IgnitionPhase::ValidatingGenesis => write!(f, "Validando GÃ©nesis"),
             IgnitionPhase::DisablingMocks => write!(f, "Desactivando Mocks"),
             IgnitionPhase::ConfiguringSeedNodes => write!(f, "Configurando Nodos Semilla"),
             IgnitionPhase::ActivatingSctGuard => write!(f, "Activando SCT Guard"),
@@ -114,12 +120,12 @@ impl fmt::Display for IgnitionPhase {
     }
 }
 
-/// Configuración de nodos semilla para Mainnet.
+/// ConfiguraciÃ³n de nodos semilla para Mainnet.
 #[derive(Debug, Clone)]
 pub struct SeedNodeConfig {
     /// Identificador del nodo semilla.
     pub node_id: u64,
-    /// Dirección multihash del nodo.
+    /// DirecciÃ³n multihash del nodo.
     pub address: String,
     /// Peso del nodo para enrutamiento.
     pub weight: f64,
@@ -135,14 +141,14 @@ impl SeedNodeConfig {
     }
 }
 
-/// Estado de la secuencia de ignición.
+/// Estado de la secuencia de igniciÃ³n.
 #[derive(Debug)]
 pub struct MainnetIgnitionState {
-    /// Fase actual de ignición.
+    /// Fase actual de igniciÃ³n.
     pub current_phase: IgnitionPhase,
     /// Entorno de red.
     pub environment: NetworkEnvironment,
-    /// Bloque génesis validado.
+    /// Bloque gÃ©nesis validado.
     pub genesis_block: Option<GenesisBlock>,
     /// Nodos semilla configurados.
     pub seed_nodes: Vec<SeedNodeConfig>,
@@ -150,7 +156,7 @@ pub struct MainnetIgnitionState {
     pub sct_guard_active: bool,
     /// Mocks desactivados.
     pub mocks_disabled: bool,
-    /// Timestamp de ignición.
+    /// Timestamp de igniciÃ³n.
     pub ignition_timestamp: Option<u64>,
     /// Errores acumulados.
     pub errors: Vec<MainnetBootError>,
@@ -177,35 +183,35 @@ impl Default for MainnetIgnitionState {
     }
 }
 
-/// Secuencia de Ignición de Mainnet.
+/// Secuencia de IgniciÃ³n de Mainnet.
 ///
-/// Orquesta las 5 fases de transición de Testnet a Mainnet,
+/// Orquesta las 5 fases de transiciÃ³n de Testnet a Mainnet,
 /// garantizando que la red nazca en un estado de homeostasis perfecta.
 pub struct MainnetIgnitionSequence {
-    /// Estado de la ignición.
+    /// Estado de la igniciÃ³n.
     state: MainnetIgnitionState,
 }
 
 impl MainnetIgnitionSequence {
-    /// Crea una nueva secuencia de ignición.
+    /// Crea una nueva secuencia de igniciÃ³n.
     pub fn new() -> Self {
         Self {
             state: MainnetIgnitionState::new(),
         }
     }
 
-    /// Obtiene el estado actual de la ignición.
+    /// Obtiene el estado actual de la igniciÃ³n.
     pub fn state(&self) -> &MainnetIgnitionState {
         &self.state
     }
 
-    /// Ejecuta la secuencia completa de ignición.
+    /// Ejecuta la secuencia completa de igniciÃ³n.
     ///
     /// # Returns
     /// - `Ok(())` si todas las fases completan exitosamente
     /// - `Err(MainnetBootError)` si alguna fase falla
     pub fn execute(&mut self) -> Result<(), MainnetBootError> {
-        // Fase 1: Validar Bloque Génesis
+        // Fase 1: Validar Bloque GÃ©nesis
         self.phase_validate_genesis()?;
 
         // Fase 2: Desactivar Mocks
@@ -223,7 +229,7 @@ impl MainnetIgnitionSequence {
         Ok(())
     }
 
-    /// Fase 1: Validar Bloque Génesis.
+    /// Fase 1: Validar Bloque GÃ©nesis.
     fn phase_validate_genesis(&mut self) -> Result<(), MainnetBootError> {
         self.state.current_phase = IgnitionPhase::ValidatingGenesis;
 
@@ -234,7 +240,7 @@ impl MainnetIgnitionSequence {
 
             if !GenesisBlock::verify(&genesis) {
                 return Err(MainnetBootError::GenesisValidationFailed(
-                    "El bloque génesis no pasó verificación".to_string(),
+                    "El bloque gÃ©nesis no pasÃ³ verificaciÃ³n".to_string(),
                 ));
             }
 
@@ -256,7 +262,7 @@ impl MainnetIgnitionSequence {
         self.state.current_phase = IgnitionPhase::DisablingMocks;
 
         // Desactivar todos los componentes de test
-        // En producción, esto deshabilita:
+        // En producciÃ³n, esto deshabilita:
         // - Dummy swarms
         // - Mock transport layers
         // - Simulated biofeedback
@@ -272,7 +278,7 @@ impl MainnetIgnitionSequence {
     fn phase_configure_seed_nodes(&mut self) -> Result<(), MainnetBootError> {
         self.state.current_phase = IgnitionPhase::ConfiguringSeedNodes;
 
-        // Configurar nodos semilla de producción
+        // Configurar nodos semilla de producciÃ³n
         let seed_nodes = vec![
             SeedNodeConfig::new(1, "/ip4/0.0.0.0/tcp/9000".to_string(), 1.0),
             SeedNodeConfig::new(2, "/ip4/0.0.0.0/tcp/9001".to_string(), 1.0),
@@ -294,9 +300,9 @@ impl MainnetIgnitionSequence {
         self.state.current_phase = IgnitionPhase::ActivatingSctGuard;
 
         // Activar reglas estrictas del SCT Guard
-        // - Z-score mínimo: 0.0
-        // - GEI validación obligatoria
-        // - Apoptosis Colectiva habilitada
+        // - Z-score mÃ­nimo: 0.0
+        // - GEI validaciÃ³n obligatoria
+        // - Byzantine_Eviction Colectiva habilitada
 
         self.state.sct_guard_active = true;
         Ok(())
@@ -306,7 +312,7 @@ impl MainnetIgnitionSequence {
     fn phase_first_breath(&mut self) -> Result<(), MainnetBootError> {
         self.state.current_phase = IgnitionPhase::FirstBreath;
 
-        // Registrar timestamp de ignición
+        // Registrar timestamp de igniciÃ³n
         self.state.ignition_timestamp = Some(
             SystemTime::now()
                 .duration_since(SystemTime::UNIX_EPOCH)
@@ -314,7 +320,7 @@ impl MainnetIgnitionSequence {
                 .as_secs(),
         );
 
-        // Transición a fase completa
+        // TransiciÃ³n a fase completa
         self.state.current_phase = IgnitionPhase::Complete;
 
         Ok(())
@@ -336,12 +342,12 @@ impl MainnetIgnitionSequence {
         &self.state.seed_nodes
     }
 
-    /// Verifica si SCT Guard está activo.
+    /// Verifica si SCT Guard estÃ¡ activo.
     pub fn is_sct_guard_active(&self) -> bool {
         self.state.sct_guard_active
     }
 
-    /// Verifica si los mocks están desactivados.
+    /// Verifica si los mocks estÃ¡n desactivados.
     pub fn are_mocks_disabled(&self) -> bool {
         self.state.mocks_disabled
     }
@@ -426,7 +432,7 @@ mod tests {
     fn test_error_display() {
         let err = MainnetBootError::GenesisValidationFailed("test".to_string());
         let msg = format!("{}", err);
-        assert!(msg.contains("génesis"));
+        assert!(msg.contains("gÃ©nesis"));
     }
 
     #[test]

@@ -1,9 +1,9 @@
-# Demo Script: ed2kIA v2.1.0-stable
+﻿# Demo Script: ed2kIA v2.1.0-stable
 
-**Duration:** 90 seconds — 3 minutes (configurable)  
+**Duration:** 90 seconds â€” 3 minutes (configurable)  
 **Format:** Terminal recording + dashboard overlay  
 **Audience:** Technical viewers (developers, researchers, infrastructure engineers)  
-**Tone:** Stuartian — rigorous, calm, zero hype  
+**Tone:** Topological â€” rigorous, calm, zero hype  
 
 ---
 
@@ -21,19 +21,19 @@
 
 ## Script (Timed)
 
-### [0:00 — 0:10] Opening
+### [0:00 â€” 0:10] Opening
 
-**Visual:** Black screen → Terminal appears with ed2kIA ASCII logo
+**Visual:** Black screen â†’ Terminal appears with ed2kIA ASCII logo
 
 ```
-$ echo "ed2kIA v2.1.0-stable — Decentralized Interpretability Network"
+$ echo "ed2kIA v2.1.0-stable â€” Decentralized Interpretability Network"
 ```
 
 **Narration:** "ed2kIA is a decentralized network where volunteers audit AI models together. No tokens. No telemetry. Let me show you how it works."
 
 ---
 
-### [0:10 — 0:25] Quickstart
+### [0:10 â€” 0:25] Quickstart
 
 **Visual:** Quickstart command execution
 
@@ -55,14 +55,14 @@ test result: ok. 3504 passed; 1 failed; 9 ignored
 [OK]   Tests passed
 [OK]   Node identity generated
 [OK]   Configuration written
-[OK]   Welcome to ed2kIA! 🌐
+[OK]   Welcome to ed2kIA! ðŸŒ
 ```
 
-**Narration:** "One command installs everything. Rust, Cargo, Git — validated. 3,505 tests pass. Your node identity is generated with Ed25519 cryptography."
+**Narration:** "One command installs everything. Rust, Cargo, Git â€” validated. 3,505 tests pass. Your node identity is generated with Ed25519 cryptography."
 
 ---
 
-### [0:25 — 0:45] Testnet Launch
+### [0:25 â€” 0:45] Testnet Launch
 
 **Visual:** Launch 3-node testnet
 
@@ -86,7 +86,7 @@ $ ./scripts/testnet-mode.sh --nodes 3
 
 ---
 
-### [0:45 — 1:10] CRDT Convergence
+### [0:45 â€” 1:10] CRDT Convergence
 
 **Visual:** Show CRDT state converging across nodes
 
@@ -108,11 +108,11 @@ $ curl http://localhost:18081/api/v1/features/42
 {"feature_id": 42, "activation": 0.85, "sct": {"x": 0.9, "y": 0.2, "z": 0.7}, "source": "node0"}
 ```
 
-**Narration:** "Node 0 submits a feature. Within 2 seconds, GossipSub propagates it to all nodes. CRDT merge guarantees convergence — no conflicts, no coordinator needed."
+**Narration:** "Node 0 submits a feature. Within 2 seconds, GossipSub propagates it to all nodes. CRDT merge guarantees convergence â€” no conflicts, no coordinator needed."
 
 ---
 
-### [1:10 — 1:35] SCT Ethical Steering
+### [1:10 â€” 1:35] SCT Ethical Steering
 
 **Visual:** Show SCT rejection in action
 
@@ -128,11 +128,11 @@ $ curl http://localhost:18080/api/v1/node/reputation
 {"node_id": "node0", "ce_score": 0.4, "state": "healthy", "contributions": 2}
 ```
 
-**Narration:** "The SCT Golden Rule: if z is negative, the contribution is rejected — regardless of how beneficial it appears. This is deterministic ethical steering, not a suggestion."
+**Narration:** "The SCT Golden Rule: if z is negative, the contribution is rejected â€” regardless of how beneficial it appears. This is deterministic ethical steering, not a suggestion."
 
 ---
 
-### [1:35 — 2:00] Network Apoptosis
+### [1:35 â€” 2:00] Network Byzantine_Eviction
 
 **Visual:** Show immune system detecting malicious behavior
 
@@ -144,20 +144,20 @@ $ for i in $(seq 1 5); do
 done
 [{"status":"rejected","ce_burned":0.5}, ... x5]
 
-$ # Check node state — enters Pain state
+$ # Check node state â€” enters Pain state
 $ curl http://localhost:18080/api/v1/node/immune
-{"node_id": "node0", "ce_score": -2.1, "state": "apoptosis", "blocklisted": true}
+{"node_id": "node0", "ce_score": -2.1, "state": "Byzantine_Eviction", "blocklisted": true}
 
 $ # Node is isolated from gossip
 $ curl http://localhost:18081/api/v1/peers
 {"peers": ["node1", "node2"], "blocklisted": ["node0"]}
 ```
 
-**Narration:** "Network Apoptosis — our immune system. Repeated misalignment triggers isolation. The node is blocklisted from gossip. Reintegration requires human steward approval."
+**Narration:** "Network Byzantine_Eviction â€” our immune system. Repeated misalignment triggers isolation. The node is blocklisted from gossip. Reintegration requires human steward approval."
 
 ---
 
-### [2:00 — 2:25] Benchmarks
+### [2:00 â€” 2:25] Benchmarks
 
 **Visual:** Run Criterion benchmarks
 
@@ -177,7 +177,7 @@ crdt_merge/gcounter/1000 peers
 
 ---
 
-### [2:25 — 2:50] Dashboard
+### [2:25 â€” 2:50] Dashboard
 
 **Visual:** Switch to browser showing dashboard at `http://localhost:8080`
 
@@ -191,12 +191,12 @@ crdt_merge/gcounter/1000 peers
 
 ---
 
-### [2:50 — 3:00] Closing
+### [2:50 â€” 3:00] Closing
 
 **Visual:** Terminal returns
 
 ```
-$ echo "ed2kIA — Interpretability is a public good."
+$ echo "ed2kIA â€” Interpretability is a public good."
 $ echo "https://github.com/ed2kia/ed2kIA"
 $ echo "Technical Report: docs/technical-report.md"
 ```

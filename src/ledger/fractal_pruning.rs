@@ -1,15 +1,15 @@
-//! Fractal Pruning (Stuartian Forgetting) — Sprint 76: Ontological Debugging & Thermodynamic Pivots
+﻿//! Fractal Pruning (Topological Forgetting) â€” Sprint 76: Ontological Debugging & Thermodynamic Pivots
 //!
-//! Resuelve el bug ontológico: DAG Global → explosión de estado a petabytes.
+//! Resuelve el bug ontolÃ³gico: DAG Global â†’ explosiÃ³n de estado a petabytes.
 //!
 //! Implementa el "Olvido Estuardiano": garbage collection a las 72h,
-//! acumulación Merkle diaria, retención solo de macro-sabiduría
+//! acumulaciÃ³n Merkle diaria, retenciÃ³n solo de macro-sabidurÃ­a
 //! (pesos SAE, consensos, gobernanza).
 //!
-//! # Garantías
+//! # GarantÃ­as
 //!
-//! - GC: O(n) para escaneo, O(k) para compresión (k = entries retenidas)
-//! - Memoria: retención acotada a macro-sabiduría
+//! - GC: O(n) para escaneo, O(k) para compresiÃ³n (k = entries retenidas)
+//! - Memoria: retenciÃ³n acotada a macro-sabidurÃ­a
 //! - Cumplimiento: entries >72h comprimidas a hash Merkle
 
 use std::collections::HashMap;
@@ -49,11 +49,11 @@ impl std::error::Error for PruningError {}
 pub enum EntryType {
     /// Regular transaction/data
     Transaction,
-    /// SAE weights (macro-sabiduría — always retained)
+    /// SAE weights (macro-sabidurÃ­a â€” always retained)
     SaeWeights,
-    /// Consensus result (macro-sabiduría — always retained)
+    /// Consensus result (macro-sabidurÃ­a â€” always retained)
     Consensus,
-    /// Governance record (macro-sabiduría — always retained)
+    /// Governance record (macro-sabidurÃ­a â€” always retained)
     Governance,
 }
 
@@ -99,7 +99,7 @@ impl DAGEntry {
         }
     }
 
-    /// Check if this entry is macro-sabiduría (always retained).
+    /// Check if this entry is macro-sabidurÃ­a (always retained).
     pub fn is_macro_wisdom(&self) -> bool {
         matches!(
             self.entry_type,
@@ -132,8 +132,8 @@ pub struct PruningConfig {
 }
 
 impl PruningConfig {
-    /// Default Stuartian configuration.
-    pub fn default_stuartian() -> Self {
+    /// Default Topological configuration.
+    pub fn default_Topological() -> Self {
         Self {
             retention_hours: 72,
             max_retention_count: 100_000,
@@ -156,7 +156,7 @@ impl PruningConfig {
 
 impl Default for PruningConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -167,7 +167,7 @@ pub struct PrunedState {
     pub pruned_count: usize,
     /// Number of entries retained.
     pub retained_count: usize,
-    /// Number of macro-sabiduría entries (always retained).
+    /// Number of macro-sabidurÃ­a entries (always retained).
     pub macro_wisdom_count: usize,
     /// Merkle root of pruned entries.
     pub merkle_root: Vec<u8>,
@@ -283,10 +283,10 @@ pub struct FractalPruning {
 }
 
 impl FractalPruning {
-    /// Create a new engine with default Stuartian configuration.
+    /// Create a new engine with default Topological configuration.
     pub fn new() -> Self {
         Self {
-            config: PruningConfig::default_stuartian(),
+            config: PruningConfig::default_Topological(),
             entries: HashMap::new(),
             merkle_accumulator: MerkleTree::new(),
             daily_hashes: Vec::new(),
@@ -315,7 +315,7 @@ impl FractalPruning {
 
     /// Prune micro-state entries older than retention period.
     ///
-    /// Macro-sabiduría (SAE weights, consensus, governance) is always retained.
+    /// Macro-sabidurÃ­a (SAE weights, consensus, governance) is always retained.
     pub fn prune_micro_state(&mut self, current_ms: u64) -> PrunedState {
         let retention_ms = self.config.retention_hours as u64 * 3_600_000;
         let mut pruned_count = 0;
@@ -325,7 +325,7 @@ impl FractalPruning {
             if entry.pruned {
                 continue;
             }
-            // Macro-sabiduría is always retained
+            // Macro-sabidurÃ­a is always retained
             if entry.is_macro_wisdom() {
                 continue;
             }
@@ -389,7 +389,7 @@ impl FractalPruning {
         self.entries.values().filter(|e| !e.pruned).count()
     }
 
-    /// Macro-sabiduría entries.
+    /// Macro-sabidurÃ­a entries.
     pub fn macro_wisdom_count(&self) -> usize {
         self.entries
             .values()
@@ -429,7 +429,7 @@ impl fmt::Display for FractalPruning {
     }
 }
 
-// ─── Public Standalone Functions ───────────────────────────────────────────────
+// â”€â”€â”€ Public Standalone Functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Prune micro-state entries (standalone).
 pub fn prune_micro_state(
@@ -482,7 +482,7 @@ pub fn fnv_hash_32(data: &[u8]) -> Vec<u8> {
     result
 }
 
-// ─── Tests ─────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[cfg(test)]
 mod tests {
@@ -490,7 +490,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = PruningConfig::default_stuartian();
+        let config = PruningConfig::default_Topological();
         assert!(config.validate().is_ok());
         assert_eq!(config.retention_hours, 72);
     }
@@ -499,7 +499,7 @@ mod tests {
     fn test_config_zero_retention() {
         let config = PruningConfig {
             retention_hours: 0,
-            ..PruningConfig::default_stuartian()
+            ..PruningConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }
@@ -656,7 +656,7 @@ mod tests {
         let entries = vec![
             // Old transaction (73h before the newest entry)
             DAGEntry::new(1, EntryType::Transaction, vec![1], 100_000),
-            // Recent SAE weights (macro-sabiduría — always retained)
+            // Recent SAE weights (macro-sabidurÃ­a â€” always retained)
             DAGEntry::new(2, EntryType::SaeWeights, vec![2], 100_000 + 73 * 3_600_000),
         ];
         let tree = MerkleTree::new();

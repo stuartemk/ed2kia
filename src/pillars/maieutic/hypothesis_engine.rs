@@ -1,14 +1,14 @@
-//! Hypothesis Engine — Distributed Scientific Hypothesis Generation.
+﻿//! Hypothesis Engine â€” Distributed Scientific Hypothesis Generation.
 //!
 //! Implements the core hypothesis generation pipeline for the Maieutic Synthesizer (RFC 002).
 //! Generates, evaluates, and synthesizes scientific hypotheses across domains using
-//! SCT (Stuartian Context Tensor) ethical evaluation as a mandatory guard.
+//! SCT (Topological Context Tensor) ethical evaluation as a mandatory guard.
 //!
 //! **WASM Compatible:** No native threads, no std::fs, no std::net.
 //! **SCT Guard:** All hypotheses must pass Z >= 0 ethical evaluation.
 //! **Zero Financial Logic:** Pure scientific creation, no Babylonian economics.
 //!
-//! **Reference:** Sprint 44 — Maieutic Synthesizer Implementation (Pillar 2)
+//! **Reference:** Sprint 44 â€” Maieutic Synthesizer Implementation (Pillar 2)
 
 /// Scientific domain categories for hypothesis classification.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
@@ -247,7 +247,7 @@ impl HypothesisEngine {
         statement: String,
         z_score: f32,
     ) -> Result<Hypothesis, HypothesisError> {
-        // SCT Guard — reject destructive hypotheses immediately.
+        // SCT Guard â€” reject destructive hypotheses immediately.
         if z_score < self.sct_threshold {
             return Err(HypothesisError::SctGuardRejected { z_score });
         }

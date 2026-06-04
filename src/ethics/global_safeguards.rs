@@ -1,8 +1,8 @@
-//! Global Safeguards — Sprint 58
+//! Global Safeguards â€” Sprint 58
 //!
 //! Planetary-scale ethical safety protocols for the Noosphere network.
 //! Implements Ethical Quarantine (topological isolation) and Global Collective
-//! Apoptosis (coordinated rollback to last known homeostatic state).
+//! Byzantine_Eviction (coordinated rollback to last known homeostatic state).
 //!
 //! **Core Protocols:**
 //!
@@ -11,7 +11,7 @@
 //! in their Noospheric Health (NH). Quarantined sub-networks cannot propagate
 //! Macro-Concepts until NH recovers above the release threshold.
 //!
-//! **Global Collective Apoptosis:**
+//! **Global Collective Byzantine_Eviction:**
 //! The mathematical "panic button." If the global resonance field inverts
 //! toward the Lower Focus, the network executes a coordinated rollback to
 //! its last verified homeostatic checkpoint.
@@ -29,8 +29,8 @@ pub enum SafeguardError {
     AlreadyQuarantined(u128),
     /// Cannot release a sub-network that is not quarantined.
     NotQuarantined(u128),
-    /// Apoptosis already triggered; cannot perform further actions.
-    ApoptosisActive,
+    /// Byzantine_Eviction already triggered; cannot perform further actions.
+    Byzantine_EvictionActive,
     /// No checkpoint available for rollback.
     NoCheckpointAvailable,
     /// Insufficient data to make a safeguard decision.
@@ -45,7 +45,9 @@ impl std::fmt::Display for SafeguardError {
                 write!(f, "Sub-network {} already quarantined", id)
             }
             SafeguardError::NotQuarantined(id) => write!(f, "Sub-network {} not quarantined", id),
-            SafeguardError::ApoptosisActive => write!(f, "Global apoptosis is active"),
+            SafeguardError::Byzantine_EvictionActive => {
+                write!(f, "Global Byzantine_Eviction is active")
+            }
             SafeguardError::NoCheckpointAvailable => {
                 write!(f, "No checkpoint available for rollback")
             }
@@ -82,9 +84,9 @@ pub enum SafeguardState {
         /// Number of quarantined sub-networks.
         quarantined_count: usize,
     },
-    /// Global apoptosis is active; network is rolling back.
-    ApoptosisActive {
-        /// Tick when apoptosis was triggered.
+    /// Global Byzantine_Eviction is active; network is rolling back.
+    Byzantine_EvictionActive {
+        /// Tick when Byzantine_Eviction was triggered.
         triggered_tick: u64,
         /// Target checkpoint tick.
         target_checkpoint: u64,
@@ -98,10 +100,10 @@ pub struct SafeguardConfig {
     pub quarantine_threshold: f64,
     /// NH threshold below which quarantine is released (default: 0.5).
     pub quarantine_release_threshold: f64,
-    /// NH threshold below which global apoptosis is triggered (default: 0.1).
-    pub apoptosis_threshold: f64,
-    /// Number of consecutive ticks below apoptosis threshold before trigger (default: 5).
-    pub apoptosis_consecutive_ticks: u32,
+    /// NH threshold below which global Byzantine_Eviction is triggered (default: 0.1).
+    pub Byzantine_Eviction_threshold: f64,
+    /// Number of consecutive ticks below Byzantine_Eviction threshold before trigger (default: 5).
+    pub Byzantine_Eviction_consecutive_ticks: u32,
     /// Maximum number of checkpoints to retain (default: 50).
     pub max_checkpoints: usize,
     /// Minimum ticks between checkpoints (default: 100).
@@ -113,8 +115,8 @@ impl Default for SafeguardConfig {
         Self {
             quarantine_threshold: 0.3,
             quarantine_release_threshold: 0.5,
-            apoptosis_threshold: 0.1,
-            apoptosis_consecutive_ticks: 5,
+            Byzantine_Eviction_threshold: 0.1,
+            Byzantine_Eviction_consecutive_ticks: 5,
             max_checkpoints: 50,
             checkpoint_interval: 100,
         }
@@ -129,14 +131,14 @@ impl SafeguardConfig {
                 "quarantine_threshold must be < quarantine_release_threshold".to_string(),
             ));
         }
-        if self.apoptosis_threshold >= self.quarantine_threshold {
+        if self.Byzantine_Eviction_threshold >= self.quarantine_threshold {
             return Err(SafeguardError::InvalidConfig(
-                "apoptosis_threshold must be < quarantine_threshold".to_string(),
+                "Byzantine_Eviction_threshold must be < quarantine_threshold".to_string(),
             ));
         }
-        if self.apoptosis_consecutive_ticks == 0 {
+        if self.Byzantine_Eviction_consecutive_ticks == 0 {
             return Err(SafeguardError::InvalidConfig(
-                "apoptosis_consecutive_ticks must be > 0".to_string(),
+                "Byzantine_Eviction_consecutive_ticks must be > 0".to_string(),
             ));
         }
         if self.max_checkpoints == 0 {
@@ -162,7 +164,7 @@ pub struct Checkpoint {
     pub nh_value: f64,
     /// Number of active nodes at checkpoint time.
     pub active_nodes: usize,
-    /// Snapshot of sub-network states (sub_network_id → NH).
+    /// Snapshot of sub-network states (sub_network_id â†’ NH).
     pub sub_network_states: HashMap<u128, f64>,
 }
 
@@ -175,24 +177,24 @@ pub struct SafeguardResult {
     pub quarantined: Vec<u128>,
     /// Sub-networks released from quarantine this tick.
     pub released: Vec<u128>,
-    /// Whether apoptosis was triggered this tick.
-    pub apoptosis_triggered: bool,
+    /// Whether Byzantine_Eviction was triggered this tick.
+    pub Byzantine_Eviction_triggered: bool,
     /// Checkpoint saved this tick (if any).
     pub checkpoint_saved: Option<Checkpoint>,
 }
 
-/// Global Safeguards Engine — Monitors and enforces ethical boundaries.
+/// Global Safeguards Engine â€” Monitors and enforces ethical boundaries.
 #[derive(Debug)]
 pub struct GlobalSafeguards {
     config: SafeguardConfig,
     state: SafeguardState,
     current_tick: u64,
-    /// Sub-network ID → Quarantine state.
+    /// Sub-network ID â†’ Quarantine state.
     quarantine_map: HashMap<u128, QuarantineState>,
     /// Saved checkpoints for rollback.
     checkpoints: Vec<Checkpoint>,
-    /// Consecutive ticks below apoptosis threshold.
-    apoptosis_counter: u32,
+    /// Consecutive ticks below Byzantine_Eviction threshold.
+    Byzantine_Eviction_counter: u32,
     /// Last checkpoint tick.
     last_checkpoint_tick: u64,
 }
@@ -206,7 +208,7 @@ impl GlobalSafeguards {
             current_tick: 0,
             quarantine_map: HashMap::new(),
             checkpoints: Vec::new(),
-            apoptosis_counter: 0,
+            Byzantine_Eviction_counter: 0,
             last_checkpoint_tick: 0,
         }
     }
@@ -220,7 +222,7 @@ impl GlobalSafeguards {
             current_tick: 0,
             quarantine_map: HashMap::new(),
             checkpoints: Vec::new(),
-            apoptosis_counter: 0,
+            Byzantine_Eviction_counter: 0,
             last_checkpoint_tick: 0,
         })
     }
@@ -229,14 +231,14 @@ impl GlobalSafeguards {
     ///
     /// # Arguments
     /// * `global_nh` - Current global Noospheric Health.
-    /// * `sub_networks` - Map of sub-network ID → current NH.
+    /// * `sub_networks` - Map of sub-network ID â†’ current NH.
     pub fn evaluate(
         &mut self,
         global_nh: f64,
         sub_networks: &HashMap<u128, f64>,
     ) -> Result<SafeguardResult, SafeguardError> {
-        if let SafeguardState::ApoptosisActive { .. } = self.state {
-            return Err(SafeguardError::ApoptosisActive);
+        if let SafeguardState::Byzantine_EvictionActive { .. } = self.state {
+            return Err(SafeguardError::Byzantine_EvictionActive);
         }
 
         self.current_tick += 1;
@@ -244,26 +246,26 @@ impl GlobalSafeguards {
             state: self.state.clone(),
             quarantined: Vec::new(),
             released: Vec::new(),
-            apoptosis_triggered: false,
+            Byzantine_Eviction_triggered: false,
             checkpoint_saved: None,
         };
 
-        // Check for apoptosis first
-        if global_nh < self.config.apoptosis_threshold {
-            self.apoptosis_counter += 1;
-            if self.apoptosis_counter >= self.config.apoptosis_consecutive_ticks {
-                // Trigger global apoptosis
+        // Check for Byzantine_Eviction first
+        if global_nh < self.config.Byzantine_Eviction_threshold {
+            self.Byzantine_Eviction_counter += 1;
+            if self.Byzantine_Eviction_counter >= self.config.Byzantine_Eviction_consecutive_ticks {
+                // Trigger global Byzantine_Eviction
                 let target = self.get_latest_checkpoint_tick()?;
-                self.state = SafeguardState::ApoptosisActive {
+                self.state = SafeguardState::Byzantine_EvictionActive {
                     triggered_tick: self.current_tick,
                     target_checkpoint: target,
                 };
                 result.state = self.state.clone();
-                result.apoptosis_triggered = true;
+                result.Byzantine_Eviction_triggered = true;
                 return Ok(result);
             }
         } else {
-            self.apoptosis_counter = 0;
+            self.Byzantine_Eviction_counter = 0;
         }
 
         // Evaluate each sub-network for quarantine
@@ -340,8 +342,8 @@ impl GlobalSafeguards {
         nh_value: f64,
         reason: String,
     ) -> Result<(), SafeguardError> {
-        if let SafeguardState::ApoptosisActive { .. } = self.state {
-            return Err(SafeguardError::ApoptosisActive);
+        if let SafeguardState::Byzantine_EvictionActive { .. } = self.state {
+            return Err(SafeguardError::Byzantine_EvictionActive);
         }
         if let Some(QuarantineState::Quarantined { .. }) = self.quarantine_map.get(&sub_network_id)
         {
@@ -360,8 +362,8 @@ impl GlobalSafeguards {
 
     /// Manually release a sub-network from quarantine.
     pub fn release_sub_network(&mut self, sub_network_id: u128) -> Result<(), SafeguardError> {
-        if let SafeguardState::ApoptosisActive { .. } = self.state {
-            return Err(SafeguardError::ApoptosisActive);
+        if let SafeguardState::Byzantine_EvictionActive { .. } = self.state {
+            return Err(SafeguardError::Byzantine_EvictionActive);
         }
         match self.quarantine_map.get(&sub_network_id) {
             None | Some(QuarantineState::Active) => {
@@ -408,9 +410,9 @@ impl GlobalSafeguards {
         self.current_tick
     }
 
-    /// Get the apoptosis counter.
-    pub fn apoptosis_counter(&self) -> u32 {
-        self.apoptosis_counter
+    /// Get the Byzantine_Eviction counter.
+    pub fn Byzantine_Eviction_counter(&self) -> u32 {
+        self.Byzantine_Eviction_counter
     }
 
     /// Get the number of quarantined sub-networks.
@@ -427,19 +429,19 @@ impl GlobalSafeguards {
         self.current_tick = 0;
         self.quarantine_map.clear();
         self.checkpoints.clear();
-        self.apoptosis_counter = 0;
+        self.Byzantine_Eviction_counter = 0;
         self.last_checkpoint_tick = 0;
     }
 
-    /// Force reset even during apoptosis (emergency).
+    /// Force reset even during Byzantine_Eviction (emergency).
     pub fn force_reset(&mut self) {
         self.reset();
     }
 
     /// Update configuration.
     pub fn update_config(&mut self, config: SafeguardConfig) -> Result<(), SafeguardError> {
-        if let SafeguardState::ApoptosisActive { .. } = self.state {
-            return Err(SafeguardError::ApoptosisActive);
+        if let SafeguardState::Byzantine_EvictionActive { .. } = self.state {
+            return Err(SafeguardError::Byzantine_EvictionActive);
         }
         config.validate()?;
         self.config = config;
@@ -473,8 +475,8 @@ mod tests {
         let config = SafeguardConfig {
             quarantine_threshold: 0.4,
             quarantine_release_threshold: 0.6,
-            apoptosis_threshold: 0.2,
-            apoptosis_consecutive_ticks: 3,
+            Byzantine_Eviction_threshold: 0.2,
+            Byzantine_Eviction_consecutive_ticks: 3,
             max_checkpoints: 20,
             checkpoint_interval: 50,
         };
@@ -500,7 +502,7 @@ mod tests {
         assert_eq!(result.state, SafeguardState::Nominal);
         assert!(result.quarantined.is_empty());
         assert!(result.released.is_empty());
-        assert!(!result.apoptosis_triggered);
+        assert!(!result.Byzantine_Eviction_triggered);
     }
 
     #[test]
@@ -532,9 +534,9 @@ mod tests {
     }
 
     #[test]
-    fn test_apoptosis_triggered() {
+    fn test_Byzantine_Eviction_triggered() {
         let config = SafeguardConfig {
-            apoptosis_consecutive_ticks: 3,
+            Byzantine_Eviction_consecutive_ticks: 3,
             ..Default::default()
         };
         let mut s = GlobalSafeguards::with_config(config).unwrap();
@@ -542,33 +544,36 @@ mod tests {
 
         // Tick 1
         s.evaluate(0.05, &sub_networks).unwrap();
-        assert_eq!(s.apoptosis_counter(), 1);
+        assert_eq!(s.Byzantine_Eviction_counter(), 1);
 
         // Tick 2
         s.evaluate(0.05, &sub_networks).unwrap();
-        assert_eq!(s.apoptosis_counter(), 2);
+        assert_eq!(s.Byzantine_Eviction_counter(), 2);
 
-        // Tick 3 — apoptosis!
+        // Tick 3 â€” Byzantine_Eviction!
         let result = s.evaluate(0.05, &sub_networks).unwrap();
-        assert!(result.apoptosis_triggered);
-        assert!(matches!(s.state(), SafeguardState::ApoptosisActive { .. }));
+        assert!(result.Byzantine_Eviction_triggered);
+        assert!(matches!(
+            s.state(),
+            SafeguardState::Byzantine_EvictionActive { .. }
+        ));
     }
 
     #[test]
-    fn test_apoptosis_counter_resets() {
+    fn test_Byzantine_Eviction_counter_resets() {
         let config = SafeguardConfig {
-            apoptosis_consecutive_ticks: 5,
+            Byzantine_Eviction_consecutive_ticks: 5,
             ..Default::default()
         };
         let mut s = GlobalSafeguards::with_config(config).unwrap();
         let sub_networks = make_sub_networks(3, 0.5);
 
         s.evaluate(0.05, &sub_networks).unwrap();
-        assert_eq!(s.apoptosis_counter(), 1);
+        assert_eq!(s.Byzantine_Eviction_counter(), 1);
 
         // Recover
         s.evaluate(0.5, &sub_networks).unwrap();
-        assert_eq!(s.apoptosis_counter(), 0);
+        assert_eq!(s.Byzantine_Eviction_counter(), 0);
     }
 
     #[test]
@@ -625,16 +630,16 @@ mod tests {
     }
 
     #[test]
-    fn test_no_operation_during_apoptosis() {
+    fn test_no_operation_during_Byzantine_Eviction() {
         let config = SafeguardConfig {
-            apoptosis_consecutive_ticks: 2,
+            Byzantine_Eviction_consecutive_ticks: 2,
             ..Default::default()
         };
         let mut s = GlobalSafeguards::with_config(config).unwrap();
         let sub_networks = make_sub_networks(3, 0.05);
 
         s.evaluate(0.05, &sub_networks).unwrap();
-        s.evaluate(0.05, &sub_networks).unwrap(); // Apoptosis triggered
+        s.evaluate(0.05, &sub_networks).unwrap(); // Byzantine_Eviction triggered
 
         assert!(s.evaluate(0.05, &sub_networks).is_err());
     }
@@ -650,17 +655,20 @@ mod tests {
     }
 
     #[test]
-    fn test_force_reset_during_apoptosis() {
+    fn test_force_reset_during_Byzantine_Eviction() {
         let config = SafeguardConfig {
-            apoptosis_consecutive_ticks: 2,
+            Byzantine_Eviction_consecutive_ticks: 2,
             ..Default::default()
         };
         let mut s = GlobalSafeguards::with_config(config).unwrap();
         let sub_networks = make_sub_networks(3, 0.05);
 
         s.evaluate(0.05, &sub_networks).unwrap();
-        s.evaluate(0.05, &sub_networks).unwrap(); // Apoptosis
-        assert!(matches!(s.state(), SafeguardState::ApoptosisActive { .. }));
+        s.evaluate(0.05, &sub_networks).unwrap(); // Byzantine_Eviction
+        assert!(matches!(
+            s.state(),
+            SafeguardState::Byzantine_EvictionActive { .. }
+        ));
 
         s.force_reset();
         assert_eq!(s.state(), &SafeguardState::Nominal);
@@ -698,8 +706,8 @@ mod tests {
         let config = SafeguardConfig {
             quarantine_threshold: 0.4,
             quarantine_release_threshold: 0.6,
-            apoptosis_threshold: 0.2,
-            apoptosis_consecutive_ticks: 3,
+            Byzantine_Eviction_threshold: 0.2,
+            Byzantine_Eviction_consecutive_ticks: 3,
             max_checkpoints: 20,
             checkpoint_interval: 50,
         };
@@ -708,16 +716,16 @@ mod tests {
     }
 
     #[test]
-    fn test_cannot_update_config_during_apoptosis() {
+    fn test_cannot_update_config_during_Byzantine_Eviction() {
         let config = SafeguardConfig {
-            apoptosis_consecutive_ticks: 2,
+            Byzantine_Eviction_consecutive_ticks: 2,
             ..Default::default()
         };
         let mut s = GlobalSafeguards::with_config(config).unwrap();
         let sub_networks = make_sub_networks(3, 0.05);
 
         s.evaluate(0.05, &sub_networks).unwrap();
-        s.evaluate(0.05, &sub_networks).unwrap(); // Apoptosis
+        s.evaluate(0.05, &sub_networks).unwrap(); // Byzantine_Eviction
 
         let new_config = SafeguardConfig::default();
         assert!(s.update_config(new_config).is_err());

@@ -1,4 +1,4 @@
-//! Hierarchical Gossip Protocol — Sprint 70: Civilization-Scale Architecture
+﻿//! Hierarchical Gossip Protocol â€” Sprint 70: Civilization-Scale Architecture
 //!
 //! Committee-based gossip with staleness-aware FedAvg and differential privacy
 //! for scaling to 1M+ heterogeneous nodes.
@@ -58,8 +58,8 @@ pub struct GossipConfig {
 }
 
 impl GossipConfig {
-    /// Default Stuartian configuration.
-    pub fn default_stuartian() -> Self {
+    /// Default Topological configuration.
+    pub fn default_Topological() -> Self {
         Self {
             committee_size: 32,
             max_staleness_ms: 30_000,
@@ -96,7 +96,7 @@ impl GossipConfig {
 
 impl Default for GossipConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -104,7 +104,7 @@ impl fmt::Display for GossipConfig {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "GossipConfig {{ committee: {}, ε: {:.2}, δ: {:.5}, decay: {:.3} }}",
+            "GossipConfig {{ committee: {}, Îµ: {:.2}, Î´: {:.5}, decay: {:.3} }}",
             self.committee_size, self.epsilon, self.delta, self.decay_rate
         )
     }
@@ -185,7 +185,7 @@ impl fmt::Display for Committee {
     }
 }
 
-/// Hierarchical Gossip Protocol — scales to 1M+ nodes via committee layers.
+/// Hierarchical Gossip Protocol â€” scales to 1M+ nodes via committee layers.
 pub struct HierarchicalGossip {
     config: GossipConfig,
     nodes: HashMap<u64, GossipNode>,
@@ -199,7 +199,7 @@ impl HierarchicalGossip {
     /// Create with default configuration.
     pub fn new() -> Self {
         Self {
-            config: GossipConfig::default_stuartian(),
+            config: GossipConfig::default_Topological(),
             nodes: HashMap::new(),
             active_committee: None,
             updates: Vec::new(),
@@ -402,20 +402,20 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = GossipConfig::default_stuartian();
+        let config = GossipConfig::default_Topological();
         assert_eq!(config.committee_size, 32);
         assert!((config.epsilon - 1.0).abs() < 1e-6);
     }
 
     #[test]
     fn test_config_validate_valid() {
-        let config = GossipConfig::default_stuartian();
+        let config = GossipConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 
     #[test]
     fn test_config_validate_zero_committee() {
-        let mut config = GossipConfig::default_stuartian();
+        let mut config = GossipConfig::default_Topological();
         config.committee_size = 0;
         match config.validate() {
             Err(GossipError::InsufficientNodes { .. }) => {}
@@ -425,7 +425,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_bad_epsilon() {
-        let mut config = GossipConfig::default_stuartian();
+        let mut config = GossipConfig::default_Topological();
         config.epsilon = -1.0;
         match config.validate() {
             Err(GossipError::InvalidPrivacyParams(_)) => {}
@@ -435,7 +435,7 @@ mod tests {
 
     #[test]
     fn test_config_display() {
-        let config = GossipConfig::default_stuartian();
+        let config = GossipConfig::default_Topological();
         let s = format!("{}", config);
         assert!(s.contains("committee: 32"));
     }
@@ -456,7 +456,7 @@ mod tests {
 
     #[test]
     fn test_elect_committee_insufficient() {
-        let mut config = GossipConfig::default_stuartian();
+        let mut config = GossipConfig::default_Topological();
         config.committee_size = 10;
         let mut gossip = HierarchicalGossip::with_config(config).unwrap();
         gossip.register_node(make_node(1, 1.0, 0));
@@ -468,7 +468,7 @@ mod tests {
 
     #[test]
     fn test_elect_committee_success() {
-        let mut config = GossipConfig::default_stuartian();
+        let mut config = GossipConfig::default_Topological();
         config.committee_size = 3;
         let mut gossip = HierarchicalGossip::with_config(config).unwrap();
         for i in 1..=10 {
@@ -481,7 +481,7 @@ mod tests {
 
     #[test]
     fn test_elect_committee_active() {
-        let mut config = GossipConfig::default_stuartian();
+        let mut config = GossipConfig::default_Topological();
         config.committee_size = 3;
         let mut gossip = HierarchicalGossip::with_config(config).unwrap();
         for i in 1..=10 {
@@ -536,7 +536,7 @@ mod tests {
 
     #[test]
     fn test_dissolve_committee() {
-        let mut config = GossipConfig::default_stuartian();
+        let mut config = GossipConfig::default_Topological();
         config.committee_size = 3;
         let mut gossip = HierarchicalGossip::with_config(config).unwrap();
         for i in 1..=10 {

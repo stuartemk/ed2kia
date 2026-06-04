@@ -1,30 +1,30 @@
-//! CRDT — Conflict-free Replicated Data Types para convergencia eventual.
+﻿//! CRDT â€” Conflict-free Replicated Data Types para convergencia eventual.
 //!
-//! **Stuartian Law 5 (Múltiples Posibilidades):** Los CRDTs garantizan
-//! convergencia eventual sin coordinación centralizada.
+//! **Topological Law 5 (MÃºltiples Posibilidades):** Los CRDTs garantizan
+//! convergencia eventual sin coordinaciÃ³n centralizada.
 //!
 //! **Feature Gate:** `v2.1-crdt-state`
 //!
 //! ### CRDTs Implementados
 //! | CRDT | Uso | Propiedades |
 //! |---|---|---|
-//! | GCounter | Merito criptográfico (grow-only) | Commutative, Associative, Idempotent |
-//! | PNCounter | Reputación bounded (inc/dec) | Commutative, Associative, Idempotent |
+//! | GCounter | Merito criptogrÃ¡fico (grow-only) | Commutative, Associative, Idempotent |
+//! | PNCounter | ReputaciÃ³n bounded (inc/dec) | Commutative, Associative, Idempotent |
 //! | ORSet | Banned/slashed peers | Commutative, Associative, Idempotent |
 //!
-//! ### Propiedades Matemáticas
+//! ### Propiedades MatemÃ¡ticas
 //! Todos los merge() son:
 //! - **Commutative:** merge(a, b) == merge(b, a)
 //! - **Associative:** merge(merge(a, b), c) == merge(a, merge(b, c))
 //! - **Idempotent:** merge(a, a) == a
 //!
-//! ### Serialización
+//! ### SerializaciÃ³n
 //! bincode para transferencia de estado CRDT entre nodos.
 //! Cada CRDT implementa `serialize()` y `deserialize()`.
 //!
 //! ### Convergencia
 //! Test con 3 nodos particionados que al reconectar convergen
-//! al mismo estado sin coordinación centralizada.
+//! al mismo estado sin coordinaciÃ³n centralizada.
 
 use std::collections::BTreeMap;
 use std::fmt;
@@ -32,13 +32,13 @@ use std::fmt;
 /// Error en operaciones CRDT.
 #[derive(Debug)]
 pub enum CrdtError {
-    /// Vector de versión incompatible.
+    /// Vector de versiÃ³n incompatible.
     IncompatibleVersion(String),
     /// Error de merge.
     MergeError(String),
     /// Estado corrupto.
     CorruptState(String),
-    /// Error de serialización.
+    /// Error de serializaciÃ³n.
     SerializationError(String),
     /// Valor fuera de rango.
     OutOfRange(String),
@@ -68,10 +68,10 @@ impl fmt::Display for CrdtError {
 
 impl std::error::Error for CrdtError {}
 
-/// Vector de versión para CRDT.
+/// Vector de versiÃ³n para CRDT.
 ///
 /// Cada nodo tiene su propio contador que se incrementa
-/// con cada operación. El merge toma el máximo por nodo.
+/// con cada operaciÃ³n. El merge toma el mÃ¡ximo por nodo.
 ///
 /// ### Propiedades
 /// - **Commutative:** max(a, b) == max(b, a)
@@ -84,7 +84,7 @@ pub struct VersionVector {
 }
 
 impl VersionVector {
-    /// Crea un nuevo vector de versión vacío.
+    /// Crea un nuevo vector de versiÃ³n vacÃ­o.
     pub fn new() -> Self {
         Self {
             counters: BTreeMap::new(),
@@ -96,12 +96,12 @@ impl VersionVector {
         *self.counters.entry(node_id.to_string()).or_insert(0) += 1;
     }
 
-    /// Retorna el contador de un nodo específico.
+    /// Retorna el contador de un nodo especÃ­fico.
     pub fn get(&self, node_id: &str) -> u64 {
         *self.counters.get(node_id).unwrap_or(&0)
     }
 
-    /// Compara dos vectores de versión.
+    /// Compara dos vectores de versiÃ³n.
     /// - Less: this < other (this es estrictamente anterior)
     /// - Greater: this > other (this es estrictamente posterior)
     /// - Equal: concurrent o iguales (conflict o mismo estado)
@@ -127,7 +127,7 @@ impl VersionVector {
             }
         }
 
-        // Verificar nodos de other que no están en self
+        // Verificar nodos de other que no estÃ¡n en self
         for (node, &count) in &other.counters {
             if !self.counters.contains_key(node) && count > 0 {
                 less = true;
@@ -146,7 +146,7 @@ impl VersionVector {
         }
     }
 
-    /// Merge con otro vector de versión (toma máximo por nodo).
+    /// Merge con otro vector de versiÃ³n (toma mÃ¡ximo por nodo).
     ///
     /// **Idempotent:** merge(v, v) == v
     /// **Commutative:** merge(a, b) == merge(b, a)
@@ -165,17 +165,17 @@ impl VersionVector {
         self.counters.keys().collect()
     }
 
-    /// Retorna true si el vector está vacío.
+    /// Retorna true si el vector estÃ¡ vacÃ­o.
     pub fn is_empty(&self) -> bool {
         self.counters.is_empty()
     }
 }
 
-/// G-Counter (Grow-only Counter) para mérito criptográfico.
+/// G-Counter (Grow-only Counter) para mÃ©rito criptogrÃ¡fico.
 ///
-/// **Stuartian Law 5:** Cada nodo incrementa su propio contador.
+/// **Topological Law 5:** Cada nodo incrementa su propio contador.
 /// El valor global es la suma de todos los contadores.
-/// Merge toma el máximo por nodo (convergencia eventual).
+/// Merge toma el mÃ¡ximo por nodo (convergencia eventual).
 ///
 /// ### Propiedades
 /// - **Commutative:** sum(max(a, b)) == sum(max(b, a))
@@ -184,7 +184,7 @@ impl VersionVector {
 /// - **Monotonic:** El valor nunca decrece
 ///
 /// ### Uso
-/// - Mérito criptográfico acumulado
+/// - MÃ©rito criptogrÃ¡fico acumulado
 /// - Conteo de contribuciones
 /// - Tokens generados (no destruibles)
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
@@ -194,7 +194,7 @@ pub struct GCounter {
 }
 
 impl GCounter {
-    /// Crea un nuevo G-Counter vacío.
+    /// Crea un nuevo G-Counter vacÃ­o.
     pub fn new() -> Self {
         Self {
             counters: BTreeMap::new(),
@@ -211,12 +211,12 @@ impl GCounter {
         self.counters.values().sum()
     }
 
-    /// Retorna el contador de un nodo específico.
+    /// Retorna el contador de un nodo especÃ­fico.
     pub fn get(&self, node_id: &str) -> u64 {
         *self.counters.get(node_id).unwrap_or(&0)
     }
 
-    /// Merge con otro G-Counter (toma máximo por nodo).
+    /// Merge con otro G-Counter (toma mÃ¡ximo por nodo).
     ///
     /// **Idempotent:** merge(c, c) == c
     /// **Commutative:** merge(a, b) == merge(b, a)
@@ -331,10 +331,10 @@ impl GCounter {
     }
 }
 
-/// PN-Counter (Positive-Negative Counter) para reputación bounded.
+/// PN-Counter (Positive-Negative Counter) para reputaciÃ³n bounded.
 ///
-/// **Stuartian Law 5:** Dos G-Counters internos (positivos y negativos).
-/// El valor es positives.value() - negatives.value() con límites [min, max].
+/// **Topological Law 5:** Dos G-Counters internos (positivos y negativos).
+/// El valor es positives.value() - negatives.value() con lÃ­mites [min, max].
 ///
 /// ### Propiedades
 /// - **Commutative:** merge(a, b) == merge(b, a)
@@ -343,7 +343,7 @@ impl GCounter {
 /// - **Bounded:** El valor se clamp-a a [min_value, max_value]
 ///
 /// ### Uso
-/// - Reputación de nodos (bounded)
+/// - ReputaciÃ³n de nodos (bounded)
 /// - Scores de confianza
 /// - Votos ponderados
 #[derive(Debug, Clone)]
@@ -352,14 +352,14 @@ pub struct PNCounter {
     positives: GCounter,
     /// Contadores negativos (decrementos).
     negatives: GCounter,
-    /// Valor mínimo permitido.
+    /// Valor mÃ­nimo permitido.
     min_value: i64,
-    /// Valor máximo permitido.
+    /// Valor mÃ¡ximo permitido.
     max_value: i64,
 }
 
 impl PNCounter {
-    /// Crea un nuevo PN-Counter con límites especificados.
+    /// Crea un nuevo PN-Counter con lÃ­mites especificados.
     pub fn new(min_value: i64, max_value: i64) -> Result<Self, CrdtError> {
         if min_value > max_value {
             return Err(CrdtError::OutOfRange(
@@ -374,12 +374,12 @@ impl PNCounter {
         })
     }
 
-    /// Incrementa la reputación de un nodo.
+    /// Incrementa la reputaciÃ³n de un nodo.
     pub fn increment(&mut self, node_id: &str, amount: u64) {
         self.positives.increment(node_id, amount);
     }
 
-    /// Decrementa la reputación de un nodo.
+    /// Decrementa la reputaciÃ³n de un nodo.
     pub fn decrement(&mut self, node_id: &str, amount: u64) {
         self.negatives.increment(node_id, amount);
     }
@@ -476,9 +476,9 @@ impl Default for PNCounter {
 
 /// OR-Set (Observed-Remove Set) para banned/slashed peers.
 ///
-/// **Stuartian Law 5:** Cada elemento tiene un tag único para
+/// **Topological Law 5:** Cada elemento tiene un tag Ãºnico para
 /// resolver conflictos add-after-remove. Si un elemento fue
-/// añadido en múltiples nodos, se necesita un remove por cada tag.
+/// aÃ±adido en mÃºltiples nodos, se necesita un remove por cada tag.
 ///
 /// ### Propiedades
 /// - **Commutative:** merge(a, b) == merge(b, a)
@@ -496,12 +496,12 @@ pub struct ORSet {
     elements: BTreeMap<String, BTreeMap<u64, String>>,
     /// Tumba de elementos removidos: element -> set of (tag, node_id).
     tombstone: BTreeMap<String, BTreeMap<u64, String>>,
-    /// Contador de tags para generar tags únicos.
+    /// Contador de tags para generar tags Ãºnicos.
     tag_counter: u64,
 }
 
 impl ORSet {
-    /// Crea un nuevo OR-Set vacío.
+    /// Crea un nuevo OR-Set vacÃ­o.
     pub fn new() -> Self {
         Self {
             elements: BTreeMap::new(),
@@ -510,16 +510,16 @@ impl ORSet {
         }
     }
 
-    /// Añade un elemento al set.
+    /// AÃ±ade un elemento al set.
     ///
-    /// Cada add genera un tag único (tag_counter++).
+    /// Cada add genera un tag Ãºnico (tag_counter++).
     /// Si el elemento fue previamente removido, los tags
     /// tombstoned se limpian para este nuevo tag.
     pub fn add(&mut self, element: &str, node_id: &str) -> u64 {
         let tag = self.tag_counter;
         self.tag_counter += 1;
 
-        // Añadir al set activo
+        // AÃ±adir al set activo
         self.elements
             .entry(element.to_string())
             .or_default()
@@ -536,8 +536,8 @@ impl ORSet {
     /// Remueve un elemento del set.
     ///
     /// Todos los tags observados del elemento se mueven a tombstone.
-    /// Si otro nodo añadió el mismo elemento con un tag diferente,
-    /// ese tag permanecerá activo (observed-remove semantics).
+    /// Si otro nodo aÃ±adiÃ³ el mismo elemento con un tag diferente,
+    /// ese tag permanecerÃ¡ activo (observed-remove semantics).
     pub fn remove(&mut self, element: &str, node_id: &str) -> usize {
         let tags = self.elements.remove(element);
         match tags {
@@ -553,7 +553,7 @@ impl ORSet {
         }
     }
 
-    /// Retorna true si el elemento está presente.
+    /// Retorna true si el elemento estÃ¡ presente.
     pub fn contains(&self, element: &str) -> bool {
         self.elements
             .get(element)
@@ -569,7 +569,7 @@ impl ORSet {
             .collect()
     }
 
-    /// Retorna el número de elementos activos.
+    /// Retorna el nÃºmero de elementos activos.
     pub fn len(&self) -> usize {
         self.elements
             .values()
@@ -577,7 +577,7 @@ impl ORSet {
             .count()
     }
 
-    /// Retorna true si el set está vacío.
+    /// Retorna true si el set estÃ¡ vacÃ­o.
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
@@ -586,19 +586,19 @@ impl ORSet {
     ///
     /// **Algoritmo:**
     /// 1. Para cada elemento en other.elements:
-    ///    - Añadir tags que no están en self.tombstone
+    ///    - AÃ±adir tags que no estÃ¡n en self.tombstone
     /// 2. Para cada elemento en other.tombstone:
     ///    - Mover tags observados en self.elements a self.tombstone
     ///
     /// **Idempotent:** merge(s, s) == s
     /// **Commutative:** merge(a, b) == merge(b, a)
     pub fn merge(&mut self, other: &ORSet) {
-        // 1. Añadir elementos de other
+        // 1. AÃ±adir elementos de other
         for (element, tags) in &other.elements {
             let self_tags = self.elements.entry(element.clone()).or_default();
 
             for (tag, node_id) in tags {
-                // Solo añadir si no está en tombstone
+                // Solo aÃ±adir si no estÃ¡ en tombstone
                 let tomb = self.tombstone.get(element);
                 let is_tombstoned = match tomb {
                     Some(t) => t.contains_key(tag),
@@ -615,17 +615,17 @@ impl ORSet {
             let self_tomb = self.tombstone.entry(element.clone()).or_default();
 
             for (tag, node_id) in tomb_tags {
-                // Si el tag está en self.elements, moverlo a tombstone
+                // Si el tag estÃ¡ en self.elements, moverlo a tombstone
                 if let Some(self_tags) = self.elements.get_mut(element) {
                     if let Some(node) = self_tags.remove(tag) {
                         self_tomb.insert(*tag, node);
                     }
                 }
-                // Siempre añadir al tombstone (para futuros adds con mismo tag)
+                // Siempre aÃ±adir al tombstone (para futuros adds con mismo tag)
                 self_tomb.entry(*tag).or_insert_with(|| node_id.clone());
             }
 
-            // Limpiar elementos vacíos
+            // Limpiar elementos vacÃ­os
             if let Some(tags) = self.elements.get(element) {
                 if tags.is_empty() {
                     self.elements.remove(element);
@@ -761,20 +761,20 @@ impl ORSet {
     }
 }
 
-/// CRDT de reputación — Max-Registry para reputación de nodos.
+/// CRDT de reputaciÃ³n â€” Max-Registry para reputaciÃ³n de nodos.
 ///
-/// **Stuartian Law 5:** Convergencia eventual. Cada nodo
-/// mantiene su propia vista de reputación que converge sin coordinación.
+/// **Topological Law 5:** Convergencia eventual. Cada nodo
+/// mantiene su propia vista de reputaciÃ³n que converge sin coordinaciÃ³n.
 #[derive(Debug, Clone)]
 pub struct ReputationCrdt {
-    /// Reputación por nodo_id.
+    /// ReputaciÃ³n por nodo_id.
     pub reputations: BTreeMap<String, f64>,
-    /// Vector de versión.
+    /// Vector de versiÃ³n.
     pub version: VersionVector,
 }
 
 impl ReputationCrdt {
-    /// Crea un nuevo CRDT de reputación vacío.
+    /// Crea un nuevo CRDT de reputaciÃ³n vacÃ­o.
     pub fn new() -> Self {
         Self {
             reputations: BTreeMap::new(),
@@ -782,15 +782,15 @@ impl ReputationCrdt {
         }
     }
 
-    /// Actualiza la reputación de un nodo.
+    /// Actualiza la reputaciÃ³n de un nodo.
     pub fn update(&mut self, node_id: &str, reputation: f64, updater_id: &str) {
         *self.reputations.entry(node_id.to_string()).or_insert(0.0) = reputation;
         self.version.increment(updater_id);
     }
 
-    /// Merge con otro CRDT de reputación.
+    /// Merge con otro CRDT de reputaciÃ³n.
     ///
-    /// **Stuartian Law 5:** Toma el máximo por nodo (max-registry).
+    /// **Topological Law 5:** Toma el mÃ¡ximo por nodo (max-registry).
     /// **Idempotent:** merge(r, r) == r
     /// **Commutative:** merge(a, b) == merge(b, a)
     pub fn merge(&mut self, other: &ReputationCrdt) {
@@ -803,7 +803,7 @@ impl ReputationCrdt {
         self.version.merge(&other.version);
     }
 
-    /// Obtiene la reputación de un nodo.
+    /// Obtiene la reputaciÃ³n de un nodo.
     pub fn get(&self, node_id: &str) -> Option<f64> {
         self.reputations.get(node_id).copied()
     }
@@ -819,9 +819,9 @@ impl Default for ReputationCrdt {
 mod tests {
     use super::*;
 
-    // ═══════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     // VersionVector Tests
-    // ═══════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     #[test]
     fn test_version_vector_new() {
@@ -904,9 +904,9 @@ mod tests {
         assert_eq!(vv1.get("a"), vv2.get("a"));
     }
 
-    // ═══════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     // GCounter Tests
-    // ═══════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     #[test]
     fn test_gcounter_new() {
@@ -983,9 +983,9 @@ mod tests {
         assert_eq!(restored.get("node-2"), 3);
     }
 
-    // ═══════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     // PNCounter Tests
-    // ═══════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     #[test]
     fn test_pncounter_new() {
@@ -1045,9 +1045,9 @@ mod tests {
         let _ = PNCounter::default();
     }
 
-    // ═══════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     // ORSet Tests
-    // ═══════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     #[test]
     fn test_orset_new() {
@@ -1138,9 +1138,9 @@ mod tests {
         assert!(restored.contains("peer-2"));
     }
 
-    // ═══════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     // ReputationCrdt Tests
-    // ═══════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     #[test]
     fn test_crdt_new() {
@@ -1172,20 +1172,20 @@ mod tests {
         let _ = ReputationCrdt::default();
     }
 
-    // ═══════════════════════════════════════════
-    // Convergence Tests — 3 Partitioned Nodes
-    // ═══════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // Convergence Tests â€” 3 Partitioned Nodes
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     /// Test de convergencia con 3 nodos particionados.
     ///
     /// Escenario:
-    /// 1. Tres nodos (A, B, C) inician con estado vacío
-    /// 2. Cada nodo hace operaciones locales (partición)
+    /// 1. Tres nodos (A, B, C) inician con estado vacÃ­o
+    /// 2. Cada nodo hace operaciones locales (particiÃ³n)
     /// 3. Nodos se reconectan y hacen merge par a par
     /// 4. Verificar que todos convergen al mismo estado
     #[test]
     fn test_gcounter_convergence_3_nodes() {
-        // Fase 1: Partición — cada nodo opera localmente
+        // Fase 1: ParticiÃ³n â€” cada nodo opera localmente
         let mut node_a = GCounter::new();
         let mut node_b = GCounter::new();
         let mut node_c = GCounter::new();
@@ -1194,12 +1194,12 @@ mod tests {
         node_b.increment("B", 20);
         node_c.increment("C", 30);
 
-        // Fase 2: Reconexión — dos rondas de merge para convergencia total
+        // Fase 2: ReconexiÃ³n â€” dos rondas de merge para convergencia total
         // Ronda 1
         node_a.merge(&node_b);
         node_b.merge(&node_c);
         node_c.merge(&node_a);
-        // Ronda 2 — propagación completa
+        // Ronda 2 â€” propagaciÃ³n completa
         node_a.merge(&node_b);
         node_b.merge(&node_c);
         node_c.merge(&node_a);
@@ -1216,14 +1216,14 @@ mod tests {
         let mut node_b = PNCounter::new(0, 1000).unwrap();
         let mut node_c = PNCounter::new(0, 1000).unwrap();
 
-        // Partición
+        // ParticiÃ³n
         node_a.increment("A", 50);
         node_a.decrement("A", 10);
         node_b.increment("B", 30);
         node_c.increment("C", 20);
         node_c.decrement("C", 5);
 
-        // Reconexión — dos rondas para convergencia total
+        // ReconexiÃ³n â€” dos rondas para convergencia total
         node_a.merge(&node_b);
         node_b.merge(&node_c);
         node_c.merge(&node_a);
@@ -1243,7 +1243,7 @@ mod tests {
         let mut node_b = ORSet::new();
         let mut node_c = ORSet::new();
 
-        // Partición
+        // ParticiÃ³n
         node_a.add("peer-x", "A");
         node_a.add("peer-y", "A");
         node_b.add("peer-y", "B"); // Conflict: same element, different tag
@@ -1251,7 +1251,7 @@ mod tests {
         node_c.add("peer-w", "C");
         node_c.remove("peer-w", "C"); // Add then remove
 
-        // Reconexión — dos rondas para convergencia total
+        // ReconexiÃ³n â€” dos rondas para convergencia total
         node_a.merge(&node_b);
         node_b.merge(&node_c);
         node_c.merge(&node_a);
@@ -1280,13 +1280,13 @@ mod tests {
         let mut node_b = ReputationCrdt::new();
         let mut node_c = ReputationCrdt::new();
 
-        // Partición
+        // ParticiÃ³n
         node_a.update("target", 0.5, "A");
         node_b.update("target", 0.8, "B");
         node_c.update("target", 0.3, "C");
         node_a.update("other", 0.9, "A");
 
-        // Reconexión — dos rondas para convergencia total
+        // ReconexiÃ³n â€” dos rondas para convergencia total
         node_a.merge(&node_b);
         node_b.merge(&node_c);
         node_c.merge(&node_a);
@@ -1294,7 +1294,7 @@ mod tests {
         node_b.merge(&node_c);
         node_c.merge(&node_a);
 
-        // Convergencia — max-registry toma el máximo
+        // Convergencia â€” max-registry toma el mÃ¡ximo
         assert_eq!(node_a.get("target"), Some(0.8));
         assert_eq!(node_b.get("target"), Some(0.8));
         assert_eq!(node_c.get("target"), Some(0.8));
@@ -1304,9 +1304,9 @@ mod tests {
         assert_eq!(node_c.get("other"), Some(0.9));
     }
 
-    // ═══════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     // Error Display Tests
-    // ═══════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     #[test]
     fn test_error_display() {

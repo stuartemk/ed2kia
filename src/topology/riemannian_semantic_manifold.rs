@@ -1,15 +1,15 @@
-//! Riemannian Semantic Manifold — Sprint 77: Physics of Consciousness & Thermodynamic Finality
+﻿//! Riemannian Semantic Manifold â€” Sprint 77: Physics of Consciousness & Thermodynamic Finality
 //!
-//! Resuelve el bug ontológico: cuantización discreta del grafo semántico (petgraph).
+//! Resuelve el bug ontolÃ³gico: cuantizaciÃ³n discreta del grafo semÃ¡ntico (petgraph).
 //!
 //! Implementa variedades Riemannianas continuas: SCT como curvatura de manifold.
-//! Enrutamiento por geodésicas, no saltos discretos.
+//! Enrutamiento por geodÃ©sicas, no saltos discretos.
 //!
-//! # Garantías
+//! # GarantÃ­as
 //!
-//! - Curvatura: O(n²) para matriz métrica completa
-//! - Proyección geodésica: O(dim × steps)
-//! - Continuidad: sin cuantización discreta
+//! - Curvatura: O(nÂ²) para matriz mÃ©trica completa
+//! - ProyecciÃ³n geodÃ©sica: O(dim Ã— steps)
+//! - Continuidad: sin cuantizaciÃ³n discreta
 
 use std::fmt;
 
@@ -60,7 +60,7 @@ pub struct ManifoldConfig {
 }
 
 impl ManifoldConfig {
-    pub fn default_stuartian() -> Self {
+    pub fn default_Topological() -> Self {
         Self {
             embedding_dim: 8,
             max_geodesic_steps: 100,
@@ -82,7 +82,7 @@ impl ManifoldConfig {
 
 impl Default for ManifoldConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -169,7 +169,7 @@ pub struct RiemannianSemanticManifold {
 impl RiemannianSemanticManifold {
     pub fn new() -> Self {
         Self {
-            config: ManifoldConfig::default_stuartian(),
+            config: ManifoldConfig::default_Topological(),
             attractors: Vec::new(),
         }
     }
@@ -309,7 +309,7 @@ impl RiemannianSemanticManifold {
                 let dist_ij = Self::pairwise_distance(&embeddings[i], &embeddings[j]);
 
                 // Compute local curvature via distance ratio
-                // K ≈ (d_ij^2 - sum_of_local_variances) / normalization
+                // K â‰ˆ (d_ij^2 - sum_of_local_variances) / normalization
                 let local_variance = Self::local_variance(&embeddings[i], embeddings, epsilon);
                 let curvature = if dist_ij > 1e-6 {
                     (local_variance / (dist_ij * dist_ij)) as f64
@@ -372,7 +372,7 @@ impl fmt::Display for RiemannianSemanticManifold {
     }
 }
 
-// ─── Public Standalone Functions ─────────────────────────────────────────────
+// â”€â”€â”€ Public Standalone Functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Compute manifold curvature from embeddings (standalone).
 pub fn compute_manifold_curvature(embeddings: &[Vec<f32>]) -> f64 {
@@ -404,7 +404,7 @@ pub fn project_to_attractor_basin(point: &[f32], basin_center: &[f32], step_size
         .collect()
 }
 
-// ─── Tests ─────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[cfg(test)]
 mod tests {
@@ -416,7 +416,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = ManifoldConfig::default_stuartian();
+        let config = ManifoldConfig::default_Topological();
         assert!(config.validate().is_ok());
         assert_eq!(config.embedding_dim, 8);
     }
@@ -425,7 +425,7 @@ mod tests {
     fn test_config_zero_dim() {
         let config = ManifoldConfig {
             embedding_dim: 0,
-            ..ManifoldConfig::default_stuartian()
+            ..ManifoldConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }
@@ -434,7 +434,7 @@ mod tests {
     fn test_config_invalid_step() {
         let config = ManifoldConfig {
             default_step_size: 0.0,
-            ..ManifoldConfig::default_stuartian()
+            ..ManifoldConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }

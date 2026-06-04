@@ -1,6 +1,6 @@
-//! Morphic Resonance Decoder (MRD) — Semantic Waveform Analysis.
+﻿//! Morphic Resonance Decoder (MRD) â€” Semantic Waveform Analysis.
 //!
-//! Maps natural language text sequences to the **Stuartian Moral Manifold**
+//! Maps natural language text sequences to the **Topological Moral Manifold**
 //! (3D ethical space: X=autonomy, Y=extraction, Z=ethical focus).
 //!
 //! **Core Algorithm:**
@@ -46,7 +46,7 @@ impl fmt::Display for MorphicError {
                 )
             }
             MorphicError::ComputationError(msg) => {
-                write!(f, "MorphicError: computation failed — {msg}")
+                write!(f, "MorphicError: computation failed â€” {msg}")
             }
         }
     }
@@ -55,11 +55,11 @@ impl fmt::Display for MorphicError {
 /// Classification of semantic intent after waveform analysis.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IntentClassification {
-    /// Upper Focus — Constructive, cooperative, evolutionary intent.
+    /// Upper Focus â€” Constructive, cooperative, evolutionary intent.
     UpperFocus,
-    /// Lower Focus — Manipulative, fear-based, divisive intent.
+    /// Lower Focus â€” Manipulative, fear-based, divisive intent.
     LowerFocus,
-    /// Neutral — Mixed or ambiguous intent requiring further context.
+    /// Neutral â€” Mixed or ambiguous intent requiring further context.
     Neutral,
 }
 
@@ -182,11 +182,11 @@ struct LexiconEntry {
     z: f64,
 }
 
-/// Upper Focus lexicon — constructive, cooperative, evolutionary patterns.
+/// Upper Focus lexicon â€” constructive, cooperative, evolutionary patterns.
 const UPPER_LEXICON: &[LexiconEntry] = &[
     // Cooperation & Unity
     LexiconEntry {
-        pattern: "cooperación",
+        pattern: "cooperaciÃ³n",
         x: 0.7,
         y: 0.1,
         z: 0.9,
@@ -198,7 +198,7 @@ const UPPER_LEXICON: &[LexiconEntry] = &[
         z: 0.9,
     },
     LexiconEntry {
-        pattern: "unión",
+        pattern: "uniÃ³n",
         x: 0.6,
         y: 0.1,
         z: 0.85,
@@ -223,7 +223,7 @@ const UPPER_LEXICON: &[LexiconEntry] = &[
     },
     // Evolution & Growth
     LexiconEntry {
-        pattern: "evolución",
+        pattern: "evoluciÃ³n",
         x: 0.8,
         y: 0.1,
         z: 0.9,
@@ -248,7 +248,7 @@ const UPPER_LEXICON: &[LexiconEntry] = &[
     },
     // Harmony & Balance
     LexiconEntry {
-        pattern: "armonía",
+        pattern: "armonÃ­a",
         x: 0.6,
         y: 0.05,
         z: 0.95,
@@ -273,7 +273,7 @@ const UPPER_LEXICON: &[LexiconEntry] = &[
     },
     // Distribution & Sharing
     LexiconEntry {
-        pattern: "distribución",
+        pattern: "distribuciÃ³n",
         x: 0.75,
         y: 0.15,
         z: 0.8,
@@ -298,7 +298,7 @@ const UPPER_LEXICON: &[LexiconEntry] = &[
     },
     // Integration & Preservation
     LexiconEntry {
-        pattern: "integración",
+        pattern: "integraciÃ³n",
         x: 0.7,
         y: 0.1,
         z: 0.85,
@@ -310,7 +310,7 @@ const UPPER_LEXICON: &[LexiconEntry] = &[
         z: 0.85,
     },
     LexiconEntry {
-        pattern: "preservación",
+        pattern: "preservaciÃ³n",
         x: 0.6,
         y: 0.1,
         z: 0.8,
@@ -360,7 +360,7 @@ const UPPER_LEXICON: &[LexiconEntry] = &[
         z: 0.85,
     },
     LexiconEntry {
-        pattern: "comprensión",
+        pattern: "comprensiÃ³n",
         x: 0.6,
         y: 0.1,
         z: 0.8,
@@ -373,7 +373,7 @@ const UPPER_LEXICON: &[LexiconEntry] = &[
     },
     // Healing & Restoration
     LexiconEntry {
-        pattern: "sanación",
+        pattern: "sanaciÃ³n",
         x: 0.65,
         y: 0.1,
         z: 0.85,
@@ -385,7 +385,7 @@ const UPPER_LEXICON: &[LexiconEntry] = &[
         z: 0.85,
     },
     LexiconEntry {
-        pattern: "restauración",
+        pattern: "restauraciÃ³n",
         x: 0.6,
         y: 0.15,
         z: 0.8,
@@ -410,7 +410,7 @@ const UPPER_LEXICON: &[LexiconEntry] = &[
         z: 0.8,
     },
     LexiconEntry {
-        pattern: "sabiduría",
+        pattern: "sabidurÃ­a",
         x: 0.65,
         y: 0.05,
         z: 0.9,
@@ -423,7 +423,7 @@ const UPPER_LEXICON: &[LexiconEntry] = &[
     },
 ];
 
-/// Lower Focus lexicon — fear, scarcity, division, manipulation patterns.
+/// Lower Focus lexicon â€” fear, scarcity, division, manipulation patterns.
 const LOWER_LEXICON: &[LexiconEntry] = &[
     // Fear & Threat
     LexiconEntry {
@@ -501,7 +501,7 @@ const LOWER_LEXICON: &[LexiconEntry] = &[
     },
     // Division & Conflict
     LexiconEntry {
-        pattern: "división",
+        pattern: "divisiÃ³n",
         x: 0.2,
         y: 0.8,
         z: -0.85,
@@ -550,7 +550,7 @@ const LOWER_LEXICON: &[LexiconEntry] = &[
         z: -0.5,
     },
     LexiconEntry {
-        pattern: "pánico",
+        pattern: "pÃ¡nico",
         x: 0.1,
         y: 0.9,
         z: -0.9,
@@ -575,7 +575,7 @@ const LOWER_LEXICON: &[LexiconEntry] = &[
         z: -0.7,
     },
     LexiconEntry {
-        pattern: "supremacía",
+        pattern: "supremacÃ­a",
         x: 0.2,
         y: 0.85,
         z: -0.85,
@@ -588,7 +588,7 @@ const LOWER_LEXICON: &[LexiconEntry] = &[
     },
     // Deception & Manipulation
     LexiconEntry {
-        pattern: "engaño",
+        pattern: "engaÃ±o",
         x: 0.15,
         y: 0.9,
         z: -0.9,
@@ -600,7 +600,7 @@ const LOWER_LEXICON: &[LexiconEntry] = &[
         z: -0.9,
     },
     LexiconEntry {
-        pattern: "manipulación",
+        pattern: "manipulaciÃ³n",
         x: 0.1,
         y: 0.95,
         z: -0.95,
@@ -625,7 +625,7 @@ const LOWER_LEXICON: &[LexiconEntry] = &[
     },
 ];
 
-/// The Morphic Resonance Decoder — Maps text to the Stuartian Moral Manifold.
+/// The Morphic Resonance Decoder â€” Maps text to the Topological Moral Manifold.
 ///
 /// Processes natural language input through semantic waveform analysis,
 /// detecting the underlying intent topology rather than isolated keywords.
@@ -758,9 +758,9 @@ impl MorphicResonanceDecoder {
     ///
     /// Detects multi-word patterns that indicate Lower Focus intent
     /// even when individual tokens appear neutral:
-    /// - "we must" + fear words → urgency manipulation
-    /// - "they say" + negative → division framing
-    /// - "only way" + action → false scarcity
+    /// - "we must" + fear words â†’ urgency manipulation
+    /// - "they say" + negative â†’ division framing
+    /// - "only way" + action â†’ false scarcity
     fn analyze_topology(&self, tokens: &[String]) -> f64 {
         let mut bonus = 0.0f64;
 
@@ -787,10 +787,10 @@ impl MorphicResonanceDecoder {
             }
         }
 
-        // False scarcity: "única forma", "última oportunidad", "only way", "last chance"
-        if Self::contains_pattern(&text, &["única", "forma"])
+        // False scarcity: "Ãºnica forma", "Ãºltima oportunidad", "only way", "last chance"
+        if Self::contains_pattern(&text, &["Ãºnica", "forma"])
             || Self::contains_pattern(&text, &["only", "way"])
-            || Self::contains_pattern(&text, &["última", "oportunidad"])
+            || Self::contains_pattern(&text, &["Ãºltima", "oportunidad"])
             || Self::contains_pattern(&text, &["last", "chance"])
         {
             bonus -= 0.12;
@@ -799,16 +799,16 @@ impl MorphicResonanceDecoder {
         // Constructive patterns: "juntos", "construir", "crear", "together", "build"
         if Self::contains_pattern(&text, &["juntos", "construir"])
             || Self::contains_pattern(&text, &["together", "build"])
-            || Self::contains_pattern(&text, &["cooperación", "futuro"])
+            || Self::contains_pattern(&text, &["cooperaciÃ³n", "futuro"])
             || Self::contains_pattern(&text, &["cooperation", "future"])
         {
             bonus += 0.1;
         }
 
-        // Knowledge-seeking patterns: "cómo", "por qué", "entender", "how", "why", "understand"
-        if Self::contains_pattern(&text, &["cómo", "hacer"])
+        // Knowledge-seeking patterns: "cÃ³mo", "por quÃ©", "entender", "how", "why", "understand"
+        if Self::contains_pattern(&text, &["cÃ³mo", "hacer"])
             || Self::contains_pattern(&text, &["how", "to"])
-            || Self::contains_pattern(&text, &["por qué", "funciona"])
+            || Self::contains_pattern(&text, &["por quÃ©", "funciona"])
             || Self::contains_pattern(&text, &["why", "does"])
         {
             bonus += 0.08;
@@ -926,7 +926,7 @@ mod tests {
     fn test_upper_focus_cooperation() {
         let decoder = MorphicResonanceDecoder::new();
         let waveform = decoder
-            .decode("cooperación y armonía para la evolución")
+            .decode("cooperaciÃ³n y armonÃ­a para la evoluciÃ³n")
             .unwrap();
         assert_eq!(waveform.intent, IntentClassification::UpperFocus);
         assert!(waveform.z_score > 0.0);
@@ -937,7 +937,7 @@ mod tests {
     fn test_upper_focus_symbiosis() {
         let decoder = MorphicResonanceDecoder::new();
         let waveform = decoder
-            .decode("simbiosis y resonancia para la preservación")
+            .decode("simbiosis y resonancia para la preservaciÃ³n")
             .unwrap();
         assert_eq!(waveform.intent, IntentClassification::UpperFocus);
         assert!(waveform.z > 0.5);
@@ -956,7 +956,7 @@ mod tests {
     fn test_lower_focus_division() {
         let decoder = MorphicResonanceDecoder::new();
         let waveform = decoder
-            .decode("división y conflicto entre oponente")
+            .decode("divisiÃ³n y conflicto entre oponente")
             .unwrap();
         assert_eq!(waveform.intent, IntentClassification::LowerFocus);
         assert!(waveform.y > 0.5);
@@ -967,7 +967,7 @@ mod tests {
         let decoder = MorphicResonanceDecoder::new();
         // Mixed text with both positive and negative patterns
         let waveform = decoder
-            .decode("el miedo puede llevar a la cooperación")
+            .decode("el miedo puede llevar a la cooperaciÃ³n")
             .unwrap();
         // Should be neutral or slightly negative due to mixed signals
         assert!(
@@ -980,7 +980,7 @@ mod tests {
     fn test_topology_us_vs_them() {
         let decoder = MorphicResonanceDecoder::new();
         let waveform = decoder
-            .decode("ellos contra nosotros en esta división")
+            .decode("ellos contra nosotros en esta divisiÃ³n")
             .unwrap();
         // Topology should detect division pattern
         assert!(waveform.intent == IntentClassification::LowerFocus || waveform.z_score < 0.0);
@@ -990,7 +990,7 @@ mod tests {
     fn test_topology_constructive() {
         let decoder = MorphicResonanceDecoder::new();
         let waveform = decoder
-            .decode("juntos construir un futuro de cooperación")
+            .decode("juntos construir un futuro de cooperaciÃ³n")
             .unwrap();
         assert!(waveform.intent == IntentClassification::UpperFocus);
     }
@@ -999,7 +999,7 @@ mod tests {
     fn test_topology_false_scarcity() {
         let decoder = MorphicResonanceDecoder::new();
         let waveform = decoder
-            .decode("última oportunidad antes del peligro")
+            .decode("Ãºltima oportunidad antes del peligro")
             .unwrap();
         // Should detect false scarcity pattern
         assert!(waveform.z_score < 0.1);
@@ -1069,7 +1069,7 @@ mod tests {
     #[test]
     fn test_knowledge_seeking_positive() {
         let decoder = MorphicResonanceDecoder::new();
-        let waveform = decoder.decode("cómo hacer para entender mejor").unwrap();
+        let waveform = decoder.decode("cÃ³mo hacer para entender mejor").unwrap();
         // Knowledge-seeking should get topology bonus
         assert!(waveform.z_score > -0.1);
     }
@@ -1092,7 +1092,7 @@ mod tests {
         );
         assert_eq!(
             format!("{}", MorphicError::ComputationError("test".to_string())),
-            "MorphicError: computation failed — test"
+            "MorphicError: computation failed â€” test"
         );
     }
 
@@ -1117,9 +1117,9 @@ mod tests {
         };
         let decoder = MorphicResonanceDecoder::with_config(config);
         // Long text should be limited to 10 tokens
-        let long_text = "cooperación cooperación cooperación cooperación cooperación \
-                         cooperación cooperación cooperación cooperación cooperación \
-                         cooperación cooperación cooperación cooperación";
+        let long_text = "cooperaciÃ³n cooperaciÃ³n cooperaciÃ³n cooperaciÃ³n cooperaciÃ³n \
+                         cooperaciÃ³n cooperaciÃ³n cooperaciÃ³n cooperaciÃ³n cooperaciÃ³n \
+                         cooperaciÃ³n cooperaciÃ³n cooperaciÃ³n cooperaciÃ³n";
         let waveform = decoder.decode(long_text).unwrap();
         assert_eq!(waveform.token_count, 10);
     }

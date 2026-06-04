@@ -1,12 +1,12 @@
-//! Mainnet Genesis — Estado de Génesis Determinista.
+﻿//! Mainnet Genesis â€” Estado de GÃ©nesis Determinista.
 //!
-//! Generación criptográfica del estado inicial de mainnet con firma Ed25519,
-//! exportación dual (bincode + JSON) y validación estricta de alineación SCT/BFT.
+//! GeneraciÃ³n criptogrÃ¡fica del estado inicial de mainnet con firma Ed25519,
+//! exportaciÃ³n dual (bincode + JSON) y validaciÃ³n estricta de alineaciÃ³n SCT/BFT.
 //!
 //! **Principios:**
-//! - Génesis transparente: hash SHA256 del estado, firma verificable
-//! - Alineación ética desde bloque cero: `sct_config.z_threshold == 0.0`
-//! - Cero lógica financiera: propiedad compartida del estado inicial
+//! - GÃ©nesis transparente: hash SHA256 del estado, firma verificable
+//! - AlineaciÃ³n Ã©tica desde bloque cero: `sct_config.z_threshold == 0.0`
+//! - Cero lÃ³gica financiera: propiedad compartida del estado inicial
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -15,7 +15,7 @@ use std::fmt;
 use std::fs;
 use std::path::Path;
 
-/// Error específico de Genesis State.
+/// Error especÃ­fico de Genesis State.
 #[derive(Debug)]
 pub enum GenesisError {
     InvalidSctThreshold { threshold: f32 },
@@ -69,7 +69,7 @@ impl fmt::Display for PeerId {
     }
 }
 
-/// SCT (Stuartian Context Tensor) configuration for genesis.
+/// SCT (Topological Context Tensor) configuration for genesis.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SCTConfig {
     /// Z-axis threshold for ethical trajectory approval.

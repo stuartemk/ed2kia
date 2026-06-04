@@ -1,4 +1,4 @@
-//! Async Mesh & Sneakernet — Sprint 81: The Biological Bridge & Singularity Resilience
+﻿//! Async Mesh & Sneakernet â€” Sprint 81: The Biological Bridge & Singularity Resilience
 //!
 //! Abstraction over Bluetooth/LoRaWAN for offline mesh networking. DAG supports
 //! offline state. Graph Merging with VersionVectors fuses topologies when
@@ -14,7 +14,7 @@
 use std::collections::HashMap;
 use std::fmt;
 
-// ─── Errors ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Errors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum MeshError {
@@ -37,7 +37,7 @@ impl fmt::Display for MeshError {
     }
 }
 
-// ─── Transport Type ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Transport Type â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TransportType {
@@ -58,7 +58,7 @@ impl fmt::Display for TransportType {
     }
 }
 
-// ─── Version Vector ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Version Vector â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct VersionVector {
@@ -124,7 +124,7 @@ impl fmt::Display for VersionVector {
     }
 }
 
-// ─── DAG State ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ DAG State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct DagState {
@@ -174,7 +174,7 @@ impl fmt::Display for DagState {
     }
 }
 
-// ─── Merge Result ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ Merge Result â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct MergeResult {
@@ -214,7 +214,7 @@ impl fmt::Display for MergeResult {
     }
 }
 
-// ─── Mesh Config ──────────────────────────────────────────────────────────────
+// â”€â”€â”€ Mesh Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct MeshConfig {
@@ -227,7 +227,7 @@ pub struct MeshConfig {
 }
 
 impl MeshConfig {
-    pub fn default_stuartian() -> Self {
+    pub fn default_Topological() -> Self {
         Self {
             max_nodes: 100_000,
             min_overlap: 0.1,
@@ -248,11 +248,11 @@ impl MeshConfig {
 
 impl Default for MeshConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
-// ─── Async Mesh Engine ────────────────────────────────────────────────────────
+// â”€â”€â”€ Async Mesh Engine â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 pub struct AsyncMeshSneakernet {
     config: MeshConfig,
@@ -263,7 +263,7 @@ pub struct AsyncMeshSneakernet {
 impl AsyncMeshSneakernet {
     pub fn new(transport: TransportType) -> Self {
         Self {
-            config: MeshConfig::default_stuartian(),
+            config: MeshConfig::default_Topological(),
             local_dag: DagState::new(transport),
             sync_history: Vec::new(),
         }
@@ -356,7 +356,7 @@ impl fmt::Display for AsyncMeshSneakernet {
     }
 }
 
-// ─── Public Functions ─────────────────────────────────────────────────────────
+// â”€â”€â”€ Public Functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Merge two offline DAGs using version vectors
 pub fn merge_offline_dags(
@@ -380,7 +380,7 @@ pub fn merge_offline_dags(
     MergeResult::new(merged, conflicts, new_added, 0)
 }
 
-// ─── Tests ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[cfg(test)]
 mod tests {
@@ -388,27 +388,27 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = MeshConfig::default_stuartian();
+        let config = MeshConfig::default_Topological();
         assert_eq!(config.max_nodes, 100_000);
         assert_eq!(config.min_overlap, 0.1);
     }
 
     #[test]
     fn test_config_validate_ok() {
-        let config = MeshConfig::default_stuartian();
+        let config = MeshConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 
     #[test]
     fn test_config_zero_nodes() {
-        let mut config = MeshConfig::default_stuartian();
+        let mut config = MeshConfig::default_Topological();
         config.max_nodes = 0;
         assert!(config.validate().is_err());
     }
 
     #[test]
     fn test_config_invalid_overlap() {
-        let mut config = MeshConfig::default_stuartian();
+        let mut config = MeshConfig::default_Topological();
         config.min_overlap = 1.5;
         assert!(config.validate().is_err());
     }
@@ -528,7 +528,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = MeshConfig::default_stuartian();
+        let config = MeshConfig::default_Topological();
         let engine = AsyncMeshSneakernet::with_config(config, TransportType::LoRaWAN).unwrap();
         assert_eq!(engine.node_count(), 0);
     }

@@ -1,16 +1,16 @@
-//! IoT Microkernel — Sprint 71: Global Bootstrap & Critical Bottleneck Resolution
+﻿//! IoT Microkernel â€” Sprint 71: Global Bootstrap & Critical Bottleneck Resolution
 //!
 //! Bridges RTOS (Real-Time Operating System) constraints with async P2P network via:
 //! - Local micro-kernel with watchdog timer
 //! - Last-valid GEI cache for offline fallback
-//! - Priority queue for async→sync command bridging
+//! - Priority queue for asyncâ†’sync command bridging
 //! - Safe action execution with ethical bounds checking
 //!
 //! # Architecture
 //!
 //! ```text
-//! [IoT Device] → [Microkernel] → [P2P Bridge]
-//!    ↑               ↑
+//! [IoT Device] â†’ [Microkernel] â†’ [P2P Bridge]
+//!    â†‘               â†‘
 //! [Watchdog]    [Last-GEI Cache]
 //! ```
 
@@ -34,9 +34,9 @@ pub enum KernelError {
     QueueFull { capacity: usize },
     /// Invalid command type.
     InvalidCommand(String),
-    /// Device is in safe mode — only diagnostic commands allowed.
+    /// Device is in safe mode â€” only diagnostic commands allowed.
     SafeModeActive,
-    /// Watchdog has triggered — system halted.
+    /// Watchdog has triggered â€” system halted.
     WatchdogTriggered,
 }
 
@@ -59,8 +59,8 @@ impl fmt::Display for KernelError {
                 write!(f, "command queue full (capacity: {})", capacity)
             }
             KernelError::InvalidCommand(msg) => write!(f, "invalid command: {}", msg),
-            KernelError::SafeModeActive => write!(f, "safe mode active — diagnostics only"),
-            KernelError::WatchdogTriggered => write!(f, "watchdog triggered — system halted"),
+            KernelError::SafeModeActive => write!(f, "safe mode active â€” diagnostics only"),
+            KernelError::WatchdogTriggered => write!(f, "watchdog triggered â€” system halted"),
         }
     }
 }
@@ -87,8 +87,8 @@ pub struct KernelConfig {
 }
 
 impl KernelConfig {
-    /// Default Stuartian configuration.
-    pub fn default_stuartian() -> Self {
+    /// Default Topological configuration.
+    pub fn default_Topological() -> Self {
         Self {
             watchdog_timeout_ms: 5000,
             queue_capacity: 64,
@@ -114,7 +114,7 @@ impl KernelConfig {
 
 impl Default for KernelConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -216,7 +216,7 @@ pub struct IotMicrokernel {
 impl IotMicrokernel {
     pub fn new() -> Self {
         Self {
-            config: KernelConfig::default_stuartian(),
+            config: KernelConfig::default_Topological(),
             state: KernelState::Running,
             command_queue: VecDeque::new(),
             gei_cache: Vec::new(),
@@ -280,7 +280,7 @@ impl IotMicrokernel {
         }
     }
 
-    /// Check watchdog — enter safe mode if timeout exceeded.
+    /// Check watchdog â€” enter safe mode if timeout exceeded.
     pub fn check_watchdog(&mut self, current_ms: u64) -> bool {
         if self.last_heartbeat_ms == 0 {
             return false; // No heartbeat recorded yet
@@ -511,7 +511,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = KernelConfig::default_stuartian();
+        let config = KernelConfig::default_Topological();
         assert_eq!(config.watchdog_timeout_ms, 5000);
         assert_eq!(config.queue_capacity, 64);
         assert!(config.offline_fallback);
@@ -519,12 +519,12 @@ mod tests {
 
     #[test]
     fn test_config_validate() {
-        assert!(KernelConfig::default_stuartian().validate().is_ok());
+        assert!(KernelConfig::default_Topological().validate().is_ok());
     }
 
     #[test]
     fn test_config_zero_timeout() {
-        let mut config = KernelConfig::default_stuartian();
+        let mut config = KernelConfig::default_Topological();
         config.watchdog_timeout_ms = 0;
         assert!(config.validate().is_err());
     }
@@ -551,7 +551,7 @@ mod tests {
     #[test]
     fn test_enqueue_priority_order() {
         let mut kernel = IotMicrokernel::new();
-        // Populate GEI cache to pass ethical bounds check (all components = 1.0 → alignment = 1.0)
+        // Populate GEI cache to pass ethical bounds check (all components = 1.0 â†’ alignment = 1.0)
         kernel.update_gei_cache([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0], 100);
         kernel
             .enqueue(
@@ -580,7 +580,7 @@ mod tests {
 
     #[test]
     fn test_queue_full() {
-        let mut config = KernelConfig::default_stuartian();
+        let mut config = KernelConfig::default_Topological();
         config.queue_capacity = 2;
         let mut kernel = IotMicrokernel::with_config(config).unwrap();
         kernel
@@ -624,7 +624,7 @@ mod tests {
 
     #[test]
     fn test_gei_cache_trim() {
-        let mut config = KernelConfig::default_stuartian();
+        let mut config = KernelConfig::default_Topological();
         config.gei_cache_size = 3;
         let mut kernel = IotMicrokernel::with_config(config).unwrap();
         for i in 0..5 {

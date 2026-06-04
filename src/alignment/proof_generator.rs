@@ -1,4 +1,4 @@
-//! Proof Generator — Sprint 70: Civilization-Scale Architecture
+﻿//! Proof Generator â€” Sprint 70: Civilization-Scale Architecture
 //!
 //! Generates Lean4/Isabelle proof stubs from interpretable features,
 //! enabling formal verification of ethical alignment guarantees.
@@ -54,8 +54,8 @@ pub struct ProofConfig {
 }
 
 impl ProofConfig {
-    /// Default Stuartian configuration.
-    pub fn default_stuartian() -> Self {
+    /// Default Topological configuration.
+    pub fn default_Topological() -> Self {
         Self {
             max_proofs: 128,
             backend: "lean4".to_string(),
@@ -90,7 +90,7 @@ impl ProofConfig {
 
 impl Default for ProofConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -131,7 +131,7 @@ impl fmt::Display for ProofRecord {
     }
 }
 
-/// Proof Generator — generates formal proofs from interpretable features.
+/// Proof Generator â€” generates formal proofs from interpretable features.
 pub struct ProofGenerator {
     config: ProofConfig,
     proofs: HashMap<u64, ProofRecord>,
@@ -142,7 +142,7 @@ impl ProofGenerator {
     /// Create a new proof generator with default configuration.
     pub fn new() -> Self {
         Self {
-            config: ProofConfig::default_stuartian(),
+            config: ProofConfig::default_Topological(),
             proofs: HashMap::new(),
             next_id: 1,
         }
@@ -218,7 +218,7 @@ impl ProofGenerator {
                     .collect::<Vec<_>>()
                     .join(", ");
                 format!(
-                    "theorem ethical_alignment (gei : Fin {} → ℝ) : γ < {} := by\n  let gei := ![{}]\n  have h : γ = {:.4} := by norm_num\n  exact lt_of_le_of_lt (gamma_nonneg gei) (by norm_num)\n  sorry",
+                    "theorem ethical_alignment (gei : Fin {} â†’ â„) : Î³ < {} := by\n  let gei := ![{}]\n  have h : Î³ = {:.4} := by norm_num\n  exact lt_of_le_of_lt (gamma_nonneg gei) (by norm_num)\n  sorry",
                     gei.len(),
                     self.config.contraction_threshold,
                     gei_str,
@@ -232,7 +232,7 @@ impl ProofGenerator {
                     .collect::<Vec<_>>()
                     .join(" ");
                 format!(
-                    "theorem ethical_alignment:\n  fixes gei :: \"real list\"\n  assumes \"gei = [{}]\"\n  shows \"γ < {}\"\n  unfolding gamma_def\n  by (simp add: assms)",
+                    "theorem ethical_alignment:\n  fixes gei :: \"real list\"\n  assumes \"gei = [{}]\"\n  shows \"Î³ < {}\"\n  unfolding gamma_def\n  by (simp add: assms)",
                     gei_str,
                     self.config.contraction_threshold
                 )
@@ -308,7 +308,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = ProofConfig::default_stuartian();
+        let config = ProofConfig::default_Topological();
         assert_eq!(config.max_proofs, 128);
         assert_eq!(config.backend, "lean4");
         assert_eq!(config.gei_dim, 8);
@@ -317,13 +317,13 @@ mod tests {
 
     #[test]
     fn test_config_validate_valid() {
-        let config = ProofConfig::default_stuartian();
+        let config = ProofConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 
     #[test]
     fn test_config_validate_zero_proofs() {
-        let mut config = ProofConfig::default_stuartian();
+        let mut config = ProofConfig::default_Topological();
         config.max_proofs = 0;
         match config.validate() {
             Err(ProofError::InvalidGeometry(msg)) => {
@@ -335,7 +335,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_zero_dim() {
-        let mut config = ProofConfig::default_stuartian();
+        let mut config = ProofConfig::default_Topological();
         config.gei_dim = 0;
         match config.validate() {
             Err(ProofError::InvalidGeometry(msg)) => {
@@ -347,7 +347,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_bad_threshold() {
-        let mut config = ProofConfig::default_stuartian();
+        let mut config = ProofConfig::default_Topological();
         config.contraction_threshold = 1.5;
         match config.validate() {
             Err(ProofError::InvalidGeometry(msg)) => {
@@ -359,7 +359,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_unsupported_backend() {
-        let mut config = ProofConfig::default_stuartian();
+        let mut config = ProofConfig::default_Topological();
         config.backend = "coq".to_string();
         match config.validate() {
             Err(ProofError::UnsupportedBackend(b)) => {
@@ -371,7 +371,7 @@ mod tests {
 
     #[test]
     fn test_config_display() {
-        let config = ProofConfig::default_stuartian();
+        let config = ProofConfig::default_Topological();
         let s = format!("{}", config);
         assert!(s.contains("lean4"));
         assert!(s.contains("8"));
@@ -430,7 +430,7 @@ mod tests {
 
     #[test]
     fn test_proof_limit() {
-        let mut config = ProofConfig::default_stuartian();
+        let mut config = ProofConfig::default_Topological();
         config.max_proofs = 2;
         let mut gen = ProofGenerator::with_config(config).unwrap();
         gen.generate_proof(&aligned_gei(), 1000).unwrap();
@@ -477,7 +477,7 @@ mod tests {
 
     #[test]
     fn test_isabelle_backend() {
-        let mut config = ProofConfig::default_stuartian();
+        let mut config = ProofConfig::default_Topological();
         config.backend = "isabelle".to_string();
         let mut gen = ProofGenerator::with_config(config).unwrap();
         let proof = gen.generate_proof(&aligned_gei(), 1000).unwrap();

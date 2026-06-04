@@ -1,4 +1,4 @@
-//! Ethical Attractor Basin — Lyapunov Stability for Recursive Self-Improvement.
+﻿//! Ethical Attractor Basin â€” Lyapunov Stability for Recursive Self-Improvement.
 //!
 //! Mathematical Foundation:
 //! - **Ethical Distance:** `d_E(I) = ||proj_Oct(I) - C_ideal||_2 * (1.0 + beta * H_PH)`
@@ -17,9 +17,9 @@ use crate::topology::persistent_homology::HomologyResult;
 #[cfg(feature = "v3.3-rssi-evolution")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BasinExitWarning {
-    /// Single contraction violation — monitor closely.
+    /// Single contraction violation â€” monitor closely.
     ContractionViolation,
-    /// Two consecutive violations — halt improvement step.
+    /// Two consecutive violations â€” halt improvement step.
     CriticalInstability,
 }
 
@@ -165,7 +165,7 @@ impl EthicalAttractorBasin {
         let contraction_bound = self.gamma * ethical_distance;
 
         if step_size < contraction_bound {
-            // Contraction holds — reset violation counter
+            // Contraction holds â€” reset violation counter
             self.consecutive_violations = 0;
             Ok(true)
         } else {
@@ -184,7 +184,7 @@ impl EthicalAttractorBasin {
         self.consecutive_violations == 0
     }
 
-    /// Reset the basin state (used after successful validation or apoptosis).
+    /// Reset the basin state (used after successful validation or Byzantine_Eviction).
     pub fn reset(&mut self) {
         self.consecutive_violations = 0;
     }
@@ -366,7 +366,7 @@ mod tests {
         let r1 = basin.validate_contraction(&i_current, &i_next, eth_dist.weighted);
         assert!(r1.is_ok());
 
-        // Second violation — should trigger critical
+        // Second violation â€” should trigger critical
         let r2 = basin.validate_contraction(&i_current, &i_next, eth_dist.weighted);
         assert_eq!(r2, Err(BasinExitWarning::CriticalInstability));
     }

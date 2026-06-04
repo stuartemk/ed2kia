@@ -1,11 +1,11 @@
-//! Immune System Integration Tests — Sprint 29
+//! Immune System Integration Tests â€” Sprint 29
 //!
 //! Validates the full lifecycle of Existential Credit, Proof of Symbiosis,
-//! and Network Apoptosis across the ed2kIA network layer.
+//! and Network Byzantine_Eviction across the ed2kIA network layer.
 
 #[cfg(all(
     feature = "v2.1-proof-of-symbiosis",
-    feature = "v2.1-network-apoptosis"
+    feature = "v2.1-network-Byzantine_Eviction"
 ))]
 mod existential_credit_tests {
     use ed2kia::economics::existential_credit::ExistentialCreditLedger;
@@ -102,13 +102,13 @@ mod existential_credit_tests {
             "Expected -150.0, got {}",
             score
         );
-        assert!(score < -100.0, "Score should trigger apoptosis");
+        assert!(score < -100.0, "Score should trigger Byzantine_Eviction");
     }
 }
 
 #[cfg(all(
     feature = "v2.1-proof-of-symbiosis",
-    feature = "v2.1-network-apoptosis"
+    feature = "v2.1-network-Byzantine_Eviction"
 ))]
 mod proof_of_symbiosis_tests {
     use ed2kia::economics::existential_credit::ExistentialCreditLedger;
@@ -193,14 +193,16 @@ mod proof_of_symbiosis_tests {
 
 #[cfg(all(
     feature = "v2.1-proof-of-symbiosis",
-    feature = "v2.1-network-apoptosis"
+    feature = "v2.1-network-Byzantine_Eviction"
 ))]
-mod apoptosis_flow_tests {
+mod Byzantine_Eviction_flow_tests {
     use ed2kia::economics::existential_credit::ExistentialCreditLedger;
-    use ed2kia::federated::network_apoptosis::{ImmuneConfig, ImmuneState, NetworkImmuneSystem};
+    use ed2kia::federated::network_Byzantine_Eviction::{
+        ImmuneConfig, ImmuneState, NetworkImmuneSystem,
+    };
 
     #[test]
-    fn test_full_apoptosis_flow() {
+    fn test_full_Byzantine_Eviction_flow() {
         let mut ledger = ExistentialCreditLedger::new();
         let mut immune = NetworkImmuneSystem::new();
 
@@ -213,15 +215,15 @@ mod apoptosis_flow_tests {
         assert_eq!(immune.evaluate_peer("node1", &ledger), ImmuneState::Pain);
         assert!(!immune.is_blocklisted("node1"));
 
-        // Phase 3: Peer enters Apoptosis (score < -100).
+        // Phase 3: Peer enters Byzantine_Eviction (score < -100).
         // Current score: 50.0 - 60.0 = -10.0. Burn 150.0 -> -160.0 < -100.0.
         ledger.burn_credit("node1", -150.0, 1.0).ok();
         assert_eq!(
             immune.evaluate_peer("node1", &ledger),
-            ImmuneState::Apoptosis
+            ImmuneState::Byzantine_Eviction
         );
 
-        // Phase 4: Auto-apoptosis triggers blocklist.
+        // Phase 4: Auto-Byzantine_Eviction triggers blocklist.
         let apoptosed = immune.evaluate_all(&ledger, 1000);
         assert_eq!(apoptosed.len(), 1);
         assert_eq!(apoptosed[0], "node1");
@@ -233,7 +235,7 @@ mod apoptosis_flow_tests {
         let mut ledger = ExistentialCreditLedger::new();
         let immune = NetworkImmuneSystem::new();
 
-        // Peer in pain state (negative but above apoptosis threshold).
+        // Peer in pain state (negative but above Byzantine_Eviction threshold).
         ledger.burn_credit("warning_node", -30.0, 1.0).ok();
 
         let state = immune.evaluate_peer("warning_node", &ledger);
@@ -254,7 +256,7 @@ mod apoptosis_flow_tests {
         // Pain peer.
         ledger.burn_credit("pain", -50.0, 1.0).ok();
 
-        // Apoptosis peer.
+        // Byzantine_Eviction peer.
         ledger.burn_credit("dead", -200.0, 1.0).ok();
 
         assert_eq!(
@@ -264,10 +266,10 @@ mod apoptosis_flow_tests {
         assert_eq!(immune.evaluate_peer("pain", &ledger), ImmuneState::Pain);
         assert_eq!(
             immune.evaluate_peer("dead", &ledger),
-            ImmuneState::Apoptosis
+            ImmuneState::Byzantine_Eviction
         );
 
-        // Evaluate all — only "dead" should be apoptosed.
+        // Evaluate all â€” only "dead" should be apoptosed.
         let apoptosed = immune.evaluate_all(&ledger, 1000);
         assert_eq!(apoptosed.len(), 1);
         assert_eq!(apoptosed[0], "dead");
@@ -279,10 +281,10 @@ mod apoptosis_flow_tests {
     }
 
     #[test]
-    fn test_custom_apoptosis_threshold() {
+    fn test_custom_Byzantine_Eviction_threshold() {
         let mut ledger = ExistentialCreditLedger::new();
         let mut immune = NetworkImmuneSystem::with_config(ImmuneConfig {
-            apoptosis_threshold: -50.0,
+            Byzantine_Eviction_threshold: -50.0,
             ..Default::default()
         })
         .expect("config should be valid");
@@ -292,7 +294,7 @@ mod apoptosis_flow_tests {
 
         assert_eq!(
             immune.evaluate_peer("node1", &ledger),
-            ImmuneState::Apoptosis
+            ImmuneState::Byzantine_Eviction
         );
 
         let apoptosed = immune.evaluate_all(&ledger, 1000);
@@ -304,25 +306,25 @@ mod apoptosis_flow_tests {
         let mut ledger = ExistentialCreditLedger::new();
         let mut immune = NetworkImmuneSystem::new();
 
-        // Peer goes to apoptosis.
+        // Peer goes to Byzantine_Eviction.
         ledger.burn_credit("node1", -200.0, 1.0).ok();
         immune
-            .trigger_apoptosis("node1", &ledger, 1000, "test")
+            .trigger_Byzantine_Eviction("node1", &ledger, 1000, "test")
             .ok();
 
         // Peer recovers score (e.g., through new ethical compute).
         ledger.emit_credit("node1", 500.0, 1.0).ok();
 
-        // Still blocklisted — apoptosis is irreversible.
+        // Still blocklisted â€” Byzantine_Eviction is irreversible.
         assert!(immune.is_blocklisted("node1"));
         assert_eq!(
             immune.evaluate_peer("node1", &ledger),
-            ImmuneState::Apoptosis
+            ImmuneState::Byzantine_Eviction
         );
     }
 
     #[test]
-    fn test_apoptosis_log_records_events() {
+    fn test_Byzantine_Eviction_log_records_events() {
         let mut ledger = ExistentialCreditLedger::new();
         let mut immune = NetworkImmuneSystem::new();
 
@@ -330,13 +332,13 @@ mod apoptosis_flow_tests {
         ledger.burn_credit("node2", -300.0, 1.0).ok();
 
         immune
-            .trigger_apoptosis("node1", &ledger, 1000, "perversity")
+            .trigger_Byzantine_Eviction("node1", &ledger, 1000, "perversity")
             .ok();
         immune
-            .trigger_apoptosis("node2", &ledger, 2000, "repeated violations")
+            .trigger_Byzantine_Eviction("node2", &ledger, 2000, "repeated violations")
             .ok();
 
-        let log = immune.get_apoptosis_log();
+        let log = immune.get_Byzantine_Eviction_log();
         assert_eq!(log.len(), 2);
         assert_eq!(log[0].peer_id, "node1");
         assert_eq!(log[0].timestamp_ms, 1000);

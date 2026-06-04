@@ -1,42 +1,42 @@
-//! Swarm Auto-Organization — Dynamic Sub-Network Topology by Hardware Capability.
+﻿//! Swarm Auto-Organization â€” Dynamic Sub-Network Topology by Hardware Capability.
 //!
-//! **Stuartian Law 1 (Diversidad):** Cada nodo se auto-asigna un rol basado en sus
+//! **Topological Law 1 (Diversidad):** Cada nodo se auto-asigna un rol basado en sus
 //! capacidades hardware (GPU, RAM, ancho de banda) y balance de CE.
-//! **Stuartian Law 3 (Cooperación Simbiótica):** Rebalanceo fluido cuando nodos
+//! **Topological Law 3 (CooperaciÃ³n SimbiÃ³tica):** Rebalanceo fluido cuando nodos
 //! se unen o abandonan la red.
 //!
-//! Este módulo proporciona auto-organización de enjambre a escala planetaria:
+//! Este mÃ³dulo proporciona auto-organizaciÃ³n de enjambre a escala planetaria:
 //! - **NodeCapabilities:** Perfil de hardware y recursos de cada nodo.
 //! - **SwarmRole:** Rol auto-asignado (MaieuticSynth, Validator, Router, Relay, Light).
-//! - **SubNetwork:** Sub-red dinámica organizada por rol y capacidad.
-//! - **SwarmTopology:** Motor principal de organización con rebalanceo fluido.
-//! - **TopologyConfig:** Configuración de umbrales y pesos de organización.
+//! - **SubNetwork:** Sub-red dinÃ¡mica organizada por rol y capacidad.
+//! - **SwarmTopology:** Motor principal de organizaciÃ³n con rebalanceo fluido.
+//! - **TopologyConfig:** ConfiguraciÃ³n de umbrales y pesos de organizaciÃ³n.
 //!
 //! ### Feature Gate
 //! `v3.5-planetary-emergence`
 //!
-//! ### Integración
+//! ### IntegraciÃ³n
 //! - [`crate::network::planetary_mesh::PlanetaryMesh`] para descubrimiento de pares
 //! - [`crate::p2p::swarm::NodeResources`] para perfiles de hardware
-//! - [`crate::ethics::moral_manifold::Vector3`] para evaluación ética de distribución
+//! - [`crate::ethics::moral_manifold::Vector3`] para evaluaciÃ³n Ã©tica de distribuciÃ³n
 
 use std::collections::{HashMap, VecDeque};
 use std::fmt;
 use std::time::{Duration, Instant};
 
 // ============================================================================
-// NodeCapabilities — Hardware y Recursos del Nodo
+// NodeCapabilities â€” Hardware y Recursos del Nodo
 // ============================================================================
 
 /// Tier computacional del nodo (determina roles elegibles).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Default)]
 pub enum ComputeTier {
-    /// Nodo WASM/light — Solo routing y validación básica.
+    /// Nodo WASM/light â€” Solo routing y validaciÃ³n bÃ¡sica.
     #[default]
     Light = 0,
-    /// Nodo estándar — Validación completa y almacenamiento.
+    /// Nodo estÃ¡ndar â€” ValidaciÃ³n completa y almacenamiento.
     Standard = 1,
-    /// Nodo GPU — Maieutic Synthesizer y carga pesada.
+    /// Nodo GPU â€” Maieutic Synthesizer y carga pesada.
     Gpu = 2,
 }
 
@@ -50,12 +50,12 @@ impl fmt::Display for ComputeTier {
     }
 }
 
-/// Capacidad de un nodo para funciones específicas.
+/// Capacidad de un nodo para funciones especÃ­ficas.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct NodeCapabilities {
     /// Tier computacional (0=WASM/light, 1=standard, 2=GPU).
     pub compute_tier: ComputeTier,
-    /// Núcleos de CPU disponibles.
+    /// NÃºcleos de CPU disponibles.
     pub cpu_cores: usize,
     /// RAM disponible en GB.
     pub ram_gb: f64,
@@ -100,7 +100,7 @@ impl NodeCapabilities {
         }
     }
 
-    /// Score de capacidad general (mayor = más capaz).
+    /// Score de capacidad general (mayor = mÃ¡s capaz).
     pub fn capability_score(&self) -> f64 {
         let tier_weight = match self.compute_tier {
             ComputeTier::Light => 1.0,
@@ -114,7 +114,7 @@ impl NodeCapabilities {
             + self.vram_gb * 0.8
     }
 
-    /// Verifica si el nodo puede asumir un rol específico.
+    /// Verifica si el nodo puede asumir un rol especÃ­fico.
     pub fn can_assume_role(&self, role: SwarmRole) -> bool {
         match role {
             SwarmRole::MaieuticSynth => {
@@ -131,21 +131,21 @@ impl NodeCapabilities {
 }
 
 // ============================================================================
-// SwarmRole — Rol Auto-Asignado del Nodo
+// SwarmRole â€” Rol Auto-Asignado del Nodo
 // ============================================================================
 
 /// Rol dentro del enjambre, determinado por capacidades y necesidad de red.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SwarmRole {
-    /// Maieutic Synthesizer — Ejecuta cargas pesadas de síntesis (GPU).
+    /// Maieutic Synthesizer â€” Ejecuta cargas pesadas de sÃ­ntesis (GPU).
     MaieuticSynth,
-    /// Validator — Valida consenso BFT y verifica ZKP.
+    /// Validator â€” Valida consenso BFT y verifica ZKP.
     Validator,
-    /// Router — Enruta mensajes y mantiene la topología DHT.
+    /// Router â€” Enruta mensajes y mantiene la topologÃ­a DHT.
     Router,
-    /// Relay — Provee circuitos de relay para nodos privados.
+    /// Relay â€” Provee circuitos de relay para nodos privados.
     Relay,
-    /// Light — Nodo WASM con funciones básicas de routing.
+    /// Light â€” Nodo WASM con funciones bÃ¡sicas de routing.
     Light,
 }
 
@@ -162,7 +162,7 @@ impl fmt::Display for SwarmRole {
 }
 
 impl SwarmRole {
-    /// Prioridad de asignación (menor = más prioritario para la red).
+    /// Prioridad de asignaciÃ³n (menor = mÃ¡s prioritario para la red).
     pub fn priority(&self) -> u8 {
         match self {
             SwarmRole::MaieuticSynth => 0,
@@ -191,10 +191,10 @@ impl SwarmRole {
 }
 
 // ============================================================================
-// NodeEntry — Entrada de Nodo en la Topología
+// NodeEntry â€” Entrada de Nodo en la TopologÃ­a
 // ============================================================================
 
-/// Estado de un nodo en la topología del enjambre.
+/// Estado de un nodo en la topologÃ­a del enjambre.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NodeState {
     Activo,
@@ -202,10 +202,10 @@ pub enum NodeState {
     Desconectado,
 }
 
-/// Entrada completa de un nodo en la topología.
+/// Entrada completa de un nodo en la topologÃ­a.
 #[derive(Debug, Clone)]
 pub struct NodeEntry {
-    /// Identificador único del nodo (u128 para compatibilidad Kademlia).
+    /// Identificador Ãºnico del nodo (u128 para compatibilidad Kademlia).
     pub node_id: u128,
     /// Rol actual asignado.
     pub role: SwarmRole,
@@ -215,9 +215,9 @@ pub struct NodeEntry {
     pub state: NodeState,
     /// Sub-red a la que pertenece.
     pub sub_network: Option<u64>,
-    /// Timestamp de última actividad.
+    /// Timestamp de Ãºltima actividad.
     pub last_active: Instant,
-    /// Timestamp de última reasignación de rol.
+    /// Timestamp de Ãºltima reasignaciÃ³n de rol.
     pub last_role_change: Instant,
     /// Contador de cambios de rol.
     pub role_change_count: u32,
@@ -253,7 +253,7 @@ impl NodeEntry {
         self.state = NodeState::Activo;
     }
 
-    /// Verifica si el nodo está inactivo por timeout.
+    /// Verifica si el nodo estÃ¡ inactivo por timeout.
     pub fn is_stale(&self, timeout: Duration) -> bool {
         self.last_active.elapsed() > timeout
     }
@@ -269,13 +269,13 @@ impl NodeEntry {
 }
 
 // ============================================================================
-// SubNetwork — Sub-Red Dinámica
+// SubNetwork â€” Sub-Red DinÃ¡mica
 // ============================================================================
 
 /// Sub-red organizada por rol y capacidad.
 #[derive(Debug, Clone)]
 pub struct SubNetwork {
-    /// Identificador único de la sub-red.
+    /// Identificador Ãºnico de la sub-red.
     pub id: u64,
     /// Rol principal de esta sub-red.
     pub primary_role: SwarmRole,
@@ -283,9 +283,9 @@ pub struct SubNetwork {
     pub members: HashMap<u128, u64>, // node_id -> sub_network_id
     /// Capacidad total de la sub-red.
     pub total_capacity: f64,
-    /// Carga actual de la sub-red (0.0 = vacía, 1.0 = saturada).
+    /// Carga actual de la sub-red (0.0 = vacÃ­a, 1.0 = saturada).
     pub current_load: f64,
-    /// Timestamp de última reorganización.
+    /// Timestamp de Ãºltima reorganizaciÃ³n.
     pub last_reorg: Instant,
 }
 
@@ -325,41 +325,41 @@ impl SubNetwork {
         self.current_load = self.current_load.min(1.0);
     }
 
-    /// Verifica si la sub-red está sobrecargada.
+    /// Verifica si la sub-red estÃ¡ sobrecargada.
     pub fn is_overloaded(&self, threshold: f64) -> bool {
         self.current_load > threshold
     }
 
-    /// Verifica si la sub-red está subutilizada.
+    /// Verifica si la sub-red estÃ¡ subutilizada.
     pub fn is_underutilized(&self, threshold: f64) -> bool {
         self.current_load < threshold && self.members.len() > 1
     }
 }
 
 // ============================================================================
-// TopologyConfig — Configuración de Organización
+// TopologyConfig â€” ConfiguraciÃ³n de OrganizaciÃ³n
 // ============================================================================
 
-/// Configuración del motor de topología del enjambre.
+/// ConfiguraciÃ³n del motor de topologÃ­a del enjambre.
 #[derive(Debug, Clone)]
 pub struct TopologyConfig {
     /// Timeout para considerar un nodo inactivo (default: 60s).
     pub inactive_timeout: Duration,
-    /// Intervalo de rebalanceo automático (default: 30s).
+    /// Intervalo de rebalanceo automÃ¡tico (default: 30s).
     pub rebalance_interval: Duration,
     /// Umbral de sobrecarga para trigger rebalanceo (default: 0.8).
     pub overload_threshold: f64,
-    /// Umbral de subutilización (default: 0.2).
+    /// Umbral de subutilizaciÃ³n (default: 0.2).
     pub underutil_threshold: f64,
-    /// Máximo de nodos por sub-red (default: 100).
+    /// MÃ¡ximo de nodos por sub-red (default: 100).
     pub max_nodes_per_subnet: usize,
-    /// Mínimo de nodos por sub-red antes de fusionar (default: 2).
+    /// MÃ­nimo de nodos por sub-red antes de fusionar (default: 2).
     pub min_nodes_per_subnet: usize,
     /// Cool-down entre cambios de rol (default: 10s).
     pub role_change_cooldown: Duration,
-    /// Peso del balance CE en asignación de rol (default: 0.3).
+    /// Peso del balance CE en asignaciÃ³n de rol (default: 0.3).
     pub ce_weight: f64,
-    /// Peso de la capacidad hardware en asignación (default: 0.7).
+    /// Peso de la capacidad hardware en asignaciÃ³n (default: 0.7).
     pub hardware_weight: f64,
 }
 
@@ -380,7 +380,7 @@ impl Default for TopologyConfig {
 }
 
 impl TopologyConfig {
-    /// Valida la configuración.
+    /// Valida la configuraciÃ³n.
     pub fn validate(&self) -> Result<(), TopologyError> {
         if self.ce_weight < 0.0 || self.ce_weight > 1.0 {
             return Err(TopologyError::InvalidCeWeight(self.ce_weight));
@@ -401,7 +401,7 @@ impl TopologyConfig {
 }
 
 // ============================================================================
-// TopologyError — Errores de Topología
+// TopologyError â€” Errores de TopologÃ­a
 // ============================================================================
 
 #[derive(Debug, Clone, PartialEq)]
@@ -424,11 +424,11 @@ impl fmt::Display for TopologyError {
             TopologyError::RolNoCompatible(role) => {
                 write!(f, "Rol {} no compatible con capacidades", role)
             }
-            TopologyError::InvalidCeWeight(w) => write!(f, "Peso CE inválido: {}", w),
-            TopologyError::InvalidHardwareWeight(w) => write!(f, "Peso hardware inválido: {}", w),
+            TopologyError::InvalidCeWeight(w) => write!(f, "Peso CE invÃ¡lido: {}", w),
+            TopologyError::InvalidHardwareWeight(w) => write!(f, "Peso hardware invÃ¡lido: {}", w),
             TopologyError::WeightsExceedOne(w) => write!(f, "Pesos exceden 1.0: {}", w),
-            TopologyError::InvalidMaxNodes(n) => write!(f, "Máximo de nodos inválido: {}", n),
-            TopologyError::TopologiaSaturada => write!(f, "Topología saturada"),
+            TopologyError::InvalidMaxNodes(n) => write!(f, "MÃ¡ximo de nodos invÃ¡lido: {}", n),
+            TopologyError::TopologiaSaturada => write!(f, "TopologÃ­a saturada"),
         }
     }
 }
@@ -436,7 +436,7 @@ impl fmt::Display for TopologyError {
 impl std::error::Error for TopologyError {}
 
 // ============================================================================
-// TopologyStats — Estadísticas de Topología
+// TopologyStats â€” EstadÃ­sticas de TopologÃ­a
 // ============================================================================
 
 #[derive(Debug, Clone, Default)]
@@ -451,23 +451,23 @@ pub struct TopologyStats {
     pub rebalances_executed: u32,
     /// Nodos por rol.
     pub nodes_per_role: HashMap<SwarmRole, usize>,
-    /// Distribución de carga promedio.
+    /// DistribuciÃ³n de carga promedio.
     pub avg_load_distribution: f64,
 }
 
 // ============================================================================
-// SwarmTopology — Motor Principal de Organización
+// SwarmTopology â€” Motor Principal de OrganizaciÃ³n
 // ============================================================================
 
-/// Motor de auto-organización del enjambre.
+/// Motor de auto-organizaciÃ³n del enjambre.
 ///
-/// Gestiona la distribución dinámica de nodos en sub-redes basadas en:
+/// Gestiona la distribuciÃ³n dinÃ¡mica de nodos en sub-redes basadas en:
 /// - Capacidades hardware (GPU, RAM, CPU, ancho de banda)
 /// - Balance de CE (Existence Credits)
 /// - Carga actual de la red
-/// - Necesidades de la topología global
+/// - Necesidades de la topologÃ­a global
 pub struct SwarmTopology {
-    /// Configuración de la topología.
+    /// ConfiguraciÃ³n de la topologÃ­a.
     config: TopologyConfig,
     /// Nodos registrados (node_id -> NodeEntry).
     nodes: HashMap<u128, NodeEntry>,
@@ -475,17 +475,17 @@ pub struct SwarmTopology {
     sub_networks: HashMap<u64, SubNetwork>,
     /// Siguiente ID de sub-red.
     next_subnet_id: u64,
-    /// Estadísticas de la topología.
+    /// EstadÃ­sticas de la topologÃ­a.
     stats: TopologyStats,
-    /// Timestamp del último rebalanceo.
+    /// Timestamp del Ãºltimo rebalanceo.
     last_rebalance: Instant,
-    /// Historial de eventos de topología.
+    /// Historial de eventos de topologÃ­a.
     event_log: VecDeque<TopologyEvent>,
-    /// Máximo de eventos en el historial.
+    /// MÃ¡ximo de eventos en el historial.
     max_events: usize,
 }
 
-/// Evento de topología registrado en el historial.
+/// Evento de topologÃ­a registrado en el historial.
 #[derive(Debug, Clone)]
 pub enum TopologyEvent {
     NodoIngresado {
@@ -515,13 +515,13 @@ pub enum TopologyEvent {
 }
 
 impl SwarmTopology {
-    /// Crea una nueva topología con configuración por defecto.
+    /// Crea una nueva topologÃ­a con configuraciÃ³n por defecto.
     pub fn new() -> Self {
         let config = TopologyConfig::default();
         Self::with_config(config).expect("Default config should be valid")
     }
 
-    /// Crea una topología con configuración personalizada.
+    /// Crea una topologÃ­a con configuraciÃ³n personalizada.
     pub fn with_config(config: TopologyConfig) -> Result<Self, TopologyError> {
         config.validate()?;
         Ok(Self {
@@ -540,7 +540,7 @@ impl SwarmTopology {
     // Node Management
     // ------------------------------------------------------------------
 
-    /// Registra un nuevo nodo en la topología.
+    /// Registra un nuevo nodo en la topologÃ­a.
     ///
     /// El nodo se auto-asigna un rol basado en sus capacidades y se coloca
     /// en la sub-red apropiada.
@@ -558,7 +558,7 @@ impl SwarmTopology {
         // Insertar nodo
         self.nodes.insert(node_id, entry);
 
-        // Actualizar estadísticas
+        // Actualizar estadÃ­sticas
         self.stats.active_nodes += 1;
         self.update_role_stats(&initial_role, 1);
 
@@ -575,7 +575,7 @@ impl SwarmTopology {
         Ok(initial_role)
     }
 
-    /// Elimina un nodo de la topología.
+    /// Elimina un nodo de la topologÃ­a.
     pub fn unregister_node(&mut self, node_id: u128) -> Result<(), TopologyError> {
         let entry = self
             .nodes
@@ -589,14 +589,14 @@ impl SwarmTopology {
             }
         }
 
-        // Actualizar estadísticas
+        // Actualizar estadÃ­sticas
         self.stats.active_nodes = self.stats.active_nodes.saturating_sub(1);
         self.update_role_stats(&entry.role, -1);
 
         // Registrar evento
         self.log_event(TopologyEvent::NodoSalido { node_id });
 
-        // Limpiar sub-redes vacías
+        // Limpiar sub-redes vacÃ­as
         self.prune_empty_subnetworks();
 
         // Verificar si necesita rebalanceo
@@ -615,12 +615,12 @@ impl SwarmTopology {
         Ok(())
     }
 
-    /// Obtiene información de un nodo.
+    /// Obtiene informaciÃ³n de un nodo.
     pub fn get_node(&self, node_id: u128) -> Option<&NodeEntry> {
         self.nodes.get(&node_id)
     }
 
-    /// Obtiene los nodos activos con un rol específico.
+    /// Obtiene los nodos activos con un rol especÃ­fico.
     pub fn get_nodes_by_role(&self, role: SwarmRole) -> Vec<&NodeEntry> {
         self.nodes
             .values()
@@ -652,7 +652,7 @@ impl SwarmTopology {
     // Sub-Network Management
     // ------------------------------------------------------------------
 
-    /// Asigna un nodo a la sub-red más apropiada.
+    /// Asigna un nodo a la sub-red mÃ¡s apropiada.
     fn assign_to_subnetwork(&mut self, entry: &NodeEntry) -> Result<Option<u64>, TopologyError> {
         // Buscar sub-red existente con el mismo rol principal
         let target_subnet = self
@@ -693,7 +693,7 @@ impl SwarmTopology {
         Ok(Some(subnet_id))
     }
 
-    /// Obtiene información de una sub-red.
+    /// Obtiene informaciÃ³n de una sub-red.
     pub fn get_subnetwork(&self, id: u64) -> Option<&SubNetwork> {
         self.sub_networks.get(&id)
     }
@@ -703,7 +703,7 @@ impl SwarmTopology {
         self.sub_networks.values().collect()
     }
 
-    /// Elimina sub-redes vacías.
+    /// Elimina sub-redes vacÃ­as.
     fn prune_empty_subnetworks(&mut self) {
         let empty_ids: Vec<u64> = self
             .sub_networks
@@ -733,16 +733,16 @@ impl SwarmTopology {
         // 2. Evaluar necesidades de cada rol
         let role_needs = self.evaluate_role_needs();
 
-        // 3. Reasignar nodos según necesidades
+        // 3. Reasignar nodos segÃºn necesidades
         nodes_moved += self.reassign_roles(role_needs);
 
         // 4. Reorganizar sub-redes
         nodes_moved += self.reorganize_subnetworks();
 
-        // 5. Fusionar sub-redes pequeñas
+        // 5. Fusionar sub-redes pequeÃ±as
         self.merge_small_subnetworks();
 
-        // 6. Actualizar estadísticas
+        // 6. Actualizar estadÃ­sticas
         self.stats.rebalances_executed += 1;
         self.last_rebalance = Instant::now();
 
@@ -768,7 +768,7 @@ impl SwarmTopology {
         }
     }
 
-    /// Evalúa las necesidades de cada rol basado en la topología actual.
+    /// EvalÃºa las necesidades de cada rol basado en la topologÃ­a actual.
     fn evaluate_role_needs(&self) -> HashMap<SwarmRole, i32> {
         let mut needs = HashMap::new();
         let total = self.nodes.len() as f64;
@@ -777,7 +777,7 @@ impl SwarmTopology {
             return needs;
         }
 
-        // Ratio ideal por rol (basado en topología de red saludable)
+        // Ratio ideal por rol (basado en topologÃ­a de red saludable)
         let ideal_ratios: HashMap<SwarmRole, f64> = [
             (SwarmRole::MaieuticSynth, 0.05), // 5% GPU
             (SwarmRole::Validator, 0.25),     // 25% validadores
@@ -804,7 +804,7 @@ impl SwarmTopology {
         needs
     }
 
-    /// Reasigna nodos según las necesidades de rol.
+    /// Reasigna nodos segÃºn las necesidades de rol.
     fn reassign_roles(&mut self, needs: HashMap<SwarmRole, i32>) -> usize {
         let mut moved = 0;
 
@@ -861,7 +861,7 @@ impl SwarmTopology {
                 if let Some(subnet) = self.sub_networks.get(&subnet_id) {
                     if subnet.primary_role != entry.role {
                         // Mover a sub-red correcta
-                        // (simplificado: se maneja en próximo rebalanceo)
+                        // (simplificado: se maneja en prÃ³ximo rebalanceo)
                         moved += 1;
                     }
                 }
@@ -871,7 +871,7 @@ impl SwarmTopology {
         moved
     }
 
-    /// Fusiona sub-redes pequeñas en sub-redes vecinas del mismo rol.
+    /// Fusiona sub-redes pequeÃ±as en sub-redes vecinas del mismo rol.
     fn merge_small_subnetworks(&mut self) {
         let small_ids: Vec<u64> = self
             .sub_networks
@@ -933,10 +933,10 @@ impl SwarmTopology {
     // CE-Based Role Scoring
     // ------------------------------------------------------------------
 
-    /// Calcula el score ponderado para asignación de rol.
+    /// Calcula el score ponderado para asignaciÃ³n de rol.
     ///
     /// Combina capacidad hardware con balance CE para determinar
-    /// la prioridad de un nodo para un rol específico.
+    /// la prioridad de un nodo para un rol especÃ­fico.
     pub fn role_score(&self, entry: &NodeEntry) -> f64 {
         let hardware_score = entry.capabilities.capability_score();
         let ce_score = entry.capabilities.ce_balance.max(0.0);
@@ -972,12 +972,12 @@ impl SwarmTopology {
     // Stats & Events
     // ------------------------------------------------------------------
 
-    /// Obtiene las estadísticas actuales de la topología.
+    /// Obtiene las estadÃ­sticas actuales de la topologÃ­a.
     pub fn get_stats(&self) -> &TopologyStats {
         &self.stats
     }
 
-    /// Actualiza las estadísticas de rol.
+    /// Actualiza las estadÃ­sticas de rol.
     fn update_role_stats(&mut self, role: &SwarmRole, delta: i32) {
         let counter = self.stats.nodes_per_role.entry(*role).or_insert(0);
         *counter = (*counter as i32 + delta).max(0) as usize;
@@ -1015,19 +1015,19 @@ impl SwarmTopology {
         count
     }
 
-    /// Obtiene la configuración actual.
+    /// Obtiene la configuraciÃ³n actual.
     pub fn config(&self) -> &TopologyConfig {
         &self.config
     }
 
-    /// Actualiza la configuración (con validación).
+    /// Actualiza la configuraciÃ³n (con validaciÃ³n).
     pub fn update_config(&mut self, new_config: TopologyConfig) -> Result<(), TopologyError> {
         new_config.validate()?;
         self.config = new_config;
         Ok(())
     }
 
-    /// Resetea la topología completa.
+    /// Resetea la topologÃ­a completa.
     pub fn reset(&mut self) {
         self.nodes.clear();
         self.sub_networks.clear();

@@ -1,4 +1,4 @@
-# ed2kIA Steward Program
+﻿# ed2kIA Steward Program
 
 **Version:** v2.1.0-stable  
 **Date:** 2026-05-22  
@@ -30,7 +30,7 @@ This is not a governance token system. Stewards receive no financial compensatio
 ### Contributor
 
 **Requirements:**
-- Functional node running for ≥7 days
+- Functional node running for â‰¥7 days
 - Valid Ed25519 identity
 - CE score > 0 (positive ethical standing)
 - No blocklist history in last 30 days
@@ -47,13 +47,13 @@ This is not a governance token system. Stewards receive no financial compensatio
 
 **Requirements:**
 - Nominated by existing Steward
-- ≥30 days as active Contributor
+- â‰¥30 days as active Contributor
 - CE score > 5
 - Demonstrated understanding of SCT ethics
 - Passed Steward orientation (documentation review)
 
 **Privileges:**
-- Review and resolve apoptosis cases
+- Review and resolve Byzantine_Eviction cases
 - Approve/deny node reintegration
 - Participate in Steward Council meetings
 - Nominate new Stewards
@@ -61,7 +61,7 @@ This is not a governance token system. Stewards receive no financial compensatio
 - Sign release candidates
 
 **Responsibilities:**
-- Review ≥5 apoptosis cases per week
+- Review â‰¥5 Byzantine_Eviction cases per week
 - Respond to escalation within 48 hours
 - Document all decisions with rationale
 - Participate in monthly Steward Council
@@ -126,26 +126,26 @@ New Stewards complete the following orientation before receiving privileges:
 - [ ] Read [Production Threat Model](security/production-threat-model.md)
 - [ ] Read [GOVERNANCE.md](../GOVERNANCE.md)
 - [ ] Read [SCT Core Documentation](../src/alignment/sct_core.rs)
-- [ ] Read [Network Apoptosis Documentation](../src/federated/network_apoptosis.rs)
+- [ ] Read [Network Byzantine_Eviction Documentation](../src/federated/network_Byzantine_Eviction.rs)
 
 ### Week 2: Practical Exercises
 
 - [ ] Run a local testnet (`./scripts/testnet-mode.sh --nodes 3`)
 - [ ] Submit 10 contributions (5 positive z, 5 negative z)
 - [ ] Observe CRDT convergence across nodes
-- [ ] Trigger and resolve 1 apoptosis case
+- [ ] Trigger and resolve 1 Byzantine_Eviction case
 - [ ] Review Prometheus metrics dashboard
 
 ### Week 3: Shadow Review
 
-- [ ] Shadow an experienced Steward for 5 apoptosis cases
+- [ ] Shadow an experienced Steward for 5 Byzantine_Eviction cases
 - [ ] Document decisions and compare with mentor
 - [ ] Receive feedback on decision quality
-- [ ] Pass orientation assessment (≥80% agreement with mentor)
+- [ ] Pass orientation assessment (â‰¥80% agreement with mentor)
 
 ### Week 4: Provisional Stewardship
 
-- [ ] Review 5 apoptosis cases independently (with mentor review)
+- [ ] Review 5 Byzantine_Eviction cases independently (with mentor review)
 - [ ] Participate in 1 Steward Council meeting (observer)
 - [ ] Complete self-assessment
 - [ ] Receive Steward status
@@ -154,11 +154,11 @@ New Stewards complete the following orientation before receiving privileges:
 
 ## Decision Framework
 
-Stewards use the following framework for apoptosis review:
+Stewards use the following framework for Byzantine_Eviction review:
 
 ### Step 1: Context Assessment
 
-- What contribution triggered apoptosis?
+- What contribution triggered Byzantine_Eviction?
 - What is the node's CE history (last 30 days)?
 - Is this a first offense or pattern?
 
@@ -183,7 +183,7 @@ Every decision requires:
 - Case ID (auto-generated)
 - Node ID (redacted for privacy if requested)
 - CE score at time of decision
-- Decision rationale (≥3 sentences)
+- Decision rationale (â‰¥3 sentences)
 - Steward signature (Ed25519)
 - Timestamp (UTC)
 
@@ -212,7 +212,7 @@ Stewards do NOT receive:
 ### Quarterly Reports
 
 The Steward Council publishes quarterly reports including:
-- Total apoptosis cases reviewed
+- Total Byzantine_Eviction cases reviewed
 - Average response time
 - Decision distribution (approve/reject/reintegrate)
 - CE score distribution across network

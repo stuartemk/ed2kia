@@ -1,7 +1,7 @@
-//! Tiered Verification — Sprint 73: Pragmatic Pivot & Asymptotic Hardening
+﻿//! Tiered Verification â€” Sprint 73: Pragmatic Pivot & Asymptotic Hardening
 //!
-//! Verificación en capas: Edge (Merkle + Ed25519) vs Prover Nodes (SNARKs batch).
-//! Sin ZKP pesado en WASM/Edge. Delegación inteligente por tier.
+//! VerificaciÃ³n en capas: Edge (Merkle + Ed25519) vs Prover Nodes (SNARKs batch).
+//! Sin ZKP pesado en WASM/Edge. DelegaciÃ³n inteligente por tier.
 
 use std::fmt;
 
@@ -79,7 +79,7 @@ pub struct TieredVerifierConfig {
 }
 
 impl TieredVerifierConfig {
-    pub fn default_stuartian() -> Self {
+    pub fn default_Topological() -> Self {
         Self {
             max_depth: 20,
             validity_window_ms: 300_000,
@@ -110,7 +110,7 @@ impl TieredVerifierConfig {
 
 impl Default for TieredVerifierConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -214,7 +214,7 @@ impl fmt::Display for VerificationRecord {
     }
 }
 
-/// Tiered Verifier — Edge (Merkle/Ed25519) vs Core (SNARKs)
+/// Tiered Verifier â€” Edge (Merkle/Ed25519) vs Core (SNARKs)
 pub struct TieredVerifier {
     config: TieredVerifierConfig,
     records: Vec<VerificationRecord>,
@@ -223,7 +223,7 @@ pub struct TieredVerifier {
 impl TieredVerifier {
     pub fn new() -> Self {
         Self {
-            config: TieredVerifierConfig::default_stuartian(),
+            config: TieredVerifierConfig::default_Topological(),
             records: Vec::new(),
         }
     }
@@ -415,7 +415,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = TieredVerifierConfig::default_stuartian();
+        let config = TieredVerifierConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 
@@ -454,7 +454,7 @@ mod tests {
 
     #[test]
     fn test_verifier_with_config() {
-        let config = TieredVerifierConfig::default_stuartian();
+        let config = TieredVerifierConfig::default_Topological();
         let verifier = TieredVerifier::with_config(config);
         assert!(verifier.is_ok());
     }

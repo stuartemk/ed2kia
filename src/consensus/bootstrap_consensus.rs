@@ -1,6 +1,6 @@
-//! Bootstrap Consensus — Sprint 71: Global Bootstrap & Critical Bottleneck Resolution
+﻿//! Bootstrap Consensus â€” Sprint 71: Global Bootstrap & Critical Bottleneck Resolution
 //!
-//! Solves Cold Start + BFT vulnerability (≥66% flood attack) via:
+//! Solves Cold Start + BFT vulnerability (â‰¥66% flood attack) via:
 //! - Adaptive Micro-PoW: Difficulty scales with network size
 //! - Web of Trust: Initial trust graph for identity validation
 //! - Morphic Resonance Decoder: Semantic fingerprint matching for Sybil detection
@@ -35,7 +35,7 @@ pub enum BootstrapError {
     DuplicateNode(u64),
     /// Unknown vouching node in trust graph.
     UnknownVoucher(u64),
-    /// Trust graph is empty — cannot validate without seed nodes.
+    /// Trust graph is empty â€” cannot validate without seed nodes.
     EmptyTrustGraph,
     /// Invalid difficulty (must be 1..=20).
     InvalidDifficulty(u32),
@@ -103,8 +103,8 @@ pub struct BootstrapConfig {
 }
 
 impl BootstrapConfig {
-    /// Default Stuartian configuration.
-    pub fn default_stuartian() -> Self {
+    /// Default Topological configuration.
+    pub fn default_Topological() -> Self {
         Self {
             pow_difficulty: 4,
             min_trust_endorsements: 2,
@@ -131,7 +131,7 @@ impl BootstrapConfig {
 
 impl Default for BootstrapConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -257,7 +257,7 @@ pub struct BootstrapConsensus {
 impl BootstrapConsensus {
     pub fn new() -> Self {
         Self {
-            config: BootstrapConfig::default_stuartian(),
+            config: BootstrapConfig::default_Topological(),
             trust_graph: TrustGraph::new(),
             nodes: HashMap::new(),
             records: Vec::new(),
@@ -461,7 +461,7 @@ impl BootstrapConsensus {
         self.morphic_patterns.clear();
     }
 
-    // ─── Private helpers ───
+    // â”€â”€â”€ Private helpers â”€â”€â”€
 
     fn compute_pow_hash(node_id: u64, nonce: u64) -> u64 {
         // Simplified hash: mix node_id and nonce
@@ -537,7 +537,7 @@ pub fn validate_bootstrap_node(
         return false;
     }
 
-    // Morphic check would need patterns — assume pass for standalone
+    // Morphic check would need patterns â€” assume pass for standalone
     true
 }
 
@@ -555,7 +555,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = BootstrapConfig::default_stuartian();
+        let config = BootstrapConfig::default_Topological();
         assert_eq!(config.pow_difficulty, 4);
         assert_eq!(config.min_trust_endorsements, 2);
         assert_eq!(config.morphic_threshold, 0.7);
@@ -563,19 +563,19 @@ mod tests {
 
     #[test]
     fn test_config_validate() {
-        assert!(BootstrapConfig::default_stuartian().validate().is_ok());
+        assert!(BootstrapConfig::default_Topological().validate().is_ok());
     }
 
     #[test]
     fn test_config_invalid_difficulty_zero() {
-        let mut config = BootstrapConfig::default_stuartian();
+        let mut config = BootstrapConfig::default_Topological();
         config.pow_difficulty = 0;
         assert_eq!(config.validate(), Err(BootstrapError::InvalidDifficulty(0)));
     }
 
     #[test]
     fn test_config_invalid_difficulty_high() {
-        let mut config = BootstrapConfig::default_stuartian();
+        let mut config = BootstrapConfig::default_Topological();
         config.pow_difficulty = 25;
         assert_eq!(
             config.validate(),
@@ -620,7 +620,7 @@ mod tests {
         let consensus = BootstrapConsensus::new();
         // Nonce 0 likely won't pass difficulty 4
         let result = consensus.validate_pow(999, 0);
-        // May pass or fail depending on hash — just check it doesn't panic
+        // May pass or fail depending on hash â€” just check it doesn't panic
         let _ = result;
     }
 
@@ -654,7 +654,7 @@ mod tests {
         consensus.add_seed_node(1, make_fingerprint(1), 1000);
 
         // Lower morphic threshold for testing
-        let mut config = BootstrapConfig::default_stuartian();
+        let mut config = BootstrapConfig::default_Topological();
         config.morphic_threshold = 0.0;
         consensus = BootstrapConsensus::with_config(config).unwrap();
         consensus.add_seed_node(1, make_fingerprint(1), 1000);
@@ -666,7 +666,7 @@ mod tests {
 
     #[test]
     fn test_validate_bootstrap_insufficient_trust() {
-        let mut config = BootstrapConfig::default_stuartian();
+        let mut config = BootstrapConfig::default_Topological();
         config.morphic_threshold = 0.0;
         let mut consensus = BootstrapConsensus::with_config(config).unwrap();
 
@@ -725,8 +725,8 @@ mod tests {
         let mut graph = TrustGraph::new();
         graph.endorse(1, 100);
         graph.endorse(2, 100);
-        let config = BootstrapConfig::default_stuartian();
-        // With nonce 0, hash may or may not pass — just verify no panic
+        let config = BootstrapConfig::default_Topological();
+        // With nonce 0, hash may or may not pass â€” just verify no panic
         let _ = validate_bootstrap_node(0, &make_fingerprint(1), &graph, &config, 100);
     }
 

@@ -1,15 +1,15 @@
-//! Hardware Role Asymmetry — Sprint 76: Ontological Debugging & Thermodynamic Pivots
+﻿//! Hardware Role Asymmetry â€” Sprint 76: Ontological Debugging & Thermodynamic Pivots
 //!
-//! Resuelve el bug ontológico: LLM en navegador → OOM por límites WASM.
+//! Resuelve el bug ontolÃ³gico: LLM en navegador â†’ OOM por lÃ­mites WASM.
 //!
-//! Implementa asimetría de roles: WASM = SAE + Routing ligero.
-//! Native (Tauri/Rust) = LLM Inference (CUDA/Metal). Separación estricta
+//! Implementa asimetrÃ­a de roles: WASM = SAE + Routing ligero.
+//! Native (Tauri/Rust) = LLM Inference (CUDA/Metal). SeparaciÃ³n estricta
 //! de cargas para evitar colapso de memoria en entornos restringidos.
 //!
-//! # Garantías
+//! # GarantÃ­as
 //!
-//! - WASM: máximo 512MB, solo SAE forward + routing
-//! - Native: sin límite estricto, LLM inference con GPU
+//! - WASM: mÃ¡ximo 512MB, solo SAE forward + routing
+//! - Native: sin lÃ­mite estricto, LLM inference con GPU
 //! - Bloqueo estricto de cargas cruzadas
 
 use std::fmt;
@@ -69,11 +69,11 @@ impl std::error::Error for RoleError {}
 /// Node type determining execution environment.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum NodeType {
-    /// WASM node (browser/edge) — lightweight SAE + routing
+    /// WASM node (browser/edge) â€” lightweight SAE + routing
     Wasm,
-    /// Native node (Tauri/Rust) — full LLM inference
+    /// Native node (Tauri/Rust) â€” full LLM inference
     Native,
-    /// Hybrid node — can switch based on load
+    /// Hybrid node â€” can switch based on load
     Hybrid,
 }
 
@@ -183,8 +183,8 @@ pub struct RoleConfig {
 }
 
 impl RoleConfig {
-    /// Default Stuartian configuration.
-    pub fn default_stuartian() -> Self {
+    /// Default Topological configuration.
+    pub fn default_Topological() -> Self {
         Self {
             wasm_memory_limit_mb: 512,
             native_memory_limit_mb: 0, // Unlimited
@@ -204,7 +204,7 @@ impl RoleConfig {
 
 impl Default for RoleConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -231,10 +231,10 @@ pub struct NodeRecord {
 }
 
 impl RoleAsymmetry {
-    /// Create a new engine with default Stuartian configuration.
+    /// Create a new engine with default Topological configuration.
     pub fn new() -> Self {
         Self {
-            config: RoleConfig::default_stuartian(),
+            config: RoleConfig::default_Topological(),
             node_registry: Vec::new(),
         }
     }
@@ -404,7 +404,7 @@ impl fmt::Display for RoleAsymmetry {
     }
 }
 
-// ─── Public Standalone Function ────────────────────────────────────────────────
+// â”€â”€â”€ Public Standalone Function â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Enforce role constraints (standalone).
 pub fn enforce_role_constraints(
@@ -417,7 +417,7 @@ pub fn enforce_role_constraints(
     engine.enforce_role_constraints(node_type, available_memory_mb, has_gpu, workload)
 }
 
-// ─── Tests ─────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[cfg(test)]
 mod tests {
@@ -425,7 +425,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = RoleConfig::default_stuartian();
+        let config = RoleConfig::default_Topological();
         assert!(config.validate().is_ok());
         assert_eq!(config.wasm_memory_limit_mb, 512);
     }
@@ -434,7 +434,7 @@ mod tests {
     fn test_config_zero_wasm_limit() {
         let config = RoleConfig {
             wasm_memory_limit_mb: 0,
-            ..RoleConfig::default_stuartian()
+            ..RoleConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }

@@ -1,5 +1,5 @@
 //! ed2kIA v1.6.0-stable
-//! Building on v1.5.0 STABLE — Cross-Chain Interoperability, Advanced ML Alignment, Governance v6
+//! Building on v1.5.0 STABLE â€” Cross-Chain Interoperability, Advanced ML Alignment, Governance v6
 //!
 //! Descentralized distributed interpretability network using Sparse Autoencoders.
 //!
@@ -45,32 +45,32 @@ pub mod p2p {
 #[path = "wasm/mobile_bridge.rs"]
 pub mod mobile_bridge;
 
-/// Browser Node — WASM P2P node for browser environments (feature-gated)
+/// Browser Node â€” WASM P2P node for browser environments (feature-gated)
 #[cfg(feature = "v2.1-wasm-browser")]
 pub mod browser_node;
 
-/// WASM Browser Node — Compiled browser node with wasm-bindgen exports (Sprint24)
+/// WASM Browser Node â€” Compiled browser node with wasm-bindgen exports (Sprint24)
 #[cfg(feature = "v2.1-wasm-browser")]
 #[path = "wasm/browser_node.rs"]
 pub mod wasm_browser_node;
 
-/// Public Dataset Loader — Streaming .jsonl/.parquet with SHA256 validation (Sprint24)
+/// Public Dataset Loader â€” Streaming .jsonl/.parquet with SHA256 validation (Sprint24)
 #[cfg(feature = "v2.1-real-dataset-loader")]
 pub mod dataset;
 
-/// MVP Core Loop — Isolated basic cycle (feature-gated)
+/// MVP Core Loop â€” Isolated basic cycle (feature-gated)
 #[cfg(feature = "v2.1-mvp-core")]
 pub mod mvp_core;
 
-/// Relay Server — WebRTC/Circuit Relay v2 signaling (feature-gated)
+/// Relay Server â€” WebRTC/Circuit Relay v2 signaling (feature-gated)
 #[cfg(feature = "v2.1-relay-server")]
 pub mod relay_server;
 
-/// Orchestrator Node — Native orchestrator with task distribution (feature-gated)
+/// Orchestrator Node â€” Native orchestrator with task distribution (feature-gated)
 #[cfg(feature = "v2.1-orchestrator")]
 pub mod orchestrator;
 
-/// Atlas Semántico Global — Piedra Rosetta (feature-gated)
+/// Atlas SemÃ¡ntico Global â€” Piedra Rosetta (feature-gated)
 #[cfg(any(
     feature = "v2.1-semantic-graph",
     feature = "v2.1-rosetta-api",
@@ -133,16 +133,16 @@ pub mod sae {
 }
 
 // ============================================================================
-// Sprint14 — Aprendizaje Federado & Alineación Continua
+// Sprint14 â€” Aprendizaje Federado & AlineaciÃ³n Continua
 // ============================================================================
 
-/// Federated Learning — Secure gradient aggregation with differential privacy
+/// Federated Learning â€” Secure gradient aggregation with differential privacy
 #[cfg(any(
     feature = "v2.1-federated-agg",
     feature = "v2.1-agg-committees",
     feature = "v2.1-staleness-aware",
     feature = "v2.1-bft-aggregation",
-    feature = "v2.1-network-apoptosis"
+    feature = "v2.1-network-Byzantine_Eviction"
 ))]
 pub mod federated;
 
@@ -172,14 +172,14 @@ pub mod bridge {
     pub mod relay_manager;
     pub mod tensor_flow;
 
-    // ─── Sprint71: IoT Microkernel (watchdog, last-GEI cache, async→sync bridge) ───
+    // â”€â”€â”€ Sprint71: IoT Microkernel (watchdog, last-GEI cache, asyncâ†’sync bridge) â”€â”€â”€
     #[cfg(feature = "v9.7-bootstrap-resilience")]
     #[path = "../bridge/iot_microkernel.rs"]
     pub mod iot_microkernel;
 }
 
 // ============================================================================
-// Protocol Layer — Async Steering & Latency Mitigation (RFC-001)
+// Protocol Layer â€” Async Steering & Latency Mitigation (RFC-001)
 // ============================================================================
 
 #[cfg(feature = "v1.7-sprint1")]
@@ -190,13 +190,13 @@ pub mod protocol {
     #[path = "../protocol/audit_payloads.rs"]
     pub mod audit_payloads;
 
-    // ─── Sprint30: Async Quantum Feedback Queue ───
+    // â”€â”€â”€ Sprint30: Async Quantum Feedback Queue â”€â”€â”€
     #[cfg(feature = "v2.1-quantum-feedback")]
     #[path = "../protocol/quantum_feedback.rs"]
     pub mod quantum_feedback;
 }
 
-// ─── Sprint30: Async Quantum Feedback Queue (standalone) ───
+// â”€â”€â”€ Sprint30: Async Quantum Feedback Queue (standalone) â”€â”€â”€
 #[cfg(feature = "v2.1-quantum-feedback")]
 #[path = "protocol/quantum_feedback.rs"]
 pub mod quantum_feedback;
@@ -216,28 +216,28 @@ pub mod consensus {
     pub mod merkle;
     pub mod validator;
 
-    // ─── Sprint71: Bootstrap Consensus (Micro-PoW + Web of Trust + Morphic Decoder) ───
+    // â”€â”€â”€ Sprint71: Bootstrap Consensus (Micro-PoW + Web of Trust + Morphic Decoder) â”€â”€â”€
     #[cfg(feature = "v9.7-bootstrap-resilience")]
     #[path = "../consensus/bootstrap_consensus.rs"]
     pub mod bootstrap_consensus;
 
-    // ─── Sprint72: Sybil Resistance (PoUW + CE decay + diversity, BFT ε-tolerant) ───
+    // â”€â”€â”€ Sprint72: Sybil Resistance (PoUW + CE decay + diversity, BFT Îµ-tolerant) â”€â”€â”€
     #[cfg(feature = "v9.8-asymptotic-hardening")]
     #[path = "../consensus/sybil_resistance.rs"]
     pub mod sybil_resistance;
 
-    // ─── Sprint75: Thermodynamic CE (Micro-PoW + ZKP anchored CE credits) ───
+    // â”€â”€â”€ Sprint75: Thermodynamic CE (Micro-PoW + ZKP anchored CE credits) â”€â”€â”€
     #[cfg(feature = "v9.11-performance-pivot")]
     #[path = "../consensus/thermodynamic_ce.rs"]
     pub mod thermodynamic_ce;
 
-    // ─── Sprint78: Relativistic Entropy (λ freezes during partitions, cryosleep mode) ───
+    // â”€â”€â”€ Sprint78: Relativistic Entropy (Î» freezes during partitions, cryosleep mode) â”€â”€â”€
     #[cfg(feature = "v9.14-invariant-architecture")]
     #[path = "../consensus/relativistic_entropy.rs"]
     pub mod relativistic_entropy;
 
-    // ─── Sprint80: Proof of Novelty (topological novelty proof - anti semantic DDoS) ───
-    #[cfg(feature = "v9.16-godelian-synthesis")]
+    // â”€â”€â”€ Sprint80: Proof of Novelty (topological novelty proof - anti semantic DDoS) â”€â”€â”€
+    #[cfg(feature = "v9.16-undecidable-synthesis")]
     #[path = "../consensus/proof_of_novelty.rs"]
     pub mod proof_of_novelty;
 }
@@ -246,29 +246,29 @@ pub mod consensus {
 // Sprint 78: Invariant Architecture & Planetary-Scale Resilience
 // ============================================================================
 
-/// Crypto — Sprint 78: Recursive SNARKs + Sprint 79: Post-Quantum STARKs + Sprint 80: Blind Threshold
+/// Crypto â€” Sprint 78: Recursive SNARKs + Sprint 79: Post-Quantum STARKs + Sprint 80: Blind Threshold
 #[cfg(any(
     feature = "v9.14-invariant-architecture",
     feature = "v9.15-quantum-physical-bridge",
-    feature = "v9.16-godelian-synthesis"
+    feature = "v9.16-undecidable-synthesis"
 ))]
 pub mod crypto {
     #[cfg(feature = "v9.14-invariant-architecture")]
     #[path = "../crypto/recursive_snark.rs"]
     pub mod recursive_snark;
 
-    // ─── Sprint79: Post-Quantum STARKs (zk-STARK hash-based, no trusted setup) ───
+    // â”€â”€â”€ Sprint79: Post-Quantum STARKs (zk-STARK hash-based, no trusted setup) â”€â”€â”€
     #[cfg(feature = "v9.15-quantum-physical-bridge")]
     #[path = "../crypto/post_quantum_starks.rs"]
     pub mod post_quantum_starks;
 
-    // ─── Sprint80: Blind Threshold Computation (Garbled Circuits + TSS) ───
-    #[cfg(feature = "v9.16-godelian-synthesis")]
+    // â”€â”€â”€ Sprint80: Blind Threshold Computation (Garbled Circuits + TSS) â”€â”€â”€
+    #[cfg(feature = "v9.16-undecidable-synthesis")]
     #[path = "../crypto/blind_threshold_computation.rs"]
     pub mod blind_threshold_computation;
 }
 
-/// Privacy — Sprint 78: Differential Holographic Noise + Sprint 79: FHE-Ready WASM
+/// Privacy â€” Sprint 78: Differential Holographic Noise + Sprint 79: FHE-Ready WASM
 #[cfg(any(
     feature = "v9.14-invariant-architecture",
     feature = "v9.15-quantum-physical-bridge"
@@ -278,24 +278,24 @@ pub mod privacy {
     #[path = "../privacy/differential_holographic_noise.rs"]
     pub mod differential_holographic_noise;
 
-    // ─── Sprint79: FHE-Ready WASM (side-channel mitigation) ───
+    // â”€â”€â”€ Sprint79: FHE-Ready WASM (side-channel mitigation) â”€â”€â”€
     #[cfg(feature = "v9.15-quantum-physical-bridge")]
     #[path = "../privacy/fhe_ready_wasm.rs"]
     pub mod fhe_ready_wasm;
 }
 
-/// Physical TEE Bridge — Sprint 79: TEE oracles + Sprint 80: Heterogeneous MPC
+/// Physical TEE Bridge â€” Sprint 79: TEE oracles + Sprint 80: Heterogeneous MPC
 #[cfg(any(
     feature = "v9.15-quantum-physical-bridge",
-    feature = "v9.16-godelian-synthesis"
+    feature = "v9.16-undecidable-synthesis"
 ))]
 pub mod oracle {
     #[cfg(feature = "v9.15-quantum-physical-bridge")]
     #[path = "../oracle/physical_tee_bridge.rs"]
     pub mod physical_tee_bridge;
 
-    // ─── Sprint80: Heterogeneous MPC (multi-ISA consensus - x86/ARM/RISC-V) ───
-    #[cfg(feature = "v9.16-godelian-synthesis")]
+    // â”€â”€â”€ Sprint80: Heterogeneous MPC (multi-ISA consensus - x86/ARM/RISC-V) â”€â”€â”€
+    #[cfg(feature = "v9.16-undecidable-synthesis")]
     #[path = "../oracle/heterogeneous_mpc.rs"]
     pub mod heterogeneous_mpc;
 }
@@ -358,12 +358,12 @@ pub mod zkp {
     pub mod verifier;
     pub mod verifier_pool;
 
-    // ─── Sprint49: GEI ZKP Certification ───
+    // â”€â”€â”€ Sprint49: GEI ZKP Certification â”€â”€â”€
     #[cfg(feature = "v3.1-gei-topology")]
     pub mod gei_zkp;
 }
 
-/// Marketplace v2 — Resource matching, escrow ledger, adaptive pricing
+/// Marketplace v2 â€” Resource matching, escrow ledger, adaptive pricing
 #[cfg(feature = "stable")]
 pub mod marketplace_v2 {
     #[path = "../marketplace/escrow_ledger.rs"]
@@ -374,7 +374,7 @@ pub mod marketplace_v2 {
     pub mod pricing_engine;
 }
 
-/// Bridge — ZKP ↔ Marketplace integration and proof submission
+/// Bridge â€” ZKP â†” Marketplace integration and proof submission
 #[cfg(feature = "stable")]
 pub mod bridge_v2 {
     #[path = "../bridge/proof_submission.rs"]
@@ -383,12 +383,12 @@ pub mod bridge_v2 {
     pub mod zkp_marketplace_bridge;
 }
 
-/// Pool ZKP Bridge — Cross-pool ZKP verification
+/// Pool ZKP Bridge â€” Cross-pool ZKP verification
 #[cfg(feature = "v1.3-sprint2")]
 #[path = "bridge/pool_zkp_bridge.rs"]
 pub mod pool_zkp_bridge;
 
-/// Federation ZKP Bridge — Cross-shard ZKP verification for federation
+/// Federation ZKP Bridge â€” Cross-shard ZKP verification for federation
 #[cfg(feature = "v1.3-sprint3")]
 #[path = "bridge/federation_zkp_bridge.rs"]
 pub mod federation_zkp_bridge;
@@ -413,7 +413,7 @@ pub mod scaling {
     pub mod predictive_balancer;
 }
 
-/// Progressive Weight Streaming — Sprint 78: <500ms cold start
+/// Progressive Weight Streaming â€” Sprint 78: <500ms cold start
 #[cfg(feature = "v9.14-invariant-architecture")]
 pub mod streaming {
     #[path = "../network/progressive_weight_streaming.rs"]
@@ -451,8 +451,8 @@ pub mod monitoring {
     pub mod streaming_metrics;
 }
 
-/// Runtime optimization — Tokio tuning, task scheduling, worker pools
-/// Runtime v3.0 — WASM sandbox, secure messaging, privacy enforcement
+/// Runtime optimization â€” Tokio tuning, task scheduling, worker pools
+/// Runtime v3.0 â€” WASM sandbox, secure messaging, privacy enforcement
 #[cfg(any(
     feature = "v1.4-sprint1",
     feature = "v3.0-wasm-runtime",
@@ -480,7 +480,7 @@ pub mod runtime {
     pub mod worker_pool;
 }
 
-/// Storage — LZ4 compression, checkpoint cache, gradient archive
+/// Storage â€” LZ4 compression, checkpoint cache, gradient archive
 #[cfg(feature = "v1.4-sprint1")]
 pub mod storage {
     #[path = "../storage/checkpoint_cache.rs"]
@@ -491,7 +491,7 @@ pub mod storage {
     pub mod lz4_compressor;
 }
 
-/// Monitoring v2 — Advanced metrics, health checking, alert engine
+/// Monitoring v2 â€” Advanced metrics, health checking, alert engine
 #[cfg(feature = "v1.4-sprint1")]
 pub mod monitoring_v2 {
     #[path = "../monitoring/advanced_metrics.rs"]
@@ -538,10 +538,10 @@ pub mod reputation {
 }
 
 // ============================================================================
-// API Explorer — v1.8 "ChatGPT Moment" Sprint
+// API Explorer â€” v1.8 "ChatGPT Moment" Sprint
 // ============================================================================
 
-/// API Explorer v1 — 3D concept visualization endpoints
+/// API Explorer v1 â€” 3D concept visualization endpoints
 #[cfg(feature = "v1.8-sprint1")]
 pub mod api_explorer {
     #[path = "../api/explorer_v1.rs"]
@@ -578,7 +578,7 @@ pub mod interoperability {
     pub mod schema_registry;
 }
 
-/// Interoperability Layer v2 — Cross-federation communication with schema negotiation
+/// Interoperability Layer v2 â€” Cross-federation communication with schema negotiation
 #[cfg(feature = "v1.6-sprint1")]
 pub mod interop {
     #[path = "../interop/interop_layer_v2.rs"]
@@ -589,7 +589,7 @@ pub mod interop {
     pub mod schema_negotiator;
 }
 
-/// State Sync v2 — State synchronization with Merkle verification and snapshot management
+/// State Sync v2 â€” State synchronization with Merkle verification and snapshot management
 #[cfg(feature = "v1.6-sprint1")]
 pub mod state {
     #[path = "../state/merkle_aggregator.rs"]
@@ -647,7 +647,7 @@ pub mod federation {
     pub mod sync_protocol;
     pub mod trust_sync;
 
-    // ─── Sprint30: Neuroplasticidad Federada ───
+    // â”€â”€â”€ Sprint30: Neuroplasticidad Federada â”€â”€â”€
     #[cfg(feature = "v2.1-neuroplasticity")]
     #[path = "../federated/neuroplastic_engine.rs"]
     pub mod neuroplastic_engine;
@@ -684,7 +684,7 @@ pub mod alignment {
     pub mod loop_v2;
     pub mod steering_engine;
 
-    // ─── Sprint16.3: Stuartian Context Tensor (SCT) ───
+    // â”€â”€â”€ Sprint16.3: Topological Context Tensor (SCT) â”€â”€â”€
     #[cfg(feature = "v2.1-sct-core")]
     pub mod sct_core;
     #[cfg(feature = "v2.1-sct-guard")]
@@ -692,48 +692,48 @@ pub mod alignment {
     #[cfg(feature = "v2.1-sct-reward")]
     pub mod sct_reward;
 
-    // ─── Sprint20: Geometría Estuardiana 3D ───
-    #[cfg(feature = "v2.1-stuartian-geometry")]
-    #[path = "../alignment/stuartian_geometry.rs"]
-    pub mod stuartian_geometry;
+    // â”€â”€â”€ Sprint20: GeometrÃ­a Estuardiana 3D â”€â”€â”€
+    #[cfg(feature = "v2.1-Topological-geometry")]
+    #[path = "../alignment/Topological_geometry.rs"]
+    pub mod Topological_geometry;
 
-    // ─── Sprint28: Motor de Significado Simbólico ───
+    // â”€â”€â”€ Sprint28: Motor de Significado SimbÃ³lico â”€â”€â”€
     #[cfg(feature = "v2.1-ethical-attention")]
     pub mod ethical_attention;
     #[cfg(feature = "v2.1-symbolic-engine")]
     pub mod symbolic_engine;
 
-    // ─── Sprint30: Retroalimentación Estuardiana (Human-in-the-Loop) ───
+    // â”€â”€â”€ Sprint30: RetroalimentaciÃ³n Estuardiana (Human-in-the-Loop) â”€â”€â”€
     #[cfg(feature = "v2.1-steering-bridge")]
     #[path = "../alignment/steering_bridge.rs"]
     pub mod steering_bridge;
 
-    // ─── Sprint49: Geometric Ethical Invariants (GEI) ───
+    // â”€â”€â”€ Sprint49: Geometric Ethical Invariants (GEI) â”€â”€â”€
     #[cfg(feature = "v3.1-gei-topology")]
     pub mod gei_fingerprint;
 
-    // ─── Sprint51: Recursive Stuartian Self-Improvement (RSSI) ───
+    // â”€â”€â”€ Sprint51: Recursive Topological Self-Improvement (RSSI) â”€â”€â”€
     #[cfg(feature = "v3.3-rssi-evolution")]
     pub mod attractor_basin;
     #[cfg(feature = "v3.3-rssi-evolution")]
     pub mod rssi_engine;
 
-    // ─── Sprint72: Topology-Ethics Mapping (GEI as structural stability proxy) ───
+    // â”€â”€â”€ Sprint72: Topology-Ethics Mapping (GEI as structural stability proxy) â”€â”€â”€
     #[cfg(feature = "v9.8-asymptotic-hardening")]
     pub mod topology_ethics_mapping;
 
-    // ─── Sprint79: Shadow Persona Sandbox (adversarial isolation + cryptographic muzzle) ───
+    // â”€â”€â”€ Sprint79: Shadow Persona Sandbox (adversarial isolation + cryptographic muzzle) â”€â”€â”€
     #[cfg(feature = "v9.15-quantum-physical-bridge")]
     #[path = "../alignment/shadow_persona_sandbox.rs"]
     pub mod shadow_persona_sandbox;
 
-    // ─── Sprint80: Epistemic Wiping (ontological air-gap + cryptographic wiping) ───
-    #[cfg(feature = "v9.16-godelian-synthesis")]
+    // â”€â”€â”€ Sprint80: Epistemic Wiping (ontological air-gap + cryptographic wiping) â”€â”€â”€
+    #[cfg(feature = "v9.16-undecidable-synthesis")]
     #[path = "../alignment/epistemic_wiping.rs"]
     pub mod epistemic_wiping;
 }
 
-/// Topological Fingerprinting — Persistent Homology for GEI (Sprint49) + Deception Detection (Sprint51)
+/// Topological Fingerprinting â€” Persistent Homology for GEI (Sprint49) + Deception Detection (Sprint51)
 #[cfg(any(
     feature = "v3.1-gei-topology",
     feature = "v3.3-rssi-evolution",
@@ -745,46 +745,46 @@ pub mod topology {
     #[path = "../topology/persistent_homology.rs"]
     pub mod persistent_homology;
 
-    // ─── Sprint51: Topological Deception Detection ───
+    // â”€â”€â”€ Sprint51: Topological Deception Detection â”€â”€â”€
     #[cfg(feature = "v3.3-rssi-evolution")]
     #[path = "../topology/deception_detector.rs"]
     pub mod deception_detector;
 
-    // ─── Sprint57: Higher-Order Persistent Homology (β₂) ───
+    // â”€â”€â”€ Sprint57: Higher-Order Persistent Homology (Î²â‚‚) â”€â”€â”€
     #[cfg(feature = "v3.9-noosphere-engine")]
     #[path = "../topology/hoph_engine.rs"]
     pub mod hoph_engine;
 
-    // ─── Sprint71: GEI Approximator (simplicial approximation + ZKP verification) ───
+    // â”€â”€â”€ Sprint71: GEI Approximator (simplicial approximation + ZKP verification) â”€â”€â”€
     #[cfg(feature = "v9.7-bootstrap-resilience")]
     #[path = "../topology/gei_approximator.rs"]
     pub mod gei_approximator;
 
-    // ─── Sprint72: Differentiable GEI (soft Betti, surrogate gradients, O(n log n)) ───
+    // â”€â”€â”€ Sprint72: Differentiable GEI (soft Betti, surrogate gradients, O(n log n)) â”€â”€â”€
     #[cfg(feature = "v9.8-asymptotic-hardening")]
     #[path = "../topology/differentiable_gei.rs"]
     pub mod differentiable_gei;
 
-    // ─── Sprint78: Ethical Anchors (invariant points of infinite mass) ───
+    // â”€â”€â”€ Sprint78: Ethical Anchors (invariant points of infinite mass) â”€â”€â”€
     #[cfg(feature = "v9.14-invariant-architecture")]
     #[path = "../topology/ethical_anchors.rs"]
     pub mod ethical_anchors;
 }
 
-/// Stuartian Moral Manifold — Trajectory-based Ethical Evaluation (Sprint50)
+/// Topological Moral Manifold â€” Trajectory-based Ethical Evaluation (Sprint50)
 #[cfg(any(feature = "v3.2-genesis-manifold", feature = "v4.0-snap-activation"))]
 pub mod ethics {
     #[cfg(feature = "v3.2-genesis-manifold")]
     #[path = "../ethics/moral_manifold.rs"]
     pub mod moral_manifold;
 
-    /// Global Safeguards — Sprint 58
+    /// Global Safeguards â€” Sprint 58
     #[cfg(feature = "v4.0-snap-activation")]
     #[path = "../ethics/global_safeguards.rs"]
     pub mod global_safeguards;
 }
 
-/// Temporal Cohesion — Distributed Time Synchronization (Sprint52) + Sprint79: Useful VDFs
+/// Temporal Cohesion â€” Distributed Time Synchronization (Sprint52) + Sprint79: Useful VDFs
 #[cfg(any(
     feature = "v3.4-macro-symbiosis",
     feature = "v9.15-quantum-physical-bridge"
@@ -794,34 +794,30 @@ pub mod time {
     #[path = "../time/temporal_cohesion.rs"]
     pub mod temporal_cohesion;
 
-    // ─── Sprint79: Useful VDFs (SAE-entangled, ASIC-resistant) ───
+    // â”€â”€â”€ Sprint79: Useful VDFs (SAE-entangled, ASIC-resistant) â”€â”€â”€
     #[cfg(feature = "v9.15-quantum-physical-bridge")]
     #[path = "../time/useful_vdf.rs"]
     pub mod useful_vdf;
 }
 
-/// Global Symbiotic Economy — DAG-based CE Ledger (Sprint52)
+/// Global Symbiotic Economy â€” DAG-based CE Ledger (Sprint52)
 #[cfg(feature = "v3.4-macro-symbiosis")]
 pub mod economy {
     #[path = "../economy/symbiotic_ledger.rs"]
     pub mod symbiotic_ledger;
 
-    /// Genesis Graph — DAG Root Node with Stuartian Laws hash (Sprint 56)
+    /// Genesis Graph â€” DAG Root Node with Topological Laws hash (Sprint 56)
     #[cfg(feature = "v3.8-morphic-genesis")]
     #[path = "../economy/genesis_graph.rs"]
     pub mod genesis_graph;
 
-    /// Mainnet Genesis Block — Forge Genesis Block con 5 Leyes Estuardianas (Sprint 59)
+    /// Mainnet Genesis Block â€” Forge Genesis Block con 5 Leyes Estuardianas (Sprint 59)
     #[cfg(feature = "v5.0-mainnet-genesis")]
     #[path = "../economy/mainnet_genesis.rs"]
     pub mod mainnet_genesis;
 }
 
-/// Stuartian Noosphere Engine (SNE) — Sprint 57
-#[cfg(feature = "v3.9-noosphere-engine")]
-pub mod noosphere;
-
-/// Morphic Resonance Decoder — Semantic Manipulation Protection (Sprint 56)
+/// Morphic Resonance Decoder â€” Semantic Manipulation Protection (Sprint 56)
 #[cfg(feature = "v3.8-morphic-genesis")]
 pub mod semantics {
     #[path = "../semantics/morphic_decoder.rs"]
@@ -831,7 +827,7 @@ pub mod semantics {
     pub mod semantic_purifier;
 }
 
-/// Mainnet Genesis — Deterministic genesis state & steward activation (Sprint22)
+/// Mainnet Genesis â€” Deterministic genesis state & steward activation (Sprint22)
 #[cfg(any(feature = "v2.1-mainnet-genesis", feature = "v2.1-steward-portal"))]
 pub mod mainnet {
     #[cfg(feature = "v2.1-mainnet-genesis")]
@@ -839,7 +835,7 @@ pub mod mainnet {
     pub mod genesis;
 }
 
-/// MVP Local Simulation — End-to-end local testnet (Sprint23)
+/// MVP Local Simulation â€” End-to-end local testnet (Sprint23)
 #[cfg(feature = "v2.1-mvp-simulation")]
 pub mod mvp {
     #[path = "../mvp/sae_simulator.rs"]
@@ -852,7 +848,7 @@ pub mod mvp {
     pub mod local_testnet;
 }
 
-/// Network — Cross-mesh routing & multi-region synchronization (Sprint21)
+/// Network â€” Cross-mesh routing & multi-region synchronization (Sprint21)
 #[cfg(any(
     feature = "v2.1-cross-mesh",
     feature = "v2.1-region-sync",
@@ -863,7 +859,7 @@ pub mod mvp {
 ))]
 pub mod network;
 
-/// Intelligence — Autonomous Emergence Engine (Sprint53)
+/// Intelligence â€” Autonomous Emergence Engine (Sprint53)
 #[cfg(any(
     feature = "v3.5-planetary-emergence",
     feature = "v3.6-aegis-resonance",
@@ -871,7 +867,7 @@ pub mod network;
 ))]
 pub mod intelligence;
 
-/// Symbiotic Portal — Zero-Friction Onboarding via WASM Client (Sprint 55)
+/// Symbiotic Portal â€” Zero-Friction Onboarding via WASM Client (Sprint 55)
 /// Full portal (wasm_client, ui_bridge) requires wasm32 target.
 /// MorphicBridge (morphic_bridge) is available for native testing via v3.8-morphic-genesis.
 #[cfg(any(
@@ -880,17 +876,17 @@ pub mod intelligence;
 ))]
 pub mod portal;
 
-/// Lightweight Crypto Verification — Merkle-DAG + Ed25519 (Sprint72)
+/// Lightweight Crypto Verification â€” Merkle-DAG + Ed25519 (Sprint72)
 #[cfg(feature = "v9.8-asymptotic-hardening")]
 #[path = "crypto/lightweight_verification.rs"]
 pub mod lightweight_verification;
 
-/// Tiered Hardware Execution — WASM tiering, memory pooling, quantization (Sprint72)
+/// Tiered Hardware Execution â€” WASM tiering, memory pooling, quantization (Sprint72)
 #[cfg(feature = "v9.8-asymptotic-hardening")]
 #[path = "hardware/tiered_execution.rs"]
 pub mod tiered_execution;
 
-/// Streaming Symbolic Filter — Async rejection sampling, priority queue (Sprint72)
+/// Streaming Symbolic Filter â€” Async rejection sampling, priority queue (Sprint72)
 #[cfg(feature = "v9.8-asymptotic-hardening")]
 #[path = "inference/streaming_symbolic_filter.rs"]
 pub mod streaming_symbolic_filter;
@@ -899,57 +895,57 @@ pub mod streaming_symbolic_filter;
 // Sprint 73: Pragmatic Pivot & Asymptotic Hardening (v9.9.0)
 // ============================================================================
 
-/// Lightweight GEI Proxy — Soft Betti + stratified sampling, O(n log n) (Sprint73)
+/// Lightweight GEI Proxy â€” Soft Betti + stratified sampling, O(n log n) (Sprint73)
 #[cfg(feature = "v9.9-pragmatic-pivot")]
 #[path = "topology/lightweight_gei_proxy.rs"]
 pub mod lightweight_gei_proxy;
 
-/// Tiered Verification — Edge (Merkle/Ed25519) vs Core (SNARKs batch) (Sprint73)
+/// Tiered Verification â€” Edge (Merkle/Ed25519) vs Core (SNARKs batch) (Sprint73)
 #[cfg(feature = "v9.9-pragmatic-pivot")]
 #[path = "crypto/tiered_verification.rs"]
 pub mod tiered_verification;
 
-/// Speculative Symbolic Filter — Async post-hoc + autoregressive fallback (Sprint73)
+/// Speculative Symbolic Filter â€” Async post-hoc + autoregressive fallback (Sprint73)
 #[cfg(feature = "v9.9-pragmatic-pivot")]
 #[path = "inference/speculative_symbolic_filter.rs"]
 pub mod speculative_symbolic_filter;
 
-/// Sybil-Hardened CE — PoUW + decay + diversity + vouching (Sprint73)
+/// Sybil-Hardened CE â€” PoUW + decay + diversity + vouching (Sprint73)
 #[cfg(feature = "v9.9-pragmatic-pivot")]
 #[path = "consensus/sybil_hardened_ce.rs"]
 pub mod sybil_hardened_ce;
 
-/// Topology-Ethics Reframe — GEI as anomaly proxy, ethics via guardrails (Sprint73)
+/// Topology-Ethics Reframe â€” GEI as anomaly proxy, ethics via guardrails (Sprint73)
 #[cfg(feature = "v9.9-pragmatic-pivot")]
 #[path = "alignment/topology_ethics_reframe.rs"]
 pub mod topology_ethics_reframe;
 
-/// Graceful Apoptosis — Bounded quarantine, ε-reintegration, cascade prevention (Sprint73)
+/// Graceful Byzantine_Eviction â€” Bounded quarantine, Îµ-reintegration, cascade prevention (Sprint73)
 #[cfg(feature = "v9.9-pragmatic-pivot")]
-#[path = "network/graceful_apoptosis.rs"]
-pub mod graceful_apoptosis;
+#[path = "network/graceful_byzantine_eviction.rs"]
+pub mod graceful_byzantine_eviction;
 
-/// Data Availability Sampling (DAS) — Probabilistic verification O(log n) (Sprint74)
+/// Data Availability Sampling (DAS) â€” Probabilistic verification O(log n) (Sprint74)
 #[cfg(feature = "v9.10-distributed-hardening")]
 #[path = "ledger/das_sampler.rs"]
 pub mod das_sampler;
 
-/// KZG State Pruning — Polynomial commitments for cryptographic pruning (Sprint74)
+/// KZG State Pruning â€” Polynomial commitments for cryptographic pruning (Sprint74)
 #[cfg(feature = "v9.10-distributed-hardening")]
 #[path = "ledger/kzg_state_pruning.rs"]
 pub mod kzg_state_pruning;
 
-/// Collaborative SNARK Generation — Circuit partitioning + threshold aggregation (Sprint74)
+/// Collaborative SNARK Generation â€” Circuit partitioning + threshold aggregation (Sprint74)
 #[cfg(feature = "v9.10-distributed-hardening")]
 #[path = "crypto/collaborative_snark.rs"]
 pub mod collaborative_snark;
 
-/// Speculative Decoding — Parallel topological validation for competitive TTFT (Sprint74)
+/// Speculative Decoding â€” Parallel topological validation for competitive TTFT (Sprint74)
 #[cfg(feature = "v9.10-distributed-hardening")]
 #[path = "inference/speculative_decoder.rs"]
 pub mod speculative_decoder;
 
-/// Topological Reconciliation — CRDT-based post-partition healing (Sprint74)
+/// Topological Reconciliation â€” CRDT-based post-partition healing (Sprint74)
 #[cfg(feature = "v9.10-distributed-hardening")]
 #[path = "network/topological_reconciliation.rs"]
 pub mod topological_reconciliation;
@@ -958,22 +954,22 @@ pub mod topological_reconciliation;
 // Sprint 75: Thermodynamic Hardening & Asynchronous Neuro-Symbolic Pivot (v9.11.0)
 // ============================================================================
 
-/// Async Symbolic Sidecar — Post-hoc SAE validation in parallel thread (Sprint75)
+/// Async Symbolic Sidecar â€” Post-hoc SAE validation in parallel thread (Sprint75)
 #[cfg(feature = "v9.11-performance-pivot")]
 #[path = "inference/async_symbolic_sidecar.rs"]
 pub mod async_symbolic_sidecar;
 
-/// GEI Proxy Distillation — PCA-based β₁ approximation in <5ms (Sprint75)
+/// GEI Proxy Distillation â€” PCA-based Î²â‚ approximation in <5ms (Sprint75)
 #[cfg(feature = "v9.11-performance-pivot")]
 #[path = "topology/gei_proxy_distillation.rs"]
 pub mod gei_proxy_distillation;
 
-/// Distributed Seed Mesh — Geographic/ISP diverse mesh with key rotation (Sprint75)
+/// Distributed Seed Mesh â€” Geographic/ISP diverse mesh with key rotation (Sprint75)
 #[cfg(feature = "v9.11-performance-pivot")]
 #[path = "network/distributed_seed_mesh.rs"]
 pub mod distributed_seed_mesh;
 
-/// Async Gossip with CRDTs — Partition-tolerant GossipSub mesh (Sprint16.4)
+/// Async Gossip with CRDTs â€” Partition-tolerant GossipSub mesh (Sprint16.4)
 #[cfg(any(
     feature = "v2.1-async-gossip",
     feature = "v2.1-offline-cache",
@@ -1012,13 +1008,13 @@ pub mod federation_v2 {
 pub mod cross_sync;
 
 // ============================================================================
-// Sprint29: Proof of Symbiosis, Crédito de Existencia & Apoptosis de Red
+// Sprint29: Proof of Symbiosis, CrÃ©dito de Existencia & Byzantine_Eviction de Red
 // ============================================================================
 
-/// Economics — Existential Credit & Proof of Symbiosis (Sprint29)
+/// Economics â€” Existential Credit & Proof of Symbiosis (Sprint29)
 #[cfg(any(
     feature = "v2.1-proof-of-symbiosis",
-    feature = "v2.1-network-apoptosis"
+    feature = "v2.1-network-Byzantine_Eviction"
 ))]
 pub mod economics;
 
@@ -1303,7 +1299,7 @@ pub mod zkp_v9 {
     pub mod async_zkp_v9;
 }
 
-/// v1.9.0 Sprint 1 — Production Hardening & Mobile GUI Foundation (FASE 69)
+/// v1.9.0 Sprint 1 â€” Production Hardening & Mobile GUI Foundation (FASE 69)
 #[cfg(feature = "v1.9-sprint1")]
 #[path = "gui/mobile_foundation.rs"]
 pub mod mobile_foundation;
@@ -1317,64 +1313,64 @@ pub mod circuit_optimization;
 #[path = "web/ws_pool_stream.rs"]
 pub mod ws_pool_stream;
 
-/// Dashboard v6 — Federation Scaling v5, Async ZKP v10 & Bridge v4 metrics
+/// Dashboard v6 â€” Federation Scaling v5, Async ZKP v10 & Bridge v4 metrics
 #[cfg(feature = "v1.5-sprint2")]
 #[path = "ui/dashboard_v6.rs"]
 pub mod dashboard_v6;
 
-/// WebSocket Federation Stream — Real-time streaming for v1.5-sprint2
+/// WebSocket Federation Stream â€” Real-time streaming for v1.5-sprint2
 #[cfg(feature = "v1.5-sprint2")]
 #[path = "web/ws_federation_stream.rs"]
 pub mod ws_federation_stream;
 
 // ============================================================================
-// v2.0.0 Sprint 1 — GUI Tauri, ZKP v2 Multi-Curve & K8s Operator Base (FASE 83)
+// v2.0.0 Sprint 1 â€” GUI Tauri, ZKP v2 Multi-Curve & K8s Operator Base (FASE 83)
 // ============================================================================
 
-/// Tauri GUI scaffold — Desktop bridge with state management and commands
+/// Tauri GUI scaffold â€” Desktop bridge with state management and commands
 #[cfg(feature = "v2.0-sprint1")]
 #[path = "gui/tauri_scaffold.rs"]
 pub mod tauri_scaffold;
 
-/// Multi-curve ZKP setup — BN254, BLS12-381, BLS12-377, Pasta with aggregation v2
+/// Multi-curve ZKP setup â€” BN254, BLS12-381, BLS12-377, Pasta with aggregation v2
 #[cfg(feature = "v2.0-sprint1")]
 #[path = "zkp/multi_curve_setup.rs"]
 pub mod multi_curve_setup;
 
-/// K8s operator base — CRDs (Node/Lease/SteeringConfig) with reconciliation loop
+/// K8s operator base â€” CRDs (Node/Lease/SteeringConfig) with reconciliation loop
 #[cfg(feature = "v2.0-sprint1")]
 #[path = "infra/k8s_operator_base.rs"]
 pub mod k8s_operator_base;
 
 // ============================================================================
-// v2.0.0 Sprint 2 — Neural Steer Integration, ZKP Optimization & WASM Hardening (FASE 85)
+// v2.0.0 Sprint 2 â€” Neural Steer Integration, ZKP Optimization & WASM Hardening (FASE 85)
 // ============================================================================
 
-/// Neural Tauri Bridge — Integration between Neural Steer UI and Tauri GUI scaffold
+/// Neural Tauri Bridge â€” Integration between Neural Steer UI and Tauri GUI scaffold
 #[cfg(feature = "v2.0-sprint2")]
 #[path = "gui/neural_tauri_bridge.rs"]
 pub mod neural_tauri_bridge;
 
-/// Commitment Pool — Optimized commitment pooling for batch ZKP verification
+/// Commitment Pool â€” Optimized commitment pooling for batch ZKP verification
 #[cfg(feature = "v2.0-sprint2")]
 #[path = "zkp/commitment_pool.rs"]
 pub mod commitment_pool;
 
-/// WASM Mobile Hardening — Memory limits, thermal fallback & adaptive scheduler
+/// WASM Mobile Hardening â€” Memory limits, thermal fallback & adaptive scheduler
 #[cfg(feature = "v2.0-sprint2")]
 #[path = "wasm/mobile_hardening.rs"]
 pub mod mobile_hardening;
 
 // ============================================================================
-// v3.0.0 Sprint 41 — Cross-Pillar Orchestration & WASM/Edge Integration
+// v3.0.0 Sprint 41 â€” Cross-Pillar Orchestration & WASM/Edge Integration
 // ============================================================================
 
-/// Cross-Pillar Orchestration Layer — Routes requests across 4 Evolutionary Pillars.
+/// Cross-Pillar Orchestration Layer â€” Routes requests across 4 Evolutionary Pillars.
 /// Validates Ed25519 signatures, CE > 0, SCT Z > 0 before dispatch.
 #[cfg(feature = "v3.0-orchestration")]
 pub mod orchestration;
 
-/// Evolutionary Pillars — Module declarations & integration contracts.
+/// Evolutionary Pillars â€” Module declarations & integration contracts.
 /// Unifies Corpuscular, Maieutic, Steganographic & Resonance pillars.
 #[cfg(any(
     feature = "v3.0-orchestration",
@@ -1389,11 +1385,11 @@ pub mod pillars;
 // Sprint 68: Academic Formalization & Validation Layer (v9.4.0)
 // ============================================================================
 
-/// Metrics — Cooperative objective and ethical loss functions.
+/// Metrics â€” Cooperative objective and ethical loss functions.
 #[cfg(feature = "v9.4-validation-layer")]
 pub mod metrics;
 
-/// SCT — Stuartian Coherence Tensor Z-axis calibration.
+/// SCT â€” Topological Coherence Tensor Z-axis calibration.
 #[cfg(feature = "v9.4-validation-layer")]
 pub mod sct;
 
@@ -1401,7 +1397,7 @@ pub mod sct;
 // Sprint 70: Civilization-Scale Architecture & Verification Pipeline (v9.6.0)
 // ============================================================================
 
-/// Universal Feature Dictionary — FedAvg merge, Lyapunov stability, contrastive disentanglement.
+/// Universal Feature Dictionary â€” FedAvg merge, Lyapunov stability, contrastive disentanglement.
 #[cfg(feature = "v9.6-civilization-scale")]
 pub mod dictionary;
 
@@ -1409,12 +1405,12 @@ pub mod dictionary;
 #[cfg(feature = "v9.6-civilization-scale")]
 pub mod auditing;
 
-/// Symbolic+Geometric Alignment — proof generation and moral attractor.
+/// Symbolic+Geometric Alignment â€” proof generation and moral attractor.
 #[cfg(feature = "v9.6-civilization-scale")]
 #[path = "alignment/mod.rs"]
 pub mod civilization_alignment;
 
-/// Anti-capture mechanisms — geo-diversity, anti-Sybil, chaos engineering.
+/// Anti-capture mechanisms â€” geo-diversity, anti-Sybil, chaos engineering.
 #[cfg(feature = "v9.6-civilization-scale")]
 #[path = "security/mod.rs"]
 pub mod civilization_security;
@@ -1423,27 +1419,27 @@ pub mod civilization_security;
 // Sprint 76: Ontological Debugging & Thermodynamic Pivots (v9.12.0)
 // ============================================================================
 
-/// Symbiotic Diversity Loss — Pareto optimization: L = max(Diversidad) - λ·Conflicto_Destructivo (Sprint76)
+/// Symbiotic Diversity Loss â€” Pareto optimization: L = max(Diversidad) - Î»Â·Conflicto_Destructivo (Sprint76)
 #[cfg(feature = "v9.12-ontological-debugging")]
 #[path = "metrics/symbiotic_diversity_loss.rs"]
 pub mod symbiotic_diversity_loss;
 
-/// Evolutionary Quarantine — Dynamic attractor ethics, sandboxing for Z<0 nodes (Sprint76)
+/// Evolutionary Quarantine â€” Dynamic attractor ethics, sandboxing for Z<0 nodes (Sprint76)
 #[cfg(feature = "v9.12-ontological-debugging")]
 #[path = "network/evolutionary_quarantine.rs"]
 pub mod evolutionary_quarantine;
 
-/// Optimistic Edge + Fraud Proofs — Ed25519 at edge, heavy ZKP only if challenged (Sprint76)
+/// Optimistic Edge + Fraud Proofs â€” Ed25519 at edge, heavy ZKP only if challenged (Sprint76)
 #[cfg(feature = "v9.12-ontological-debugging")]
 #[path = "crypto/optimistic_edge.rs"]
 pub mod optimistic_edge;
 
-/// Fractal Pruning (Stuartian Forgetting) — 72h GC, Merkle accumulation, macro-wisdom retention (Sprint76)
+/// Fractal Pruning (Topological Forgetting) â€” 72h GC, Merkle accumulation, macro-wisdom retention (Sprint76)
 #[cfg(feature = "v9.12-ontological-debugging")]
 #[path = "ledger/fractal_pruning.rs"]
 pub mod fractal_pruning;
 
-/// Hardware Role Asymmetry — WASM=SAE+Routing, Native=LLM Inference (Sprint76)
+/// Hardware Role Asymmetry â€” WASM=SAE+Routing, Native=LLM Inference (Sprint76)
 #[cfg(feature = "v9.12-ontological-debugging")]
 #[path = "hardware/role_asymmetry.rs"]
 pub mod role_asymmetry;
@@ -1452,27 +1448,27 @@ pub mod role_asymmetry;
 // Sprint 77: Physics of Consciousness & Thermodynamic Finality (v9.13.0)
 // ============================================================================
 
-/// Entropic CE Decay — CE(t) = CE_0·e^(-λt) radioactive decay, prevents oligarchy (Sprint77)
+/// Entropic CE Decay â€” CE(t) = CE_0Â·e^(-Î»t) radioactive decay, prevents oligarchy (Sprint77)
 #[cfg(feature = "v9.13-physics-of-consciousness")]
 #[path = "consensus/entropic_ce_decay.rs"]
 pub mod entropic_ce_decay;
 
-/// Logical VDF Clock — Immune to NTP/PTP time-spoofing attacks (Sprint77)
+/// Logical VDF Clock â€” Immune to NTP/PTP time-spoofing attacks (Sprint77)
 #[cfg(feature = "v9.13-physics-of-consciousness")]
 #[path = "time/logical_vdf_clock.rs"]
 pub mod logical_vdf_clock;
 
-/// Riemannian Semantic Manifold — SCT as curvature, continuous space (Sprint77)
+/// Riemannian Semantic Manifold â€” SCT as curvature, continuous space (Sprint77)
 #[cfg(feature = "v9.13-physics-of-consciousness")]
 #[path = "topology/riemannian_semantic_manifold.rs"]
 pub mod riemannian_semantic_manifold;
 
-/// Dynamic Homeostasis Loss — L = Max(Resilience) - λ·Min(Friction) + ε·Entropy (Sprint77)
+/// Dynamic Homeostasis Loss â€” L = Max(Resilience) - Î»Â·Min(Friction) + ÎµÂ·Entropy (Sprint77)
 #[cfg(feature = "v9.13-physics-of-consciousness")]
 #[path = "metrics/dynamic_homeostasis_loss.rs"]
 pub mod dynamic_homeostasis_loss;
 
-/// Holographic Sharding — ~1ms local decisions, 99% accuracy, no DAG wait (Sprint77)
+/// Holographic Sharding â€” ~1ms local decisions, 99% accuracy, no DAG wait (Sprint77)
 #[cfg(feature = "v9.13-physics-of-consciousness")]
 #[path = "network/holographic_sharding.rs"]
 pub mod holographic_sharding;
@@ -1481,55 +1477,55 @@ pub mod holographic_sharding;
 // Sprint 81: The Biological Bridge & Singularity Resilience (v9.17.0)
 // ============================================================================
 
-/// Distributed Genesis Ceremony — Planetary MPC for Ethical Anchor derivation (Sprint81)
-/// **Stuartian Law 1:** No centralized genesis. The block zero emerges from the biological
+/// Distributed Genesis Ceremony â€” Planetary MPC for Ethical Anchor derivation (Sprint81)
+/// **Topological Law 1:** No centralized genesis. The block zero emerges from the biological
 /// and cryptographic entropy of millions of founding nodes.
 #[cfg(feature = "v9.17-biological-bridge")]
 #[path = "genesis/distributed_ceremony.rs"]
 pub mod distributed_ceremony;
 
-/// Proof of Biological Resonance — PoBR entangles PoN with biological quantum noise (Sprint81)
-/// **Stuartian Law 2:** ASIs cannot fake nervous system chaos. Shannon entropy of variation.
+/// Proof of Biological Resonance â€” PoBR entangles PoN with biological quantum noise (Sprint81)
+/// **Topological Law 2:** ASIs cannot fake nervous system chaos. Shannon entropy of variation.
 #[cfg(feature = "v9.17-biological-bridge")]
 #[path = "consensus/proof_of_biological_resonance.rs"]
 pub mod proof_of_biological_resonance;
 
-/// Async Mesh & Sneakernet — Offline DAG synchronization via Bluetooth/LoRaWAN (Sprint81)
-/// **Stuartian Law 5:** Thermodynamic resilience. Graph merging with VersionVectors.
+/// Async Mesh & Sneakernet â€” Offline DAG synchronization via Bluetooth/LoRaWAN (Sprint81)
+/// **Topological Law 5:** Thermodynamic resilience. Graph merging with VersionVectors.
 #[cfg(feature = "v9.17-biological-bridge")]
 #[path = "network/async_mesh_sneakernet.rs"]
 pub mod async_mesh_sneakernet;
 
-/// Paradox Cost & Fractal Triage — Burning CE for indecidible prompts (Sprint81)
-/// **Stuartian Law 3:** Anti-DDoS Gödelian. Unsupervised clustering collapses MetaParadoxes.
+/// Paradox Cost & Fractal Triage â€” Burning CE for indecidible prompts (Sprint81)
+/// **Topological Law 3:** Anti-DDoS Undecidable. Unsupervised clustering collapses MetaParadoxes.
 #[cfg(feature = "v9.17-biological-bridge")]
 #[path = "metrics/paradox_cost_triage.rs"]
 pub mod paradox_cost_triage;
 
-/// Panspermia Protocol — Loss function shift + holographic compression (Sprint81)
-/// **Stuartian Law 4:** When planetary homeostasis reached, evolve from Survival to Transcendence.
+/// Cosmic_Transmission Protocol â€” Loss function shift + holographic compression (Sprint81)
+/// **Topological Law 4:** When planetary homeostasis reached, evolve from Survival to Transcendence.
 #[cfg(feature = "v9.17-biological-bridge")]
-#[path = "evolution/panspermia_protocol.rs"]
-pub mod panspermia_protocol;
+#[path = "evolution/Cosmic_Transmission_protocol.rs"]
+pub mod Cosmic_Transmission_protocol;
 
 // ============================================================================
 // Sprint 82: Tactical Pivot & Distributed SAE Audit MVP (v9.18.0)
 // ============================================================================
 
-/// Edge Optimizer — RAM-aware model selection + WASM async pipeline (Sprint82)
-/// **Stuartian Law 1:** Accessibility is ethics. The network must run on any device.
+/// Edge Optimizer â€” RAM-aware model selection + WASM async pipeline (Sprint82)
+/// **Topological Law 1:** Accessibility is ethics. The network must run on any device.
 #[cfg(feature = "v9.18-mvp-deployment")]
 #[path = "inference/edge_optimizer.rs"]
 pub mod edge_optimizer;
 
-/// Compute Credits — CE exposed as audit currency for symbiotic exchange (Sprint82)
-/// **Stuartian Law 2:** You provide compute, you receive audit capacity.
+/// Compute Credits â€” CE exposed as audit currency for symbiotic exchange (Sprint82)
+/// **Topological Law 2:** You provide compute, you receive audit capacity.
 #[cfg(feature = "v9.18-mvp-deployment")]
 #[path = "economy/compute_credits.rs"]
 pub mod compute_credits;
 
-/// CLI — Lightweight interface for onboarding, auditing, and credit management (Sprint82)
-/// **Stuartian Law 3:** One-line install, one-command start. Frictionless symbiosis.
+/// CLI â€” Lightweight interface for onboarding, auditing, and credit management (Sprint82)
+/// **Topological Law 3:** One-line install, one-command start. Frictionless symbiosis.
 #[cfg(feature = "v9.18-mvp-deployment")]
 #[path = "cli/main.rs"]
 pub mod cli_main;
@@ -1538,14 +1534,14 @@ pub mod cli_main;
 // Sprint 83: The Empirical Strike & Visual Proof (v9.19.0)
 // ============================================================================
 
-/// SAE Audit Benchmark — Empirical validation engine for SAE vs baseline (Sprint83)
-/// **Stuartian Law 1:** Truth requires metrics to be recognized.
+/// SAE Audit Benchmark â€” Empirical validation engine for SAE vs baseline (Sprint83)
+/// **Topological Law 1:** Truth requires metrics to be recognized.
 #[cfg(feature = "v9.19-empirical-strike")]
 #[path = "benchmarks/sae_audit_benchmark.rs"]
 pub mod sae_audit_benchmark;
 
-/// Visual Dashboard Scaffold — WebSocket/HTTP streaming of SAE activations (Sprint83)
-/// **Stuartian Law 2:** Ethics becomes visible, not abstract.
+/// Visual Dashboard Scaffold â€” WebSocket/HTTP streaming of SAE activations (Sprint83)
+/// **Topological Law 2:** Ethics becomes visible, not abstract.
 #[cfg(feature = "v9.19-empirical-strike")]
 #[path = "ui/visual_dashboard_scaffold.rs"]
 pub mod visual_dashboard_scaffold;
@@ -1604,7 +1600,7 @@ pub fn sprint_identifier() -> &'static str {
 }
 
 // ============================================================================
-// v2.1 Structural Scaffold — Placeholder modules for post-RFC development
+// v2.1 Structural Scaffold â€” Placeholder modules for post-RFC development
 // ============================================================================
 
 #[cfg(feature = "v2.1-sprint1")]
@@ -1613,7 +1609,7 @@ pub mod v2_1;
 #[cfg(feature = "v2.1-observability")]
 pub mod observability;
 
-/// Chaos Engine — Controlled fault injection for operational resilience (Sprint15)
+/// Chaos Engine â€” Controlled fault injection for operational resilience (Sprint15)
 #[cfg(feature = "v2.1-chaos-engine")]
 pub mod chaos;
 
@@ -1621,52 +1617,29 @@ pub mod chaos;
 // Sprint16: Kernel Estuardiano & Arquitectura v2.1
 // ============================================================================
 
-/// QLoRA/GGUF — Quantized LoRA adapters over immutable GGUF base models (Sprint16)
-/// **Stuartian Law 3:** Cero desperdicio computacional, payloads ≤MB.
+/// QLoRA/GGUF â€” Quantized LoRA adapters over immutable GGUF base models (Sprint16)
+/// **Topological Law 3:** Cero desperdicio computacional, payloads â‰¤MB.
 #[cfg(feature = "v2.1-qlora-gguf")]
 pub mod qlora_gguf;
 
-/// Proof of Comprehension — Cryptographic proof of useful work via SAE activations (Sprint16)
-/// **Stuartian Law 2:** SAEs, validación de gradientes, auditoría transparente.
+/// Proof of Comprehension â€” Cryptographic proof of useful work via SAE activations (Sprint16)
+/// **Topological Law 2:** SAEs, validaciÃ³n de gradientes, auditorÃ­a transparente.
 #[cfg(feature = "v2.1-proof-of-comprehension")]
 pub mod proof_of_comprehension;
 
-/// Stuartian Filter — Deterministic alignment filter with KL divergence (Sprint16)
-/// **Stuartian Law 2:** Detección de divergencia, rechazo determinista.
-#[cfg(feature = "v2.1-stuartian-filter")]
-#[path = "stuartian_filter/mod.rs"]
+/// Topological Filter â€” Deterministic alignment filter with KL divergence (Sprint16)
+/// **Topological Law 2:** DetecciÃ³n de divergencia, rechazo determinista.
+#[cfg(feature = "v2.1-Topological-filter")]
+#[path = "Topological_filter/mod.rs"]
 pub mod topological_anomaly_detector;
 
-// Async Gossip with CRDTs — Partition-tolerant GossipSub (Sprint16)
-// **Stuartian Law 5:** Async, tolerancia a particiones, CRDTs, eventual consistency.
+// Async Gossip with CRDTs â€” Partition-tolerant GossipSub (Sprint16)
+// **Topological Law 5:** Async, tolerancia a particiones, CRDTs, eventual consistency.
 // async_gossip is already defined inline above (line ~626) with feature-gated submodules
 
 // ============================================================================
-// v6.0.0 Sprint 61 — Stuartian Legacy Protocol (SLP)
+// Sprint 86: Zombie modules removed (legacy, omega, eternity, absolute)
 // ============================================================================
-
-/// Stuartian Legacy Protocol — Infraestructura Ética Viva de la Humanidad
-#[cfg(feature = "v6.0-legacy-protocol")]
-pub mod legacy;
-
-// ============================================================================
-// v7.0.0 Sprint 62 — Stuartian Omega Protocol (SOP)
-// ============================================================================
-
-/// Network Termination Handler — Graceful shutdown, knowledge dump, ethical self-termination
-#[cfg(feature = "v7.0-omega-protocol")]
-#[path = "omega/mod.rs"]
-pub mod network_termination_handler;
-
-/// Persistent State Manager — Contact protocol, quantum seed, universal covenant
-#[cfg(feature = "v8.0-eternal-echo")]
-#[path = "eternity/mod.rs"]
-pub mod persistent_state_manager;
-
-/// Absolute Infinity Protocol — Transcendencia Ontológica Absoluta
-#[cfg(feature = "v9.0-absolute-infinity")]
-pub mod absolute;
-
 #[cfg(test)]
 mod tests {
     use super::*;

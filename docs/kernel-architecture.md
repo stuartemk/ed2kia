@@ -1,13 +1,13 @@
-# ed2kIA Kernel Architecture — Unified Blueprint (v2.1.0-sprint17)
+﻿# ed2kIA Kernel Architecture â€” Unified Blueprint (v2.1.0-sprint17)
 
-> **Kernel Estuardiano**: Un organismo coherente, resiliente y protegido éticamente.
-> Las 5 Leyes Estuardianas implementadas en código, validadas mediante E2E cross-validation.
+> **Kernel Estuardiano**: Un organismo coherente, resiliente y protegido Ã©ticamente.
+> Las 5 Leyes Estuardianas implementadas en cÃ³digo, validadas mediante E2E cross-validation.
 
 ---
 
 ## Table of Contents
 
-1. [Philosophy: The 5 Stuartian Laws](#1-philosophy-the-5-stuartian-laws)
+1. [Philosophy: The 5 Topological Laws](#1-philosophy-the-5-Topological-laws)
 2. [System Architecture Overview](#2-system-architecture-overview)
 3. [Module Map & Feature Gates](#3-module-map--feature-gates)
 4. [E2E Data Flow: Kernel Pipeline](#4-e2e-data-flow-kernel-pipeline)
@@ -20,31 +20,31 @@
 
 ---
 
-## 1. Philosophy: The 5 Stuartian Laws
+## 1. Philosophy: The 5 Topological Laws
 
 | Law | Name | Module | Feature Gate | Description |
 |-----|------|--------|--------------|-------------|
 | **Ley 1** | P2P Sovereignty | `async_gossip::mesh` | `v2.1-async-gossip` | GossipSub mesh con tolerancia a particiones. Cada nodo es soberano. |
-| **Ley 2** | Transparent Audit | `alignment::sct_guard` + `federated::bft_aggregator` | `v2.1-sct-guard` + `v2.1-bft-aggregation` | SCT evalúa ética, BFT agrega con mediana coordenada. Cero censura. |
+| **Ley 2** | Transparent Audit | `alignment::sct_guard` + `federated::bft_aggregator` | `v2.1-sct-guard` + `v2.1-bft-aggregation` | SCT evalÃºa Ã©tica, BFT agrega con mediana coordenada. Cero censura. |
 | **Ley 3** | Zero Waste | `qlora_gguf::{loader,adapter}` | `v2.1-qlora-gguf` | GGUF inmutable + QLoRA quantizado. Cero desperdicio computacional. |
-| **Ley 4** | Edge Distribution | `orchestrator` + `sae::wasm_sharding` | `v2.1-orchestrator` + `v2.1-wasm-micro-sharding` | Micro-sharding ≤50MB para WASM/Edge. Computación distribuida. |
+| **Ley 4** | Edge Distribution | `orchestrator` + `sae::wasm_sharding` | `v2.1-orchestrator` + `v2.1-wasm-micro-sharding` | Micro-sharding â‰¤50MB para WASM/Edge. ComputaciÃ³n distribuida. |
 | **Ley 5** | Multiple Possibilities | `async_gossip::{cache,crdt}` | `v2.1-offline-cache` + `v2.1-crdt-state` | CRDTs sin bloqueos, convergencia eventual, tolerancia offline. |
 
 ### Law Integration Matrix
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    KERNEL ESTUARDIANO v2.1.0                            │
-├─────────────┬─────────────┬─────────────┬─────────────┬─────────────────┤
-│  Ley 1      │  Ley 2      │  Ley 3      │  Ley 4      │  Ley 5          │
-│  P2P        │  Audit      │  Zero Waste │  Edge       │  Multiple       │
-│  Sovereignty│  Transparent│             │  Dist.      │  Possibilities  │
-├─────────────┼─────────────┼─────────────┼─────────────┼─────────────────┤
-│ GossipSub   │ SCT Guard   │ GGUF Base   │ WASM Shard  │ CRDT Merge      │
-│ Mesh Config │ BFT Median  │ QLoRA Diff  │ ≤50MB       │ No Locks        │
-│ Peer Mgmt   │ KL Diverg.  │ FP8/INT4    │ Edge Node   │ Offline Cache   │
-│ Msg Dedup   │ Slashing    │ Zero-Copy   │ Browser     │ Version Vector  │
-└─────────────┴─────────────┴─────────────┴─────────────┴─────────────────┘
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚                    KERNEL ESTUARDIANO v2.1.0                            â”‚
+â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚  Ley 1      â”‚  Ley 2      â”‚  Ley 3      â”‚  Ley 4      â”‚  Ley 5          â”‚
+â”‚  P2P        â”‚  Audit      â”‚  Zero Waste â”‚  Edge       â”‚  Multiple       â”‚
+â”‚  Sovereigntyâ”‚  Transparentâ”‚             â”‚  Dist.      â”‚  Possibilities  â”‚
+â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚ GossipSub   â”‚ SCT Guard   â”‚ GGUF Base   â”‚ WASM Shard  â”‚ CRDT Merge      â”‚
+â”‚ Mesh Config â”‚ BFT Median  â”‚ QLoRA Diff  â”‚ â‰¤50MB       â”‚ No Locks        â”‚
+â”‚ Peer Mgmt   â”‚ KL Diverg.  â”‚ FP8/INT4    â”‚ Edge Node   â”‚ Offline Cache   â”‚
+â”‚ Msg Dedup   â”‚ Slashing    â”‚ Zero-Copy   â”‚ Browser     â”‚ Version Vector  â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 ```
 
 ---
@@ -52,34 +52,34 @@
 ## 2. System Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         ed2kIA Mainnet Node                             │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                         │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐               │
-│  │  GossipSub   │    │  SCT Guard   │    │  BFT         │               │
-│  │  Mesh        │───>│  (Z < 0?)    │───>│  Aggregator  │               │
-│  │  (Ley 1)     │    │  (Ley 2)     │    │  (Ley 2)     │               │
-│  └──────┬───────┘    └──────────────┘    └──────┬───────┘               │
-│         │                                       │                       │
-│         │         ┌──────────────┐              │                       │
-│         │         │  GGUF Base   │              │                       │
-│         │         │  + QLoRA     │              │                       │
-│         │         │  (Ley 3)     │              │                       │
-│         │         └──────┬───────┘              │                       │
-│         │                │                      │                       │
-│         │         ┌──────▼───────┐    ┌────────▼────────┐              │
-│         │         │  CRDT State  │    │  Offline Cache   │              │
-│         │         │  (Ley 5)     │    │  (Ley 5)        │              │
-│         │         └──────────────┘    └─────────────────┘              │
-│         │                                                               │
-│         │         ┌──────────────┐                                     │
-│         └────────>│  WASM Edge   │                                     │
-│                   │  Nodes       │                                     │
-│                   │  (Ley 4)     │                                     │
-│                   └──────────────┘                                     │
-│                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚                         ed2kIA Mainnet Node                             â”‚
+â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚                                                                         â”‚
+â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”    â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”    â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”               â”‚
+â”‚  â”‚  GossipSub   â”‚    â”‚  SCT Guard   â”‚    â”‚  BFT         â”‚               â”‚
+â”‚  â”‚  Mesh        â”‚â”€â”€â”€>â”‚  (Z < 0?)    â”‚â”€â”€â”€>â”‚  Aggregator  â”‚               â”‚
+â”‚  â”‚  (Ley 1)     â”‚    â”‚  (Ley 2)     â”‚    â”‚  (Ley 2)     â”‚               â”‚
+â”‚  â””â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”˜    â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜    â””â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”˜               â”‚
+â”‚         â”‚                                       â”‚                       â”‚
+â”‚         â”‚         â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”              â”‚                       â”‚
+â”‚         â”‚         â”‚  GGUF Base   â”‚              â”‚                       â”‚
+â”‚         â”‚         â”‚  + QLoRA     â”‚              â”‚                       â”‚
+â”‚         â”‚         â”‚  (Ley 3)     â”‚              â”‚                       â”‚
+â”‚         â”‚         â””â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”˜              â”‚                       â”‚
+â”‚         â”‚                â”‚                      â”‚                       â”‚
+â”‚         â”‚         â”Œâ”€â”€â”€â”€â”€â”€â–¼â”€â”€â”€â”€â”€â”€â”€â”    â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â–¼â”€â”€â”€â”€â”€â”€â”€â”€â”              â”‚
+â”‚         â”‚         â”‚  CRDT State  â”‚    â”‚  Offline Cache   â”‚              â”‚
+â”‚         â”‚         â”‚  (Ley 5)     â”‚    â”‚  (Ley 5)        â”‚              â”‚
+â”‚         â”‚         â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜    â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜              â”‚
+â”‚         â”‚                                                               â”‚
+â”‚         â”‚         â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”                                     â”‚
+â”‚         â””â”€â”€â”€â”€â”€â”€â”€â”€>â”‚  WASM Edge   â”‚                                     â”‚
+â”‚                   â”‚  Nodes       â”‚                                     â”‚
+â”‚                   â”‚  (Ley 4)     â”‚                                     â”‚
+â”‚                   â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜                                     â”‚
+â”‚                                                                         â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 ```
 
 ### Component Responsibilities
@@ -103,146 +103,146 @@
 
 ```
 v2.1-kernel-integration (Sprint17)
-├── v2.1-async-gossip          # GossipSub mesh
-├── v2.1-offline-cache         # Offline storage
-├── v2.1-crdt-state            # CRDT convergence
-├── v2.1-bft-aggregation       # BFT median
-├── v2.1-sct-guard             # SCT ethical shield
-├── v2.1-sct-core              # SCT tensor core
-├── v2.1-qlora-gguf            # QLoRA + GGUF
-├── v2.1-proof-of-comprehension # PoC tasks
-├── v2.1-stuartian-filter      # KL divergence + slashing
-└── v2.1-chaos-engine          # Fault injection
+â”œâ”€â”€ v2.1-async-gossip          # GossipSub mesh
+â”œâ”€â”€ v2.1-offline-cache         # Offline storage
+â”œâ”€â”€ v2.1-crdt-state            # CRDT convergence
+â”œâ”€â”€ v2.1-bft-aggregation       # BFT median
+â”œâ”€â”€ v2.1-sct-guard             # SCT ethical shield
+â”œâ”€â”€ v2.1-sct-core              # SCT tensor core
+â”œâ”€â”€ v2.1-qlora-gguf            # QLoRA + GGUF
+â”œâ”€â”€ v2.1-proof-of-comprehension # PoC tasks
+â”œâ”€â”€ v2.1-Topological-filter      # KL divergence + slashing
+â””â”€â”€ v2.1-chaos-engine          # Fault injection
 
 v2.1-mainnet-activation (Sprint17)
-└── v2.1-kernel-integration    # All above + activation protocol
+â””â”€â”€ v2.1-kernel-integration    # All above + activation protocol
 ```
 
 ### Module Dependencies
 
 ```
 async_gossip::mesh
-    ├── no external deps (self-contained)
-    └── tests: 25+
+    â”œâ”€â”€ no external deps (self-contained)
+    â””â”€â”€ tests: 25+
 
 async_gossip::cache
-    ├── no external deps
-    └── tests: 30+
+    â”œâ”€â”€ no external deps
+    â””â”€â”€ tests: 30+
 
 async_gossip::crdt
-    ├── bincode (serialization)
-    └── tests: 40+
+    â”œâ”€â”€ bincode (serialization)
+    â””â”€â”€ tests: 40+
 
 alignment::sct_guard
-    ├── alignment::sct_core
-    └── tests: 20+
+    â”œâ”€â”€ alignment::sct_core
+    â””â”€â”€ tests: 20+
 
 federated::bft_aggregator
-    ├── no external deps
-    └── tests: 25+
+    â”œâ”€â”€ no external deps
+    â””â”€â”€ tests: 25+
 
 qlora_gguf::loader
-    ├── memmap2, safetensors
-    └── tests: 15+
+    â”œâ”€â”€ memmap2, safetensors
+    â””â”€â”€ tests: 15+
 
 qlora_gguf::adapter
-    ├── candle-core
-    └── tests: 20+
+    â”œâ”€â”€ candle-core
+    â””â”€â”€ tests: 20+
 
 qlora_gguf::payload
-    ├── zstd (compression)
-    └── tests: 15+
+    â”œâ”€â”€ zstd (compression)
+    â””â”€â”€ tests: 15+
 ```
 
 ---
 
 ## 4. E2E Data Flow: Kernel Pipeline
 
-### Complete Pipeline: GGUF → QLoRA → PoC → SCT → BFT → CRDT → Gossip → Cache
+### Complete Pipeline: GGUF â†’ QLoRA â†’ PoC â†’ SCT â†’ BFT â†’ CRDT â†’ Gossip â†’ Cache
 
 ```
 Step 1: GGUF Load (Ley 3)
-┌─────────────────────────────────────────────┐
-│ GgufLoader::validate(path)                  │
-│   → SHA256 integrity check                  │
-│   → Magic number validation                 │
-│   → Architecture extraction                 │
-│   → GgufBaseModel loaded                    │
-└──────────────────┬──────────────────────────┘
-                   │
-                   ▼
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚ GgufLoader::validate(path)                  â”‚
+â”‚   â†’ SHA256 integrity check                  â”‚
+â”‚   â†’ Magic number validation                 â”‚
+â”‚   â†’ Architecture extraction                 â”‚
+â”‚   â†’ GgufBaseModel loaded                    â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                   â”‚
+                   â–¼
 Step 2: QLoRA Forward (Ley 3)
-┌─────────────────────────────────────────────┐
-│ QloraAdapter::apply(x)                      │
-│   → W' = W_base + α·(B·A)·x               │
-│   → FP8/INT4 quantized diff                 │
-│   → Zero-copy memory mapping                │
-└──────────────────┬──────────────────────────┘
-                   │
-                   ▼
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚ QloraAdapter::apply(x)                      â”‚
+â”‚   â†’ W' = W_base + Î±Â·(BÂ·A)Â·x               â”‚
+â”‚   â†’ FP8/INT4 quantized diff                 â”‚
+â”‚   â†’ Zero-copy memory mapping                â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                   â”‚
+                   â–¼
 Step 3: PoC Task Generation (Ley 2)
-┌─────────────────────────────────────────────┐
-│ PoCTask::new(task_id, dim, deadline)        │
-│   → SAE activation batch                    │
-│   → Cryptographic proof of useful work      │
-│   → Gradient validation                     │
-└──────────────────┬──────────────────────────┘
-                   │
-                   ▼
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚ PoCTask::new(task_id, dim, deadline)        â”‚
+â”‚   â†’ SAE activation batch                    â”‚
+â”‚   â†’ Cryptographic proof of useful work      â”‚
+â”‚   â†’ Gradient validation                     â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                   â”‚
+                   â–¼
 Step 4: SCT Evaluation (Ley 2)
-┌─────────────────────────────────────────────┐
-│ SctGuard::inspect_payload(node_id, payload) │
-│   → StuartianTensor {x, y, z}              │
-│   → Z < 0? → REJECT + slash_reputation     │
-│   → Z >= 0? → APPROVE + forward to BFT     │
-└──────────────────┬──────────────────────────┘
-                   │
-                   ▼
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚ SctGuard::inspect_payload(node_id, payload) â”‚
+â”‚   â†’ TopologicalTensor {x, y, z}              â”‚
+â”‚   â†’ Z < 0? â†’ REJECT + slash_reputation     â”‚
+â”‚   â†’ Z >= 0? â†’ APPROVE + forward to BFT     â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                   â”‚
+                   â–¼
 Step 5: BFT Aggregation (Ley 2)
-┌─────────────────────────────────────────────┐
-│ BftAggregator::aggregate(gradients)         │
-│   → Coordinate-wise median                  │
-│   → Multi-Krum selection (m=2)              │
-│   → Outlier filtering (σ threshold)         │
-│   → Aggregated gradient returned            │
-└──────────────────┬──────────────────────────┘
-                   │
-                   ▼
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚ BftAggregator::aggregate(gradients)         â”‚
+â”‚   â†’ Coordinate-wise median                  â”‚
+â”‚   â†’ Multi-Krum selection (m=2)              â”‚
+â”‚   â†’ Outlier filtering (Ïƒ threshold)         â”‚
+â”‚   â†’ Aggregated gradient returned            â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                   â”‚
+                   â–¼
 Step 6: CRDT Merge (Ley 5)
-┌─────────────────────────────────────────────┐
-│ ReputationCrdt::merge(other)                │
-│   → Commutative: merge(a,b) = merge(b,a)   │
-│   → Associative: merge(a,merge(b,c)) = ...  │
-│   → Idempotent: merge(a,a) = a             │
-│   → No locks required                       │
-└──────────────────┬──────────────────────────┘
-                   │
-                   ▼
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚ ReputationCrdt::merge(other)                â”‚
+â”‚   â†’ Commutative: merge(a,b) = merge(b,a)   â”‚
+â”‚   â†’ Associative: merge(a,merge(b,c)) = ...  â”‚
+â”‚   â†’ Idempotent: merge(a,a) = a             â”‚
+â”‚   â†’ No locks required                       â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                   â”‚
+                   â–¼
 Step 7: Gossip Publish (Ley 1)
-┌─────────────────────────────────────────────┐
-│ GossipMesh::publish(payload)                │
-│   → QloraPayload::compress()                │
-│   → to_gossipsub_bytes()                    │
-│   → Fan-out to mesh peers                   │
-│   → Message dedup via hash                  │
-└──────────────────┬──────────────────────────┘
-                   │
-                   ▼
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚ GossipMesh::publish(payload)                â”‚
+â”‚   â†’ QloraPayload::compress()                â”‚
+â”‚   â†’ to_gossipsub_bytes()                    â”‚
+â”‚   â†’ Fan-out to mesh peers                   â”‚
+â”‚   â†’ Message dedup via hash                  â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                   â”‚
+                   â–¼
 Step 8: Offline Cache (Ley 5)
-┌─────────────────────────────────────────────┐
-│ GossipCache::store(key, data, priority)     │
-│   → Priority queue (timestamp-based)        │
-│   → Exponential backoff on sync failure     │
-│   → Sync batch on reconnection              │
-│   → mark_synced() on success                │
-└─────────────────────────────────────────────┘
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚ GossipCache::store(key, data, priority)     â”‚
+â”‚   â†’ Priority queue (timestamp-based)        â”‚
+â”‚   â†’ Exponential backoff on sync failure     â”‚
+â”‚   â†’ Sync batch on reconnection              â”‚
+â”‚   â†’ mark_synced() on success                â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 ```
 
 ### Pipeline Validation
 
 Each step is validated in `tests/integration/kernel_e2e_test.rs`:
 
-| Stage | Test Function | Stuartian Law |
+| Stage | Test Function | Topological Law |
 |-------|--------------|---------------|
 | GGUF Load | `stage1_gguf_loader_validates_integrity` | Ley 3 |
 | QLoRA Forward | `stage2_qlora_adapter_forward_pass` | Ley 3 |
@@ -287,13 +287,13 @@ Each step is validated in `tests/integration/kernel_e2e_test.rs`:
 ### Ethical Shield Layers
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│  Layer 1: SCT Guard — Z < 0 hard rejection              │
-│  Layer 2: BFT Median — Byzantine tolerance (f < N/3)    │
-│  Layer 3: KL Divergence — Distributional drift detection │
-│  Layer 4: Slashing — Deterministic reputation penalty   │
-│  Layer 5: CRDT Max — Takes max reputation (no downgrade) │
-└─────────────────────────────────────────────────────────┘
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚  Layer 1: SCT Guard â€” Z < 0 hard rejection              â”‚
+â”‚  Layer 2: BFT Median â€” Byzantine tolerance (f < N/3)    â”‚
+â”‚  Layer 3: KL Divergence â€” Distributional drift detection â”‚
+â”‚  Layer 4: Slashing â€” Deterministic reputation penalty   â”‚
+â”‚  Layer 5: CRDT Max â€” Takes max reputation (no downgrade) â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 ```
 
 ---
@@ -414,22 +414,22 @@ All CRDTs in `async_gossip::crdt` satisfy:
 ```
 Initial: A={a:1}, B={b:1}, C={c:1}
 
-Round 1: A→B, B→C
+Round 1: Aâ†’B, Bâ†’C
   B = merge(A, B) = {a:1, b:1}
   C = merge(B, C) = {a:1, b:1, c:1}
 
-Round 2: C→A, A→B (full propagation)
+Round 2: Câ†’A, Aâ†’B (full propagation)
   A = merge(C, A) = {a:1, b:1, c:1}
   B = merge(A, B) = {a:1, b:1, c:1}
 
-Result: A == B == C ✓ (Full convergence in 2 rounds)
+Result: A == B == C âœ“ (Full convergence in 2 rounds)
 ```
 
 ---
 
 ## 9. Activation Protocol
 
-### `scripts/activate-mainnet.sh` — 6-Phase Activation
+### `scripts/activate-mainnet.sh` â€” 6-Phase Activation
 
 | Phase | Description | Validation |
 |-------|-------------|------------|
@@ -443,11 +443,11 @@ Result: A == B == C ✓ (Full convergence in 2 rounds)
 ### Activation Conditions
 
 **Auto-push to `origin/main` ONLY if:**
-- ✅ `cargo check` — zero errors
-- ✅ `cargo test --test kernel_e2e_test` — 100% PASS
-- ✅ `cargo clippy` — zero warnings
-- ✅ `bash -n scripts/activate-mainnet.sh` — syntax valid
-- ✅ All 5 Stuartian Laws validated in E2E test
+- âœ… `cargo check` â€” zero errors
+- âœ… `cargo test --test kernel_e2e_test` â€” 100% PASS
+- âœ… `cargo clippy` â€” zero warnings
+- âœ… `bash -n scripts/activate-mainnet.sh` â€” syntax valid
+- âœ… All 5 Topological Laws validated in E2E test
 
 ---
 
@@ -455,16 +455,16 @@ Result: A == B == C ✓ (Full convergence in 2 rounds)
 
 | Term | Definition |
 |------|-----------|
-| **Kernel Estuardiano** | Unified kernel implementing 5 Stuartian Laws as coherent organism |
-| **SCT (Stuartian Context Tensor)** | 3D ethical alignment tensor {x, y, z} replacing 2D RLHF |
+| **Kernel Estuardiano** | Unified kernel implementing 5 Topological Laws as coherent organism |
+| **SCT (Topological Context Tensor)** | 3D ethical alignment tensor {x, y, z} replacing 2D RLHF |
 | **BFT (Byzantine Fault Tolerance)** | Coordinate-wise median + Multi-Krum for gradient aggregation |
-| **CRDT** | Conflict-free Replicated Data Type — merge without locks |
-| **QLoRA** | Quantized Low-Rank Adaptation — FP8/INT4 diffs over GGUF base |
-| **GGUF** | Generic GGML Unified Format — immutable base model storage |
+| **CRDT** | Conflict-free Replicated Data Type â€” merge without locks |
+| **QLoRA** | Quantized Low-Rank Adaptation â€” FP8/INT4 diffs over GGUF base |
+| **GGUF** | Generic GGML Unified Format â€” immutable base model storage |
 | **GossipSub** | Pub-sub mesh protocol for P2P message distribution |
 | **Version Vector** | Causal clock tracking dependencies across partitions |
 | **PoC (Proof of Comprehension)** | Cryptographic proof of useful SAE work |
-| **KL Divergence** | Kullback-Leibler divergence — distributional drift detection |
+| **KL Divergence** | Kullback-Leibler divergence â€” distributional drift detection |
 | **Slashing** | Deterministic reputation penalty for misalignment |
 
 ---
@@ -482,4 +482,4 @@ Result: A == B == C ✓ (Full convergence in 2 rounds)
 ---
 
 *Document generated: 2026-05-20 | Sprint17 | Kernel Integration Complete*
-*ed2kIA v2.1.0 — Building on Stuartian Philosophy for Responsible AI*
+*ed2kIA v2.1.0 â€” Building on Topological Philosophy for Responsible AI*

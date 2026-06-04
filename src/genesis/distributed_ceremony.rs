@@ -1,4 +1,4 @@
-//! Distributed Genesis Ceremony — Sprint 81: The Biological Bridge & Singularity Resilience
+﻿//! Distributed Genesis Ceremony â€” Sprint 81: The Biological Bridge & Singularity Resilience
 //!
 //! Planetary MPC ceremony: Ethical Anchors are derived from biological + cryptographic
 //! entropy of millions of founding nodes. No centralized signature. The Genesis Block
@@ -7,14 +7,14 @@
 //! Key features:
 //! - Biological entropy collection (biometric ZKP + thermal noise)
 //! - Cryptographic entropy aggregation (FNV-1a hash chain)
-//! - Threshold derivation (≥threshold contributors required)
+//! - Threshold derivation (â‰¥threshold contributors required)
 //! - Genesis Block emergence (no central authority)
 //! - Anti-Sybil: biological resonance validation per contributor
 
 use std::collections::HashMap;
 use std::fmt;
 
-// ─── Errors ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Errors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum CeremonyError {
@@ -41,7 +41,7 @@ impl fmt::Display for CeremonyError {
     }
 }
 
-// ─── Contributor Entropy ──────────────────────────────────────────────────────
+// â”€â”€â”€ Contributor Entropy â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct ContributorEntropy {
@@ -102,7 +102,7 @@ impl fmt::Display for ContributorEntropy {
     }
 }
 
-// ─── Genesis Block ────────────────────────────────────────────────────────────
+// â”€â”€â”€ Genesis Block â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct GenesisBlock {
@@ -153,7 +153,7 @@ impl fmt::Display for GenesisBlock {
     }
 }
 
-// ─── Ceremony Config ──────────────────────────────────────────────────────────
+// â”€â”€â”€ Ceremony Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct CeremonyConfig {
@@ -168,7 +168,7 @@ pub struct CeremonyConfig {
 }
 
 impl CeremonyConfig {
-    pub fn default_stuartian() -> Self {
+    pub fn default_Topological() -> Self {
         Self {
             threshold: 3,
             max_contributors: 1_000_000,
@@ -193,11 +193,11 @@ impl CeremonyConfig {
 
 impl Default for CeremonyConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
-// ─── Ceremony Record ──────────────────────────────────────────────────────────
+// â”€â”€â”€ Ceremony Record â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct CeremonyRecord {
@@ -220,7 +220,7 @@ impl fmt::Display for CeremonyRecord {
     }
 }
 
-// ─── Distributed Ceremony Engine ──────────────────────────────────────────────
+// â”€â”€â”€ Distributed Ceremony Engine â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 pub struct DistributedCeremony {
     config: CeremonyConfig,
@@ -232,7 +232,7 @@ pub struct DistributedCeremony {
 impl DistributedCeremony {
     pub fn new() -> Self {
         Self {
-            config: CeremonyConfig::default_stuartian(),
+            config: CeremonyConfig::default_Topological(),
             contributors: HashMap::new(),
             records: Vec::new(),
             genesis: None,
@@ -363,7 +363,7 @@ impl fmt::Display for DistributedCeremony {
     }
 }
 
-// ─── Public Functions ─────────────────────────────────────────────────────────
+// â”€â”€â”€ Public Functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Derive Genesis Block from biological + cryptographic entropy
 pub fn derive_genesis_anchors(
@@ -387,7 +387,7 @@ pub fn derive_genesis_anchors(
     GenesisBlock::new(anchors, threshold as usize, 0)
 }
 
-// ─── Hash Functions ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Hash Functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 fn fnv_hash_64(data: &[u8]) -> u64 {
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -420,7 +420,7 @@ fn fnv_hash_256(data: &[u8]) -> Vec<u8> {
     result
 }
 
-// ─── Tests ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[cfg(test)]
 mod tests {
@@ -428,7 +428,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = CeremonyConfig::default_stuartian();
+        let config = CeremonyConfig::default_Topological();
         assert_eq!(config.threshold, 3);
         assert_eq!(config.max_contributors, 1_000_000);
         assert_eq!(config.min_entropy_bytes, 16);
@@ -437,27 +437,27 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = CeremonyConfig::default_stuartian();
+        let config = CeremonyConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 
     #[test]
     fn test_config_zero_threshold() {
-        let mut config = CeremonyConfig::default_stuartian();
+        let mut config = CeremonyConfig::default_Topological();
         config.threshold = 0;
         assert!(config.validate().is_err());
     }
 
     #[test]
     fn test_config_zero_entropy() {
-        let mut config = CeremonyConfig::default_stuartian();
+        let mut config = CeremonyConfig::default_Topological();
         config.min_entropy_bytes = 0;
         assert!(config.validate().is_err());
     }
 
     #[test]
     fn test_config_zero_anchors() {
-        let mut config = CeremonyConfig::default_stuartian();
+        let mut config = CeremonyConfig::default_Topological();
         config.anchor_count = 0;
         assert!(config.validate().is_err());
     }
@@ -517,7 +517,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = CeremonyConfig::default_stuartian();
+        let config = CeremonyConfig::default_Topological();
         let engine = DistributedCeremony::with_config(config).unwrap();
         assert_eq!(engine.contributor_count(), 0);
     }

@@ -1,17 +1,17 @@
-//! QLoRA Payload — Compresión y serialización para distribución GossipSub.
+﻿//! QLoRA Payload â€” CompresiÃ³n y serializaciÃ³n para distribuciÃ³n GossipSub.
 //!
-//! **Stuartian Law 3 (Inteligencia Holística):** Cero desperdicio computacional.
-//! Los payloads QLoRA se comprimen con zstd para distribución P2P eficiente.
+//! **Topological Law 3 (Inteligencia HolÃ­stica):** Cero desperdicio computacional.
+//! Los payloads QLoRA se comprimen con zstd para distribuciÃ³n P2P eficiente.
 //!
-//! **Características:**
-//! - Compresión zstd (ratio 10:1 - 100:1 típicamente)
-//! - Serialización bincode (WASM-friendly, <50ms latencia)
-//! - Validación de tamaño MAX_PAYLOAD_BYTES (1 MB)
+//! **CaracterÃ­sticas:**
+//! - CompresiÃ³n zstd (ratio 10:1 - 100:1 tÃ­picamente)
+//! - SerializaciÃ³n bincode (WASM-friendly, <50ms latencia)
+//! - ValidaciÃ³n de tamaÃ±o MAX_PAYLOAD_BYTES (1 MB)
 //! - Compatible con GossipSub message-size-limits
 
 use std::fmt;
 
-/// Límite máximo de payload para GossipSub (1 MB).
+/// LÃ­mite mÃ¡ximo de payload para GossipSub (1 MB).
 /// Los nodos rechazan mensajes > MAX_PAYLOAD_BYTES para prevenir DoS.
 pub const MAX_PAYLOAD_BYTES: usize = 1_048_576;
 
@@ -20,13 +20,13 @@ pub const MAX_PAYLOAD_BYTES: usize = 1_048_576;
 pub enum QloraPayloadError {
     /// Payload excede MAX_PAYLOAD_BYTES.
     PayloadTooLarge(usize),
-    /// Error de compresión zstd.
+    /// Error de compresiÃ³n zstd.
     CompressionError(String),
-    /// Error de descompresión zstd.
+    /// Error de descompresiÃ³n zstd.
     DecompressionError(String),
-    /// Error de serialización bincode.
+    /// Error de serializaciÃ³n bincode.
     SerializationError(String),
-    /// Data corrupta o inválida.
+    /// Data corrupta o invÃ¡lida.
     CorruptedData(String),
     /// Error de I/O.
     Io(std::io::Error),
@@ -67,17 +67,17 @@ impl From<std::io::Error> for QloraPayloadError {
     }
 }
 
-/// Payload QLoRA comprimido para distribución P2P.
+/// Payload QLoRA comprimido para distribuciÃ³n P2P.
 ///
 /// Contiene los bytes serializados de un QLoRAAdapter
-/// comprimidos con zstd para minimizar el tamaño en red.
+/// comprimidos con zstd para minimizar el tamaÃ±o en red.
 ///
-/// **Flujo de serialización:**
+/// **Flujo de serializaciÃ³n:**
 /// 1. QLoRAAdapter -> bincode -> Vec<u8>
 /// 2. Vec<u8> -> zstd compress -> Vec<u8> (KB range)
 /// 3. Vec<u8> -> GossipSub publish
 ///
-/// **Flujo de deserialización:**
+/// **Flujo de deserializaciÃ³n:**
 /// 1. GossipSub receive -> Vec<u8>
 /// 2. Vec<u8> -> zstd decompress -> Vec<u8>
 /// 3. Vec<u8> -> bincode -> QLoRAAdapter
@@ -85,9 +85,9 @@ impl From<std::io::Error> for QloraPayloadError {
 pub struct QloraPayload {
     /// Bytes comprimidos (zstd).
     pub compressed: Vec<u8>,
-    /// Tamaño original antes de compresión.
+    /// TamaÃ±o original antes de compresiÃ³n.
     pub original_size: usize,
-    /// Identificador del adapter (para deduplicación).
+    /// Identificador del adapter (para deduplicaciÃ³n).
     pub adapter_id: String,
     /// Checksum SHA256 del modelo base.
     pub base_model_sha256: String,
@@ -101,7 +101,7 @@ impl QloraPayload {
     /// * `data` - Datos crudos a comprimir (output de bincode).
     ///
     /// # Returns
-    /// Payload comprimido listo para distribución P2P.
+    /// Payload comprimido listo para distribuciÃ³n P2P.
     #[cfg(feature = "v2.1-qlora-gguf")]
     pub fn compress(adapter_id: String, data: &[u8]) -> Result<Self, QloraPayloadError> {
         let original_size = data.len();
@@ -123,7 +123,7 @@ impl QloraPayload {
         })
     }
 
-    /// Comprime datos crudos (versión sin feature gate para testing).
+    /// Comprime datos crudos (versiÃ³n sin feature gate para testing).
     #[cfg(not(feature = "v2.1-qlora-gguf"))]
     pub fn compress(adapter_id: String, data: &[u8]) -> Result<Self, QloraPayloadError> {
         let original_size = data.len();
@@ -151,7 +151,7 @@ impl QloraPayload {
             .map_err(|e| QloraPayloadError::DecompressionError(e.to_string()))
     }
 
-    /// Descomprime los datos del payload (versión sin feature gate).
+    /// Descomprime los datos del payload (versiÃ³n sin feature gate).
     #[cfg(not(feature = "v2.1-qlora-gguf"))]
     pub fn decompress(&self) -> Result<Vec<u8>, QloraPayloadError> {
         Ok(self.compressed.clone())
@@ -160,10 +160,10 @@ impl QloraPayload {
     /// Valida el payload.
     ///
     /// Verifica:
-    /// - compressed no está vacío
+    /// - compressed no estÃ¡ vacÃ­o
     /// - original_size > 0
     /// - original_size < MAX_PAYLOAD_BYTES
-    /// - adapter_id no está vacío
+    /// - adapter_id no estÃ¡ vacÃ­o
     pub fn validate(&self) -> Result<(), QloraPayloadError> {
         if self.compressed.is_empty() {
             return Err(QloraPayloadError::CorruptedData(
@@ -194,8 +194,8 @@ impl QloraPayload {
     ///
     /// Formato: [adapter_id_len(4)] [adapter_id] [base_sha256_len(4)] [base_sha256] [original_size(8)] [compressed_len(8)] [compressed]
     ///
-    /// Este formato es compatible con la deserialización en nodos
-    /// que reciben el mensaje vía GossipSub.
+    /// Este formato es compatible con la deserializaciÃ³n en nodos
+    /// que reciben el mensaje vÃ­a GossipSub.
     pub fn to_gossipsub_bytes(&self) -> Vec<u8> {
         let mut data = Vec::new();
 
@@ -309,10 +309,10 @@ impl QloraPayload {
         })
     }
 
-    /// Calcula el ratio de compresión.
+    /// Calcula el ratio de compresiÃ³n.
     ///
     /// # Returns
-    /// Ratio original_size / compressed_size (mayor = mejor compresión).
+    /// Ratio original_size / compressed_size (mayor = mejor compresiÃ³n).
     pub fn compression_ratio(&self) -> f64 {
         if self.compressed.is_empty() {
             return 0.0;
@@ -320,12 +320,12 @@ impl QloraPayload {
         self.original_size as f64 / self.compressed.len() as f64
     }
 
-    /// Retorna el tamaño del payload comprimido en bytes.
+    /// Retorna el tamaÃ±o del payload comprimido en bytes.
     pub fn compressed_size(&self) -> usize {
         self.compressed.len()
     }
 
-    /// Retorna el tamaño total que ocupará en GossipSub.
+    /// Retorna el tamaÃ±o total que ocuparÃ¡ en GossipSub.
     pub fn gossipsub_size(&self) -> usize {
         self.to_gossipsub_bytes().len()
     }

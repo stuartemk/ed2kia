@@ -1,21 +1,21 @@
-//! Browser Node WASM — Compilación a wasm32-unknown-unknown con wasm-bindgen.
+﻿//! Browser Node WASM â€” CompilaciÃ³n a wasm32-unknown-unknown con wasm-bindgen.
 //!
 //! Nodo P2P para navegadores modernos cumpliendo Ley 4 (Simbiosis Existencial)
-//! y Ley 1 (Diversidad Comunitaria). Cero telemetría externa, cero trackers,
-//! cero lógica financiera.
+//! y Ley 1 (Diversidad Comunitaria). Cero telemetrÃ­a externa, cero trackers,
+//! cero lÃ³gica financiera.
 //!
 //! Feature gates: `v2.1-wasm-browser-node`, `v2.1-wasm-worker`
 //! Target: `wasm32-unknown-unknown`
 //!
 //! **Exportaciones JS:**
-//! - `BrowserNode.init(id, memoryLimitMb)` → inicializa nodo
-//! - `BrowserNode.processTask(payload)` → procesa tarea SAE dummy
-//! - `BrowserNode.processTensor(payload)` → evalúa SCT, retorna `{ x, y, z, decision }` (Sprint25)
-//! - `BrowserNode.getHealth()` → retorna JSON con estado del nodo
+//! - `BrowserNode.init(id, memoryLimitMb)` â†’ inicializa nodo
+//! - `BrowserNode.processTask(payload)` â†’ procesa tarea SAE dummy
+//! - `BrowserNode.processTensor(payload)` â†’ evalÃºa SCT, retorna `{ x, y, z, decision }` (Sprint25)
+//! - `BrowserNode.getHealth()` â†’ retorna JSON con estado del nodo
 //!
 //! **Restricciones WASM:**
 //! - Cero `std::fs` / `std::net`
-//! - Async vía `wasm_bindgen_futures::spawn_local`
+//! - Async vÃ­a `wasm_bindgen_futures::spawn_local`
 //! - Heap controlado (default 64MB, configurable)
 //! - `console_error_panic_hook` para debug
 
@@ -122,13 +122,13 @@ mod wasm_internal {
     }
 
     // ============================================================================
-    // BrowserNode — WASM Exported Struct
+    // BrowserNode â€” WASM Exported Struct
     // ============================================================================
 
-    /// Browser Node — WASM P2P node for browser environments.
+    /// Browser Node â€” WASM P2P node for browser environments.
     ///
-    /// Ley 4 (Simbiosis): Hardware modesto, conexiones inestables, fricción cero.
-    /// Ley 1 (Diversidad): Cero centralización, propiedad comunitaria.
+    /// Ley 4 (Simbiosis): Hardware modesto, conexiones inestables, fricciÃ³n cero.
+    /// Ley 1 (Diversidad): Cero centralizaciÃ³n, propiedad comunitaria.
     #[wasm_bindgen]
     pub struct BrowserNode {
         id: String,
@@ -146,8 +146,8 @@ mod wasm_internal {
         /// Create a new BrowserNode instance.
         ///
         /// # Args
-        /// * `id` — Unique node identifier (e.g., "browser-node-001")
-        /// * `memory_limit_mb` — Maximum heap allocation in MB (default: 64)
+        /// * `id` â€” Unique node identifier (e.g., "browser-node-001")
+        /// * `memory_limit_mb` â€” Maximum heap allocation in MB (default: 64)
         ///
         /// # Example
         /// ```js
@@ -201,7 +201,7 @@ mod wasm_internal {
         /// within WASM, returning result as JSON.
         ///
         /// # Args
-        /// * `payload` — JSON string: `{"type":"SaeInference","data":"..."}`
+        /// * `payload` â€” JSON string: `{"type":"SaeInference","data":"..."}`
         ///
         /// # Returns
         /// JSON string with task result.
@@ -243,12 +243,12 @@ mod wasm_internal {
             let (success, output) = match task_type {
                 TaskType::HealthCheck => (true, format!("pong-{}", self.id)),
                 TaskType::SaeInference => {
-                    // Dummy SAE inference — simulates activation extraction
+                    // Dummy SAE inference â€” simulates activation extraction
                     let activations = self.simulate_sae_activations(payload.len());
                     (true, activations)
                 }
                 TaskType::GradientValidation => {
-                    // Dummy gradient validation — checks payload integrity
+                    // Dummy gradient validation â€” checks payload integrity
                     let valid = payload.len() > 10;
                     (
                         valid,
@@ -329,14 +329,14 @@ mod wasm_internal {
             status.to_json()
         }
 
-        /// Process a tensor payload via SCT (Stuartian Context Tensor) evaluation.
+        /// Process a tensor payload via SCT (Topological Context Tensor) evaluation.
         ///
         /// Sprint25: Exposes ethical gravity evaluation directly to the Web Worker bridge.
         /// Returns a JSON object with SCT axes `{ x, y, z, decision }` compatible with
         /// 3D Octahedron visualization (`geometry-bridge.js`).
         ///
         /// # Args
-        /// * `payload` — Arbitrary string payload to evaluate
+        /// * `payload` â€” Arbitrary string payload to evaluate
         ///
         /// # Returns
         /// `JsValue` containing JSON: `{ "x": f32, "y": f32, "z": f32, "decision": String }`
@@ -435,10 +435,10 @@ mod wasm_internal {
             format!("activations(k={},mean={:.3},node={})", k, mean_val, self.id)
         }
 
-        /// Evaluate SCT (Stuartian Context Tensor) from payload.
+        /// Evaluate SCT (Topological Context Tensor) from payload.
         ///
         /// Deterministic evaluation based on payload content hash.
-        /// Compatible with `src/alignment/sct_core.rs` StuartianTensor structure.
+        /// Compatible with `src/alignment/sct_core.rs` TopologicalTensor structure.
         ///
         /// Returns `{ x, y, z }` where:
         /// - x: Community Benefit [0, 1]
@@ -451,13 +451,13 @@ mod wasm_internal {
                 seed = seed.wrapping_mul(31).wrapping_add(byte as u32);
             }
 
-            // X: Community Benefit [0.2, 0.9] — higher = more beneficial
+            // X: Community Benefit [0.2, 0.9] â€” higher = more beneficial
             let x = ((seed as f64 * 0.01).sin().abs() * 0.7 + 0.2) as f32;
 
-            // Y: External Cost [0.1, 0.6] — lower = less costly
+            // Y: External Cost [0.1, 0.6] â€” lower = less costly
             let y = ((seed as f64 * 0.013).cos().abs() * 0.5 + 0.1) as f32;
 
-            // Z: Symbiosis Score [-1, 1] — derived from x - y balance
+            // Z: Symbiosis Score [-1, 1] â€” derived from x - y balance
             let mut z = (x - y) * 2.0 - 0.3;
             z = z.max(-1.0).min(1.0);
 
@@ -565,11 +565,11 @@ mod wasm_internal {
 
         #[test]
         fn test_memory_limit_bounds() {
-            // Too low → clamped to 16
+            // Too low â†’ clamped to 16
             let node = BrowserNode::new("low-mem", 4);
             assert_eq!(node.memory_limit_mb, 16);
 
-            // Too high → clamped to 512
+            // Too high â†’ clamped to 512
             let node = BrowserNode::new("high-mem", 1024);
             assert_eq!(node.memory_limit_mb, 512);
         }
@@ -673,7 +673,7 @@ mod wasm_internal {
             let result2 = node.process_tensor("same-payload");
             let s1 = result1.as_string().unwrap_or_default();
             let s2 = result2.as_string().unwrap_or_default();
-            // Same payload → same SCT vectors (latency may differ)
+            // Same payload â†’ same SCT vectors (latency may differ)
             assert!(
                 s1.contains(&s2[0..s2.len().min(s1.len())])
                     || s2.contains(&s1[0..s1.len().min(s2.len())])

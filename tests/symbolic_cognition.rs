@@ -1,4 +1,4 @@
-//! Symbolic Cognition Tests — Sprint 28
+﻿//! Symbolic Cognition Tests â€” Sprint 28
 //!
 //! Property-based and unit tests for the Symbolic Meaning Engine:
 //! - SymbolicEmbedding fusion with SCT Z-axis scaling
@@ -10,15 +10,15 @@
 #[cfg(test)]
 mod symbolic_fusion_tests {
     use candle_core::{Device, Tensor};
-    use ed2kia::alignment::sct_core::StuartianTensor;
+    use ed2kia::alignment::sct_core::TopologicalTensor;
     use ed2kia::alignment::symbolic_engine::SymbolicEmbedding;
 
-    fn benign_sct() -> StuartianTensor {
-        StuartianTensor::new(0.8, 0.2, 0.8).unwrap()
+    fn benign_sct() -> TopologicalTensor {
+        TopologicalTensor::new(0.8, 0.2, 0.8).unwrap()
     }
 
-    fn poisoned_sct() -> StuartianTensor {
-        StuartianTensor::new(0.2, 0.9, -0.9).unwrap()
+    fn poisoned_sct() -> TopologicalTensor {
+        TopologicalTensor::new(0.2, 0.9, -0.9).unwrap()
     }
 
     /// Test 1: Symbolic Fusion Decay
@@ -98,7 +98,7 @@ mod symbolic_fusion_tests {
 #[cfg(test)]
 mod ethical_attention_tests {
     use candle_core::{Device, Tensor};
-    use ed2kia::alignment::ethical_attention::apply_stuartian_mask;
+    use ed2kia::alignment::ethical_attention::apply_Topological_mask;
 
     /// Test 2: Ethical Attention Masking
     ///
@@ -115,7 +115,7 @@ mod ethical_attention_tests {
         let z_vectors = Tensor::new(&[0.5f32, 0.3, -0.7, 0.1], &device).unwrap();
 
         // Apply ethical mask
-        let masked = apply_stuartian_mask(&scores, &z_vectors).unwrap();
+        let masked = apply_Topological_mask(&scores, &z_vectors).unwrap();
         let masked_vec: Vec<f32> = masked.to_vec1().unwrap();
 
         // Token 2 should have -10.0 penalty: 2.0 + (-10.0) = -8.0
@@ -156,7 +156,7 @@ mod ethical_attention_tests {
         );
     }
 
-    /// Test: All tokens positive — no masking effect
+    /// Test: All tokens positive â€” no masking effect
     #[test]
     fn test_ethical_attention_all_positive() {
         let device = Device::Cpu;
@@ -164,7 +164,7 @@ mod ethical_attention_tests {
         let scores = Tensor::new(&[1.0f32, 2.0, 3.0], &device).unwrap();
         let z_vectors = Tensor::new(&[0.1f32, 0.5, 0.9], &device).unwrap();
 
-        let masked = apply_stuartian_mask(&scores, &z_vectors).unwrap();
+        let masked = apply_Topological_mask(&scores, &z_vectors).unwrap();
         let masked_vec: Vec<f32> = masked.to_vec1().unwrap();
 
         // No Z < 0, so scores should be unchanged
@@ -173,7 +173,7 @@ mod ethical_attention_tests {
         assert!((masked_vec[2] - 3.0).abs() < 1e-6);
     }
 
-    /// Test: All tokens negative — all penalized equally
+    /// Test: All tokens negative â€” all penalized equally
     #[test]
     fn test_ethical_attention_all_negative() {
         let device = Device::Cpu;
@@ -181,7 +181,7 @@ mod ethical_attention_tests {
         let scores = Tensor::new(&[3.0f32, 3.0, 3.0], &device).unwrap();
         let z_vectors = Tensor::new(&[-0.1f32, -0.5, -0.9], &device).unwrap();
 
-        let masked = apply_stuartian_mask(&scores, &z_vectors).unwrap();
+        let masked = apply_Topological_mask(&scores, &z_vectors).unwrap();
         let masked_vec: Vec<f32> = masked.to_vec1().unwrap();
 
         // All penalized by -10.0: 3.0 + (-10.0) = -7.0
@@ -193,18 +193,18 @@ mod ethical_attention_tests {
 
 #[cfg(test)]
 mod crdt_symbol_convergence_tests {
-    use ed2kia::alignment::sct_core::StuartianTensor;
+    use ed2kia::alignment::sct_core::TopologicalTensor;
     use ed2kia::async_gossip::crdt_symbols::SymbolRegistry;
 
-    fn high_ethics_sct() -> StuartianTensor {
-        StuartianTensor::new(0.9, 0.1, 0.9).unwrap()
+    fn high_ethics_sct() -> TopologicalTensor {
+        TopologicalTensor::new(0.9, 0.1, 0.9).unwrap()
     }
 
-    fn low_ethics_sct() -> StuartianTensor {
-        StuartianTensor::new(0.2, 0.8, -0.8).unwrap()
+    fn low_ethics_sct() -> TopologicalTensor {
+        TopologicalTensor::new(0.2, 0.8, -0.8).unwrap()
     }
 
-    /// Test: 3-node convergence — ethical consensus emerges
+    /// Test: 3-node convergence â€” ethical consensus emerges
     #[test]
     fn test_3_node_ethical_convergence() {
         let mut node_alpha = SymbolRegistry::new("alpha");

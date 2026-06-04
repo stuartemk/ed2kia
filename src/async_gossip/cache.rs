@@ -1,40 +1,40 @@
-//! Gossip Cache — Almacenamiento offline con sync al reconectar.
+﻿//! Gossip Cache â€” Almacenamiento offline con sync al reconectar.
 //!
-//! **Stuartian Law 5 (Múltiples Posibilidades):** Los nodos operan
-//! offline y sincronizan al reconectar, sin pérdida de estado.
+//! **Topological Law 5 (MÃºltiples Posibilidades):** Los nodos operan
+//! offline y sincronizan al reconectar, sin pÃ©rdida de estado.
 //!
 //! **Feature Gate:** `v2.1-offline-cache`
 //!
 //! ### Arquitectura
-//! - **PendingQueue:** Cola priorizada por timestamp (más antiguo primero)
-//!   y tipo de payload (crítico > normal > bajo).
+//! - **PendingQueue:** Cola priorizada por timestamp (mÃ¡s antiguo primero)
+//!   y tipo de payload (crÃ­tico > normal > bajo).
 //! - **redb Storage:** Base de datos embebida para persistencia.
 //! - **Sync Logic:** On `ConnectionEstablished`, drena la cola en batches
 //!   con backoff exponencial (1s, 2s, 4s, 8s... max 30s) en fallos.
 //!
 //! ### Prioridad de Payload
-//! | Tipo | Prioridad | Descripción |
+//! | Tipo | Prioridad | DescripciÃ³n |
 //! |---|---|---|
 //! | Critical | 0 | Slashing, bans, seguridad |
-//! | Normal | 1 | Reputación, gradientes |
+//! | Normal | 1 | ReputaciÃ³n, gradientes |
 //! | Low | 2 | Metadata, heartbeats |
 //!
 //! ### Sync Strategy
 //! 1. Ordenar por (priority ASC, timestamp ASC)
 //! 2. Batch size: 32 entradas
 //! 3. Exponential backoff en fallos
-//! 4. Mark as synced después de mesh ACK
+//! 4. Mark as synced despuÃ©s de mesh ACK
 
 use std::collections::BinaryHeap;
 use std::fmt;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-/// Tipo de payload para priorización en sync.
+/// Tipo de payload para priorizaciÃ³n en sync.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum PayloadType {
-    /// Crítico: slashing, bans, seguridad (prioridad 0).
+    /// CrÃ­tico: slashing, bans, seguridad (prioridad 0).
     Critical = 0,
-    /// Normal: reputación, gradientes (prioridad 1).
+    /// Normal: reputaciÃ³n, gradientes (prioridad 1).
     Normal = 1,
     /// Bajo: metadata, heartbeats (prioridad 2).
     Low = 2,
@@ -59,7 +59,7 @@ pub enum GossipCacheError {
     EntryNotFound(String),
     /// Cache lleno.
     CacheFull,
-    /// Error de serialización.
+    /// Error de serializaciÃ³n.
     SerializationError(String),
     /// Sync fallido (reintentos agotados).
     SyncExhausted(String),
@@ -92,15 +92,15 @@ impl std::error::Error for GossipCacheError {}
 /// Entrada del cache de gossip.
 #[derive(Debug, Clone)]
 pub struct CacheEntry {
-    /// Clave única.
+    /// Clave Ãºnica.
     pub key: String,
     /// Datos almacenados.
     pub data: Vec<u8>,
-    /// Timestamp de creación (epoch seconds).
+    /// Timestamp de creaciÃ³n (epoch seconds).
     pub created_at: u64,
-    /// ¿Sincronizado con la red?
+    /// Â¿Sincronizado con la red?
     pub synced: bool,
-    /// Tipo de payload para priorización.
+    /// Tipo de payload para priorizaciÃ³n.
     pub payload_type: PayloadType,
     /// Contador de intentos de sync fallidos.
     pub sync_attempts: u32,
@@ -123,7 +123,7 @@ impl CacheEntry {
         }
     }
 
-    /// Retorna true si la entrada está pendiente de sync.
+    /// Retorna true si la entrada estÃ¡ pendiente de sync.
     pub fn is_pending(&self) -> bool {
         !self.synced
     }
@@ -163,14 +163,14 @@ impl Ord for CacheEntry {
     }
 }
 
-/// Estado de sync de una operación.
+/// Estado de sync de una operaciÃ³n.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SyncStatus {
-    /// Sincronización exitosa.
+    /// SincronizaciÃ³n exitosa.
     Synced,
     /// En cola de sync.
     Pending,
-    /// Falló con backoff activo.
+    /// FallÃ³ con backoff activo.
     Backoff,
     /// Reintentos agotados.
     Exhausted,
@@ -187,7 +187,7 @@ impl fmt::Display for SyncStatus {
     }
 }
 
-/// Estadísticas del cache.
+/// EstadÃ­sticas del cache.
 #[derive(Debug, Clone)]
 pub struct CacheStats {
     /// Total de entradas.
@@ -196,7 +196,7 @@ pub struct CacheStats {
     pub synced_count: usize,
     /// Entradas pendientes.
     pub pending_count: usize,
-    /// Tamaño total en bytes.
+    /// TamaÃ±o total en bytes.
     pub total_bytes: usize,
 }
 
@@ -210,9 +210,9 @@ impl CacheStats {
     }
 }
 
-/// Cache local para mensajes de gossip durante desconexión.
+/// Cache local para mensajes de gossip durante desconexiÃ³n.
 ///
-/// **Stuartian Law 5:** Tolerancia a particiones. Los mensajes
+/// **Topological Law 5:** Tolerancia a particiones. Los mensajes
 /// se almacenan localmente y se sincronizan al reconectar.
 ///
 /// ### Invariantes
@@ -221,15 +221,15 @@ impl CacheStats {
 /// 3. mark_synced() solo cambia synced = true
 /// 4. sync_batch() retorna en orden de prioridad
 pub struct GossipCache {
-    /// Capacidad máxima del cache.
+    /// Capacidad mÃ¡xima del cache.
     pub max_entries: usize,
     /// Entradas almacenadas.
     entries: std::collections::BTreeMap<String, CacheEntry>,
     /// Cola priorizada para sync.
     pending_queue: BinaryHeap<CacheEntry>,
-    /// Límite de reintentos antes de marcar como exhausted.
+    /// LÃ­mite de reintentos antes de marcar como exhausted.
     max_retries: u32,
-    /// Tamaño del batch de sync.
+    /// TamaÃ±o del batch de sync.
     batch_size: usize,
 }
 
@@ -245,13 +245,13 @@ impl GossipCache {
         }
     }
 
-    /// Configura el límite de reintentos.
+    /// Configura el lÃ­mite de reintentos.
     pub fn with_max_retries(mut self, retries: u32) -> Self {
         self.max_retries = retries;
         self
     }
 
-    /// Configura el tamaño del batch de sync.
+    /// Configura el tamaÃ±o del batch de sync.
     pub fn with_batch_size(mut self, size: usize) -> Self {
         self.batch_size = size;
         self
@@ -305,7 +305,7 @@ impl GossipCache {
         Ok(())
     }
 
-    /// Retorna entradas pendientes de sincronización, ordenadas por prioridad.
+    /// Retorna entradas pendientes de sincronizaciÃ³n, ordenadas por prioridad.
     pub fn pending_sync(&self) -> Vec<CacheEntry> {
         self.entries
             .values()
@@ -316,7 +316,7 @@ impl GossipCache {
 
     /// Retorna un batch de entradas para sync.
     ///
-    /// Orden: priority ASC, timestamp ASC (más crítico y antiguo primero).
+    /// Orden: priority ASC, timestamp ASC (mÃ¡s crÃ­tico y antiguo primero).
     pub fn sync_batch(&self) -> Vec<CacheEntry> {
         let mut pending: Vec<CacheEntry> = self
             .entries
@@ -337,7 +337,7 @@ impl GossipCache {
 
     /// Simula un intento de sync para un batch.
     ///
-    /// En producción, esto envía los mensajes al mesh y espera ACK.
+    /// En producciÃ³n, esto envÃ­a los mensajes al mesh y espera ACK.
     /// Retorna (synced_keys, failed_keys).
     pub fn attempt_sync(
         &mut self,
@@ -348,7 +348,7 @@ impl GossipCache {
         let mut failed = Vec::new();
 
         for entry in batch {
-            // Simulación: success_rate determina éxito
+            // SimulaciÃ³n: success_rate determina Ã©xito
             let roll: f64 = (entry.created_at as f64 % 1000.0) / 1000.0;
             if roll < success_rate {
                 self.mark_synced(&entry.key).ok();
@@ -368,12 +368,12 @@ impl GossipCache {
         (synced, failed)
     }
 
-    /// Retorna el backoff para una entrada específica.
+    /// Retorna el backoff para una entrada especÃ­fica.
     pub fn entry_backoff_ms(&self, key: &str) -> Option<u64> {
         self.entries.get(key).map(|e| e.backoff_ms())
     }
 
-    /// Retorna las estadísticas del cache.
+    /// Retorna las estadÃ­sticas del cache.
     pub fn stats(&self) -> CacheStats {
         let total_entries = self.entries.len();
         let synced_count = self.entries.values().filter(|e| e.synced).count();
@@ -392,9 +392,9 @@ impl GossipCache {
         }
     }
 
-    /// Limpia entradas sincronizadas más antiguas para liberar espacio.
+    /// Limpia entradas sincronizadas mÃ¡s antiguas para liberar espacio.
     ///
-    /// Retorna el número de entradas eliminadas.
+    /// Retorna el nÃºmero de entradas eliminadas.
     pub fn compact(&mut self, keep_recent: usize) -> usize {
         let synced_keys: Vec<String> = self
             .entries
@@ -407,7 +407,7 @@ impl GossipCache {
         let to_remove = synced_keys.len().saturating_sub(keep_recent);
 
         if to_remove > 0 {
-            // Eliminar las más antiguas
+            // Eliminar las mÃ¡s antiguas
             for key in &synced_keys[..to_remove] {
                 self.entries.remove(key);
             }
@@ -566,7 +566,7 @@ mod tests {
         cache
             .store("normal-1".into(), vec![1], PayloadType::Normal)
             .unwrap();
-        // Critical después
+        // Critical despuÃ©s
         cache
             .store("critical-1".into(), vec![2], PayloadType::Critical)
             .unwrap();

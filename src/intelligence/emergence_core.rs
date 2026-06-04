@@ -1,52 +1,52 @@
-//! Stuartian Emergence Engine — Cross-Tensor Fusion for Autonomous Discovery.
+﻿//! Topological Emergence Engine â€” Cross-Tensor Fusion for Autonomous Discovery.
 //!
-//! **Stuartian Law 2 (Emergencia):** Capabilidades nuevas surgen de la interacción
-//! simbiótica entre nodos, no de programación explícita.
-//! **Stuartian Law 4 (Ética Geométrica):** Toda emergencia debe pasar por el SCT Guard
-//! para garantizar alineación con el Upper Focus (Z ≥ 0).
+//! **Topological Law 2 (Emergencia):** Capabilidades nuevas surgen de la interacciÃ³n
+//! simbiÃ³tica entre nodos, no de programaciÃ³n explÃ­cita.
+//! **Topological Law 4 (Ã‰tica GeomÃ©trica):** Toda emergencia debe pasar por el SCT Guard
+//! para garantizar alineaciÃ³n con el Upper Focus (Z â‰¥ 0).
 //!
-//! Este módulo proporciona el motor de emergencia autónoma:
-//! - **NodeTensor:** Tensor de problema/solución de cada nodo en el enjambre.
-//! - **CrossTensorFusion:** Algoritmo de fusión que detecta correlaciones latentes.
-//! - **EmergentInsight:** Insight emergente con score de novedad y validación SCT.
-//! - **SCTGuard:** Guardián ético que valida Z ≥ 0 antes de emitir insights.
-//! - **StuartianEmergenceEngine:** Motor principal de emergencia autónoma.
+//! Este mÃ³dulo proporciona el motor de emergencia autÃ³noma:
+//! - **NodeTensor:** Tensor de problema/soluciÃ³n de cada nodo en el enjambre.
+//! - **CrossTensorFusion:** Algoritmo de fusiÃ³n que detecta correlaciones latentes.
+//! - **EmergentInsight:** Insight emergente con score de novedad y validaciÃ³n SCT.
+//! - **SCTGuard:** GuardiÃ¡n Ã©tico que valida Z â‰¥ 0 antes de emitir insights.
+//! - **TopologicalEmergenceEngine:** Motor principal de emergencia autÃ³noma.
 //!
 //! ### Feature Gate
 //! `v3.5-planetary-emergence`
 //!
-//! ### Integración
-//! - [`crate::ethics::moral_manifold::Vector3`] para evaluación ética
-//! - [`crate::orchestration::swarm_topology::SwarmTopology`] para distribución de nodos
-//! - [`crate::network::planetary_mesh::PlanetaryMesh`] para comunicación WAN
+//! ### IntegraciÃ³n
+//! - [`crate::ethics::moral_manifold::Vector3`] para evaluaciÃ³n Ã©tica
+//! - [`crate::orchestration::swarm_topology::SwarmTopology`] para distribuciÃ³n de nodos
+//! - [`crate::network::planetary_mesh::PlanetaryMesh`] para comunicaciÃ³n WAN
 
 use std::collections::{HashMap, VecDeque};
 use std::fmt;
 use std::time::{Duration, Instant};
 
 // ============================================================================
-// NodeTensor — Tensor de Problema/Solución del Nodo
+// NodeTensor â€” Tensor de Problema/SoluciÃ³n del Nodo
 // ============================================================================
 
-/// Tensor que representa el estado de problema/solución de un nodo.
+/// Tensor que representa el estado de problema/soluciÃ³n de un nodo.
 ///
 /// Cada nodo en el enjambre mantiene un tensor que codifica:
-/// - El fragmento de información que posee
-/// - El estado de su investigación/solución parcial
-/// - La dirección ética de su trabajo (en espacio Octahedron)
+/// - El fragmento de informaciÃ³n que posee
+/// - El estado de su investigaciÃ³n/soluciÃ³n parcial
+/// - La direcciÃ³n Ã©tica de su trabajo (en espacio Octahedron)
 #[derive(Debug, Clone)]
 pub struct NodeTensor {
     /// Identificador del nodo que posee este tensor.
     pub node_id: u128,
-    /// Vector de características del problema (embedding).
+    /// Vector de caracterÃ­sticas del problema (embedding).
     pub problem_features: Vec<f64>,
-    /// Vector de características de la solución parcial.
+    /// Vector de caracterÃ­sticas de la soluciÃ³n parcial.
     pub solution_features: Vec<f64>,
-    /// Dirección ética en espacio Octahedron (x, y, z).
+    /// DirecciÃ³n Ã©tica en espacio Octahedron (x, y, z).
     pub ethical_direction: Vector3,
-    /// Timestamp de última actualización.
+    /// Timestamp de Ãºltima actualizaciÃ³n.
     pub updated_at: Instant,
-    /// Secuencia de versión del tensor.
+    /// Secuencia de versiÃ³n del tensor.
     pub version: u64,
     /// Metadata del problema (tipo, dominio, etc.).
     pub metadata: HashMap<String, String>,
@@ -70,7 +70,7 @@ impl NodeTensor {
         }
     }
 
-    /// Actualiza el tensor con nuevas características de solución.
+    /// Actualiza el tensor con nuevas caracterÃ­sticas de soluciÃ³n.
     pub fn update_solution(
         &mut self,
         new_solution_features: Vec<f64>,
@@ -87,29 +87,29 @@ impl NodeTensor {
         cosine_similarity(&self.problem_features, &other.problem_features)
     }
 
-    /// Calcula la similitud coseno con otro tensor (basado en solución).
+    /// Calcula la similitud coseno con otro tensor (basado en soluciÃ³n).
     pub fn solution_similarity(&self, other: &NodeTensor) -> f64 {
         cosine_similarity(&self.solution_features, &other.solution_features)
     }
 
-    /// Verifica si la dirección ética es válida (Z ≥ 0).
+    /// Verifica si la direcciÃ³n Ã©tica es vÃ¡lida (Z â‰¥ 0).
     pub fn is_ethically_aligned(&self) -> bool {
         self.ethical_direction.z >= 0.0
     }
 }
 
 // ============================================================================
-// Vector3 — Vector en Espacio Ético Octahedron
+// Vector3 â€” Vector en Espacio Ã‰tico Octahedron
 // ============================================================================
 
-/// Vector 3D en el espacio ético Stuartiano (Octahedron).
+/// Vector 3D en el espacio Ã©tico Topologicalo (Octahedron).
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub struct Vector3 {
-    /// Eje X: Autonomía (0.0 = ninguna, 1.0 = total)
+    /// Eje X: AutonomÃ­a (0.0 = ninguna, 1.0 = total)
     pub x: f64,
-    /// Eje Y: Extracción/Costo (0.0 = ninguno, 1.0 = total)
+    /// Eje Y: ExtracciÃ³n/Costo (0.0 = ninguno, 1.0 = total)
     pub y: f64,
-    /// Eje Z: Enfoque ético (-1.0 = Lower Focus, +1.0 = Upper Focus)
+    /// Eje Z: Enfoque Ã©tico (-1.0 = Lower Focus, +1.0 = Upper Focus)
     pub z: f64,
 }
 
@@ -162,7 +162,7 @@ impl Vector3 {
         diff.magnitude()
     }
 
-    /// Proyecta al Octahedron Ético (normaliza por L1).
+    /// Proyecta al Octahedron Ã‰tico (normaliza por L1).
     pub fn project_to_octahedron(&self) -> Vector3 {
         let l1 = self.x.abs() + self.y.abs() + self.z.abs();
         if l1 < f64::EPSILON {
@@ -179,16 +179,16 @@ impl fmt::Display for Vector3 {
 }
 
 // ============================================================================
-// EmergentInsight — Insight Emergente
+// EmergentInsight â€” Insight Emergente
 // ============================================================================
 
-/// Insight emergente generado por fusión de tensores cruzados.
+/// Insight emergente generado por fusiÃ³n de tensores cruzados.
 ///
-/// Representa una nueva capacidad o solución que no fue explícitamente
-/// programada, sino que surgió de la interacción simbiótica entre nodos.
+/// Representa una nueva capacidad o soluciÃ³n que no fue explÃ­citamente
+/// programada, sino que surgiÃ³ de la interacciÃ³n simbiÃ³tica entre nodos.
 #[derive(Debug, Clone)]
 pub struct EmergentInsight {
-    /// Identificador único del insight.
+    /// Identificador Ãºnico del insight.
     pub insight_id: u64,
     /// Nodos que contribuyeron a este insight.
     pub contributing_nodes: Vec<u128>,
@@ -196,15 +196,15 @@ pub struct EmergentInsight {
     pub fused_tensor: NodeTensor,
     /// Score de novedad (0.0 = conocido, 1.0 = completamente nuevo).
     pub novelty_score: f64,
-    /// Score de utilidad (0.0 = inútil, 1.0 = extremadamente útil).
+    /// Score de utilidad (0.0 = inÃºtil, 1.0 = extremadamente Ãºtil).
     pub utility_score: f64,
-    /// Score ético SCT (Z del resultado fusionado).
+    /// Score Ã©tico SCT (Z del resultado fusionado).
     pub sct_z_score: f64,
-    /// Estado de validación SCT.
+    /// Estado de validaciÃ³n SCT.
     pub sct_validated: bool,
-    /// Timestamp de generación.
+    /// Timestamp de generaciÃ³n.
     pub generated_at: Instant,
-    /// Descripción del insight (derivada de metadata fusionado).
+    /// DescripciÃ³n del insight (derivada de metadata fusionado).
     pub description: String,
 }
 
@@ -257,27 +257,27 @@ impl EmergentInsight {
 }
 
 // ============================================================================
-// EmergentSolutionEvent — Evento de Solución Emergente
+// EmergentSolutionEvent â€” Evento de SoluciÃ³n Emergente
 // ============================================================================
 
-/// Evento emitido cuando se genera una solución emergente válida.
+/// Evento emitido cuando se genera una soluciÃ³n emergente vÃ¡lida.
 ///
-/// Este es el evento clave para el "Grok Challenge": cuando múltiples
-/// nodos trabajan en fragmentos de información desconectados y logran
-/// generar una solución coherente con Z ≥ 0.
+/// Este es el evento clave para el "Grok Challenge": cuando mÃºltiples
+/// nodos trabajan en fragmentos de informaciÃ³n desconectados y logran
+/// generar una soluciÃ³n coherente con Z â‰¥ 0.
 #[derive(Debug, Clone)]
 pub struct EmergentSolutionEvent {
     /// Identificador del evento.
     pub event_id: u64,
-    /// Insight emergente que desencadenó el evento.
+    /// Insight emergente que desencadenÃ³ el evento.
     pub insight: EmergentInsight,
-    /// Score Z final (debe ser ≥ 0 para ser válido).
+    /// Score Z final (debe ser â‰¥ 0 para ser vÃ¡lido).
     pub z_score: f64,
     /// Timestamp del evento.
     pub timestamp: Instant,
-    /// Fragmentos de información que se fusionaron.
+    /// Fragmentos de informaciÃ³n que se fusionaron.
     pub fragments_fused: usize,
-    /// Nodos participantes en la solución.
+    /// Nodos participantes en la soluciÃ³n.
     pub participating_nodes: usize,
 }
 
@@ -293,7 +293,7 @@ impl EmergentSolutionEvent {
         }
     }
 
-    /// Verifica si el evento es válido (Z ≥ 0).
+    /// Verifica si el evento es vÃ¡lido (Z â‰¥ 0).
     pub fn is_valid(&self) -> bool {
         self.z_score >= 0.0
     }
@@ -314,18 +314,18 @@ impl fmt::Display for EmergentSolutionEvent {
 }
 
 // ============================================================================
-// SCTGuard — Guardián Ético Stuartiano
+// SCTGuard â€” GuardiÃ¡n Ã‰tico Topologicalo
 // ============================================================================
 
-/// Guardián ético que valida que toda emergencia esté alineada
-/// con el Upper Focus (Z ≥ 0).
+/// GuardiÃ¡n Ã©tico que valida que toda emergencia estÃ© alineada
+/// con el Upper Focus (Z â‰¥ 0).
 ///
-/// Implementa la validación SCT (Stuartian Context Tensor) para
+/// Implementa la validaciÃ³n SCT (Topological Context Tensor) para
 /// garantizar que los insights emergentes no tiendan hacia el
 /// Lower Focus (perversidad).
 #[derive(Debug, Clone)]
 pub struct SCTGuard {
-    /// Umbral mínimo de Z para validación (default: 0.0).
+    /// Umbral mÃ­nimo de Z para validaciÃ³n (default: 0.0).
     pub min_z_threshold: f64,
     /// Umbral de alerta para Z cercano a 0 (default: 0.1).
     pub warning_z_threshold: f64,
@@ -335,7 +335,7 @@ pub struct SCTGuard {
     pub validations_failed: u64,
     /// Historial de scores Z recientes.
     pub recent_z_scores: VecDeque<f64>,
-    /// Máximo de scores en el historial.
+    /// MÃ¡ximo de scores en el historial.
     max_history: usize,
 }
 
@@ -392,7 +392,7 @@ impl SCTGuard {
         sum / self.recent_z_scores.len() as f64
     }
 
-    /// Obtiene la tasa de éxito de validación.
+    /// Obtiene la tasa de Ã©xito de validaciÃ³n.
     pub fn success_rate(&self) -> f64 {
         let total = self.validations_passed + self.validations_failed;
         if total == 0 {
@@ -401,7 +401,7 @@ impl SCTGuard {
         self.validations_passed as f64 / total as f64
     }
 
-    /// Resetea las estadísticas del guardián.
+    /// Resetea las estadÃ­sticas del guardiÃ¡n.
     pub fn reset(&mut self) {
         self.validations_passed = 0;
         self.validations_failed = 0;
@@ -415,14 +415,14 @@ impl Default for SCTGuard {
     }
 }
 
-/// Resultado de validación SCT.
+/// Resultado de validaciÃ³n SCT.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum SCTValidationResult {
-    /// Insight pasa validación ética.
+    /// Insight pasa validaciÃ³n Ã©tica.
     Passed(f64),
-    /// Insight pasa pero está cerca del umbral (alerta).
+    /// Insight pasa pero estÃ¡ cerca del umbral (alerta).
     Warning(f64),
-    /// Insight rechazado por no cumplir Z ≥ 0.
+    /// Insight rechazado por no cumplir Z â‰¥ 0.
     Rejected(f64),
 }
 
@@ -441,22 +441,22 @@ impl SCTValidationResult {
 }
 
 // ============================================================================
-// CrossTensorFusion — Algoritmo de Fusión Cruzada
+// CrossTensorFusion â€” Algoritmo de FusiÃ³n Cruzada
 // ============================================================================
 
-/// Algoritmo de fusión de tensores cruzados que detecta
+/// Algoritmo de fusiÃ³n de tensores cruzados que detecta
 /// correlaciones latentes entre problemas de diferentes nodos.
 #[derive(Debug, Clone)]
 pub struct CrossTensorFusion {
-    /// Umbral de similitud para considerar fusión (default: 0.3).
+    /// Umbral de similitud para considerar fusiÃ³n (default: 0.3).
     pub similarity_threshold: f64,
-    /// Peso de similitud de problema en la fusión (default: 0.5).
+    /// Peso de similitud de problema en la fusiÃ³n (default: 0.5).
     pub problem_weight: f64,
-    /// Peso de similitud de solución en la fusión (default: 0.3).
+    /// Peso de similitud de soluciÃ³n en la fusiÃ³n (default: 0.3).
     pub solution_weight: f64,
-    /// Peso de alineación ética en la fusión (default: 0.2).
+    /// Peso de alineaciÃ³n Ã©tica en la fusiÃ³n (default: 0.2).
     pub ethical_weight: f64,
-    /// Máximo de nodos por fusión (default: 10).
+    /// MÃ¡ximo de nodos por fusiÃ³n (default: 10).
     pub max_fusion_nodes: usize,
 }
 
@@ -482,7 +482,7 @@ impl CrossTensorFusion {
         }
     }
 
-    /// Detecta candidatos a fusión entre un tensor y una lista de tensores.
+    /// Detecta candidatos a fusiÃ³n entre un tensor y una lista de tensores.
     pub fn find_fusion_candidates(
         &self,
         target: &NodeTensor,
@@ -505,7 +505,7 @@ impl CrossTensorFusion {
             .collect()
     }
 
-    /// Fusiona múltiples tensores en uno emergente.
+    /// Fusiona mÃºltiples tensores en uno emergente.
     pub fn fuse_tensors(&self, tensors: &[NodeTensor]) -> Option<NodeTensor> {
         if tensors.is_empty() {
             return None;
@@ -513,21 +513,21 @@ impl CrossTensorFusion {
 
         let n = tensors.len() as f64;
 
-        // Promedio ponderado de características de problema
+        // Promedio ponderado de caracterÃ­sticas de problema
         let problem_refs: Vec<_> = tensors
             .iter()
             .map(|t| t.problem_features.as_slice())
             .collect();
         let fused_problem = weighted_average_features(&problem_refs);
 
-        // Promedio ponderado de características de solución
+        // Promedio ponderado de caracterÃ­sticas de soluciÃ³n
         let solution_refs: Vec<_> = tensors
             .iter()
             .map(|t| t.solution_features.as_slice())
             .collect();
         let fused_solution = weighted_average_features(&solution_refs);
 
-        // Dirección ética fusionada (promedio en espacio Octahedron)
+        // DirecciÃ³n Ã©tica fusionada (promedio en espacio Octahedron)
         let fused_ethical = {
             let sum_x: f64 = tensors.iter().map(|t| t.ethical_direction.x).sum();
             let sum_y: f64 = tensors.iter().map(|t| t.ethical_direction.y).sum();
@@ -570,7 +570,7 @@ impl CrossTensorFusion {
         }
 
         // La novedad se mide como la distancia del tensor fusionado
-        // al tensor original más cercano
+        // al tensor original mÃ¡s cercano
         let min_distance = originals
             .iter()
             .map(|orig| {
@@ -579,13 +579,13 @@ impl CrossTensorFusion {
             })
             .fold(f64::MAX, f64::min);
 
-        // Normalizar a [0, 1] asumiendo distancia máxima de 2.0
+        // Normalizar a [0, 1] asumiendo distancia mÃ¡xima de 2.0
         (1.0 - (min_distance / 2.0).clamp(0.0, 1.0)).clamp(0.0, 1.0)
     }
 
-    /// Calcula el score de utilidad basado en la coherencia ética y convergencia.
+    /// Calcula el score de utilidad basado en la coherencia Ã©tica y convergencia.
     pub fn calculate_utility(&self, fused: &NodeTensor) -> f64 {
-        // Utilidad = alineación ética * coherencia de solución
+        // Utilidad = alineaciÃ³n Ã©tica * coherencia de soluciÃ³n
         let ethical_score = (fused.ethical_direction.z + 1.0) * 0.5; // [0, 1]
         let solution_coherence = solution_coherence_score(&fused.solution_features);
         0.6 * ethical_score + 0.4 * solution_coherence
@@ -599,41 +599,41 @@ impl Default for CrossTensorFusion {
 }
 
 // ============================================================================
-// StuartianEmergenceEngine — Motor Principal de Emergencia
+// TopologicalEmergenceEngine â€” Motor Principal de Emergencia
 // ============================================================================
 
-/// Motor de emergencia autónoma Stuartiana.
+/// Motor de emergencia autÃ³noma Topologicala.
 ///
 /// Gestiona el ciclo completo de emergencia:
-/// 1. Recibe tensores de problema/solución de nodos
+/// 1. Recibe tensores de problema/soluciÃ³n de nodos
 /// 2. Detecta correlaciones latentes mediante Cross-Tensor Fusion
 /// 3. Genera insights emergentes
-/// 4. Valida con SCT Guard (Z ≥ 0)
-/// 5. Emite EmergentSolutionEvent cuando se encuentra solución válida
-pub struct StuartianEmergenceEngine {
-    /// Algoritmo de fusión cruzada.
+/// 4. Valida con SCT Guard (Z â‰¥ 0)
+/// 5. Emite EmergentSolutionEvent cuando se encuentra soluciÃ³n vÃ¡lida
+pub struct TopologicalEmergenceEngine {
+    /// Algoritmo de fusiÃ³n cruzada.
     fusion: CrossTensorFusion,
-    /// Guardián ético SCT.
+    /// GuardiÃ¡n Ã©tico SCT.
     sct_guard: SCTGuard,
     /// Tensores de nodos registrados.
     node_tensors: HashMap<u128, NodeTensor>,
     /// Insights emergentes generados.
     emergent_insights: Vec<EmergentInsight>,
-    /// Eventos de solución emitidos.
+    /// Eventos de soluciÃ³n emitidos.
     solution_events: Vec<EmergentSolutionEvent>,
     /// Siguiente ID de insight.
     next_insight_id: u64,
     /// Siguiente ID de evento.
     next_event_id: u64,
-    /// Estadísticas del motor.
+    /// EstadÃ­sticas del motor.
     stats: EmergenceStats,
-    /// Timestamp del último ciclo de emergencia.
+    /// Timestamp del Ãºltimo ciclo de emergencia.
     last_cycle: Instant,
-    /// Intervalo mínimo entre ciclos (default: 1s).
+    /// Intervalo mÃ­nimo entre ciclos (default: 1s).
     cycle_interval: Duration,
 }
 
-/// Estadísticas del motor de emergencia.
+/// EstadÃ­sticas del motor de emergencia.
 #[derive(Debug, Clone, Default)]
 pub struct EmergenceStats {
     /// Total de tensores procesados.
@@ -652,7 +652,7 @@ pub struct EmergenceStats {
     pub total_cycle_time_ms: f64,
 }
 
-impl StuartianEmergenceEngine {
+impl TopologicalEmergenceEngine {
     pub fn new() -> Self {
         Self {
             fusion: CrossTensorFusion::new(),
@@ -712,13 +712,13 @@ impl StuartianEmergenceEngine {
 
     /// Ejecuta un ciclo completo de emergencia.
     ///
-    /// Este es el método principal que:
+    /// Este es el mÃ©todo principal que:
     /// 1. Escanea todos los tensores registrados
-    /// 2. Detecta candidatos a fusión
-    /// 3. Ejecuta fusión de tensores
+    /// 2. Detecta candidatos a fusiÃ³n
+    /// 3. Ejecuta fusiÃ³n de tensores
     /// 4. Genera insights emergentes
     /// 5. Valida con SCT Guard
-    /// 6. Emite EmergentSolutionEvent si Z ≥ 0
+    /// 6. Emite EmergentSolutionEvent si Z â‰¥ 0
     pub fn run_emergence_cycle(&mut self) -> Vec<EmergentSolutionEvent> {
         let start = Instant::now();
         let mut events = Vec::new();
@@ -731,7 +731,7 @@ impl StuartianEmergenceEngine {
         let mut processed_pairs = Vec::new();
 
         for tensor in &tensors {
-            // Encontrar candidatos a fusión
+            // Encontrar candidatos a fusiÃ³n
             let candidates = self.fusion.find_fusion_candidates(
                 tensor,
                 &tensors
@@ -753,14 +753,14 @@ impl StuartianEmergenceEngine {
                 }
             }
 
-            // Evitar procesar el mismo conjunto múltiples veces
+            // Evitar procesar el mismo conjunto mÃºltiples veces
             let pair_key: Vec<u128> = fusion_set.iter().map(|t| t.node_id).collect::<Vec<_>>();
             if processed_pairs.contains(&pair_key) {
                 continue;
             }
             processed_pairs.push(pair_key);
 
-            // Ejecutar fusión
+            // Ejecutar fusiÃ³n
             if let Some(fused) = self.fusion.fuse_tensors(&fusion_set) {
                 self.stats.fusions_executed += 1;
 
@@ -784,7 +784,7 @@ impl StuartianEmergenceEngine {
                 let validation = self.sct_guard.validate(&insight);
 
                 if validation.is_valid() {
-                    // Emitir evento de solución
+                    // Emitir evento de soluciÃ³n
                     let event = EmergentSolutionEvent::new(insight.clone());
                     self.solution_events.push(event.clone());
                     self.emergent_insights.push(insight);
@@ -809,8 +809,8 @@ impl StuartianEmergenceEngine {
         events
     }
 
-    /// Ejecuta el "Grok Challenge": inyecta fragmentos de información
-    /// desconectados y verifica que el motor genere una solución emergente.
+    /// Ejecuta el "Grok Challenge": inyecta fragmentos de informaciÃ³n
+    /// desconectados y verifica que el motor genere una soluciÃ³n emergente.
     pub fn run_grok_challenge(
         &mut self,
         fragments: Vec<NodeTensor>,
@@ -820,7 +820,7 @@ impl StuartianEmergenceEngine {
             self.register_tensor(fragment);
         }
 
-        // Ejecutar ciclos de emergencia hasta encontrar solución
+        // Ejecutar ciclos de emergencia hasta encontrar soluciÃ³n
         let max_cycles = 10;
         for _ in 0..max_cycles {
             let events = self.run_emergence_cycle();
@@ -837,12 +837,12 @@ impl StuartianEmergenceEngine {
         &self.emergent_insights
     }
 
-    /// Obtiene los eventos de solución emitidos.
+    /// Obtiene los eventos de soluciÃ³n emitidos.
     pub fn get_solution_events(&self) -> &[EmergentSolutionEvent] {
         &self.solution_events
     }
 
-    /// Obtiene las estadísticas del motor.
+    /// Obtiene las estadÃ­sticas del motor.
     pub fn get_stats(&self) -> &EmergenceStats {
         &self.stats
     }
@@ -852,7 +852,7 @@ impl StuartianEmergenceEngine {
         &self.sct_guard
     }
 
-    /// Obtiene el algoritmo de fusión.
+    /// Obtiene el algoritmo de fusiÃ³n.
     pub fn get_fusion(&self) -> &CrossTensorFusion {
         &self.fusion
     }
@@ -870,7 +870,7 @@ impl StuartianEmergenceEngine {
     }
 }
 
-impl Default for StuartianEmergenceEngine {
+impl Default for TopologicalEmergenceEngine {
     fn default() -> Self {
         Self::new()
     }
@@ -905,14 +905,14 @@ pub fn cosine_similarity(a: &[f64], b: &[f64]) -> f64 {
     (dot / denom).clamp(-1.0, 1.0)
 }
 
-/// Calcula la alineación ética entre dos direcciones.
+/// Calcula la alineaciÃ³n Ã©tica entre dos direcciones.
 fn ethical_alignment(a: &Vector3, b: &Vector3) -> f64 {
     let normalized_a = a.normalized();
     let normalized_b = b.normalized();
     (normalized_a.dot(&normalized_b) + 1.0) * 0.5 // [0, 1]
 }
 
-/// Calcula el promedio ponderado de características.
+/// Calcula el promedio ponderado de caracterÃ­sticas.
 fn weighted_average_features(features_list: &[&[f64]]) -> Vec<f64> {
     if features_list.is_empty() {
         return vec![];
@@ -932,14 +932,14 @@ fn weighted_average_features(features_list: &[&[f64]]) -> Vec<f64> {
         .collect()
 }
 
-/// Calcula la distancia euclidiana entre dos vectores de características.
+/// Calcula la distancia euclidiana entre dos vectores de caracterÃ­sticas.
 fn feature_distance(a: &[f64], b: &[f64]) -> f64 {
     let min_len = a.len().min(b.len());
     let sum: f64 = (0..min_len).map(|i| (a[i] - b[i]).powi(2)).sum();
     sum.sqrt()
 }
 
-/// Calcula el score de coherencia de solución (varianza inversa).
+/// Calcula el score de coherencia de soluciÃ³n (varianza inversa).
 fn solution_coherence_score(features: &[f64]) -> f64 {
     if features.is_empty() {
         return 0.0;
@@ -1291,18 +1291,18 @@ mod tests {
     }
 
     // ------------------------------------------------------------------
-    // StuartianEmergenceEngine Tests
+    // TopologicalEmergenceEngine Tests
     // ------------------------------------------------------------------
 
     #[test]
     fn test_engine_creation() {
-        let engine = StuartianEmergenceEngine::new();
+        let engine = TopologicalEmergenceEngine::new();
         assert_eq!(engine.stats.tensors_processed, 0);
     }
 
     #[test]
     fn test_register_tensor() {
-        let mut engine = StuartianEmergenceEngine::new();
+        let mut engine = TopologicalEmergenceEngine::new();
         engine.register_tensor(make_tensor(1, 0.5));
         assert_eq!(engine.stats.tensors_processed, 1);
         assert!(engine.get_tensor(1).is_some());
@@ -1310,7 +1310,7 @@ mod tests {
 
     #[test]
     fn test_update_tensor() {
-        let mut engine = StuartianEmergenceEngine::new();
+        let mut engine = TopologicalEmergenceEngine::new();
         engine.register_tensor(make_tensor(1, 0.5));
         assert!(engine.update_tensor(make_tensor(1, 0.7)));
         assert!(!engine.update_tensor(make_tensor(999, 0.5)));
@@ -1318,7 +1318,7 @@ mod tests {
 
     #[test]
     fn test_unregister_tensor() {
-        let mut engine = StuartianEmergenceEngine::new();
+        let mut engine = TopologicalEmergenceEngine::new();
         engine.register_tensor(make_tensor(1, 0.5));
         assert!(engine.unregister_tensor(1));
         assert!(!engine.unregister_tensor(1));
@@ -1326,7 +1326,7 @@ mod tests {
 
     #[test]
     fn test_emergence_cycle_single_node() {
-        let mut engine = StuartianEmergenceEngine::new();
+        let mut engine = TopologicalEmergenceEngine::new();
         engine.register_tensor(make_tensor(1, 0.5));
         let events = engine.run_emergence_cycle();
         assert!(events.is_empty());
@@ -1334,7 +1334,7 @@ mod tests {
 
     #[test]
     fn test_emergence_cycle_multiple_nodes() {
-        let mut engine = StuartianEmergenceEngine::new();
+        let mut engine = TopologicalEmergenceEngine::new();
         // Register similar tensors that should fuse
         for i in 0..5 {
             let mut tensor = make_tensor(i, 0.5);
@@ -1349,7 +1349,7 @@ mod tests {
 
     #[test]
     fn test_grok_challenge_three_fragments() {
-        let mut engine = StuartianEmergenceEngine::new();
+        let mut engine = TopologicalEmergenceEngine::new();
         // Three disconnected information fragments
         let fragments = vec![
             make_tensor_with_metadata(1, 0.4, "biology"),
@@ -1366,7 +1366,7 @@ mod tests {
 
     #[test]
     fn test_grok_challenge_aligned_fragments() {
-        let mut engine = StuartianEmergenceEngine::new();
+        let mut engine = TopologicalEmergenceEngine::new();
         // Three well-aligned fragments
         let fragments = vec![
             make_tensor_with_metadata(1, 0.6, "domain_a"),
@@ -1382,7 +1382,7 @@ mod tests {
 
     #[test]
     fn test_engine_stats() {
-        let mut engine = StuartianEmergenceEngine::new();
+        let mut engine = TopologicalEmergenceEngine::new();
         engine.register_tensor(make_tensor(1, 0.5));
         engine.register_tensor(make_tensor(2, 0.3));
         let stats = engine.get_stats();
@@ -1391,7 +1391,7 @@ mod tests {
 
     #[test]
     fn test_engine_reset() {
-        let mut engine = StuartianEmergenceEngine::new();
+        let mut engine = TopologicalEmergenceEngine::new();
         engine.register_tensor(make_tensor(1, 0.5));
         engine.reset();
         assert_eq!(engine.stats.tensors_processed, 0);
@@ -1401,7 +1401,7 @@ mod tests {
 
     #[test]
     fn test_engine_default() {
-        let engine = StuartianEmergenceEngine::default();
+        let engine = TopologicalEmergenceEngine::default();
         assert_eq!(engine.stats.tensors_processed, 0);
     }
 
@@ -1409,7 +1409,7 @@ mod tests {
     fn test_engine_with_config() {
         let fusion = CrossTensorFusion::new();
         let guard = SCTGuard::new();
-        let engine = StuartianEmergenceEngine::with_config(fusion, guard);
+        let engine = TopologicalEmergenceEngine::with_config(fusion, guard);
         assert_eq!(engine.stats.tensors_processed, 0);
     }
 
@@ -1486,7 +1486,7 @@ mod tests {
 
     #[test]
     fn test_large_scale_emergence() {
-        let mut engine = StuartianEmergenceEngine::new();
+        let mut engine = TopologicalEmergenceEngine::new();
         // Simulate 100 nodes with aligned ethical direction
         for i in 0..100 {
             let z = 0.3 + (i % 10) as f64 * 0.05; // Z between 0.3 and 0.75
@@ -1505,7 +1505,7 @@ mod tests {
 
     #[test]
     fn test_mixed_ethical_directions() {
-        let mut engine = StuartianEmergenceEngine::new();
+        let mut engine = TopologicalEmergenceEngine::new();
         // Mix of aligned and misaligned nodes
         for i in 0..50 {
             let z = if i % 3 == 0 { -0.3 } else { 0.5 };
@@ -1521,7 +1521,7 @@ mod tests {
 
     #[test]
     fn test_grok_challenge_1000_nodes_simulation() {
-        let mut engine = StuartianEmergenceEngine::new();
+        let mut engine = TopologicalEmergenceEngine::new();
         // Simulate 1000 nodes with 3 information fragments
         // Fragment A: nodes 0-332
         // Fragment B: nodes 333-665

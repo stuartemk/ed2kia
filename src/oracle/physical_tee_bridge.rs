@@ -1,4 +1,4 @@
-//! Physical TEE Bridge — Sprint 79: Quantum-Physical Bridge & God-Level Resilience
+﻿//! Physical TEE Bridge â€” Sprint 79: Quantum-Physical Bridge & God-Level Resilience
 //!
 //! TEE (Trusted Execution Environment) oracles with thermodynamic proof-of-work.
 //! Bridges physical hardware attestation (SGX/TDX/SEV) with consensus layer.
@@ -13,7 +13,7 @@
 use std::collections::HashMap;
 use std::fmt;
 
-// ─── Errors ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Errors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TeeError {
@@ -46,7 +46,7 @@ impl fmt::Display for TeeError {
     }
 }
 
-// ─── TEE Types ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ TEE Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TeeType {
@@ -65,7 +65,7 @@ impl fmt::Display for TeeType {
     }
 }
 
-// ─── Config ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct TeeBridgeConfig {
@@ -82,7 +82,7 @@ pub struct TeeBridgeConfig {
 }
 
 impl TeeBridgeConfig {
-    pub fn default_stuartian() -> Self {
+    pub fn default_Topological() -> Self {
         Self {
             max_quote_age_ms: 30_000,
             min_aggregation_count: 3,
@@ -113,11 +113,11 @@ impl TeeBridgeConfig {
 
 impl Default for TeeBridgeConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
-// ─── TEE Quote ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ TEE Quote â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct TeeQuote {
@@ -212,7 +212,7 @@ impl fmt::Display for TeeQuote {
     }
 }
 
-// ─── TEE Record ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ TEE Record â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TeeRecord {
@@ -233,7 +233,7 @@ impl fmt::Display for TeeRecord {
     }
 }
 
-// ─── Bridge Engine ────────────────────────────────────────────────────────────
+// â”€â”€â”€ Bridge Engine â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 pub struct PhysicalTeeBridge {
     config: TeeBridgeConfig,
@@ -247,7 +247,7 @@ pub struct PhysicalTeeBridge {
 impl PhysicalTeeBridge {
     pub fn new() -> Self {
         Self {
-            config: TeeBridgeConfig::default_stuartian(),
+            config: TeeBridgeConfig::default_Topological(),
             counters: HashMap::new(),
             records: Vec::new(),
             total_work: 0.0,
@@ -428,7 +428,7 @@ impl fmt::Display for PhysicalTeeBridge {
     }
 }
 
-// ─── Public API ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ Public API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Create a TEE quote with auto-generated signature
 pub fn create_tee_quote(
@@ -459,7 +459,7 @@ pub fn compute_thermodynamic_work(measurement: &[u8]) -> f64 {
     PhysicalTeeBridge::compute_thermodynamic_work(measurement)
 }
 
-// ─── Utilities ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Utilities â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 fn fnv_hash_256(data: &[u8]) -> Vec<u8> {
     let mut hash = [0u8; 32];
@@ -494,7 +494,7 @@ fn fnv_hash_256(data: &[u8]) -> Vec<u8> {
     hash.to_vec()
 }
 
-// ─── Tests ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[cfg(test)]
 mod tests {
@@ -502,7 +502,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = TeeBridgeConfig::default_stuartian();
+        let config = TeeBridgeConfig::default_Topological();
         assert_eq!(config.max_quote_age_ms, 30_000);
         assert_eq!(config.min_aggregation_count, 3);
         assert!(config.enforce_counter);
@@ -510,7 +510,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = TeeBridgeConfig::default_stuartian();
+        let config = TeeBridgeConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 
@@ -518,7 +518,7 @@ mod tests {
     fn test_config_zero_age() {
         let config = TeeBridgeConfig {
             max_quote_age_ms: 0,
-            ..TeeBridgeConfig::default_stuartian()
+            ..TeeBridgeConfig::default_Topological()
         };
         assert_eq!(config.validate(), Err(TeeError::InvalidQuoteFormat));
     }
@@ -527,7 +527,7 @@ mod tests {
     fn test_config_zero_aggregation() {
         let config = TeeBridgeConfig {
             min_aggregation_count: 0,
-            ..TeeBridgeConfig::default_stuartian()
+            ..TeeBridgeConfig::default_Topological()
         };
         assert_eq!(
             config.validate(),
@@ -539,7 +539,7 @@ mod tests {
     fn test_config_negative_threshold() {
         let config = TeeBridgeConfig {
             thermodynamic_threshold: -1.0,
-            ..TeeBridgeConfig::default_stuartian()
+            ..TeeBridgeConfig::default_Topological()
         };
         assert!(matches!(
             config.validate(),
@@ -551,7 +551,7 @@ mod tests {
     fn test_config_empty_tees() {
         let config = TeeBridgeConfig {
             supported_tees: vec![],
-            ..TeeBridgeConfig::default_stuartian()
+            ..TeeBridgeConfig::default_Topological()
         };
         assert_eq!(config.validate(), Err(TeeError::UnsupportedTeeType));
     }
@@ -607,7 +607,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = TeeBridgeConfig::default_stuartian();
+        let config = TeeBridgeConfig::default_Topological();
         let engine = PhysicalTeeBridge::with_config(config);
         assert!(engine.is_ok());
     }
@@ -625,7 +625,7 @@ mod tests {
     fn test_verify_quote_unsupported_type() {
         let config = TeeBridgeConfig {
             supported_tees: vec![TeeType::Sgx],
-            ..TeeBridgeConfig::default_stuartian()
+            ..TeeBridgeConfig::default_Topological()
         };
         let mut engine = PhysicalTeeBridge::with_config(config).unwrap();
         let quote = TeeQuote::new(TeeType::Tdx, 1, vec![1], 0, 10000, 1);
@@ -701,7 +701,7 @@ mod tests {
     fn test_aggregate_quotes_insufficient() {
         let config = TeeBridgeConfig {
             min_aggregation_count: 5,
-            ..TeeBridgeConfig::default_stuartian()
+            ..TeeBridgeConfig::default_Topological()
         };
         let mut engine = PhysicalTeeBridge::with_config(config).unwrap();
         let quotes = vec![

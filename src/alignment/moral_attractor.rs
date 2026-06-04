@@ -1,4 +1,4 @@
-//! Moral Attractor — Sprint 70: Civilization-Scale Architecture
+﻿//! Moral Attractor â€” Sprint 70: Civilization-Scale Architecture
 //!
 //! Moral Manifold modeled as a Lyapunov attractor basin, providing
 //! ethical attention masking and convergence guarantees.
@@ -46,7 +46,7 @@ pub struct AttractorConfig {
     pub dimension: usize,
     /// Maximum basin capacity.
     pub max_capacity: usize,
-    /// Lyapunov convergence threshold (γ < threshold → stable).
+    /// Lyapunov convergence threshold (Î³ < threshold â†’ stable).
     pub convergence_threshold: f64,
     /// Attraction strength (higher = faster convergence).
     pub attraction_strength: f64,
@@ -55,8 +55,8 @@ pub struct AttractorConfig {
 }
 
 impl AttractorConfig {
-    /// Default Stuartian configuration.
-    pub fn default_stuartian() -> Self {
+    /// Default Topological configuration.
+    pub fn default_Topological() -> Self {
         Self {
             dimension: 8,
             max_capacity: 1000,
@@ -90,7 +90,7 @@ impl AttractorConfig {
 
 impl Default for AttractorConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -98,7 +98,7 @@ impl fmt::Display for AttractorConfig {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "AttractorConfig {{ dim: {}, capacity: {}, γ_thresh: {:.3}, strength: {:.3} }}",
+            "AttractorConfig {{ dim: {}, capacity: {}, Î³_thresh: {:.3}, strength: {:.3} }}",
             self.dimension, self.max_capacity, self.convergence_threshold, self.attraction_strength
         )
     }
@@ -111,7 +111,7 @@ pub struct MoralState {
     pub gei: Vec<f64>,
     /// Lyapunov function value (lower = more stable).
     pub lyapunov_value: f64,
-    /// Convergence coefficient γ.
+    /// Convergence coefficient Î³.
     pub gamma: f64,
     /// Whether the state is within the attractor basin.
     pub in_basin: bool,
@@ -125,13 +125,13 @@ impl fmt::Display for MoralState {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "MoralState {{ V: {:.4}, γ: {:.4}, basin: {}, mask: {:.3} }}",
+            "MoralState {{ V: {:.4}, Î³: {:.4}, basin: {}, mask: {:.3} }}",
             self.lyapunov_value, self.gamma, self.in_basin, self.attention_mask
         )
     }
 }
 
-/// Moral Attractor — Lyapunov attractor basin for ethical convergence.
+/// Moral Attractor â€” Lyapunov attractor basin for ethical convergence.
 pub struct MoralAttractor {
     config: AttractorConfig,
     /// Attractor center (ideal ethical state).
@@ -145,7 +145,7 @@ pub struct MoralAttractor {
 impl MoralAttractor {
     /// Create a new moral attractor with default configuration.
     pub fn new() -> Self {
-        let config = AttractorConfig::default_stuartian();
+        let config = AttractorConfig::default_Topological();
         let center = vec![1.0; config.dimension];
         Self {
             config,
@@ -167,7 +167,7 @@ impl MoralAttractor {
     }
 
     /// Compute Lyapunov function value for a GEI vector.
-    /// V(x) = ||x - center||² (squared Euclidean distance to attractor center)
+    /// V(x) = ||x - center||Â² (squared Euclidean distance to attractor center)
     pub fn compute_lyapunov(&self, gei: &[f64]) -> f64 {
         if gei.len() != self.center.len() {
             return f64::MAX;
@@ -178,8 +178,8 @@ impl MoralAttractor {
             .sum()
     }
 
-    /// Compute convergence coefficient γ from Lyapunov values.
-    /// γ = V_new / V_old (γ < 1 → contracting/stable)
+    /// Compute convergence coefficient Î³ from Lyapunov values.
+    /// Î³ = V_new / V_old (Î³ < 1 â†’ contracting/stable)
     pub fn compute_gamma(&self, v_old: f64, v_new: f64) -> f64 {
         if v_old < 1e-10 {
             return 0.0;
@@ -190,7 +190,7 @@ impl MoralAttractor {
     /// Compute ethical attention mask based on basin proximity.
     /// States closer to center get higher attention.
     pub fn compute_attention_mask(&self, lyapunov_value: f64) -> f64 {
-        // Exponential decay: mask = exp(-λ * V)
+        // Exponential decay: mask = exp(-Î» * V)
         let lambda = self.config.attraction_strength;
         (-lambda * lyapunov_value).exp().clamp(0.0, 1.0)
     }
@@ -333,7 +333,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = AttractorConfig::default_stuartian();
+        let config = AttractorConfig::default_Topological();
         assert_eq!(config.dimension, 8);
         assert_eq!(config.max_capacity, 1000);
         assert!((0.0..1.0).contains(&config.convergence_threshold));
@@ -341,13 +341,13 @@ mod tests {
 
     #[test]
     fn test_config_validate_valid() {
-        let config = AttractorConfig::default_stuartian();
+        let config = AttractorConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 
     #[test]
     fn test_config_validate_zero_dimension() {
-        let mut config = AttractorConfig::default_stuartian();
+        let mut config = AttractorConfig::default_Topological();
         config.dimension = 0;
         match config.validate() {
             Err(AttractorError::InvalidDimension(0)) => {}
@@ -357,7 +357,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_zero_capacity() {
-        let mut config = AttractorConfig::default_stuartian();
+        let mut config = AttractorConfig::default_Topological();
         config.max_capacity = 0;
         match config.validate() {
             Err(AttractorError::BasinFull(0)) => {}
@@ -367,7 +367,7 @@ mod tests {
 
     #[test]
     fn test_config_display() {
-        let config = AttractorConfig::default_stuartian();
+        let config = AttractorConfig::default_Topological();
         let s = format!("{}", config);
         assert!(s.contains("dim: 8"));
     }

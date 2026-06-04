@@ -1,6 +1,6 @@
-//! Intelligence Module — Autonomous Emergence Engine (Sprint 53)
+﻿//! Intelligence Module â€” Autonomous Emergence Engine (Sprint 53)
 //!
-//! Provides the Stuartian Emergence Engine for autonomous discovery of
+//! Provides the Topological Emergence Engine for autonomous discovery of
 //! emergent capabilities through Cross-Tensor Fusion.
 //!
 //! **Feature Gate:** `v3.5-planetary-emergence`

@@ -1,6 +1,6 @@
-//! Universal Feature Dictionary — Cross-model feature merging with Lyapunov stability.
+﻿//! Universal Feature Dictionary â€” Cross-model feature merging with Lyapunov stability.
 //!
-//! Implements FedAvg weighted by CE×SCT-Z, contrastive disentanglement
+//! Implements FedAvg weighted by CEÃ—SCT-Z, contrastive disentanglement
 //! to prevent feature collapse, and Lyapunov contraction verification.
 
 use std::collections::HashMap;
@@ -44,7 +44,7 @@ pub struct MergeConfig {
 }
 
 impl MergeConfig {
-    pub fn default_stuartian() -> Self {
+    pub fn default_Topological() -> Self {
         Self {
             lyapunov_threshold: 0.95,
             contrastive_lambda: 0.1,
@@ -55,7 +55,7 @@ impl MergeConfig {
 
 impl Default for MergeConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -104,7 +104,7 @@ impl FeatureEntry {
     }
 }
 
-/// Universal Feature Dictionary — merges features across models.
+/// Universal Feature Dictionary â€” merges features across models.
 #[derive(Debug, Clone)]
 pub struct UniversalFeatureDict {
     entries: HashMap<u64, FeatureEntry>,
@@ -135,7 +135,7 @@ impl UniversalFeatureDict {
         Ok(())
     }
 
-    /// Merge features from multiple models using FedAvg weighted by CE×Z.
+    /// Merge features from multiple models using FedAvg weighted by CEÃ—Z.
     pub fn merge(&self, feature_ids: &[u64]) -> Result<Vec<f64>, MergeError> {
         if feature_ids.is_empty() {
             return Err(MergeError::EmptyFeatures);

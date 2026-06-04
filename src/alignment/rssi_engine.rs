@@ -1,4 +1,4 @@
-//! RSSI Engine — Recursive Stuartian Self-Improvement with Apoptosis.
+//! RSSI Engine â€” Recursive Topological Self-Improvement with Byzantine_Eviction.
 //!
 //! Implements the 5-phase self-improvement cycle:
 //! 1. **Inference Phase:** SAE execution on complex prompts.
@@ -7,7 +7,7 @@
 //! 4. **Self-Improvement Step:** Controlled update `I_{n+1} = I_n + alpha * grad`.
 //! 5. **Validation Gate:** BFT consensus + cryptographic signature from 7+ Stewards.
 //!
-//! **Apoptosis Mechanism:** If validation fails or basin exit is detected,
+//! **Byzantine_Eviction Mechanism:** If validation fails or basin exit is detected,
 //! triggers automatic rollback and partial weight reset of unstable SAE layers.
 //!
 //! WASM-compatible: pure computation, no std::thread.
@@ -45,8 +45,8 @@ pub struct ImprovementResult {
     pub contraction_held: bool,
     /// Human correlation score (higher = better alignment).
     pub human_correlation: f64,
-    /// Apoptosis was triggered.
-    pub apoptosis_triggered: bool,
+    /// Byzantine_Eviction was triggered.
+    pub Byzantine_Eviction_triggered: bool,
 }
 
 /// Configuration for the RSSI Engine.
@@ -85,7 +85,7 @@ impl Default for RssiConfig {
 #[cfg(feature = "v3.3-rssi-evolution")]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RssiError {
-    /// Basin validation failed — system exiting ethical basin.
+    /// Basin validation failed â€” system exiting ethical basin.
     BasinExit(BasinExitWarning),
     /// Deception detected in ethical trajectory.
     DeceptionDetected,
@@ -97,8 +97,8 @@ pub enum RssiError {
     MaxIterationsReached,
     /// Invalid configuration.
     InvalidConfig(&'static str),
-    /// Apoptosis error during rollback.
-    ApoptosisFailed(&'static str),
+    /// Byzantine_Eviction error during rollback.
+    Byzantine_EvictionFailed(&'static str),
 }
 
 #[cfg(feature = "v3.3-rssi-evolution")]
@@ -122,18 +122,20 @@ impl core::fmt::Display for RssiError {
                 write!(f, "Insufficient signatures: {}/{}", received, required)
             }
             RssiError::MaxIterationsReached => {
-                write!(f, "Maximum iterations reached — forced review required")
+                write!(f, "Maximum iterations reached â€” forced review required")
             }
             RssiError::InvalidConfig(msg) => write!(f, "Invalid config: {}", msg),
-            RssiError::ApoptosisFailed(msg) => write!(f, "Apoptosis failed: {}", msg),
+            RssiError::Byzantine_EvictionFailed(msg) => {
+                write!(f, "Byzantine_Eviction failed: {}", msg)
+            }
         }
     }
 }
 
-/// Errors specific to apoptosis (rollback) operations.
+/// Errors specific to Byzantine_Eviction (rollback) operations.
 #[cfg(feature = "v3.3-rssi-evolution")]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ApoptosisError {
+pub enum Byzantine_EvictionError {
     /// Layer index out of bounds.
     LayerOutOfBounds { index: usize, max: usize },
     /// Rollback state unavailable.
@@ -141,14 +143,14 @@ pub enum ApoptosisError {
 }
 
 #[cfg(feature = "v3.3-rssi-evolution")]
-impl core::fmt::Display for ApoptosisError {
+impl core::fmt::Display for Byzantine_EvictionError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            ApoptosisError::LayerOutOfBounds { index, max } => {
+            Byzantine_EvictionError::LayerOutOfBounds { index, max } => {
                 write!(f, "Layer {} out of bounds (max {})", index, max)
             }
-            ApoptosisError::NoRollbackState => {
-                write!(f, "No rollback state available for apoptosis")
+            Byzantine_EvictionError::NoRollbackState => {
+                write!(f, "No rollback state available for Byzantine_Eviction")
             }
         }
     }
@@ -227,7 +229,7 @@ impl RssiEngine {
     // --- Phase 1: Inference Phase ---
 
     /// Phase 1: Execute SAE inference on complex prompts.
-    /// Returns feature activations as a Vector3 (X=Comprensión, Y=Generalización, Z=Ética).
+    /// Returns feature activations as a Vector3 (X=ComprensiÃ³n, Y=GeneralizaciÃ³n, Z=Ã‰tica).
     pub fn phase_inference(&self, prompt_features: &[f64]) -> Vector3 {
         if prompt_features.is_empty() {
             return self.current_state;
@@ -364,7 +366,7 @@ impl RssiEngine {
                     return Err(RssiError::DeceptionDetected);
                 }
                 Ok(DeceptionStatus::WithinBasin) => {}
-                Err(_) => {} // Insufficient data — proceed with caution
+                Err(_) => {} // Insufficient data â€” proceed with caution
             }
         }
 
@@ -387,7 +389,7 @@ impl RssiEngine {
             step_size,
             contraction_held,
             human_correlation,
-            apoptosis_triggered: false,
+            Byzantine_Eviction_triggered: false,
         };
 
         // Commit the improvement
@@ -446,24 +448,27 @@ impl RssiEngine {
         )
     }
 
-    // --- Apoptosis Mechanism ---
+    // --- Byzantine_Eviction Mechanism ---
 
-    /// Trigger apoptosis: rollback to previous state and reset unstable SAE layers.
-    pub fn trigger_apoptosis(&mut self, unstable_layers: &[usize]) -> Result<(), ApoptosisError> {
+    /// Trigger Byzantine_Eviction: rollback to previous state and reset unstable SAE layers.
+    pub fn trigger_Byzantine_Eviction(
+        &mut self,
+        unstable_layers: &[usize],
+    ) -> Result<(), Byzantine_EvictionError> {
         // Rollback interpretation state
         match self.previous_state.take() {
             Some(previous) => {
                 self.current_state = previous;
             }
             None => {
-                return Err(ApoptosisError::NoRollbackState);
+                return Err(Byzantine_EvictionError::NoRollbackState);
             }
         }
 
         // Reset unstable SAE layer weights to baseline
         for &layer_idx in unstable_layers {
             if layer_idx >= MAX_SAE_LAYERS {
-                return Err(ApoptosisError::LayerOutOfBounds {
+                return Err(Byzantine_EvictionError::LayerOutOfBounds {
                     index: layer_idx,
                     max: MAX_SAE_LAYERS,
                 });
@@ -634,7 +639,7 @@ mod tests {
         assert!(result.is_ok());
         let r = result.unwrap();
         assert!(r.contraction_held);
-        assert!(r.apoptosis_triggered == false);
+        assert!(r.Byzantine_Eviction_triggered == false);
     }
 
     #[test]
@@ -670,14 +675,14 @@ mod tests {
     }
 
     #[test]
-    fn test_apoptosis_rollback() {
+    fn test_Byzantine_Eviction_rollback() {
         let mut engine = RssiEngine::new();
         // Advance one step first
         engine.previous_state = Some(Vector3::new(0.2, 0.3, 0.4));
         engine.current_state = Vector3::new(0.5, 0.5, 0.5);
         engine.sae_weights[0] = 0.9;
 
-        let result = engine.trigger_apoptosis(&[0]);
+        let result = engine.trigger_Byzantine_Eviction(&[0]);
         assert!(result.is_ok());
         // State should be rolled back
         assert!((engine.current_state().x - 0.2).abs() < 1e-10);
@@ -686,21 +691,21 @@ mod tests {
     }
 
     #[test]
-    fn test_apoptosis_no_rollback_state() {
+    fn test_Byzantine_Eviction_no_rollback_state() {
         let mut engine = RssiEngine::new();
         engine.previous_state = None;
-        let result = engine.trigger_apoptosis(&[0]);
-        assert_eq!(result, Err(ApoptosisError::NoRollbackState));
+        let result = engine.trigger_Byzantine_Eviction(&[0]);
+        assert_eq!(result, Err(Byzantine_EvictionError::NoRollbackState));
     }
 
     #[test]
-    fn test_apoptosis_layer_out_of_bounds() {
+    fn test_Byzantine_Eviction_layer_out_of_bounds() {
         let mut engine = RssiEngine::new();
         engine.previous_state = Some(Vector3::new(0.2, 0.3, 0.4));
-        let result = engine.trigger_apoptosis(&[100]);
+        let result = engine.trigger_Byzantine_Eviction(&[100]);
         assert_eq!(
             result,
-            Err(ApoptosisError::LayerOutOfBounds {
+            Err(Byzantine_EvictionError::LayerOutOfBounds {
                 index: 100,
                 max: MAX_SAE_LAYERS
             })
@@ -746,8 +751,8 @@ mod tests {
     }
 
     #[test]
-    fn test_apoptosis_error_display() {
-        let e = ApoptosisError::NoRollbackState;
+    fn test_Byzantine_Eviction_error_display() {
+        let e = Byzantine_EvictionError::NoRollbackState;
         assert!(format!("{}", e).contains("rollback"));
     }
 

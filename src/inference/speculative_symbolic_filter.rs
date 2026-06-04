@@ -1,7 +1,7 @@
-//! Speculative Symbolic Filter — Sprint 73: Pragmatic Pivot & Asymptotic Hardening
+﻿//! Speculative Symbolic Filter â€” Sprint 73: Pragmatic Pivot & Asymptotic Hardening
 //!
-//! Filtro asíncrono post-hoc + speculative decoding + fallback autoregresivo.
-//! Sin traversal síncrono en hot-path. TTFT optimizado.
+//! Filtro asÃ­ncrono post-hoc + speculative decoding + fallback autoregresivo.
+//! Sin traversal sÃ­ncrono en hot-path. TTFT optimizado.
 
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
@@ -57,7 +57,7 @@ pub struct SpeculativeConfig {
 }
 
 impl SpeculativeConfig {
-    pub fn default_stuartian() -> Self {
+    pub fn default_Topological() -> Self {
         Self {
             max_queue_size: 256,
             alignment_threshold: 0.6,
@@ -87,7 +87,7 @@ impl SpeculativeConfig {
 
 impl Default for SpeculativeConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -186,7 +186,7 @@ impl fmt::Display for FilterResult {
     }
 }
 
-/// Speculative Symbolic Filter — Async post-hoc with autoregressive fallback
+/// Speculative Symbolic Filter â€” Async post-hoc with autoregressive fallback
 pub struct SpeculativeSymbolicFilter {
     config: SpeculativeConfig,
     queue: BinaryHeap<TokenCandidate>,
@@ -200,7 +200,7 @@ pub struct SpeculativeSymbolicFilter {
 impl SpeculativeSymbolicFilter {
     pub fn new() -> Self {
         Self {
-            config: SpeculativeConfig::default_stuartian(),
+            config: SpeculativeConfig::default_Topological(),
             queue: BinaryHeap::new(),
             gei_cache: [0.0; 8],
             gei_timestamp_ms: 0,
@@ -271,7 +271,7 @@ impl SpeculativeSymbolicFilter {
         while let Some(candidate) = candidates.pop() {
             self.total_processed += 1;
 
-            // Check latency budget — trigger fallback if exceeded
+            // Check latency budget â€” trigger fallback if exceeded
             if elapsed_ms > self.config.latency_budget_ms {
                 self.total_fallbacks += 1;
                 // Autoregressive fallback: pick highest semantic score
@@ -473,7 +473,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = SpeculativeConfig::default_stuartian();
+        let config = SpeculativeConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 

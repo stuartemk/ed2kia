@@ -1,4 +1,4 @@
-# Steward Onboarding Guide — ed2kIA Live Testnet
+﻿# Steward Onboarding Guide â€” ed2kIA Live Testnet
 
 > **Welcome, Steward.** This guide will take you from zero to connected on the ed2kIA live testnet in under 30 minutes. You will learn to launch a node, submit ethical feedback via the Steering Bridge, verify the Octahedron reacts, report issues, and join the steward community channel.
 
@@ -23,7 +23,7 @@
 
 ## 1. What is a Steward?
 
-A **Steward** is a trusted community member who operates an ed2kIA node on the live testnet and participates in **Human Steering** — the process of providing ethical feedback to the network's Sparse Autoencoder (SAE) interpretation layer.
+A **Steward** is a trusted community member who operates an ed2kIA node on the live testnet and participates in **Human Steering** â€” the process of providing ethical feedback to the network's Sparse Autoencoder (SAE) interpretation layer.
 
 ### Steward Responsibilities
 
@@ -31,7 +31,7 @@ A **Steward** is a trusted community member who operates an ed2kIA node on the l
 |---|---|
 | **Node Operation** | Run an ed2kIA node 24/7 on the testnet |
 | **Ethical Feedback** | Submit steering events via CLI or Web interface |
-| **Observation** | Monitor the Stuartian Octahedron for network health |
+| **Observation** | Monitor the Topological Octahedron for network health |
 | **Reporting** | Report anomalies, bugs, or ethical concerns |
 | **Community** | Participate in steward discussions and RFC reviews |
 
@@ -59,17 +59,17 @@ A **Steward** is a trusted community member who operates an ed2kIA node on the l
 
 | Dependency | Version | Install |
 |---|---|---|
-| Rust | ≥ 1.75 | `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \| sh` |
+| Rust | â‰¥ 1.75 | `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \| sh` |
 | Cargo | Latest | Included with Rust |
-| Git | ≥ 2.30 | `sudo apt install git` or [git-scm.com](https://git-scm.com) |
-| Docker (optional) | ≥ 20.10 | [docs.docker.com/get-docker](https://docs.docker.com/get-docker/) |
+| Git | â‰¥ 2.30 | `sudo apt install git` or [git-scm.com](https://git-scm.com) |
+| Docker (optional) | â‰¥ 20.10 | [docs.docker.com/get-docker](https://docs.docker.com/get-docker/) |
 
 ### Platform Support
 
-- ✅ Linux (Ubuntu 22.04+, Debian 12+, Arch)
-- ✅ macOS (Ventura 13+, ARM64/x86_64)
-- ✅ Windows (WSL2 required for POSIX scripts)
-- ⚠️ Bare Windows (cargo run works, scripts require WSL/Git Bash)
+- âœ… Linux (Ubuntu 22.04+, Debian 12+, Arch)
+- âœ… macOS (Ventura 13+, ARM64/x86_64)
+- âœ… Windows (WSL2 required for POSIX scripts)
+- âš ï¸ Bare Windows (cargo run works, scripts require WSL/Git Bash)
 
 ### Verify Installation
 
@@ -122,7 +122,7 @@ ls -la target/release/ed2kIA-node
 # Expected: ed2kIA-node v2.1.0-stable
 ```
 
-### Step 4: Alternative — Quickstart Script
+### Step 4: Alternative â€” Quickstart Script
 
 For automated setup (Linux/macOS/WSL):
 
@@ -130,7 +130,7 @@ For automated setup (Linux/macOS/WSL):
 ./scripts/quickstart.sh
 ```
 
-This script handles: dependency check → clone → build → test → config → launch.
+This script handles: dependency check â†’ clone â†’ build â†’ test â†’ config â†’ launch.
 
 ---
 
@@ -185,17 +185,17 @@ Your node log should show:
 
 | Indicator | What to Look For |
 |---|---|
-| ✅ P2P Listening | `P2P: Listening on /ip4/...` |
-| ✅ Peer Discovery | `Discovery: Found peer ...` |
-| ✅ GossipSub | `Subscribed to symbol-registry topic` |
-| ✅ CRDT Sync | `SymbolRegistry: CRDT sync initiated` |
-| ✅ HTTP API | `HTTP: API on :18080/api/v1` |
+| âœ… P2P Listening | `P2P: Listening on /ip4/...` |
+| âœ… Peer Discovery | `Discovery: Found peer ...` |
+| âœ… GossipSub | `Subscribed to symbol-registry topic` |
+| âœ… CRDT Sync | `SymbolRegistry: CRDT sync initiated` |
+| âœ… HTTP API | `HTTP: API on :18080/api/v1` |
 
 ---
 
 ## 5. Use the Steering Bridge
 
-The **Steering Bridge** is the interface for submitting ethical feedback to the network. Your feedback influences the Stuartian Context Tensor (SCT) that guides SAE interpretation.
+The **Steering Bridge** is the interface for submitting ethical feedback to the network. Your feedback influences the Topological Context Tensor (SCT) that guides SAE interpretation.
 
 ### CLI Steering Bridge
 
@@ -219,7 +219,7 @@ The **Steering Bridge** is the interface for submitting ethical feedback to the 
 2. Connect to your node's API (default: `http://localhost:18080`)
 3. Navigate to "Steering Bridge" tab
 4. Write your ethical feedback
-5. Submit — your feedback is signed and broadcast via GossipSub
+5. Submit â€” your feedback is signed and broadcast via GossipSub
 
 ### Feedback Guidelines
 
@@ -228,23 +228,23 @@ The **Steering Bridge** is the interface for submitting ethical feedback to the 
 | Be specific about what you observed | Submit vague or emotional feedback |
 | Reference specific token IDs or layers | Submit feedback without context |
 | Explain why an interpretation is ethical/unethical | Spam the bridge with duplicate feedback |
-| Consider the Golden Rule (X·Y·Z > 0) | Attempt to manipulate CE scores |
+| Consider the Golden Rule (XÂ·YÂ·Z > 0) | Attempt to manipulate CE scores |
 
 ### How Your Feedback Works
 
 ```
 Your Feedback
-    ↓
+    â†“
 Steering Bridge (signed with your node's Ed25519 key)
-    ↓
+    â†“
 GossipSub broadcast to all nodes
-    ↓
+    â†“
 SymbolRegistry CRDT merge (async conflict resolution)
-    ↓
+    â†“
 SCT Tensor update (X: benefit, Y: cost, Z: golden rule)
-    ↓
+    â†“
 SAE interpretation layer adjusts attention weights
-    ↓
+    â†“
 Octahedron visualization updates in real-time
 ```
 
@@ -252,7 +252,7 @@ Octahedron visualization updates in real-time
 
 ## 6. Verify Octahedron Reacts
 
-The **Stuartian Octahedron** is the 3D visualization of the network's collective ethical state. After submitting feedback, verify the Octahedron reacts.
+The **Topological Octahedron** is the 3D visualization of the network's collective ethical state. After submitting feedback, verify the Octahedron reacts.
 
 ### Steps
 
@@ -271,16 +271,16 @@ The **Stuartian Octahedron** is the 3D visualization of the network's collective
 |---|---|
 | Positive (constructive) | Green particles increase, Z-axis shifts upward |
 | Negative (destructive) | Red particles increase, Z-axis shifts downward |
-| Mixed (conflicting) | Particles converge toward equator (Z ≈ 0) |
+| Mixed (conflicting) | Particles converge toward equator (Z â‰ˆ 0) |
 | No feedback | Auto-rotation continues, particles stable |
 
 ### Axes Reference
 
 | Axis | Meaning | Range |
 |---|---|---|
-| **X** | Collective Benefit | 0.0 (none) → 1.0 (maximum) |
-| **Y** | Ethical Cost | 0.0 (none) → 1.0 (maximum) |
-| **Z** | Golden Rule Evaluation | -1.0 (rejected) → +1.0 (approved) |
+| **X** | Collective Benefit | 0.0 (none) â†’ 1.0 (maximum) |
+| **Y** | Ethical Cost | 0.0 (none) â†’ 1.0 (maximum) |
+| **Z** | Golden Rule Evaluation | -1.0 (rejected) â†’ +1.0 (approved) |
 
 ### Troubleshooting Octahedron
 
@@ -301,10 +301,10 @@ As a Steward, you are the eyes and ears of the network. Report issues promptly a
 
 | Category | Severity | Examples |
 |---|---|---|
-| **Critical** | P0 — Immediate | Node crash, data corruption, security vulnerability |
-| **High** | P1 — Within 24h | P2P discovery failure, CRDT divergence, CE miscalculation |
-| **Medium** | P2 — Within 1 week | UI bugs, performance degradation, documentation gaps |
-| **Low** | P3 — Backlog | Cosmetic issues, feature requests, typo fixes |
+| **Critical** | P0 â€” Immediate | Node crash, data corruption, security vulnerability |
+| **High** | P1 â€” Within 24h | P2P discovery failure, CRDT divergence, CE miscalculation |
+| **Medium** | P2 â€” Within 1 week | UI bugs, performance degradation, documentation gaps |
+| **Low** | P3 â€” Backlog | Cosmetic issues, feature requests, typo fixes |
 
 ### How to Report
 
@@ -313,10 +313,10 @@ As a Steward, you are the eyes and ears of the network. Report issues promptly a
 1. Go to: https://github.com/ed2kia/ed2kIA/issues
 2. Click "New Issue"
 3. Select appropriate template:
-   - 🐛 Bug Report
-   - ✨ Feature Request
-   - 📚 Documentation
-   - 🔒 Security (use private vulnerability reporting)
+   - ðŸ› Bug Report
+   - âœ¨ Feature Request
+   - ðŸ“š Documentation
+   - ðŸ”’ Security (use private vulnerability reporting)
 4. Fill in the template with:
    - **Title:** Clear, specific description
    - **Steps to Reproduce:** Numbered list
@@ -388,7 +388,7 @@ The steward channel is the primary communication hub for testnet stewards.
 
 ### Getting Started
 
-1. **Introduce yourself** in GitHub Discussions → "Steward Introductions"
+1. **Introduce yourself** in GitHub Discussions â†’ "Steward Introductions"
 2. **Share your setup:** OS, hardware, node status
 3. **Ask questions:** No question is too basic
 4. **Share learnings:** Help other stewards onboard
@@ -412,7 +412,7 @@ The steward channel is the primary communication hub for testnet stewards.
 
 ```bash
 # Check Rust version
-rustc --version  # Must be ≥ 1.75
+rustc --version  # Must be â‰¥ 1.75
 
 # Check for port conflicts
 sudo lsof -i :18080  # Linux/macOS
@@ -577,33 +577,33 @@ Congratulations! You are now an ed2kIA Steward. Here's what to do next:
 For stewards who want to understand the internals:
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    ed2kIA Network                            │
-├─────────────────────────────────────────────────────────────┤
-│                                                               │
-│  ┌──────────┐    ┌──────────┐    ┌──────────┐               │
-│  │ Node 1   │◄──►│ Node 2   │◄──►│ Node 3   │   ...         │
-│  │ (You)    │    │ (Peer)   │    │ (Peer)   │               │
-│  └────┬─────┘    └────┬─────┘    └────┬─────┘               │
-│       │               │               │                      │
-│       └───────────────┴───────────────┘                      │
-│                       │                                       │
-│              ┌────────▼────────┐                              │
-│              │   GossipSub     │                              │
-│              │   (libp2p)      │                              │
-│              └────────┬────────┘                              │
-│                       │                                       │
-│       ┌───────────────┼───────────────┐                      │
-│       │               │               │                      │
-│  ┌────▼─────┐  ┌──────▼──────┐  ┌────▼─────┐               │
-│  │ Symbol   │  │  Existential│  │  Stuart- │               │
-│  │Registry  │  │  Credit     │  │ ian      │               │
-│  │ (CRDT)   │  │  Ledger     │  │ Octahedron│              │
-│  └──────────┘  └─────────────┘  └──────────┘               │
-│                                                               │
-│  Human Steering → Steering Bridge → SCT → SAE → Octahedron   │
-│                                                               │
-└─────────────────────────────────────────────────────────────┘
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚                    ed2kIA Network                            â”‚
+â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚                                                               â”‚
+â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”    â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”    â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”               â”‚
+â”‚  â”‚ Node 1   â”‚â—„â”€â”€â–ºâ”‚ Node 2   â”‚â—„â”€â”€â–ºâ”‚ Node 3   â”‚   ...         â”‚
+â”‚  â”‚ (You)    â”‚    â”‚ (Peer)   â”‚    â”‚ (Peer)   â”‚               â”‚
+â”‚  â””â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”˜    â””â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”˜    â””â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”˜               â”‚
+â”‚       â”‚               â”‚               â”‚                      â”‚
+â”‚       â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜                      â”‚
+â”‚                       â”‚                                       â”‚
+â”‚              â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â–¼â”€â”€â”€â”€â”€â”€â”€â”€â”                              â”‚
+â”‚              â”‚   GossipSub     â”‚                              â”‚
+â”‚              â”‚   (libp2p)      â”‚                              â”‚
+â”‚              â””â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”˜                              â”‚
+â”‚                       â”‚                                       â”‚
+â”‚       â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”                      â”‚
+â”‚       â”‚               â”‚               â”‚                      â”‚
+â”‚  â”Œâ”€â”€â”€â”€â–¼â”€â”€â”€â”€â”€â”  â”Œâ”€â”€â”€â”€â”€â”€â–¼â”€â”€â”€â”€â”€â”€â”  â”Œâ”€â”€â”€â”€â–¼â”€â”€â”€â”€â”€â”               â”‚
+â”‚  â”‚ Symbol   â”‚  â”‚  Existentialâ”‚  â”‚  Stuart- â”‚               â”‚
+â”‚  â”‚Registry  â”‚  â”‚  Credit     â”‚  â”‚ ian      â”‚               â”‚
+â”‚  â”‚ (CRDT)   â”‚  â”‚  Ledger     â”‚  â”‚ Octahedronâ”‚              â”‚
+â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜               â”‚
+â”‚                                                               â”‚
+â”‚  Human Steering â†’ Steering Bridge â†’ SCT â†’ SAE â†’ Octahedron   â”‚
+â”‚                                                               â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 ```
 
 ---

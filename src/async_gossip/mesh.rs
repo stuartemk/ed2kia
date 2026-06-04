@@ -1,19 +1,19 @@
-//! Gossip Mesh — Configuración de GossipSub con tolerancia asíncrona.
+﻿//! Gossip Mesh â€” ConfiguraciÃ³n de GossipSub con tolerancia asÃ­ncrona.
 //!
-//! **Stuartian Law 5 (Múltiples Posibilidades):** Mesh dinámico sin maestros,
-//! tolerante a particiones, con reconexión automática.
+//! **Topological Law 5 (MÃºltiples Posibilidades):** Mesh dinÃ¡mico sin maestros,
+//! tolerante a particiones, con reconexiÃ³n automÃ¡tica.
 //!
 //! **Feature Gate:** `v2.1-async-gossip`
 //!
-//! ### Parámetros GossipSub
-//! | Parámetro | Valor | Descripción |
+//! ### ParÃ¡metros GossipSub
+//! | ParÃ¡metro | Valor | DescripciÃ³n |
 //! |---|---|---|
-//! | heartbeat_interval | 500ms | Frecuencia de mantención de mesh |
-//! | fanout_ttl | 120s | Vida útil de fanout entries |
-//! | mesh_n | 6 | Tamaño ideal del mesh |
-//! | mesh_n_low | 4 | Mínimo antes de IHAVE flood |
-//! | mesh_n_high | 12 | Máximo antes de prune |
-//! | validate_messages | true | Validación antes de reenvío |
+//! | heartbeat_interval | 500ms | Frecuencia de mantenciÃ³n de mesh |
+//! | fanout_ttl | 120s | Vida Ãºtil de fanout entries |
+//! | mesh_n | 6 | TamaÃ±o ideal del mesh |
+//! | mesh_n_low | 4 | MÃ­nimo antes de IHAVE flood |
+//! | mesh_n_high | 12 | MÃ¡ximo antes de prune |
+//! | validate_messages | true | ValidaciÃ³n antes de reenvÃ­o |
 //!
 //! ### Deterministic Message ID
 //! El message_id se calcula como SHA-256 del payload hash para evitar
@@ -27,16 +27,16 @@ use std::collections::{BTreeMap, HashMap};
 use std::fmt;
 use std::time::{Duration, Instant};
 
-/// Error en la configuración o gestión del mesh GossipSub.
+/// Error en la configuraciÃ³n o gestiÃ³n del mesh GossipSub.
 #[derive(Debug)]
 pub enum GossipMeshError {
-    /// Parámetro de mesh inválido.
+    /// ParÃ¡metro de mesh invÃ¡lido.
     InvalidParameter(String),
-    /// Error de conexión.
+    /// Error de conexiÃ³n.
     ConnectionError(String),
-    /// Topología inválida.
+    /// TopologÃ­a invÃ¡lida.
     InvalidTopology(String),
-    /// Message ID colisión detectada.
+    /// Message ID colisiÃ³n detectada.
     MessageIdCollision(String),
 }
 
@@ -61,7 +61,7 @@ impl fmt::Display for GossipMeshError {
 
 impl std::error::Error for GossipMeshError {}
 
-/// Estado de conexión de un peer en el mesh.
+/// Estado de conexiÃ³n de un peer en el mesh.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PeerState {
     /// Peer activo en el mesh.
@@ -85,16 +85,16 @@ impl fmt::Display for PeerState {
     }
 }
 
-/// Información de un peer en el mesh.
+/// InformaciÃ³n de un peer en el mesh.
 #[derive(Debug, Clone)]
 pub struct PeerInfo {
-    /// Identificador único del peer.
+    /// Identificador Ãºnico del peer.
     pub peer_id: String,
     /// Estado actual del peer.
     pub state: PeerState,
     /// Latencia promedio en milisegundos.
     pub avg_latency_ms: f64,
-    /// Último heartbeat recibido.
+    /// Ãšltimo heartbeat recibido.
     pub last_heartbeat: Instant,
     /// Contador de backoff actual.
     pub backoff_count: u32,
@@ -128,33 +128,33 @@ impl PeerInfo {
     }
 }
 
-/// Configuración del mesh GossipSub.
+/// ConfiguraciÃ³n del mesh GossipSub.
 #[derive(Debug, Clone)]
 pub struct MeshConfig {
-    /// Tamaño ideal del mesh (mesh_n = 6).
+    /// TamaÃ±o ideal del mesh (mesh_n = 6).
     pub mesh_size: usize,
-    /// Tamaño mínimo del mesh (mesh_n_low = 4).
+    /// TamaÃ±o mÃ­nimo del mesh (mesh_n_low = 4).
     pub mesh_min: usize,
-    /// Tamaño máximo del mesh (mesh_n_high = 12).
+    /// TamaÃ±o mÃ¡ximo del mesh (mesh_n_high = 12).
     pub mesh_max: usize,
-    /// Grado de propagación (D = 6).
+    /// Grado de propagaciÃ³n (D = 6).
     pub fanout: usize,
     /// Intervalo de heartbeat en milisegundos (500ms).
     pub heartbeat_interval_ms: u64,
-    /// Vida útil de fanout entries en segundos (120s).
+    /// Vida Ãºtil de fanout entries en segundos (120s).
     pub fanout_ttl_s: u64,
-    /// Validar mensajes antes de reenvío (true).
+    /// Validar mensajes antes de reenvÃ­o (true).
     pub validate_messages: bool,
     /// ID del nodo local para message_id determinista.
     pub local_peer_id: String,
 }
 
 impl MeshConfig {
-    /// Crea configuración por defecto para ed2kIA.
+    /// Crea configuraciÃ³n por defecto para ed2kIA.
     ///
-    /// Parámetros optimizados para redes de 50-500 nodos:
-    /// - heartbeat: 500ms para detección rápida de particiones
-    /// - fanout_ttl: 120s para propagación completa
+    /// ParÃ¡metros optimizados para redes de 50-500 nodos:
+    /// - heartbeat: 500ms para detecciÃ³n rÃ¡pida de particiones
+    /// - fanout_ttl: 120s para propagaciÃ³n completa
     /// - mesh_n: 6 para balance entre latencia y ancho de banda
     pub fn default_ed2kia() -> Self {
         Self {
@@ -169,12 +169,12 @@ impl MeshConfig {
         }
     }
 
-    /// Construye configuración personalizada.
+    /// Construye configuraciÃ³n personalizada.
     pub fn builder() -> MeshConfigBuilder {
         MeshConfigBuilder::default()
     }
 
-    /// Valida los parámetros del mesh.
+    /// Valida los parÃ¡metros del mesh.
     ///
     /// Invariantes:
     /// - mesh_min <= mesh_size <= mesh_max
@@ -258,19 +258,19 @@ pub struct MeshConfigBuilder {
 }
 
 impl MeshConfigBuilder {
-    /// Establece el tamaño ideal del mesh.
+    /// Establece el tamaÃ±o ideal del mesh.
     pub fn mesh_size(mut self, size: usize) -> Self {
         self.mesh_size = size;
         self
     }
 
-    /// Establece el tamaño mínimo del mesh.
+    /// Establece el tamaÃ±o mÃ­nimo del mesh.
     pub fn mesh_min(mut self, min: usize) -> Self {
         self.mesh_min = min;
         self
     }
 
-    /// Establece el tamaño máximo del mesh.
+    /// Establece el tamaÃ±o mÃ¡ximo del mesh.
     pub fn mesh_max(mut self, max: usize) -> Self {
         self.mesh_max = max;
         self
@@ -294,7 +294,7 @@ impl MeshConfigBuilder {
         self
     }
 
-    /// Establece si validar mensajes antes de reenvío.
+    /// Establece si validar mensajes antes de reenvÃ­o.
     pub fn validate_messages(mut self, validate: bool) -> Self {
         self.validate_messages = validate;
         self
@@ -306,7 +306,7 @@ impl MeshConfigBuilder {
         self
     }
 
-    /// Construye la configuración, validando parámetros.
+    /// Construye la configuraciÃ³n, validando parÃ¡metros.
     pub fn build(self) -> Result<MeshConfig, GossipMeshError> {
         let config = MeshConfig {
             mesh_size: self.mesh_size,
@@ -332,7 +332,7 @@ pub struct MeshMessage {
     pub origin: String,
     /// Payload del mensaje.
     pub payload: Vec<u8>,
-    /// Timestamp de creación.
+    /// Timestamp de creaciÃ³n.
     pub timestamp: u64,
     /// Secuencia del origen.
     pub sequence: u64,
@@ -357,7 +357,7 @@ impl MeshMessage {
 
     /// Calcula el message_id como hash del payload.
     /// Usa una suma simple de bytes para evitar dependencias externas.
-    /// En producción, usar SHA-256.
+    /// En producciÃ³n, usar SHA-256.
     fn compute_message_id(payload: &[u8]) -> String {
         let mut hash: u64 = 0xcbf29ce484222325; // FNV offset basis
         for &byte in payload {
@@ -367,7 +367,7 @@ impl MeshMessage {
         format!("{:016x}", hash)
     }
 
-    /// Verifica si el mensaje está expirado.
+    /// Verifica si el mensaje estÃ¡ expirado.
     pub fn is_expired(&self, ttl_s: u64) -> bool {
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -377,33 +377,33 @@ impl MeshMessage {
     }
 }
 
-/// Mesh GossipSub con tolerancia asíncrona.
+/// Mesh GossipSub con tolerancia asÃ­ncrona.
 ///
-/// **Stuartian Law 5:** Sin puntos únicos de fallo.
+/// **Topological Law 5:** Sin puntos Ãºnicos de fallo.
 /// La red se auto-organiza y tolera particiones.
 ///
 /// ### Invariantes
-/// 1. mesh_min <= peers_meshed <= mesh_max (después de heartbeat)
+/// 1. mesh_min <= peers_meshed <= mesh_max (despuÃ©s de heartbeat)
 /// 2. Mensajes duplicados se detectan por message_id
 /// 3. Peers lentos reciben prune con backoff exponencial
 /// 4. Merge de particiones es idempotente
 pub struct GossipMesh {
-    /// Configuración del mesh.
+    /// ConfiguraciÃ³n del mesh.
     pub config: MeshConfig,
     /// Peers activos en el mesh.
     peers: BTreeMap<String, PeerInfo>,
-    /// Mensajes recibidos (deduplicación).
+    /// Mensajes recibidos (deduplicaciÃ³n).
     seen_messages: HashMap<String, Instant>,
     /// Cola de mensajes pendientes.
     pending_messages: Vec<MeshMessage>,
     /// Contador de secuencia local.
     sequence_counter: u64,
-    /// Momento del último heartbeat.
+    /// Momento del Ãºltimo heartbeat.
     last_heartbeat: Instant,
 }
 
 impl GossipMesh {
-    /// Crea un nuevo mesh con configuración especificada.
+    /// Crea un nuevo mesh con configuraciÃ³n especificada.
     pub fn new(config: MeshConfig) -> Result<Self, GossipMeshError> {
         config.validate()?;
         Ok(Self {
@@ -416,7 +416,7 @@ impl GossipMesh {
         })
     }
 
-    /// Inicializa el mesh con configuración por defecto.
+    /// Inicializa el mesh con configuraciÃ³n por defecto.
     pub fn default_mesh() -> Self {
         Self {
             config: MeshConfig::default_ed2kia(),
@@ -428,9 +428,9 @@ impl GossipMesh {
         }
     }
 
-    /// Añade un peer al mesh.
+    /// AÃ±ade un peer al mesh.
     ///
-    /// Si el mesh está en mesh_max, el peer se añade como fanout.
+    /// Si el mesh estÃ¡ en mesh_max, el peer se aÃ±ade como fanout.
     pub fn add_peer(&mut self, peer_id: String) {
         let state = if self.peers.len() >= self.config.mesh_max {
             PeerState::Fanout
@@ -457,7 +457,7 @@ impl GossipMesh {
 
     /// Publica un mensaje en el mesh.
     ///
-    /// Retorna Err si el message_id ya fue visto (deduplicación).
+    /// Retorna Err si el message_id ya fue visto (deduplicaciÃ³n).
     pub fn publish(&mut self, payload: Vec<u8>) -> Result<MeshMessage, GossipMeshError> {
         self.sequence_counter += 1;
         let msg = MeshMessage::new(
@@ -466,7 +466,7 @@ impl GossipMesh {
             self.sequence_counter,
         );
 
-        // Deduplicación
+        // DeduplicaciÃ³n
         if self.seen_messages.contains_key(&msg.message_id) {
             return Err(GossipMeshError::MessageIdCollision(format!(
                 "Duplicate message_id: {}",
@@ -482,12 +482,12 @@ impl GossipMesh {
 
     /// Inyecta un mensaje recibido de un peer.
     pub fn inject_message(&mut self, msg: MeshMessage, _from_peer: &str) -> bool {
-        // Deduplicación
+        // DeduplicaciÃ³n
         if self.seen_messages.contains_key(&msg.message_id) {
             return false;
         }
 
-        // Validación opcional
+        // ValidaciÃ³n opcional
         if self.config.validate_messages && msg.payload.is_empty() {
             return false;
         }
@@ -502,7 +502,7 @@ impl GossipMesh {
     ///
     /// - Detecta peers lentos y los prunea
     /// - Limpia mensajes expirados
-    /// - Rebalancea el mesh si está por debajo de mesh_min
+    /// - Rebalancea el mesh si estÃ¡ por debajo de mesh_min
     pub fn heartbeat(&mut self) {
         self.last_heartbeat = Instant::now();
 
@@ -562,17 +562,17 @@ impl GossipMesh {
         std::mem::take(&mut self.pending_messages)
     }
 
-    /// Retorna el número total de peers.
+    /// Retorna el nÃºmero total de peers.
     pub fn peer_count(&self) -> usize {
         self.peers.len()
     }
 
-    /// Verifica si el mesh está saludable (>= mesh_min peers meshed).
+    /// Verifica si el mesh estÃ¡ saludable (>= mesh_min peers meshed).
     pub fn is_healthy(&self) -> bool {
         self.meshed_peers().len() >= self.config.mesh_min
     }
 
-    /// Retorna el backoff para un peer específico.
+    /// Retorna el backoff para un peer especÃ­fico.
     pub fn peer_backoff_ms(&self, peer_id: &str) -> Option<u64> {
         self.peers.get(peer_id).map(|p| p.backoff_ms())
     }

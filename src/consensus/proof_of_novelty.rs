@@ -1,4 +1,4 @@
-//! Proof of Novelty — Sprint 80: Gödelian Synthesis & Architecture of Absolute Incompleteness
+﻿//! Proof of Novelty â€” Sprint 80: Undecidable Synthesis & Architecture of Absolute Incompleteness
 //!
 //! Topological novelty proof prevents semantic DDoS and uVDF farming.
 //! CE is weighted by semantic entropy: zero reward for already-mapped areas,
@@ -14,7 +14,7 @@
 use std::collections::HashMap;
 use std::fmt;
 
-// ─── Errors ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Errors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum NoveltyError {
@@ -39,7 +39,7 @@ impl fmt::Display for NoveltyError {
     }
 }
 
-// ─── Coverage Map ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ Coverage Map â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct CoverageMap {
@@ -113,7 +113,7 @@ impl fmt::Display for CoverageMap {
     }
 }
 
-// ─── Novelty Record ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Novelty Record â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct NoveltyRecord {
@@ -137,7 +137,7 @@ impl fmt::Display for NoveltyRecord {
     }
 }
 
-// ─── Config ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct NoveltyConfig {
@@ -154,7 +154,7 @@ pub struct NoveltyConfig {
 }
 
 impl NoveltyConfig {
-    pub fn default_stuartian() -> Self {
+    pub fn default_Topological() -> Self {
         Self {
             embedding_dim: 768,
             entropy_threshold: 0.3,
@@ -180,11 +180,11 @@ impl NoveltyConfig {
 
 impl Default for NoveltyConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
-// ─── Proof of Novelty Engine ──────────────────────────────────────────────────
+// â”€â”€â”€ Proof of Novelty Engine â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 pub struct ProofOfNovelty {
     config: NoveltyConfig,
@@ -196,7 +196,7 @@ pub struct ProofOfNovelty {
 
 impl ProofOfNovelty {
     pub fn new() -> Self {
-        let config = NoveltyConfig::default_stuartian();
+        let config = NoveltyConfig::default_Topological();
         Self {
             coverage: CoverageMap::new(
                 config.embedding_dim,
@@ -364,7 +364,7 @@ impl fmt::Display for ProofOfNovelty {
     }
 }
 
-// ─── Public Standalone Functions ──────────────────────────────────────────────
+// â”€â”€â”€ Public Standalone Functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Compute topological novelty of a prompt embedding against a coverage map.
 /// Returns 0.0 if fully covered, 1.0 if completely novel.
@@ -447,7 +447,7 @@ fn fnv_hash_64(data: &[u8]) -> u64 {
     hash
 }
 
-// ─── Tests ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[cfg(test)]
 mod tests {
@@ -455,7 +455,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = NoveltyConfig::default_stuartian();
+        let config = NoveltyConfig::default_Topological();
         assert_eq!(config.embedding_dim, 768);
         assert_eq!(config.entropy_threshold, 0.3);
         assert_eq!(config.max_ce_reward, 100.0);
@@ -463,7 +463,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = NoveltyConfig::default_stuartian();
+        let config = NoveltyConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 
@@ -471,7 +471,7 @@ mod tests {
     fn test_config_zero_dim() {
         let config = NoveltyConfig {
             embedding_dim: 0,
-            ..NoveltyConfig::default_stuartian()
+            ..NoveltyConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }
@@ -480,7 +480,7 @@ mod tests {
     fn test_config_invalid_entropy() {
         let config = NoveltyConfig {
             entropy_threshold: 1.5,
-            ..NoveltyConfig::default_stuartian()
+            ..NoveltyConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }
@@ -557,7 +557,7 @@ mod tests {
     fn test_engine_with_config() {
         let config = NoveltyConfig {
             embedding_dim: 3,
-            ..NoveltyConfig::default_stuartian()
+            ..NoveltyConfig::default_Topological()
         };
         let engine = ProofOfNovelty::with_config(config);
         assert!(engine.is_ok());
@@ -576,7 +576,7 @@ mod tests {
         let mut engine = ProofOfNovelty::with_config(NoveltyConfig {
             embedding_dim: 3,
             coverage_radius: 2.0,
-            ..NoveltyConfig::default_stuartian()
+            ..NoveltyConfig::default_Topological()
         })
         .unwrap();
         let embedding = vec![1.0, 2.0, 3.0];

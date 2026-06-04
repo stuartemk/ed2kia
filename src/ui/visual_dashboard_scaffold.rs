@@ -1,4 +1,4 @@
-//! Visual Dashboard Scaffold \u2014 Sprint 83: The Empirical Strike & Visual Proof
+﻿//! Visual Dashboard Scaffold \u2014 Sprint 83: The Empirical Strike & Visual Proof
 //!
 //! WebSocket/HTTP endpoint scaffold for streaming SAE activations and
 //! topological metrics. WebGL placeholder for 3D manifold visualization.
@@ -9,7 +9,7 @@ use std::fmt;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 
-// ─── Errors ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Errors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub enum DashboardError {
@@ -38,7 +38,7 @@ impl fmt::Display for DashboardError {
     }
 }
 
-// ─── Data Structures ──────────────────────────────────────────────────────────
+// â”€â”€â”€ Data Structures â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Single SAE activation point in 3D topological space.
 #[derive(Debug, Clone)]
@@ -237,7 +237,7 @@ pub struct DashboardConfig {
 }
 
 impl DashboardConfig {
-    pub fn default_stuartian() -> Self {
+    pub fn default_Topological() -> Self {
         Self {
             port: 8787,
             max_connections: 100,
@@ -266,7 +266,7 @@ impl DashboardConfig {
 
 impl Default for DashboardConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -445,7 +445,7 @@ impl fmt::Display for VisualDashboardScaffold {
     }
 }
 
-// ─── Standalone Functions ─────────────────────────────────────────────────────
+// â”€â”€â”€ Standalone Functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Start visual stream server (standalone for CLI integration).
 pub fn start_visual_stream_server(port: u16) -> Result<ServerHandle, Box<dyn std::error::Error>> {
@@ -466,7 +466,7 @@ pub fn get_manifold_snapshot() -> ManifoldData {
     ManifoldData::new(0)
 }
 
-// ─── Tests ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[cfg(test)]
 mod tests {
@@ -474,7 +474,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = DashboardConfig::default_stuartian();
+        let config = DashboardConfig::default_Topological();
         assert_eq!(config.port, 8787);
         assert_eq!(config.max_connections, 100);
         assert_eq!(config.divergence_threshold, 2.0);

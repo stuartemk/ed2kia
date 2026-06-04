@@ -1,4 +1,4 @@
-//! SCT — Stuartian Coherence Tensor module.
+﻿//! SCT â€” Topological Coherence Tensor module.
 //!
 //! Contains the Z-axis calibration layer for auditable ethical coherence computation.
 

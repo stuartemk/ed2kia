@@ -1,17 +1,17 @@
-//! Evolutionary Quarantine — Sprint 76: Ontological Debugging & Thermodynamic Pivots
+﻿//! Evolutionary Quarantine â€” Sprint 76: Ontological Debugging & Thermodynamic Pivots
 //!
-//! Resuelve el bug ontológico: SCT Guard → conservadurismo algorítmico / censura estática.
+//! Resuelve el bug ontolÃ³gico: SCT Guard â†’ conservadurismo algorÃ­tmico / censura estÃ¡tica.
 //!
-//! La cuarentena evolutiva aísla nodos con Z<0 en un shard de prueba,
-//! donde son validados por simulación macro. La reintegración ocurre
-//! si el nodo mejora las métricas globales. La ética es un atractor dinámico,
-//! no un muro estático.
+//! La cuarentena evolutiva aÃ­sla nodos con Z<0 en un shard de prueba,
+//! donde son validados por simulaciÃ³n macro. La reintegraciÃ³n ocurre
+//! si el nodo mejora las mÃ©tricas globales. La Ã©tica es un atractor dinÃ¡mico,
+//! no un muro estÃ¡tico.
 //!
-//! # Garantías
+//! # GarantÃ­as
 //!
-//! - Complejidad: O(1) para enrutamiento a cuarentena, O(n) para evaluación de reintegración
+//! - Complejidad: O(1) para enrutamiento a cuarentena, O(n) para evaluaciÃ³n de reintegraciÃ³n
 //! - Memoria: O(n) para nodos en cuarentena
-//! - Prevención de cascada: máximo 20% de la red en cuarentena simultánea
+//! - PrevenciÃ³n de cascada: mÃ¡ximo 20% de la red en cuarentena simultÃ¡nea
 
 use std::collections::HashMap;
 use std::fmt;
@@ -59,15 +59,15 @@ impl std::error::Error for QuarantineError {}
 /// Quarantine state machine
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum QuarantineState {
-    /// Active — normal operation
+    /// Active â€” normal operation
     Active,
-    /// Observing — monitoring for anomalies
+    /// Observing â€” monitoring for anomalies
     Observing,
-    /// Quarantined — isolated in test shard
+    /// Quarantined â€” isolated in test shard
     Quarantined,
-    /// Simulating — running macro simulation for reintegration
+    /// Simulating â€” running macro simulation for reintegration
     Simulating,
-    /// Reintegrating — attempting re-entry
+    /// Reintegrating â€” attempting re-entry
     Reintegrating,
 }
 
@@ -101,8 +101,8 @@ pub struct QuarantineConfig {
 }
 
 impl QuarantineConfig {
-    /// Default Stuartian configuration.
-    pub fn default_stuartian() -> Self {
+    /// Default Topological configuration.
+    pub fn default_Topological() -> Self {
         Self {
             observation_threshold: -0.5,
             quarantine_threshold: -1.0,
@@ -130,7 +130,7 @@ impl QuarantineConfig {
 
 impl Default for QuarantineConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -195,7 +195,7 @@ impl fmt::Display for QuarantineRecord {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "QuarantineRecord {{ id={}, {}→{}, sct_z={:.4}, reason=\"{}\" }}",
+            "QuarantineRecord {{ id={}, {}â†’{}, sct_z={:.4}, reason=\"{}\" }}",
             self.node_id, self.from_state, self.to_state, self.sct_z, self.reason
         )
     }
@@ -211,10 +211,10 @@ pub struct EvolutionaryQuarantine {
 }
 
 impl EvolutionaryQuarantine {
-    /// Create a new engine with default Stuartian configuration.
+    /// Create a new engine with default Topological configuration.
     pub fn new() -> Self {
         Self {
-            config: QuarantineConfig::default_stuartian(),
+            config: QuarantineConfig::default_Topological(),
             nodes: HashMap::new(),
             total_nodes: 0,
             records: Vec::new(),
@@ -345,7 +345,7 @@ impl EvolutionaryQuarantine {
         node.state_entered_ms = current_ms;
 
         // Simulate macro evaluation: score based on SCT-Z improvement potential
-        node.simulation_score = 1.0 + node.sct_z; // Higher SCT-Z → better score
+        node.simulation_score = 1.0 + node.sct_z; // Higher SCT-Z â†’ better score
 
         let record = QuarantineRecord {
             node_id,
@@ -426,7 +426,7 @@ impl EvolutionaryQuarantine {
             from_state: old_state,
             to_state: QuarantineState::Active,
             sct_z: node.sct_z,
-            reason: "Reintegration completed — node returned to active mesh".to_string(),
+            reason: "Reintegration completed â€” node returned to active mesh".to_string(),
             timestamp_ms: current_ms,
         };
         self.records.push(record);
@@ -510,7 +510,7 @@ impl fmt::Display for EvolutionaryQuarantine {
     }
 }
 
-// ─── Public Standalone Function ────────────────────────────────────────────────
+// â”€â”€â”€ Public Standalone Function â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Route a node to quarantine based on SCT-Z value.
 ///
@@ -533,7 +533,7 @@ pub fn route_to_quarantine(
     QuarantineState::Simulating
 }
 
-// ─── Tests ─────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[cfg(test)]
 mod tests {
@@ -541,7 +541,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = QuarantineConfig::default_stuartian();
+        let config = QuarantineConfig::default_Topological();
         assert!(config.validate().is_ok());
         assert_eq!(config.max_quarantine_fraction, 0.2);
     }
@@ -550,7 +550,7 @@ mod tests {
     fn test_config_invalid_fraction() {
         let config = QuarantineConfig {
             max_quarantine_fraction: 0.0,
-            ..QuarantineConfig::default_stuartian()
+            ..QuarantineConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }
@@ -559,7 +559,7 @@ mod tests {
     fn test_config_zero_cycles() {
         let config = QuarantineConfig {
             min_simulation_cycles: 0,
-            ..QuarantineConfig::default_stuartian()
+            ..QuarantineConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }

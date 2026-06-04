@@ -1,4 +1,4 @@
-//! Migration Protocol — Cluster Onboarding for Large Data Centers ("Gran Migración").
+﻿//! Migration Protocol â€” Cluster Onboarding for Large Data Centers ("Gran MigraciÃ³n").
 //!
 //! Enables seamless integration of new clusters into the ed2kIA network through
 //! cooperative handshake negotiation, transport selection, and SCT-supervised
@@ -7,8 +7,8 @@
 //!
 //! **Migration Flow:**
 //! ```text
-//! New Cluster → MigrationHandshake → negotiate_migration() → MigrationToken
-//!     → Bootstrap Routes → SCT Validation → Cluster Integrated
+//! New Cluster â†’ MigrationHandshake â†’ negotiate_migration() â†’ MigrationToken
+//!     â†’ Bootstrap Routes â†’ SCT Validation â†’ Cluster Integrated
 //! ```
 //!
 //! **Design Principles:**
@@ -18,9 +18,9 @@
 //! - CE-aware: Migration costs tracked via Existential Credit ledger.
 //! - Zero telemetry: Biometric and sensitive data remains local-only.
 //!
-//! **Reference:** Sprint 47 — Omni-Node Integration & Symbiotic Ignition Sequence
+//! **Reference:** Sprint 47 â€” Omni-Node Integration & Symbiotic Ignition Sequence
 
-use crate::alignment::sct_core::{SCTDecision, StuartianTensor};
+use crate::alignment::sct_core::{SCTDecision, TopologicalTensor};
 use crate::pillars::steganographic::transport_rotator::{TransportHealth, TransportType};
 use std::collections::HashMap;
 
@@ -97,7 +97,7 @@ impl std::fmt::Display for MigrationError {
     }
 }
 
-/// Migration Handshake — Initial contact from a new cluster.
+/// Migration Handshake â€” Initial contact from a new cluster.
 ///
 /// Contains the cluster's capabilities, preferred transports,
 /// and cryptographic signature for cooperative onboarding.
@@ -212,7 +212,7 @@ impl MigrationHandshake {
     }
 }
 
-/// Migration Token — Bootstrap credentials for integrated clusters.
+/// Migration Token â€” Bootstrap credentials for integrated clusters.
 ///
 /// Generated after successful negotiation, this token contains
 /// the bootstrap routes, SCT thresholds, and CE limits for the
@@ -291,7 +291,7 @@ impl MigrationToken {
     }
 }
 
-/// Migration Negotiator — Coordinates cluster onboarding.
+/// Migration Negotiator â€” Coordinates cluster onboarding.
 ///
 /// Manages the migration negotiation process, including SCT validation,
 /// transport selection, and token generation.
@@ -346,7 +346,7 @@ impl MigrationNegotiator {
     pub fn negotiate_migration(
         &mut self,
         handshake: &MigrationHandshake,
-        sct_tensor: &StuartianTensor,
+        sct_tensor: &TopologicalTensor,
     ) -> Result<MigrationToken, MigrationError> {
         // Step 1: Verify handshake signature
         handshake.verify_signature()?;
@@ -528,8 +528,8 @@ mod tests {
         .unwrap()
     }
 
-    fn make_valid_tensor(z: f32) -> StuartianTensor {
-        StuartianTensor { x: 0.7, y: 0.3, z }
+    fn make_valid_tensor(z: f32) -> TopologicalTensor {
+        TopologicalTensor { x: 0.7, y: 0.3, z }
     }
 
     #[test]

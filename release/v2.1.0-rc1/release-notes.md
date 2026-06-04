@@ -1,9 +1,9 @@
-# Release Notes — ed2kIA v2.1.0-rc1
+﻿# Release Notes â€” ed2kIA v2.1.0-rc1
 
 **Date:** 2026-05-22
 **Version:** v2.1.0-rc1 (Release Candidate 1)
-**Sprint:** 32 — "Test Hardening, Remediation & Release Candidate Preparation"
-**Status:** ✅ RELEASE CANDIDATE READY
+**Sprint:** 32 â€” "Test Hardening, Remediation & Release Candidate Preparation"
+**Status:** âœ… RELEASE CANDIDATE READY
 
 ---
 
@@ -29,7 +29,7 @@ This release candidate represents the culmination of **Sprint 32**, an exclusive
 
 ### Scope
 
-This release candidate includes **10 test fixes** across **5 source files**, addressing pre-existing failures inherited from Sprint 30. All fixes are strictly limited to test code and test infrastructure — no production code was modified for feature purposes.
+This release candidate includes **10 test fixes** across **5 source files**, addressing pre-existing failures inherited from Sprint 30. All fixes are strictly limited to test code and test infrastructure â€” no production code was modified for feature purposes.
 
 ### Modified Files
 
@@ -160,7 +160,7 @@ assert_eq!(report.version, ed2kia::version());  // Dynamic comparison
 
 ## Breaking Changes
 
-**NONE** — This is a test-only remediation release. No production code, APIs, or behaviors were modified.
+**NONE** â€” This is a test-only remediation release. No production code, APIs, or behaviors were modified.
 
 ---
 
@@ -194,13 +194,13 @@ The following feature gates were validated during this sprint:
 
 | Feature Gate | Status | Description |
 |--------------|--------|-------------|
-| `stable` | ✅ Enabled | Core stable features |
-| `v2.1-neuroplasticity` | ✅ Enabled | Neuroplastic aggregation engine |
-| `v2.1-steering-bridge` | ✅ Enabled | Steering bridge with Ed25519 signatures |
-| `v2.1-quantum-feedback` | ✅ Enabled | Async quantum feedback queue |
-| `v2.1-proof-of-symbiosis` | ✅ Validated | Proof of Symbiosis consensus |
-| `v2.1-network-apoptosis` | ✅ Validated | Network immune system |
-| `v2.1-interactive-showcase` | ✅ Validated | Stuartian showcase (Sprint 31) |
+| `stable` | âœ… Enabled | Core stable features |
+| `v2.1-neuroplasticity` | âœ… Enabled | Neuroplastic aggregation engine |
+| `v2.1-steering-bridge` | âœ… Enabled | Steering bridge with Ed25519 signatures |
+| `v2.1-quantum-feedback` | âœ… Enabled | Async quantum feedback queue |
+| `v2.1-proof-of-symbiosis` | âœ… Validated | Proof of Symbiosis consensus |
+| `v2.1-network-Byzantine_Eviction` | âœ… Validated | Network immune system |
+| `v2.1-interactive-showcase` | âœ… Validated | Topological showcase (Sprint 31) |
 
 ---
 
@@ -210,10 +210,10 @@ All validation steps were executed and passed:
 
 | Step | Command | Result |
 |------|---------|--------|
-| 1. Format Check | `cargo fmt --all` | ✅ PASS |
-| 2. Clippy Lints | `cargo clippy --features "stable,v2.1-neuroplasticity,v2.1-steering-bridge,v2.1-quantum-feedback" -- -D warnings` | ✅ PASS (0 warnings) |
-| 3. Full Test Suite | `cargo test --features "stable,v2.1-neuroplasticity,v2.1-steering-bridge,v2.1-quantum-feedback" --all-targets --all-features -- --test-threads=4` | ✅ **3460 passed; 0 failed; 9 ignored** |
-| 4. Test Suites | 31 test suites validated | ✅ 100% PASS rate |
+| 1. Format Check | `cargo fmt --all` | âœ… PASS |
+| 2. Clippy Lints | `cargo clippy --features "stable,v2.1-neuroplasticity,v2.1-steering-bridge,v2.1-quantum-feedback" -- -D warnings` | âœ… PASS (0 warnings) |
+| 3. Full Test Suite | `cargo test --features "stable,v2.1-neuroplasticity,v2.1-steering-bridge,v2.1-quantum-feedback" --all-targets --all-features -- --test-threads=4` | âœ… **3460 passed; 0 failed; 9 ignored** |
+| 4. Test Suites | 31 test suites validated | âœ… 100% PASS rate |
 
 ---
 
@@ -221,45 +221,45 @@ All validation steps were executed and passed:
 
 ### Pre-Release Validation
 
-- [x] **Zero new features** — No modules, business logic, or UI changes
-- [x] **100% pass rate** — All 3460 tests passing
-- [x] **Zero clippy warnings** — Clean linting across all features
-- [x] **Proper formatting** — `cargo fmt` validation passed
-- [x] **Documentation updated** — README.md, CHANGELOG.md, release notes
-- [x] **Version consistency** — Dynamic version assertions prevent drift
-- [x] **Feature gate validation** — All 7 feature gates tested
-- [x] **No breaking changes** — Test-only modifications
+- [x] **Zero new features** â€” No modules, business logic, or UI changes
+- [x] **100% pass rate** â€” All 3460 tests passing
+- [x] **Zero clippy warnings** â€” Clean linting across all features
+- [x] **Proper formatting** â€” `cargo fmt` validation passed
+- [x] **Documentation updated** â€” README.md, CHANGELOG.md, release notes
+- [x] **Version consistency** â€” Dynamic version assertions prevent drift
+- [x] **Feature gate validation** â€” All 7 feature gates tested
+- [x] **No breaking changes** â€” Test-only modifications
 
 ### Governance & Ethics
 
-- [x] **Zero financial logic changes** — No economic module modifications
-- [x] **Human-reviewed fixes** — All test fixes validated for correctness
-- [x] **Transparent documentation** — Full root cause analysis provided
-- [x] **Commutative property preserved** — CRDT merge semantics verified
+- [x] **Zero financial logic changes** â€” No economic module modifications
+- [x] **Human-reviewed fixes** â€” All test fixes validated for correctness
+- [x] **Transparent documentation** â€” Full root cause analysis provided
+- [x] **Commutative property preserved** â€” CRDT merge semantics verified
 
 ### Release Artifacts
 
-- [x] `README.md` — Updated version badge to v2.1.0-rc1
-- [x] `CHANGELOG.md` — Sprint 32 entry with detailed fix documentation
-- [x] `release/v2.1.0-rc1/release-notes.md` — This document
-- [x] Git commit prepared — `test(qa): fix 8 pre-existing failures, harden test suite, validate 100% pass rate & prepare v2.1.0-rc1`
+- [x] `README.md` â€” Updated version badge to v2.1.0-rc1
+- [x] `CHANGELOG.md` â€” Sprint 32 entry with detailed fix documentation
+- [x] `release/v2.1.0-rc1/release-notes.md` â€” This document
+- [x] Git commit prepared â€” `test(qa): fix 8 pre-existing failures, harden test suite, validate 100% pass rate & prepare v2.1.0-rc1`
 
 ---
 
 ## Known Limitations
 
-- **9 ignored tests** — These are intentionally skipped tests (platform-specific or resource-intensive). No action required.
-- **Pre-existing test infrastructure** — Some tests use patterns that could be further refactored in future sprints (out of scope for this QA-focused sprint).
+- **9 ignored tests** â€” These are intentionally skipped tests (platform-specific or resource-intensive). No action required.
+- **Pre-existing test infrastructure** â€” Some tests use patterns that could be further refactored in future sprints (out of scope for this QA-focused sprint).
 
 ---
 
 ## Next Steps
 
-1. **Peer Review** — Submit PR for community review
-2. **Final Sign-off** — Governance committee approval
-3. **Tag Release** — `git tag v2.1.0-rc1`
-4. **Publish RC** — Deploy to staging environment for final validation
-5. **Stabilization Period** — 7-day observation window before v2.1.0-stable
+1. **Peer Review** â€” Submit PR for community review
+2. **Final Sign-off** â€” Governance committee approval
+3. **Tag Release** â€” `git tag v2.1.0-rc1`
+4. **Publish RC** â€” Deploy to staging environment for final validation
+5. **Stabilization Period** â€” 7-day observation window before v2.1.0-stable
 
 ---
 
@@ -268,7 +268,7 @@ All validation steps were executed and passed:
 - **Sprint 32 Plan:** Test Hardening, Remediation & Release Candidate Preparation
 - **CHANGELOG.md:** See `[v2.1.0-rc1]` section
 - **README.md:** Version badge updated to v2.1.0-rc1
-- **Previous Release:** v2.1.0-sprint31 (The Stuartian Showcase)
+- **Previous Release:** v2.1.0-sprint31 (The Topological Showcase)
 
 ---
 

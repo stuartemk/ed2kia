@@ -1,4 +1,4 @@
-//! Topological Reconciliation — Sprint 74: Distributed Systems Hardening & Second-Order Resolution
+﻿//! Topological Reconciliation â€” Sprint 74: Distributed Systems Hardening & Second-Order Resolution
 //!
 //! CRDT-based reconciliation for post-partition network healing.
 //! Weighted by pre-partition CE scores for smooth manifold fusion.
@@ -72,8 +72,8 @@ pub struct ReconcileConfig {
 }
 
 impl ReconcileConfig {
-    /// Default Stuartian configuration.
-    pub fn default_stuartian() -> Self {
+    /// Default Topological configuration.
+    pub fn default_Topological() -> Self {
         Self {
             max_divergence: 0.3,
             ce_weight: 0.6,
@@ -96,7 +96,7 @@ impl ReconcileConfig {
 
 impl Default for ReconcileConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -195,7 +195,7 @@ impl TopologicalReconciliation {
     /// Create a new reconciliation engine.
     pub fn new() -> Self {
         Self {
-            config: ReconcileConfig::default_stuartian(),
+            config: ReconcileConfig::default_Topological(),
             history: Vec::new(),
         }
     }
@@ -479,7 +479,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = ReconcileConfig::default_stuartian();
+        let config = ReconcileConfig::default_Topological();
         assert_eq!(config.max_divergence, 0.3);
         assert_eq!(config.ce_weight, 0.6);
         assert_eq!(config.malice_threshold, 0.8);
@@ -488,7 +488,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = ReconcileConfig::default_stuartian();
+        let config = ReconcileConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 
@@ -496,7 +496,7 @@ mod tests {
     fn test_config_invalid_divergence() {
         let config = ReconcileConfig {
             max_divergence: 1.5,
-            ..ReconcileConfig::default_stuartian()
+            ..ReconcileConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }
@@ -509,7 +509,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = ReconcileConfig::default_stuartian();
+        let config = ReconcileConfig::default_Topological();
         let engine = TopologicalReconciliation::with_config(config).unwrap();
         assert!(engine.history().is_empty());
     }

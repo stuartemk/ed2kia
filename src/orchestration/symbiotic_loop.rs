@@ -1,6 +1,6 @@
-//! Symbiotic Orchestration Loop — GEI + SMM + Telomere Genesis Integration.
+﻿//! Symbiotic Orchestration Loop â€” GEI + SMM + Telomere Genesis Integration.
 //!
-//! **Sprint 50:** Unites Geometric Ethical Invariants (GEI), Stuartian Moral
+//! **Sprint 50:** Unites Geometric Ethical Invariants (GEI), Topological Moral
 //! Manifold (SMM) and Telomere Regeneration Workload into a single symbiotic
 //! orchestration loop with BFT consensus.
 //!
@@ -19,10 +19,10 @@
 //!
 //! **Feature Gate:** `v3.2-genesis-manifold`
 //!
-//! **Reference:** Sprint 50 — The Stuartian Moral Manifold & Genesis Telomere Workload
+//! **Reference:** Sprint 50 â€” The Topological Moral Manifold & Genesis Telomere Workload
 
 #[cfg(feature = "v3.2-genesis-manifold")]
-use crate::ethics::moral_manifold::{SCTPoint, StuartianMoralManifold, TrajectoryVerdict};
+use crate::ethics::moral_manifold::{SCTPoint, TopologicalMoralManifold, TrajectoryVerdict};
 
 #[cfg(feature = "v3.2-genesis-manifold")]
 use crate::pillars::maieutic::workloads::{
@@ -248,7 +248,7 @@ impl core::fmt::Display for BFTConsensusError {
 // Symbiotic Loop
 // ---------------------------------------------------------------------------
 
-/// Symbiotic Orchestration Loop — Unites GEI, SMM, and Telomere Workload.
+/// Symbiotic Orchestration Loop â€” Unites GEI, SMM, and Telomere Workload.
 ///
 /// Coordinates the full pipeline from ethical evaluation through biological
 /// regeneration, ensuring all operations align with Upper Focus (simbiosis).
@@ -294,7 +294,7 @@ impl SymbioticLoop {
         })
     }
 
-    /// Execute the full symbiotic loop: GEI → SMM → Telomere → BFT.
+    /// Execute the full symbiotic loop: GEI â†’ SMM â†’ Telomere â†’ BFT.
     ///
     /// **Process:**
     /// 1. Extract GEI fingerprint from ethical point cloud.
@@ -322,7 +322,7 @@ impl SymbioticLoop {
 
         // Phase 2: SMM Trajectory Evaluation
         self.state = SymbioticState::EvaluatingTrajectory;
-        let manifold = StuartianMoralManifold::default();
+        let manifold = TopologicalMoralManifold::default();
         let verdict = manifold.evaluate_trajectory(trajectory);
         let ethical_alignment = manifold.focal_alignment_score(trajectory);
 

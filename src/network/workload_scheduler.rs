@@ -1,12 +1,12 @@
-//! Distributed Workload Scheduler — Sprint 69: Testnet Hardening & Distributed Alignment Workloads
+﻿//! Distributed Workload Scheduler â€” Sprint 69: Testnet Hardening & Distributed Alignment Workloads
 //!
-//! **Stuartian Law 1 (Diversidad):** Distribución equitativa de shards SAE entre nodos por tiers.
-//! **Stuartian Law 5 (Múltiples Posibilidades):** Fallback automático cuando latencia >50ms.
+//! **Topological Law 1 (Diversidad):** DistribuciÃ³n equitativa de shards SAE entre nodos por tiers.
+//! **Topological Law 5 (MÃºltiples Posibilidades):** Fallback automÃ¡tico cuando latencia >50ms.
 //!
 //! ### Feature Gates
-//! | Feature | Módulo | Descripción |
+//! | Feature | MÃ³dulo | DescripciÃ³n |
 //! |---|---|---|
-//! | `v9.5-testnet-hardening` | workload_scheduler | Distribución dinámica de shards, latencia <50ms, fallback local |
+//! | `v9.5-testnet-hardening` | workload_scheduler | DistribuciÃ³n dinÃ¡mica de shards, latencia <50ms, fallback local |
 
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
@@ -116,7 +116,7 @@ pub fn distribute_shards(nodes: &[NodeTier], shard_count: u32) -> Vec<ShardAssig
     assignments
 }
 
-/// Build a node lookup map from assignments for O(1) shard→node queries.
+/// Build a node lookup map from assignments for O(1) shardâ†’node queries.
 pub fn build_assignment_map(assignments: &[ShardAssignment]) -> HashMap<u32, &str> {
     assignments
         .iter()
@@ -310,7 +310,7 @@ mod tests {
             },
         ];
         let ratio = load_balance_ratio(&assigns);
-        // a=3, b=1 → min=1, max=3 → ratio = 1/3 ≈ 0.333
+        // a=3, b=1 â†’ min=1, max=3 â†’ ratio = 1/3 â‰ˆ 0.333
         assert!((ratio - 1.0 / 3.0).abs() < 1e-9);
     }
 

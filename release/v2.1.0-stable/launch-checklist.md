@@ -1,21 +1,21 @@
-# Launch Checklist — ed2kIA v2.1.0-stable
+﻿# Launch Checklist â€” ed2kIA v2.1.0-stable
 
 **Date:** 2026-05-22
 **Version:** v2.1.0-stable
-**Sprint:** 33 — "Production Readiness, Benchmarking & Mainnet Launch Protocol"
-**Status:** ✅ READY FOR LAUNCH
+**Sprint:** 33 â€” "Production Readiness, Benchmarking & Mainnet Launch Protocol"
+**Status:** âœ… READY FOR LAUNCH
 
 ---
 
 ## Pre-Flight Validation
 
 ### Code Quality
-- [x] `cargo fmt --all` — PASS
-- [x] `cargo clippy --all-targets --all-features -- -D warnings` — PASS (0 warnings)
-- [x] `cargo test --all-targets --all-features` — PASS (3460 passed, 0 failed)
-- [x] `cargo bench --features "v2.1-benchmarks"` — PASS (baseline saved)
-- [x] `cargo audit` — PASS (no critical CVEs)
-- [x] `cargo deny check` — PASS (license compliance)
+- [x] `cargo fmt --all` â€” PASS
+- [x] `cargo clippy --all-targets --all-features -- -D warnings` â€” PASS (0 warnings)
+- [x] `cargo test --all-targets --all-features` â€” PASS (3460 passed, 0 failed)
+- [x] `cargo bench --features "v2.1-benchmarks"` â€” PASS (baseline saved)
+- [x] `cargo audit` â€” PASS (no critical CVEs)
+- [x] `cargo deny check` â€” PASS (license compliance)
 
 ### Security
 - [x] Production threat model documented (`docs/security/production-threat-model.md`)
@@ -29,8 +29,8 @@
 ### Infrastructure
 - [x] Dockerfile multi-stage build (non-root user, healthchecks)
 - [x] Docker Compose validated (3-node testnet)
-- [x] Health check script (`scripts/health-check.sh`) — POSIX valid
-- [x] Launch script (`scripts/launch-mainnet.sh`) — POSIX valid
+- [x] Health check script (`scripts/health-check.sh`) â€” POSIX valid
+- [x] Launch script (`scripts/launch-mainnet.sh`) â€” POSIX valid
 - [x] systemd service file configured
 - [x] Prometheus metrics exporter configured
 - [x] Grafana dashboard available
@@ -40,7 +40,7 @@
 - [x] CHANGELOG.md updated (Sprint 33 entry)
 - [x] Launch checklist (this document)
 - [x] Production threat model
-- [x] Release notes (v2.1.0-rc1 → v2.1.0-stable)
+- [x] Release notes (v2.1.0-rc1 â†’ v2.1.0-stable)
 
 ---
 
@@ -100,7 +100,7 @@ docker compose -f deploy/docker-compose.yml -p ed2kia exec node1 ed2kia peers
 |--------|-------------|-----------------|
 | `peers_connected` | Active P2P connections | < 3 for > 5min |
 | `ce_emitted_total` | Total CE credits emitted | Anomaly detection |
-| `apoptosis_triggered_total` | Network apoptosis events | > 5/hour |
+| `Byzantine_Eviction_triggered_total` | Network Byzantine_Eviction events | > 5/hour |
 | `sae_latency_ms` | SAE inference latency | > 15ms p99 |
 | `crdt_sync_count` | CRDT sync operations | > 1000/min |
 | `node_uptime_seconds` | Node uptime | < 1 hour |
@@ -152,10 +152,10 @@ bash scripts/health-check.sh --port 9001 --host localhost
 ### Required Approvals
 | Role | Name | Status |
 |------|------|--------|
-| Technical Lead | — | ⬜ Pending |
-| Security Lead | — | ⬜ Pending |
-| QA Lead | — | ✅ Approved (Sprint 32) |
-| Governance Council | — | ⬜ Pending |
+| Technical Lead | â€” | â¬œ Pending |
+| Security Lead | â€” | â¬œ Pending |
+| QA Lead | â€” | âœ… Approved (Sprint 32) |
+| Governance Council | â€” | â¬œ Pending |
 
 ### Launch Authorization
 - [ ] All pre-flight checks passed

@@ -1,24 +1,24 @@
-#![cfg(feature = "v3.5-planetary-emergence")]
-//! Planetary Emergence E2E Tests — Sprint 53
+﻿#![cfg(feature = "v3.5-planetary-emergence")]
+//! Planetary Emergence E2E Tests â€” Sprint 53
 //!
 //! **"Grok Challenge" Benchmark:**
 //! - 1000 concurrent nodes auto-organized by SwarmTopology
 //! - 3 disconnected information fragments injected into 3 sub-networks
-//! - Must auto-organize and emit EmergentSolutionEvent with Z ≥ 0
+//! - Must auto-organize and emit EmergentSolutionEvent with Z â‰¥ 0
 //!
 //! **Validation Criteria:**
 //! 1. All nodes register successfully in SwarmTopology
 //! 2. Sub-networks form by role (MaieuticSynth, Validator, Router, Relay, Light)
 //! 3. Information fragments propagate across sub-networks
 //! 4. Cross-Tensor Fusion detects latent correlations
-//! 5. EmergentSolutionEvent emitted with Z ≥ 0
+//! 5. EmergentSolutionEvent emitted with Z â‰¥ 0
 //! 6. SCT Guard validates all emergent insights
 //! 7. Planetary Mesh routes between disconnected fragments
 
 mod planetary_emergence_tests {
     use ed2kia::intelligence::{
         cosine_similarity, CrossTensorFusion, EmergentInsight, EmergentSolutionEvent, NodeTensor,
-        SCTGuard, StuartianEmergenceEngine, Vector3,
+        SCTGuard, TopologicalEmergenceEngine, Vector3,
     };
     use ed2kia::network::{
         kademlia_distance, AutoNatEngine, AutoNatStatus, KTable, MeshConfig, MeshNodeCapabilities,
@@ -298,7 +298,7 @@ mod planetary_emergence_tests {
 
     #[test]
     fn test_emergence_three_fragments() {
-        let mut engine = StuartianEmergenceEngine::new();
+        let mut engine = TopologicalEmergenceEngine::new();
         // Three disconnected information fragments
         let fragments = vec![
             make_fragment_tensor(1, 0.5, "fragment_a", "A1", None),
@@ -317,7 +317,7 @@ mod planetary_emergence_tests {
 
     #[test]
     fn test_emergence_aligned_fragments_produce_solution() {
-        let mut engine = StuartianEmergenceEngine::new();
+        let mut engine = TopologicalEmergenceEngine::new();
         // Well-aligned fragments should produce emergent solution
         let fragments = vec![
             make_fragment_tensor(1, 0.7, "domain_x", "X1", None),
@@ -336,7 +336,7 @@ mod planetary_emergence_tests {
 
     #[test]
     fn test_emergence_misaligned_rejected() {
-        let mut engine = StuartianEmergenceEngine::new();
+        let mut engine = TopologicalEmergenceEngine::new();
         // Misaligned fragments (negative Z) should be rejected
         let fragments = vec![
             make_fragment_tensor(1, -0.5, "bad_a", "BAD1", None),
@@ -393,7 +393,7 @@ mod planetary_emergence_tests {
     }
 
     // ========================================================================
-    // Grok Challenge — 1000 Node Benchmark
+    // Grok Challenge â€” 1000 Node Benchmark
     // ========================================================================
 
     #[test]
@@ -417,7 +417,7 @@ mod planetary_emergence_tests {
         assert_eq!(topo.get_stats().active_nodes, 1000);
 
         // Phase 2: Inject 3 disconnected information fragments
-        let mut engine = StuartianEmergenceEngine::new();
+        let mut engine = TopologicalEmergenceEngine::new();
 
         // Fragment A: Biology/Health (nodes 0-332)
         for i in 0..333 {
@@ -499,7 +499,7 @@ mod planetary_emergence_tests {
     #[test]
     fn test_grok_challenge_fragment_convergence() {
         // Test that 3 fragments converge to a single emergent solution
-        let mut engine = StuartianEmergenceEngine::new();
+        let mut engine = TopologicalEmergenceEngine::new();
 
         // Create 3 fragments with overlapping ethical direction
         let fragments = vec![
@@ -522,7 +522,7 @@ mod planetary_emergence_tests {
     #[test]
     fn test_grok_challenge_stress_500_nodes() {
         // Stress test with 500 nodes
-        let mut engine = StuartianEmergenceEngine::new();
+        let mut engine = TopologicalEmergenceEngine::new();
         for i in 0..500 {
             let domain = match i % 3 {
                 0 => "fragment_a",
@@ -542,7 +542,7 @@ mod planetary_emergence_tests {
     }
 
     // ========================================================================
-    // Integration Tests — Planetary Mesh + Swarm + Emergence
+    // Integration Tests â€” Planetary Mesh + Swarm + Emergence
     // ========================================================================
 
     #[test]
@@ -570,7 +570,7 @@ mod planetary_emergence_tests {
         }
 
         // 4. Create Emergence Engine with fragments
-        let mut engine = StuartianEmergenceEngine::new();
+        let mut engine = TopologicalEmergenceEngine::new();
         for i in 0..50 {
             let domain = match i % 3 {
                 0 => "fragment_a",
@@ -599,7 +599,7 @@ mod planetary_emergence_tests {
     fn test_swarm_emergence_coordination() {
         // Test that GPU nodes (MaieuticSynth) handle heavy fusion workloads
         let mut topo = SwarmTopology::new();
-        let mut engine = StuartianEmergenceEngine::new();
+        let mut engine = TopologicalEmergenceEngine::new();
 
         // Register GPU nodes
         for i in 0..10 {
@@ -628,7 +628,7 @@ mod planetary_emergence_tests {
 
     #[test]
     fn test_emergence_reset_and_recovery() {
-        let mut engine = StuartianEmergenceEngine::new();
+        let mut engine = TopologicalEmergenceEngine::new();
 
         // Register and run
         for i in 0..10 {
@@ -661,14 +661,14 @@ mod planetary_emergence_tests {
 
     #[test]
     fn test_empty_emergence_cycle() {
-        let mut engine = StuartianEmergenceEngine::new();
+        let mut engine = TopologicalEmergenceEngine::new();
         let events = engine.run_emergence_cycle();
         assert!(events.is_empty());
     }
 
     #[test]
     fn test_single_node_no_emergence() {
-        let mut engine = StuartianEmergenceEngine::new();
+        let mut engine = TopologicalEmergenceEngine::new();
         engine.register_tensor(make_fragment_tensor(1, 0.5, "solo", "solo", None));
         let events = engine.run_emergence_cycle();
         assert!(events.is_empty());
@@ -676,7 +676,7 @@ mod planetary_emergence_tests {
 
     #[test]
     fn test_all_negative_z_rejected() {
-        let mut engine = StuartianEmergenceEngine::new();
+        let mut engine = TopologicalEmergenceEngine::new();
         for i in 0..10 {
             engine.register_tensor(make_fragment_tensor(i, -0.5, "negative", "neg", None));
         }
@@ -687,8 +687,8 @@ mod planetary_emergence_tests {
 
     #[test]
     fn test_boundary_z_zero() {
-        let mut engine = StuartianEmergenceEngine::new();
-        // Z = 0 is the boundary — should be valid
+        let mut engine = TopologicalEmergenceEngine::new();
+        // Z = 0 is the boundary â€” should be valid
         engine.register_tensor(make_fragment_tensor(1, 0.0, "boundary", "z0", None));
         engine.register_tensor(make_fragment_tensor(2, 0.0, "boundary", "z0", None));
         let events = engine.run_emergence_cycle();

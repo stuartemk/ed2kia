@@ -1,7 +1,7 @@
-//! Neuroplastic Aggregation Engine — Sprint 30
+﻿//! Neuroplastic Aggregation Engine â€” Sprint 30
 //!
 //! Federated gradient aggregation weighted by Existential Credit (CE) and
-//! Stuartian Context Tensor (SCT) Z-axis consensus. This is the core of
+//! Topological Context Tensor (SCT) Z-axis consensus. This is the core of
 //! **neuroplastic federated learning**: nodes with higher ethical alignment
 //! (CE > 0, Z > 0) have more influence on the global model update.
 //!
@@ -47,7 +47,7 @@ pub enum NeuroplasticError {
 /// Maximum allowed gradient payload size (50MB).
 const MAX_GRADIENT_MB: usize = 50;
 
-/// Neuroplastic Aggregator — CE + SCT weighted gradient aggregation.
+/// Neuroplastic Aggregator â€” CE + SCT weighted gradient aggregation.
 ///
 /// Combines the Existential Credit Ledger and Symbol Registry to compute
 /// ethical weights for federated gradient aggregation.
@@ -64,8 +64,8 @@ impl NeuroplasticAggregator {
     /// Creates a new `NeuroplasticAggregator`.
     ///
     /// # Arguments
-    /// * `ce_ledger` — Existential Credit Ledger for CE scores.
-    /// * `sct_dict` — Symbol Registry for SCT Z-axis consensus.
+    /// * `ce_ledger` â€” Existential Credit Ledger for CE scores.
+    /// * `sct_dict` â€” Symbol Registry for SCT Z-axis consensus.
     pub fn new(ce_ledger: ExistentialCreditLedger, sct_dict: SymbolRegistry) -> Self {
         Self {
             ce_ledger,
@@ -80,7 +80,7 @@ impl NeuroplasticAggregator {
     /// `weight = (ce_score.clamp(0.0, 1000.0) / 1000.0) * (1.0 + z_weight.clamp(-0.5, 0.5))`
     ///
     /// # Arguments
-    /// * `peer_id` — Peer identifier (used as both CE key and SCT token lookup).
+    /// * `peer_id` â€” Peer identifier (used as both CE key and SCT token lookup).
     ///
     /// # Returns
     /// Weight in range [0.0, 1.5]. Zero if CE = 0 (no influence).
@@ -108,8 +108,8 @@ impl NeuroplasticAggregator {
     /// Aggregate local gradients with CE + SCT ethical weighting.
     ///
     /// # Arguments
-    /// * `local_grads` — Local gradient tensor from the peer.
-    /// * `peer_id` — Peer identifier for CE/SCT lookup.
+    /// * `local_grads` â€” Local gradient tensor from the peer.
+    /// * `peer_id` â€” Peer identifier for CE/SCT lookup.
     ///
     /// # Returns
     /// Weighted gradient tensor ready for FedAvg.
@@ -137,7 +137,7 @@ impl NeuroplasticAggregator {
     /// Returns the sum of all weighted gradients (FedAvg step).
     ///
     /// # Arguments
-    /// * `grads_by_peer` — Map of peer_id → gradient tensor.
+    /// * `grads_by_peer` â€” Map of peer_id â†’ gradient tensor.
     ///
     /// # Returns
     /// Aggregated gradient tensor (sum of weighted gradients).
@@ -189,7 +189,7 @@ mod tests {
         let token = NeuroplasticAggregator::peer_id_to_token("ethical-peer");
         sct.insert_symbol(
             token,
-            crate::alignment::sct_core::StuartianTensor::new(0.5, 0.3, 0.4).unwrap(),
+            crate::alignment::sct_core::TopologicalTensor::new(0.5, 0.3, 0.4).unwrap(),
             1000,
         );
 
@@ -198,7 +198,7 @@ mod tests {
         let token2 = NeuroplasticAggregator::peer_id_to_token("weak-peer");
         sct.insert_symbol(
             token2,
-            crate::alignment::sct_core::StuartianTensor::new(0.2, 0.1, -0.3).unwrap(),
+            crate::alignment::sct_core::TopologicalTensor::new(0.2, 0.1, -0.3).unwrap(),
             1000,
         );
 

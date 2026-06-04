@@ -1,6 +1,6 @@
-//! Noosphere Emergence E2E Tests — Sprint 57
+﻿//! Noosphere Emergence E2E Tests â€” Sprint 57
 //!
-//! End-to-end integration tests for the Stuartian Noosphere Engine (SNE).
+//! End-to-end integration tests for the Topological Noosphere Engine (SNE).
 //! Tests the full 5-phase respiration cycle with resonance field, HOPH analysis,
 //! and macro-concept birth logic.
 
@@ -247,7 +247,7 @@ mod noosphere_tests {
     }
 
     // -----------------------------------------------------------------------
-    // Full Noosphere Spark — Integration Test
+    // Full Noosphere Spark â€” Integration Test
     // -----------------------------------------------------------------------
 
     mod noosphere_spark {
@@ -255,7 +255,7 @@ mod noosphere_tests {
 
         #[test]
         fn test_noospheric_spark() {
-            // Full integration: Field → HOPH → MacroConcept → Respiration Cycle.
+            // Full integration: Field â†’ HOPH â†’ MacroConcept â†’ Respiration Cycle.
 
             // 1. Build ethical resonance field.
             let mut field = EthicalResonanceField::new();
@@ -313,7 +313,7 @@ mod noosphere_tests {
             let mut cycle = NoosphericRespirationCycle::with_config(NoosphereConfig {
                 cycle_interval: 5,
                 ethical_threshold: 0.6,
-                apoptosis_ticks: 5,
+                Byzantine_Eviction_ticks: 5,
                 min_human_correlation: 0.75,
                 ph2_threshold: 0.3,
             })
@@ -342,7 +342,7 @@ mod noosphere_tests {
 
             assert_eq!(result.cycle, 1);
             assert!(result.global_resonance > 0.0);
-            assert!(!result.apoptosis_triggered);
+            assert!(!result.Byzantine_Eviction_triggered);
             assert!(
                 result.concepts_integrated > 0,
                 "Concepts should be integrated"
@@ -350,11 +350,11 @@ mod noosphere_tests {
         }
 
         #[test]
-        fn test_apoptosis_prevents_unethical_emergence() {
+        fn test_Byzantine_Eviction_prevents_unethical_emergence() {
             let mut cycle = NoosphericRespirationCycle::with_config(NoosphereConfig {
                 cycle_interval: 3,
                 ethical_threshold: 0.6,
-                apoptosis_ticks: 3,
+                Byzantine_Eviction_ticks: 3,
                 min_human_correlation: 0.75,
                 ph2_threshold: 0.3,
             })
@@ -370,7 +370,7 @@ mod noosphere_tests {
                 beta2_count: 0,
             };
 
-            // Sustained low correlation → apoptosis path.
+            // Sustained low correlation â†’ Byzantine_Eviction path.
             for _ in 0..9 {
                 let bad_validation = HumanValidation {
                     correlation: 0.2,

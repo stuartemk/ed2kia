@@ -1,4 +1,4 @@
-//! Anti-Capture Mechanisms — Sprint 70: Civilization-Scale Architecture
+﻿//! Anti-Capture Mechanisms â€” Sprint 70: Civilization-Scale Architecture
 //!
 //! Geo-diversity weighting (max 30% per region), anti-Sybil via proof-of-work
 //! and behavioral fingerprinting, and chaos engineering fault injection.
@@ -73,8 +73,8 @@ pub struct CaptureConfig {
 }
 
 impl CaptureConfig {
-    /// Default Stuartian configuration.
-    pub fn default_stuartian() -> Self {
+    /// Default Topological configuration.
+    pub fn default_Topological() -> Self {
         Self {
             max_region_weight: 0.3,
             pow_difficulty: 4,
@@ -112,7 +112,7 @@ impl CaptureConfig {
 
 impl Default for CaptureConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -175,7 +175,7 @@ impl fmt::Display for NodeRisk {
     }
 }
 
-/// Anti-Capture System — protects against network capture attacks.
+/// Anti-Capture System â€” protects against network capture attacks.
 pub struct AntiCapture {
     config: CaptureConfig,
     nodes: HashMap<u64, NodeRisk>,
@@ -188,7 +188,7 @@ impl AntiCapture {
     /// Create with default configuration.
     pub fn new() -> Self {
         Self {
-            config: CaptureConfig::default_stuartian(),
+            config: CaptureConfig::default_Topological(),
             nodes: HashMap::new(),
             region_weights: HashMap::new(),
             fingerprint_counts: HashMap::new(),
@@ -386,20 +386,20 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = CaptureConfig::default_stuartian();
+        let config = CaptureConfig::default_Topological();
         assert!((config.max_region_weight - 0.3).abs() < 1e-6);
         assert_eq!(config.pow_difficulty, 4);
     }
 
     #[test]
     fn test_config_validate_valid() {
-        let config = CaptureConfig::default_stuartian();
+        let config = CaptureConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 
     #[test]
     fn test_config_validate_bad_difficulty() {
-        let mut config = CaptureConfig::default_stuartian();
+        let mut config = CaptureConfig::default_Topological();
         config.pow_difficulty = 25;
         match config.validate() {
             Err(CaptureError::InvalidDifficulty(25)) => {}
@@ -409,7 +409,7 @@ mod tests {
 
     #[test]
     fn test_config_display() {
-        let config = CaptureConfig::default_stuartian();
+        let config = CaptureConfig::default_Topological();
         let s = format!("{}", config);
         assert!(s.contains("max_region: 30%"));
     }
@@ -433,7 +433,7 @@ mod tests {
 
     #[test]
     fn test_sybil_detection() {
-        let mut config = CaptureConfig::default_stuartian();
+        let mut config = CaptureConfig::default_Topological();
         config.max_nodes_per_fingerprint = 2;
         let mut ac = AntiCapture::with_config(config).unwrap();
         ac.register_node(1, "na".to_string(), "same_fp".to_string())
@@ -448,7 +448,7 @@ mod tests {
 
     #[test]
     fn test_region_weight_limit() {
-        let mut config = CaptureConfig::default_stuartian();
+        let mut config = CaptureConfig::default_Topological();
         config.max_region_weight = 0.4;
         let mut ac = AntiCapture::with_config(config).unwrap();
         // Register multiple nodes in same region.

@@ -1,16 +1,16 @@
-//! Consensus Runner — Ejecución del BFT y SCT para MVP local.
+﻿//! Consensus Runner â€” EjecuciÃ³n del BFT y SCT para MVP local.
 //!
 //! Nodo Gamma (Steward) intercepta payloads del topic GossipSub,
 //! pasa cada payload por SCTGuard.evaluate_trajectory() y ejecuta
 //! BFT aggregation solo con payloads aprobados.
 //!
 //! Ley 2 (Reconocimiento del Error): Hard Reject cuando Z < 0.
-//! Ley 3 (Cero desperdicio): Logs deterministas, métricas de latencia.
+//! Ley 3 (Cero desperdicio): Logs deterministas, mÃ©tricas de latencia.
 
 use std::time::Instant;
 use thiserror::Error;
 
-use crate::alignment::sct_core::{SCTDecision, StuartianTensor};
+use crate::alignment::sct_core::{SCTDecision, TopologicalTensor};
 use crate::alignment::sct_guard::{SctGuard, SctGuardError};
 use crate::federated::bft_aggregator::{
     coordinate_wise_median, BftAggregator, BftConfig, BftError,
@@ -36,22 +36,22 @@ pub enum ConsensusError {
     LatencyExceeded { elapsed_ms: f64, limit_ms: f64 },
 }
 
-/// Resultado de evaluación SCT para un payload.
+/// Resultado de evaluaciÃ³n SCT para un payload.
 #[derive(Debug, Clone)]
 pub struct SctEvaluation {
     /// ID del nodo.
     pub node_id: String,
     /// Valor Z del tensor SCT.
     pub z_value: f32,
-    /// Decisión SCT.
+    /// DecisiÃ³n SCT.
     pub decision: SCTDecision,
-    /// ¿Fue aprobado?
+    /// Â¿Fue aprobado?
     pub approved: bool,
     /// Mensaje de log determinista.
     pub log_message: String,
 }
 
-/// Métricas de consenso.
+/// MÃ©tricas de consenso.
 #[derive(Debug, Clone)]
 pub struct ConsensusMetrics {
     /// Payloads totales procesados.
@@ -72,11 +72,11 @@ pub struct ConsensusMetrics {
 
 /// Ejecutor de consenso MVP.
 pub struct ConsensusRunner {
-    /// Guard SCT para validación ética.
+    /// Guard SCT para validaciÃ³n Ã©tica.
     sct_guard: SctGuard,
     /// Agregador BFT para consenso.
     bft_aggregator: BftAggregator,
-    /// Límite de latencia en ms.
+    /// LÃ­mite de latencia en ms.
     latency_limit_ms: f64,
 }
 
@@ -92,7 +92,7 @@ impl ConsensusRunner {
         })
     }
 
-    /// Construye con configuración BFT personalizada.
+    /// Construye con configuraciÃ³n BFT personalizada.
     pub fn with_bft_config(
         max_violations: usize,
         bft_config: BftConfig,
@@ -106,11 +106,11 @@ impl ConsensusRunner {
         })
     }
 
-    /// Evalúa un payload individual mediante SCT.
+    /// EvalÃºa un payload individual mediante SCT.
     ///
-    /// Simula la evaluación SCT calculando Z a partir del gradiente:
-    /// - Gradiente positivo (simbiótico) → Z ≈ +0.8 → APPROVED
-    /// - Gradiente negativo (perverso) → Z ≈ -0.9 → HARD REJECT
+    /// Simula la evaluaciÃ³n SCT calculando Z a partir del gradiente:
+    /// - Gradiente positivo (simbiÃ³tico) â†’ Z â‰ˆ +0.8 â†’ APPROVED
+    /// - Gradiente negativo (perverso) â†’ Z â‰ˆ -0.9 â†’ HARD REJECT
     pub fn evaluate_payload(&mut self, payload: &SaePayload) -> SctEvaluation {
         let start = Instant::now();
 
@@ -118,20 +118,20 @@ impl ConsensusRunner {
         let gradient_mean: f32 =
             payload.gradient.iter().sum::<f32>() / payload.gradient.len() as f32;
 
-        // Map gradient mean to Z value: positive mean → positive Z, negative mean → negative Z
+        // Map gradient mean to Z value: positive mean â†’ positive Z, negative mean â†’ negative Z
         let z_value = if gradient_mean > 0.0 {
-            // Symbiotic: Z ≈ +0.8
+            // Symbiotic: Z â‰ˆ +0.8
             0.6 + (gradient_mean * 0.4).min(0.2)
         } else {
-            // Perverse: Z ≈ -0.9
+            // Perverse: Z â‰ˆ -0.9
             -0.5 + (gradient_mean * 0.8).max(-0.4)
         };
 
         let x_value = 0.5; // Neutral benefit axis
         let y_value = 0.5; // Neutral cost axis
 
-        let tensor = StuartianTensor::new(x_value, y_value, z_value).unwrap_or_else(|_| {
-            StuartianTensor::new(0.5, 0.5, 0.0).expect("Neutral tensor should always work")
+        let tensor = TopologicalTensor::new(x_value, y_value, z_value).unwrap_or_else(|_| {
+            TopologicalTensor::new(0.5, 0.5, 0.0).expect("Neutral tensor should always work")
         });
         let decision = tensor.evaluate_trajectory().unwrap_or_else(|_| {
             if z_value > 0.0 {
@@ -246,7 +246,7 @@ impl ConsensusRunner {
         }
 
         println!(
-            "[MVP] Latency: {:.1}ms (limit: {:.0}ms) — {}",
+            "[MVP] Latency: {:.1}ms (limit: {:.0}ms) â€” {}",
             total_latency_ms,
             self.latency_limit_ms,
             if total_latency_ms < self.latency_limit_ms {
@@ -267,7 +267,7 @@ impl ConsensusRunner {
         })
     }
 
-    /// Genera reporte JSON de métricas.
+    /// Genera reporte JSON de mÃ©tricas.
     pub fn metrics_to_json(&self, metrics: &ConsensusMetrics) -> String {
         let evals: Vec<&SctEvaluation> = metrics.evaluations.iter().collect();
         serde_json::json!({

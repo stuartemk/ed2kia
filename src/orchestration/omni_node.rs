@@ -1,7 +1,7 @@
-//! Omni-Node — Unified Pillar Integration with SCT Guard Supervision.
+﻿//! Omni-Node â€” Unified Pillar Integration with SCT Guard Supervision.
 //!
 //! Integrates the 4 Evolutionary Pillars (Corpuscular, Maieutic, Steganographic, Resonance)
-//! under absolute Stuartian Context Tensor (SCT) supervision. Every inter-pillar communication
+//! under absolute Topological Context Tensor (SCT) supervision. Every inter-pillar communication
 //! must pass through the SCT Guard with Z >= 0 for ethical approval.
 //!
 //! **Architecture Principles:**
@@ -10,10 +10,10 @@
 //! - CE Ledger: Existential Credit tracking for cooperative merit.
 //! - Zero telemetry: biometric data remains LOCAL_ONLY.
 //!
-//! **Reference:** Sprint 47 — Omni-Node Integration & Symbiotic Ignition Sequence
+//! **Reference:** Sprint 47 â€” Omni-Node Integration & Symbiotic Ignition Sequence
 
 #[cfg(feature = "v2.1-sct-core")]
-use crate::alignment::sct_core::{SCTDecision, StuartianTensor};
+use crate::alignment::sct_core::{SCTDecision, TopologicalTensor};
 use crate::orchestration::{PillarId, PillarResponse, PillarStatus};
 #[cfg(any(
     feature = "v1.4-sprint1",
@@ -67,7 +67,7 @@ impl std::fmt::Display for RoutingError {
     }
 }
 
-/// Symbiosis Validator — SCT Guard for inter-pillar communication.
+/// Symbiosis Validator â€” SCT Guard for inter-pillar communication.
 ///
 /// Every message between pillars must pass through this validator.
 /// Z < 0 results in automatic ethical rejection and audit logging.
@@ -115,11 +115,11 @@ impl SymbiosisValidator {
         }
     }
 
-    /// Validate a trajectory via Stuartian Context Tensor.
+    /// Validate a trajectory via Topological Context Tensor.
     ///
     /// Returns `SCTDecision::Approved` if Z >= threshold,
     /// or `SCTDecision::Rejected` if Z < threshold.
-    pub fn validate(&self, tensor: &StuartianTensor) -> SCTDecision {
+    pub fn validate(&self, tensor: &TopologicalTensor) -> SCTDecision {
         if tensor.z >= self.z_threshold {
             SCTDecision::Approved(tensor.z)
         } else {
@@ -134,7 +134,7 @@ impl SymbiosisValidator {
         &mut self,
         from: PillarId,
         to: PillarId,
-        tensor: &StuartianTensor,
+        tensor: &TopologicalTensor,
     ) -> Result<(), RoutingError> {
         let decision = self.validate(tensor);
         match decision {
@@ -175,7 +175,7 @@ impl SymbiosisValidator {
     }
 }
 
-/// Existential Credit Ledger — Cooperative merit tracking.
+/// Existential Credit Ledger â€” Cooperative merit tracking.
 ///
 /// CE is non-transferable, non-speculative, and represents
 /// symbiotic contribution to the network.
@@ -249,7 +249,7 @@ impl ExistentialCreditLedger {
     }
 }
 
-/// Symbiotic Router — Inter-pillar message routing with SCT Guard.
+/// Symbiotic Router â€” Inter-pillar message routing with SCT Guard.
 ///
 /// Routes messages between pillars, enforcing SCT validation
 /// and CE consumption for every inter-pillar transfer.
@@ -310,7 +310,7 @@ impl SymbioticRouter {
         from: PillarId,
         to: PillarId,
         message: &PillarMessage,
-        sct_tensor: &StuartianTensor,
+        sct_tensor: &TopologicalTensor,
     ) -> Result<PillarResponse, RoutingError> {
         // Verify source registered
         if !self.is_registered(from) {
@@ -361,7 +361,7 @@ impl SymbioticRouter {
     }
 }
 
-/// Pillar Registry — Maps pillar IDs to their status.
+/// Pillar Registry â€” Maps pillar IDs to their status.
 #[derive(Debug, Clone)]
 pub struct PillarRegistry {
     pillars: HashMap<PillarId, PillarStatus>,
@@ -407,7 +407,7 @@ impl PillarRegistry {
     }
 }
 
-/// Omni-Node — Unified integration of all 4 Evolutionary Pillars.
+/// Omni-Node â€” Unified integration of all 4 Evolutionary Pillars.
 ///
 /// The Omni-Node is the central coordination entity that:
 /// - Registers and manages all 4 pillars.
@@ -472,7 +472,7 @@ impl OmniNode {
         from: PillarId,
         to: PillarId,
         message: &PillarMessage,
-        sct_tensor: &StuartianTensor,
+        sct_tensor: &TopologicalTensor,
     ) -> Result<PillarResponse, RoutingError> {
         let result = self
             .router
@@ -562,8 +562,8 @@ mod tests {
         )
     }
 
-    fn make_valid_tensor(z: f32) -> StuartianTensor {
-        StuartianTensor { x: 0.7, y: 0.3, z }
+    fn make_valid_tensor(z: f32) -> TopologicalTensor {
+        TopologicalTensor { x: 0.7, y: 0.3, z }
     }
 
     #[test]

@@ -1,10 +1,10 @@
-//! Cross-Mesh Routing & Peering — Enrutamiento determinista entre mallas GossipSub independientes.
+﻿//! Cross-Mesh Routing & Peering â€” Enrutamiento determinista entre mallas GossipSub independientes.
 //!
-//! **Stuartian Law 1 (Diversidad):** Peering orgánico entre mallas, sin coordinación centralizada.
-//! **Stuartian Law 5 (Múltiples Posibilidades):** Tolerancia a particiones, fallback a broadcast directo.
+//! **Topological Law 1 (Diversidad):** Peering orgÃ¡nico entre mallas, sin coordinaciÃ³n centralizada.
+//! **Topological Law 5 (MÃºltiples Posibilidades):** Tolerancia a particiones, fallback a broadcast directo.
 //!
 //! ### Feature Gates
-//! | Feature | Módulo | Descripción |
+//! | Feature | MÃ³dulo | DescripciÃ³n |
 //! |---|---|---|
 //! | `v2.1-cross-mesh` | cross_mesh | Cross-mesh routing, peering, rate limiting |
 

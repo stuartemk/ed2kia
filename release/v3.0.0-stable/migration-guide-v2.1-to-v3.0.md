@@ -1,4 +1,4 @@
-# Guía de Migración: v2.1.0 → v3.0.0-stable
+﻿# GuÃ­a de MigraciÃ³n: v2.1.0 â†’ v3.0.0-stable
 
 **Fecha:** 2026-05-25
 **Dificultad:** Media
@@ -8,13 +8,13 @@
 
 ## Resumen de Cambios
 
-| Área | v2.1.0 | v3.0.0 | Impacto |
+| Ãrea | v2.1.0 | v3.0.0 | Impacto |
 |------|--------|--------|---------|
 | Pilares | Individual | 4 Pilares unificados bajo Omni-Node | Alto |
-| Orquestación | `PillarOrchestrator` | `OmniNode` + `SymbioticRouter` | Alto |
-| Mensajería | `orchestration::PillarMessage` | `runtime::pillar_messaging::PillarMessage` | Medio |
+| OrquestaciÃ³n | `PillarOrchestrator` | `OmniNode` + `SymbioticRouter` | Alto |
+| MensajerÃ­a | `orchestration::PillarMessage` | `runtime::pillar_messaging::PillarMessage` | Medio |
 | SCT | `SCTDecision` directo | `Result<SCTDecision, SctError>` | Medio |
-| CLI | Comandos v2.1 | `--omni-mode` añadido | Bajo |
+| CLI | Comandos v2.1 | `--omni-mode` aÃ±adido | Bajo |
 | Feature Gates | `v2.1-*` | `v3.0-*` (coexisten) | Medio |
 
 ---
@@ -37,7 +37,7 @@ ed2kia = { version = "3.0.0", features = ["v3.0-omni-integration"] }
 | v2.1 (Legacy) | v3.0 (Nuevo) | Notas |
 |---------------|--------------|-------|
 | `v2.1-orchestrator` | `v3.0-orchestration` | Reemplazo directo |
-| `v2.1-pillar-comm` | `v3.0-pillar-messaging` | Módulo movido a `runtime` |
+| `v2.1-pillar-comm` | `v3.0-pillar-messaging` | MÃ³dulo movido a `runtime` |
 | `v2.1-sct-core` | `v2.1-sct-core` | Sin cambios (compatible) |
 | N/A | `v3.0-omni-integration` | Nuevo: integra los 4 pilares |
 | N/A | `v3.0-corpuscular-bridge` | Pilar 1 |
@@ -52,17 +52,17 @@ ed2kia = { version = "3.0.0", features = ["v3.0-omni-integration"] }
 ### PillarMessage
 
 ```rust
-// ❌ Antes (v2.1)
+// âŒ Antes (v2.1)
 use ed2kia::orchestration::PillarMessage;
 
-// ✅ Ahora (v3.0)
+// âœ… Ahora (v3.0)
 use ed2kia::runtime::pillar_messaging::PillarMessage;
 ```
 
 ### OmniNode
 
 ```rust
-// ✅ Nuevo en v3.0
+// âœ… Nuevo en v3.0
 use ed2kia::orchestration::{OmniNode, SymbioticRouter, ExistentialCreditLedger};
 use ed2kia::orchestration::{PillarId, RoutingError, SymbiosisValidator};
 ```
@@ -70,7 +70,7 @@ use ed2kia::orchestration::{PillarId, RoutingError, SymbiosisValidator};
 ### Migration Protocol
 
 ```rust
-// ✅ Nuevo en v3.0 (requiere v3.0-omni-integration)
+// âœ… Nuevo en v3.0 (requiere v3.0-omni-integration)
 use ed2kia::pillars::steganographic::{
     MigrationHandshake, MigrationToken, MigrationNegotiator,
 };
@@ -83,13 +83,13 @@ use ed2kia::pillars::steganographic::{
 ### evaluate_trajectory()
 
 ```rust
-// ❌ Antes (v2.1) — retorno directo
-let tensor = StuartianTensor::new(0.7, 0.2, 0.5).unwrap();
+// âŒ Antes (v2.1) â€” retorno directo
+let tensor = TopologicalTensor::new(0.7, 0.2, 0.5).unwrap();
 let decision = tensor.evaluate_trajectory();
 if decision.is_approved() { /* ... */ }
 
-// ✅ Ahora (v3.0) — Result type
-let tensor = StuartianTensor::new(0.7, 0.2, 0.5).unwrap();
+// âœ… Ahora (v3.0) â€” Result type
+let tensor = TopologicalTensor::new(0.7, 0.2, 0.5).unwrap();
 let decision = tensor.evaluate_trajectory().map_err(|e| {
     eprintln!("SCT evaluation failed: {}", e);
     MyError::SctFailure(e)
@@ -101,7 +101,7 @@ if decision.is_approved() { /* ... */ }
 
 ## Paso 4: Configurar Omni-Node
 
-### Inicialización Básica
+### InicializaciÃ³n BÃ¡sica
 
 ```rust
 use ed2kia::orchestration::OmniNode;
@@ -123,7 +123,7 @@ fn main() {
 # Inicializar con CE default (100.0)
 cargo run --bin ed2kia-cli --features "v3.0-omni-integration" -- omni
 
-# CE personalizado + diagnóstico
+# CE personalizado + diagnÃ³stico
 cargo run --bin ed2kia-cli --features "v3.0-omni-integration" \
   -- omni --initial-ce 200.0 --diagnose
 ```
@@ -138,7 +138,7 @@ Para clusters que desean integrarse:
 use ed2kia::pillars::steganographic::{
     MigrationHandshake, MigrationNegotiator,
 };
-use ed2kia::alignment::sct_core::StuartianTensor;
+use ed2kia::alignment::sct_core::TopologicalTensor;
 
 let mut negotiator = MigrationNegotiator::new();
 
@@ -152,7 +152,7 @@ let handshake = MigrationHandshake {
     ce_budget: 500.0,
 };
 
-let tensor = StuartianTensor::new(0.8, 0.1, 0.6).unwrap();
+let tensor = TopologicalTensor::new(0.8, 0.1, 0.6).unwrap();
 match negotiator.negotiate_migration(&handshake, &tensor) {
     Ok(token) => println!("Cluster onboarded: {}", token.cluster_id),
     Err(e) => eprintln!("Migration failed: {}", e),
@@ -161,10 +161,10 @@ match negotiator.negotiate_migration(&handshake, &tensor) {
 
 ---
 
-## Paso 6: Validar Migración
+## Paso 6: Validar MigraciÃ³n
 
 ```bash
-# 1. Verificar compilación
+# 1. Verificar compilaciÃ³n
 cargo check --features "v3.0-omni-integration"
 
 # 2. Ejecutar tests
@@ -181,7 +181,7 @@ cargo bench --features "v3.0-scaling-bench" --bench omni_node_scaling
 
 ## Rollback
 
-Si la migración falla, rollback a v2.1.0:
+Si la migraciÃ³n falla, rollback a v2.1.0:
 
 ```bash
 git checkout v2.1.0-stable
@@ -195,7 +195,7 @@ Los feature gates v2.1 siguen funcionando y son compatibles con v3.0.
 ## Soporte
 
 - **Issues:** https://github.com/ed2kia/ed2kIA/issues
-- **Documentación:** https://ed2kia.github.io/ed2kIA
+- **DocumentaciÃ³n:** https://ed2kia.github.io/ed2kIA
 - **Gobernanza:** GOVERNANCE.md
 
-*Esta guía se actualizará con cada sprint de v3.0.*
+*Esta guÃ­a se actualizarÃ¡ con cada sprint de v3.0.*

@@ -1,11 +1,11 @@
-//! Tiered Execution — Sprint 72: Asymptotic Optimization & Hard Sybil Resistance
+﻿//! Tiered Execution â€” Sprint 72: Asymptotic Optimization & Hard Sybil Resistance
 //!
 //! WASM tiering (Edge vs Core), memory pooling, INT4/FP8 quantization.
 
 use std::collections::HashMap;
 use std::fmt;
 
-// ─── Error Types ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ Error Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TierError {
@@ -42,16 +42,16 @@ impl fmt::Display for TierError {
 
 impl std::error::Error for TierError {}
 
-// ─── Execution Tier ────────────────────────────────────────────────────────────
+// â”€â”€â”€ Execution Tier â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(u8)]
 pub enum ExecutionTier {
-    /// Edge/WASM nodes — lightweight, quantized inference
+    /// Edge/WASM nodes â€” lightweight, quantized inference
     Edge = 0,
-    /// Core/GPU nodes — full precision, heavy computation
+    /// Core/GPU nodes â€” full precision, heavy computation
     Core = 1,
-    /// Hybrid nodes — can switch between Edge and Core
+    /// Hybrid nodes â€” can switch between Edge and Core
     Hybrid = 2,
 }
 
@@ -91,7 +91,7 @@ impl ExecutionTier {
     }
 }
 
-// ─── Precision Levels ─────────────────────────────────────────────────────────
+// â”€â”€â”€ Precision Levels â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Precision {
@@ -178,7 +178,7 @@ impl Precision {
     }
 }
 
-// ─── Configuration ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ Configuration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct TieredConfig {
@@ -197,7 +197,7 @@ pub struct TieredConfig {
 }
 
 impl TieredConfig {
-    pub fn default_stuartian() -> Self {
+    pub fn default_Topological() -> Self {
         Self {
             memory_pool_size: 1024 * 1024 * 64, // 64 MB
             max_nodes_per_tier: 256,
@@ -229,11 +229,11 @@ impl TieredConfig {
 
 impl Default for TieredConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
-// ─── Memory Pool ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ Memory Pool â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug)]
 pub struct MemoryPool {
@@ -309,7 +309,7 @@ impl fmt::Display for MemoryPool {
     }
 }
 
-// ─── Execution Node ────────────────────────────────────────────────────────────
+// â”€â”€â”€ Execution Node â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct ExecutionNode {
@@ -361,7 +361,7 @@ impl fmt::Display for ExecutionNode {
     }
 }
 
-// ─── Tiered Executor ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Tiered Executor â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug)]
 pub struct TieredExecutor {
@@ -374,7 +374,7 @@ pub struct TieredExecutor {
 impl TieredExecutor {
     pub fn new() -> Self {
         Self {
-            config: TieredConfig::default_stuartian(),
+            config: TieredConfig::default_Topological(),
             nodes: HashMap::new(),
             memory_pool: MemoryPool::new(1024 * 1024 * 64),
             tier_counts: HashMap::new(),
@@ -418,17 +418,17 @@ impl TieredExecutor {
             return ExecutionTier::Core;
         }
 
-        // Small tensors + low precision req → Edge
+        // Small tensors + low precision req â†’ Edge
         if tensor_size < 1024 && precision_req < self.config.quantization_threshold {
             return ExecutionTier::Edge;
         }
 
-        // Large tensors + high precision req → Core
+        // Large tensors + high precision req â†’ Core
         if tensor_size > 65536 || precision_req > 0.5 {
             return ExecutionTier::Core;
         }
 
-        // Medium → Hybrid
+        // Medium â†’ Hybrid
         ExecutionTier::Hybrid
     }
 
@@ -499,7 +499,7 @@ impl fmt::Display for TieredExecutor {
     }
 }
 
-// ─── Public Utility Functions ──────────────────────────────────────────────────
+// â”€â”€â”€ Public Utility Functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Quantize a tensor to the specified precision
 pub fn quantize_tensor(tensor: &[f32], precision: Precision) -> Vec<f32> {
@@ -526,13 +526,13 @@ pub fn memory_savings_ratio(from: Precision, to: Precision) -> f64 {
     1.0 - (to_bytes / from_bytes)
 }
 
-// ─── Tests ─────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    // ─── ExecutionTier Tests ───────────────────────────────────────────────────
+    // â”€â”€â”€ ExecutionTier Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_tier_display() {
@@ -562,7 +562,7 @@ mod tests {
         assert!((ExecutionTier::Hybrid.quantization_factor() - 0.25) < 1e-10);
     }
 
-    // ─── Precision Tests ───────────────────────────────────────────────────────
+    // â”€â”€â”€ Precision Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_precision_display() {
@@ -581,7 +581,7 @@ mod tests {
 
     #[test]
     fn test_precision_bytes() {
-        assert_eq!(Precision::Int4.bytes_per_element(), 1); // 4 bits → 1 byte
+        assert_eq!(Precision::Int4.bytes_per_element(), 1); // 4 bits â†’ 1 byte
         assert_eq!(Precision::Fp32.bytes_per_element(), 4);
     }
 
@@ -617,18 +617,18 @@ mod tests {
         assert!(quantized <= 7.0 / 8.0 * 100.0); // Should be clamped
     }
 
-    // ─── Config Tests ──────────────────────────────────────────────────────────
+    // â”€â”€â”€ Config Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_config_default() {
-        let config = TieredConfig::default_stuartian();
+        let config = TieredConfig::default_Topological();
         assert!(config.auto_tier);
         assert!(config.memory_pooling);
     }
 
     #[test]
     fn test_config_validate_ok() {
-        let config = TieredConfig::default_stuartian();
+        let config = TieredConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 
@@ -636,7 +636,7 @@ mod tests {
     fn test_config_zero_pool() {
         let config = TieredConfig {
             memory_pool_size: 0,
-            ..TieredConfig::default_stuartian()
+            ..TieredConfig::default_Topological()
         };
         assert_eq!(config.validate(), Err(TierError::InvalidMemorySize(0)));
     }
@@ -645,12 +645,12 @@ mod tests {
     fn test_config_zero_nodes() {
         let config = TieredConfig {
             max_nodes_per_tier: 0,
-            ..TieredConfig::default_stuartian()
+            ..TieredConfig::default_Topological()
         };
         assert_eq!(config.validate(), Err(TierError::InvalidConfig));
     }
 
-    // ─── Memory Pool Tests ─────────────────────────────────────────────────────
+    // â”€â”€â”€ Memory Pool Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_pool_new() {
@@ -713,7 +713,7 @@ mod tests {
         assert!(s.contains("MemoryPool"));
     }
 
-    // ─── Execution Node Tests ──────────────────────────────────────────────────
+    // â”€â”€â”€ Execution Node Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_node_new_edge() {
@@ -754,7 +754,7 @@ mod tests {
         assert!(s.contains("id=42"));
     }
 
-    // ─── Tiered Executor Tests ─────────────────────────────────────────────────
+    // â”€â”€â”€ Tiered Executor Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_executor_new() {
@@ -764,7 +764,7 @@ mod tests {
 
     #[test]
     fn test_executor_with_config() {
-        let config = TieredConfig::default_stuartian();
+        let config = TieredConfig::default_Topological();
         let executor = TieredExecutor::with_config(config).unwrap();
         assert_eq!(executor.node_count(), 0);
     }
@@ -892,7 +892,7 @@ mod tests {
         assert!(s.contains("TieredExecutor"));
     }
 
-    // ─── Utility Function Tests ────────────────────────────────────────────────
+    // â”€â”€â”€ Utility Function Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_quantize_tensor() {
@@ -935,7 +935,7 @@ mod tests {
         assert!((savings - 0.0) < 1e-10);
     }
 
-    // ─── Error Display Tests ───────────────────────────────────────────────────
+    // â”€â”€â”€ Error Display Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_error_display_invalid_tier() {
@@ -956,7 +956,7 @@ mod tests {
         assert!(s.contains("100"));
     }
 
-    // ─── Workflow Tests ────────────────────────────────────────────────────────
+    // â”€â”€â”€ Workflow Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_full_tiered_workflow() {

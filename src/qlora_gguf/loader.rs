@@ -1,6 +1,6 @@
-//! GGUF Loader — Parsing y validación de modelos base GGUF.
+﻿//! GGUF Loader â€” Parsing y validaciÃ³n de modelos base GGUF.
 //!
-//! **Stuartian Law 3 (Inteligencia Holística):** Eficiencia termodinámica.
+//! **Topological Law 3 (Inteligencia HolÃ­stica):** Eficiencia termodinÃ¡mica.
 //! Los modelos base se cargan una vez y se comparten inmutablemente.
 
 use std::fmt;
@@ -18,9 +18,9 @@ use memmap2::Mmap;
 pub enum GgufLoaderError {
     /// Archivo no encontrado.
     FileNotFound(String),
-    /// Formato GGUF inválido.
+    /// Formato GGUF invÃ¡lido.
     InvalidFormat(String),
-    /// Versión de GGUF no soportada.
+    /// VersiÃ³n de GGUF no soportada.
     UnsupportedVersion(String),
     /// Checksum SHA256 no coincide.
     ChecksumMismatch(String),
@@ -57,15 +57,15 @@ impl From<std::io::Error> for GgufLoaderError {
 pub struct GgufModelInfo {
     /// Ruta del archivo GGUF.
     pub path: String,
-    /// Versión del formato GGUF.
+    /// VersiÃ³n del formato GGUF.
     pub version: u32,
     /// Arquitectura del modelo (e.g., "llama", "qwen2").
     pub architecture: String,
-    /// Número de capas.
+    /// NÃºmero de capas.
     pub num_layers: usize,
-    /// Dimensión del embedding (d_model).
+    /// DimensiÃ³n del embedding (d_model).
     pub embedding_dim: usize,
-    /// Tamaño en bytes.
+    /// TamaÃ±o en bytes.
     pub size_bytes: u64,
     /// Checksum SHA256 del archivo.
     pub sha256: String,
@@ -73,7 +73,7 @@ pub struct GgufModelInfo {
 
 /// Modelo base GGUF inmutable con memoria mapeada.
 ///
-/// **Stuartian Law 3:** Cero desperdicio. El modelo se mapea
+/// **Topological Law 3:** Cero desperdicio. El modelo se mapea
 /// memory-mapped para evitar copias innecesarias.
 #[cfg(feature = "v2.1-qlora-gguf")]
 pub struct GgufBaseModel {
@@ -104,14 +104,14 @@ pub struct GgufLoader {
 }
 
 impl GgufLoader {
-    /// Crea un nuevo GgufLoader sin validación de checksum.
+    /// Crea un nuevo GgufLoader sin validaciÃ³n de checksum.
     pub fn new() -> Self {
         GgufLoader {
             expected_sha256: None,
         }
     }
 
-    /// Crea un GgufLoader con validación de checksum SHA256.
+    /// Crea un GgufLoader con validaciÃ³n de checksum SHA256.
     ///
     /// # Arguments
     /// * `sha256_hex` - Checksum SHA256 esperado en formato hex (64 chars).
@@ -154,7 +154,7 @@ impl GgufLoader {
         Ok(())
     }
 
-    /// Lee la versión GGUF (4 bytes little-endian después del magic).
+    /// Lee la versiÃ³n GGUF (4 bytes little-endian despuÃ©s del magic).
     fn read_gguf_version<P: AsRef<Path>>(path: P) -> Result<u32, GgufLoaderError> {
         let mut file = File::open(path)?;
         file.seek(SeekFrom::Start(4))?; // Skip magic
@@ -163,9 +163,9 @@ impl GgufLoader {
         Ok(u32::from_le_bytes(version_bytes))
     }
 
-    /// Valida que el archivo existe y tiene formato GGUF válido.
+    /// Valida que el archivo existe y tiene formato GGUF vÃ¡lido.
     ///
-    /// Retorna metadata del modelo si la validación pasa.
+    /// Retorna metadata del modelo si la validaciÃ³n pasa.
     pub fn validate<P: AsRef<Path>>(&self, path: P) -> Result<GgufModelInfo, GgufLoaderError> {
         let path_ref = path.as_ref();
         if !path_ref.exists() {
@@ -234,7 +234,7 @@ impl GgufLoader {
 
     /// Carga el modelo GGUF en memoria (read-only, memory-mapped).
     ///
-    /// **Stuartian Law 3:** Cero desperdicio. El modelo se mapea
+    /// **Topological Law 3:** Cero desperdicio. El modelo se mapea
     /// memory-mapped para evitar copias innecesarias.
     #[cfg(feature = "v2.1-qlora-gguf")]
     pub fn load<P: AsRef<Path>>(&self, path: P) -> Result<GgufBaseModel, GgufLoaderError> {
@@ -249,7 +249,7 @@ impl GgufLoader {
 
     /// Carga el modelo GGUF en memoria (read-only).
     ///
-    /// Versión sin feature gate para testing básico.
+    /// VersiÃ³n sin feature gate para testing bÃ¡sico.
     #[cfg(not(feature = "v2.1-qlora-gguf"))]
     pub fn load<P: AsRef<Path>>(&self, path: P) -> Result<GgufModelInfo, GgufLoaderError> {
         self.validate(path)

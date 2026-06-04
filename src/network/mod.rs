@@ -1,10 +1,10 @@
-//! Network — Cross-mesh routing and multi-region synchronization.
+﻿//! Network â€” Cross-mesh routing and multi-region synchronization.
 //!
-//! **Stuartian Law 1 (Diversidad):** Peering orgánico entre mallas, sin coordinación centralizada.
-//! **Stuartian Law 5 (Múltiples Posibilidades):** Tolerancia a particiones, convergencia eventual.
+//! **Topological Law 1 (Diversidad):** Peering orgÃ¡nico entre mallas, sin coordinaciÃ³n centralizada.
+//! **Topological Law 5 (MÃºltiples Posibilidades):** Tolerancia a particiones, convergencia eventual.
 //!
 //! ### Feature Gates
-//! | Feature | Módulo | Descripción |
+//! | Feature | MÃ³dulo | DescripciÃ³n |
 //! |---|---|---|
 //! | `v2.1-cross-mesh` | cross_mesh | Cross-mesh routing, peering, rate limiting |
 //! | `v2.1-region-sync` | region_sync | Multi-region sync, delta-encoding, batch merge |
@@ -89,7 +89,7 @@ pub use global_bootstrap::{
     BootstrapState, GlobalBootstrap,
 };
 
-// ─── Sprint81: Async Mesh & Sneakernet (offline DAG + VersionVector merging) ───
+// â”€â”€â”€ Sprint81: Async Mesh & Sneakernet (offline DAG + VersionVector merging) â”€â”€â”€
 #[cfg(feature = "v9.17-biological-bridge")]
 pub mod async_mesh_sneakernet;
 

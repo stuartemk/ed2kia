@@ -1,4 +1,4 @@
-//! Metrics — Cooperative objective and loss functions for ethical alignment.
+//! Metrics â€” Cooperative objective and loss functions for ethical alignment.
 //!
 //! Contains the Love = Zero Conflict formalization as a pairwise L2 divergence
 //! with KL divergence entropy proxy for policy diversity.
@@ -12,17 +12,17 @@ pub use cooperative_objective::{
     EPSILON, LAMBDA, MU,
 };
 
-// ─── Sprint80: Gödelian Grace (paradox detection + singularity marking) ───
-#[cfg(feature = "v9.16-godelian-synthesis")]
-pub mod godelian_grace;
+// â”€â”€â”€ Sprint80: Undecidable Grace (paradox detection + singularity marking) â”€â”€â”€
+#[cfg(feature = "v9.16-undecidable-synthesis")]
+pub mod undecidable_grace;
 
-#[cfg(feature = "v9.16-godelian-synthesis")]
-pub use godelian_grace::{
-    detect_godelian_paradox, invoke_godelian_grace, GodelianGrace, GodelianNode, GraceConfig,
-    GraceRecord, GraceState, NodeId,
+#[cfg(feature = "v9.16-undecidable-synthesis")]
+pub use undecidable_grace::{
+    detect_undecidable_paradox, invoke_undecidable_grace, undecidableGrace, undecidableNode,
+    GraceConfig, GraceRecord, GraceState, NodeId,
 };
 
-// ─── Sprint81: Paradox Cost & Fractal Triage (CE burning + anti-DDoS Gödelian) ───
+// â”€â”€â”€ Sprint81: Paradox Cost & Fractal Triage (CE burning + anti-DDoS Undecidable) â”€â”€â”€
 #[cfg(feature = "v9.17-biological-bridge")]
 pub mod paradox_cost_triage;
 

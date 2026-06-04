@@ -1,6 +1,6 @@
-//! Ethical Anchors — Sprint 78: Invariant Architecture & Planetary-Scale Resilience
+﻿//! Ethical Anchors â€” Sprint 78: Invariant Architecture & Planetary-Scale Resilience
 //!
-//! Invariant ethical anchors as points of infinite mass (Stuartian Laws) in the Genesis Block.
+//! Invariant ethical anchors as points of infinite mass (Topological Laws) in the Genesis Block.
 //! Curvature is limited by geodesic distance to anchors, preventing topological drift
 //! from oracle inversion attacks.
 
@@ -70,13 +70,13 @@ pub struct AnchorConfig {
     pub curvature_damping: f64,
     /// Minimum number of anchors required for validation.
     pub min_anchor_count: usize,
-    /// Infinite mass simulation constant (represents Stuartian Law weight).
+    /// Infinite mass simulation constant (represents Topological Law weight).
     pub anchor_mass: f64,
 }
 
 impl AnchorConfig {
-    /// Default Stuartian configuration.
-    pub fn default_stuartian() -> Self {
+    /// Default Topological configuration.
+    pub fn default_Topological() -> Self {
         Self {
             max_geodesic_drift: 0.15,
             curvature_damping: 0.85,
@@ -102,7 +102,7 @@ impl AnchorConfig {
 
 impl Default for AnchorConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -115,11 +115,11 @@ impl Default for AnchorConfig {
 pub struct EthicalAnchor {
     /// Unique identifier for this anchor.
     pub id: u64,
-    /// Name of the Stuartian Law this anchor represents.
+    /// Name of the Topological Law this anchor represents.
     pub law_name: String,
     /// Coordinates in the semantic manifold (3D for geodesic computation).
     pub coordinates: Vec<f64>,
-    /// Immutable flag — anchors in genesis cannot be moved.
+    /// Immutable flag â€” anchors in genesis cannot be moved.
     pub immutable: bool,
 }
 
@@ -198,7 +198,7 @@ impl EthicalAnchors {
     /// Create a new ethical anchors engine with default config.
     pub fn new() -> Self {
         Self {
-            config: AnchorConfig::default_stuartian(),
+            config: AnchorConfig::default_Topological(),
             anchors: HashMap::new(),
             records: Vec::new(),
         }
@@ -220,7 +220,7 @@ impl EthicalAnchors {
         Ok(())
     }
 
-    /// Remove an anchor (only if not immutable — genesis anchors are permanent).
+    /// Remove an anchor (only if not immutable â€” genesis anchors are permanent).
     pub fn remove_anchor(&mut self, id: u64) -> Result<bool, AnchorError> {
         if let Some(anchor) = self.anchors.get(&id) {
             if anchor.immutable {
@@ -250,7 +250,7 @@ impl EthicalAnchors {
     /// Returns a factor in (0, 1] where 1 means fully constrained near anchor.
     pub fn curvature_constraint_factor(&self, distance: f64) -> f64 {
         let damping = self.config.curvature_damping;
-        // Exponential decay: closer to anchor → stronger constraint
+        // Exponential decay: closer to anchor â†’ stronger constraint
         let factor = (-distance / (1.0 - damping)).exp();
         factor.min(1.0).max(0.0)
     }
@@ -450,7 +450,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = AnchorConfig::default_stuartian();
+        let config = AnchorConfig::default_Topological();
         assert!(config.max_geodesic_drift > 0.0);
         assert!(config.curvature_damping > 0.0);
         assert!(config.min_anchor_count >= 3);
@@ -458,7 +458,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = AnchorConfig::default_stuartian();
+        let config = AnchorConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 
@@ -466,7 +466,7 @@ mod tests {
     fn test_config_invalid_drift() {
         let config = AnchorConfig {
             max_geodesic_drift: 0.0,
-            ..AnchorConfig::default_stuartian()
+            ..AnchorConfig::default_Topological()
         };
         assert!(matches!(
             config.validate(),
@@ -478,7 +478,7 @@ mod tests {
     fn test_config_invalid_damping() {
         let config = AnchorConfig {
             curvature_damping: 0.0,
-            ..AnchorConfig::default_stuartian()
+            ..AnchorConfig::default_Topological()
         };
         assert!(matches!(
             config.validate(),
@@ -490,7 +490,7 @@ mod tests {
     fn test_config_insufficient_min_anchors() {
         let config = AnchorConfig {
             min_anchor_count: 2,
-            ..AnchorConfig::default_stuartian()
+            ..AnchorConfig::default_Topological()
         };
         assert!(matches!(
             config.validate(),
@@ -526,7 +526,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = AnchorConfig::default_stuartian();
+        let config = AnchorConfig::default_Topological();
         let engine = EthicalAnchors::with_config(config);
         assert!(engine.is_ok());
     }
@@ -796,7 +796,7 @@ mod tests {
     fn test_full_workflow() {
         let mut engine = EthicalAnchors::new();
 
-        // Register genesis anchors (Stuartian Laws)
+        // Register genesis anchors (Topological Laws)
         engine
             .register_anchor(EthicalAnchor::new(
                 1,
@@ -819,13 +819,13 @@ mod tests {
             ))
             .unwrap();
 
-        // Enforce curvature near anchor — should succeed
+        // Enforce curvature near anchor â€” should succeed
         let curvature = engine
             .enforce_curvature(&[0.05, 0.0, 0.0], 0.5, 1000)
             .unwrap();
         assert!(curvature <= 0.5);
 
-        // Enforce curvature far from anchors — should fail
+        // Enforce curvature far from anchors â€” should fail
         let result = engine.enforce_curvature(&[10.0, 10.0, 10.0], 0.5, 2000);
         assert!(result.is_err());
 

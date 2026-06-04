@@ -1,4 +1,4 @@
-//! Progressive Weight Streaming — Sprint 78: Invariant Architecture & Planetary-Scale Resilience
+﻿//! Progressive Weight Streaming â€” Sprint 78: Invariant Architecture & Planetary-Scale Resilience
 //!
 //! Progressive weight streaming for cold start optimization. Micro-SAE (1MB) boots in <500ms,
 //! then full SAE weights are streamed via WebRTC P2P (BitTorrent-style). Value from t=0.
@@ -72,8 +72,8 @@ pub struct StreamingConfig {
 }
 
 impl StreamingConfig {
-    /// Default Stuartian configuration.
-    pub fn default_stuartian() -> Self {
+    /// Default Topological configuration.
+    pub fn default_Topological() -> Self {
         Self {
             max_chunk_size: 64 * 1024, // 64 KB chunks
             min_transfer_rate_kb: 10.0,
@@ -100,7 +100,7 @@ impl StreamingConfig {
 
 impl Default for StreamingConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -261,7 +261,7 @@ impl ProgressiveWeightStreaming {
     /// Create a new streaming engine with default config.
     pub fn new() -> Self {
         Self {
-            config: StreamingConfig::default_stuartian(),
+            config: StreamingConfig::default_Topological(),
             peers: HashMap::new(),
             chunks: HashMap::new(),
             downloaded_chunks: HashMap::new(),
@@ -390,7 +390,7 @@ impl ProgressiveWeightStreaming {
             return Err(StreamingError::RateTooLow(rate_kb));
         }
 
-        // Success — mark as downloaded
+        // Success â€” mark as downloaded
         let downloaded_chunk = chunk.clone();
         self.downloaded_chunks.insert(chunk_id, downloaded_chunk);
 
@@ -514,7 +514,7 @@ pub fn estimate_transfer_time(size_bytes: usize, rate_kb: f64) -> u64 {
 
 /// Compute optimal chunk size for a given bandwidth and latency.
 pub fn optimal_chunk_size(bandwidth_kb: f64, latency_ms: u64) -> usize {
-    // Target: chunk transfer time ≈ 2 * latency (pipelining optimization)
+    // Target: chunk transfer time â‰ˆ 2 * latency (pipelining optimization)
     let target_time_ms = latency_ms.saturating_mul(2);
     let target_size_kb = bandwidth_kb * (target_time_ms as f64 / 1000.0);
     let size = target_size_kb as usize * 1024;
@@ -550,7 +550,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = StreamingConfig::default_stuartian();
+        let config = StreamingConfig::default_Topological();
         assert!(config.max_chunk_size > 0);
         assert!(config.min_transfer_rate_kb > 0.0);
         assert!(config.micro_load_timeout_ms > 0);
@@ -558,7 +558,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = StreamingConfig::default_stuartian();
+        let config = StreamingConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 
@@ -566,7 +566,7 @@ mod tests {
     fn test_config_zero_chunk_size() {
         let config = StreamingConfig {
             max_chunk_size: 0,
-            ..StreamingConfig::default_stuartian()
+            ..StreamingConfig::default_Topological()
         };
         assert!(matches!(
             config.validate(),
@@ -578,7 +578,7 @@ mod tests {
     fn test_config_zero_rate() {
         let config = StreamingConfig {
             min_transfer_rate_kb: 0.0,
-            ..StreamingConfig::default_stuartian()
+            ..StreamingConfig::default_Topological()
         };
         assert!(matches!(
             config.validate(),
@@ -590,7 +590,7 @@ mod tests {
     fn test_config_zero_timeout() {
         let config = StreamingConfig {
             micro_load_timeout_ms: 0,
-            ..StreamingConfig::default_stuartian()
+            ..StreamingConfig::default_Topological()
         };
         assert!(matches!(
             config.validate(),
@@ -666,7 +666,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = StreamingConfig::default_stuartian();
+        let config = StreamingConfig::default_Topological();
         let engine = ProgressiveWeightStreaming::with_config(config);
         assert!(engine.is_ok());
     }

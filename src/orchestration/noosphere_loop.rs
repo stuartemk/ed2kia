@@ -1,22 +1,22 @@
-//! Noospheric Respiration Cycle — 5-phase orchestration loop.
+//! Noospheric Respiration Cycle â€” 5-phase orchestration loop.
 //!
 //! Executed every N symbiotic clock ticks:
-//! 1. **Temporal Snapshot** — Capture distributed time state
-//! 2. **Field Computation** — Evaluate EthicalResonanceField
-//! 3. **HOPH Analysis** — Compute β₂ persistent homology
-//! 4. **Human Validation Loop** — Steering Bridge correlation check
-//! 5. **Integration / Apoptosis** — Integrate valid concepts, dissolve failing ones
+//! 1. **Temporal Snapshot** â€” Capture distributed time state
+//! 2. **Field Computation** â€” Evaluate EthicalResonanceField
+//! 3. **HOPH Analysis** â€” Compute Î²â‚‚ persistent homology
+//! 4. **Human Validation Loop** â€” Steering Bridge correlation check
+//! 5. **Integration / Byzantine_Eviction** â€” Integrate valid concepts, dissolve failing ones
 //!
 //! Feature gate: `v3.9-noosphere-engine`
 
 /// Default number of symbiotic clock ticks between respiration cycles.
 const DEFAULT_CYCLE_INTERVAL: u32 = 10;
 
-/// Default global ethical threshold. If exceeded for `apoptosis_ticks` ticks, triggers rollback.
+/// Default global ethical threshold. If exceeded for `Byzantine_Eviction_ticks` ticks, triggers rollback.
 const DEFAULT_ETHICAL_THRESHOLD: f64 = 0.6;
 
-/// Default number of consecutive ticks above threshold before collective apoptosis.
-const DEFAULT_APOPTOSIS_TICKS: u32 = 5;
+/// Default number of consecutive ticks above threshold before collective Byzantine_Eviction.
+const DEFAULT_Byzantine_Eviction_TICKS: u32 = 5;
 
 // ---------------------------------------------------------------------------
 // Errors
@@ -30,8 +30,8 @@ pub enum NoosphereError {
     HophAnalysis(String),
     /// Human validation rejected (correlation too low).
     HumanValidationRejected { correlation: f64 },
-    /// Collective apoptosis triggered.
-    CollectiveApoptosis { cycle: u64, reason: String },
+    /// Collective Byzantine_Eviction triggered.
+    CollectiveByzantine_Eviction { cycle: u64, reason: String },
     /// Invalid configuration.
     InvalidConfig(String),
 }
@@ -48,8 +48,12 @@ impl std::fmt::Display for NoosphereError {
                     correlation
                 )
             }
-            NoosphereError::CollectiveApoptosis { cycle, reason } => {
-                write!(f, "Collective apoptosis at cycle {}: {}", cycle, reason)
+            NoosphereError::CollectiveByzantine_Eviction { cycle, reason } => {
+                write!(
+                    f,
+                    "Collective Byzantine_Eviction at cycle {}: {}",
+                    cycle, reason
+                )
             }
             NoosphereError::InvalidConfig(msg) => write!(f, "Invalid config: {}", msg),
         }
@@ -95,7 +99,7 @@ pub struct CycleResult {
     pub cycle: u64,
     /// Global resonance value from field computation.
     pub global_resonance: f64,
-    /// β₂ persistence score from HOPH analysis.
+    /// Î²â‚‚ persistence score from HOPH analysis.
     pub ph2_score: f64,
     /// Human steward correlation.
     pub human_correlation: f64,
@@ -103,8 +107,8 @@ pub struct CycleResult {
     pub concepts_integrated: usize,
     /// Number of concepts dissolved this cycle.
     pub concepts_dissolved: usize,
-    /// Whether collective apoptosis was triggered.
-    pub apoptosis_triggered: bool,
+    /// Whether collective Byzantine_Eviction was triggered.
+    pub Byzantine_Eviction_triggered: bool,
     /// Final phase reached.
     pub final_phase: RespirationPhase,
 }
@@ -118,13 +122,13 @@ pub struct CycleResult {
 pub struct NoosphereConfig {
     /// Number of symbiotic clock ticks between cycles.
     pub cycle_interval: u32,
-    /// Global ethical threshold for apoptosis monitoring.
+    /// Global ethical threshold for Byzantine_Eviction monitoring.
     pub ethical_threshold: f64,
-    /// Consecutive ticks above threshold before apoptosis.
-    pub apoptosis_ticks: u32,
+    /// Consecutive ticks above threshold before Byzantine_Eviction.
+    pub Byzantine_Eviction_ticks: u32,
     /// Minimum human correlation for concept integration.
     pub min_human_correlation: f64,
-    /// PH₂ persistence threshold for macro-concept birth.
+    /// PHâ‚‚ persistence threshold for macro-concept birth.
     pub ph2_threshold: f64,
 }
 
@@ -133,7 +137,7 @@ impl Default for NoosphereConfig {
         NoosphereConfig {
             cycle_interval: DEFAULT_CYCLE_INTERVAL,
             ethical_threshold: DEFAULT_ETHICAL_THRESHOLD,
-            apoptosis_ticks: DEFAULT_APOPTOSIS_TICKS,
+            Byzantine_Eviction_ticks: DEFAULT_Byzantine_Eviction_TICKS,
             min_human_correlation: 0.75,
             ph2_threshold: 0.3,
         }
@@ -153,9 +157,9 @@ impl NoosphereConfig {
                 "ethical_threshold must be in [0,1]".into(),
             ));
         }
-        if self.apoptosis_ticks == 0 {
+        if self.Byzantine_Eviction_ticks == 0 {
             return Err(NoosphereError::InvalidConfig(
-                "apoptosis_ticks must be > 0".into(),
+                "Byzantine_Eviction_ticks must be > 0".into(),
             ));
         }
         Ok(())
@@ -243,35 +247,35 @@ impl NoosphericRespirationCycle {
 
         // Check if it's time for a cycle.
         if !self.current_tick.is_multiple_of(self.config.cycle_interval) {
-            // Still between cycles — monitor ethical threshold.
+            // Still between cycles â€” monitor ethical threshold.
             self.monitor_ethical_threshold(human_validation);
             return None;
         }
 
         // Execute full 5-phase cycle.
         self.phase = RespirationPhase::TemporalSnapshot;
-        // Phase 1: Temporal Snapshot — update field σ(t).
+        // Phase 1: Temporal Snapshot â€” update field Ïƒ(t).
         let _ = snapshot; // In production, update TemporalCohesionEngine.
 
         self.phase = RespirationPhase::FieldComputation;
-        // Phase 2: Field Computation — compute global resonance.
+        // Phase 2: Field Computation â€” compute global resonance.
         let global_resonance = self.compute_field(snapshot);
 
         self.phase = RespirationPhase::HophAnalysis;
-        // Phase 3: HOPH Analysis — use provided result.
+        // Phase 3: HOPH Analysis â€” use provided result.
         let ph2_score = hoph_result.ph2_score;
 
         self.phase = RespirationPhase::HumanValidation;
-        // Phase 4: Human Validation — check correlation.
+        // Phase 4: Human Validation â€” check correlation.
         let human_correlation = human_validation.correlation;
 
         self.phase = RespirationPhase::Integration;
-        // Phase 5: Integration / Apoptosis.
-        let (integrated, dissolved, apoptosis) =
+        // Phase 5: Integration / Byzantine_Eviction.
+        let (integrated, dissolved, Byzantine_Eviction) =
             self.integrate(human_correlation, ph2_score, hoph_result);
 
-        // Check for apoptosis.
-        if apoptosis || self.check_collective_apoptosis() {
+        // Check for Byzantine_Eviction.
+        if Byzantine_Eviction || self.check_collective_Byzantine_Eviction() {
             self.ethical_violation_count += 1;
         } else {
             self.ethical_violation_count = 0;
@@ -287,7 +291,7 @@ impl NoosphericRespirationCycle {
             human_correlation,
             concepts_integrated: integrated,
             concepts_dissolved: dissolved,
-            apoptosis_triggered: apoptosis,
+            Byzantine_Eviction_triggered: Byzantine_Eviction,
             final_phase: RespirationPhase::Integration,
         };
 
@@ -316,20 +320,20 @@ impl NoosphericRespirationCycle {
     ) -> (usize, usize, bool) {
         let mut integrated = 0;
         let mut dissolved = 0;
-        let mut apoptosis = false;
+        let mut Byzantine_Eviction = false;
 
         // Check if conditions support concept birth.
         if ph2_score >= self.config.ph2_threshold
             && human_correlation >= self.config.min_human_correlation
         {
-            integrated = _hoph_result.beta2_count; // Each β₂ feature → one concept.
+            integrated = _hoph_result.beta2_count; // Each Î²â‚‚ feature â†’ one concept.
         } else if human_correlation < self.config.min_human_correlation * 0.5 {
-            // Very low correlation → dissolve existing concepts + trigger apoptosis.
+            // Very low correlation â†’ dissolve existing concepts + trigger Byzantine_Eviction.
             dissolved = _hoph_result.beta2_count;
-            apoptosis = true;
+            Byzantine_Eviction = true;
         }
 
-        (integrated, dissolved, apoptosis)
+        (integrated, dissolved, Byzantine_Eviction)
     }
 
     // ---- Ethical monitoring ----
@@ -343,9 +347,9 @@ impl NoosphericRespirationCycle {
         }
     }
 
-    /// Check if collective apoptosis should be triggered.
-    fn check_collective_apoptosis(&self) -> bool {
-        self.ethical_violation_count >= self.config.apoptosis_ticks
+    /// Check if collective Byzantine_Eviction should be triggered.
+    fn check_collective_Byzantine_Eviction(&self) -> bool {
+        self.ethical_violation_count >= self.config.Byzantine_Eviction_ticks
     }
 
     // ---- State queries ----
@@ -381,10 +385,11 @@ impl NoosphericRespirationCycle {
         self.ethical_violation_count
     }
 
-    /// Check if apoptosis is imminent.
-    pub fn apoptosis_imminent(&self) -> bool {
+    /// Check if Byzantine_Eviction is imminent.
+    pub fn Byzantine_Eviction_imminent(&self) -> bool {
         self.ethical_violation_count() > 0
-            && (self.ethical_violation_count() as f64 / self.config.apoptosis_ticks as f64) > 0.8
+            && (self.ethical_violation_count() as f64 / self.config.Byzantine_Eviction_ticks as f64)
+                > 0.8
     }
 
     /// Reset the cycle engine.
@@ -453,7 +458,7 @@ mod tests {
         let config = NoosphereConfig {
             cycle_interval: 5,
             ethical_threshold: 0.5,
-            apoptosis_ticks: 3,
+            Byzantine_Eviction_ticks: 3,
             min_human_correlation: 0.7,
             ph2_threshold: 0.2,
         };
@@ -519,7 +524,7 @@ mod tests {
         })
         .unwrap();
 
-        // Low correlation → dissolution.
+        // Low correlation â†’ dissolution.
         for _ in 0..2 {
             cycle.tick(
                 &make_snapshot(0.1, 50),
@@ -542,7 +547,7 @@ mod tests {
         let cycle = NoosphericRespirationCycle::new().unwrap();
         let r1 = cycle.compute_field(&make_snapshot(0.1, 10));
         let r2 = cycle.compute_field(&make_snapshot(0.1, 100));
-        assert!(r2 > r1, "More peers → higher resonance");
+        assert!(r2 > r1, "More peers â†’ higher resonance");
     }
 
     #[test]
@@ -550,7 +555,7 @@ mod tests {
         let cycle = NoosphericRespirationCycle::new().unwrap();
         let r1 = cycle.compute_field(&make_snapshot(0.01, 50));
         let r2 = cycle.compute_field(&make_snapshot(10.0, 50));
-        assert!(r1 > r2, "Lower variance → higher resonance");
+        assert!(r1 > r2, "Lower variance â†’ higher resonance");
     }
 
     #[test]
@@ -608,7 +613,7 @@ mod tests {
 
     #[test]
     fn test_error_display() {
-        let err = NoosphereError::CollectiveApoptosis {
+        let err = NoosphereError::CollectiveByzantine_Eviction {
             cycle: 5,
             reason: "ethical threshold exceeded".into(),
         };

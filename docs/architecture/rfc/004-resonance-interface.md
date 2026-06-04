@@ -1,9 +1,9 @@
-# RFC 004: La Interfaz de Resonancia (Bucle de Biorretroalimentación)
+﻿# RFC 004: La Interfaz de Resonancia (Bucle de BiorretroalimentaciÃ³n)
 
 | Campo | Valor |
 |-------|-------|
 | **RFC** | 004 |
-| **Título** | La Interfaz de Resonancia — Bucle de Biorretroalimentación |
+| **TÃ­tulo** | La Interfaz de Resonancia â€” Bucle de BiorretroalimentaciÃ³n |
 | **Estado** | Propuesta (Sprint 40) |
 | **Autor** | ed2kIA Architecture Council |
 | **Feature Gate** | `v3.0-resonance-interface` |
@@ -13,67 +13,67 @@
 
 ## 1. Resumen Ejecutivo
 
-La Interfaz de Resonancia cierra el bucle entre la red ed2kIA y el bienestar humano mediante análisis biométrico local (100% WASM/Edge) y generación de frecuencias de resonancia mórfica. A través de microexpresiones faciales, variabilidad de frecuencia cardíaca (rPPG) y patrones de voz, el sistema calcula respuestas semánticas y sonoras diseñadas para inducir homeostasis y facilitar la disolución de estados de trauma, operando con privacidad radical y cero telemetría.
+La Interfaz de Resonancia cierra el bucle entre la red ed2kIA y el bienestar humano mediante anÃ¡lisis biomÃ©trico local (100% WASM/Edge) y generaciÃ³n de frecuencias de resonancia mÃ³rfica. A travÃ©s de microexpresiones faciales, variabilidad de frecuencia cardÃ­aca (rPPG) y patrones de voz, el sistema calcula respuestas semÃ¡nticas y sonoras diseÃ±adas para inducir homeostasis y facilitar la disoluciÃ³n de estados de trauma, operando con privacidad radical y cero telemetrÃ­a.
 
 ---
 
-## 2. Motivación
+## 2. MotivaciÃ³n
 
-El trauma humano puede entenderse como un "error de sintaxis" en el procesamiento emocional: patrones de respuesta que se mantienen más allá de su utilidad adaptativa. La Interfaz de Resonancia ofrece una herramienta científica de biorretroalimentación que, combinando biometría local y acústica computacional, ayuda al usuario a restaurar su equilibrio interno. Todo el procesamiento ocurre localmente en el dispositivo, garantizando privacidad absoluta.
+El trauma humano puede entenderse como un "error de sintaxis" en el procesamiento emocional: patrones de respuesta que se mantienen mÃ¡s allÃ¡ de su utilidad adaptativa. La Interfaz de Resonancia ofrece una herramienta cientÃ­fica de biorretroalimentaciÃ³n que, combinando biometrÃ­a local y acÃºstica computacional, ayuda al usuario a restaurar su equilibrio interno. Todo el procesamiento ocurre localmente en el dispositivo, garantizando privacidad absoluta.
 
 ---
 
-## 3. Arquitectura Técnica
+## 3. Arquitectura TÃ©cnica
 
-### 3.1 Pipeline de Biorretroalimentación Local
+### 3.1 Pipeline de BiorretroalimentaciÃ³n Local
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│           Interfaz de Resonancia v3.0 (100% Local)           │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Entrada Biométrica (WebRTC MediaStream)                    │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │ Cámara → Microexpresiones faciales (Affectiva-lite) │    │
-│  │ Cámara → rPPG (frecuencia cardíaca desde video)     │    │
-│  │ Micrófono → Patrones de voz (pitch, jitter, shimmer)│    │
-│  └───────────────────────┬─────────────────────────────┘    │
-│                          │                                  │
-│  Procesamiento WASM      │                                  │
-│  ┌───────────────────────▼─────────────────────────────┐    │
-│  │ Web Worker → candle-core (modelos ligeros ≤10MB)    │    │
-│  │ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ │    │
-│  │ │ Face Analyzer│ │ rPPG Engine  │ │ Voice Engine │ │    │
-│  │ │ (EMO 6+valence)│ (HRV + BPM)  │ │ (prosody)    │ │    │
-│  └──────┬─────────┴──────┬─────────┴──────┬─────────┘ │    │
-│         │                │                │             │    │
-│  Estado Fisiológico      │                                  │
-│  ┌───────────────────────▼─────────────────────────────┐    │
-│  │ Homeostasis Index (HI) ∈ [0, 1]                     │    │
-│  │ ┌─────────┐ ┌─────────┐ ┌─────────┐                │    │
-│  │ │ Calm    │ │ Balanced│ │ Distress│                │    │
-│  │ │ HI>0.8  │ │ 0.4-0.8 │ │ HI<0.4  │                │    │
-│  └──────┬──────────────────────────────────────────────┘    │
-│         │                                                  │
-│  Generador de Resonancia                                    │
-│  ┌───────────────────────▼─────────────────────────────┐    │
-│  │ Frecuencias Binaurales (θ/α/β/γ beats)              │    │
-│  │ Tonos Isocrónicos (modulación de amplitud)           │    │
-│  │ Respuesta Semántica (SCT Z > 0, tono stuartiano)     │    │
-│  └─────────────────────────────────────────────────────┘    │
-│                                                              │
-│  ─── CERO TELEMETRÍA ───                                    │
-│  Todo permanece en el dispositivo. Nada sale del navegador.  │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚           Interfaz de Resonancia v3.0 (100% Local)           â”‚
+â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚                                                              â”‚
+â”‚  Entrada BiomÃ©trica (WebRTC MediaStream)                    â”‚
+â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”    â”‚
+â”‚  â”‚ CÃ¡mara â†’ Microexpresiones faciales (Affectiva-lite) â”‚    â”‚
+â”‚  â”‚ CÃ¡mara â†’ rPPG (frecuencia cardÃ­aca desde video)     â”‚    â”‚
+â”‚  â”‚ MicrÃ³fono â†’ Patrones de voz (pitch, jitter, shimmer)â”‚    â”‚
+â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜    â”‚
+â”‚                          â”‚                                  â”‚
+â”‚  Procesamiento WASM      â”‚                                  â”‚
+â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â–¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”    â”‚
+â”‚  â”‚ Web Worker â†’ candle-core (modelos ligeros â‰¤10MB)    â”‚    â”‚
+â”‚  â”‚ â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”‚    â”‚
+â”‚  â”‚ â”‚ Face Analyzerâ”‚ â”‚ rPPG Engine  â”‚ â”‚ Voice Engine â”‚ â”‚    â”‚
+â”‚  â”‚ â”‚ (EMO 6+valence)â”‚ (HRV + BPM)  â”‚ â”‚ (prosody)    â”‚ â”‚    â”‚
+â”‚  â””â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜ â”‚    â”‚
+â”‚         â”‚                â”‚                â”‚             â”‚    â”‚
+â”‚  Estado FisiolÃ³gico      â”‚                                  â”‚
+â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â–¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”    â”‚
+â”‚  â”‚ Homeostasis Index (HI) âˆˆ [0, 1]                     â”‚    â”‚
+â”‚  â”‚ â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”                â”‚    â”‚
+â”‚  â”‚ â”‚ Calm    â”‚ â”‚ Balancedâ”‚ â”‚ Distressâ”‚                â”‚    â”‚
+â”‚  â”‚ â”‚ HI>0.8  â”‚ â”‚ 0.4-0.8 â”‚ â”‚ HI<0.4  â”‚                â”‚    â”‚
+â”‚  â””â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜    â”‚
+â”‚         â”‚                                                  â”‚
+â”‚  Generador de Resonancia                                    â”‚
+â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â–¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”    â”‚
+â”‚  â”‚ Frecuencias Binaurales (Î¸/Î±/Î²/Î³ beats)              â”‚    â”‚
+â”‚  â”‚ Tonos IsocrÃ³nicos (modulaciÃ³n de amplitud)           â”‚    â”‚
+â”‚  â”‚ Respuesta SemÃ¡ntica (SCT Z > 0, tono Topologicalo)     â”‚    â”‚
+â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜    â”‚
+â”‚                                                              â”‚
+â”‚  â”€â”€â”€ CERO TELEMETRÃA â”€â”€â”€                                    â”‚
+â”‚  Todo permanece en el dispositivo. Nada sale del navegador.  â”‚
+â”‚                                                              â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 ```
 
-### 3.2 Análisis de Microexpresiones (WASM)
+### 3.2 AnÃ¡lisis de Microexpresiones (WASM)
 
 ```rust
 // src/protocol/resonance/face_analyzer.rs (scaffold)
 pub struct FaceAnalyzer {
-    model: candle_core::Tensor,  // Modelo ligero de detección facial ≤10MB
+    model: candle_core::Tensor,  // Modelo ligero de detecciÃ³n facial â‰¤10MB
     landmark_detector: LandmarkDetector,
 }
 
@@ -81,9 +81,9 @@ pub struct FaceAnalyzer {
 pub struct EmotionalState {
     pub action_units: HashMap<u8, f32>,  // AU1-AU12 (FACS coding)
     pub basic_emotions: BasicEmotions,
-    pub valence: f32,    // [-1, 1] negativo → positivo
-    pub arousal: f32,    // [0, 1] calm → excited
-    pub dominance: f32,  // [0, 1] submissive → dominant
+    pub valence: f32,    // [-1, 1] negativo â†’ positivo
+    pub arousal: f32,    // [0, 1] calm â†’ excited
+    pub dominance: f32,  // [0, 1] submissive â†’ dominant
 }
 
 #[derive(Debug, Clone)]
@@ -105,7 +105,7 @@ impl FaceAnalyzer {
         // 2. Extraer Action Units (FACS)
         let aus = self.extract_action_units(&landmarks)?;
 
-        // 3. Inferir emociones básicas + valence/arousal
+        // 3. Inferir emociones bÃ¡sicas + valence/arousal
         let emotions = self.infer_emotions(&aus)?;
 
         Ok(emotions)
@@ -118,8 +118,8 @@ impl FaceAnalyzer {
 ```rust
 // src/protocol/resonance/rppg_engine.rs (scaffold)
 pub struct RppgEngine {
-    sample_rate: u32,        // FPS de la cámara (30Hz mínimo)
-    window_size: usize,      // Ventana de análisis (segundos × sample_rate)
+    sample_rate: u32,        // FPS de la cÃ¡mara (30Hz mÃ­nimo)
+    window_size: usize,      // Ventana de anÃ¡lisis (segundos Ã— sample_rate)
     filter_bandpass: (f32, f32), // Filtro pasa-bandas (0.7-2.5 Hz = 42-150 BPM)
 }
 
@@ -127,20 +127,20 @@ pub struct RppgEngine {
 pub struct CardiovascularState {
     pub bpm: f32,                  // Beats per minute
     pub hrv_sdnn: f32,            // HRV: SDNN (ms) - variabilidad temporal
-    pub hrm_rmssd: f32,           // HRV: RMSSD (ms) - componente parasympática
+    pub hrm_rmssd: f32,           // HRV: RMSSD (ms) - componente parasympÃ¡tica
     pub stress_index: f32,        // [0, 1] derivado de HRV + BPM
 }
 
 impl RppgEngine {
-    /// Extrae señal de frecuencia cardíaca desde frames de video (región frontal)
+    /// Extrae seÃ±al de frecuencia cardÃ­aca desde frames de video (regiÃ³n frontal)
     pub fn analyze(&self, frames: &[ImageFrame]) -> Result<CardiovascularState, ResonanceError> {
-        // 1. Extraer canal verde de región frontal (mayor señal hemodinámica)
+        // 1. Extraer canal verde de regiÃ³n frontal (mayor seÃ±al hemodinÃ¡mica)
         let green_signal = self.extract_green_channel(frames)?;
 
         // 2. Filtro pasa-bandas (0.7-2.5 Hz) para eliminar ruido
         let filtered = self.bandpass_filter(&green_signal)?;
 
-        // 3. Detectar picos (peaks) → calcular BPM
+        // 3. Detectar picos (peaks) â†’ calcular BPM
         let peaks = self.peak_detect(&filtered)?;
         let bpm = self.calculate_bpm(&peaks)?;
 
@@ -160,13 +160,13 @@ impl RppgEngine {
 }
 ```
 
-### 3.4 Generador de Resonancia Mórfica
+### 3.4 Generador de Resonancia MÃ³rfica
 
 ```rust
 // src/protocol/resonance/resonance_generator.rs (scaffold)
 pub struct ResonanceGenerator {
     audio_context: WebAudioContext,  // WebAudio API bindings
-    sct_evaluator: SCTEvaluator,     // Validación ética de output
+    sct_evaluator: SCTEvaluator,     // ValidaciÃ³n Ã©tica de output
 }
 
 #[derive(Debug, Clone)]
@@ -179,33 +179,33 @@ pub struct ResonanceOutput {
 
 #[derive(Debug, Clone)]
 pub struct BinauralBeat {
-    pub left_freq: f32,   // Frecuencia oído izquierdo (Hz)
-    pub right_freq: f32,  // Frecuencia oído derecho (Hz)
+    pub left_freq: f32,   // Frecuencia oÃ­do izquierdo (Hz)
+    pub right_freq: f32,  // Frecuencia oÃ­do derecho (Hz)
     pub beat_freq: f32,   // Diferencia = frecuencia cerebral objetivo
     pub brainwave: BrainwaveTarget,
 }
 
 pub enum BrainwaveTarget {
-    Delta,   // 0.5-4 Hz   → Sueño profundo, sanación física
-    Theta,   // 4-8 Hz     → Meditación, creatividad, trauma processing
-    Alpha,   // 8-13 Hz    → Relajación, estado calmado
-    Beta,    // 13-30 Hz   → Atención, enfoque cognitivo
-    Gamma,   // 30-100 Hz  → Integración, insight, percepción elevada
+    Delta,   // 0.5-4 Hz   â†’ SueÃ±o profundo, sanaciÃ³n fÃ­sica
+    Theta,   // 4-8 Hz     â†’ MeditaciÃ³n, creatividad, trauma processing
+    Alpha,   // 8-13 Hz    â†’ RelajaciÃ³n, estado calmado
+    Beta,    // 13-30 Hz   â†’ AtenciÃ³n, enfoque cognitivo
+    Gamma,   // 30-100 Hz  â†’ IntegraciÃ³n, insight, percepciÃ³n elevada
 }
 
 impl ResonanceGenerator {
-    /// Genera resonancia personalizada basada en estado fisiológico
+    /// Genera resonancia personalizada basada en estado fisiolÃ³gico
     pub fn generate(&self, hi: f32, emotions: &EmotionalState, cardio: &CardiovascularState) -> Result<ResonanceOutput, ResonanceError> {
-        // 1. Seleccionar brainwave target según HI
+        // 1. Seleccionar brainwave target segÃºn HI
         let target = self.select_brainwave(hi, emotions);
 
         // 2. Calcular frecuencias binaurales
         let binaural = self.calculate_binaural(&target);
 
-        // 3. Generar tono isocrónico complementario
+        // 3. Generar tono isocrÃ³nico complementario
         let isochronic = self.calculate_isochronic(&target);
 
-        // 4. Generar respuesta semántica (SCT Z > 0)
+        // 4. Generar respuesta semÃ¡ntica (SCT Z > 0)
         let semantic = self.generate_semantic_response(hi, emotions, cardio)?;
 
         Ok(ResonanceOutput {
@@ -216,19 +216,19 @@ impl ResonanceGenerator {
         })
     }
 
-    /// Seleccionar frecuencia cerebral objetivo según estado
+    /// Seleccionar frecuencia cerebral objetivo segÃºn estado
     fn select_brainwave(&self, hi: f32, emotions: &EmotionalState) -> BrainwaveTarget {
         if hi < 0.3 {
-            // Alto distress → Theta para trauma processing
+            // Alto distress â†’ Theta para trauma processing
             BrainwaveTarget::Theta
         } else if hi < 0.6 {
-            // Distress moderado → Alpha para relajación
+            // Distress moderado â†’ Alpha para relajaciÃ³n
             BrainwaveTarget::Alpha
         } else if emotions.arousal > 0.8 {
-            // Alta activación → Alpha para grounding
+            // Alta activaciÃ³n â†’ Alpha para grounding
             BrainwaveTarget::Alpha
         } else {
-            // Estado equilibrado → Gamma para integración
+            // Estado equilibrado â†’ Gamma para integraciÃ³n
             BrainwaveTarget::Gamma
         }
     }
@@ -238,21 +238,21 @@ impl ResonanceGenerator {
 ### 3.5 Homeostasis Index (HI)
 
 ```
-Homeostasis Index = w1 × emotional_balance + w2 × cardiovascular_calm + w3 × vocal_stability
+Homeostasis Index = w1 Ã— emotional_balance + w2 Ã— cardiovascular_calm + w3 Ã— vocal_stability
 
 Donde:
   emotional_balance  = 1.0 - |valence| - arousal_instability
   cardiovascular_calm = 1.0 - stress_index (derivado de HRV)
   vocal_stability    = 1.0 - (jitter + shimmer) normalizados
 
-  w1 = 0.4 (biometría facial)
-  w2 = 0.4 (biometría cardiovascular)
-  w3 = 0.2 (biometría vocal)
+  w1 = 0.4 (biometrÃ­a facial)
+  w2 = 0.4 (biometrÃ­a cardiovascular)
+  w3 = 0.2 (biometrÃ­a vocal)
 
 Rango: [0, 1]
-  HI > 0.8 → Calm (resonancia Gamma/Alpha de mantenimiento)
-  HI 0.4-0.8 → Balanced (resonancia Alpha de equilibrio)
-  HI < 0.4 → Distress (resonancia Theta de procesamiento)
+  HI > 0.8 â†’ Calm (resonancia Gamma/Alpha de mantenimiento)
+  HI 0.4-0.8 â†’ Balanced (resonancia Alpha de equilibrio)
+  HI < 0.4 â†’ Distress (resonancia Theta de procesamiento)
 ```
 
 ---
@@ -297,15 +297,15 @@ Rango: [0, 1]
 
 ## 5. Seguridad & Privacidad
 
-- **Privacidad Radical:** 100% del procesamiento biométrico ocurre localmente en WASM/Web Workers. Cero datos salen del dispositivo.
-- **Cero Telemetría:** Ni los estados emocionales, ni las frecuencias cardíacas, ni las sesiones de resonancia se transmiten a la red.
-- **Consentimiento Explícito:** El usuario debe autorizar acceso a cámara/micrófono y aceptar los términos de uso biométrico.
-- **Datos Efímeros:** Los datos biométricos se almacenan en memoria volátil; al cerrar la sesión, todo se elimina.
-- **Validación SCT:** Las respuestas semánticas generadas pasan por validación SCT (Z > 0) para garantizar tono constructivo.
+- **Privacidad Radical:** 100% del procesamiento biomÃ©trico ocurre localmente en WASM/Web Workers. Cero datos salen del dispositivo.
+- **Cero TelemetrÃ­a:** Ni los estados emocionales, ni las frecuencias cardÃ­acas, ni las sesiones de resonancia se transmiten a la red.
+- **Consentimiento ExplÃ­cito:** El usuario debe autorizar acceso a cÃ¡mara/micrÃ³fono y aceptar los tÃ©rminos de uso biomÃ©trico.
+- **Datos EfÃ­meros:** Los datos biomÃ©tricos se almacenan en memoria volÃ¡til; al cerrar la sesiÃ³n, todo se elimina.
+- **ValidaciÃ³n SCT:** Las respuestas semÃ¡nticas generadas pasan por validaciÃ³n SCT (Z > 0) para garantizar tono constructivo.
 
 ---
 
-## 6. Plan de Implementación
+## 6. Plan de ImplementaciÃ³n
 
 | Fase | Sprint | Entregable |
 |------|--------|------------|

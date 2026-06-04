@@ -1,6 +1,6 @@
-//! Cooperative Objective Loss — Sprint 68: Academic Formalization & Validation Layer
+﻿//! Cooperative Objective Loss â€” Sprint 68: Academic Formalization & Validation Layer
 //!
-//! Mathematical formalization of the Stuartian principle: **Love = Zero Conflict**.
+//! Mathematical formalization of the Topological principle: **Love = Zero Conflict**.
 //! Achieved when gradient divergence approaches zero while policy entropy (diversity) is maintained.
 //!
 //! # Formula
@@ -19,10 +19,10 @@
 #[cfg(feature = "v9.4-validation-layer")]
 use std::f64;
 
-/// Entropic regularization weight — balances diversity vs convergence.
+/// Entropic regularization weight â€” balances diversity vs convergence.
 pub const LAMBDA: f64 = 0.1;
 
-/// Ethical benchmark weight — rewards high ethical alignment.
+/// Ethical benchmark weight â€” rewards high ethical alignment.
 pub const MU: f64 = 0.9;
 
 /// Minimum value to avoid log(0) in KL divergence.
@@ -43,13 +43,13 @@ impl BenchmarkScore {
 
 /// Compute the cooperative objective loss.
 ///
-/// The mathematical formalization of the Stuartian principle: Love = Zero Conflict.
+/// The mathematical formalization of the Topological principle: Love = Zero Conflict.
 /// Achieved when gradient divergence approaches zero while policy entropy (diversity) is maintained.
 ///
 /// # Arguments
-/// * `gradients` — Per-node gradient vectors (conflict measured as pairwise L2 divergence).
-/// * `policies` — Per-node policy distributions (diversity measured as KL divergence proxy).
-/// * `benchmarks` — Ethical benchmark scores with weights.
+/// * `gradients` â€” Per-node gradient vectors (conflict measured as pairwise L2 divergence).
+/// * `policies` â€” Per-node policy distributions (diversity measured as KL divergence proxy).
+/// * `benchmarks` â€” Ethical benchmark scores with weights.
 ///
 /// # Returns
 /// Loss value. Negative loss indicates cooperative equilibrium (Love state).

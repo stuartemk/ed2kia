@@ -1,19 +1,19 @@
-//! Paradox Cost & Fractal Triage — Sprint 81: The Biological Bridge & Singularity Resilience
+﻿//! Paradox Cost & Fractal Triage â€” Sprint 81: The Biological Bridge & Singularity Resilience
 //!
 //! Burning massive CE when a prompt is indecidible. Unsupervised clustering collapses
-//! related paradoxes into a single MetaParadox for human review. Prevents Gödelian DDoS.
+//! related paradoxes into a single MetaParadox for human review. Prevents Undecidable DDoS.
 //!
 //! Key features:
 //! - CE burn for indecidible prompts
 //! - Fractal clustering of paradoxes
 //! - MetaParadox aggregation
-//! - Anti-DDoS Gödelian protection
+//! - Anti-DDoS Undecidable protection
 //! - Human review queue management
 
 use std::collections::HashMap;
 use std::fmt;
 
-// ─── Errors ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Errors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TriageError {
@@ -34,7 +34,7 @@ impl fmt::Display for TriageError {
     }
 }
 
-// ─── Node ID ──────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Node ID â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct NodeId(pub u64);
@@ -45,7 +45,7 @@ impl fmt::Display for NodeId {
     }
 }
 
-// ─── CE Burn Result ───────────────────────────────────────────────────────────
+// â”€â”€â”€ CE Burn Result â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct CEBurnResult {
@@ -89,7 +89,7 @@ impl fmt::Display for CEBurnResult {
     }
 }
 
-// ─── MetaParadox ──────────────────────────────────────────────────────────────
+// â”€â”€â”€ MetaParadox â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct MetaParadox {
@@ -147,7 +147,7 @@ impl fmt::Display for MetaParadox {
     }
 }
 
-// ─── Triage Config ────────────────────────────────────────────────────────────
+// â”€â”€â”€ Triage Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct TriageConfig {
@@ -162,7 +162,7 @@ pub struct TriageConfig {
 }
 
 impl TriageConfig {
-    pub fn default_stuartian() -> Self {
+    pub fn default_Topological() -> Self {
         Self {
             ce_cost_per_paradox: 100,
             fractal_threshold: 0.7,
@@ -184,11 +184,11 @@ impl TriageConfig {
 
 impl Default for TriageConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
-// ─── Paradox Cost Engine ──────────────────────────────────────────────────────
+// â”€â”€â”€ Paradox Cost Engine â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 pub struct ParadoxCostTriage {
     config: TriageConfig,
@@ -204,7 +204,7 @@ pub struct ParadoxCostTriage {
 impl ParadoxCostTriage {
     pub fn new() -> Self {
         Self {
-            config: TriageConfig::default_stuartian(),
+            config: TriageConfig::default_Topological(),
             node_ce: HashMap::new(),
             burn_history: Vec::new(),
             clusters: HashMap::new(),
@@ -331,7 +331,7 @@ impl fmt::Display for ParadoxCostTriage {
     }
 }
 
-// ─── Public Functions ─────────────────────────────────────────────────────────
+// â”€â”€â”€ Public Functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Apply paradox cost to a node
 pub fn apply_paradox_cost(node_id: &NodeId, paradox_hash: &[u8]) -> CEBurnResult {
@@ -345,7 +345,7 @@ pub fn cluster_paradoxes(fractal_threshold: f64) -> Vec<MetaParadox> {
     vec![meta]
 }
 
-// ─── Hash Functions ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Hash Functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 fn fnv_hash_64(data: &[u8]) -> u64 {
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -369,7 +369,7 @@ fn fnv_hash_256(data: &[u8]) -> Vec<u8> {
     result
 }
 
-// ─── Tests ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[cfg(test)]
 mod tests {
@@ -377,7 +377,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = TriageConfig::default_stuartian();
+        let config = TriageConfig::default_Topological();
         assert_eq!(config.ce_cost_per_paradox, 100);
         assert_eq!(config.fractal_threshold, 0.7);
         assert_eq!(config.max_cluster_size, 50);
@@ -385,20 +385,20 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = TriageConfig::default_stuartian();
+        let config = TriageConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 
     #[test]
     fn test_config_zero_cost() {
-        let mut config = TriageConfig::default_stuartian();
+        let mut config = TriageConfig::default_Topological();
         config.ce_cost_per_paradox = 0;
         assert!(config.validate().is_err());
     }
 
     #[test]
     fn test_config_invalid_threshold() {
-        let mut config = TriageConfig::default_stuartian();
+        let mut config = TriageConfig::default_Topological();
         config.fractal_threshold = 1.5;
         assert!(config.validate().is_err());
     }
@@ -454,7 +454,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = TriageConfig::default_stuartian();
+        let config = TriageConfig::default_Topological();
         let engine = ParadoxCostTriage::with_config(config).unwrap();
         assert_eq!(engine.cluster_count(), 0);
     }

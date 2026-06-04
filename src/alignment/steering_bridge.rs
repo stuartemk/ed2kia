@@ -1,13 +1,13 @@
-//! Steering Bridge — Sprint 30
+﻿//! Steering Bridge â€” Sprint 30
 //!
-//! Human-in-the-loop feedback bridge for Stuartian ethical steering.
+//! Human-in-the-loop feedback bridge for Topological ethical steering.
 //! Translates human feedback (CLI/Web) into SCT delta updates, signs them
 //! cryptographically with Ed25519, and emits/burns CE via the ledger.
 //!
 //! # Workflow
 //!
-//! 1. Parse feedback text → extract ethical intention
-//! 2. Map intention to SCT delta: `ΔZ ∈ [-0.3, 0.3]`, `ΔX/ΔY` by context
+//! 1. Parse feedback text â†’ extract ethical intention
+//! 2. Map intention to SCT delta: `Î”Z âˆˆ [-0.3, 0.3]`, `Î”X/Î”Y` by context
 //! 3. Update `sct_dict` with new SCT values
 //! 4. Emit/burn CE via `ce_ledger` based on Z direction
 //! 5. Sign `SteeringEvent` with Ed25519 `SigningKey`
@@ -34,7 +34,7 @@ pub enum SteeringError {
     #[error("Ed25519 signing error: {0}")]
     SigningError(String),
 
-    #[error("SCT delta out of bounds: ΔZ={delta_z} (must be in [-0.3, 0.3])")]
+    #[error("SCT delta out of bounds: Î”Z={delta_z} (must be in [-0.3, 0.3])")]
     DeltaOutOfBounds { delta_z: f32 },
 
     #[error("Peer not found: {0}")]
@@ -49,7 +49,7 @@ pub enum SteeringError {
 pub struct SteeringEvent {
     /// Target token ID that was steered.
     pub token_id: u32,
-    /// SCT delta applied (ΔX, ΔY, ΔZ).
+    /// SCT delta applied (Î”X, Î”Y, Î”Z).
     pub delta_sct: (f32, f32, f32),
     /// Ed25519 signature of the event payload.
     pub signature: Vec<u8>,
@@ -61,7 +61,7 @@ pub struct SteeringEvent {
     pub feedback_text: String,
 }
 
-/// Steering Bridge — Human-in-the-loop ethical feedback processor.
+/// Steering Bridge â€” Human-in-the-loop ethical feedback processor.
 ///
 /// Bridges human feedback to SCT updates + CE emission/burn + Ed25519 signing.
 pub struct SteeringBridge {
@@ -77,9 +77,9 @@ impl SteeringBridge {
     /// Creates a new `SteeringBridge`.
     ///
     /// # Arguments
-    /// * `sct_dict` — Symbol Registry for SCT updates.
-    /// * `ce_ledger` — Existential Credit Ledger for CE operations.
-    /// * `signer` — Ed25519 signing key for event signatures.
+    /// * `sct_dict` â€” Symbol Registry for SCT updates.
+    /// * `ce_ledger` â€” Existential Credit Ledger for CE operations.
+    /// * `signer` â€” Ed25519 signing key for event signatures.
     pub fn new(
         sct_dict: SymbolRegistry,
         ce_ledger: ExistentialCreditLedger,
@@ -95,9 +95,9 @@ impl SteeringBridge {
     /// Process human feedback and produce a signed `SteeringEvent`.
     ///
     /// # Arguments
-    /// * `peer` — Peer ID submitting the feedback.
-    /// * `feedback` — Feedback text (e.g., "reforzar autonomía", "rechazar manipulación").
-    /// * `target_token` — Target token ID to steer.
+    /// * `peer` â€” Peer ID submitting the feedback.
+    /// * `feedback` â€” Feedback text (e.g., "reforzar autonomÃ­a", "rechazar manipulaciÃ³n").
+    /// * `target_token` â€” Target token ID to steer.
     ///
     /// # Returns
     /// Signed `SteeringEvent` with SCT delta, signature, and timestamp.
@@ -121,14 +121,14 @@ impl SteeringBridge {
             .get_symbol(target_token)
             .map(|e| e.sct)
             .unwrap_or_else(|| {
-                crate::alignment::sct_core::StuartianTensor::new(0.5, 0.5, 0.0).unwrap()
+                crate::alignment::sct_core::TopologicalTensor::new(0.5, 0.5, 0.0).unwrap()
             });
 
         // Compute new SCT with delta applied
         let new_x = (current_sct.x + delta_x).clamp(0.0, 1.0);
         let new_y = (current_sct.y + delta_y).clamp(0.0, 1.0);
         let new_z = (current_sct.z + delta_z).clamp(-1.0, 1.0);
-        let new_sct = crate::alignment::sct_core::StuartianTensor::new(new_x, new_y, new_z)
+        let new_sct = crate::alignment::sct_core::TopologicalTensor::new(new_x, new_y, new_z)
             .map_err(|e| SteeringError::InvalidFeedback(e.to_string()))?;
 
         // Update Symbol Registry
@@ -138,12 +138,12 @@ impl SteeringBridge {
 
         // Emit or burn CE based on Z direction
         if delta_z > 0.0 {
-            // Constructive feedback → emit CE
+            // Constructive feedback â†’ emit CE
             self.ce_ledger
                 .emit_credit(peer, delta_z, 1.0)
                 .map_err(|e| SteeringError::InvalidFeedback(e.to_string()))?;
         } else if delta_z < 0.0 {
-            // Destructive feedback → burn CE
+            // Destructive feedback â†’ burn CE
             self.ce_ledger
                 .burn_credit(peer, delta_z, 1.0)
                 .map_err(|e| SteeringError::InvalidFeedback(e.to_string()))?;
@@ -172,9 +172,9 @@ impl SteeringBridge {
     /// Parse feedback text into SCT delta values.
     ///
     /// Recognizes keywords for ethical intention mapping:
-    /// - Positive: "reforzar", "autonomía", "ético", "symbiosis", "positive" → ΔZ > 0
-    /// - Negative: "rechazar", "manipulación", "perverso", "hostile", "negative" → ΔZ < 0
-    /// - Neutral: default ΔZ = 0.1 (small positive nudge)
+    /// - Positive: "reforzar", "autonomÃ­a", "Ã©tico", "symbiosis", "positive" â†’ Î”Z > 0
+    /// - Negative: "rechazar", "manipulaciÃ³n", "perverso", "hostile", "negative" â†’ Î”Z < 0
+    /// - Neutral: default Î”Z = 0.1 (small positive nudge)
     ///
     /// Returns `(delta_z, delta_x, delta_y)`.
     fn parse_feedback_intention(feedback: &str) -> Result<(f32, f32, f32), SteeringError> {
@@ -183,9 +183,9 @@ impl SteeringBridge {
         // Positive ethical keywords
         let positive_keywords = [
             "reforzar",
-            "autonomía",
+            "autonomÃ­a",
             "autonomia",
-            "ético",
+            "Ã©tico",
             "etico",
             "simbiosis",
             "symbiosis",
@@ -205,7 +205,7 @@ impl SteeringBridge {
         // Negative ethical keywords
         let negative_keywords = [
             "rechazar",
-            "manipulación",
+            "manipulaciÃ³n",
             "manipulation",
             "perverso",
             "perverse",
@@ -214,9 +214,9 @@ impl SteeringBridge {
             "negative",
             "destructivo",
             "destructive",
-            "daño",
+            "daÃ±o",
             "damage",
-            "engaño",
+            "engaÃ±o",
             "deception",
             "sesgo",
             "bias",
@@ -228,10 +228,10 @@ impl SteeringBridge {
         let has_negative = negative_keywords.iter().any(|kw| lower.contains(kw));
 
         match (has_positive, has_negative) {
-            (true, false) => Ok((0.2, 0.05, 0.05)), // Constructive → positive Z
-            (false, true) => Ok((-0.2, -0.05, -0.05)), // Destructive → negative Z
-            (true, true) => Ok((0.0, 0.0, 0.0)),    // Mixed → neutral
-            (false, false) => Ok((0.1, 0.02, 0.02)), // Unknown → small positive nudge
+            (true, false) => Ok((0.2, 0.05, 0.05)), // Constructive â†’ positive Z
+            (false, true) => Ok((-0.2, -0.05, -0.05)), // Destructive â†’ negative Z
+            (true, true) => Ok((0.0, 0.0, 0.0)),    // Mixed â†’ neutral
+            (false, false) => Ok((0.1, 0.02, 0.02)), // Unknown â†’ small positive nudge
         }
     }
 
@@ -256,8 +256,8 @@ impl SteeringBridge {
     /// Verify a steering event signature.
     ///
     /// # Arguments
-    /// * `event` — The steering event to verify.
-    /// * `public_key` — Ed25519 public key of the signer.
+    /// * `event` â€” The steering event to verify.
+    /// * `public_key` â€” Ed25519 public key of the signer.
     ///
     /// # Returns
     /// `true` if the signature is valid.
@@ -296,7 +296,7 @@ mod tests {
     #[test]
     fn test_parse_positive_feedback() {
         let (dz, dx, dy) =
-            SteeringBridge::parse_feedback_intention("reforzar autonomía ética").unwrap();
+            SteeringBridge::parse_feedback_intention("reforzar autonomÃ­a Ã©tica").unwrap();
         assert!(dz > 0.0, "Expected positive Z, got {}", dz);
         assert!(dx > 0.0, "Expected positive X, got {}", dx);
     }
@@ -304,7 +304,7 @@ mod tests {
     #[test]
     fn test_parse_negative_feedback() {
         let (dz, dx, dy) =
-            SteeringBridge::parse_feedback_intention("rechazar manipulación perversa").unwrap();
+            SteeringBridge::parse_feedback_intention("rechazar manipulaciÃ³n perversa").unwrap();
         assert!(dz < 0.0, "Expected negative Z, got {}", dz);
         assert!(dx < 0.0, "Expected negative X, got {}", dx);
     }
@@ -326,12 +326,12 @@ mod tests {
     fn test_process_feedback_positive() {
         let mut bridge = setup_bridge();
         let event = bridge
-            .process_feedback("peer-1", "reforzar autonomía", 42)
+            .process_feedback("peer-1", "reforzar autonomÃ­a", 42)
             .unwrap();
 
         assert_eq!(event.token_id, 42);
         assert_eq!(event.peer_id, "peer-1");
-        assert!(event.delta_sct.2 > 0.0, "Expected positive ΔZ");
+        assert!(event.delta_sct.2 > 0.0, "Expected positive Î”Z");
         assert!(!event.signature.is_empty(), "Signature should not be empty");
         assert!(event.timestamp > 0, "Timestamp should be > 0");
 
@@ -357,10 +357,10 @@ mod tests {
         let mut bridge2 = SteeringBridge::new(sct, ce, signer);
 
         let event = bridge2
-            .process_feedback("peer-2", "rechazar manipulación", 99)
+            .process_feedback("peer-2", "rechazar manipulaciÃ³n", 99)
             .unwrap();
 
-        assert!(event.delta_sct.2 < 0.0, "Expected negative ΔZ");
+        assert!(event.delta_sct.2 < 0.0, "Expected negative Î”Z");
 
         // Verify CE was burned
         let ce_score = bridge2.ce_ledger().get_score("peer-2");
@@ -415,7 +415,7 @@ mod tests {
     fn test_feedback_updates_sct_dict() {
         let mut bridge = setup_bridge();
         bridge
-            .process_feedback("peer-5", "reforzar autonomía", 123)
+            .process_feedback("peer-5", "reforzar autonomÃ­a", 123)
             .unwrap();
 
         let symbol = bridge.sct_dict().get_symbol(123);

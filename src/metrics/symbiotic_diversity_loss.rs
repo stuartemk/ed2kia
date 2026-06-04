@@ -1,21 +1,21 @@
-//! Symbiotic Diversity Loss — Sprint 76: Ontological Debugging & Thermodynamic Pivots
+﻿//! Symbiotic Diversity Loss â€” Sprint 76: Ontological Debugging & Thermodynamic Pivots
 //!
-//! Resuelve el bug ontológico: `Love = Zero Conflict` → muerte térmica / mode collapse.
+//! Resuelve el bug ontolÃ³gico: `Love = Zero Conflict` â†’ muerte tÃ©rmica / mode collapse.
 //!
-//! La optimización de Pareto diferencia entre fricción generativa (constructiva)
-//! y conflicto destructivo (aniquilación). La pérdida se formula como:
+//! La optimizaciÃ³n de Pareto diferencia entre fricciÃ³n generativa (constructiva)
+//! y conflicto destructivo (aniquilaciÃ³n). La pÃ©rdida se formula como:
 //!
 //! ```text
-//! L = max(Diversidad) - λ · Conflicto_Destructivo
+//! L = max(Diversidad) - Î» Â· Conflicto_Destructivo
 //! ```
 //!
-//! La fricción constructiva NO es penalizada, permitiendo evolución sin colapso.
+//! La fricciÃ³n constructiva NO es penalizada, permitiendo evoluciÃ³n sin colapso.
 //!
-//! # Garantías
+//! # GarantÃ­as
 //!
-//! - Complejidad: O(n²) para diversidad de Shannon, O(1) para pérdida Pareto
-//! - Memoria: O(n) para distribución de nichos
-//! - La pérdida puede ser negativa (equilibrio cooperativo)
+//! - Complejidad: O(nÂ²) para diversidad de Shannon, O(1) para pÃ©rdida Pareto
+//! - Memoria: O(n) para distribuciÃ³n de nichos
+//! - La pÃ©rdida puede ser negativa (equilibrio cooperativo)
 
 use std::fmt;
 
@@ -55,7 +55,7 @@ impl std::error::Error for DiversityError {}
 /// Configuration for Pareto loss computation.
 #[derive(Debug, Clone)]
 pub struct ParetoConfig {
-    /// Weight for destructive conflict penalty (λ).
+    /// Weight for destructive conflict penalty (Î»).
     pub lambda: f64,
     /// Minimum acceptable diversity (Shannon entropy).
     pub min_diversity: f64,
@@ -66,8 +66,8 @@ pub struct ParetoConfig {
 }
 
 impl ParetoConfig {
-    /// Default Stuartian configuration.
-    pub fn default_stuartian() -> Self {
+    /// Default Topological configuration.
+    pub fn default_Topological() -> Self {
         Self {
             lambda: 0.5,
             min_diversity: 0.1,
@@ -90,7 +90,7 @@ impl ParetoConfig {
 
 impl Default for ParetoConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -127,10 +127,10 @@ pub struct SymbioticDiversityLoss {
 }
 
 impl SymbioticDiversityLoss {
-    /// Create a new engine with default Stuartian configuration.
+    /// Create a new engine with default Topological configuration.
     pub fn new() -> Self {
         Self {
-            config: ParetoConfig::default_stuartian(),
+            config: ParetoConfig::default_Topological(),
             records: Vec::new(),
         }
     }
@@ -147,9 +147,9 @@ impl SymbioticDiversityLoss {
     /// Compute the Pareto loss and record the result.
     ///
     /// # Arguments
-    /// * `niche_distribution` — Probability distribution across niches (diversity proxy).
-    /// * `destructive_conflict` — Measured destructive conflict (penalized).
-    /// * `constructive_friction` — Measured constructive friction (non-penalized).
+    /// * `niche_distribution` â€” Probability distribution across niches (diversity proxy).
+    /// * `destructive_conflict` â€” Measured destructive conflict (penalized).
+    /// * `constructive_friction` â€” Measured constructive friction (non-penalized).
     pub fn compute(
         &mut self,
         niche_distribution: &[f64],
@@ -261,17 +261,17 @@ impl fmt::Display for SymbioticDiversityLoss {
     }
 }
 
-// ─── Public Standalone Functions ───────────────────────────────────────────────
+// â”€â”€â”€ Public Standalone Functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-/// Compute the Pareto loss: L = max(Diversidad) - λ · Conflicto_Destructivo.
+/// Compute the Pareto loss: L = max(Diversidad) - Î» Â· Conflicto_Destructivo.
 ///
-/// La fricción constructiva NO es penalizada, permitiendo evolución sin colapso.
+/// La fricciÃ³n constructiva NO es penalizada, permitiendo evoluciÃ³n sin colapso.
 ///
 /// # Arguments
-/// * `diversity_metric` — Shannon entropy or other diversity measure (>= 0).
-/// * `destructive_conflict` — Destructive conflict component (penalized).
-/// * `constructive_friction` — Constructive friction (non-penalized, informational).
-/// * `lambda` — Weight for destructive conflict (>= 0).
+/// * `diversity_metric` â€” Shannon entropy or other diversity measure (>= 0).
+/// * `destructive_conflict` â€” Destructive conflict component (penalized).
+/// * `constructive_friction` â€” Constructive friction (non-penalized, informational).
+/// * `lambda` â€” Weight for destructive conflict (>= 0).
 ///
 /// # Returns
 /// Loss value. Negative indicates cooperative equilibrium.
@@ -281,19 +281,19 @@ pub fn compute_pareto_loss(
     _constructive_friction: f64,
     lambda: f64,
 ) -> f64 {
-    // L = -diversity + λ · destructive_conflict
-    // Negamos diversidad porque queremos maximizarla (minimizar pérdida).
-    // Fricción constructiva no penalizada.
+    // L = -diversity + Î» Â· destructive_conflict
+    // Negamos diversidad porque queremos maximizarla (minimizar pÃ©rdida).
+    // FricciÃ³n constructiva no penalizada.
     -diversity_metric + lambda * destructive_conflict
 }
 
 /// Compute Shannon entropy of a probability distribution.
 ///
-/// H = -Σ p_i · log(p_i)
+/// H = -Î£ p_i Â· log(p_i)
 ///
 /// # Arguments
-/// * `distribution` — Probability distribution (must sum to ~1.0, no negatives).
-/// * `epsilon` — Small value to avoid log(0).
+/// * `distribution` â€” Probability distribution (must sum to ~1.0, no negatives).
+/// * `epsilon` â€” Small value to avoid log(0).
 pub fn shannon_entropy(distribution: &[f64], epsilon: f64) -> Result<f64, DiversityError> {
     if distribution.is_empty() {
         return Err(DiversityError::EmptyDistribution);
@@ -328,7 +328,7 @@ pub fn is_cooperative_equilibrium(loss: f64, diversity: f64, min_diversity: f64)
     loss <= 0.0 && diversity >= min_diversity
 }
 
-// ─── Tests ─────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[cfg(test)]
 mod tests {
@@ -344,7 +344,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = ParetoConfig::default_stuartian();
+        let config = ParetoConfig::default_Topological();
         assert!(config.validate().is_ok());
         assert_eq!(config.lambda, 0.5);
     }
@@ -353,7 +353,7 @@ mod tests {
     fn test_config_negative_lambda() {
         let config = ParetoConfig {
             lambda: -1.0,
-            ..ParetoConfig::default_stuartian()
+            ..ParetoConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }
@@ -405,14 +405,14 @@ mod tests {
 
     #[test]
     fn test_pareto_loss_cooperative() {
-        // High diversity, low destructive conflict → negative loss (cooperative)
+        // High diversity, low destructive conflict â†’ negative loss (cooperative)
         let loss = compute_pareto_loss(2.0, 0.1, 0.5, 0.5);
         assert!(loss < 0.0);
     }
 
     #[test]
     fn test_pareto_loss_destructive() {
-        // Low diversity, high destructive conflict → positive loss
+        // Low diversity, high destructive conflict â†’ positive loss
         let loss = compute_pareto_loss(0.5, 2.0, 0.1, 0.5);
         assert!(loss > 0.0);
     }
@@ -448,7 +448,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = ParetoConfig::default_stuartian();
+        let config = ParetoConfig::default_Topological();
         let engine = SymbioticDiversityLoss::with_config(config).unwrap();
         assert_eq!(engine.record_count(), 0);
     }

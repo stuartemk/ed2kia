@@ -1,12 +1,12 @@
-//! Sybil Resistance — Sprint 72: Asymptotic Optimization & Hard Sybil Resistance
+﻿//! Sybil Resistance â€” Sprint 72: Asymptotic Optimization & Hard Sybil Resistance
 //!
 //! Proof-of-Useful-Work (PoUW) + CE decay + diversity weighting.
-//! BFT ε-tolerant consensus with geographic/semantic diversity.
+//! BFT Îµ-tolerant consensus with geographic/semantic diversity.
 
 use std::collections::HashMap;
 use std::fmt;
 
-// ─── Error Types ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ Error Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum SybilError {
@@ -49,7 +49,7 @@ impl fmt::Display for SybilError {
 
 impl std::error::Error for SybilError {}
 
-// ─── Configuration ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ Configuration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct SybilConfig {
@@ -72,7 +72,7 @@ pub struct SybilConfig {
 }
 
 impl SybilConfig {
-    pub fn default_stuartian() -> Self {
+    pub fn default_Topological() -> Self {
         Self {
             min_ce_threshold: 0.1,
             ce_decay_rate: 0.999,
@@ -110,11 +110,11 @@ impl SybilConfig {
 
 impl Default for SybilConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
-// ─── Work Proof ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Work Proof â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct WorkProof {
@@ -167,7 +167,7 @@ impl fmt::Display for WorkProof {
     }
 }
 
-// ─── Node State ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Node State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct NodeState {
@@ -214,7 +214,7 @@ impl fmt::Display for NodeState {
     }
 }
 
-// ─── Consensus Record ──────────────────────────────────────────────────────────
+// â”€â”€â”€ Consensus Record â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ConsensusRecord {
@@ -249,7 +249,7 @@ impl fmt::Display for ConsensusRecord {
     }
 }
 
-// ─── Sybil Resistance Engine ───────────────────────────────────────────────────
+// â”€â”€â”€ Sybil Resistance Engine â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, PartialEq)]
 pub struct SybilResistance {
@@ -265,7 +265,7 @@ pub struct SybilResistance {
 impl SybilResistance {
     pub fn new() -> Self {
         Self {
-            config: SybilConfig::default_stuartian(),
+            config: SybilConfig::default_Topological(),
             nodes: HashMap::new(),
             proof_history: Vec::new(),
             consensus_history: Vec::new(),
@@ -355,7 +355,7 @@ impl SybilResistance {
             return 0.0;
         }
 
-        // Compute Shannon entropy: H = -Σ(p * log2(p))
+        // Compute Shannon entropy: H = -Î£(p * log2(p))
         let mut entropy = 0.0_f64;
         for &count in region_counts.values() {
             let p = count as f64 / total as f64;
@@ -518,7 +518,7 @@ impl fmt::Display for SybilResistance {
     }
 }
 
-// ─── Public Utility Functions ──────────────────────────────────────────────────
+// â”€â”€â”€ Public Utility Functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Compute Shannon entropy from region distribution
 pub fn shannon_entropy(region_counts: &[usize]) -> f64 {
@@ -566,7 +566,7 @@ pub fn apply_ce_decay(initial_ce: f64, decay_rate: f64, ticks: u32) -> f64 {
     initial_ce * decay_rate.powi(ticks as i32)
 }
 
-// ─── Tests ─────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[cfg(test)]
 mod tests {
@@ -576,18 +576,18 @@ mod tests {
         WorkProof::new(id, node, 0xABCD, ts, ce, region.to_string(), node * 31)
     }
 
-    // ─── Config Tests ──────────────────────────────────────────────────────────
+    // â”€â”€â”€ Config Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_config_default() {
-        let config = SybilConfig::default_stuartian();
+        let config = SybilConfig::default_Topological();
         assert_eq!(config.bft_epsilon, 0.33);
         assert!(config.min_ce_threshold > 0.0);
     }
 
     #[test]
     fn test_config_validate_ok() {
-        let config = SybilConfig::default_stuartian();
+        let config = SybilConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 
@@ -595,7 +595,7 @@ mod tests {
     fn test_config_invalid_ce() {
         let config = SybilConfig {
             min_ce_threshold: -0.1,
-            ..SybilConfig::default_stuartian()
+            ..SybilConfig::default_Topological()
         };
         assert_eq!(config.validate(), Err(SybilError::InvalidConfig));
     }
@@ -604,7 +604,7 @@ mod tests {
     fn test_config_invalid_bft() {
         let config = SybilConfig {
             bft_epsilon: 0.6,
-            ..SybilConfig::default_stuartian()
+            ..SybilConfig::default_Topological()
         };
         assert_eq!(config.validate(), Err(SybilError::InvalidConfig));
     }
@@ -613,7 +613,7 @@ mod tests {
     fn test_config_zero_nodes() {
         let config = SybilConfig {
             max_nodes: 0,
-            ..SybilConfig::default_stuartian()
+            ..SybilConfig::default_Topological()
         };
         assert_eq!(config.validate(), Err(SybilError::InvalidConfig));
     }
@@ -623,12 +623,12 @@ mod tests {
         let config = SybilConfig {
             diversity_weight: 0.6,
             ce_weight: 0.6,
-            ..SybilConfig::default_stuartian()
+            ..SybilConfig::default_Topological()
         };
         assert_eq!(config.validate(), Err(SybilError::InvalidConfig));
     }
 
-    // ─── Work Proof Tests ──────────────────────────────────────────────────────
+    // â”€â”€â”€ Work Proof Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_proof_creation() {
@@ -651,7 +651,7 @@ mod tests {
         assert!(s.contains("node=100"));
     }
 
-    // ─── Node State Tests ──────────────────────────────────────────────────────
+    // â”€â”€â”€ Node State Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_node_state_new() {
@@ -678,7 +678,7 @@ mod tests {
         assert!(s.contains("id=42"));
     }
 
-    // ─── Engine Creation Tests ─────────────────────────────────────────────────
+    // â”€â”€â”€ Engine Creation Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_engine_new() {
@@ -689,7 +689,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = SybilConfig::default_stuartian();
+        let config = SybilConfig::default_Topological();
         let engine = SybilResistance::with_config(config).unwrap();
         assert_eq!(engine.node_count(), 0);
     }
@@ -698,7 +698,7 @@ mod tests {
     fn test_engine_with_bad_config() {
         let config = SybilConfig {
             max_nodes: 0,
-            ..SybilConfig::default_stuartian()
+            ..SybilConfig::default_Topological()
         };
         assert_eq!(
             SybilResistance::with_config(config),
@@ -706,7 +706,7 @@ mod tests {
         );
     }
 
-    // ─── Proof Submission Tests ────────────────────────────────────────────────
+    // â”€â”€â”€ Proof Submission Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_submit_proof() {
@@ -770,7 +770,7 @@ mod tests {
         assert!((node.contribution_evidence - 0.8) < 1e-10);
     }
 
-    // ─── Diversity Tests ───────────────────────────────────────────────────────
+    // â”€â”€â”€ Diversity Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_diversity_empty() {
@@ -826,7 +826,7 @@ mod tests {
         assert!(entropy > 0.0 && entropy < 1.0);
     }
 
-    // ─── Consensus Tests ───────────────────────────────────────────────────────
+    // â”€â”€â”€ Consensus Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_consensus_empty() {
@@ -920,7 +920,7 @@ mod tests {
         assert!(s.contains("ConsensusRecord"));
     }
 
-    // ─── Verification Tests ────────────────────────────────────────────────────
+    // â”€â”€â”€ Verification Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_verify_work_proof_match() {
@@ -939,7 +939,7 @@ mod tests {
         );
     }
 
-    // ─── BFT Check Tests ───────────────────────────────────────────────────────
+    // â”€â”€â”€ BFT Check Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_can_reach_consensus_true() {
@@ -968,7 +968,7 @@ mod tests {
         assert!(!engine.can_reach_consensus());
     }
 
-    // ─── Utility Function Tests ────────────────────────────────────────────────
+    // â”€â”€â”€ Utility Function Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_shannon_entropy_uniform() {
@@ -1026,7 +1026,7 @@ mod tests {
         assert!((apply_ce_decay(0.8, 0.9, 0) - 0.8) < 1e-10);
     }
 
-    // ─── Reset Tests ───────────────────────────────────────────────────────────
+    // â”€â”€â”€ Reset Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_reset() {
@@ -1042,7 +1042,7 @@ mod tests {
         assert_eq!(engine.consensus_history().len(), 0);
     }
 
-    // ─── Display Tests ─────────────────────────────────────────────────────────
+    // â”€â”€â”€ Display Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_engine_display() {
@@ -1051,7 +1051,7 @@ mod tests {
         assert!(s.contains("SybilResistance"));
     }
 
-    // ─── Error Display Tests ───────────────────────────────────────────────────
+    // â”€â”€â”€ Error Display Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_error_display_invalid_proof() {
@@ -1087,7 +1087,7 @@ mod tests {
         assert!(s.contains("0.5"));
     }
 
-    // ─── Workflow Tests ────────────────────────────────────────────────────────
+    // â”€â”€â”€ Workflow Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     #[test]
     fn test_full_sybil_workflow() {

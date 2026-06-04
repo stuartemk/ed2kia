@@ -1,16 +1,16 @@
-//! GEI Approximator — Sprint 71: Global Bootstrap & Critical Bottleneck Resolution
+﻿//! GEI Approximator â€” Sprint 71: Global Bootstrap & Critical Bottleneck Resolution
 //!
 //! Solves NP-Hard GEI computation in high dimensions via:
 //! - Stratified sampling for dimensionality reduction
-//! - Simplified Vietoris-Rips complex (β₁ approximation)
+//! - Simplified Vietoris-Rips complex (Î²â‚ approximation)
 //! - GPU delegation interface + lightweight ZKP verification in WASM
 //!
 //! # Algorithm
 //!
 //! 1. **Stratified Sampling**: Divide activation space into strata based on norm quantiles,
 //!    sample proportionally to preserve topological structure.
-//! 2. **Vietoris-Rips Complex**: Build simplicial complex from sampled points at scale ε.
-//! 3. **Betti Number Approximation**: Compute β₁ (number of 1-dimensional holes) via
+//! 2. **Vietoris-Rips Complex**: Build simplicial complex from sampled points at scale Îµ.
+//! 3. **Betti Number Approximation**: Compute Î²â‚ (number of 1-dimensional holes) via
 //!    persistent homology on the filtered complex.
 //! 4. **Error Bound**: Guaranteed approximation error < epsilon via sampling theory.
 
@@ -90,8 +90,8 @@ pub struct ApproxConfig {
 }
 
 impl ApproxConfig {
-    /// Default Stuartian configuration tuned for noospheric computation.
-    pub fn default_stuartian() -> Self {
+    /// Default Topological configuration tuned for noospheric computation.
+    pub fn default_Topological() -> Self {
         Self {
             max_simplices: 4096,
             strata_count: 8,
@@ -118,7 +118,7 @@ impl ApproxConfig {
 
 impl Default for ApproxConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -129,9 +129,9 @@ impl Default for ApproxConfig {
 /// Record of a single GEI approximation result.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ApproxRecord {
-    /// Approximated β₁ (number of 1D holes).
+    /// Approximated Î²â‚ (number of 1D holes).
     pub betti_1: u32,
-    /// Approximated β₀ (number of connected components).
+    /// Approximated Î²â‚€ (number of connected components).
     pub betti_0: u32,
     /// Guaranteed upper bound on approximation error.
     pub error_bound: f64,
@@ -149,7 +149,7 @@ impl fmt::Display for ApproxRecord {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "ApproxRecord(β₁={}, β₀={}, err<{}, n={}, σ={})",
+            "ApproxRecord(Î²â‚={}, Î²â‚€={}, err<{}, n={}, Ïƒ={})",
             self.betti_1, self.betti_0, self.error_bound, self.sample_count, self.simplex_count
         )
     }
@@ -162,10 +162,10 @@ pub struct GeiApproximator {
 }
 
 impl GeiApproximator {
-    /// Create a new approximator with default Stuartian config.
+    /// Create a new approximator with default Topological config.
     pub fn new() -> Self {
         Self {
-            config: ApproxConfig::default_stuartian(),
+            config: ApproxConfig::default_Topological(),
             records: Vec::new(),
         }
     }
@@ -179,7 +179,7 @@ impl GeiApproximator {
         })
     }
 
-    /// Compute approximated β₁ via stratified sampling + Vietoris-Rips.
+    /// Compute approximated Î²â‚ via stratified sampling + Vietoris-Rips.
     ///
     /// # Arguments
     /// * `activations` - Flat activation vector (interpreted as dim x k points).
@@ -224,7 +224,7 @@ impl GeiApproximator {
         let edges = Self::build_vietoris_rips(&points, epsilon);
         let simplex_count = edges.len();
 
-        // Compute β₁ via cycle counting (simplified persistent homology)
+        // Compute Î²â‚ via cycle counting (simplified persistent homology)
         let (betti_0, betti_1) = Self::compute_betti_numbers(&points, &edges);
 
         // Error bound from sampling theory: O(1/sqrt(n))
@@ -346,7 +346,7 @@ impl GeiApproximator {
         edges
     }
 
-    /// Compute β₀ and β₁ via union-find + cycle counting.
+    /// Compute Î²â‚€ and Î²â‚ via union-find + cycle counting.
     fn compute_betti_numbers(points: &[[f32; 8]], edges: &[(usize, usize)]) -> (u32, u32) {
         let n = points.len();
         let mut parent = (0..n).collect::<Vec<usize>>();
@@ -376,7 +376,7 @@ impl GeiApproximator {
             }
         }
 
-        // β₀ = number of connected components
+        // Î²â‚€ = number of connected components
         let mut roots = std::collections::HashSet::new();
         for i in 0..n {
             roots.insert(find(&parent, i));
@@ -410,7 +410,7 @@ impl GeiApproximator {
         &self.records
     }
 
-    /// Average β₁ across all records.
+    /// Average Î²â‚ across all records.
     pub fn average_betti_1(&self) -> Option<f64> {
         if self.records.is_empty() {
             return None;
@@ -444,7 +444,7 @@ impl fmt::Display for GeiApproximator {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "GeiApproximator(records={}, avg_β₁={:?}, avg_err={:?})",
+            "GeiApproximator(records={}, avg_Î²â‚={:?}, avg_err={:?})",
             self.records.len(),
             self.average_betti_1(),
             self.average_error_bound()
@@ -491,7 +491,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = ApproxConfig::default_stuartian();
+        let config = ApproxConfig::default_Topological();
         assert_eq!(config.max_simplices, 4096);
         assert_eq!(config.strata_count, 8);
         assert!(config.gpu_enabled);
@@ -500,26 +500,26 @@ mod tests {
 
     #[test]
     fn test_config_validate() {
-        assert!(ApproxConfig::default_stuartian().validate().is_ok());
+        assert!(ApproxConfig::default_Topological().validate().is_ok());
     }
 
     #[test]
     fn test_config_zero_simplices() {
-        let mut config = ApproxConfig::default_stuartian();
+        let mut config = ApproxConfig::default_Topological();
         config.max_simplices = 0;
         assert_eq!(config.validate(), Err(ApproxError::InsufficientSamples(0)));
     }
 
     #[test]
     fn test_config_zero_strata() {
-        let mut config = ApproxConfig::default_stuartian();
+        let mut config = ApproxConfig::default_Topological();
         config.strata_count = 0;
         assert_eq!(config.validate(), Err(ApproxError::InsufficientSamples(0)));
     }
 
     #[test]
     fn test_config_negative_scale() {
-        let mut config = ApproxConfig::default_stuartian();
+        let mut config = ApproxConfig::default_Topological();
         config.persistence_scale = -1.0;
         assert_eq!(config.validate(), Err(ApproxError::NegativeEpsilon(-1.0)));
     }
@@ -532,7 +532,7 @@ mod tests {
 
     #[test]
     fn test_approximator_with_config() {
-        let config = ApproxConfig::default_stuartian();
+        let config = ApproxConfig::default_Topological();
         let approx = GeiApproximator::with_config(config).unwrap();
         assert!(approx.records().is_empty());
     }
@@ -591,7 +591,7 @@ mod tests {
             .approximate_betti_1(&activations, 8, 1.0, 3.0, 3000)
             .unwrap();
         assert!(record.betti_0 > 0);
-        // β₁ can be 0
+        // Î²â‚ can be 0
     }
 
     #[test]
@@ -612,7 +612,7 @@ mod tests {
 
     #[test]
     fn test_zkp_proof_hash_generated() {
-        let config = ApproxConfig::default_stuartian();
+        let config = ApproxConfig::default_Topological();
         let mut approx = GeiApproximator::with_config(config).unwrap();
         let activations = make_activations(20, 8);
         let record = approx
@@ -623,7 +623,7 @@ mod tests {
 
     #[test]
     fn test_zkp_proof_hash_disabled() {
-        let mut config = ApproxConfig::default_stuartian();
+        let mut config = ApproxConfig::default_Topological();
         config.zkp_enabled = false;
         let mut approx = GeiApproximator::with_config(config).unwrap();
         let activations = make_activations(20, 8);

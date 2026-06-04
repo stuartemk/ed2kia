@@ -1,6 +1,6 @@
-//! GEI Proxy Distillation — Sprint 75: Thermodynamic Hardening & Asynchronous Neuro-Symbolic Pivot
+﻿//! GEI Proxy Distillation â€” Sprint 75: Thermodynamic Hardening & Asynchronous Neuro-Symbolic Pivot
 //!
-//! Lightweight proxy network approximates β₁ in <5ms via UMAP/PCA reduction.
+//! Lightweight proxy network approximates Î²â‚ in <5ms via UMAP/PCA reduction.
 //! Heavy homology computation delegated to async orchestrator nodes.
 
 use std::fmt;
@@ -35,7 +35,7 @@ pub struct ProxyConfig {
 }
 
 impl ProxyConfig {
-    pub fn default_stuartian() -> Self {
+    pub fn default_Topological() -> Self {
         Self {
             reduction_dim: 64,
             epsilon: 0.01,
@@ -57,11 +57,11 @@ impl ProxyConfig {
 
 impl Default for ProxyConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
-/// Lightweight proxy network for β₁ approximation.
+/// Lightweight proxy network for Î²â‚ approximation.
 #[derive(Debug, Clone)]
 pub struct ProxyNetwork {
     pub weights: Vec<f32>,
@@ -139,7 +139,7 @@ impl ProxyNetwork {
         self.trained = true;
     }
 
-    /// Forward pass: reduced projection → β₁ proxy.
+    /// Forward pass: reduced projection â†’ Î²â‚ proxy.
     pub fn forward(&self, activations: &[f32]) -> Result<f32, ProxyError> {
         if !self.trained {
             return Err(ProxyError::ModelNotTrained);
@@ -160,7 +160,7 @@ impl ProxyNetwork {
             reduced[j] += self.bias;
         }
 
-        // β₁ proxy: normalized energy of reduced representation
+        // Î²â‚ proxy: normalized energy of reduced representation
         let energy: f32 = reduced.iter().map(|x| x * x).sum();
         Ok(energy.sqrt())
     }
@@ -180,7 +180,7 @@ impl fmt::Display for DistillationRecord {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "DistillationRecord {{ input: {}d, reduced: {}d, β₁: {:.4}, latency: {}ms, delegated: {} }}",
+            "DistillationRecord {{ input: {}d, reduced: {}d, Î²â‚: {:.4}, latency: {}ms, delegated: {} }}",
             self.input_dim, self.reduced_dim, self.proxy_betti_1, self.latency_ms, self.delegated
         )
     }
@@ -196,8 +196,8 @@ pub struct GeiProxyDistillation {
 impl GeiProxyDistillation {
     pub fn new(input_dim: usize) -> Self {
         Self {
-            config: ProxyConfig::default_stuartian(),
-            proxy: ProxyNetwork::new(input_dim, ProxyConfig::default_stuartian().reduction_dim),
+            config: ProxyConfig::default_Topological(),
+            proxy: ProxyNetwork::new(input_dim, ProxyConfig::default_Topological().reduction_dim),
             records: Vec::new(),
         }
     }
@@ -216,7 +216,7 @@ impl GeiProxyDistillation {
         self.proxy.train_pca(samples);
     }
 
-    /// Approximate β₁ via proxy network. <5ms target.
+    /// Approximate Î²â‚ via proxy network. <5ms target.
     pub fn approximate_betti_1_proxy(
         &mut self,
         activations: &[f32],
@@ -309,19 +309,19 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = ProxyConfig::default_stuartian();
+        let config = ProxyConfig::default_Topological();
         assert_eq!(config.reduction_dim, 64);
         assert_eq!(config.target_latency_ms, 5);
     }
 
     #[test]
     fn test_config_validate_ok() {
-        assert!(ProxyConfig::default_stuartian().validate().is_ok());
+        assert!(ProxyConfig::default_Topological().validate().is_ok());
     }
 
     #[test]
     fn test_config_zero_reduction() {
-        let mut config = ProxyConfig::default_stuartian();
+        let mut config = ProxyConfig::default_Topological();
         config.reduction_dim = 0;
         assert!(config.validate().is_err());
     }

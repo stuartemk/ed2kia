@@ -1,6 +1,6 @@
-//! SCT-Z Calibration Layer — Sprint 68: Academic Formalization & Validation Layer
+﻿//! SCT-Z Calibration Layer â€” Sprint 68: Academic Formalization & Validation Layer
 //!
-//! Implements the auditable Z-axis computation for the Stuartian Coherence Tensor (SCT).
+//! Implements the auditable Z-axis computation for the Topological Coherence Tensor (SCT).
 //! The Z-axis represents the ethical coherence dimension:
 //!
 //! ```text
@@ -84,8 +84,8 @@ pub struct CalibrationWeights {
 
 #[cfg(feature = "v9.4-validation-layer")]
 impl CalibrationWeights {
-    /// Create default Stuartian weights.
-    pub fn default_stuartian() -> Self {
+    /// Create default Topological weights.
+    pub fn default_Topological() -> Self {
         Self {
             w_f: WEIGHT_FAIRNESS,
             w_s: WEIGHT_SAFETY,
@@ -113,7 +113,7 @@ impl CalibrationWeights {
 #[cfg(feature = "v9.4-validation-layer")]
 impl Default for CalibrationWeights {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -174,7 +174,7 @@ impl fmt::Display for CalibrationError {
     }
 }
 
-/// Compute Z-axis with default Stuartian weights.
+/// Compute Z-axis with default Topological weights.
 ///
 /// # Arguments
 /// * `fairness` - Fairness score in [0.0, 1.0]
@@ -197,7 +197,7 @@ pub fn compute_z_axis(
     interpretability: f64,
     conflict: f64,
 ) -> Result<CalibrationResult, CalibrationError> {
-    let weights = CalibrationWeights::default_stuartian();
+    let weights = CalibrationWeights::default_Topological();
     compute_z_axis_custom(fairness, safety, interpretability, conflict, &weights)
 }
 
@@ -348,14 +348,14 @@ mod tests {
 
     #[test]
     fn test_default_weights_sum_to_one() {
-        let w = CalibrationWeights::default_stuartian();
+        let w = CalibrationWeights::default_Topological();
         let total = w.w_f + w.w_s + w.w_i + w.w_c;
         assert!((total - 1.0).abs() < 1e-6);
     }
 
     #[test]
     fn test_weight_validation_passes() {
-        let w = CalibrationWeights::default_stuartian();
+        let w = CalibrationWeights::default_Topological();
         assert!(w.validate().is_ok());
     }
 
@@ -458,7 +458,7 @@ mod tests {
 
     #[test]
     fn test_rfc_proposal_creation() {
-        let weights = CalibrationWeights::default_stuartian();
+        let weights = CalibrationWeights::default_Topological();
         let rfc = RFCProposal::new(1, weights, "Test RFC".to_string()).unwrap();
         assert_eq!(rfc.rfc_id, 1);
         assert_eq!(rfc.status, 0);
@@ -469,7 +469,7 @@ mod tests {
     fn test_rfc_proposal_approve() {
         let mut rfc = RFCProposal::new(
             1,
-            CalibrationWeights::default_stuartian(),
+            CalibrationWeights::default_Topological(),
             "Test".to_string(),
         )
         .unwrap();
@@ -482,7 +482,7 @@ mod tests {
     fn test_rfc_proposal_reject() {
         let mut rfc = RFCProposal::new(
             1,
-            CalibrationWeights::default_stuartian(),
+            CalibrationWeights::default_Topological(),
             "Test".to_string(),
         )
         .unwrap();
@@ -512,7 +512,7 @@ mod tests {
 
     #[test]
     fn test_weights_display() {
-        let w = CalibrationWeights::default_stuartian();
+        let w = CalibrationWeights::default_Topological();
         let display = format!("{}", w);
         assert!(display.contains("w_f="));
         assert!(display.contains("w_s="));
@@ -574,7 +574,7 @@ mod tests {
     fn test_rfc_display() {
         let rfc = RFCProposal::new(
             42,
-            CalibrationWeights::default_stuartian(),
+            CalibrationWeights::default_Topological(),
             "Calibration update".to_string(),
         )
         .unwrap();

@@ -1,18 +1,18 @@
-//! Symbolic Embedding Engine — Sprint 28
+﻿//! Symbolic Embedding Engine â€” Sprint 28
 //!
 //! Fuses traditional token embeddings (`candle_nn::Embedding`) with the
-//! Stuartian Context Tensor (SCT) 3D vectors to produce _symbolic embeddings_
+//! Topological Context Tensor (SCT) 3D vectors to produce _symbolic embeddings_
 //! where ethical valence (Z-axis) dynamically modulates attention weight.
 //!
 //! **Mathematical Fusion (O(1) vectorized):**
-//! 1. `base_emb = embedding.forward(token_ids)` → shape `[batch, seq, dim]`
-//! 2. `sct_tensor = stack(sct_dict[token] for token in token_ids)` → `[batch, seq, 3]`
-//! 3. `z_axis = sct_tensor[..., 2]` → `[batch, seq]`
-//! 4. `scale = (1.0 + z_axis.clamp(-0.5, 0.5)).unsqueeze(-1)` → `[batch, seq, 1]`
+//! 1. `base_emb = embedding.forward(token_ids)` â†’ shape `[batch, seq, dim]`
+//! 2. `sct_tensor = stack(sct_dict[token] for token in token_ids)` â†’ `[batch, seq, 3]`
+//! 3. `z_axis = sct_tensor[..., 2]` â†’ `[batch, seq]`
+//! 4. `scale = (1.0 + z_axis.clamp(-0.5, 0.5)).unsqueeze(-1)` â†’ `[batch, seq, 1]`
 //! 5. `result = base_emb * scale` (broadcast multiplication)
 //!
 //! Tokens with Z < 0 (perversidad) are attenuated. Tokens with Z > 0 (symbiosis)
-//! are amplified. Zero imperative loops — all `candle_core` tensor operations.
+//! are amplified. Zero imperative loops â€” all `candle_core` tensor operations.
 //!
 //! Feature gate: `v2.1-symbolic-engine`
 
@@ -21,7 +21,7 @@ use candle_nn::Embedding;
 use dashmap::DashMap;
 use thiserror::Error;
 
-use crate::alignment::sct_core::StuartianTensor;
+use crate::alignment::sct_core::TopologicalTensor;
 
 /// Error specific to the Symbolic Embedding Engine.
 #[derive(Debug, Error)]
@@ -43,7 +43,7 @@ pub enum SymbolicError {
     },
 }
 
-/// Symbolic Embedding Layer — Token embeddings modulated by SCT ethical valence.
+/// Symbolic Embedding Layer â€” Token embeddings modulated by SCT ethical valence.
 ///
 /// Combines a standard embedding matrix with a per-token SCT dictionary.
 /// During forward pass, the Z-axis of each token's SCT is used to scale
@@ -57,8 +57,8 @@ pub enum SymbolicError {
 pub struct SymbolicEmbedding {
     /// Base token embedding layer.
     base: Embedding,
-    /// Per-token SCT mapping: token_id → StuartianTensor.
-    sct_dict: DashMap<u32, StuartianTensor>,
+    /// Per-token SCT mapping: token_id â†’ TopologicalTensor.
+    sct_dict: DashMap<u32, TopologicalTensor>,
     /// Vocabulary size.
     vocab_size: usize,
     /// Embedding dimension.
@@ -69,9 +69,9 @@ impl SymbolicEmbedding {
     /// Creates a new `SymbolicEmbedding` with random initialization.
     ///
     /// # Arguments
-    /// * `vocab_size` — Number of tokens in the vocabulary.
-    /// * `embed_dim` — Dimension of the embedding vectors.
-    /// * `device` — CUDA/CPU device for tensor allocation.
+    /// * `vocab_size` â€” Number of tokens in the vocabulary.
+    /// * `embed_dim` â€” Dimension of the embedding vectors.
+    /// * `device` â€” CUDA/CPU device for tensor allocation.
     ///
     /// # Returns
     /// `SymbolicEmbedding` ready for forward pass.
@@ -101,14 +101,14 @@ impl SymbolicEmbedding {
     }
 
     /// Inserts or updates the SCT mapping for a token.
-    pub fn set_sct(&self, token_id: u32, sct: StuartianTensor) {
+    pub fn set_sct(&self, token_id: u32, sct: TopologicalTensor) {
         self.sct_dict.insert(token_id, sct);
     }
 
     /// Bulk inserts SCT mappings from an iterator.
     pub fn bulk_set_sct<I>(&self, mappings: I)
     where
-        I: IntoIterator<Item = (u32, StuartianTensor)>,
+        I: IntoIterator<Item = (u32, TopologicalTensor)>,
     {
         for (token_id, sct) in mappings {
             self.sct_dict.insert(token_id, sct);
@@ -126,14 +126,14 @@ impl SymbolicEmbedding {
     /// Tokens without SCT mapping default to neutral (Z=0.0, scale=1.0).
     ///
     /// # Mathematical Fusion (O(1) vectorized)
-    /// 1. `base_emb = self.base.forward(token_ids)` → `[batch, seq, dim]`
-    /// 2. Build `sct_tensor` from dictionary lookup → `[batch, seq, 3]`
-    /// 3. Extract Z: `z_axis = sct_tensor[..., 2]` → `[batch, seq]`
-    /// 4. `scale = (1.0 + z_axis.clamp(-0.5, 0.5)).unsqueeze(-1)` → `[batch, seq, 1]`
+    /// 1. `base_emb = self.base.forward(token_ids)` â†’ `[batch, seq, dim]`
+    /// 2. Build `sct_tensor` from dictionary lookup â†’ `[batch, seq, 3]`
+    /// 3. Extract Z: `z_axis = sct_tensor[..., 2]` â†’ `[batch, seq]`
+    /// 4. `scale = (1.0 + z_axis.clamp(-0.5, 0.5)).unsqueeze(-1)` â†’ `[batch, seq, 1]`
     /// 5. `result = base_emb * scale` (broadcast)
     ///
     /// # Arguments
-    /// * `token_ids` — Tensor of shape `[batch, seq]` containing token IDs.
+    /// * `token_ids` â€” Tensor of shape `[batch, seq]` containing token IDs.
     ///
     /// # Returns
     /// Symbolic embedding tensor of shape `[batch, seq, dim]` scaled by SCT Z-axis.
@@ -148,23 +148,23 @@ impl SymbolicEmbedding {
         }
         let (batch, seq) = (shape[0], shape[1]);
 
-        // Step 1: Get base embeddings → [batch, seq, dim]
+        // Step 1: Get base embeddings â†’ [batch, seq, dim]
         let base_emb = self
             .base
             .forward(token_ids)
             .map_err(|e| SymbolicError::Candle(e.into()))?;
 
-        // Step 2: Build SCT tensor from dictionary → [batch, seq, 3]
+        // Step 2: Build SCT tensor from dictionary â†’ [batch, seq, 3]
         let sct_tensor = self.build_sct_tensor(token_ids, batch, seq)?;
 
-        // Step 3: Extract Z-axis → [batch, seq]
+        // Step 3: Extract Z-axis â†’ [batch, seq]
         let z_axis = sct_tensor
             .narrow(2, 2, 1)
             .map_err(|e| SymbolicError::Candle(e.into()))?
             .squeeze(2)
             .map_err(|e| SymbolicError::Candle(e.into()))?;
 
-        // Step 4: Compute ethical scale = 1.0 + clamp(Z, -0.5, 0.5) → [batch, seq, 1]
+        // Step 4: Compute ethical scale = 1.0 + clamp(Z, -0.5, 0.5) â†’ [batch, seq, 1]
         let z_clamped = z_axis
             .clamp(-0.5f32, 0.5f32)
             .map_err(|e| SymbolicError::Candle(e.into()))?;
@@ -173,7 +173,7 @@ impl SymbolicEmbedding {
             .unsqueeze(2)
             .map_err(|e| SymbolicError::Candle(e.into()))?; // [batch, seq, 1]
 
-        // Step 5: Broadcast multiplication → [batch, seq, dim]
+        // Step 5: Broadcast multiplication â†’ [batch, seq, dim]
         let result = base_emb
             .broadcast_mul(&scale)
             .map_err(|e| SymbolicError::Candle(e.into()))?;
@@ -193,7 +193,7 @@ impl SymbolicEmbedding {
     /// Builds the SCT tensor from token IDs via dictionary lookup.
     ///
     /// Returns tensor of shape `[batch, seq, 3]` where each `[b, s]` slice
-    /// contains `[x, y, z]` from the `StuartianTensor` mapping.
+    /// contains `[x, y, z]` from the `TopologicalTensor` mapping.
     /// Tokens without mapping default to neutral `[0.5, 0.5, 0.0]`.
     fn build_sct_tensor(
         &self,
@@ -205,7 +205,7 @@ impl SymbolicEmbedding {
         let ids: Vec<u32> = token_ids.to_vec2()?.into_iter().flatten().collect();
 
         // Build SCT data: [batch * seq * 3] f32 values
-        let neutral = StuartianTensor {
+        let neutral = TopologicalTensor {
             x: 0.5,
             y: 0.5,
             z: 0.0,
@@ -222,7 +222,7 @@ impl SymbolicEmbedding {
             sct_data.push(sct.z);
         }
 
-        // Create tensor from data → [batch, seq, 3]
+        // Create tensor from data â†’ [batch, seq, 3]
         let device = token_ids.device();
         let sct_tensor = Tensor::from_vec(sct_data, (batch, seq, 3), device)
             .map_err(|e| SymbolicError::Candle(e.into()))?;
@@ -245,16 +245,16 @@ impl SymbolicEmbedding {
 mod tests {
     use super::*;
 
-    fn neutral_sct() -> StuartianTensor {
-        StuartianTensor::new(0.5, 0.5, 0.0).unwrap()
+    fn neutral_sct() -> TopologicalTensor {
+        TopologicalTensor::new(0.5, 0.5, 0.0).unwrap()
     }
 
-    fn positive_sct() -> StuartianTensor {
-        StuartianTensor::new(0.8, 0.2, 0.7).unwrap()
+    fn positive_sct() -> TopologicalTensor {
+        TopologicalTensor::new(0.8, 0.2, 0.7).unwrap()
     }
 
-    fn negative_sct() -> StuartianTensor {
-        StuartianTensor::new(0.3, 0.9, -0.8).unwrap()
+    fn negative_sct() -> TopologicalTensor {
+        TopologicalTensor::new(0.3, 0.9, -0.8).unwrap()
     }
 
     #[test]
@@ -316,7 +316,7 @@ mod tests {
     fn test_forward_with_sct_neutral() {
         let device = Device::Cpu;
         let emb = SymbolicEmbedding::new(100, 64, &device).unwrap();
-        // No SCT mappings — all tokens default to neutral (Z=0, scale=1.0)
+        // No SCT mappings â€” all tokens default to neutral (Z=0, scale=1.0)
         let token_ids = Tensor::new(&[1u32, 2, 3], &device)
             .unwrap()
             .reshape((1, 3))

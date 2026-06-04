@@ -1,4 +1,4 @@
-//! Temporal Cohesion Engine — Distributed Time Synchronization for P2P Networks.
+﻿//! Temporal Cohesion Engine â€” Distributed Time Synchronization for P2P Networks.
 //!
 //! Implements a PTP/NTP-inspired time synchronization protocol adapted for
 //! decentralized P2P/GossipSub topologies. Each node maintains a
@@ -8,27 +8,27 @@
 //!
 //! # Design Principles
 //!
-//! - **Decentralized convergence**: No master clock — all nodes contribute equally.
+//! - **Decentralized convergence**: No master clock â€” all nodes contribute equally.
 //! - **PTP/NTP-inspired**: Uses round-trip delay measurement and offset correction.
 //! - **GossipSub compatible**: Time samples propagate through existing gossip channels.
-//! - **4D integration**: SymbioticTimestamp integrates with StuartianMoralManifold
+//! - **4D integration**: SymbioticTimestamp integrates with TopologicalMoralManifold
 //!   for precise chronological trajectory evaluation (x, y, z, t).
 //! - **WASM compatible**: No blocking syscalls, all time sources abstracted.
 //!
 //! # Mathematical Foundation
 //!
 //! For two nodes A and B exchanging timestamps:
-//! - t₁ = A sends timestamp (A-local)
-//! - t₂ = B receives (B-local)
-//! - t₃ = B replies (B-local)
-//! - t₄ = A receives reply (A-local)
+//! - tâ‚ = A sends timestamp (A-local)
+//! - tâ‚‚ = B receives (B-local)
+//! - tâ‚ƒ = B replies (B-local)
+//! - tâ‚„ = A receives reply (A-local)
 //!
-//! Offset: θ = ((t₂ - t₁) + (t₃ - t₄)) / 2
-//! Delay: δ = (t₄ - t₁) - (t₃ - t₂)
+//! Offset: Î¸ = ((tâ‚‚ - tâ‚) + (tâ‚ƒ - tâ‚„)) / 2
+//! Delay: Î´ = (tâ‚„ - tâ‚) - (tâ‚ƒ - tâ‚‚)
 //!
-//! Corrected time: t_corrected = t_local - θ
+//! Corrected time: t_corrected = t_local - Î¸
 //!
-//! Convergence criterion: |θₙ - θₙ₋₁| < ε after N gossip rounds.
+//! Convergence criterion: |Î¸â‚™ - Î¸â‚™â‚‹â‚| < Îµ after N gossip rounds.
 //!
 //! **Feature Gate:** `v3.4-macro-symbiosis`
 
@@ -101,7 +101,7 @@ pub struct TimeSample {
 impl TimeSample {
     /// Compute the estimated clock offset from this sample.
     ///
-    /// offset = ((t₂ - t₁) + (t₃ - t₄)) / 2
+    /// offset = ((tâ‚‚ - tâ‚) + (tâ‚ƒ - tâ‚„)) / 2
     pub fn offset(&self) -> f64 {
         let t1 = self.t1 as f64;
         let t2 = self.t2 as f64;
@@ -112,7 +112,7 @@ impl TimeSample {
 
     /// Compute the round-trip delay from this sample.
     ///
-    /// delay = (t₄ - t₁) - (t₃ - t₂)
+    /// delay = (tâ‚„ - tâ‚) - (tâ‚ƒ - tâ‚‚)
     pub fn delay(&self) -> f64 {
         let t1 = self.t1 as f64;
         let t2 = self.t2 as f64;
@@ -121,7 +121,7 @@ impl TimeSample {
         (t4 - t1) - (t3 - t2)
     }
 
-    /// Validate that the sample has consistent ordering (t₁ < t₂ < t₃ < t₄).
+    /// Validate that the sample has consistent ordering (tâ‚ < tâ‚‚ < tâ‚ƒ < tâ‚„).
     pub fn is_valid(&self) -> bool {
         self.t1 <= self.t2 && self.t2 <= self.t3 && self.t3 <= self.t4
     }
@@ -176,7 +176,7 @@ pub enum SyncStatus {
     Converged,
     /// Still in progress, currently on given round.
     InProgress { round: usize },
-    /// Unable to converge — insufficient peers or invalid samples.
+    /// Unable to converge â€” insufficient peers or invalid samples.
     InsufficientPeers,
 }
 
@@ -216,7 +216,7 @@ impl std::fmt::Display for TemporalError {
     }
 }
 
-/// Temporal Cohesion Engine — Maintains distributed time synchronization.
+/// Temporal Cohesion Engine â€” Maintains distributed time synchronization.
 ///
 /// Collects time samples from peer nodes via gossip exchange, computes
 /// clock offsets using PTP-inspired algorithms, and applies gradual
@@ -312,7 +312,7 @@ impl TemporalCohesionEngine {
     /// Record a time sample from a peer gossip exchange.
     ///
     /// The sample represents a complete round-trip exchange:
-    /// t₁ = peer sent, t₂ = we received, t₃ = peer replied, t₄ = we received reply.
+    /// tâ‚ = peer sent, tâ‚‚ = we received, tâ‚ƒ = peer replied, tâ‚„ = we received reply.
     pub fn record_sample(&mut self, sample: TimeSample) -> Result<(), TemporalError> {
         if !sample.is_valid() {
             return Err(TemporalError::InvalidTimeSample);
@@ -693,8 +693,8 @@ mod tests {
                 .unwrap();
         }
         // Peer 3: positive offset (asymmetric delays -> non-zero offset)
-        // θ = ((t2-t1) + (t3-t4)) / 2 = ((30) + (-20)) / 2 = 5ms
-        // Ordering: t1=1000 < t2=1030 < t3=1040 < t4=1060 ✓
+        // Î¸ = ((t2-t1) + (t3-t4)) / 2 = ((30) + (-20)) / 2 = 5ms
+        // Ordering: t1=1000 < t2=1030 < t3=1040 < t4=1060 âœ“
         for i in 0..3 {
             let sample = TimeSample {
                 t1: 1000 + i * 10,

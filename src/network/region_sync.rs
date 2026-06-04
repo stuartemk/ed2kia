@@ -1,10 +1,10 @@
-//! Region Sync — Multi-region synchronization with latency awareness.
+﻿//! Region Sync â€” Multi-region synchronization with latency awareness.
 //!
-//! **Stuartian Law 3 (Holística):** Delta-encoding para cero desperdicio computacional.
-//! **Stuartian Law 5 (Múltiples Posibilidades):** Convergencia eventual bajo latencia variable.
+//! **Topological Law 3 (HolÃ­stica):** Delta-encoding para cero desperdicio computacional.
+//! **Topological Law 5 (MÃºltiples Posibilidades):** Convergencia eventual bajo latencia variable.
 //!
 //! ### Feature Gates
-//! | Feature | Módulo | Descripción |
+//! | Feature | MÃ³dulo | DescripciÃ³n |
 //! |---|---|---|
 //! | `v2.1-region-sync` | region_sync | Multi-region sync, delta-encoding, batch merge |
 
@@ -279,7 +279,7 @@ pub fn resolve_conflicts(local: &mut RegionState, remote: &RegionState) -> usize
             local.versions.insert(node_id.clone(), remote_version);
             resolved += 1;
         } else if remote_version == local_version {
-            // Same version, take max value (Stuartian Law 5: max-registry).
+            // Same version, take max value (Topological Law 5: max-registry).
             let local_value = local.get(node_id).unwrap_or(0.0);
             if *remote_value > local_value {
                 local.reputations.insert(node_id.clone(), *remote_value);
@@ -526,7 +526,7 @@ mod tests {
         remote.update("node-1", 0.7);
         let config = SyncConfig::default_config();
 
-        // Sync twice — should converge to same state.
+        // Sync twice â€” should converge to same state.
         sync_region_state(&mut local1, &remote, 50, &config).unwrap();
         sync_region_state(&mut local2, &remote, 50, &config).unwrap();
 

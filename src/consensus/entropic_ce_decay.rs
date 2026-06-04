@@ -1,16 +1,16 @@
-//! Entropic CE Decay — Sprint 77: Physics of Consciousness & Thermodynamic Finality
+﻿//! Entropic CE Decay â€” Sprint 77: Physics of Consciousness & Thermodynamic Finality
 //!
-//! Resuelve el bug ontológico: CE oligárquico (Gini → 1.0).
+//! Resuelve el bug ontolÃ³gico: CE oligÃ¡rquico (Gini â†’ 1.0).
 //!
-//! Implementa decaimiento entrópico radioactivo: CE(t) = CE_0·e^(-λt).
-//! El mérito pasado se evapora. Influencia solo por contribución continua.
-//! Evita acumulación perpetua de poder (Gini controlado).
+//! Implementa decaimiento entrÃ³pico radioactivo: CE(t) = CE_0Â·e^(-Î»t).
+//! El mÃ©rito pasado se evapora. Influencia solo por contribuciÃ³n continua.
+//! Evita acumulaciÃ³n perpetua de poder (Gini controlado).
 //!
-//! # Garantías
+//! # GarantÃ­as
 //!
 //! - Decaimiento: O(1) por nodo, O(n) para red completa
-//! - Gini: acotado por λ (mayor λ → menor concentración)
-//! - Cumplimiento: créditos sin decaimiento = 0 influencia
+//! - Gini: acotado por Î» (mayor Î» â†’ menor concentraciÃ³n)
+//! - Cumplimiento: crÃ©ditos sin decaimiento = 0 influencia
 
 use std::collections::HashMap;
 use std::fmt;
@@ -34,7 +34,7 @@ impl fmt::Display for DecayError {
             DecayError::NegativeCe(v) => write!(f, "Negative CE value: {:.4}", v),
             DecayError::InvalidLambda(l) => write!(f, "Invalid lambda: {:.6} (must be > 0)", l),
             DecayError::TimestampRegression(old, new) => {
-                write!(f, "Timestamp regression: {} → {}", old, new)
+                write!(f, "Timestamp regression: {} â†’ {}", old, new)
             }
             DecayError::NodeNotFound(id) => write!(f, "Node not found: {}", id),
         }
@@ -46,7 +46,7 @@ impl std::error::Error for DecayError {}
 /// Configuration for Entropic CE Decay.
 #[derive(Debug, Clone)]
 pub struct DecayConfig {
-    /// Decay constant λ (default 0.00001 ≈ half-life ~69.3k ms)
+    /// Decay constant Î» (default 0.00001 â‰ˆ half-life ~69.3k ms)
     pub lambda: f64,
     /// Maximum CE a node can hold
     pub max_ce: f64,
@@ -57,8 +57,8 @@ pub struct DecayConfig {
 }
 
 impl DecayConfig {
-    /// Default Stuartian configuration.
-    pub fn default_stuartian() -> Self {
+    /// Default Topological configuration.
+    pub fn default_Topological() -> Self {
         Self {
             lambda: 0.000_01,
             max_ce: 1000.0,
@@ -81,7 +81,7 @@ impl DecayConfig {
 
 impl Default for DecayConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -178,10 +178,10 @@ pub struct EntropicCeDecay {
 }
 
 impl EntropicCeDecay {
-    /// Create a new engine with default Stuartian configuration.
+    /// Create a new engine with default Topological configuration.
     pub fn new() -> Self {
         Self {
-            config: DecayConfig::default_stuartian(),
+            config: DecayConfig::default_Topological(),
             nodes: HashMap::new(),
         }
     }
@@ -322,11 +322,11 @@ impl fmt::Display for EntropicCeDecay {
     }
 }
 
-// ─── Public Standalone Functions ─────────────────────────────────────────────
+// â”€â”€â”€ Public Standalone Functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Apply entropic decay to a single CE value.
 ///
-/// CE(t) = CE_0 · e^(-λ · Δt)
+/// CE(t) = CE_0 Â· e^(-Î» Â· Î”t)
 pub fn apply_entropic_decay(
     initial_ce: f64,
     last_contribution_ts: u64,
@@ -371,7 +371,7 @@ pub fn compute_gini_coefficient(values: &[f64]) -> f64 {
         .min(1.0)
 }
 
-// ─── Tests ─────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[cfg(test)]
 mod tests {
@@ -379,7 +379,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = DecayConfig::default_stuartian();
+        let config = DecayConfig::default_Topological();
         assert!(config.validate().is_ok());
         assert!(config.lambda > 0.0);
     }
@@ -388,7 +388,7 @@ mod tests {
     fn test_config_invalid_lambda() {
         let config = DecayConfig {
             lambda: 0.0,
-            ..DecayConfig::default_stuartian()
+            ..DecayConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }
@@ -560,7 +560,7 @@ mod tests {
     fn test_half_life() {
         let hl = half_life(0.000_01);
         assert!(hl > 0.0);
-        // ln(2) / 0.00001 ≈ 69314.7
+        // ln(2) / 0.00001 â‰ˆ 69314.7
         assert!((hl - 69314.7).abs() < 1.0);
     }
 

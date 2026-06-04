@@ -1,4 +1,4 @@
-//! Blind Threshold Computation — Sprint 80: Gödelian Synthesis & Architecture of Absolute Incompleteness
+﻿//! Blind Threshold Computation â€” Sprint 80: Undecidable Synthesis & Architecture of Absolute Incompleteness
 //!
 //! Garbled Circuits for local obfuscation + Threshold Secret Sharing (TSS) for heavy
 //! network computation. GEI is validated without decrypting the original plaintext,
@@ -14,7 +14,7 @@
 use std::collections::HashMap;
 use std::fmt;
 
-// ─── Errors ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Errors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum BlindError {
@@ -43,7 +43,7 @@ impl fmt::Display for BlindError {
     }
 }
 
-// ─── Garbled Circuit ──────────────────────────────────────────────────────────
+// â”€â”€â”€ Garbled Circuit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct GarbledCircuit {
@@ -99,7 +99,7 @@ impl fmt::Display for GarbledCircuit {
     }
 }
 
-// ─── TSS Share ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ TSS Share â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TSSSignature {
@@ -141,7 +141,7 @@ impl fmt::Display for TSSSignature {
     }
 }
 
-// ─── Config ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct BlindConfig {
@@ -158,7 +158,7 @@ pub struct BlindConfig {
 }
 
 impl BlindConfig {
-    pub fn default_stuartian() -> Self {
+    pub fn default_Topological() -> Self {
         Self {
             threshold: 3,
             total_shares: 5,
@@ -190,11 +190,11 @@ impl BlindConfig {
 
 impl Default for BlindConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
-// ─── Computation Record ───────────────────────────────────────────────────────
+// â”€â”€â”€ Computation Record â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct BlindRecord {
@@ -220,7 +220,7 @@ impl fmt::Display for BlindRecord {
     }
 }
 
-// ─── Blind Threshold Engine ───────────────────────────────────────────────────
+// â”€â”€â”€ Blind Threshold Engine â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 pub struct BlindThresholdComputation {
     config: BlindConfig,
@@ -232,7 +232,7 @@ pub struct BlindThresholdComputation {
 impl BlindThresholdComputation {
     pub fn new() -> Self {
         Self {
-            config: BlindConfig::default_stuartian(),
+            config: BlindConfig::default_Topological(),
             circuits: HashMap::new(),
             records: Vec::new(),
             next_round: 1,
@@ -386,7 +386,7 @@ impl fmt::Display for BlindThresholdComputation {
     }
 }
 
-// ─── Public Standalone Functions ──────────────────────────────────────────────
+// â”€â”€â”€ Public Standalone Functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Generate a garbled circuit from a prompt and local key.
 /// The circuit obfuscates the prompt for secure network computation.
@@ -433,7 +433,7 @@ pub fn generate_garbled_circuit(prompt: &[u8], local_key: &[u8]) -> GarbledCircu
 }
 
 /// Verify GEI with TSS without decrypting the original text.
-/// Returns true if ≥required_threshold valid signatures agree.
+/// Returns true if â‰¥required_threshold valid signatures agree.
 pub fn verify_blind_gei_with_tss(
     encrypted_gei: &[u8],
     threshold_signatures: &[TSSSignature],
@@ -527,7 +527,7 @@ fn fnv_hash_256(data: &[u8]) -> Vec<u8> {
     result
 }
 
-// ─── Tests ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[cfg(test)]
 mod tests {
@@ -535,7 +535,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = BlindConfig::default_stuartian();
+        let config = BlindConfig::default_Topological();
         assert_eq!(config.threshold, 3);
         assert_eq!(config.total_shares, 5);
         assert_eq!(config.max_circuit_size, 65536);
@@ -544,7 +544,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = BlindConfig::default_stuartian();
+        let config = BlindConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 
@@ -552,7 +552,7 @@ mod tests {
     fn test_config_zero_threshold() {
         let config = BlindConfig {
             threshold: 0,
-            ..BlindConfig::default_stuartian()
+            ..BlindConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }
@@ -562,7 +562,7 @@ mod tests {
         let config = BlindConfig {
             threshold: 10,
             total_shares: 5,
-            ..BlindConfig::default_stuartian()
+            ..BlindConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }
@@ -571,7 +571,7 @@ mod tests {
     fn test_config_zero_circuit_size() {
         let config = BlindConfig {
             max_circuit_size: 0,
-            ..BlindConfig::default_stuartian()
+            ..BlindConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }
@@ -580,7 +580,7 @@ mod tests {
     fn test_config_zero_share_size() {
         let config = BlindConfig {
             share_size: 0,
-            ..BlindConfig::default_stuartian()
+            ..BlindConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }
@@ -655,7 +655,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = BlindConfig::default_stuartian();
+        let config = BlindConfig::default_Topological();
         let engine = BlindThresholdComputation::with_config(config);
         assert!(engine.is_ok());
     }

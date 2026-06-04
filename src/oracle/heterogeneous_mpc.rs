@@ -1,4 +1,4 @@
-//! Heterogeneous MPC — Sprint 80: Gödelian Synthesis & Architecture of Absolute Incompleteness
+﻿//! Heterogeneous MPC â€” Sprint 80: Undecidable Synthesis & Architecture of Absolute Incompleteness
 //!
 //! Multi-ISA consensus validation: physical attestation is only trusted when
 //! x86, ARM, and RISC-V architectures attest simultaneously. Manufacturer
@@ -6,7 +6,7 @@
 //!
 //! Key features:
 //! - Multi-ISA attestation (x86/ARM/RISC-V)
-//! - Threshold-based validation (≥2 of 3 architectures required)
+//! - Threshold-based validation (â‰¥2 of 3 architectures required)
 //! - Cross-architecture hash reconciliation
 //! - Replay protection via nonce binding
 //! - Manufacturer-agnostic trust model
@@ -14,7 +14,7 @@
 use std::collections::HashMap;
 use std::fmt;
 
-// ─── Errors ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Errors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum MpcError {
@@ -43,7 +43,7 @@ impl fmt::Display for MpcError {
     }
 }
 
-// ─── Architecture Types ───────────────────────────────────────────────────────
+// â”€â”€â”€ Architecture Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Architecture {
@@ -68,7 +68,7 @@ impl Architecture {
     }
 }
 
-// ─── Config ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct MpcConfig {
@@ -83,7 +83,7 @@ pub struct MpcConfig {
 }
 
 impl MpcConfig {
-    pub fn default_stuartian() -> Self {
+    pub fn default_Topological() -> Self {
         Self {
             threshold: 2,
             max_age_ms: 60_000,
@@ -111,11 +111,11 @@ impl MpcConfig {
 
 impl Default for MpcConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
-// ─── Attestation Proof ────────────────────────────────────────────────────────
+// â”€â”€â”€ Attestation Proof â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct AttestationProof {
@@ -167,7 +167,7 @@ impl fmt::Display for AttestationProof {
     }
 }
 
-// ─── Consensus Record ─────────────────────────────────────────────────────────
+// â”€â”€â”€ Consensus Record â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[derive(Debug, Clone)]
 pub struct MpcRecord {
@@ -194,7 +194,7 @@ impl fmt::Display for MpcRecord {
     }
 }
 
-// ─── Heterogeneous MPC Engine ─────────────────────────────────────────────────
+// â”€â”€â”€ Heterogeneous MPC Engine â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 pub struct HeterogeneousMpc {
     config: MpcConfig,
@@ -206,7 +206,7 @@ pub struct HeterogeneousMpc {
 impl HeterogeneousMpc {
     pub fn new() -> Self {
         Self {
-            config: MpcConfig::default_stuartian(),
+            config: MpcConfig::default_Topological(),
             proofs: HashMap::new(),
             records: Vec::new(),
             next_round: 1,
@@ -372,10 +372,10 @@ impl fmt::Display for HeterogeneousMpc {
     }
 }
 
-// ─── Public Standalone Functions ──────────────────────────────────────────────
+// â”€â”€â”€ Public Standalone Functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// Validate heterogeneous attestation across multiple architectures.
-/// Returns true if ≥threshold architectures agree on the committed hash.
+/// Returns true if â‰¥threshold architectures agree on the committed hash.
 pub fn validate_heterogeneous_attestation(
     x86_proof: &[u8],
     arm_proof: &[u8],
@@ -440,7 +440,7 @@ fn fnv_hash_256(data: &[u8]) -> Vec<u8> {
     result
 }
 
-// ─── Tests ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 #[cfg(test)]
 mod tests {
@@ -448,7 +448,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = MpcConfig::default_stuartian();
+        let config = MpcConfig::default_Topological();
         assert_eq!(config.threshold, 2);
         assert_eq!(config.max_age_ms, 60_000);
         assert!(config.enforce_nonce);
@@ -457,7 +457,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = MpcConfig::default_stuartian();
+        let config = MpcConfig::default_Topological();
         assert!(config.validate().is_ok());
     }
 
@@ -465,7 +465,7 @@ mod tests {
     fn test_config_threshold_too_low() {
         let config = MpcConfig {
             threshold: 1,
-            ..MpcConfig::default_stuartian()
+            ..MpcConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }
@@ -474,7 +474,7 @@ mod tests {
     fn test_config_threshold_too_high() {
         let config = MpcConfig {
             threshold: 4,
-            ..MpcConfig::default_stuartian()
+            ..MpcConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }
@@ -483,7 +483,7 @@ mod tests {
     fn test_config_zero_max_age() {
         let config = MpcConfig {
             max_age_ms: 0,
-            ..MpcConfig::default_stuartian()
+            ..MpcConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }
@@ -492,7 +492,7 @@ mod tests {
     fn test_config_zero_hash_size() {
         let config = MpcConfig {
             hash_size: 0,
-            ..MpcConfig::default_stuartian()
+            ..MpcConfig::default_Topological()
         };
         assert!(config.validate().is_err());
     }
@@ -577,7 +577,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = MpcConfig::default_stuartian();
+        let config = MpcConfig::default_Topological();
         let engine = HeterogeneousMpc::with_config(config);
         assert!(engine.is_ok());
     }

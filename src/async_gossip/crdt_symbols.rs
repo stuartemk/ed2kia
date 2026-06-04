@@ -1,10 +1,10 @@
-//! Symbol Registry CRDT — Sprint 28
+﻿//! Symbol Registry CRDT â€” Sprint 28
 //!
 //! Distributed symbol registry using ORSet + VersionVector for
-//! convergent SCT (Stuartian Context Tensor) propagation across
+//! convergent SCT (Topological Context Tensor) propagation across
 //! the federation network.
 //!
-//! Each node maintains a local mapping of `token_id → StuartianTensor`.
+//! Each node maintains a local mapping of `token_id â†’ TopologicalTensor`.
 //! When nodes sync, the registry merges using last-writer-wins semantics
 //! on the Z-axis (higher Z wins, promoting ethical consensus).
 //!
@@ -15,7 +15,7 @@
 
 use std::collections::BTreeMap;
 
-use crate::alignment::sct_core::StuartianTensor;
+use crate::alignment::sct_core::TopologicalTensor;
 use crate::async_gossip::crdt::{GCounter, VersionVector};
 
 /// Error specific to the Symbol Registry CRDT.
@@ -34,8 +34,8 @@ pub enum SymbolRegistryError {
 /// Entry in the symbol registry with version tracking.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct SymbolEntry {
-    /// The Stuartian Context Tensor for this token.
-    pub sct: StuartianTensor,
+    /// The Topological Context Tensor for this token.
+    pub sct: TopologicalTensor,
     /// Version vector at time of insertion.
     pub version: VersionVector,
     /// Node ID that last updated this entry.
@@ -44,7 +44,7 @@ pub struct SymbolEntry {
     pub timestamp: u64,
 }
 
-/// Distributed Symbol Registry — CRDT-based SCT propagation.
+/// Distributed Symbol Registry â€” CRDT-based SCT propagation.
 ///
 /// Uses ORSet semantics for token presence + LWW (Last-Writer-Wins)
 /// for SCT values. Merge strategy: higher Z wins (ethical consensus).
@@ -88,7 +88,7 @@ impl SymbolRegistry {
     /// If the token already exists, the new SCT wins if:
     /// 1. Its Z-axis is higher (more ethical), OR
     /// 2. Same Z but newer timestamp (LWW tiebreaker)
-    pub fn insert_symbol(&mut self, token_id: u32, sct: StuartianTensor, timestamp: u64) {
+    pub fn insert_symbol(&mut self, token_id: u32, sct: TopologicalTensor, timestamp: u64) {
         self.version.increment(&self.node_id);
         self.insert_counter.increment(&self.node_id, 1);
 
@@ -148,8 +148,8 @@ impl SymbolRegistry {
     /// **Merge Strategy (Ethical Consensus):**
     /// - For each token present in either registry:
     ///   - Higher Z wins (promotes ethical symbols)
-    ///   - Same Z → newer timestamp wins (LWW)
-    ///   - Same Z and timestamp → lexicographically higher node_id wins (deterministic)
+    ///   - Same Z â†’ newer timestamp wins (LWW)
+    ///   - Same Z and timestamp â†’ lexicographically higher node_id wins (deterministic)
     ///
     /// **CRDT Properties:**
     /// - Commutative, Associative, Idempotent
@@ -241,16 +241,16 @@ impl Default for SymbolRegistry {
 mod tests {
     use super::*;
 
-    fn benign_sct() -> StuartianTensor {
-        StuartianTensor::new(0.8, 0.2, 0.7).unwrap()
+    fn benign_sct() -> TopologicalTensor {
+        TopologicalTensor::new(0.8, 0.2, 0.7).unwrap()
     }
 
-    fn perverse_sct() -> StuartianTensor {
-        StuartianTensor::new(0.3, 0.9, -0.6).unwrap()
+    fn perverse_sct() -> TopologicalTensor {
+        TopologicalTensor::new(0.3, 0.9, -0.6).unwrap()
     }
 
-    fn neutral_sct() -> StuartianTensor {
-        StuartianTensor::new(0.5, 0.5, 0.0).unwrap()
+    fn neutral_sct() -> TopologicalTensor {
+        TopologicalTensor::new(0.5, 0.5, 0.0).unwrap()
     }
 
     #[test]
@@ -312,7 +312,7 @@ mod tests {
         let mut reg_b = SymbolRegistry::new("node-b");
 
         // Same SCT, different timestamps
-        let sct = StuartianTensor::new(0.6, 0.4, 0.3).unwrap();
+        let sct = TopologicalTensor::new(0.6, 0.4, 0.3).unwrap();
         reg_a.insert_symbol(1, sct, 1000);
         reg_b.insert_symbol(1, sct, 2000);
 

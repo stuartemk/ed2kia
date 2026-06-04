@@ -1,4 +1,4 @@
-//! Existential Credit Ledger — Sprint 29
+﻿//! Existential Credit Ledger â€” Sprint 29
 //!
 //! Non-transferable alignment metric mined by ethical compute (Z > 0),
 //! burned by perversity (Z < 0). Uses a concurrent hash map keyed by
@@ -94,7 +94,7 @@ impl Default for CeEntry {
     }
 }
 
-/// Existential Credit Ledger — The Symbiotic Ledger.
+/// Existential Credit Ledger â€” The Symbiotic Ledger.
 ///
 /// Maps peer IDs to their current existential credit score.
 /// Thread-safe via RwLock for concurrent reads/writes.
@@ -130,7 +130,7 @@ impl ExistentialCreditLedger {
     /// # Arguments
     ///
     /// * `peer_id` - Identifier of the peer receiving credit.
-    /// * `z_score` - Stuartian Tensor Z-axis value (must be > 0).
+    /// * `z_score` - Topological Tensor Z-axis value (must be > 0).
     /// * `compute_weight` - Weight factor for compute contribution (must be > 0).
     ///
     /// # Errors
@@ -171,7 +171,7 @@ impl ExistentialCreditLedger {
     /// # Arguments
     ///
     /// * `peer_id` - Identifier of the peer losing credit.
-    /// * `z_score` - Stuartian Tensor Z-axis value (must be < 0).
+    /// * `z_score` - Topological Tensor Z-axis value (must be < 0).
     /// * `penalty_multiplier` - Multiplier for perversity penalty (must be > 0).
     ///
     /// # Errors
@@ -272,7 +272,7 @@ impl ExistentialCreditLedger {
         self.entries.contains_key(peer_id)
     }
 
-    /// Remove a peer from the ledger (used during apoptosis).
+    /// Remove a peer from the ledger (used during Byzantine_Eviction).
     ///
     /// # Arguments
     ///

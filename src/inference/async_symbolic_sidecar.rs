@@ -1,4 +1,4 @@
-//! Async Symbolic Sidecar — Sprint 75: Thermodynamic Hardening & Asynchronous Neuro-Symbolic Pivot
+﻿//! Async Symbolic Sidecar â€” Sprint 75: Thermodynamic Hardening & Asynchronous Neuro-Symbolic Pivot
 //!
 //! LLM generates locally, ed2kIA validates post-hoc in a parallel thread.
 //! Distributes SAE weights/corrections, not per-token activations.
@@ -120,7 +120,7 @@ pub struct SidecarConfig {
 }
 
 impl SidecarConfig {
-    pub fn default_stuartian() -> Self {
+    pub fn default_Topological() -> Self {
         Self {
             latency_budget_ms: 50,
             max_queue_size: 256,
@@ -143,7 +143,7 @@ impl SidecarConfig {
 
 impl Default for SidecarConfig {
     fn default() -> Self {
-        Self::default_stuartian()
+        Self::default_Topological()
     }
 }
 
@@ -190,7 +190,7 @@ pub struct AsyncSymbolicSidecar {
 impl AsyncSymbolicSidecar {
     pub fn new() -> Self {
         Self {
-            config: SidecarConfig::default_stuartian(),
+            config: SidecarConfig::default_Topological(),
             queue: BinaryHeap::new(),
             sae_weights: None,
             total_validated: 0,
@@ -254,7 +254,7 @@ impl AsyncSymbolicSidecar {
         for token in generated_tokens {
             let elapsed = start.elapsed().as_millis() as u32;
             if elapsed > latency_budget_ms {
-                // Budget exceeded — fallback to accept remaining
+                // Budget exceeded â€” fallback to accept remaining
                 if self.config.enable_fallback {
                     self.total_fallback += 1;
                     accepted.push(token.clone());
@@ -367,19 +367,19 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = SidecarConfig::default_stuartian();
+        let config = SidecarConfig::default_Topological();
         assert_eq!(config.latency_budget_ms, 50);
         assert_eq!(config.max_queue_size, 256);
     }
 
     #[test]
     fn test_config_validate_ok() {
-        assert!(SidecarConfig::default_stuartian().validate().is_ok());
+        assert!(SidecarConfig::default_Topological().validate().is_ok());
     }
 
     #[test]
     fn test_config_zero_budget() {
-        let mut config = SidecarConfig::default_stuartian();
+        let mut config = SidecarConfig::default_Topological();
         config.latency_budget_ms = 0;
         assert!(config.validate().is_err());
     }
@@ -426,7 +426,7 @@ mod tests {
     fn test_enqueue_queue_full() {
         let mut engine = AsyncSymbolicSidecar::with_config(SidecarConfig {
             max_queue_size: 2,
-            ..SidecarConfig::default_stuartian()
+            ..SidecarConfig::default_Topological()
         })
         .unwrap();
         let tokens = vec![
@@ -461,7 +461,7 @@ mod tests {
         let mut engine = AsyncSymbolicSidecar::with_config(SidecarConfig {
             latency_budget_ms: 1000,
             enable_fallback: true,
-            ..SidecarConfig::default_stuartian()
+            ..SidecarConfig::default_Topological()
         })
         .unwrap();
         // Many tokens to ensure processing time exceeds the tiny budget
