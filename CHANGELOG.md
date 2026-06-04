@@ -1,3 +1,52 @@
+## [v9.21.0-architectural-decapitation] — 2026-06-04 (Sprint 85 — The Architectural Decapitation & Modular Workspace)
+
+### Sprint 85 "The Architectural Decapitation & Modular Workspace"
+
+Refactorización arquitectónica fundamental: **Cargo Workspace** (4 crates: `ed2k-sae`, `ed2k-p2p`, `ed2k-consensus`, `ed2k-cli`), **Renombrado Semántico** (`stuartian_filter` → `topological_anomaly_detector`, `omega` → `network_termination_handler`, `eternity` → `persistent_state_manager`, `godelian_grace` → `undecidable_state_fallback`), **Benchmark Reproducible** (`benchmarks/run_advbench_eval.sh`), **Bootstrap Config** (`config/bootstrap_peers.toml`), **Contributing Guide** actualizado con estructura de workspace.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| Workspace SAE | `crates/sae/` | Sparse Autoencoder module crate |
+| Workspace P2P | `crates/p2p/` | P2P networking layer crate |
+| Workspace Consensus | `crates/consensus/` | Consensus mechanisms crate |
+| Workspace CLI | `crates/cli/` | CLI interface crate |
+| Benchmark Script | `benchmarks/run_advbench_eval.sh` | Reproducible AdvBench evaluation |
+| Bootstrap Config | `config/bootstrap_peers.toml` | Bootstrap peer configuration |
+| Semantic Rename | `src/topological_anomaly_detector/` | Was `stuartian_filter/` |
+| Semantic Rename | `src/network_termination_handler/` | Was `omega/` |
+| Semantic Rename | `src/persistent_state_manager/` | Was `eternity/` |
+
+### Workspace Structure
+```
+ed2kIA/
+├── Cargo.toml          # Workspace root
+├── crates/
+│   ├── sae/            # Sparse Autoencoder module
+│   ├── p2p/            # P2P networking layer
+│   ├── consensus/      # Consensus mechanisms
+│   └── cli/            # CLI interface
+├── src/                # Core library (feature-gated modules)
+├── config/             # Configuration files
+├── benchmarks/         # Reproducible benchmarks
+└── tests/              # Integration tests
+```
+
+### Semantic Nomenclature Mapping
+| Old (Esoteric) | New (Engineering) |
+|----------------|-------------------|
+| `stuartian_filter` | `topological_anomaly_detector` |
+| `omega` | `network_termination_handler` |
+| `eternity` | `persistent_state_manager` |
+| `godelian_grace` | `undecidable_state_fallback` |
+| `apoptosis` | `byzantine_node_eviction` |
+
+### Validation Protocol
+- `cargo fmt` ✓
+- Workspace structure created ✓
+- Semantic renaming applied ✓
+- Benchmark script syntax validated ✓
+- Bootstrap config validated ✓
+
 ## [v9.20.0-brutal-pruning] — 2026-06-04 (Sprint 84 — The Brutal Pruning & Real-World Validation)
 
 ### Sprint 84 "The Brutal Pruning & Real-World Validation"

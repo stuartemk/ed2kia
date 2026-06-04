@@ -320,11 +320,11 @@ impl VisualDashboardScaffold {
         }
 
         let handle = ServerHandle {
-                    port: self.config.port,
-                    running: Arc::new(AtomicBool::new(true)),
-                    connections: Arc::new(AtomicU64::new(0)),
-                    endpoints,
-                };
+            port: self.config.port,
+            running: Arc::new(AtomicBool::new(true)),
+            connections: Arc::new(AtomicU64::new(0)),
+            endpoints,
+        };
 
         self.server = Some(handle.clone());
         Ok(handle)
@@ -340,11 +340,13 @@ impl VisualDashboardScaffold {
     /// Record a new SAE activation.
     pub fn record_activation(&mut self, point: ActivationPoint) {
         self.activations.push(point.clone());
-        self.manifold.add_point(point, self.config.divergence_threshold);
+        self.manifold
+            .add_point(point, self.config.divergence_threshold);
 
         // Enforce buffer limit
         if self.activations.len() > self.config.buffer_size {
-            self.activations.drain(0..self.activations.len() - self.config.buffer_size);
+            self.activations
+                .drain(0..self.activations.len() - self.config.buffer_size);
         }
     }
 
@@ -436,7 +438,9 @@ impl fmt::Display for VisualDashboardScaffold {
             self.activation_count(),
             self.manifold.point_count(),
             self.metrics.len(),
-            self.server.as_ref().map_or("none".to_string(), |s| format!("{}", s))
+            self.server
+                .as_ref()
+                .map_or("none".to_string(), |s| format!("{}", s))
         )
     }
 }

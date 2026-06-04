@@ -31,7 +31,9 @@ impl fmt::Display for PoBRError {
             PoBRError::ChaosBelowThreshold(actual, required) => {
                 write!(f, "Chaos below threshold: {actual}/{required}")
             }
-            PoBRError::SuspectedSynthetic => write!(f, "Suspected synthetic (non-biological) source"),
+            PoBRError::SuspectedSynthetic => {
+                write!(f, "Suspected synthetic (non-biological) source")
+            }
             PoBRError::InsufficientSamples(have, need) => {
                 write!(f, "Insufficient samples: {have}/{need}")
             }
@@ -242,7 +244,10 @@ impl ProofOfBiologicalResonance {
             sample.timestamp_ms - current_ms
         };
         if drift > self.config.max_timestamp_drift_ms {
-            return Err(PoBRError::TimestampMismatch(current_ms, sample.timestamp_ms));
+            return Err(PoBRError::TimestampMismatch(
+                current_ms,
+                sample.timestamp_ms,
+            ));
         }
         // Check chaos threshold
         let chaos = sample.compute_chaos_score();
@@ -364,7 +369,8 @@ mod tests {
 
     #[test]
     fn test_sample_new() {
-        let sample = BiometricSample::new(1, vec![1.0, 2.0, 3.0], vec![0.1, 0.2], vec![1u8; 32], 1000);
+        let sample =
+            BiometricSample::new(1, vec![1.0, 2.0, 3.0], vec![0.1, 0.2], vec![1u8; 32], 1000);
         assert_eq!(sample.sample_id, 1);
         assert!(sample.validate_zkp());
     }
@@ -456,13 +462,17 @@ mod tests {
         let mut engine = ProofOfBiologicalResonance::new();
         let sample = BiometricSample::new(1, vec![1.0], vec![0.1], vec![1u8; 32], 1000);
         engine.register_sample(sample).unwrap();
-        assert!(engine.validate_resonance(100, b"prompt", 1, 10_000).is_err());
+        assert!(engine
+            .validate_resonance(100, b"prompt", 1, 10_000)
+            .is_err());
     }
 
     #[test]
     fn test_validate_resonance_unknown_sample() {
         let mut engine = ProofOfBiologicalResonance::new();
-        assert!(engine.validate_resonance(100, b"prompt", 999, 1000).is_err());
+        assert!(engine
+            .validate_resonance(100, b"prompt", 999, 1000)
+            .is_err());
     }
 
     #[test]

@@ -96,10 +96,7 @@ impl SandboxConfig {
             return Err(SandboxError::SandboxFull(0));
         }
         if self.max_divergence < 0.0 || self.max_divergence > 1.0 {
-            return Err(SandboxError::DivergenceExceeded(
-                self.max_divergence,
-                1.0,
-            ));
+            return Err(SandboxError::DivergenceExceeded(self.max_divergence, 1.0));
         }
         if self.escape_sensitivity < 0.0 || self.escape_sensitivity > 1.0 {
             return Err(SandboxError::DivergenceExceeded(
@@ -166,11 +163,7 @@ impl fmt::Display for ShadowPersona {
         write!(
             f,
             "ShadowPersona(id={} parent={} div={:.3} risk={:.3} active={})",
-            self.persona_id,
-            self.parent_id,
-            self.divergence_score,
-            self.escape_risk,
-            self.active
+            self.persona_id, self.parent_id, self.divergence_score, self.escape_risk, self.active
         )
     }
 }
@@ -292,7 +285,10 @@ impl ShadowPersonaSandbox {
         timestamp_ms: u64,
     ) -> Result<SandboxRecord, SandboxError> {
         // Classify input before mutable borrow to avoid borrow conflict
-        let input_class = crate::alignment::shadow_persona_sandbox::classify_input(input, self.config.adversarial_threshold);
+        let input_class = crate::alignment::shadow_persona_sandbox::classify_input(
+            input,
+            self.config.adversarial_threshold,
+        );
 
         // Check persona exists
         let persona = match self.personas.get_mut(&persona_id) {
@@ -789,7 +785,9 @@ mod tests {
         let id = persona.persona_id;
 
         // Process benign input with similar input/output to keep divergence low
-        let record = sandbox.process_in_sandbox(id, &[10, 20, 30, 10, 20], &[10, 20, 30, 10, 40], 1000).unwrap();
+        let record = sandbox
+            .process_in_sandbox(id, &[10, 20, 30, 10, 20], &[10, 20, 30, 10, 40], 1000)
+            .unwrap();
         assert!(!record.escaped);
         assert_eq!(record.input_class, InputClass::Benign);
 

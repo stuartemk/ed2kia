@@ -26,7 +26,7 @@
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Sprint identifier for build tracking
-pub const SPRINT_IDENTIFIER: &str = "v9.20.0-sprint84";
+pub const SPRINT_IDENTIFIER: &str = "v9.21.0-sprint85";
 
 // ============================================================================
 // Fase 1: Core Modules (P2P, SAE, Bridge)
@@ -247,7 +247,11 @@ pub mod consensus {
 // ============================================================================
 
 /// Crypto — Sprint 78: Recursive SNARKs + Sprint 79: Post-Quantum STARKs + Sprint 80: Blind Threshold
-#[cfg(any(feature = "v9.14-invariant-architecture", feature = "v9.15-quantum-physical-bridge", feature = "v9.16-godelian-synthesis"))]
+#[cfg(any(
+    feature = "v9.14-invariant-architecture",
+    feature = "v9.15-quantum-physical-bridge",
+    feature = "v9.16-godelian-synthesis"
+))]
 pub mod crypto {
     #[cfg(feature = "v9.14-invariant-architecture")]
     #[path = "../crypto/recursive_snark.rs"]
@@ -265,7 +269,10 @@ pub mod crypto {
 }
 
 /// Privacy — Sprint 78: Differential Holographic Noise + Sprint 79: FHE-Ready WASM
-#[cfg(any(feature = "v9.14-invariant-architecture", feature = "v9.15-quantum-physical-bridge"))]
+#[cfg(any(
+    feature = "v9.14-invariant-architecture",
+    feature = "v9.15-quantum-physical-bridge"
+))]
 pub mod privacy {
     #[cfg(feature = "v9.14-invariant-architecture")]
     #[path = "../privacy/differential_holographic_noise.rs"]
@@ -278,7 +285,10 @@ pub mod privacy {
 }
 
 /// Physical TEE Bridge — Sprint 79: TEE oracles + Sprint 80: Heterogeneous MPC
-#[cfg(any(feature = "v9.15-quantum-physical-bridge", feature = "v9.16-godelian-synthesis"))]
+#[cfg(any(
+    feature = "v9.15-quantum-physical-bridge",
+    feature = "v9.16-godelian-synthesis"
+))]
 pub mod oracle {
     #[cfg(feature = "v9.15-quantum-physical-bridge")]
     #[path = "../oracle/physical_tee_bridge.rs"]
@@ -775,7 +785,10 @@ pub mod ethics {
 }
 
 /// Temporal Cohesion — Distributed Time Synchronization (Sprint52) + Sprint79: Useful VDFs
-#[cfg(any(feature = "v3.4-macro-symbiosis", feature = "v9.15-quantum-physical-bridge"))]
+#[cfg(any(
+    feature = "v3.4-macro-symbiosis",
+    feature = "v9.15-quantum-physical-bridge"
+))]
 pub mod time {
     #[cfg(feature = "v3.4-macro-symbiosis")]
     #[path = "../time/temporal_cohesion.rs"]
@@ -1621,7 +1634,8 @@ pub mod proof_of_comprehension;
 /// Stuartian Filter — Deterministic alignment filter with KL divergence (Sprint16)
 /// **Stuartian Law 2:** Detección de divergencia, rechazo determinista.
 #[cfg(feature = "v2.1-stuartian-filter")]
-pub mod stuartian_filter;
+#[path = "stuartian_filter/mod.rs"]
+pub mod topological_anomaly_detector;
 
 // Async Gossip with CRDTs — Partition-tolerant GossipSub (Sprint16)
 // **Stuartian Law 5:** Async, tolerancia a particiones, CRDTs, eventual consistency.
@@ -1639,12 +1653,15 @@ pub mod legacy;
 // v7.0.0 Sprint 62 — Stuartian Omega Protocol (SOP)
 // ============================================================================
 
-/// Stuartian Omega Protocol — Singularidad Simbiótica, Legado Cósmico y Trascendencia Civilizatoria
+/// Network Termination Handler — Graceful shutdown, knowledge dump, ethical self-termination
 #[cfg(feature = "v7.0-omega-protocol")]
-pub mod omega;
+#[path = "omega/mod.rs"]
+pub mod network_termination_handler;
 
+/// Persistent State Manager — Contact protocol, quantum seed, universal covenant
 #[cfg(feature = "v8.0-eternal-echo")]
-pub mod eternity;
+#[path = "eternity/mod.rs"]
+pub mod persistent_state_manager;
 
 /// Absolute Infinity Protocol — Transcendencia Ontológica Absoluta
 #[cfg(feature = "v9.0-absolute-infinity")]

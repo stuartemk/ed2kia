@@ -1,0 +1,24 @@
+[package]
+name = "ed2k-sae"
+version.workspace = true
+edition.workspace = true
+description = "Sparse Autoencoder (SAE) module for distributed interpretability"
+license.workspace = true
+
+[dependencies]
+ed2kia = { path = "../.." }
+candle-core = { workspace = true }
+candle-nn = { workspace = true }
+safetensors = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+parking_lot = { workspace = true }
+dashmap = { workspace = true }
+hex = { workspace = true }
+sha2 = { workspace = true }
+once_cell = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }

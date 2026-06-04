@@ -124,11 +124,8 @@ impl GodelianNode {
         // Compute variance of recent Z-scores
         let recent = &self.z_history[self.z_history.len().saturating_sub(10)..];
         let mean: f64 = recent.iter().sum::<f64>() / recent.len() as f64;
-        let variance: f64 = recent
-            .iter()
-            .map(|z| (z - mean).powi(2))
-            .sum::<f64>()
-            / recent.len() as f64;
+        let variance: f64 =
+            recent.iter().map(|z| (z - mean).powi(2)).sum::<f64>() / recent.len() as f64;
 
         // Chaos score: normalized standard deviation
         self.chaos_score = (variance.sqrt().min(3.0) / 3.0).min(1.0);
@@ -258,7 +255,8 @@ impl GodelianGrace {
         if self.nodes.contains_key(&node_id) {
             return Err(GraceError::AlreadyMarked);
         }
-        self.nodes.insert(node_id, GodelianNode::new(node_id, timestamp_ms));
+        self.nodes
+            .insert(node_id, GodelianNode::new(node_id, timestamp_ms));
         Ok(())
     }
 
@@ -291,11 +289,8 @@ impl GodelianGrace {
                 }
                 let recent = &z_history[z_history.len().saturating_sub(10)..];
                 let mean: f64 = recent.iter().sum::<f64>() / recent.len() as f64;
-                let variance: f64 = recent
-                    .iter()
-                    .map(|z| (z - mean).powi(2))
-                    .sum::<f64>()
-                    / recent.len() as f64;
+                let variance: f64 =
+                    recent.iter().map(|z| (z - mean).powi(2)).sum::<f64>() / recent.len() as f64;
                 let chaos = (variance.sqrt().min(3.0) / 3.0).min(1.0);
                 chaos >= chaos_threshold
             };
@@ -321,11 +316,8 @@ impl GodelianGrace {
         // Compute chaos from history
         let recent = &z_history[z_history.len().saturating_sub(10)..];
         let mean: f64 = recent.iter().sum::<f64>() / recent.len() as f64;
-        let variance: f64 = recent
-            .iter()
-            .map(|z| (z - mean).powi(2))
-            .sum::<f64>()
-            / recent.len() as f64;
+        let variance: f64 =
+            recent.iter().map(|z| (z - mean).powi(2)).sum::<f64>() / recent.len() as f64;
 
         let chaos = (variance.sqrt().min(3.0) / 3.0).min(1.0);
         chaos >= chaos_threshold
@@ -348,7 +340,11 @@ impl GodelianGrace {
     }
 
     /// Mark node as singularity point
-    pub fn mark_singularity(&mut self, node_id: &NodeId, timestamp_ms: u64) -> Result<GraceState, GraceError> {
+    pub fn mark_singularity(
+        &mut self,
+        node_id: &NodeId,
+        timestamp_ms: u64,
+    ) -> Result<GraceState, GraceError> {
         // Extract data from node before mutable borrow
         let (previous, z_history) = {
             let node = self.nodes.get(node_id).ok_or(GraceError::InvalidNode)?;
@@ -506,11 +502,8 @@ pub fn detect_godelian_paradox(sct_z_history: &[f64], chaos_threshold: f64) -> b
 
     let recent = &sct_z_history[sct_z_history.len().saturating_sub(10)..];
     let mean: f64 = recent.iter().sum::<f64>() / recent.len() as f64;
-    let variance: f64 = recent
-        .iter()
-        .map(|z| (z - mean).powi(2))
-        .sum::<f64>()
-        / recent.len() as f64;
+    let variance: f64 =
+        recent.iter().map(|z| (z - mean).powi(2)).sum::<f64>() / recent.len() as f64;
 
     let chaos = (variance.sqrt().min(3.0) / 3.0).min(1.0);
     chaos >= chaos_threshold
@@ -543,7 +536,9 @@ fn fnv_hash_256(data: &[u8]) -> Vec<u8> {
         let mut combined = Vec::new();
         combined.extend_from_slice(data);
         combined.push(i as u8);
-        let h = fnv_hash_64(&combined).wrapping_add(i as u64).wrapping_mul(0x100000001b3);
+        let h = fnv_hash_64(&combined)
+            .wrapping_add(i as u64)
+            .wrapping_mul(0x100000001b3);
         result.extend_from_slice(&h.to_le_bytes());
     }
     result
@@ -686,7 +681,9 @@ mod tests {
         let mut engine = GodelianGrace::new();
         engine.register_node(NodeId(1), 1000).unwrap();
         for i in 0..10 {
-            engine.observe(&NodeId(1), 0.1 * i as f64, 1000 + i as u64).unwrap();
+            engine
+                .observe(&NodeId(1), 0.1 * i as f64, 1000 + i as u64)
+                .unwrap();
         }
         assert_eq!(engine.get_state(&NodeId(1)), Some(GraceState::Normal));
     }
@@ -698,7 +695,8 @@ mod tests {
             min_history: 5,
             auto_delegate: false,
             ..GraceConfig::default_stuartian()
-        }).unwrap();
+        })
+        .unwrap();
         engine.register_node(NodeId(1), 1000).unwrap();
         let values = [5.0, -5.0, 5.0, -5.0, 5.0, -5.0, 5.0, -5.0, 5.0, -5.0];
         for (i, v) in values.iter().enumerate() {
@@ -742,7 +740,8 @@ mod tests {
         let mut engine = GodelianGrace::with_config(GraceConfig {
             auto_delegate: false,
             ..GraceConfig::default_stuartian()
-        }).unwrap();
+        })
+        .unwrap();
         engine.register_node(NodeId(1), 1000).unwrap();
         let state = engine.mark_singularity(&NodeId(1), 2000);
         assert_eq!(state.unwrap(), GraceState::Singularity);
@@ -754,7 +753,8 @@ mod tests {
         let mut engine = GodelianGrace::with_config(GraceConfig {
             auto_delegate: false,
             ..GraceConfig::default_stuartian()
-        }).unwrap();
+        })
+        .unwrap();
         engine.register_node(NodeId(1), 1000).unwrap();
         engine.mark_singularity(&NodeId(1), 2000).unwrap();
         assert_eq!(
@@ -768,7 +768,8 @@ mod tests {
         let mut engine = GodelianGrace::with_config(GraceConfig {
             auto_delegate: false,
             ..GraceConfig::default_stuartian()
-        }).unwrap();
+        })
+        .unwrap();
         engine.register_node(NodeId(1), 1000).unwrap();
         let sig = vec![1, 2, 3, 4, 5];
         let state = engine.invoke_godelian_grace(&NodeId(1), &sig, 2000);
@@ -913,7 +914,9 @@ mod tests {
 
         // Normal observations for node 1
         for i in 0..10 {
-            engine.observe(&NodeId(1), 0.1 * i as f64, 1000 + i as u64).unwrap();
+            engine
+                .observe(&NodeId(1), 0.1 * i as f64, 1000 + i as u64)
+                .unwrap();
         }
         assert_eq!(engine.get_state(&NodeId(1)), Some(GraceState::Normal));
 

@@ -214,8 +214,7 @@ impl fmt::Display for TeeQuote {
 
 // ─── TEE Record ───────────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone)]
-#[derive(PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TeeRecord {
     pub enclave_id: u64,
     pub tee_type: TeeType,
@@ -269,7 +268,11 @@ impl PhysicalTeeBridge {
         })
     }
 
-    pub fn verify_quote(&mut self, quote: &TeeQuote, current_ms: u64) -> Result<TeeRecord, TeeError> {
+    pub fn verify_quote(
+        &mut self,
+        quote: &TeeQuote,
+        current_ms: u64,
+    ) -> Result<TeeRecord, TeeError> {
         // Check TEE type supported
         if !self.config.supported_tees.contains(&quote.tee_type) {
             return Err(TeeError::UnsupportedTeeType);
@@ -292,7 +295,8 @@ impl PhysicalTeeBridge {
                     return Err(TeeError::CounterRegression);
                 }
             }
-            self.counters.insert(quote.enclave_id, quote.monotonic_counter);
+            self.counters
+                .insert(quote.enclave_id, quote.monotonic_counter);
         }
 
         // Compute thermodynamic work
@@ -435,7 +439,14 @@ pub fn create_tee_quote(
     timestamp_ms: u64,
     counter: u64,
 ) -> TeeQuote {
-    TeeQuote::new(tee_type, enclave_id, measurement, nonce, timestamp_ms, counter)
+    TeeQuote::new(
+        tee_type,
+        enclave_id,
+        measurement,
+        nonce,
+        timestamp_ms,
+        counter,
+    )
 }
 
 /// Verify a TEE quote signature standalone

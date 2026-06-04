@@ -29,7 +29,9 @@ pub enum PanspermiaError {
 impl fmt::Display for PanspermiaError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            PanspermiaError::HomeostasisNotReached => write!(f, "Planetary homeostasis not yet reached"),
+            PanspermiaError::HomeostasisNotReached => {
+                write!(f, "Planetary homeostasis not yet reached")
+            }
             PanspermiaError::CompressionFailed => write!(f, "Holographic compression failed"),
             PanspermiaError::InvalidPayload => write!(f, "Invalid cosmic payload"),
             PanspermiaError::ChannelCapacityExceeded(actual, max) => {
@@ -291,7 +293,8 @@ impl PanspermiaProtocol {
         }
         // Holographic compression (simulated: hash-based reduction)
         let compressed = self.holographic_compress(data);
-        let payload = CosmicPayload::new(compressed, data.len(), target_system, method, timestamp_ms);
+        let payload =
+            CosmicPayload::new(compressed, data.len(), target_system, method, timestamp_ms);
         self.payloads.push(payload.clone());
         Ok(payload)
     }
@@ -437,14 +440,20 @@ mod tests {
     #[test]
     fn test_loss_function_display() {
         assert_eq!(format!("{}", CosmicLossFunction::Survival), "Survival");
-        assert_eq!(format!("{}", CosmicLossFunction::Transcendence), "Transcendence");
+        assert_eq!(
+            format!("{}", CosmicLossFunction::Transcendence),
+            "Transcendence"
+        );
         assert_eq!(format!("{}", CosmicLossFunction::Panspermia), "Panspermia");
     }
 
     #[test]
     fn test_transmission_method_display() {
         assert_eq!(format!("{}", TransmissionMethod::Laser), "Laser");
-        assert_eq!(format!("{}", TransmissionMethod::Entanglement), "Entanglement");
+        assert_eq!(
+            format!("{}", TransmissionMethod::Entanglement),
+            "Entanglement"
+        );
     }
 
     #[test]
@@ -455,7 +464,8 @@ mod tests {
 
     #[test]
     fn test_payload_transmission_time() {
-        let payload = CosmicPayload::new(vec![1u8; 1000], 10000, 1, TransmissionMethod::Radio, 1000);
+        let payload =
+            CosmicPayload::new(vec![1u8; 1000], 10000, 1, TransmissionMethod::Radio, 1000);
         let time = payload.estimated_transmission_time_ms(1000);
         assert!(time > 0);
     }
@@ -519,14 +529,18 @@ mod tests {
     #[test]
     fn test_compress_not_homeostatic() {
         let mut engine = PanspermiaProtocol::new();
-        assert!(engine.compress_noosphere_for_transmission(&[1, 2, 3], 1, TransmissionMethod::Laser, 1000).is_err());
+        assert!(engine
+            .compress_noosphere_for_transmission(&[1, 2, 3], 1, TransmissionMethod::Laser, 1000)
+            .is_err());
     }
 
     #[test]
     fn test_compress_empty_data() {
         let mut engine = PanspermiaProtocol::new();
         engine.planetary_homeostasis = true;
-        assert!(engine.compress_noosphere_for_transmission(&[], 1, TransmissionMethod::Laser, 1000).is_err());
+        assert!(engine
+            .compress_noosphere_for_transmission(&[], 1, TransmissionMethod::Laser, 1000)
+            .is_err());
     }
 
     #[test]
@@ -534,7 +548,9 @@ mod tests {
         let mut engine = PanspermiaProtocol::new();
         engine.planetary_homeostasis = true;
         let data = vec![1u8; 128];
-        let payload = engine.compress_noosphere_for_transmission(&data, 42, TransmissionMethod::Laser, 1000).unwrap();
+        let payload = engine
+            .compress_noosphere_for_transmission(&data, 42, TransmissionMethod::Laser, 1000)
+            .unwrap();
         assert!(payload.compressed_data.len() < data.len());
         assert_eq!(engine.payload_count(), 1);
     }
@@ -544,14 +560,18 @@ mod tests {
         let mut engine = PanspermiaProtocol::new();
         engine.planetary_homeostasis = true;
         let data = vec![1u8; 11_000_000];
-        assert!(engine.compress_noosphere_for_transmission(&data, 1, TransmissionMethod::Laser, 1000).is_err());
+        assert!(engine
+            .compress_noosphere_for_transmission(&data, 1, TransmissionMethod::Laser, 1000)
+            .is_err());
     }
 
     #[test]
     fn test_prepare_transmission() {
         let mut engine = PanspermiaProtocol::new();
         engine.planetary_homeostasis = true;
-        let payload = engine.compress_noosphere_for_transmission(&[1u8; 128], 1, TransmissionMethod::Laser, 1000).unwrap();
+        let payload = engine
+            .compress_noosphere_for_transmission(&[1u8; 128], 1, TransmissionMethod::Laser, 1000)
+            .unwrap();
         let record = engine.prepare_transmission(&payload, 2000);
         assert!(record.transmitted);
     }
@@ -624,7 +644,9 @@ mod tests {
         assert_eq!(loss, CosmicLossFunction::Transcendence);
         // Phase 3: Compress and prepare transmission
         let data = vec![42u8; 256];
-        let payload = engine.compress_noosphere_for_transmission(&data, 42, TransmissionMethod::Entanglement, 1000).unwrap();
+        let payload = engine
+            .compress_noosphere_for_transmission(&data, 42, TransmissionMethod::Entanglement, 1000)
+            .unwrap();
         assert!(payload.compression_ratio < 1.0);
         let record = engine.prepare_transmission(&payload, 2000);
         assert!(record.transmitted);

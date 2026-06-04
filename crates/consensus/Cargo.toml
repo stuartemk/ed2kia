@@ -1,0 +1,27 @@
+[package]
+name = "ed2k-consensus"
+version.workspace = true
+edition.workspace = true
+description = "Consensus mechanisms for ed2kIA (PoN, ZKP, MPC)"
+license.workspace = true
+
+[dependencies]
+ed2kia = { path = "../.." }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+ark-ec = { workspace = true }
+ark-ff = { workspace = true }
+ark-std = { workspace = true }
+ark-bn254 = { workspace = true }
+ark-serialize = { workspace = true }
+ed25519-dalek = { workspace = true }
+parking_lot = { workspace = true }
+hex = { workspace = true }
+sha2 = { workspace = true }
+once_cell = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }

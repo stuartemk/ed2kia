@@ -405,7 +405,9 @@ pub fn compute_useful_delay(
 /// Verify a VDF result (standalone).
 pub fn verify_vdf_result(result: &VdfResult, semantic_payload: &[u8]) -> bool {
     let mut engine = UsefulVdf::new();
-    engine.verify_result(result, semantic_payload).unwrap_or(false)
+    engine
+        .verify_result(result, semantic_payload)
+        .unwrap_or(false)
 }
 
 /// FNV-1a 64-bit hash.
@@ -542,12 +544,8 @@ mod tests {
     #[test]
     fn test_computation_count() {
         let mut engine = UsefulVdf::new();
-        engine
-            .compute_useful_delay(&[1.0], b"a", 10, 100)
-            .unwrap();
-        engine
-            .compute_useful_delay(&[1.0], b"b", 20, 200)
-            .unwrap();
+        engine.compute_useful_delay(&[1.0], b"a", 10, 100).unwrap();
+        engine.compute_useful_delay(&[1.0], b"b", 20, 200).unwrap();
         assert_eq!(engine.computation_count(), 2);
     }
 
@@ -564,9 +562,7 @@ mod tests {
     #[test]
     fn test_reset() {
         let mut engine = UsefulVdf::new();
-        engine
-            .compute_useful_delay(&[1.0], b"x", 10, 100)
-            .unwrap();
+        engine.compute_useful_delay(&[1.0], b"x", 10, 100).unwrap();
         engine.reset();
         assert_eq!(engine.computation_count(), 0);
     }

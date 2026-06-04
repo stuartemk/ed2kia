@@ -123,8 +123,7 @@ impl Default for FheWasmConfig {
 
 // ─── FHE Key ──────────────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone)]
-#[derive(PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct FheKey {
     pub key_id: u64,
     pub scheme: FheScheme,
@@ -154,7 +153,11 @@ impl FheKey {
     fn generate_public_key(_key_id: u64, scheme: FheScheme, security_level: usize) -> Vec<u8> {
         let dim = security_level / 8;
         let mut key = vec![0u8; dim.min(256)];
-        let scheme_val = match scheme { FheScheme::Bfv => 1u8, FheScheme::Ckks => 2u8, FheScheme::Bgvr => 3u8 };
+        let scheme_val = match scheme {
+            FheScheme::Bfv => 1u8,
+            FheScheme::Ckks => 2u8,
+            FheScheme::Bgvr => 3u8,
+        };
         let mut seed = Vec::new();
         seed.extend_from_slice(&_key_id.to_le_bytes());
         seed.push(scheme_val);
@@ -373,11 +376,7 @@ impl FheReadyWasm {
         Ok(module)
     }
 
-    pub fn decrypt_module(
-        &mut self,
-        module_id: u64,
-        key_id: u64,
-    ) -> Result<Vec<u8>, FheError> {
+    pub fn decrypt_module(&mut self, module_id: u64, key_id: u64) -> Result<Vec<u8>, FheError> {
         let module = match self.modules.get(&module_id) {
             Some(m) => m,
             None => return Err(FheError::InvalidCiphertext),

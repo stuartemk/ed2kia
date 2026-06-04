@@ -354,11 +354,7 @@ impl PostQuantumStarks {
         path
     }
 
-    fn generate_query_responses(
-        &self,
-        circuit: &[u8],
-        commitment: &[u8],
-    ) -> Vec<Vec<u8>> {
+    fn generate_query_responses(&self, circuit: &[u8], commitment: &[u8]) -> Vec<Vec<u8>> {
         // Generate query responses at challenge points derived from commitment
         let mut responses = Vec::with_capacity(self.config.query_rounds);
         for i in 0..self.config.query_rounds {
@@ -374,9 +370,7 @@ impl PostQuantumStarks {
 
     fn verify_fri_commitment(&self, proof: &StarkProof) -> bool {
         // Verify FRI commitment has valid structure
-        !proof.fri_commitment.is_empty()
-            && proof.fri_commitment.len() >= 8
-            && proof.degree >= 2
+        !proof.fri_commitment.is_empty() && proof.fri_commitment.len() >= 8 && proof.degree >= 2
     }
 
     fn verify_merkle_proofs(&self, proof: &StarkProof) -> bool {
@@ -422,9 +416,9 @@ pub fn generate_stark_proof(circuit: &[u8], public_inputs: &[u8]) -> StarkProof 
     let mut engine = PostQuantumStarks::new();
     engine
         .generate_proof(circuit, public_inputs, 0)
-        .unwrap_or_else(|_| StarkProof::new(
-            vec![], vec![], vec![], fnv_hash_256(public_inputs), 0, 0, 0,
-        ))
+        .unwrap_or_else(|_| {
+            StarkProof::new(vec![], vec![], vec![], fnv_hash_256(public_inputs), 0, 0, 0)
+        })
 }
 
 /// Verify a STARK proof against public inputs (standalone).
@@ -666,8 +660,12 @@ mod tests {
         let mut engine = PostQuantumStarks::new();
 
         // Generate multiple proofs
-        let proof1 = engine.generate_proof(b"circuit_alpha", b"input_alpha", 1000).unwrap();
-        let proof2 = engine.generate_proof(b"circuit_beta", b"input_beta", 2000).unwrap();
+        let proof1 = engine
+            .generate_proof(b"circuit_alpha", b"input_alpha", 1000)
+            .unwrap();
+        let proof2 = engine
+            .generate_proof(b"circuit_beta", b"input_beta", 2000)
+            .unwrap();
 
         // Verify correct proofs
         assert!(engine.verify_proof(&proof1, b"input_alpha").unwrap());

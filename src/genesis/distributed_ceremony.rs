@@ -64,7 +64,8 @@ impl ContributorEntropy {
         cryptographic_entropy: Vec<u8>,
         timestamp_ms: u64,
     ) -> Self {
-        let combined_hash = Self::compute_combined_hash(&biological_entropy, &cryptographic_entropy);
+        let combined_hash =
+            Self::compute_combined_hash(&biological_entropy, &cryptographic_entropy);
         Self {
             node_id,
             biological_entropy,
@@ -211,7 +212,10 @@ impl fmt::Display for CeremonyRecord {
         write!(
             f,
             "Record(node={}, bio={}B, crypto={}B, t={})",
-            self.contributor_id, self.bio_entropy_size, self.crypto_entropy_size, self.contributed_at_ms
+            self.contributor_id,
+            self.bio_entropy_size,
+            self.crypto_entropy_size,
+            self.contributed_at_ms
         )
     }
 }
@@ -295,11 +299,7 @@ impl DistributedCeremony {
             ));
         }
         let anchors = self.derive_ethical_anchors();
-        let genesis = GenesisBlock::new(
-            anchors,
-            self.contributors.len(),
-            timestamp_ms,
-        );
+        let genesis = GenesisBlock::new(anchors, self.contributors.len(), timestamp_ms);
         self.genesis = Some(genesis.clone());
         Ok(genesis)
     }
@@ -354,7 +354,11 @@ impl fmt::Display for DistributedCeremony {
             "Ceremony(contributors={}, threshold={}, genesis={})",
             self.contributor_count(),
             self.config.threshold,
-            if self.genesis.is_some() { "forged" } else { "pending" }
+            if self.genesis.is_some() {
+                "forged"
+            } else {
+                "pending"
+            }
         )
     }
 }
@@ -540,7 +544,9 @@ mod tests {
         let mut engine = DistributedCeremony::new();
         let bio = vec![1u8; 32];
         let crypto = vec![2u8; 32];
-        engine.contribute(1, bio.clone(), crypto.clone(), 1000).unwrap();
+        engine
+            .contribute(1, bio.clone(), crypto.clone(), 1000)
+            .unwrap();
         assert!(engine.contribute(1, bio, crypto, 1001).is_err());
     }
 
@@ -549,7 +555,9 @@ mod tests {
         let mut engine = DistributedCeremony::new();
         let bio = vec![1u8; 32];
         let crypto = vec![2u8; 32];
-        engine.contribute(1, bio.clone(), crypto.clone(), 1000).unwrap();
+        engine
+            .contribute(1, bio.clone(), crypto.clone(), 1000)
+            .unwrap();
         assert!(engine.derive_genesis(2000).is_err());
     }
 
@@ -587,7 +595,9 @@ mod tests {
             engine.contribute(i, bio, crypto, 1000 + i).unwrap();
         }
         engine.derive_genesis(2000).unwrap();
-        assert!(engine.contribute(3, vec![4u8; 32], vec![14u8; 32], 3000).is_err());
+        assert!(engine
+            .contribute(3, vec![4u8; 32], vec![14u8; 32], 3000)
+            .is_err());
     }
 
     #[test]
@@ -717,7 +727,9 @@ mod tests {
         assert!(engine.get_genesis().is_some());
         // Phase 3: Verify immutability
         assert!(engine.derive_genesis(6000).is_err());
-        assert!(engine.contribute(5, vec![6u8; 32], vec![16u8; 32], 6000).is_err());
+        assert!(engine
+            .contribute(5, vec![6u8; 32], vec![16u8; 32], 6000)
+            .is_err());
         // Phase 4: Reset and re-derive
         engine.reset();
         assert_eq!(engine.contributor_count(), 0);

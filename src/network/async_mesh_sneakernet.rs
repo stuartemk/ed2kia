@@ -189,7 +189,12 @@ pub struct MergeResult {
 }
 
 impl MergeResult {
-    pub fn new(merged_nodes: usize, conflicts_resolved: usize, new_nodes_added: usize, timestamp_ms: u64) -> Self {
+    pub fn new(
+        merged_nodes: usize,
+        conflicts_resolved: usize,
+        new_nodes_added: usize,
+        timestamp_ms: u64,
+    ) -> Self {
         Self {
             merged_nodes,
             conflicts_resolved,
@@ -315,7 +320,9 @@ impl AsyncMeshSneakernet {
             }
         }
         // Merge version vectors
-        self.local_dag.version_vector.merge(&remote_dag.version_vector);
+        self.local_dag
+            .version_vector
+            .merge(&remote_dag.version_vector);
         self.local_dag.version_vector.merge(sync_vector);
         self.local_dag.last_sync_ms = timestamp_ms;
         let result = MergeResult::new(merged, conflicts, new_added, timestamp_ms);
@@ -601,7 +608,7 @@ mod tests {
         let mut remote = DagState::new(TransportType::LoRaWAN);
         remote.add_node(2, vec![200u8; 16]); // Conflict
         remote.add_node(3, vec![200u8; 16]); // New
-        // Merge
+                                             // Merge
         let sync_vv = VersionVector::new();
         let result = engine.merge_dag(&remote, &sync_vv, 1000).unwrap();
         assert!(result.conflicts_resolved >= 1);

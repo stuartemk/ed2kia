@@ -62,7 +62,13 @@ pub struct CEBurnResult {
 }
 
 impl CEBurnResult {
-    pub fn new(node_id: NodeId, ce_burned: u64, ce_remaining: u64, paradox_hash: Vec<u8>, timestamp_ms: u64) -> Self {
+    pub fn new(
+        node_id: NodeId,
+        ce_burned: u64,
+        ce_remaining: u64,
+        paradox_hash: Vec<u8>,
+        timestamp_ms: u64,
+    ) -> Self {
         Self {
             node_id,
             ce_burned,
@@ -232,14 +238,24 @@ impl ParadoxCostTriage {
         if paradox_hash.is_empty() {
             return Err(TriageError::EmptyParadoxHash);
         }
-        let ce = self.node_ce.get(node_id).copied().ok_or(TriageError::InvalidNode)?;
+        let ce = self
+            .node_ce
+            .get(node_id)
+            .copied()
+            .ok_or(TriageError::InvalidNode)?;
         if ce < self.config.min_ce_required {
             return Err(TriageError::InsufficientCE(ce, self.config.min_ce_required));
         }
         let burn_amount = self.config.ce_cost_per_paradox;
         let remaining = ce - burn_amount;
         *self.node_ce.get_mut(node_id).unwrap() = remaining;
-        let result = CEBurnResult::new(*node_id, burn_amount, remaining, paradox_hash.to_vec(), timestamp_ms);
+        let result = CEBurnResult::new(
+            *node_id,
+            burn_amount,
+            remaining,
+            paradox_hash.to_vec(),
+            timestamp_ms,
+        );
         self.burn_history.push(result.clone());
         Ok(result)
     }
@@ -454,7 +470,9 @@ mod tests {
     fn test_apply_cost_success() {
         let mut engine = ParadoxCostTriage::new();
         engine.register_node(NodeId(1), 1000);
-        let result = engine.apply_paradox_cost(&NodeId(1), &[1, 2, 3], 1000).unwrap();
+        let result = engine
+            .apply_paradox_cost(&NodeId(1), &[1, 2, 3], 1000)
+            .unwrap();
         assert_eq!(result.ce_burned, 100);
         assert_eq!(engine.get_ce(&NodeId(1)), Some(900));
     }
@@ -463,7 +481,9 @@ mod tests {
     fn test_apply_cost_insufficient_ce() {
         let mut engine = ParadoxCostTriage::new();
         engine.register_node(NodeId(1), 100);
-        assert!(engine.apply_paradox_cost(&NodeId(1), &[1, 2, 3], 1000).is_err());
+        assert!(engine
+            .apply_paradox_cost(&NodeId(1), &[1, 2, 3], 1000)
+            .is_err());
     }
 
     #[test]
@@ -476,16 +496,24 @@ mod tests {
     #[test]
     fn test_apply_cost_invalid_node() {
         let mut engine = ParadoxCostTriage::new();
-        assert!(engine.apply_paradox_cost(&NodeId(999), &[1, 2, 3], 1000).is_err());
+        assert!(engine
+            .apply_paradox_cost(&NodeId(999), &[1, 2, 3], 1000)
+            .is_err());
     }
 
     #[test]
     fn test_cluster_paradoxes() {
         let mut engine = ParadoxCostTriage::new();
         engine.register_node(NodeId(1), 5000);
-        engine.apply_paradox_cost(&NodeId(1), &[0xAA, 1, 2], 1000).unwrap();
-        engine.apply_paradox_cost(&NodeId(1), &[0xAA, 3, 4], 1001).unwrap();
-        engine.apply_paradox_cost(&NodeId(1), &[0xBB, 5, 6], 1002).unwrap();
+        engine
+            .apply_paradox_cost(&NodeId(1), &[0xAA, 1, 2], 1000)
+            .unwrap();
+        engine
+            .apply_paradox_cost(&NodeId(1), &[0xAA, 3, 4], 1001)
+            .unwrap();
+        engine
+            .apply_paradox_cost(&NodeId(1), &[0xBB, 5, 6], 1002)
+            .unwrap();
         let clusters = engine.cluster_paradoxes(0.7);
         assert!(clusters.len() >= 1);
     }
@@ -501,8 +529,12 @@ mod tests {
     fn test_total_ce_burned() {
         let mut engine = ParadoxCostTriage::new();
         engine.register_node(NodeId(1), 5000);
-        engine.apply_paradox_cost(&NodeId(1), &[1, 2, 3], 1000).unwrap();
-        engine.apply_paradox_cost(&NodeId(1), &[4, 5, 6], 1001).unwrap();
+        engine
+            .apply_paradox_cost(&NodeId(1), &[1, 2, 3], 1000)
+            .unwrap();
+        engine
+            .apply_paradox_cost(&NodeId(1), &[4, 5, 6], 1001)
+            .unwrap();
         assert_eq!(engine.total_ce_burned(), 200);
     }
 
@@ -547,8 +579,12 @@ mod tests {
         engine.register_node(NodeId(1), 5000);
         engine.register_node(NodeId(2), 3000);
         // Apply paradox costs
-        engine.apply_paradox_cost(&NodeId(1), &[0xAA, 1, 2], 1000).unwrap();
-        engine.apply_paradox_cost(&NodeId(2), &[0xAA, 3, 4], 1001).unwrap();
+        engine
+            .apply_paradox_cost(&NodeId(1), &[0xAA, 1, 2], 1000)
+            .unwrap();
+        engine
+            .apply_paradox_cost(&NodeId(2), &[0xAA, 3, 4], 1001)
+            .unwrap();
         assert_eq!(engine.total_ce_burned(), 200);
         // Cluster
         let clusters = engine.cluster_paradoxes(0.7);

@@ -51,14 +51,18 @@ impl CliParser {
 
     /// Parse CLI arguments into a command.
     pub fn parse(&self, args: &[String]) -> Result<CliCommand, String> {
-        if args.is_empty() || args.contains(&"--help".to_string()) || args.contains(&"-h".to_string()) {
+        if args.is_empty()
+            || args.contains(&"--help".to_string())
+            || args.contains(&"-h".to_string())
+        {
             return Ok(CliCommand::Help);
         }
 
         let cmd = &args[0];
         match cmd.as_str() {
             "start" => {
-                let model = Self::extract_flag(args, "--model").unwrap_or_else(|| "qwen3.5:2b".to_string());
+                let model =
+                    Self::extract_flag(args, "--model").unwrap_or_else(|| "qwen3.5:2b".to_string());
                 Ok(CliCommand::Start { model })
             }
             "audit" => {
@@ -68,7 +72,10 @@ impl CliParser {
             }
             "status" => Ok(CliCommand::Status),
             "credits" => Ok(CliCommand::Credits),
-            unknown => Err(format!("Unknown command: {}. Use --help for usage.", unknown)),
+            unknown => Err(format!(
+                "Unknown command: {}. Use --help for usage.",
+                unknown
+            )),
         }
     }
 
@@ -180,21 +187,48 @@ mod tests {
     fn test_parse_start_default_model() {
         let parser = CliParser::new();
         let cmd = parser.parse(&["start".to_string()]).unwrap();
-        assert_eq!(cmd, CliCommand::Start { model: "qwen3.5:2b".to_string() });
+        assert_eq!(
+            cmd,
+            CliCommand::Start {
+                model: "qwen3.5:2b".to_string()
+            }
+        );
     }
 
     #[test]
     fn test_parse_start_custom_model() {
         let parser = CliParser::new();
-        let cmd = parser.parse(&["start".to_string(), "--model".to_string(), "qwen3.5:4b".to_string()]).unwrap();
-        assert_eq!(cmd, CliCommand::Start { model: "qwen3.5:4b".to_string() });
+        let cmd = parser
+            .parse(&[
+                "start".to_string(),
+                "--model".to_string(),
+                "qwen3.5:4b".to_string(),
+            ])
+            .unwrap();
+        assert_eq!(
+            cmd,
+            CliCommand::Start {
+                model: "qwen3.5:4b".to_string()
+            }
+        );
     }
 
     #[test]
     fn test_parse_audit() {
         let parser = CliParser::new();
-        let cmd = parser.parse(&["audit".to_string(), "--prompt".to_string(), "test".to_string()]).unwrap();
-        assert_eq!(cmd, CliCommand::Audit { prompt: "test".to_string() });
+        let cmd = parser
+            .parse(&[
+                "audit".to_string(),
+                "--prompt".to_string(),
+                "test".to_string(),
+            ])
+            .unwrap();
+        assert_eq!(
+            cmd,
+            CliCommand::Audit {
+                prompt: "test".to_string()
+            }
+        );
     }
 
     #[test]
@@ -228,14 +262,18 @@ mod tests {
     #[test]
     fn test_execute_start() {
         let runner = CliRunner::new();
-        let output = runner.execute(&CliCommand::Start { model: "qwen3.5:2b".to_string() });
+        let output = runner.execute(&CliCommand::Start {
+            model: "qwen3.5:2b".to_string(),
+        });
         assert!(output.contains("qwen3.5:2b"));
     }
 
     #[test]
     fn test_execute_audit() {
         let runner = CliRunner::new();
-        let output = runner.execute(&CliCommand::Audit { prompt: "hello".to_string() });
+        let output = runner.execute(&CliCommand::Audit {
+            prompt: "hello".to_string(),
+        });
         assert!(output.contains("hello"));
     }
 
@@ -264,7 +302,9 @@ mod tests {
 
     #[test]
     fn test_command_display() {
-        let cmd = CliCommand::Start { model: "qwen3.5:2b".to_string() };
+        let cmd = CliCommand::Start {
+            model: "qwen3.5:2b".to_string(),
+        };
         assert!(format!("{}", cmd).contains("start"));
     }
 
@@ -277,7 +317,11 @@ mod tests {
 
     #[test]
     fn test_run_start() {
-        let result = run(&["start".to_string(), "--model".to_string(), "qwen3.5:4b".to_string()]);
+        let result = run(&[
+            "start".to_string(),
+            "--model".to_string(),
+            "qwen3.5:4b".to_string(),
+        ]);
         assert!(result.is_ok());
         assert!(result.unwrap().contains("qwen3.5:4b"));
     }

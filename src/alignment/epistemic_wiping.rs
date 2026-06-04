@@ -133,7 +133,12 @@ pub struct SandboxState {
 }
 
 impl SandboxState {
-    pub fn new(sandbox_id: u32, weights: Vec<f32>, activations: Vec<f32>, timestamp_ms: u64) -> Self {
+    pub fn new(
+        sandbox_id: u32,
+        weights: Vec<f32>,
+        activations: Vec<f32>,
+        timestamp_ms: u64,
+    ) -> Self {
         Self {
             sandbox_id,
             state: QuarantineState::Active,
@@ -152,11 +157,7 @@ impl SandboxState {
         }
         // Simulated: high variance in weights indicates prion-like behavior
         let mean: f32 = self.weights.iter().sum::<f32>() / self.weights.len() as f32;
-        let variance: f32 = self
-            .weights
-            .iter()
-            .map(|w| (w - mean).powi(2))
-            .sum::<f32>()
+        let variance: f32 = self.weights.iter().map(|w| (w - mean).powi(2)).sum::<f32>()
             / self.weights.len() as f32;
         let risk = (variance as f64).min(1.0);
         if risk > threshold {
@@ -311,7 +312,10 @@ impl EpistemicWiping {
         sandbox_id: u32,
         non_euclidean_metric: f64,
     ) -> Result<QuarantineState, WipeError> {
-        let sandbox = self.sandboxes.get_mut(&sandbox_id).ok_or(WipeError::SandboxNotFound)?;
+        let sandbox = self
+            .sandboxes
+            .get_mut(&sandbox_id)
+            .ok_or(WipeError::SandboxNotFound)?;
 
         if sandbox.state != QuarantineState::Active {
             return Err(WipeError::AlreadyQuarantined);
@@ -338,7 +342,10 @@ impl EpistemicWiping {
     ) -> Result<WipeResult, WipeError> {
         // Validate state before mutable borrow
         {
-            let sandbox = self.sandboxes.get(&sandbox_id).ok_or(WipeError::SandboxNotFound)?;
+            let sandbox = self
+                .sandboxes
+                .get(&sandbox_id)
+                .ok_or(WipeError::SandboxNotFound)?;
             if sandbox.state == QuarantineState::Wiped {
                 return Err(WipeError::AlreadyWiped);
             }
@@ -349,7 +356,13 @@ impl EpistemicWiping {
         }
 
         // Extract data for destruction
-        let (weights_count, activations_count, quarantine_distance, destruction_hash, activation_hash) = {
+        let (
+            weights_count,
+            activations_count,
+            quarantine_distance,
+            destruction_hash,
+            activation_hash,
+        ) = {
             let sandbox = self.sandboxes.get_mut(&sandbox_id).unwrap();
             let weights_count = sandbox.weights.len();
             let activations_count = sandbox.activations.len();
@@ -357,7 +370,13 @@ impl EpistemicWiping {
             let destruction_hash = Self::destroy_weights_vec(&mut sandbox.weights);
             let activation_hash = Self::destroy_weights_vec(&mut sandbox.activations);
             sandbox.state = QuarantineState::Wiped;
-            (weights_count, activations_count, quarantine_distance, destruction_hash, activation_hash)
+            (
+                weights_count,
+                activations_count,
+                quarantine_distance,
+                destruction_hash,
+                activation_hash,
+            )
         };
 
         // Combine destruction proofs
@@ -398,7 +417,10 @@ impl EpistemicWiping {
     /// Check if a sandbox has prion contagion risk
     pub fn check_contagion(&mut self, sandbox_id: u32) -> Result<f64, WipeError> {
         let threshold = self.config.contagion_threshold;
-        let sandbox = self.sandboxes.get_mut(&sandbox_id).ok_or(WipeError::SandboxNotFound)?;
+        let sandbox = self
+            .sandboxes
+            .get_mut(&sandbox_id)
+            .ok_or(WipeError::SandboxNotFound)?;
         sandbox.contagion_risk = sandbox.compute_contagion_risk(threshold);
         Ok(sandbox.contagion_risk)
     }
@@ -415,7 +437,10 @@ impl EpistemicWiping {
 
     /// Get total wiped count
     pub fn wiped_count(&self) -> usize {
-        self.sandboxes.values().filter(|s| s.state == QuarantineState::Wiped).count()
+        self.sandboxes
+            .values()
+            .filter(|s| s.state == QuarantineState::Wiped)
+            .count()
     }
 
     /// Reset state
@@ -494,7 +519,9 @@ fn fnv_hash_256(data: &[u8]) -> Vec<u8> {
         let mut combined = Vec::new();
         combined.extend_from_slice(data);
         combined.push(i as u8);
-        let h = fnv_hash_64(&combined).wrapping_add(i as u64).wrapping_mul(0x100000001b3);
+        let h = fnv_hash_64(&combined)
+            .wrapping_add(i as u64)
+            .wrapping_mul(0x100000001b3);
         result.extend_from_slice(&h.to_le_bytes());
     }
     result
@@ -617,7 +644,9 @@ mod tests {
     #[test]
     fn test_register_duplicate_sandbox() {
         let mut engine = EpistemicWiping::new();
-        engine.register_sandbox(1, vec![1.0], vec![0.5], 1000).unwrap();
+        engine
+            .register_sandbox(1, vec![1.0], vec![0.5], 1000)
+            .unwrap();
         assert_eq!(
             engine.register_sandbox(1, vec![2.0], vec![0.5], 1000),
             Err(WipeError::AlreadyQuarantined)
@@ -627,7 +656,9 @@ mod tests {
     #[test]
     fn test_quarantine_success() {
         let mut engine = EpistemicWiping::new();
-        engine.register_sandbox(1, vec![1.0, 2.0], vec![0.5], 1000).unwrap();
+        engine
+            .register_sandbox(1, vec![1.0, 2.0], vec![0.5], 1000)
+            .unwrap();
         let state = engine.quarantine_shadow_persona(1, 0.8);
         assert_eq!(state.unwrap(), QuarantineState::Quarantined);
     }
@@ -635,7 +666,9 @@ mod tests {
     #[test]
     fn test_quarantine_insufficient_metric() {
         let mut engine = EpistemicWiping::new();
-        engine.register_sandbox(1, vec![1.0], vec![0.5], 1000).unwrap();
+        engine
+            .register_sandbox(1, vec![1.0], vec![0.5], 1000)
+            .unwrap();
         assert_eq!(
             engine.quarantine_shadow_persona(1, 0.2),
             Err(WipeError::InsufficientMetric(0.2, 0.5))
@@ -654,7 +687,9 @@ mod tests {
     #[test]
     fn test_epistemic_wipe_success() {
         let mut engine = EpistemicWiping::new();
-        engine.register_sandbox(1, vec![1.0, 2.0, 3.0], vec![0.5, 0.5], 1000).unwrap();
+        engine
+            .register_sandbox(1, vec![1.0, 2.0, 3.0], vec![0.5, 0.5], 1000)
+            .unwrap();
         engine.quarantine_shadow_persona(1, 0.8).unwrap();
         let result = engine.perform_epistemic_wipe(1, &[0.1, -0.2, 0.3], 2000);
         assert!(result.is_ok());
@@ -666,7 +701,9 @@ mod tests {
     #[test]
     fn test_epistemic_wipe_already_wiped() {
         let mut engine = EpistemicWiping::new();
-        engine.register_sandbox(1, vec![1.0], vec![0.5], 1000).unwrap();
+        engine
+            .register_sandbox(1, vec![1.0], vec![0.5], 1000)
+            .unwrap();
         engine.perform_epistemic_wipe(1, &[0.1], 1000).unwrap();
         assert_eq!(
             engine.perform_epistemic_wipe(1, &[0.1], 2000),
@@ -677,7 +714,9 @@ mod tests {
     #[test]
     fn test_epistemic_wipe_empty_gradient() {
         let mut engine = EpistemicWiping::new();
-        engine.register_sandbox(1, vec![1.0], vec![0.5], 1000).unwrap();
+        engine
+            .register_sandbox(1, vec![1.0], vec![0.5], 1000)
+            .unwrap();
         assert_eq!(
             engine.perform_epistemic_wipe(1, &[], 1000),
             Err(WipeError::InvalidGradient)
@@ -687,7 +726,9 @@ mod tests {
     #[test]
     fn test_check_contagion() {
         let mut engine = EpistemicWiping::new();
-        engine.register_sandbox(1, vec![1.0, 1.0, 1.0], vec![0.5], 1000).unwrap();
+        engine
+            .register_sandbox(1, vec![1.0, 1.0, 1.0], vec![0.5], 1000)
+            .unwrap();
         let risk = engine.check_contagion(1).unwrap();
         assert!(risk < 0.7);
     }
@@ -695,7 +736,9 @@ mod tests {
     #[test]
     fn test_get_state() {
         let mut engine = EpistemicWiping::new();
-        engine.register_sandbox(1, vec![1.0], vec![0.5], 1000).unwrap();
+        engine
+            .register_sandbox(1, vec![1.0], vec![0.5], 1000)
+            .unwrap();
         assert_eq!(engine.get_state(1), Some(QuarantineState::Active));
         assert_eq!(engine.get_state(99), None);
     }
@@ -703,8 +746,12 @@ mod tests {
     #[test]
     fn test_wiped_count() {
         let mut engine = EpistemicWiping::new();
-        engine.register_sandbox(1, vec![1.0], vec![0.5], 1000).unwrap();
-        engine.register_sandbox(2, vec![2.0], vec![0.5], 1000).unwrap();
+        engine
+            .register_sandbox(1, vec![1.0], vec![0.5], 1000)
+            .unwrap();
+        engine
+            .register_sandbox(2, vec![2.0], vec![0.5], 1000)
+            .unwrap();
         engine.perform_epistemic_wipe(1, &[0.1], 1000).unwrap();
         assert_eq!(engine.wiped_count(), 1);
     }
@@ -712,7 +759,9 @@ mod tests {
     #[test]
     fn test_reset() {
         let mut engine = EpistemicWiping::new();
-        engine.register_sandbox(1, vec![1.0], vec![0.5], 1000).unwrap();
+        engine
+            .register_sandbox(1, vec![1.0], vec![0.5], 1000)
+            .unwrap();
         engine.reset();
         assert_eq!(engine.sandboxes.len(), 0);
         assert_eq!(engine.records().len(), 0);
@@ -828,7 +877,10 @@ mod tests {
         assert_eq!(engine.records().len(), 1);
 
         // Standalone functions
-        assert_eq!(quarantine_shadow_persona(2, 0.9), QuarantineState::Quarantined);
+        assert_eq!(
+            quarantine_shadow_persona(2, 0.9),
+            QuarantineState::Quarantined
+        );
         let standalone_result = perform_epistemic_wipe(2, &[0.5]);
         assert_eq!(standalone_result.sandbox_id, 2);
 

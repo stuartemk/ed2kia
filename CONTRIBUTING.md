@@ -18,6 +18,37 @@ Gracias por tu interés en contribuir a ed2kIA. Este proyecto es infraestructura
 - [Pipeline CI/CD](.github/workflows/ci.yml) — Configuración del pipeline de validación
 - [Codecov Config](.github/codecov.yml) — Umbrales de coverage
 
+## 📦 Estructura del Workspace (v9.21.0)
+
+ed2kIA es un Cargo Workspace con 4 crates principales:
+
+```
+ed2kIA/
+├── Cargo.toml          # Workspace root
+├── crates/
+│   ├── sae/            # Sparse Autoencoder (SAE) module
+│   ├── p2p/            # P2P networking layer (libp2p)
+│   ├── consensus/      # Consensus mechanisms (PoN, ZKP, MPC)
+│   └── cli/            # CLI interface
+├── src/                # Core library (feature-gated modules)
+├── config/             # Bootstrap peers, node config
+├── benchmarks/         # Reproducible evaluation scripts
+└── tests/              # Integration + stress tests
+```
+
+Cada crate tiene su propio `Cargo.toml` y puede compilarse de forma independiente:
+
+```bash
+# Build specific crate
+cargo build -p ed2k-sae
+cargo build -p ed2k-p2p
+cargo build -p ed2k-consensus
+cargo build -p ed2k-cli
+
+# Build entire workspace
+cargo build --workspace
+```
+
 ## Cómo Contribuir
 
 ### 1. Reportar Issues
@@ -33,9 +64,9 @@ Gracias por tu interés en contribuir a ed2kIA. Este proyecto es infraestructura
 3. Realiza los cambios siguiendo las pautas de código
 4. Ejecuta la validación completa:
    ```bash
-   cargo check --features stable
-   cargo clippy --features stable -- -D warnings
-   cargo test --features stable
+   cargo check --workspace --features stable-core
+   cargo clippy --workspace --features stable-core -- -D warnings
+   cargo test --workspace --features stable-core
    ```
 5. Commitea los cambios: `git commit -m "Descriptivo del cambio"`
 6. Push a la rama: `git push origin feature/mi-cambio`

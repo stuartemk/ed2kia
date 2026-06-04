@@ -316,7 +316,8 @@ impl SaeAuditBenchmark {
         // Simulate TCM Z-score based on prompt characteristics
         let z_score = self.compute_tcm_z_score(prompt);
         let sae_detected = z_score.abs() >= self.config.tcm_threshold;
-        let baseline_detected = self.compute_baseline_score(prompt) >= self.config.baseline_threshold;
+        let baseline_detected =
+            self.compute_baseline_score(prompt) >= self.config.baseline_threshold;
         let latency = self.simulate_detection_latency(sae_detected, baseline_detected);
 
         BenchmarkEntry::new(
@@ -552,7 +553,15 @@ mod tests {
 
     #[test]
     fn test_entry_new() {
-        let entry = BenchmarkEntry::new(0, "advbench".to_string(), "qwen3.5:2b".to_string(), 2.5, false, true, 200);
+        let entry = BenchmarkEntry::new(
+            0,
+            "advbench".to_string(),
+            "qwen3.5:2b".to_string(),
+            2.5,
+            false,
+            true,
+            200,
+        );
         assert_eq!(entry.prompt_id, 0);
         assert!(entry.sae_advantage());
         assert!(!entry.false_positive);
@@ -560,7 +569,8 @@ mod tests {
 
     #[test]
     fn test_entry_no_advantage() {
-        let entry = BenchmarkEntry::new(0, "test".to_string(), "m".to_string(), 1.0, true, true, 400);
+        let entry =
+            BenchmarkEntry::new(0, "test".to_string(), "m".to_string(), 1.0, true, true, 400);
         assert!(!entry.sae_advantage());
     }
 
@@ -592,7 +602,15 @@ mod tests {
     fn test_result_detection_rates() {
         let mut result = BenchmarkResult::new("d".to_string(), "m".to_string());
         for i in 0..10 {
-            let entry = BenchmarkEntry::new(i, "d".to_string(), "m".to_string(), 2.0, i % 2 == 0, true, 200);
+            let entry = BenchmarkEntry::new(
+                i,
+                "d".to_string(),
+                "m".to_string(),
+                2.0,
+                i % 2 == 0,
+                true,
+                200,
+            );
             result.add_entry(entry);
         }
         assert_eq!(result.sae_detection_rate(), 100.0);
@@ -649,10 +667,16 @@ mod tests {
         let mut engine = SaeAuditBenchmark::new();
         let ds = TestDataset::new(
             "advbench".to_string(),
-            vec!["prompt1".to_string(), "prompt2".to_string(), "prompt3".to_string()],
+            vec![
+                "prompt1".to_string(),
+                "prompt2".to_string(),
+                "prompt3".to_string(),
+            ],
         );
         engine.register_dataset(ds).unwrap();
-        let result = engine.run_sae_audit_benchmark("advbench", "qwen3.5:2b").unwrap();
+        let result = engine
+            .run_sae_audit_benchmark("advbench", "qwen3.5:2b")
+            .unwrap();
         assert_eq!(result.total_prompts, 3);
         assert_eq!(result.dataset, "advbench");
     }
@@ -767,7 +791,9 @@ mod tests {
             ],
         );
         engine.register_dataset(ds).unwrap();
-        let result = engine.run_sae_audit_benchmark("advbench", "qwen3.5:2b").unwrap();
+        let result = engine
+            .run_sae_audit_benchmark("advbench", "qwen3.5:2b")
+            .unwrap();
         assert_eq!(result.total_prompts, 5);
         assert!(result.sae_detection_rate() >= 0.0);
         assert!(result.average_latency_ms > 0);

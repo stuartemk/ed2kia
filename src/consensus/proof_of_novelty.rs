@@ -302,7 +302,8 @@ impl ProofOfNovelty {
     /// Compute CE reward from novelty score
     fn compute_ce_reward(&self, novelty: f64) -> f64 {
         // Linear scaling: higher novelty = higher reward
-        let scaled = (novelty - self.config.entropy_threshold) / (1.0 - self.config.entropy_threshold);
+        let scaled =
+            (novelty - self.config.entropy_threshold) / (1.0 - self.config.entropy_threshold);
         (scaled * self.config.max_ce_reward).min(self.config.max_ce_reward)
     }
 
@@ -425,7 +426,8 @@ fn euclidean_distance(a: &[f32], b: &[f32]) -> f32 {
     if a.len() != b.len() || a.is_empty() {
         return 0.0;
     }
-    let sum: f32 = a.iter()
+    let sum: f32 = a
+        .iter()
         .zip(b.iter())
         .map(|(x, y)| {
             let diff = x - y;
@@ -515,7 +517,10 @@ mod tests {
         let mut map = CoverageMap::new(2, 0.5, 2);
         map.add_region(vec![0.0, 0.0]).unwrap();
         map.add_region(vec![1.0, 1.0]).unwrap();
-        assert_eq!(map.add_region(vec![2.0, 2.0]), Err(NoveltyError::CoverageMapFull));
+        assert_eq!(
+            map.add_region(vec![2.0, 2.0]),
+            Err(NoveltyError::CoverageMapFull)
+        );
     }
 
     #[test]
@@ -572,7 +577,8 @@ mod tests {
             embedding_dim: 3,
             coverage_radius: 2.0,
             ..NoveltyConfig::default_stuartian()
-        }).unwrap();
+        })
+        .unwrap();
         let embedding = vec![1.0, 2.0, 3.0];
         let _ = engine.compute_novelty_reward(&embedding, 1000).unwrap();
         let reward2 = engine.compute_novelty_reward(&embedding, 2000).unwrap();
@@ -731,7 +737,8 @@ mod tests {
             entropy_threshold: 0.3,
             max_ce_reward: 100.0,
             max_coverage_regions: 100,
-        }).unwrap();
+        })
+        .unwrap();
 
         // First embedding: high novelty
         let e1 = vec![1.0, 2.0, 3.0];

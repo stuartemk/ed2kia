@@ -31,7 +31,10 @@ pub enum EdgeError {
 impl fmt::Display for EdgeError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            EdgeError::InsufficientRam { available_mb, minimum_mb } => {
+            EdgeError::InsufficientRam {
+                available_mb,
+                minimum_mb,
+            } => {
                 write!(
                     f,
                     "Insufficient RAM: {} MB available, {} MB minimum required",
@@ -87,7 +90,11 @@ impl fmt::Display for ModelSpec {
         write!(
             f,
             "{} (RAM: {}-{} MB, boot: {}ms, wasm: {})",
-            self.name, self.min_ram_mb, self.recommended_ram_mb, self.boot_latency_ms, self.wasm_async
+            self.name,
+            self.min_ram_mb,
+            self.recommended_ram_mb,
+            self.boot_latency_ms,
+            self.wasm_async
         )
     }
 }
@@ -134,10 +141,14 @@ impl EdgeConfig {
 
     pub fn validate(&self) -> Result<(), EdgeError> {
         if self.default_model.is_empty() {
-            return Err(EdgeError::InvalidConfig("default_model cannot be empty".to_string()));
+            return Err(EdgeError::InvalidConfig(
+                "default_model cannot be empty".to_string(),
+            ));
         }
         if self.fallback_model.is_empty() {
-            return Err(EdgeError::InvalidConfig("fallback_model cannot be empty".to_string()));
+            return Err(EdgeError::InvalidConfig(
+                "fallback_model cannot be empty".to_string(),
+            ));
         }
         if self.micro_threshold_mb < 256 {
             return Err(EdgeError::InvalidConfig(
@@ -145,7 +156,9 @@ impl EdgeConfig {
             ));
         }
         if self.max_workers == 0 {
-            return Err(EdgeError::InvalidConfig("max_workers must be > 0".to_string()));
+            return Err(EdgeError::InvalidConfig(
+                "max_workers must be > 0".to_string(),
+            ));
         }
         Ok(())
     }
@@ -204,7 +217,11 @@ impl fmt::Display for OptimizationRecord {
         write!(
             f,
             "Optimization: {} -> {} (RAM: {} MB, fallback: {}, ts: {})",
-            self.requested_model, self.selected_model, self.available_ram_mb, fallback, self.timestamp_ms
+            self.requested_model,
+            self.selected_model,
+            self.available_ram_mb,
+            fallback,
+            self.timestamp_ms
         )
     }
 }
@@ -243,17 +260,29 @@ impl EdgeOptimizer {
 
     /// Select the optimal model based on available RAM.
     /// If the preferred model fits, use it. Otherwise, fall back to the largest model that fits.
-    pub fn select_model(&mut self, preferred: &str, available_ram_mb: u32, timestamp_ms: u64) -> Result<String, EdgeError> {
+    pub fn select_model(
+        &mut self,
+        preferred: &str,
+        available_ram_mb: u32,
+        timestamp_ms: u64,
+    ) -> Result<String, EdgeError> {
         // Check if preferred model fits
         if let Some(spec) = self.catalog.iter().find(|s| s.name == preferred) {
             if available_ram_mb >= spec.min_ram_mb {
-                self.record_selection(preferred.to_string(), preferred.to_string(), available_ram_mb, timestamp_ms, false);
+                self.record_selection(
+                    preferred.to_string(),
+                    preferred.to_string(),
+                    available_ram_mb,
+                    timestamp_ms,
+                    false,
+                );
                 return Ok(preferred.to_string());
             }
         }
 
         // Find the largest model that fits
-        let mut candidates: Vec<&ModelSpec> = self.catalog
+        let mut candidates: Vec<&ModelSpec> = self
+            .catalog
             .iter()
             .filter(|s| available_ram_mb >= s.min_ram_mb)
             .collect();
@@ -263,7 +292,13 @@ impl EdgeOptimizer {
         if let Some(best) = candidates.first() {
             let selected = best.name.clone();
             let fallback = selected != preferred;
-            self.record_selection(preferred.to_string(), selected.clone(), available_ram_mb, timestamp_ms, fallback);
+            self.record_selection(
+                preferred.to_string(),
+                selected.clone(),
+                available_ram_mb,
+                timestamp_ms,
+                fallback,
+            );
             return Ok(selected);
         }
 
@@ -281,7 +316,9 @@ impl EdgeOptimizer {
     /// Activate the WASM async pipeline.
     pub fn activate_pipeline(&mut self) -> Result<(), EdgeError> {
         if !self.config.wasm_async_enabled {
-            return Err(EdgeError::WasmInitFailed("WASM async disabled in config".to_string()));
+            return Err(EdgeError::WasmInitFailed(
+                "WASM async disabled in config".to_string(),
+            ));
         }
         self.pipeline_state = PipelineState::Processing { active_workers: 0 };
         Ok(())
@@ -298,10 +335,14 @@ impl EdgeOptimizer {
                         self.config.max_workers
                     )));
                 }
-                self.pipeline_state = PipelineState::Processing { active_workers: new_count };
+                self.pipeline_state = PipelineState::Processing {
+                    active_workers: new_count,
+                };
                 Ok(new_count)
             }
-            PipelineState::Idle => Err(EdgeError::WasmInitFailed("Pipeline not activated".to_string())),
+            PipelineState::Idle => Err(EdgeError::WasmInitFailed(
+                "Pipeline not activated".to_string(),
+            )),
             PipelineState::Error(msg) => Err(EdgeError::WasmInitFailed(msg.clone())),
         }
     }
@@ -313,7 +354,9 @@ impl EdgeOptimizer {
             if new_count == 0 {
                 self.pipeline_state = PipelineState::Idle;
             } else {
-                self.pipeline_state = PipelineState::Processing { active_workers: new_count };
+                self.pipeline_state = PipelineState::Processing {
+                    active_workers: new_count,
+                };
             }
         }
     }
@@ -325,7 +368,10 @@ impl EdgeOptimizer {
 
     /// Get all models that fit in the given RAM.
     pub fn compatible_models(&self, available_ram_mb: u32) -> Vec<&ModelSpec> {
-        self.catalog.iter().filter(|s| available_ram_mb >= s.min_ram_mb).collect()
+        self.catalog
+            .iter()
+            .filter(|s| available_ram_mb >= s.min_ram_mb)
+            .collect()
     }
 
     /// Get optimization records.
@@ -373,7 +419,9 @@ impl fmt::Display for EdgeOptimizer {
         write!(
             f,
             "EdgeOptimizer(default={}, pipeline={}, records={})",
-            self.config.default_model, self.pipeline_state, self.records.len()
+            self.config.default_model,
+            self.pipeline_state,
+            self.records.len()
         )
     }
 }
@@ -637,7 +685,10 @@ mod tests {
 
     #[test]
     fn test_error_display() {
-        let err = EdgeError::InsufficientRam { available_mb: 512, minimum_mb: 2048 };
+        let err = EdgeError::InsufficientRam {
+            available_mb: 512,
+            minimum_mb: 2048,
+        };
         assert!(format!("{}", err).contains("512"));
     }
 

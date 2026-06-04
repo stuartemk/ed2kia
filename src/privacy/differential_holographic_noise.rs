@@ -384,7 +384,9 @@ struct FnvRng {
 impl FnvRng {
     fn new(seed: u64) -> Self {
         // Ensure state is never 0 (degenerate: produces all-zero output)
-        Self { state: seed | 0x9E3779B97F4A7C15 }
+        Self {
+            state: seed | 0x9E3779B97F4A7C15,
+        }
     }
 
     fn next_u64(&mut self) -> u64 {

@@ -36,7 +36,9 @@ impl fmt::Display for MpcError {
             MpcError::NonceMismatch => write!(f, "Nonce mismatch across attestations"),
             MpcError::ExpiredAttestation => write!(f, "Attestation expired"),
             MpcError::InvalidProofFormat => write!(f, "Invalid proof format"),
-            MpcError::DuplicateAttestation => write!(f, "Duplicate attestation from same architecture"),
+            MpcError::DuplicateAttestation => {
+                write!(f, "Duplicate attestation from same architecture")
+            }
         }
     }
 }
@@ -229,7 +231,10 @@ impl HeterogeneousMpc {
     ) -> Result<(), MpcError> {
         // Check for duplicate architecture in same round
         if let Some(existing) = self.proofs.get(&round_id) {
-            if existing.iter().any(|p| p.architecture == proof.architecture) {
+            if existing
+                .iter()
+                .any(|p| p.architecture == proof.architecture)
+            {
                 return Err(MpcError::DuplicateAttestation);
             }
         }
@@ -427,7 +432,9 @@ fn fnv_hash_256(data: &[u8]) -> Vec<u8> {
         let mut combined = Vec::new();
         combined.extend_from_slice(data);
         combined.push(i as u8);
-        let h = fnv_hash_64(&combined).wrapping_add(i as u64).wrapping_mul(0x100000001b3);
+        let h = fnv_hash_64(&combined)
+            .wrapping_add(i as u64)
+            .wrapping_mul(0x100000001b3);
         result.extend_from_slice(&h.to_le_bytes());
     }
     result
@@ -609,24 +616,38 @@ mod tests {
             vec![10, 20, 30],
         );
         assert!(engine.submit_attestation(1, proof1).is_ok());
-        assert_eq!(engine.submit_attestation(1, proof2), Err(MpcError::DuplicateAttestation));
+        assert_eq!(
+            engine.submit_attestation(1, proof2),
+            Err(MpcError::DuplicateAttestation)
+        );
     }
 
     #[test]
     fn test_validate_round_insufficient() {
         let engine = HeterogeneousMpc::new();
-        assert!(matches!(
-            engine.validate_round(1),
-            Ok(false)
-        ));
+        assert!(matches!(engine.validate_round(1), Ok(false)));
     }
 
     #[test]
     fn test_validate_round_success() {
         let mut engine = HeterogeneousMpc::new();
         let hash = vec![10, 20, 30];
-        let x86 = AttestationProof::new(Architecture::X86, "Intel".into(), vec![1], 42, 1000, hash.clone());
-        let arm = AttestationProof::new(Architecture::Arm, "Apple".into(), vec![2], 42, 1000, hash.clone());
+        let x86 = AttestationProof::new(
+            Architecture::X86,
+            "Intel".into(),
+            vec![1],
+            42,
+            1000,
+            hash.clone(),
+        );
+        let arm = AttestationProof::new(
+            Architecture::Arm,
+            "Apple".into(),
+            vec![2],
+            42,
+            1000,
+            hash.clone(),
+        );
         engine.submit_attestation(1, x86).unwrap();
         engine.submit_attestation(1, arm).unwrap();
         assert!(engine.validate_round(1).unwrap());
@@ -636,8 +657,22 @@ mod tests {
     fn test_validate_round_nonce_mismatch() {
         let mut engine = HeterogeneousMpc::new();
         let hash = vec![10, 20, 30];
-        let x86 = AttestationProof::new(Architecture::X86, "Intel".into(), vec![1], 42, 1000, hash.clone());
-        let arm = AttestationProof::new(Architecture::Arm, "Apple".into(), vec![2], 99, 1000, hash.clone());
+        let x86 = AttestationProof::new(
+            Architecture::X86,
+            "Intel".into(),
+            vec![1],
+            42,
+            1000,
+            hash.clone(),
+        );
+        let arm = AttestationProof::new(
+            Architecture::Arm,
+            "Apple".into(),
+            vec![2],
+            99,
+            1000,
+            hash.clone(),
+        );
         engine.submit_attestation(1, x86).unwrap();
         engine.submit_attestation(1, arm).unwrap();
         assert_eq!(engine.validate_round(1), Err(MpcError::NonceMismatch));
@@ -646,8 +681,22 @@ mod tests {
     #[test]
     fn test_validate_round_hash_mismatch() {
         let mut engine = HeterogeneousMpc::new();
-        let x86 = AttestationProof::new(Architecture::X86, "Intel".into(), vec![1], 42, 1000, vec![10, 20]);
-        let arm = AttestationProof::new(Architecture::Arm, "Apple".into(), vec![2], 42, 1000, vec![30, 40]);
+        let x86 = AttestationProof::new(
+            Architecture::X86,
+            "Intel".into(),
+            vec![1],
+            42,
+            1000,
+            vec![10, 20],
+        );
+        let arm = AttestationProof::new(
+            Architecture::Arm,
+            "Apple".into(),
+            vec![2],
+            42,
+            1000,
+            vec![30, 40],
+        );
         engine.submit_attestation(1, x86).unwrap();
         engine.submit_attestation(1, arm).unwrap();
         assert_eq!(engine.validate_round(1), Err(MpcError::HashMismatch));
@@ -658,9 +707,30 @@ mod tests {
         let mut engine = HeterogeneousMpc::new();
         let hash = vec![10, 20, 30];
         let proofs = vec![
-            AttestationProof::new(Architecture::X86, "Intel".into(), vec![1], 42, 1000, hash.clone()),
-            AttestationProof::new(Architecture::Arm, "Apple".into(), vec![2], 42, 1000, hash.clone()),
-            AttestationProof::new(Architecture::RiscV, "SiFive".into(), vec![3], 42, 1000, hash.clone()),
+            AttestationProof::new(
+                Architecture::X86,
+                "Intel".into(),
+                vec![1],
+                42,
+                1000,
+                hash.clone(),
+            ),
+            AttestationProof::new(
+                Architecture::Arm,
+                "Apple".into(),
+                vec![2],
+                42,
+                1000,
+                hash.clone(),
+            ),
+            AttestationProof::new(
+                Architecture::RiscV,
+                "SiFive".into(),
+                vec![3],
+                42,
+                1000,
+                hash.clone(),
+            ),
         ];
         let result = engine.execute_round(proofs, 1000);
         assert!(result.unwrap());
@@ -671,9 +741,14 @@ mod tests {
     fn test_execute_round_failure() {
         let mut engine = HeterogeneousMpc::new();
         let hash = vec![10, 20, 30];
-        let proofs = vec![
-            AttestationProof::new(Architecture::X86, "Intel".into(), vec![1], 42, 1000, hash.clone()),
-        ];
+        let proofs = vec![AttestationProof::new(
+            Architecture::X86,
+            "Intel".into(),
+            vec![1],
+            42,
+            1000,
+            hash.clone(),
+        )];
         let result = engine.execute_round(proofs, 1000);
         assert!(result.is_err());
     }
@@ -682,8 +757,22 @@ mod tests {
     fn test_architecture_count() {
         let mut engine = HeterogeneousMpc::new();
         let hash = vec![10, 20, 30];
-        let x86 = AttestationProof::new(Architecture::X86, "Intel".into(), vec![1], 42, 1000, hash.clone());
-        let arm = AttestationProof::new(Architecture::Arm, "Apple".into(), vec![2], 42, 1000, hash.clone());
+        let x86 = AttestationProof::new(
+            Architecture::X86,
+            "Intel".into(),
+            vec![1],
+            42,
+            1000,
+            hash.clone(),
+        );
+        let arm = AttestationProof::new(
+            Architecture::Arm,
+            "Apple".into(),
+            vec![2],
+            42,
+            1000,
+            hash.clone(),
+        );
         engine.submit_attestation(1, x86).unwrap();
         engine.submit_attestation(1, arm).unwrap();
         assert_eq!(engine.architecture_count(1), 2);
@@ -696,14 +785,33 @@ mod tests {
         let hash = vec![10, 20, 30];
         // Round 1: success
         let proofs1 = vec![
-            AttestationProof::new(Architecture::X86, "Intel".into(), vec![1], 42, 1000, hash.clone()),
-            AttestationProof::new(Architecture::Arm, "Apple".into(), vec![2], 42, 1000, hash.clone()),
+            AttestationProof::new(
+                Architecture::X86,
+                "Intel".into(),
+                vec![1],
+                42,
+                1000,
+                hash.clone(),
+            ),
+            AttestationProof::new(
+                Architecture::Arm,
+                "Apple".into(),
+                vec![2],
+                42,
+                1000,
+                hash.clone(),
+            ),
         ];
         engine.execute_round(proofs1, 1000).unwrap();
         // Round 2: failure (only 1 arch)
-        let proofs2 = vec![
-            AttestationProof::new(Architecture::X86, "Intel".into(), vec![1], 43, 2000, hash.clone()),
-        ];
+        let proofs2 = vec![AttestationProof::new(
+            Architecture::X86,
+            "Intel".into(),
+            vec![1],
+            43,
+            2000,
+            hash.clone(),
+        )];
         let _ = engine.execute_round(proofs2, 2000);
         assert_eq!(engine.consensus_rate(), Some(1.0));
     }
@@ -719,8 +827,22 @@ mod tests {
         let mut engine = HeterogeneousMpc::new();
         let hash = vec![10, 20, 30];
         let proofs = vec![
-            AttestationProof::new(Architecture::X86, "Intel".into(), vec![1], 42, 1000, hash.clone()),
-            AttestationProof::new(Architecture::Arm, "Apple".into(), vec![2], 42, 1000, hash.clone()),
+            AttestationProof::new(
+                Architecture::X86,
+                "Intel".into(),
+                vec![1],
+                42,
+                1000,
+                hash.clone(),
+            ),
+            AttestationProof::new(
+                Architecture::Arm,
+                "Apple".into(),
+                vec![2],
+                42,
+                1000,
+                hash.clone(),
+            ),
         ];
         engine.execute_round(proofs, 1000).unwrap();
         engine.reset();
@@ -798,17 +920,52 @@ mod tests {
         // Round 1: Full consensus (3 architectures)
         let hash1 = vec![1, 2, 3];
         let proofs1 = vec![
-            AttestationProof::new(Architecture::X86, "Intel".into(), vec![1], 1, 1000, hash1.clone()),
-            AttestationProof::new(Architecture::Arm, "Apple".into(), vec![2], 1, 1000, hash1.clone()),
-            AttestationProof::new(Architecture::RiscV, "SiFive".into(), vec![3], 1, 1000, hash1.clone()),
+            AttestationProof::new(
+                Architecture::X86,
+                "Intel".into(),
+                vec![1],
+                1,
+                1000,
+                hash1.clone(),
+            ),
+            AttestationProof::new(
+                Architecture::Arm,
+                "Apple".into(),
+                vec![2],
+                1,
+                1000,
+                hash1.clone(),
+            ),
+            AttestationProof::new(
+                Architecture::RiscV,
+                "SiFive".into(),
+                vec![3],
+                1,
+                1000,
+                hash1.clone(),
+            ),
         ];
         assert!(engine.execute_round(proofs1, 1000).unwrap());
 
         // Round 2: Partial consensus (2 architectures)
         let hash2 = vec![4, 5, 6];
         let proofs2 = vec![
-            AttestationProof::new(Architecture::X86, "AMD".into(), vec![4], 2, 2000, hash2.clone()),
-            AttestationProof::new(Architecture::RiscV, "SiFive".into(), vec![5], 2, 2000, hash2.clone()),
+            AttestationProof::new(
+                Architecture::X86,
+                "AMD".into(),
+                vec![4],
+                2,
+                2000,
+                hash2.clone(),
+            ),
+            AttestationProof::new(
+                Architecture::RiscV,
+                "SiFive".into(),
+                vec![5],
+                2,
+                2000,
+                hash2.clone(),
+            ),
         ];
         assert!(engine.execute_round(proofs2, 2000).unwrap());
 
@@ -818,7 +975,9 @@ mod tests {
 
         // Verify standalone function
         let proof = vec![10, 20, 30];
-        assert!(validate_heterogeneous_attestation(&proof, &proof, &proof, 2));
+        assert!(validate_heterogeneous_attestation(
+            &proof, &proof, &proof, 2
+        ));
 
         // Reset
         engine.reset();

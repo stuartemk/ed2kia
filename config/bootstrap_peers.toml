@@ -1,0 +1,93 @@
+# bootstrap_peers.toml — Bootstrap Node Configuration for ed2kIA
+#
+# This file defines the bootstrap peers for network discovery.
+# New nodes use these peers to join the ed2kIA distributed network.
+#
+# For production, replace with your own bootstrap nodes.
+
+[bootstrap]
+# Network name identifier
+network_name = "ed2kIA-mainnet"
+# Protocol version
+protocol_version = "9.21.0-sprint85"
+
+[[bootstrap.peers]]
+# Bootstrap Node 0 — Primary (US East)
+id = "12D3KooWBootstrap0Primary"
+address = "/ip4/0.0.0.0/tcp/4001"
+role = "bootstrap"
+region = "us-east"
+
+[[bootstrap.peers]]
+# Bootstrap Node 1 — Secondary (EU West)
+id = "12D3KooWBootstrap1Secondary"
+address = "/ip4/0.0.0.0/tcp/4002"
+role = "bootstrap"
+region = "eu-west"
+
+[[bootstrap.peers]]
+# Bootstrap Node 2 — Tertiary (APAC)
+id = "12D3KooWBootstrap2Tertiary"
+address = "/ip4/0.0.0.0/tcp/4003"
+role = "bootstrap"
+region = "apac"
+
+[network]
+# Maximum number of peers to maintain
+max_peers = 50
+# Minimum peers before seeking more
+min_peers = 5
+# Peer refresh interval in seconds
+peer_refresh_interval = 30
+# Connection timeout in milliseconds
+connection_timeout_ms = 5000
+
+[discovery]
+# Enable mDNS for local discovery
+enable_mdns = true
+# Enable Kademlia DHT
+enable_kad = true
+# Enable gossipsub
+enable_gossipsub = true
+# Gossipsub mesh size
+gossipsub_mesh_size = 6
+
+[sae]
+# SAE routing configuration
+enabled = true
+# Top-K activations for SAE
+topk = 14336
+# TCM Z-score threshold for anomaly detection
+tcm_z_threshold = 2.0
+# Enable distributed SAE fine-tuning
+distributed_finetune = false
+
+[consensus]
+# Proof of Novelty configuration
+enabled = true
+# Novelty detection dimension
+novelty_dim = 768
+# Novelty radius
+novelty_radius = 0.5
+# Maximum coverage regions
+max_coverage_regions = 1000
+
+[security]
+# Enable WASM sandbox
+wasm_sandbox = true
+# Maximum WASM module size in bytes
+max_wasm_size_bytes = 10485760
+# Enable ZKP verification
+zkp_verification = true
+# Enable FHE for encrypted computation
+fhe_enabled = false
+
+[monitoring]
+# Enable Prometheus metrics
+prometheus_enabled = true
+# Prometheus metrics port
+prometheus_port = 9090
+# Enable health check endpoint
+health_check_enabled = true
+# Health check port
+health_check_port = 8080

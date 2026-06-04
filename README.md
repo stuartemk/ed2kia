@@ -1,6 +1,6 @@
 # 🌐 ed2kIA: Distributed Sparse Autoencoders for Edge LLM Interpretability
 
-[![Version](https://img.shields.io/badge/v9.20.0-sprint84-blue.svg)](https://github.com/Stuartemk/ed2kIA/releases/tag/v9.20.0-sprint84)
+[![Version](https://img.shields.io/badge/v9.21.0-sprint85-blue.svg)](https://github.com/Stuartemk/ed2kIA/releases/tag/v9.21.0-sprint85)
 [![Tests](https://img.shields.io/badge/Tests-6631%20PASS-green.svg)](https://github.com/Stuartemk/ed2kIA/actions)
 [![Audit](https://img.shields.io/badge/OSSF-8.5%2F10-yellow.svg)](https://github.com/Stuartemk/ed2kIA/security)
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ética-orange.svg)](LICENSE)
@@ -21,6 +21,20 @@ ed2k start --model qwen3.5:2b
 - **Compute Credits (CE):** Earn credits by running a node; spend credits to audit models
 - **Post-Quantum Ready:** zk-STARKs, Ed25519, recursive SNARKs for proof aggregation
 
+## 📦 Workspace Structure (v9.21.0)
+```
+ed2kIA/
+├── crates/
+│   ├── sae/            # Sparse Autoencoder module
+│   ├── p2p/            # P2P networking layer (libp2p)
+│   ├── consensus/      # Consensus (PoN, ZKP, MPC)
+│   └── cli/            # CLI interface
+├── src/                # Core library (feature-gated modules)
+├── config/             # Bootstrap peers, node config
+├── benchmarks/         # Reproducible evaluation scripts
+└── tests/              # Integration + stress tests
+```
+
 ## 📈 Comparative Analysis
 | Feature | Petals | Anthropic SAE | ed2kIA |
 |---------|--------|---------------|--------|
@@ -33,10 +47,21 @@ ed2k start --model qwen3.5:2b
 
 ## 🛠️ Development & Testing
 ```bash
-cargo test --features stable-core
-cargo run --bin ed2k -- audit --prompt "test input"
-bash scripts/deploy_testnet.sh  # Multi-node latency/packet loss simulation
+# Build workspace
+cargo build --workspace --features stable-core
+
+# Run tests
+cargo test --workspace --features stable-core
+
+# Run benchmarks
+bash benchmarks/run_advbench_eval.sh
+
+# Deploy testnet
+bash scripts/deploy_testnet.sh
 ```
+
+## 🤝 Contributing
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for workspace structure, coding standards, and PR workflow.
 
 ## 📜 Governance & Long-Term Vision
 Technical specifications, ethical invariants, and architectural philosophy are documented in [`/philosophy/WHITE_PAPER.md`](philosophy/WHITE_PAPER.md).

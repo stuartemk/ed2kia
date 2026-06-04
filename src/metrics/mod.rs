@@ -18,8 +18,8 @@ pub mod godelian_grace;
 
 #[cfg(feature = "v9.16-godelian-synthesis")]
 pub use godelian_grace::{
-    detect_godelian_paradox, invoke_godelian_grace, GraceConfig, GodelianGrace, GraceRecord,
-    GraceState, GodelianNode, NodeId,
+    detect_godelian_paradox, invoke_godelian_grace, GodelianGrace, GodelianNode, GraceConfig,
+    GraceRecord, GraceState, NodeId,
 };
 
 // ─── Sprint81: Paradox Cost & Fractal Triage (CE burning + anti-DDoS Gödelian) ───

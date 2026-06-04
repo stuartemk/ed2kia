@@ -444,7 +444,10 @@ pub fn verify_blind_gei_with_tss(
     }
 
     // Filter valid shares
-    let valid: Vec<&TSSSignature> = threshold_signatures.iter().filter(|s| s.verify_share()).collect();
+    let valid: Vec<&TSSSignature> = threshold_signatures
+        .iter()
+        .filter(|s| s.verify_share())
+        .collect();
 
     if valid.len() < required_threshold {
         return false;
@@ -516,7 +519,9 @@ fn fnv_hash_256(data: &[u8]) -> Vec<u8> {
         let mut combined = Vec::new();
         combined.extend_from_slice(data);
         combined.push(i as u8);
-        let h = fnv_hash_64(&combined).wrapping_add(i as u64).wrapping_mul(0x100000001b3);
+        let h = fnv_hash_64(&combined)
+            .wrapping_add(i as u64)
+            .wrapping_mul(0x100000001b3);
         result.extend_from_slice(&h.to_le_bytes());
     }
     result
@@ -605,7 +610,12 @@ mod tests {
 
     #[test]
     fn test_tss_signature_new() {
-        let sig = TSSSignature::new(1, vec![1, 2, 3], vec![4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19], 1000);
+        let sig = TSSSignature::new(
+            1,
+            vec![1, 2, 3],
+            vec![4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
+            1000,
+        );
         assert_eq!(sig.node_id, 1);
     }
 
@@ -697,7 +707,10 @@ mod tests {
             TSSSignature::new(1, vec![4, 5, 6], proof.clone(), 1000),
             TSSSignature::new(1, vec![7, 8, 9], proof.clone(), 1000),
         ];
-        assert_eq!(engine.collect_shares(1, &shares), Err(BlindError::CollusionDetected));
+        assert_eq!(
+            engine.collect_shares(1, &shares),
+            Err(BlindError::CollusionDetected)
+        );
     }
 
     #[test]

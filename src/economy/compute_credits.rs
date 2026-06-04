@@ -26,7 +26,10 @@ pub enum CreditError {
 impl fmt::Display for CreditError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            CreditError::InsufficientBalance { available, required } => {
+            CreditError::InsufficientBalance {
+                available,
+                required,
+            } => {
                 write!(
                     f,
                     "Insufficient balance: {} available, {} required",
@@ -130,7 +133,13 @@ impl ComputeCredits {
     }
 
     /// Earn credits by providing compute.
-    pub fn earn(&mut self, node_id: u64, amount: u64, compute_hash: u64, timestamp_ms: u64) -> Result<CreditEntry, CreditError> {
+    pub fn earn(
+        &mut self,
+        node_id: u64,
+        amount: u64,
+        compute_hash: u64,
+        timestamp_ms: u64,
+    ) -> Result<CreditEntry, CreditError> {
         if amount == 0 {
             return Err(CreditError::InvalidAmount);
         }
@@ -142,7 +151,10 @@ impl ComputeCredits {
             timestamp_ms,
         };
 
-        let balance = self.balances.get_mut(&node_id).ok_or(CreditError::NodeNotFound(node_id))?;
+        let balance = self
+            .balances
+            .get_mut(&node_id)
+            .ok_or(CreditError::NodeNotFound(node_id))?;
 
         // Check overflow
         if balance.balance.checked_add(amount).is_none() {
@@ -157,12 +169,21 @@ impl ComputeCredits {
     }
 
     /// Spend credits to request an audit.
-    pub fn spend(&mut self, node_id: u64, amount: u64, audit_id: u64, timestamp_ms: u64) -> Result<CreditEntry, CreditError> {
+    pub fn spend(
+        &mut self,
+        node_id: u64,
+        amount: u64,
+        audit_id: u64,
+        timestamp_ms: u64,
+    ) -> Result<CreditEntry, CreditError> {
         if amount == 0 {
             return Err(CreditError::InvalidAmount);
         }
 
-        let balance = self.balances.get_mut(&node_id).ok_or(CreditError::NodeNotFound(node_id))?;
+        let balance = self
+            .balances
+            .get_mut(&node_id)
+            .ok_or(CreditError::NodeNotFound(node_id))?;
 
         if balance.balance < amount {
             return Err(CreditError::InsufficientBalance {
@@ -186,7 +207,13 @@ impl ComputeCredits {
     }
 
     /// Grant a reward (e.g., governance bonus).
-    pub fn reward(&mut self, node_id: u64, amount: u64, reason: String, timestamp_ms: u64) -> Result<CreditEntry, CreditError> {
+    pub fn reward(
+        &mut self,
+        node_id: u64,
+        amount: u64,
+        reason: String,
+        timestamp_ms: u64,
+    ) -> Result<CreditEntry, CreditError> {
         if amount == 0 {
             return Err(CreditError::InvalidAmount);
         }
@@ -198,7 +225,10 @@ impl ComputeCredits {
             timestamp_ms,
         };
 
-        let balance = self.balances.get_mut(&node_id).ok_or(CreditError::NodeNotFound(node_id))?;
+        let balance = self
+            .balances
+            .get_mut(&node_id)
+            .ok_or(CreditError::NodeNotFound(node_id))?;
 
         if balance.balance.checked_add(amount).is_none() {
             return Err(CreditError::Overflow);
@@ -329,7 +359,9 @@ mod tests {
     fn test_reward() {
         let mut engine = ComputeCredits::new();
         engine.register_node(1);
-        let entry = engine.reward(1, 50, "governance".to_string(), 3000).unwrap();
+        let entry = engine
+            .reward(1, 50, "governance".to_string(), 3000)
+            .unwrap();
         assert_eq!(entry.amount, 50);
         assert_eq!(engine.get_balance(1).unwrap().balance, 50);
     }
@@ -389,7 +421,9 @@ mod tests {
         let entry = CreditEntry {
             node_id: 1,
             amount: 100,
-            kind: CreditKind::Earned { compute_hash: 0xABCD },
+            kind: CreditKind::Earned {
+                compute_hash: 0xABCD,
+            },
             timestamp_ms: 1000,
         };
         let display = format!("{}", entry);
@@ -405,7 +439,10 @@ mod tests {
 
     #[test]
     fn test_error_display() {
-        let err = CreditError::InsufficientBalance { available: 50, required: 100 };
+        let err = CreditError::InsufficientBalance {
+            available: 50,
+            required: 100,
+        };
         assert!(format!("{}", err).contains("50"));
     }
 
@@ -429,7 +466,9 @@ mod tests {
         engine.earn(2, 500, 0xBEEF, 3000).unwrap();
 
         // Governance reward
-        engine.reward(1, 100, "stewardship".to_string(), 4000).unwrap();
+        engine
+            .reward(1, 100, "stewardship".to_string(), 4000)
+            .unwrap();
         assert_eq!(engine.get_balance(1).unwrap().balance, 900);
 
         // Verify circulation
