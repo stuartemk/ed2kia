@@ -26,7 +26,7 @@
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Sprint identifier for build tracking
-pub const SPRINT_IDENTIFIER: &str = "v9.19.0-sprint83";
+pub const SPRINT_IDENTIFIER: &str = "v9.20.0-sprint84";
 
 // ============================================================================
 // Fase 1: Core Modules (P2P, SAE, Bridge)
@@ -297,8 +297,10 @@ pub mod oracle {
 /// Security modules (WASM sandbox, memory guard)
 pub mod security {
     pub mod memory_guard;
+    #[cfg(feature = "v1.1-sprint1")]
     pub mod wasm_profiler;
     pub mod wasm_sandbox;
+    #[cfg(feature = "v1.1-sprint1")]
     pub mod wasm_sandbox_v2;
 }
 

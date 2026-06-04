@@ -1,229 +1,178 @@
-# ==============================================================================
-# ed2kIA — Testnet Hardening (Sprint 69: v9.5.0)
-# ==============================================================================
-# 5-nodo testnet para validación de fault tolerance, shard distribution
-# y workload scheduler bajo condiciones de latencia y fallos simulados.
-#
-# Uso:
-#   docker-compose -f deploy/docker-compose.testnet.yml up -d
-#   docker-compose -f deploy/docker-compose.testnet.yml logs -f
-#   docker-compose -f deploy/docker-compose.testnet.yml down
-# ==============================================================================
+# ed2kIA Testnet — Hostile Network Simulation (Sprint 84: v9.20.0)
+# 5-node distributed SAE network with latency/packet loss simulation via tc/netem
+# Usage: docker compose -f deploy/docker-compose.testnet.yml up -d
 
-version: '3.8'
+version: "3.9"
 
 services:
-  # ---------------------------------------------------------------------------
-  # Nodo 1 — Coordinador (bootstrapper)
-  # ---------------------------------------------------------------------------
-  testnet-node1:
+  # Bootstrap/Coordinator node
+  ed2k-node-0:
     build:
-      context: ..
-      dockerfile: deploy/Dockerfile
-      target: runtime
-      args:
-        FEATURES: "v9.5-testnet-hardening"
-    container_name: ed2kia-testnet-node1
-    hostname: testnet-node1
-    ports:
-      - "10001:9000/tcp"
-      - "10001:9000/udp"
+      context: .
+      dockerfile: Dockerfile
+    container_name: ed2k-node-0
     environment:
-      - RUST_LOG=ed2kia=debug
-      - NODE_ID=testnet-node1
-      - PORT=9000
-      - BOOTSTRAP_PEERS=
-      - SHARD_COUNT=64
-      - WORKLOAD_SCHEDULER_ENABLED=true
+      - ED2K_NODE_ID=0
+      - ED2K_LISTEN_ADDR=0.0.0.0:8080
+      - ED2K_BOOTSTRAP=/dns4/ed2k-node-0/tcp/8080
+      - ED2K_LOG_LEVEL=info
+      - ED2K_FEATURE_FLAG=stable-core
+    ports:
+      - "8080:8080"
     volumes:
-      - ./testnet-data/node1:/data/ed2kia
-      - ./models:/data/ed2kia/models:ro
-    command: ["--port", "9000", "testnet"]
-    restart: unless-stopped
+      - ed2k-data-0:/data/ed2k
     networks:
-      - testnet-net
+      - ed2k-testnet
+    deploy:
+      resources:
+        limits:
+          memory: 2G
     healthcheck:
-      test: ["CMD", "ed2kia", "--help"]
-      interval: 15s
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 10s
+      retries: 3
 
-  # ---------------------------------------------------------------------------
-  # Nodo 2 — Worker (alta capacidad)
-  # ---------------------------------------------------------------------------
-  testnet-node2:
+  # Worker node 1
+  ed2k-node-1:
     build:
-      context: ..
-      dockerfile: deploy/Dockerfile
-      target: runtime
-      args:
-        FEATURES: "v9.5-testnet-hardening"
-    container_name: ed2kia-testnet-node2
-    hostname: testnet-node2
-    ports:
-      - "10002:9000/tcp"
-      - "10002:9000/udp"
+      context: .
+      dockerfile: Dockerfile
+    container_name: ed2k-node-1
     environment:
-      - RUST_LOG=ed2kia=info
-      - NODE_ID=testnet-node2
-      - PORT=9000
-      - BOOTSTRAP_PEERS=/ip4/172.21.0.2/tcp/9000/p2p/testnet-node1
-      - SHARD_COUNT=64
-      - NODE_CAPACITY=200
+      - ED2K_NODE_ID=1
+      - ED2K_LISTEN_ADDR=0.0.0.0:8081
+      - ED2K_BOOTSTRAP=/dns4/ed2k-node-0/tcp/8080
+      - ED2K_LOG_LEVEL=info
+      - ED2K_FEATURE_FLAG=stable-core
+    ports:
+      - "8081:8081"
     volumes:
-      - ./testnet-data/node2:/data/ed2kia
-      - ./models:/data/ed2kia/models:ro
-    command: ["--port", "9000", "testnet"]
-    restart: unless-stopped
+      - ed2k-data-1:/data/ed2k
     networks:
-      - testnet-net
-    depends_on:
-      testnet-node1:
-        condition: service_started
+      - ed2k-testnet
+    deploy:
+      resources:
+        limits:
+          memory: 2G
     healthcheck:
-      test: ["CMD", "ed2kia", "--help"]
-      interval: 15s
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 10s
+      retries: 3
 
-  # ---------------------------------------------------------------------------
-  # Nodo 3 — Worker (latencia simulada)
-  # ---------------------------------------------------------------------------
-  testnet-node3:
+  # Worker node 2
+  ed2k-node-2:
     build:
-      context: ..
-      dockerfile: deploy/Dockerfile
-      target: runtime
-      args:
-        FEATURES: "v9.5-testnet-hardening"
-    container_name: ed2kia-testnet-node3
-    hostname: testnet-node3
-    ports:
-      - "10003:9000/tcp"
-      - "10003:9000/udp"
+      context: .
+      dockerfile: Dockerfile
+    container_name: ed2k-node-2
     environment:
-      - RUST_LOG=ed2kia=info
-      - NODE_ID=testnet-node3
-      - PORT=9000
-      - BOOTSTRAP_PEERS=/ip4/172.21.0.2/tcp/9000/p2p/testnet-node1
-      - SHARD_COUNT=64
-      - SIMULATED_LATENCY_MS=80
-      - NODE_CAPACITY=100
+      - ED2K_NODE_ID=2
+      - ED2K_LISTEN_ADDR=0.0.0.0:8082
+      - ED2K_BOOTSTRAP=/dns4/ed2k-node-0/tcp/8080
+      - ED2K_LOG_LEVEL=info
+      - ED2K_FEATURE_FLAG=stable-core
+    ports:
+      - "8082:8082"
     volumes:
-      - ./testnet-data/node3:/data/ed2kia
-      - ./models:/data/ed2kia/models:ro
-    command: ["--port", "9000", "testnet"]
-    restart: unless-stopped
+      - ed2k-data-2:/data/ed2k
     networks:
-      - testnet-net
-    depends_on:
-      testnet-node1:
-        condition: service_started
+      - ed2k-testnet
+    deploy:
+      resources:
+        limits:
+          memory: 2G
     healthcheck:
-      test: ["CMD", "ed2kia", "--help"]
-      interval: 15s
+      test: ["CMD", "curl", "-f", "http://localhost:8082/health"]
+      interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 10s
+      retries: 3
 
-  # ---------------------------------------------------------------------------
-  # Nodo 4 — Verificador ZKP
-  # ---------------------------------------------------------------------------
-  testnet-node4:
+  # Worker node 3
+  ed2k-node-3:
     build:
-      context: ..
-      dockerfile: deploy/Dockerfile
-      target: runtime
-      args:
-        FEATURES: "v9.5-testnet-hardening"
-    container_name: ed2kia-testnet-node4
-    hostname: testnet-node4
-    ports:
-      - "10004:9000/tcp"
-      - "10004:9000/udp"
+      context: .
+      dockerfile: Dockerfile
+    container_name: ed2k-node-3
     environment:
-      - RUST_LOG=ed2kia=info
-      - NODE_ID=testnet-node4
-      - PORT=9000
-      - BOOTSTRAP_PEERS=/ip4/172.21.0.2/tcp/9000/p2p/testnet-node1
-      - SHARD_COUNT=64
-      - NODE_CAPACITY=150
+      - ED2K_NODE_ID=3
+      - ED2K_LISTEN_ADDR=0.0.0.0:8083
+      - ED2K_BOOTSTRAP=/dns4/ed2k-node-0/tcp/8080
+      - ED2K_LOG_LEVEL=info
+      - ED2K_FEATURE_FLAG=stable-core
+    ports:
+      - "8083:8083"
     volumes:
-      - ./testnet-data/node4:/data/ed2kia
-      - ./models:/data/ed2kia/models:ro
-    command: ["--port", "9000", "testnet"]
-    restart: unless-stopped
+      - ed2k-data-3:/data/ed2k
     networks:
-      - testnet-net
-    depends_on:
-      testnet-node1:
-        condition: service_started
+      - ed2k-testnet
+    deploy:
+      resources:
+        limits:
+          memory: 2G
     healthcheck:
-      test: ["CMD", "ed2kia", "--help"]
-      interval: 15s
+      test: ["CMD", "curl", "-f", "http://localhost:8083/health"]
+      interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 10s
+      retries: 3
 
-  # ---------------------------------------------------------------------------
-  # Nodo 5 — Observador (baja capacidad, alta latencia)
-  # ---------------------------------------------------------------------------
-  testnet-node5:
+  # Worker node 4
+  ed2k-node-4:
     build:
-      context: ..
-      dockerfile: deploy/Dockerfile
-      target: runtime
-      args:
-        FEATURES: "v9.5-testnet-hardening"
-    container_name: ed2kia-testnet-node5
-    hostname: testnet-node5
-    ports:
-      - "10005:9000/tcp"
-      - "10005:9000/udp"
+      context: .
+      dockerfile: Dockerfile
+    container_name: ed2k-node-4
     environment:
-      - RUST_LOG=ed2kia=warn
-      - NODE_ID=testnet-node5
-      - PORT=9000
-      - BOOTSTRAP_PEERS=/ip4/172.21.0.2/tcp/9000/p2p/testnet-node1
-      - SHARD_COUNT=64
-      - SIMULATED_LATENCY_MS=120
-      - NODE_CAPACITY=50
+      - ED2K_NODE_ID=4
+      - ED2K_LISTEN_ADDR=0.0.0.0:8084
+      - ED2K_BOOTSTRAP=/dns4/ed2k-node-0/tcp/8080
+      - ED2K_LOG_LEVEL=info
+      - ED2K_FEATURE_FLAG=stable-core
+    ports:
+      - "8084:8084"
     volumes:
-      - ./testnet-data/node5:/data/ed2kia
-      - ./models:/data/ed2kia/models:ro
-    command: ["--port", "9000", "testnet"]
-    restart: unless-stopped
+      - ed2k-data-4:/data/ed2k
     networks:
-      - testnet-net
-    depends_on:
-      testnet-node1:
-        condition: service_started
+      - ed2k-testnet
+    deploy:
+      resources:
+        limits:
+          memory: 2G
     healthcheck:
-      test: ["CMD", "ed2kia", "--help"]
-      interval: 15s
+      test: ["CMD", "curl", "-f", "http://localhost:8084/health"]
+      interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 10s
+      retries: 3
 
-# ---------------------------------------------------------------------------
-# Redes
-# ---------------------------------------------------------------------------
+  # Network emulation — tc/netem for latency and packet loss
+  # Note: Requires host-level tc access. Run deploy_testnet.sh for full setup.
+  netem-sim:
+    image: ghusta/netem:latest
+    container_name: netem-sim
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+    command: >
+      bash -c '
+        echo "Applying netem rules..."
+        tc qdisc add dev eth0 root netem delay 250ms 50ms distribution normal loss 3% 2>/dev/null || true
+        echo "Latency: 250ms ± 50ms, Packet loss: 3%"
+        echo "Run: tc qdisc show dev eth0 to verify"
+        sleep infinity
+      '
+    restart: unless-stopped
+
+volumes:
+  ed2k-data-0:
+  ed2k-data-1:
+  ed2k-data-2:
+  ed2k-data-3:
+  ed2k-data-4:
+
 networks:
-  testnet-net:
+  ed2k-testnet:
     driver: bridge
-    name: ed2kia-testnet
     ipam:
       config:
-        - subnet: 172.21.0.0/16
-
-# ---------------------------------------------------------------------------
-# Volumes
-# ---------------------------------------------------------------------------
-volumes:
-  testnet-node1-data:
-  testnet-node2-data:
-  testnet-node3-data:
-  testnet-node4-data:
-  testnet-node5-data:
+        - subnet: 172.20.0.0/24

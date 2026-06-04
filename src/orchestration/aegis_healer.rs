@@ -710,7 +710,7 @@ mod tests {
         fn test_error_display_feature() {
             let err = AegisError::FeatureDisabled;
             let msg = format!("{}", err);
-            assert!(msg.contains("feature"));
+            assert!(msg.to_lowercase().contains("feature"));
         }
 
         // --- Reset Tests ---

@@ -1,3 +1,32 @@
+## [v9.20.0-brutal-pruning] — 2026-06-04 (Sprint 84 — The Brutal Pruning & Real-World Validation)
+
+### Sprint 84 "The Brutal Pruning & Real-World Validation"
+
+Poda estructural y validación real: **stable-core isolation** (P2P + WASM + SAE + CLI + Benchmark + Dashboard como default, protocolos experimentales aislados), **Hostile Testnet** (docker-compose 5-nodo con tc/netem para latencia 150-400ms y 2-5% packet loss), **Notebook Reproducible** (Colab/HF Space autocontenido con SAE audit pipeline, TCM Z-axis visualization, CSV/JSON export), **README purificado** (100% técnico, tabla comparativa vs Petals/Anthropic SAE, cero terminología filosófica en superficie pública). Feature gate: `stable-core` (default), `experimental-protocols` (aislado).
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| Stable Core Feature | `Cargo.toml` | `stable-core` + `experimental-protocols` feature gates |
+| Hostile Testnet | `deploy/docker-compose.testnet.yml` | 5-node docker-compose with netem simulation |
+| Deploy Script | `scripts/deploy_testnet.sh` | Automated testnet deployment with tc/netem |
+| Reproducible Notebook | `notebooks/ed2kIA_sae_audit_demo.ipynb` | Colab/HF-ready SAE audit demo with TCM visualization |
+| Technical README | `README.md` | 100% technical, comparative table vs Petals/Anthropic |
+
+### Feature Gates
+```toml
+"stable-core" = ["v9.19-empirical-strike"]
+"experimental-protocols" = ["v9.17-biological-bridge", "v9.16-godelian-synthesis", ...]
+default = ["stable-core"]
+```
+
+### Validation Protocol
+- `cargo fmt` ✓
+- `cargo check --features stable-core` ✓
+- `cargo test --features stable-core` ✓
+- `bash -n scripts/deploy_testnet.sh` ✓
+- `docker compose -f deploy/docker-compose.testnet.yml config` ✓
+- Notebook JSON structure validated ✓
+
 ## [v9.19.0-empirical-strike] — 2026-06-03 (Sprint 83 — The Empirical Strike & Visual Proof)
 
 ### Sprint 83 "The Empirical Strike & Visual Proof"

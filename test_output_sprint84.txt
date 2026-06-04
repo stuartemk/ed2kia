@@ -1,0 +1,385 @@
+warning: file `c:\Users\cualo\Desktop\PROYECTOS\ed2kIA\tests\load\sprint3_stress.rs` found to be present in multiple build targets:
+  * `integration-test` target `sprint3_stress`
+  * `integration-test` target `v1_5_sprint3_stress`
+   Compiling ed2kia v9.20.0-sprint84 (C:\Users\cualo\Desktop\PROYECTOS\ed2kIA)
+error[E0433]: failed to resolve: use of undeclared type `SandboxError`
+   --> src\security\wasm_sandbox_v2.rs:560:38
+    |
+560 |         assert!(matches!(result, Err(SandboxError::CompilationError(_))));
+    |                                      ^^^^^^^^^^^^ use of undeclared type `SandboxError`
+    |
+help: consider importing this enum
+    |
+500 +     use crate::alignment::shadow_persona_sandbox::SandboxError;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `SandboxError`
+   --> src\security\wasm_sandbox_v2.rs:569:38
+    |
+569 |         assert!(matches!(result, Err(SandboxError::CompilationError(_))));
+    |                                      ^^^^^^^^^^^^ use of undeclared type `SandboxError`
+    |
+help: consider importing this enum
+    |
+500 +     use crate::alignment::shadow_persona_sandbox::SandboxError;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `SandboxError`
+   --> src\security\wasm_sandbox_v2.rs:579:17
+    |
+579 |             Err(SandboxError::ModuleNotFound(ref s)) if s == "nonexistent"
+    |                 ^^^^^^^^^^^^ use of undeclared type `SandboxError`
+    |
+help: consider importing this enum
+    |
+500 +     use crate::alignment::shadow_persona_sandbox::SandboxError;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `SandboxError`
+   --> src\security\wasm_sandbox_v2.rs:590:38
+    |
+590 |         assert!(matches!(result, Err(SandboxError::FunctionNotFound(_))));
+    |                                      ^^^^^^^^^^^^ use of undeclared type `SandboxError`
+    |
+help: consider importing this enum
+    |
+500 +     use crate::alignment::shadow_persona_sandbox::SandboxError;
+    |
+
+error[E0422]: cannot find struct, variant or union type `ExecutionProfile` in this scope
+   --> src\security\wasm_sandbox_v2.rs:631:28
+    |
+631 |         let high_profile = ExecutionProfile {
+    |                            ^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `ExecutionProfile` in this scope
+   --> src\security\wasm_sandbox_v2.rs:642:27
+    |
+642 |         let low_profile = ExecutionProfile {
+    |                           ^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `SandboxConfigV2` in this scope
+   --> src\security\wasm_sandbox_v2.rs:680:22
+    |
+680 |         let config = SandboxConfigV2 {
+    |                      ^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0433]: failed to resolve: use of undeclared type `SandboxError`
+   --> src\security\wasm_sandbox_v2.rs:691:38
+    |
+691 |         assert!(matches!(result, Err(SandboxError::CompilationError(_))));
+    |                                      ^^^^^^^^^^^^ use of undeclared type `SandboxError`
+    |
+help: consider importing this enum
+    |
+500 +     use crate::alignment::shadow_persona_sandbox::SandboxError;
+    |
+
+error[E0422]: cannot find struct, variant or union type `SandboxConfigV2` in this scope
+   --> src\security\wasm_sandbox_v2.rs:716:22
+    |
+716 |         let config = SandboxConfigV2 {
+    |                      ^^^^^^^^^^^^^^^ not found in this scope
+
+warning: unused import: `std::collections::HashMap`
+  --> src\consensus\..\consensus\proof_of_novelty.rs:14:5
+   |
+14 | use std::collections::HashMap;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `super::*`
+   --> src\security\wasm_sandbox_v2.rs:500:9
+    |
+500 |     use super::*;
+    |         ^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+  --> src\evolution\panspermia_protocol.rs:15:5
+   |
+15 | use std::collections::HashMap;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+  --> src\inference\edge_optimizer.rs:11:5
+   |
+11 | use std::collections::HashMap;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0433]: failed to resolve: use of undeclared type `SandboxConfigV2`
+   --> src\security\wasm_sandbox_v2.rs:531:22
+    |
+531 |         let config = SandboxConfigV2::default();
+    |                      ^^^^^^^^^^^^^^^ use of undeclared type `SandboxConfigV2`
+
+error[E0433]: failed to resolve: use of undeclared type `WasmSandboxV2`
+   --> src\security\wasm_sandbox_v2.rs:541:23
+    |
+541 |         let sandbox = WasmSandboxV2::with_defaults();
+    |                       ^^^^^^^^^^^^^ use of undeclared type `WasmSandboxV2`
+
+error[E0433]: failed to resolve: use of undeclared type `WasmSandboxV2`
+   --> src\security\wasm_sandbox_v2.rs:547:27
+    |
+547 |         let mut sandbox = WasmSandboxV2::with_defaults();
+    |                           ^^^^^^^^^^^^^ use of undeclared type `WasmSandboxV2`
+
+error[E0433]: failed to resolve: use of undeclared type `WasmSandboxV2`
+   --> src\security\wasm_sandbox_v2.rs:556:27
+    |
+556 |         let mut sandbox = WasmSandboxV2::with_defaults();
+    |                           ^^^^^^^^^^^^^ use of undeclared type `WasmSandboxV2`
+
+error[E0433]: failed to resolve: use of undeclared type `WasmSandboxV2`
+   --> src\security\wasm_sandbox_v2.rs:565:27
+    |
+565 |         let mut sandbox = WasmSandboxV2::with_defaults();
+    |                           ^^^^^^^^^^^^^ use of undeclared type `WasmSandboxV2`
+
+error[E0433]: failed to resolve: use of undeclared type `WasmSandboxV2`
+   --> src\security\wasm_sandbox_v2.rs:574:27
+    |
+574 |         let mut sandbox = WasmSandboxV2::with_defaults();
+    |                           ^^^^^^^^^^^^^ use of undeclared type `WasmSandboxV2`
+
+error[E0433]: failed to resolve: use of undeclared type `WasmSandboxV2`
+   --> src\security\wasm_sandbox_v2.rs:585:27
+    |
+585 |         let mut sandbox = WasmSandboxV2::with_defaults();
+    |                           ^^^^^^^^^^^^^ use of undeclared type `WasmSandboxV2`
+
+error[E0433]: failed to resolve: use of undeclared type `WasmSandboxV2`
+   --> src\security\wasm_sandbox_v2.rs:595:27
+    |
+595 |         let mut sandbox = WasmSandboxV2::with_defaults();
+    |                           ^^^^^^^^^^^^^ use of undeclared type `WasmSandboxV2`
+
+error[E0433]: failed to resolve: use of undeclared type `WasmSandboxV2`
+   --> src\security\wasm_sandbox_v2.rs:609:27
+    |
+609 |         let mut sandbox = WasmSandboxV2::with_defaults();
+    |                           ^^^^^^^^^^^^^ use of undeclared type `WasmSandboxV2`
+
+error[E0433]: failed to resolve: use of undeclared type `WasmSandboxV2`
+   --> src\security\wasm_sandbox_v2.rs:628:23
+    |
+628 |         let sandbox = WasmSandboxV2::with_defaults();
+    |                       ^^^^^^^^^^^^^ use of undeclared type `WasmSandboxV2`
+
+error[E0433]: failed to resolve: use of undeclared type `WasmSandboxV2`
+   --> src\security\wasm_sandbox_v2.rs:655:27
+    |
+655 |         let mut sandbox = WasmSandboxV2::with_defaults();
+    |                           ^^^^^^^^^^^^^ use of undeclared type `WasmSandboxV2`
+
+error[E0433]: failed to resolve: use of undeclared type `WasmSandboxV2`
+   --> src\security\wasm_sandbox_v2.rs:684:27
+    |
+684 |         let mut sandbox = WasmSandboxV2::new(config);
+    |                           ^^^^^^^^^^^^^ use of undeclared type `WasmSandboxV2`
+
+error[E0433]: failed to resolve: use of undeclared type `WasmSandboxV2`
+   --> src\security\wasm_sandbox_v2.rs:696:23
+    |
+696 |         let sandbox = WasmSandboxV2::with_defaults();
+    |                       ^^^^^^^^^^^^^ use of undeclared type `WasmSandboxV2`
+
+error[E0433]: failed to resolve: use of undeclared type `WasmSandboxV2`
+   --> src\security\wasm_sandbox_v2.rs:702:27
+    |
+702 |         let mut sandbox = WasmSandboxV2::with_defaults();
+    |                           ^^^^^^^^^^^^^ use of undeclared type `WasmSandboxV2`
+
+error[E0433]: failed to resolve: use of undeclared type `WasmSandboxV2`
+   --> src\security\wasm_sandbox_v2.rs:721:27
+    |
+721 |         let mut sandbox = WasmSandboxV2::new(config);
+    |                           ^^^^^^^^^^^^^ use of undeclared type `WasmSandboxV2`
+
+warning: unused variable: `round_id`
+   --> src\crypto\..\crypto\blind_threshold_computation.rs:268:9
+    |
+268 |         round_id: u64,
+    |         ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_round_id`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `base`
+   --> src\crypto\..\crypto\blind_threshold_computation.rs:514:9
+    |
+514 |     let base = fnv_hash_64(data);
+    |         ^^^^ help: if this is intentional, prefix it with an underscore: `_base`
+
+warning: unused variable: `current_ms`
+   --> src\privacy\..\privacy\fhe_ready_wasm.rs:325:47
+    |
+325 |     pub fn rotate_key(&mut self, key_id: u64, current_ms: u64) -> Result<FheKey, FheError> {
+    |                                               ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_current_ms`
+
+warning: variable does not need to be mutable
+   --> src\privacy\..\privacy\fhe_ready_wasm.rs:490:13
+    |
+490 |         let mut stream = fnv_hash_256(public_key);
+    |             ----^^^^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> src\privacy\..\privacy\fhe_ready_wasm.rs:512:13
+    |
+512 |         let mut stream = fnv_hash_256(secret_key);
+    |             ----^^^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> src\oracle\..\oracle\physical_tee_bridge.rs:678:13
+    |
+678 |         let mut engine = PhysicalTeeBridge::new();
+    |             ----^^^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> src\oracle\..\oracle\physical_tee_bridge.rs:695:13
+    |
+695 |         let mut engine = PhysicalTeeBridge::with_config(config).unwrap();
+    |             ----^^^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: unused variable: `base`
+   --> src\oracle\..\oracle\heterogeneous_mpc.rs:425:9
+    |
+425 |     let base = fnv_hash_64(data);
+    |         ^^^^ help: if this is intentional, prefix it with an underscore: `_base`
+
+warning: unused variable: `sandbox_id`
+   --> src\alignment\..\alignment\epistemic_wiping.rs:449:34
+    |
+449 | pub fn quarantine_shadow_persona(sandbox_id: u32, non_euclidean_metric: f64) -> QuarantineState {
+    |                                  ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_sandbox_id`
+
+warning: unused variable: `base`
+   --> src\alignment\..\alignment\epistemic_wiping.rs:492:9
+    |
+492 |     let base = fnv_hash_64(data);
+    |         ^^^^ help: if this is intentional, prefix it with an underscore: `_base`
+
+warning: unused variable: `sync_vector`
+   --> src\network\async_mesh_sneakernet.rs:358:5
+    |
+358 |     sync_vector: &VersionVector,
+    |     ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_sync_vector`
+
+warning: unused variable: `record`
+   --> src\ledger\kzg_state_pruning.rs:503:13
+    |
+503 |         let record = pruner.prune_expired(200_000_000).unwrap();
+    |             ^^^^^^ help: if this is intentional, prefix it with an underscore: `_record`
+
+warning: variable does not need to be mutable
+   --> src\network\distributed_seed_mesh.rs:417:13
+    |
+417 |         let mut config = SeedMeshConfig {
+    |             ----^^^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: unused variable: `hash`
+   --> src\pillars\corpuscular\macro_bridge.rs:469:13
+    |
+469 |         let hash = bridge.bridge_exchange(event).unwrap();
+    |             ^^^^ help: if this is intentional, prefix it with an underscore: `_hash`
+
+warning: variable does not need to be mutable
+   --> src\pillars\maieutic\workloads\telomere_genesis.rs:723:13
+    |
+723 |         let mut task = TelomereRegenerationTask::new(-1.0);
+    |             ----^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: unused variable: `chaffed`
+   --> src\pillars\steganographic\chaffing_engine.rs:424:13
+    |
+424 |         let chaffed = engine.inject_chaff(stream, "test").unwrap();
+    |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_chaffed`
+
+warning: unused variable: `previous`
+   --> src\metrics\godelian_grace.rs:353:14
+    |
+353 |         let (previous, z_history) = {
+    |              ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_previous`
+
+warning: unused variable: `node_id`
+   --> src\metrics\godelian_grace.rs:521:30
+    |
+521 | pub fn invoke_godelian_grace(node_id: &NodeId, paradox_signature: &[u8]) -> GraceState {
+    |                              ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_node_id`
+
+warning: unused variable: `base`
+   --> src\metrics\godelian_grace.rs:541:9
+    |
+541 |     let base = fnv_hash_64(data);
+    |         ^^^^ help: if this is intentional, prefix it with an underscore: `_base`
+
+warning: unused variable: `fractal_threshold`
+   --> src\metrics\paradox_cost_triage.rs:248:41
+    |
+248 |     pub fn cluster_paradoxes(&mut self, fractal_threshold: f64) -> Vec<MetaParadox> {
+    |                                         ^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_fractal_threshold`
+
+warning: unused variable: `fractal_threshold`
+   --> src\metrics\paradox_cost_triage.rs:327:26
+    |
+327 | pub fn cluster_paradoxes(fractal_threshold: f64) -> Vec<MetaParadox> {
+    |                          ^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_fractal_threshold`
+
+warning: variable does not need to be mutable
+    --> src\absolute\infinite_resonance.rs:1325:13
+     |
+1325 |         let mut s = StuartianAbsolute::new();
+     |             ----^
+     |             |
+     |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+    --> src\absolute\infinite_resonance.rs:1326:13
+     |
+1326 |         let mut r = InfiniteResonanceSingularity::new();
+     |             ----^
+     |             |
+     |             help: remove this `mut`
+
+warning: unused variable: `expected_s`
+    --> src\absolute\infinite_resonance.rs:1497:13
+     |
+1497 |         let expected_s = expected_numerator / expected_denominator; // 2.4
+     |             ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_expected_s`
+
+warning: unused variable: `step`
+   --> src\absolute\ultima_dissolutio.rs:821:17
+    |
+821 |             let step = d.dissolve_step().unwrap();
+    |                 ^^^^ help: if this is intentional, prefix it with an underscore: `_step`
+
+warning: unused variable: `proto`
+    --> src\absolute\voluntary_non_existence.rs:1413:13
+     |
+1413 |         let proto = VoluntaryNonExistenceProtocol::new();
+     |             ^^^^^ help: if this is intentional, prefix it with an underscore: `_proto`
+
+error[E0433]: failed to resolve: use of undeclared type `ProfilingAlert`
+   --> src\security\wasm_sandbox_v2.rs:604:37
+    |
+604 |         matches!(exec_result.alert, ProfilingAlert::Ok);
+    |                                     ^^^^^^^^^^^^^^ use of undeclared type `ProfilingAlert`
+
+Some errors have detailed explanations: E0422, E0433.
+For more information about an error, try `rustc --explain E0422`.
+warning: `ed2kia` (lib test) generated 33 warnings (3 duplicates)
+error: could not compile `ed2kia` (lib test) due to 25 previous errors; 33 warnings emitted

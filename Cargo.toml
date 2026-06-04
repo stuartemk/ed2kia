@@ -1,6 +1,6 @@
 [package]
 name = "ed2kia"
-version = "9.19.0-sprint83"
+version = "9.20.0-sprint84"
 edition = "2021"
 description = "Descentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
 license = "Apache-2.0"
@@ -133,7 +133,7 @@ web-sys = { version = "0.3", features = ["AudioContext", "OscillatorNode", "Gain
 [features]
 # CONSOLIDATION: v1.0.0 stable feature structure
 # `default` enables all stable modules (Fases 1-9 unified)
-default = ["stable"]
+default = ["stable-core"]
 
 # ─── Stable Features (Production) ───
 # `stable` enables all validated modules from Fases 1-9
@@ -928,6 +928,11 @@ test-mocks = []
 # src/ui/visual_dashboard_scaffold.rs: WebSocket/HTTP streaming of SAE activations, 3D manifold placeholder
 "v9.19-empirical-strike" = ["v9.18-mvp-deployment"]
 
+# Sprint 84: The Brutal Pruning & Real-World Validation (v9.20.0)
+# stable-core: P2P + WASM + SAE Distributed + CLI + SAE Audit Benchmark + Visual Dashboard
+# experimental-protocols: Genesis ceremony, evolution, metrics, biofeedback, etc.
+"stable-core" = ["v9.19-empirical-strike"]
+"experimental-protocols" = ["v9.17-biological-bridge", "v9.16-godelian-synthesis"]
 # Sprint 50 Test: Moral Manifold Behavior
 [[test]]
 name = "moral_manifold_behavior"

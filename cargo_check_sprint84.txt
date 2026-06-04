@@ -1,0 +1,139 @@
+warning: file `c:\Users\cualo\Desktop\PROYECTOS\ed2kIA\tests\load\sprint3_stress.rs` found to be present in multiple build targets:
+  * `integration-test` target `sprint3_stress`
+  * `integration-test` target `v1_5_sprint3_stress`
+    Checking ed2kia v9.20.0-sprint84 (C:\Users\cualo\Desktop\PROYECTOS\ed2kIA)
+warning: unused import: `std::collections::HashMap`
+  --> src\consensus\..\consensus\proof_of_novelty.rs:14:5
+   |
+14 | use std::collections::HashMap;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `std::collections::HashMap`
+  --> src\evolution\panspermia_protocol.rs:15:5
+   |
+15 | use std::collections::HashMap;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+  --> src\inference\edge_optimizer.rs:11:5
+   |
+11 | use std::collections::HashMap;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `round_id`
+   --> src\crypto\..\crypto\blind_threshold_computation.rs:268:9
+    |
+268 |         round_id: u64,
+    |         ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_round_id`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `base`
+   --> src\crypto\..\crypto\blind_threshold_computation.rs:514:9
+    |
+514 |     let base = fnv_hash_64(data);
+    |         ^^^^ help: if this is intentional, prefix it with an underscore: `_base`
+
+warning: unused variable: `current_ms`
+   --> src\privacy\..\privacy\fhe_ready_wasm.rs:325:47
+    |
+325 |     pub fn rotate_key(&mut self, key_id: u64, current_ms: u64) -> Result<FheKey, FheError> {
+    |                                               ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_current_ms`
+
+warning: variable does not need to be mutable
+   --> src\privacy\..\privacy\fhe_ready_wasm.rs:490:13
+    |
+490 |         let mut stream = fnv_hash_256(public_key);
+    |             ----^^^^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> src\privacy\..\privacy\fhe_ready_wasm.rs:512:13
+    |
+512 |         let mut stream = fnv_hash_256(secret_key);
+    |             ----^^^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: unused variable: `base`
+   --> src\oracle\..\oracle\heterogeneous_mpc.rs:425:9
+    |
+425 |     let base = fnv_hash_64(data);
+    |         ^^^^ help: if this is intentional, prefix it with an underscore: `_base`
+
+warning: unused variable: `sandbox_id`
+   --> src\alignment\..\alignment\epistemic_wiping.rs:449:34
+    |
+449 | pub fn quarantine_shadow_persona(sandbox_id: u32, non_euclidean_metric: f64) -> QuarantineState {
+    |                                  ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_sandbox_id`
+
+warning: unused variable: `base`
+   --> src\alignment\..\alignment\epistemic_wiping.rs:492:9
+    |
+492 |     let base = fnv_hash_64(data);
+    |         ^^^^ help: if this is intentional, prefix it with an underscore: `_base`
+
+warning: unused variable: `sync_vector`
+   --> src\network\async_mesh_sneakernet.rs:358:5
+    |
+358 |     sync_vector: &VersionVector,
+    |     ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_sync_vector`
+
+warning: unused variable: `previous`
+   --> src\metrics\godelian_grace.rs:353:14
+    |
+353 |         let (previous, z_history) = {
+    |              ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_previous`
+
+warning: unused variable: `node_id`
+   --> src\metrics\godelian_grace.rs:521:30
+    |
+521 | pub fn invoke_godelian_grace(node_id: &NodeId, paradox_signature: &[u8]) -> GraceState {
+    |                              ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_node_id`
+
+warning: unused variable: `base`
+   --> src\metrics\godelian_grace.rs:541:9
+    |
+541 |     let base = fnv_hash_64(data);
+    |         ^^^^ help: if this is intentional, prefix it with an underscore: `_base`
+
+warning: unused variable: `fractal_threshold`
+   --> src\metrics\paradox_cost_triage.rs:248:41
+    |
+248 |     pub fn cluster_paradoxes(&mut self, fractal_threshold: f64) -> Vec<MetaParadox> {
+    |                                         ^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_fractal_threshold`
+
+warning: unused variable: `fractal_threshold`
+   --> src\metrics\paradox_cost_triage.rs:327:26
+    |
+327 | pub fn cluster_paradoxes(fractal_threshold: f64) -> Vec<MetaParadox> {
+    |                          ^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_fractal_threshold`
+
+warning: unused `Result` that must be used
+   --> src\metrics\godelian_grace.rs:308:17
+    |
+308 |                 self.mark_singularity(&node_id_copy, timestamp_ms);
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: this `Result` may be an `Err` variant, which should be handled
+    = note: `#[warn(unused_must_use)]` (part of `#[warn(unused)]`) on by default
+help: use `let _ = ...` to ignore the resulting value
+    |
+308 |                 let _ = self.mark_singularity(&node_id_copy, timestamp_ms);
+    |                 +++++++
+
+warning: comparison is useless due to type limits
+   --> src\ui\visual_dashboard_scaffold.rs:448:21
+    |
+448 |     if port == 0 || port > 65535 {
+    |                     ^^^^^^^^^^^^
+    |
+    = note: `#[warn(unused_comparisons)]` on by default
+
+warning: `ed2kia` (lib) generated 22 warnings (3 duplicates) (run `cargo fix --lib -p ed2kia` to apply 17 suggestions)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 13.55s
