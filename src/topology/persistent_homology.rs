@@ -31,7 +31,7 @@ impl EthicalPoint {
     }
 
     /// Convert from TopologicalTensor.
-    pub fn from_Topological(tensor: &TopologicalTensor) -> Self {
+    pub fn from_topological(tensor: &TopologicalTensor) -> Self {
         Self {
             x: tensor.x as f64,
             y: tensor.y as f64,
@@ -615,9 +615,9 @@ mod tests {
     }
 
     #[test]
-    fn test_from_Topological_tensor() {
+    fn test_from_topological_tensor() {
         let tensor = TopologicalTensor::new(0.6, 0.3, 0.5).unwrap();
-        let point = EthicalPoint::from_Topological(&tensor);
+        let point = EthicalPoint::from_topological(&tensor);
         // f32â†’f64 conversion introduces precision loss; use 1e-6 tolerance
         assert!((point.x - 0.6).abs() < 1e-6);
         assert!((point.y - 0.3).abs() < 1e-6);

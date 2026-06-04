@@ -82,7 +82,7 @@ pub struct TeeBridgeConfig {
 }
 
 impl TeeBridgeConfig {
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             max_quote_age_ms: 30_000,
             min_aggregation_count: 3,
@@ -113,7 +113,7 @@ impl TeeBridgeConfig {
 
 impl Default for TeeBridgeConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -247,7 +247,7 @@ pub struct PhysicalTeeBridge {
 impl PhysicalTeeBridge {
     pub fn new() -> Self {
         Self {
-            config: TeeBridgeConfig::default_Topological(),
+            config: TeeBridgeConfig::default_topological(),
             counters: HashMap::new(),
             records: Vec::new(),
             total_work: 0.0,
@@ -502,7 +502,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = TeeBridgeConfig::default_Topological();
+        let config = TeeBridgeConfig::default_topological();
         assert_eq!(config.max_quote_age_ms, 30_000);
         assert_eq!(config.min_aggregation_count, 3);
         assert!(config.enforce_counter);
@@ -510,7 +510,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = TeeBridgeConfig::default_Topological();
+        let config = TeeBridgeConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
@@ -518,7 +518,7 @@ mod tests {
     fn test_config_zero_age() {
         let config = TeeBridgeConfig {
             max_quote_age_ms: 0,
-            ..TeeBridgeConfig::default_Topological()
+            ..TeeBridgeConfig::default_topological()
         };
         assert_eq!(config.validate(), Err(TeeError::InvalidQuoteFormat));
     }
@@ -527,7 +527,7 @@ mod tests {
     fn test_config_zero_aggregation() {
         let config = TeeBridgeConfig {
             min_aggregation_count: 0,
-            ..TeeBridgeConfig::default_Topological()
+            ..TeeBridgeConfig::default_topological()
         };
         assert_eq!(
             config.validate(),
@@ -539,7 +539,7 @@ mod tests {
     fn test_config_negative_threshold() {
         let config = TeeBridgeConfig {
             thermodynamic_threshold: -1.0,
-            ..TeeBridgeConfig::default_Topological()
+            ..TeeBridgeConfig::default_topological()
         };
         assert!(matches!(
             config.validate(),
@@ -551,7 +551,7 @@ mod tests {
     fn test_config_empty_tees() {
         let config = TeeBridgeConfig {
             supported_tees: vec![],
-            ..TeeBridgeConfig::default_Topological()
+            ..TeeBridgeConfig::default_topological()
         };
         assert_eq!(config.validate(), Err(TeeError::UnsupportedTeeType));
     }
@@ -607,7 +607,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = TeeBridgeConfig::default_Topological();
+        let config = TeeBridgeConfig::default_topological();
         let engine = PhysicalTeeBridge::with_config(config);
         assert!(engine.is_ok());
     }
@@ -625,7 +625,7 @@ mod tests {
     fn test_verify_quote_unsupported_type() {
         let config = TeeBridgeConfig {
             supported_tees: vec![TeeType::Sgx],
-            ..TeeBridgeConfig::default_Topological()
+            ..TeeBridgeConfig::default_topological()
         };
         let mut engine = PhysicalTeeBridge::with_config(config).unwrap();
         let quote = TeeQuote::new(TeeType::Tdx, 1, vec![1], 0, 10000, 1);
@@ -701,7 +701,7 @@ mod tests {
     fn test_aggregate_quotes_insufficient() {
         let config = TeeBridgeConfig {
             min_aggregation_count: 5,
-            ..TeeBridgeConfig::default_Topological()
+            ..TeeBridgeConfig::default_topological()
         };
         let mut engine = PhysicalTeeBridge::with_config(config).unwrap();
         let quotes = vec![

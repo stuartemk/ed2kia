@@ -87,7 +87,7 @@ pub struct FheWasmConfig {
 }
 
 impl FheWasmConfig {
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             security_level: 128,
             max_noise_budget: 40,
@@ -117,7 +117,7 @@ impl FheWasmConfig {
 
 impl Default for FheWasmConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -286,7 +286,7 @@ pub struct FheReadyWasm {
 impl FheReadyWasm {
     pub fn new() -> Self {
         Self {
-            config: FheWasmConfig::default_Topological(),
+            config: FheWasmConfig::default_topological(),
             keys: HashMap::new(),
             modules: HashMap::new(),
             records: Vec::new(),
@@ -325,7 +325,7 @@ impl FheReadyWasm {
         Ok(key)
     }
 
-    pub fn rotate_key(&mut self, key_id: u64, current_ms: u64) -> Result<FheKey, FheError> {
+    pub fn rotate_key(&mut self, key_id: u64, _current_ms: u64) -> Result<FheKey, FheError> {
         // Verify old key exists
         if !self.keys.contains_key(&key_id) {
             return Err(FheError::InvalidCiphertext);
@@ -486,7 +486,7 @@ impl FheReadyWasm {
         // Add header
         ct.extend_from_slice(&plaintext.len().to_le_bytes());
         // XOR with key-derived stream
-        let mut stream = fnv_hash_256(public_key);
+        let stream = fnv_hash_256(public_key);
         for (i, &byte) in plaintext.iter().enumerate() {
             let key_byte = stream[i % stream.len()];
             ct.push(byte ^ key_byte);
@@ -508,7 +508,7 @@ impl FheReadyWasm {
         // In real FHE, decryption uses the secret key to remove noise.
         // Here we simulate by deriving the stream from the secret key in the same way.
         let mut pt = Vec::with_capacity(len);
-        let mut stream = fnv_hash_256(secret_key);
+        let stream = fnv_hash_256(secret_key);
         for i in 0..len {
             let key_byte = stream[i % stream.len()];
             pt.push(ciphertext[i + 8] ^ key_byte);
@@ -661,7 +661,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = FheWasmConfig::default_Topological();
+        let config = FheWasmConfig::default_topological();
         assert_eq!(config.security_level, 128);
         assert_eq!(config.max_noise_budget, 40);
         assert_eq!(config.scheme, FheScheme::Bfv);
@@ -669,7 +669,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = FheWasmConfig::default_Topological();
+        let config = FheWasmConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
@@ -677,7 +677,7 @@ mod tests {
     fn test_config_invalid_security() {
         let config = FheWasmConfig {
             security_level: 32,
-            ..FheWasmConfig::default_Topological()
+            ..FheWasmConfig::default_topological()
         };
         assert!(matches!(
             config.validate(),
@@ -689,7 +689,7 @@ mod tests {
     fn test_config_zero_noise() {
         let config = FheWasmConfig {
             max_noise_budget: 0,
-            ..FheWasmConfig::default_Topological()
+            ..FheWasmConfig::default_topological()
         };
         assert_eq!(config.validate(), Err(FheError::NoiseBudgetExhausted));
     }
@@ -698,7 +698,7 @@ mod tests {
     fn test_config_zero_module_size() {
         let config = FheWasmConfig {
             max_module_size: 0,
-            ..FheWasmConfig::default_Topological()
+            ..FheWasmConfig::default_topological()
         };
         assert!(matches!(
             config.validate(),
@@ -763,7 +763,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = FheWasmConfig::default_Topological();
+        let config = FheWasmConfig::default_topological();
         let engine = FheReadyWasm::with_config(config);
         assert!(engine.is_ok());
     }
@@ -799,7 +799,7 @@ mod tests {
     fn test_encrypt_module_too_large() {
         let config = FheWasmConfig {
             max_module_size: 10,
-            ..FheWasmConfig::default_Topological()
+            ..FheWasmConfig::default_topological()
         };
         let mut engine = FheReadyWasm::with_config(config).unwrap();
         engine.generate_key_pair(60_000).unwrap();

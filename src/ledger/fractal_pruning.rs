@@ -133,7 +133,7 @@ pub struct PruningConfig {
 
 impl PruningConfig {
     /// Default Topological configuration.
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             retention_hours: 72,
             max_retention_count: 100_000,
@@ -156,7 +156,7 @@ impl PruningConfig {
 
 impl Default for PruningConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -286,7 +286,7 @@ impl FractalPruning {
     /// Create a new engine with default Topological configuration.
     pub fn new() -> Self {
         Self {
-            config: PruningConfig::default_Topological(),
+            config: PruningConfig::default_topological(),
             entries: HashMap::new(),
             merkle_accumulator: MerkleTree::new(),
             daily_hashes: Vec::new(),
@@ -490,7 +490,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = PruningConfig::default_Topological();
+        let config = PruningConfig::default_topological();
         assert!(config.validate().is_ok());
         assert_eq!(config.retention_hours, 72);
     }
@@ -499,7 +499,7 @@ mod tests {
     fn test_config_zero_retention() {
         let config = PruningConfig {
             retention_hours: 0,
-            ..PruningConfig::default_Topological()
+            ..PruningConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }

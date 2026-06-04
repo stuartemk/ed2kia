@@ -237,7 +237,7 @@ pub struct DashboardConfig {
 }
 
 impl DashboardConfig {
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             port: 8787,
             max_connections: 100,
@@ -266,7 +266,7 @@ impl DashboardConfig {
 
 impl Default for DashboardConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -449,7 +449,7 @@ impl fmt::Display for VisualDashboardScaffold {
 
 /// Start visual stream server (standalone for CLI integration).
 pub fn start_visual_stream_server(port: u16) -> Result<ServerHandle, Box<dyn std::error::Error>> {
-    if port == 0 || port > 65535 {
+    if port == 0 {
         return Err(Box::new(DashboardError::InvalidPort(port)));
     }
     let config = DashboardConfig {
@@ -474,7 +474,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = DashboardConfig::default_Topological();
+        let config = DashboardConfig::default_topological();
         assert_eq!(config.port, 8787);
         assert_eq!(config.max_connections, 100);
         assert_eq!(config.divergence_threshold, 2.0);

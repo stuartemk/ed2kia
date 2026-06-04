@@ -8,7 +8,6 @@
 //! |---|---|---|
 //! | `v9.18-mvp-deployment` | edge_optimizer | EdgeOptimizer â€” RAM-aware model selection, WASM async pipeline |
 
-use std::collections::HashMap;
 use std::fmt;
 
 // ============================================================================
@@ -129,7 +128,7 @@ pub struct EdgeConfig {
 }
 
 impl EdgeConfig {
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             default_model: "qwen3.5:2b".to_string(),
             fallback_model: "micro-sae".to_string(),
@@ -166,7 +165,7 @@ impl EdgeConfig {
 
 impl Default for EdgeConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -241,7 +240,7 @@ pub struct EdgeOptimizer {
 impl EdgeOptimizer {
     pub fn new() -> Self {
         Self {
-            config: EdgeConfig::default_Topological(),
+            config: EdgeConfig::default_topological(),
             catalog: default_catalog(),
             pipeline_state: PipelineState::Idle,
             records: Vec::new(),
@@ -468,7 +467,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = EdgeConfig::default_Topological();
+        let config = EdgeConfig::default_topological();
         assert_eq!(config.default_model, "qwen3.5:2b");
         assert_eq!(config.fallback_model, "micro-sae");
         assert!(config.wasm_async_enabled);
@@ -476,27 +475,27 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = EdgeConfig::default_Topological();
+        let config = EdgeConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
     #[test]
     fn test_config_empty_default() {
-        let mut config = EdgeConfig::default_Topological();
+        let mut config = EdgeConfig::default_topological();
         config.default_model = "".to_string();
         assert!(config.validate().is_err());
     }
 
     #[test]
     fn test_config_zero_workers() {
-        let mut config = EdgeConfig::default_Topological();
+        let mut config = EdgeConfig::default_topological();
         config.max_workers = 0;
         assert!(config.validate().is_err());
     }
 
     #[test]
     fn test_config_low_threshold() {
-        let mut config = EdgeConfig::default_Topological();
+        let mut config = EdgeConfig::default_topological();
         config.micro_threshold_mb = 128;
         assert!(config.validate().is_err());
     }
@@ -525,7 +524,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = EdgeConfig::default_Topological();
+        let config = EdgeConfig::default_topological();
         let engine = EdgeOptimizer::with_config(config);
         assert!(engine.is_ok());
     }
@@ -588,7 +587,7 @@ mod tests {
 
     #[test]
     fn test_activate_pipeline_disabled() {
-        let mut config = EdgeConfig::default_Topological();
+        let mut config = EdgeConfig::default_topological();
         config.wasm_async_enabled = false;
         let mut engine = EdgeOptimizer::with_config(config).unwrap();
         assert!(engine.activate_pipeline().is_err());
@@ -604,7 +603,7 @@ mod tests {
 
     #[test]
     fn test_start_worker_max_reached() {
-        let mut config = EdgeConfig::default_Topological();
+        let mut config = EdgeConfig::default_topological();
         config.max_workers = 1;
         let mut engine = EdgeOptimizer::with_config(config).unwrap();
         engine.activate_pipeline().unwrap();

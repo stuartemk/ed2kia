@@ -120,7 +120,7 @@ pub struct SidecarConfig {
 }
 
 impl SidecarConfig {
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             latency_budget_ms: 50,
             max_queue_size: 256,
@@ -143,7 +143,7 @@ impl SidecarConfig {
 
 impl Default for SidecarConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -190,7 +190,7 @@ pub struct AsyncSymbolicSidecar {
 impl AsyncSymbolicSidecar {
     pub fn new() -> Self {
         Self {
-            config: SidecarConfig::default_Topological(),
+            config: SidecarConfig::default_topological(),
             queue: BinaryHeap::new(),
             sae_weights: None,
             total_validated: 0,
@@ -367,19 +367,19 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = SidecarConfig::default_Topological();
+        let config = SidecarConfig::default_topological();
         assert_eq!(config.latency_budget_ms, 50);
         assert_eq!(config.max_queue_size, 256);
     }
 
     #[test]
     fn test_config_validate_ok() {
-        assert!(SidecarConfig::default_Topological().validate().is_ok());
+        assert!(SidecarConfig::default_topological().validate().is_ok());
     }
 
     #[test]
     fn test_config_zero_budget() {
-        let mut config = SidecarConfig::default_Topological();
+        let mut config = SidecarConfig::default_topological();
         config.latency_budget_ms = 0;
         assert!(config.validate().is_err());
     }
@@ -426,7 +426,7 @@ mod tests {
     fn test_enqueue_queue_full() {
         let mut engine = AsyncSymbolicSidecar::with_config(SidecarConfig {
             max_queue_size: 2,
-            ..SidecarConfig::default_Topological()
+            ..SidecarConfig::default_topological()
         })
         .unwrap();
         let tokens = vec![
@@ -461,7 +461,7 @@ mod tests {
         let mut engine = AsyncSymbolicSidecar::with_config(SidecarConfig {
             latency_budget_ms: 1000,
             enable_fallback: true,
-            ..SidecarConfig::default_Topological()
+            ..SidecarConfig::default_topological()
         })
         .unwrap();
         // Many tokens to ensure processing time exceeds the tiny budget

@@ -91,7 +91,7 @@ pub struct ApproxConfig {
 
 impl ApproxConfig {
     /// Default Topological configuration tuned for noospheric computation.
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             max_simplices: 4096,
             strata_count: 8,
@@ -118,7 +118,7 @@ impl ApproxConfig {
 
 impl Default for ApproxConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -165,7 +165,7 @@ impl GeiApproximator {
     /// Create a new approximator with default Topological config.
     pub fn new() -> Self {
         Self {
-            config: ApproxConfig::default_Topological(),
+            config: ApproxConfig::default_topological(),
             records: Vec::new(),
         }
     }
@@ -491,7 +491,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = ApproxConfig::default_Topological();
+        let config = ApproxConfig::default_topological();
         assert_eq!(config.max_simplices, 4096);
         assert_eq!(config.strata_count, 8);
         assert!(config.gpu_enabled);
@@ -500,26 +500,26 @@ mod tests {
 
     #[test]
     fn test_config_validate() {
-        assert!(ApproxConfig::default_Topological().validate().is_ok());
+        assert!(ApproxConfig::default_topological().validate().is_ok());
     }
 
     #[test]
     fn test_config_zero_simplices() {
-        let mut config = ApproxConfig::default_Topological();
+        let mut config = ApproxConfig::default_topological();
         config.max_simplices = 0;
         assert_eq!(config.validate(), Err(ApproxError::InsufficientSamples(0)));
     }
 
     #[test]
     fn test_config_zero_strata() {
-        let mut config = ApproxConfig::default_Topological();
+        let mut config = ApproxConfig::default_topological();
         config.strata_count = 0;
         assert_eq!(config.validate(), Err(ApproxError::InsufficientSamples(0)));
     }
 
     #[test]
     fn test_config_negative_scale() {
-        let mut config = ApproxConfig::default_Topological();
+        let mut config = ApproxConfig::default_topological();
         config.persistence_scale = -1.0;
         assert_eq!(config.validate(), Err(ApproxError::NegativeEpsilon(-1.0)));
     }
@@ -532,7 +532,7 @@ mod tests {
 
     #[test]
     fn test_approximator_with_config() {
-        let config = ApproxConfig::default_Topological();
+        let config = ApproxConfig::default_topological();
         let approx = GeiApproximator::with_config(config).unwrap();
         assert!(approx.records().is_empty());
     }
@@ -612,7 +612,7 @@ mod tests {
 
     #[test]
     fn test_zkp_proof_hash_generated() {
-        let config = ApproxConfig::default_Topological();
+        let config = ApproxConfig::default_topological();
         let mut approx = GeiApproximator::with_config(config).unwrap();
         let activations = make_activations(20, 8);
         let record = approx
@@ -623,7 +623,7 @@ mod tests {
 
     #[test]
     fn test_zkp_proof_hash_disabled() {
-        let mut config = ApproxConfig::default_Topological();
+        let mut config = ApproxConfig::default_topological();
         config.zkp_enabled = false;
         let mut approx = GeiApproximator::with_config(config).unwrap();
         let activations = make_activations(20, 8);

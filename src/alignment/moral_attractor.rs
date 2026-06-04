@@ -56,7 +56,7 @@ pub struct AttractorConfig {
 
 impl AttractorConfig {
     /// Default Topological configuration.
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             dimension: 8,
             max_capacity: 1000,
@@ -90,7 +90,7 @@ impl AttractorConfig {
 
 impl Default for AttractorConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -145,7 +145,7 @@ pub struct MoralAttractor {
 impl MoralAttractor {
     /// Create a new moral attractor with default configuration.
     pub fn new() -> Self {
-        let config = AttractorConfig::default_Topological();
+        let config = AttractorConfig::default_topological();
         let center = vec![1.0; config.dimension];
         Self {
             config,
@@ -333,7 +333,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = AttractorConfig::default_Topological();
+        let config = AttractorConfig::default_topological();
         assert_eq!(config.dimension, 8);
         assert_eq!(config.max_capacity, 1000);
         assert!((0.0..1.0).contains(&config.convergence_threshold));
@@ -341,13 +341,13 @@ mod tests {
 
     #[test]
     fn test_config_validate_valid() {
-        let config = AttractorConfig::default_Topological();
+        let config = AttractorConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
     #[test]
     fn test_config_validate_zero_dimension() {
-        let mut config = AttractorConfig::default_Topological();
+        let mut config = AttractorConfig::default_topological();
         config.dimension = 0;
         match config.validate() {
             Err(AttractorError::InvalidDimension(0)) => {}
@@ -357,7 +357,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_zero_capacity() {
-        let mut config = AttractorConfig::default_Topological();
+        let mut config = AttractorConfig::default_topological();
         config.max_capacity = 0;
         match config.validate() {
             Err(AttractorError::BasinFull(0)) => {}
@@ -367,7 +367,7 @@ mod tests {
 
     #[test]
     fn test_config_display() {
-        let config = AttractorConfig::default_Topological();
+        let config = AttractorConfig::default_topological();
         let s = format!("{}", config);
         assert!(s.contains("dim: 8"));
     }

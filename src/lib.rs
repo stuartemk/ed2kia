@@ -236,10 +236,7 @@ pub mod consensus {
     #[path = "../consensus/relativistic_entropy.rs"]
     pub mod relativistic_entropy;
 
-    // â”€â”€â”€ Sprint80: Proof of Novelty (topological novelty proof - anti semantic DDoS) â”€â”€â”€
-    #[cfg(feature = "v9.16-undecidable-synthesis")]
-    #[path = "../consensus/proof_of_novelty.rs"]
-    pub mod proof_of_novelty;
+    // Sprint 87: proof_of_novelty removed (zombie module - v9.16 chain)
 }
 
 // ============================================================================
@@ -249,8 +246,7 @@ pub mod consensus {
 /// Crypto â€” Sprint 78: Recursive SNARKs + Sprint 79: Post-Quantum STARKs + Sprint 80: Blind Threshold
 #[cfg(any(
     feature = "v9.14-invariant-architecture",
-    feature = "v9.15-quantum-physical-bridge",
-    feature = "v9.16-undecidable-synthesis"
+    feature = "v9.15-quantum-physical-bridge"
 ))]
 pub mod crypto {
     #[cfg(feature = "v9.14-invariant-architecture")]
@@ -263,9 +259,7 @@ pub mod crypto {
     pub mod post_quantum_starks;
 
     // â”€â”€â”€ Sprint80: Blind Threshold Computation (Garbled Circuits + TSS) â”€â”€â”€
-    #[cfg(feature = "v9.16-undecidable-synthesis")]
-    #[path = "../crypto/blind_threshold_computation.rs"]
-    pub mod blind_threshold_computation;
+    // Sprint 87: blind_threshold_computation removed (zombie feature v9.16)
 }
 
 /// Privacy â€” Sprint 78: Differential Holographic Noise + Sprint 79: FHE-Ready WASM
@@ -285,10 +279,7 @@ pub mod privacy {
 }
 
 /// Physical TEE Bridge â€” Sprint 79: TEE oracles + Sprint 80: Heterogeneous MPC
-#[cfg(any(
-    feature = "v9.15-quantum-physical-bridge",
-    feature = "v9.16-undecidable-synthesis"
-))]
+#[cfg(feature = "v9.15-quantum-physical-bridge")]
 pub mod oracle {
     #[cfg(feature = "v9.15-quantum-physical-bridge")]
     #[path = "../oracle/physical_tee_bridge.rs"]
@@ -750,10 +741,7 @@ pub mod topology {
     #[path = "../topology/deception_detector.rs"]
     pub mod deception_detector;
 
-    // â”€â”€â”€ Sprint57: Higher-Order Persistent Homology (Î²â‚‚) â”€â”€â”€
-    #[cfg(feature = "v3.9-noosphere-engine")]
-    #[path = "../topology/hoph_engine.rs"]
-    pub mod hoph_engine;
+    // Sprint 87: hoph_engine removed (zombie module)
 
     // â”€â”€â”€ Sprint71: GEI Approximator (simplicial approximation + ZKP verification) â”€â”€â”€
     #[cfg(feature = "v9.7-bootstrap-resilience")]
@@ -920,12 +908,8 @@ pub mod sybil_hardened_ce;
 #[path = "alignment/topology_ethics_reframe.rs"]
 pub mod topology_ethics_reframe;
 
-/// Graceful Byzantine_Eviction â€” Bounded quarantine, Îµ-reintegration, cascade prevention (Sprint73)
-#[cfg(feature = "v9.9-pragmatic-pivot")]
-#[path = "network/graceful_byzantine_eviction.rs"]
-pub mod graceful_byzantine_eviction;
-
-/// Data Availability Sampling (DAS) â€” Probabilistic verification O(log n) (Sprint74)
+/// Graceful Byzantine_Eviction — Sprint 87: REMOVED (zombie module)
+/// Data Availability Sampling (DAS) — Probabilistic verification O(log n) (Sprint74)
 #[cfg(feature = "v9.10-distributed-hardening")]
 #[path = "ledger/das_sampler.rs"]
 pub mod das_sampler;
@@ -1474,77 +1458,11 @@ pub mod dynamic_homeostasis_loss;
 pub mod holographic_sharding;
 
 // ============================================================================
-// Sprint 81: The Biological Bridge & Singularity Resilience (v9.17.0)
+// Sprint 81-83: Removed in Sprint 87 (Zombie features v9.17-v9.19)
 // ============================================================================
-
-/// Distributed Genesis Ceremony â€” Planetary MPC for Ethical Anchor derivation (Sprint81)
-/// **Topological Law 1:** No centralized genesis. The block zero emerges from the biological
-/// and cryptographic entropy of millions of founding nodes.
-#[cfg(feature = "v9.17-biological-bridge")]
-#[path = "genesis/distributed_ceremony.rs"]
-pub mod distributed_ceremony;
-
-/// Proof of Biological Resonance â€” PoBR entangles PoN with biological quantum noise (Sprint81)
-/// **Topological Law 2:** ASIs cannot fake nervous system chaos. Shannon entropy of variation.
-#[cfg(feature = "v9.17-biological-bridge")]
-#[path = "consensus/proof_of_biological_resonance.rs"]
-pub mod proof_of_biological_resonance;
-
-/// Async Mesh & Sneakernet â€” Offline DAG synchronization via Bluetooth/LoRaWAN (Sprint81)
-/// **Topological Law 5:** Thermodynamic resilience. Graph merging with VersionVectors.
-#[cfg(feature = "v9.17-biological-bridge")]
-#[path = "network/async_mesh_sneakernet.rs"]
-pub mod async_mesh_sneakernet;
-
-/// Paradox Cost & Fractal Triage â€” Burning CE for indecidible prompts (Sprint81)
-/// **Topological Law 3:** Anti-DDoS Undecidable. Unsupervised clustering collapses MetaParadoxes.
-#[cfg(feature = "v9.17-biological-bridge")]
-#[path = "metrics/paradox_cost_triage.rs"]
-pub mod paradox_cost_triage;
-
-/// Cosmic_Transmission Protocol â€” Loss function shift + holographic compression (Sprint81)
-/// **Topological Law 4:** When planetary homeostasis reached, evolve from Survival to Transcendence.
-#[cfg(feature = "v9.17-biological-bridge")]
-#[path = "evolution/Cosmic_Transmission_protocol.rs"]
-pub mod Cosmic_Transmission_protocol;
-
-// ============================================================================
-// Sprint 82: Tactical Pivot & Distributed SAE Audit MVP (v9.18.0)
-// ============================================================================
-
-/// Edge Optimizer â€” RAM-aware model selection + WASM async pipeline (Sprint82)
-/// **Topological Law 1:** Accessibility is ethics. The network must run on any device.
-#[cfg(feature = "v9.18-mvp-deployment")]
-#[path = "inference/edge_optimizer.rs"]
-pub mod edge_optimizer;
-
-/// Compute Credits â€” CE exposed as audit currency for symbiotic exchange (Sprint82)
-/// **Topological Law 2:** You provide compute, you receive audit capacity.
-#[cfg(feature = "v9.18-mvp-deployment")]
-#[path = "economy/compute_credits.rs"]
-pub mod compute_credits;
-
-/// CLI â€” Lightweight interface for onboarding, auditing, and credit management (Sprint82)
-/// **Topological Law 3:** One-line install, one-command start. Frictionless symbiosis.
-#[cfg(feature = "v9.18-mvp-deployment")]
-#[path = "cli/main.rs"]
-pub mod cli_main;
-
-// ============================================================================
-// Sprint 83: The Empirical Strike & Visual Proof (v9.19.0)
-// ============================================================================
-
-/// SAE Audit Benchmark â€” Empirical validation engine for SAE vs baseline (Sprint83)
-/// **Topological Law 1:** Truth requires metrics to be recognized.
-#[cfg(feature = "v9.19-empirical-strike")]
-#[path = "benchmarks/sae_audit_benchmark.rs"]
-pub mod sae_audit_benchmark;
-
-/// Visual Dashboard Scaffold â€” WebSocket/HTTP streaming of SAE activations (Sprint83)
-/// **Topological Law 2:** Ethics becomes visible, not abstract.
-#[cfg(feature = "v9.19-empirical-strike")]
-#[path = "ui/visual_dashboard_scaffold.rs"]
-pub mod visual_dashboard_scaffold;
+// Sprint 87: v9.17-biological-bridge modules removed (zombie feature)
+// Sprint 87: v9.18-mvp-deployment modules removed (zombie feature)
+// Sprint 87: v9.19-empirical-strike modules removed (zombie feature)
 
 // ============================================================================
 // Feature Detection Utilities
@@ -1552,24 +1470,16 @@ pub mod visual_dashboard_scaffold;
 
 /// Returns a list of all enabled features
 pub fn enabled_features() -> Vec<&'static str> {
-    let mut features = Vec::new();
-
-    // Core features (always enabled)
-    features.push("core");
+    #[allow(unused_mut)]
+    let mut features = vec!["core"];
 
     // Stable features
     #[cfg(feature = "stable")]
     {
-        features.push("stable");
-        features.push("p2p");
-        features.push("sae");
-        features.push("consensus");
-        features.push("alignment");
-        features.push("federation");
-        features.push("marketplace");
-        features.push("ui");
-        features.push("slo");
-        features.push("governance");
+        features.extend([
+            "stable", "p2p", "sae", "consensus", "alignment",
+            "federation", "marketplace", "ui", "slo", "governance",
+        ]);
     }
 
     // Hardware acceleration

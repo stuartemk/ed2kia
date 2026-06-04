@@ -67,7 +67,7 @@ pub struct SnarkConfig {
 
 impl SnarkConfig {
     /// Default Topological configuration.
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             polynomial_degree: 64,
             max_recursion_depth: 1024,
@@ -96,7 +96,7 @@ impl SnarkConfig {
 
 impl Default for SnarkConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -209,7 +209,7 @@ impl RecursiveSnark {
     /// Create with default Topological config.
     pub fn new() -> Self {
         Self {
-            config: SnarkConfig::default_Topological(),
+            config: SnarkConfig::default_topological(),
             state_history: VecDeque::new(),
             proof_chain: Vec::new(),
             compression_records: Vec::new(),
@@ -421,27 +421,27 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = SnarkConfig::default_Topological();
+        let config = SnarkConfig::default_topological();
         assert_eq!(config.polynomial_degree, 64);
         assert_eq!(config.max_recursion_depth, 1024);
     }
 
     #[test]
     fn test_config_validate_ok() {
-        let config = SnarkConfig::default_Topological();
+        let config = SnarkConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
     #[test]
     fn test_config_invalid_degree() {
-        let mut config = SnarkConfig::default_Topological();
+        let mut config = SnarkConfig::default_topological();
         config.polynomial_degree = 0;
         assert!(config.validate().is_err());
     }
 
     #[test]
     fn test_config_zero_proof_size() {
-        let mut config = SnarkConfig::default_Topological();
+        let mut config = SnarkConfig::default_topological();
         config.target_proof_size = 0;
         assert!(config.validate().is_err());
     }
@@ -481,7 +481,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = SnarkConfig::default_Topological();
+        let config = SnarkConfig::default_topological();
         let engine = RecursiveSnark::with_config(config).unwrap();
         assert_eq!(engine.chain_depth(), 0);
     }

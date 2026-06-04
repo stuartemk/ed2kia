@@ -77,7 +77,7 @@ pub struct RelativisticConfig {
 
 impl RelativisticConfig {
     /// Default Topological configuration.
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             base_lambda: 0.000_01,
             partition_threshold: 0.15,
@@ -109,7 +109,7 @@ impl RelativisticConfig {
 
 impl Default for RelativisticConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -253,7 +253,7 @@ impl RelativisticEntropy {
     /// Create with default Topological config.
     pub fn new() -> Self {
         Self {
-            config: RelativisticConfig::default_Topological(),
+            config: RelativisticConfig::default_topological(),
             nodes: HashMap::new(),
             decay_history: Vec::new(),
         }
@@ -442,7 +442,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = RelativisticConfig::default_Topological();
+        let config = RelativisticConfig::default_topological();
         assert!(config.base_lambda > 0.0);
         assert!(config.partition_threshold > 0.0);
         assert!(config.max_ce > 0.0);
@@ -450,20 +450,20 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = RelativisticConfig::default_Topological();
+        let config = RelativisticConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
     #[test]
     fn test_config_invalid_lambda() {
-        let mut config = RelativisticConfig::default_Topological();
+        let mut config = RelativisticConfig::default_topological();
         config.base_lambda = 0.0;
         assert!(config.validate().is_err());
     }
 
     #[test]
     fn test_config_invalid_threshold() {
-        let mut config = RelativisticConfig::default_Topological();
+        let mut config = RelativisticConfig::default_topological();
         config.partition_threshold = 0.0;
         assert!(config.validate().is_err());
     }
@@ -523,7 +523,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = RelativisticConfig::default_Topological();
+        let config = RelativisticConfig::default_topological();
         let engine = RelativisticEntropy::with_config(config).unwrap();
         assert_eq!(engine.nodes.len(), 0);
     }

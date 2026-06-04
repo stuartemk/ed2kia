@@ -158,7 +158,7 @@ pub struct BlindConfig {
 }
 
 impl BlindConfig {
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             threshold: 3,
             total_shares: 5,
@@ -190,7 +190,7 @@ impl BlindConfig {
 
 impl Default for BlindConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -232,7 +232,7 @@ pub struct BlindThresholdComputation {
 impl BlindThresholdComputation {
     pub fn new() -> Self {
         Self {
-            config: BlindConfig::default_Topological(),
+            config: BlindConfig::default_topological(),
             circuits: HashMap::new(),
             records: Vec::new(),
             next_round: 1,
@@ -265,7 +265,7 @@ impl BlindThresholdComputation {
     /// Collect TSS shares for a computation round
     pub fn collect_shares(
         &self,
-        round_id: u64,
+        _round_id: u64,
         signatures: &[TSSSignature],
     ) -> Result<Vec<TSSSignature>, BlindError> {
         // Filter valid shares
@@ -514,7 +514,7 @@ pub fn fnv_hash_64(data: &[u8]) -> u64 {
 /// FNV-1a 256-bit hash
 fn fnv_hash_256(data: &[u8]) -> Vec<u8> {
     let mut result = Vec::with_capacity(32);
-    let base = fnv_hash_64(data);
+    let _base = fnv_hash_64(data);
     for i in 0..4 {
         let mut combined = Vec::new();
         combined.extend_from_slice(data);
@@ -535,7 +535,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = BlindConfig::default_Topological();
+        let config = BlindConfig::default_topological();
         assert_eq!(config.threshold, 3);
         assert_eq!(config.total_shares, 5);
         assert_eq!(config.max_circuit_size, 65536);
@@ -544,7 +544,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = BlindConfig::default_Topological();
+        let config = BlindConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
@@ -552,7 +552,7 @@ mod tests {
     fn test_config_zero_threshold() {
         let config = BlindConfig {
             threshold: 0,
-            ..BlindConfig::default_Topological()
+            ..BlindConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -562,7 +562,7 @@ mod tests {
         let config = BlindConfig {
             threshold: 10,
             total_shares: 5,
-            ..BlindConfig::default_Topological()
+            ..BlindConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -571,7 +571,7 @@ mod tests {
     fn test_config_zero_circuit_size() {
         let config = BlindConfig {
             max_circuit_size: 0,
-            ..BlindConfig::default_Topological()
+            ..BlindConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -580,7 +580,7 @@ mod tests {
     fn test_config_zero_share_size() {
         let config = BlindConfig {
             share_size: 0,
-            ..BlindConfig::default_Topological()
+            ..BlindConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -655,7 +655,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = BlindConfig::default_Topological();
+        let config = BlindConfig::default_topological();
         let engine = BlindThresholdComputation::with_config(config);
         assert!(engine.is_ok());
     }

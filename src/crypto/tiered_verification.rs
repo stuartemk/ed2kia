@@ -79,7 +79,7 @@ pub struct TieredVerifierConfig {
 }
 
 impl TieredVerifierConfig {
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             max_depth: 20,
             validity_window_ms: 300_000,
@@ -110,7 +110,7 @@ impl TieredVerifierConfig {
 
 impl Default for TieredVerifierConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -223,7 +223,7 @@ pub struct TieredVerifier {
 impl TieredVerifier {
     pub fn new() -> Self {
         Self {
-            config: TieredVerifierConfig::default_Topological(),
+            config: TieredVerifierConfig::default_topological(),
             records: Vec::new(),
         }
     }
@@ -415,7 +415,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = TieredVerifierConfig::default_Topological();
+        let config = TieredVerifierConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
@@ -454,7 +454,7 @@ mod tests {
 
     #[test]
     fn test_verifier_with_config() {
-        let config = TieredVerifierConfig::default_Topological();
+        let config = TieredVerifierConfig::default_topological();
         let verifier = TieredVerifier::with_config(config);
         assert!(verifier.is_ok());
     }

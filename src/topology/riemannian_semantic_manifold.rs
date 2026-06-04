@@ -60,7 +60,7 @@ pub struct ManifoldConfig {
 }
 
 impl ManifoldConfig {
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             embedding_dim: 8,
             max_geodesic_steps: 100,
@@ -82,7 +82,7 @@ impl ManifoldConfig {
 
 impl Default for ManifoldConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -169,7 +169,7 @@ pub struct RiemannianSemanticManifold {
 impl RiemannianSemanticManifold {
     pub fn new() -> Self {
         Self {
-            config: ManifoldConfig::default_Topological(),
+            config: ManifoldConfig::default_topological(),
             attractors: Vec::new(),
         }
     }
@@ -416,7 +416,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = ManifoldConfig::default_Topological();
+        let config = ManifoldConfig::default_topological();
         assert!(config.validate().is_ok());
         assert_eq!(config.embedding_dim, 8);
     }
@@ -425,7 +425,7 @@ mod tests {
     fn test_config_zero_dim() {
         let config = ManifoldConfig {
             embedding_dim: 0,
-            ..ManifoldConfig::default_Topological()
+            ..ManifoldConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -434,7 +434,7 @@ mod tests {
     fn test_config_invalid_step() {
         let config = ManifoldConfig {
             default_step_size: 0.0,
-            ..ManifoldConfig::default_Topological()
+            ..ManifoldConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }

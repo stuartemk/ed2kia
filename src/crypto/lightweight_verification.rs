@@ -61,7 +61,7 @@ pub struct LightweightVerifierConfig {
 }
 
 impl LightweightVerifierConfig {
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             max_depth: 32,
             validity_window_ms: 3600_000, // 1 hour
@@ -90,7 +90,7 @@ impl LightweightVerifierConfig {
 
 impl Default for LightweightVerifierConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -242,7 +242,7 @@ pub struct LightweightVerifier {
 impl LightweightVerifier {
     pub fn new() -> Self {
         Self {
-            config: LightweightVerifierConfig::default_Topological(),
+            config: LightweightVerifierConfig::default_topological(),
             dag_nodes: HashMap::new(),
             verification_history: Vec::new(),
             next_proof_id: 1,
@@ -560,7 +560,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = LightweightVerifierConfig::default_Topological();
+        let config = LightweightVerifierConfig::default_topological();
         assert_eq!(config.max_depth, 32);
         assert_eq!(config.validity_window_ms, 3600_000);
         assert!(config.ed25519_enabled);
@@ -568,7 +568,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = LightweightVerifierConfig::default_Topological();
+        let config = LightweightVerifierConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
@@ -576,7 +576,7 @@ mod tests {
     fn test_config_zero_depth() {
         let config = LightweightVerifierConfig {
             max_depth: 0,
-            ..LightweightVerifierConfig::default_Topological()
+            ..LightweightVerifierConfig::default_topological()
         };
         assert_eq!(config.validate(), Err(VerificationError::InvalidConfig));
     }
@@ -585,7 +585,7 @@ mod tests {
     fn test_config_depth_too_high() {
         let config = LightweightVerifierConfig {
             max_depth: 65,
-            ..LightweightVerifierConfig::default_Topological()
+            ..LightweightVerifierConfig::default_topological()
         };
         assert_eq!(config.validate(), Err(VerificationError::InvalidConfig));
     }
@@ -594,7 +594,7 @@ mod tests {
     fn test_config_zero_validity() {
         let config = LightweightVerifierConfig {
             validity_window_ms: 0,
-            ..LightweightVerifierConfig::default_Topological()
+            ..LightweightVerifierConfig::default_topological()
         };
         assert_eq!(config.validate(), Err(VerificationError::InvalidConfig));
     }
@@ -610,7 +610,7 @@ mod tests {
 
     #[test]
     fn test_verifier_with_config() {
-        let config = LightweightVerifierConfig::default_Topological();
+        let config = LightweightVerifierConfig::default_topological();
         let verifier = LightweightVerifier::with_config(config).unwrap();
         assert_eq!(verifier.dag_node_count(), 0);
     }
@@ -619,7 +619,7 @@ mod tests {
     fn test_verifier_with_bad_config() {
         let config = LightweightVerifierConfig {
             max_depth: 0,
-            ..LightweightVerifierConfig::default_Topological()
+            ..LightweightVerifierConfig::default_topological()
         };
         assert_eq!(
             LightweightVerifier::with_config(config),

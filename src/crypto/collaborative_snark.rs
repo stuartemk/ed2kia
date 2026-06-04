@@ -73,7 +73,7 @@ pub struct CollaborativeConfig {
 
 impl CollaborativeConfig {
     /// Default Topological configuration.
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             threshold: 3,
             max_circuit_size: 1_000_000,
@@ -96,7 +96,7 @@ impl CollaborativeConfig {
 
 impl Default for CollaborativeConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -212,7 +212,7 @@ impl CollaborativeSnark {
     /// Create a new collaborative SNARK engine.
     pub fn new() -> Self {
         Self {
-            config: CollaborativeConfig::default_Topological(),
+            config: CollaborativeConfig::default_topological(),
             tasks: Vec::new(),
             partial_proofs: Vec::new(),
             aggregated_proofs: Vec::new(),
@@ -410,7 +410,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = CollaborativeConfig::default_Topological();
+        let config = CollaborativeConfig::default_topological();
         assert_eq!(config.threshold, 3);
         assert_eq!(config.max_circuit_size, 1_000_000);
         assert!(config.compress);
@@ -418,7 +418,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = CollaborativeConfig::default_Topological();
+        let config = CollaborativeConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
@@ -426,7 +426,7 @@ mod tests {
     fn test_config_zero_threshold() {
         let config = CollaborativeConfig {
             threshold: 0,
-            ..CollaborativeConfig::default_Topological()
+            ..CollaborativeConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -439,7 +439,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = CollaborativeConfig::default_Topological();
+        let config = CollaborativeConfig::default_topological();
         let engine = CollaborativeSnark::with_config(config).unwrap();
         assert!(engine.tasks.is_empty());
     }

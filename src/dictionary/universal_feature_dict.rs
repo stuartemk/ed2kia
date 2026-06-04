@@ -44,7 +44,7 @@ pub struct MergeConfig {
 }
 
 impl MergeConfig {
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             lyapunov_threshold: 0.95,
             contrastive_lambda: 0.1,
@@ -55,7 +55,7 @@ impl MergeConfig {
 
 impl Default for MergeConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 

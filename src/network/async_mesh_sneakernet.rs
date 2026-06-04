@@ -227,7 +227,7 @@ pub struct MeshConfig {
 }
 
 impl MeshConfig {
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             max_nodes: 100_000,
             min_overlap: 0.1,
@@ -248,7 +248,7 @@ impl MeshConfig {
 
 impl Default for MeshConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -263,7 +263,7 @@ pub struct AsyncMeshSneakernet {
 impl AsyncMeshSneakernet {
     pub fn new(transport: TransportType) -> Self {
         Self {
-            config: MeshConfig::default_Topological(),
+            config: MeshConfig::default_topological(),
             local_dag: DagState::new(transport),
             sync_history: Vec::new(),
         }
@@ -362,7 +362,7 @@ impl fmt::Display for AsyncMeshSneakernet {
 pub fn merge_offline_dags(
     local_dag: &DagState,
     remote_dag: &DagState,
-    sync_vector: &VersionVector,
+    _sync_vector: &VersionVector,
 ) -> MergeResult {
     let mut merged = 0;
     let mut conflicts = 0;
@@ -388,27 +388,27 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = MeshConfig::default_Topological();
+        let config = MeshConfig::default_topological();
         assert_eq!(config.max_nodes, 100_000);
         assert_eq!(config.min_overlap, 0.1);
     }
 
     #[test]
     fn test_config_validate_ok() {
-        let config = MeshConfig::default_Topological();
+        let config = MeshConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
     #[test]
     fn test_config_zero_nodes() {
-        let mut config = MeshConfig::default_Topological();
+        let mut config = MeshConfig::default_topological();
         config.max_nodes = 0;
         assert!(config.validate().is_err());
     }
 
     #[test]
     fn test_config_invalid_overlap() {
-        let mut config = MeshConfig::default_Topological();
+        let mut config = MeshConfig::default_topological();
         config.min_overlap = 1.5;
         assert!(config.validate().is_err());
     }
@@ -528,7 +528,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = MeshConfig::default_Topological();
+        let config = MeshConfig::default_topological();
         let engine = AsyncMeshSneakernet::with_config(config, TransportType::LoRaWAN).unwrap();
         assert_eq!(engine.node_count(), 0);
     }

@@ -61,7 +61,7 @@ pub struct KzgConfig {
 
 impl KzgConfig {
     /// Default Topological configuration for production KZG pruning.
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             max_degree: 1024,
             pruning_window_ms: 86_400_000, // 24 hours
@@ -84,7 +84,7 @@ impl KzgConfig {
 
 impl Default for KzgConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -147,7 +147,7 @@ impl KzgStatePruner {
     /// Create a new KZG state pruner with default configuration.
     pub fn new() -> Self {
         Self {
-            config: KzgConfig::default_Topological(),
+            config: KzgConfig::default_topological(),
             commitments: Vec::new(),
             pruning_records: Vec::new(),
         }
@@ -359,7 +359,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = KzgConfig::default_Topological();
+        let config = KzgConfig::default_topological();
         assert_eq!(config.max_degree, 1024);
         assert_eq!(config.pruning_window_ms, 86_400_000);
         assert_eq!(config.retention_count, 16);
@@ -368,7 +368,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = KzgConfig::default_Topological();
+        let config = KzgConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
@@ -376,7 +376,7 @@ mod tests {
     fn test_config_invalid_degree() {
         let config = KzgConfig {
             max_degree: 0,
-            ..KzgConfig::default_Topological()
+            ..KzgConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -385,7 +385,7 @@ mod tests {
     fn test_config_zero_retention() {
         let config = KzgConfig {
             retention_count: 0,
-            ..KzgConfig::default_Topological()
+            ..KzgConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -399,7 +399,7 @@ mod tests {
 
     #[test]
     fn test_pruner_with_config() {
-        let config = KzgConfig::default_Topological();
+        let config = KzgConfig::default_topological();
         let pruner = KzgStatePruner::with_config(config).unwrap();
         assert!(pruner.commitments().is_empty());
     }

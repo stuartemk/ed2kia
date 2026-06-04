@@ -63,7 +63,7 @@ pub struct FilterConfig {
 }
 
 impl FilterConfig {
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             alignment_threshold: 0.3,
             max_queue_size: 256,
@@ -103,7 +103,7 @@ impl FilterConfig {
 
 impl Default for FilterConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -223,7 +223,7 @@ pub struct StreamingSymbolicFilter {
 impl StreamingSymbolicFilter {
     pub fn new() -> Self {
         Self {
-            config: FilterConfig::default_Topological(),
+            config: FilterConfig::default_topological(),
             queue: BinaryHeap::new(),
             gei_cache: [0.0; 8],
             gei_timestamp_ms: 0,
@@ -521,14 +521,14 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = FilterConfig::default_Topological();
+        let config = FilterConfig::default_topological();
         assert_eq!(config.alignment_threshold, 0.3);
         assert!(config.autoregressive_fallback);
     }
 
     #[test]
     fn test_config_validate_ok() {
-        let config = FilterConfig::default_Topological();
+        let config = FilterConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
@@ -536,7 +536,7 @@ mod tests {
     fn test_config_invalid_threshold() {
         let config = FilterConfig {
             alignment_threshold: 1.5,
-            ..FilterConfig::default_Topological()
+            ..FilterConfig::default_topological()
         };
         assert_eq!(config.validate(), Err(FilterError::InvalidThreshold(1.5)));
     }
@@ -545,7 +545,7 @@ mod tests {
     fn test_config_zero_queue() {
         let config = FilterConfig {
             max_queue_size: 0,
-            ..FilterConfig::default_Topological()
+            ..FilterConfig::default_topological()
         };
         assert_eq!(config.validate(), Err(FilterError::InvalidConfig));
     }
@@ -555,7 +555,7 @@ mod tests {
         let config = FilterConfig {
             symbolic_weight: 0.8,
             statistical_weight: 0.8,
-            ..FilterConfig::default_Topological()
+            ..FilterConfig::default_topological()
         };
         assert_eq!(config.validate(), Err(FilterError::InvalidConfig));
     }
@@ -608,7 +608,7 @@ mod tests {
 
     #[test]
     fn test_filter_with_config() {
-        let config = FilterConfig::default_Topological();
+        let config = FilterConfig::default_topological();
         let filter = StreamingSymbolicFilter::with_config(config).unwrap();
         assert_eq!(filter.queue_size(), 0);
     }
@@ -617,7 +617,7 @@ mod tests {
     fn test_filter_with_bad_config() {
         let config = FilterConfig {
             max_queue_size: 0,
-            ..FilterConfig::default_Topological()
+            ..FilterConfig::default_topological()
         };
         let result = StreamingSymbolicFilter::with_config(config);
         assert!(matches!(result, Err(FilterError::InvalidConfig)));

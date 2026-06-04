@@ -58,7 +58,7 @@ pub struct DecayConfig {
 
 impl DecayConfig {
     /// Default Topological configuration.
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             lambda: 0.000_01,
             max_ce: 1000.0,
@@ -81,7 +81,7 @@ impl DecayConfig {
 
 impl Default for DecayConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -181,7 +181,7 @@ impl EntropicCeDecay {
     /// Create a new engine with default Topological configuration.
     pub fn new() -> Self {
         Self {
-            config: DecayConfig::default_Topological(),
+            config: DecayConfig::default_topological(),
             nodes: HashMap::new(),
         }
     }
@@ -379,7 +379,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = DecayConfig::default_Topological();
+        let config = DecayConfig::default_topological();
         assert!(config.validate().is_ok());
         assert!(config.lambda > 0.0);
     }
@@ -388,7 +388,7 @@ mod tests {
     fn test_config_invalid_lambda() {
         let config = DecayConfig {
             lambda: 0.0,
-            ..DecayConfig::default_Topological()
+            ..DecayConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }

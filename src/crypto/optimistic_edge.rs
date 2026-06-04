@@ -92,7 +92,7 @@ pub struct OptimisticConfig {
 
 impl OptimisticConfig {
     /// Default Topological configuration.
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             challenge_window_ms: 86_400_000, // 24 hours
             max_pending_claims: 10_000,
@@ -115,7 +115,7 @@ impl OptimisticConfig {
 
 impl Default for OptimisticConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -198,7 +198,7 @@ impl OptimisticEdge {
     /// Create a new engine with default Topological configuration.
     pub fn new() -> Self {
         Self {
-            config: OptimisticConfig::default_Topological(),
+            config: OptimisticConfig::default_topological(),
             claims: HashMap::new(),
             next_claim_id: 1,
             challenges: Vec::new(),
@@ -441,7 +441,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = OptimisticConfig::default_Topological();
+        let config = OptimisticConfig::default_topological();
         assert!(config.validate().is_ok());
         assert_eq!(config.challenge_window_ms, 86_400_000);
     }
@@ -450,7 +450,7 @@ mod tests {
     fn test_config_zero_window() {
         let config = OptimisticConfig {
             challenge_window_ms: 0,
-            ..OptimisticConfig::default_Topological()
+            ..OptimisticConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }

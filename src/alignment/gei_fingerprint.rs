@@ -290,7 +290,7 @@ impl GEIFingerprintEngine {
         }
 
         let points: Vec<EthicalPoint> =
-            tensors.iter().map(EthicalPoint::from_Topological).collect();
+            tensors.iter().map(EthicalPoint::from_topological).collect();
         self.extract_from_points(&points)
     }
 

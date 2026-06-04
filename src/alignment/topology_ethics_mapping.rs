@@ -65,7 +65,7 @@ pub struct MappingConfig {
 }
 
 impl MappingConfig {
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             max_drift: 0.3,
             min_coherence: 0.7,
@@ -98,7 +98,7 @@ impl MappingConfig {
 
 impl Default for MappingConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -215,7 +215,7 @@ pub struct TopologyEthicsMapper {
 impl TopologyEthicsMapper {
     pub fn new() -> Self {
         Self {
-            config: MappingConfig::default_Topological(),
+            config: MappingConfig::default_topological(),
             history: Vec::new(),
             last_snapshot: None,
             smoothed_drift: 0.0,
@@ -470,7 +470,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = MappingConfig::default_Topological();
+        let config = MappingConfig::default_topological();
         assert_eq!(config.max_drift, 0.3);
         assert_eq!(config.min_coherence, 0.7);
         assert!(config.mapping_enabled);
@@ -478,7 +478,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = MappingConfig::default_Topological();
+        let config = MappingConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
@@ -486,7 +486,7 @@ mod tests {
     fn test_config_invalid_drift() {
         let config = MappingConfig {
             max_drift: -0.1,
-            ..MappingConfig::default_Topological()
+            ..MappingConfig::default_topological()
         };
         assert_eq!(config.validate(), Err(MappingError::InvalidThreshold(-0.1)));
     }
@@ -495,7 +495,7 @@ mod tests {
     fn test_config_invalid_coherence() {
         let config = MappingConfig {
             min_coherence: 1.5,
-            ..MappingConfig::default_Topological()
+            ..MappingConfig::default_topological()
         };
         assert_eq!(config.validate(), Err(MappingError::InvalidThreshold(1.5)));
     }
@@ -504,7 +504,7 @@ mod tests {
     fn test_config_zero_decay() {
         let config = MappingConfig {
             drift_decay: 0.0,
-            ..MappingConfig::default_Topological()
+            ..MappingConfig::default_topological()
         };
         assert_eq!(config.validate(), Err(MappingError::InvalidThreshold(0.0)));
     }
@@ -577,7 +577,7 @@ mod tests {
 
     #[test]
     fn test_mapper_with_config() {
-        let config = MappingConfig::default_Topological();
+        let config = MappingConfig::default_topological();
         let mapper = TopologyEthicsMapper::with_config(config).unwrap();
         assert!(mapper.history().is_empty());
     }
@@ -586,7 +586,7 @@ mod tests {
     fn test_mapper_with_bad_config() {
         let config = MappingConfig {
             max_drift: 0.0,
-            ..MappingConfig::default_Topological()
+            ..MappingConfig::default_topological()
         };
         assert_eq!(
             TopologyEthicsMapper::with_config(config),

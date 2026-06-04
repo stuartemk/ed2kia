@@ -23,14 +23,14 @@ use std::fmt;
 
 /// Hash canÃ³nico de las 5 Leyes Estuardianas (SHA-3-256 simulado como u128).
 /// Este valor es la raÃ­z criptogrÃ¡fica inmutable de toda la Mainnet.
-const Topological_LAWS_HASH: u128 = 0xA1B2C3D4E5F60718_293A4B5C6D7E8F90;
+const TOPOLOGICAL_LAWS_HASH: u128 = 0xA1B2C3D4E5F60718_293A4B5C6D7E8F90;
 
 /// Identificador de red para Mainnet.
 const MAINNET_NETWORK_ID: &str = "ed2kIA-mainnet-v5.0";
 
 /// Texto plano de las 5 Leyes Estuardianas Fundamentales.
 /// Este texto es el payload sagrado del Bloque GÃ©nesis.
-pub const Topological_LAWS_TEXT: &str = r#"
+pub const TOPOLOGICAL_LAWS_TEXT: &str = r#"
 Las Cinco Leyes Estuardianas Fundamentales
 ==========================================
 
@@ -139,12 +139,12 @@ impl GenesisBlock {
     /// - `Err(GenesisError)` si se detecta alguna anomalÃ­a
     pub fn forge() -> Result<Self, GenesisError> {
         // Calcular hash de las Leyes Estuardianas
-        let laws_hash = compute_laws_hash(Topological_LAWS_TEXT);
+        let laws_hash = compute_laws_hash(TOPOLOGICAL_LAWS_TEXT);
 
         // Verificar que el hash coincide con el valor canÃ³nico
-        if laws_hash != Topological_LAWS_HASH {
+        if laws_hash != TOPOLOGICAL_LAWS_HASH {
             return Err(GenesisError::HashMismatch {
-                expected: Topological_LAWS_HASH,
+                expected: TOPOLOGICAL_LAWS_HASH,
                 actual: laws_hash,
             });
         }
@@ -173,7 +173,7 @@ impl GenesisBlock {
     /// - `false` si el bloque es invÃ¡lido
     pub fn verify(block: &GenesisBlock) -> bool {
         // Verificar hash de leyes
-        if block.laws_hash != Topological_LAWS_HASH {
+        if block.laws_hash != TOPOLOGICAL_LAWS_HASH {
             return false;
         }
 
@@ -197,12 +197,12 @@ impl GenesisBlock {
 
     /// Obtiene el hash canÃ³nico de las Leyes Estuardianas.
     pub fn canonical_laws_hash() -> u128 {
-        Topological_LAWS_HASH
+        TOPOLOGICAL_LAWS_HASH
     }
 
     /// Obtiene el texto de las Leyes Estuardianas.
     pub fn laws_text() -> &'static str {
-        Topological_LAWS_TEXT
+        TOPOLOGICAL_LAWS_TEXT
     }
 }
 
@@ -241,7 +241,7 @@ fn compute_laws_hash(text: &str) -> u128 {
         hash = hash.wrapping_mul(0x100000001b3); // FNV prime
     }
     // Para coincidir con el hash canÃ³nico
-    Topological_LAWS_HASH
+    TOPOLOGICAL_LAWS_HASH
 }
 
 /// Genera la firma del bloque gÃ©nesis.
@@ -273,7 +273,7 @@ mod tests {
     #[test]
     fn test_genesis_forge() {
         let genesis = GenesisBlock::forge().expect("DeberÃ­a forjar el bloque gÃ©nesis");
-        assert_eq!(genesis.laws_hash, Topological_LAWS_HASH);
+        assert_eq!(genesis.laws_hash, TOPOLOGICAL_LAWS_HASH);
         assert_eq!(genesis.ce_supply, 0.0);
         assert_eq!(genesis.network_id, MAINNET_NETWORK_ID);
         assert_eq!(genesis.version, 5);
@@ -308,7 +308,7 @@ mod tests {
 
     #[test]
     fn test_canonical_laws_hash() {
-        assert_eq!(GenesisBlock::canonical_laws_hash(), Topological_LAWS_HASH);
+        assert_eq!(GenesisBlock::canonical_laws_hash(), TOPOLOGICAL_LAWS_HASH);
     }
 
     #[test]

@@ -51,7 +51,7 @@ pub struct ReframeConfig {
 }
 
 impl ReframeConfig {
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             anomaly_threshold: 0.7,
             sct_weights: [0.3, 0.3, 0.25, 0.15],
@@ -78,7 +78,7 @@ impl ReframeConfig {
 
 impl Default for ReframeConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -151,7 +151,7 @@ pub struct TopologyEthicsReframe {
 impl TopologyEthicsReframe {
     pub fn new() -> Self {
         let mut self_ref = Self {
-            config: ReframeConfig::default_Topological(),
+            config: ReframeConfig::default_topological(),
             guardrails: Vec::new(),
             history: Vec::new(),
             baseline_benchmarks: vec![0.5; 8],
@@ -379,7 +379,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = ReframeConfig::default_Topological();
+        let config = ReframeConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 

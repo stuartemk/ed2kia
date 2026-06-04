@@ -1,0 +1,103 @@
+warning: unexpected `cfg` condition value: `v9.16-undecidable-synthesis`
+   --> src\lib.rs:250:5
+    |
+250 |     feature = "v9.16-undecidable-synthesis"
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `core-only`, `cpu`, `cuda`, `debug`, `default`, `dialoguer`, `env_logger`, `js-sys`, `memmap2`, `metal`, `phase6-core`, `phase6-experimental`, `phase6-sprint2`, `phase7-sprint1`, `phase7-sprint2`, `phase8-sprint1`, `phase8-sprint2`, `phase9-sprint1`, `proptest`, `stable`, `test-mocks`, `v1.1-sprint1`, `v1.1-sprint2`, `v1.1-sprint3`, `v1.1-sprint4`, `v1.1-sprint5`, `v1.2-sprint1`, `v1.2-sprint2`, `v1.2-sprint3`, `v1.2-sprint4`, `v1.3-sprint1`, `v1.3-sprint2`, `v1.3-sprint3`, `v1.4-sprint1`, and `v1.4-sprint2` and 147 more
+    = help: consider adding `v9.16-undecidable-synthesis` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: `#[warn(unexpected_cfgs)]` on by default
+
+warning: unexpected `cfg` condition value: `v9.16-undecidable-synthesis`
+   --> src\lib.rs:287:5
+    |
+287 |     feature = "v9.16-undecidable-synthesis"
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `core-only`, `cpu`, `cuda`, `debug`, `default`, `dialoguer`, `env_logger`, `js-sys`, `memmap2`, `metal`, `phase6-core`, `phase6-experimental`, `phase6-sprint2`, `phase7-sprint1`, `phase7-sprint2`, `phase8-sprint1`, `phase8-sprint2`, `phase9-sprint1`, `proptest`, `stable`, `test-mocks`, `v1.1-sprint1`, `v1.1-sprint2`, `v1.1-sprint3`, `v1.1-sprint4`, `v1.1-sprint5`, `v1.2-sprint1`, `v1.2-sprint2`, `v1.2-sprint3`, `v1.2-sprint4`, `v1.3-sprint1`, `v1.3-sprint2`, `v1.3-sprint3`, `v1.4-sprint1`, and `v1.4-sprint2` and 147 more
+    = help: consider adding `v9.16-undecidable-synthesis` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `v9.17-biological-bridge`
+    --> src\lib.rs:1473:7
+     |
+1473 | #[cfg(feature = "v9.17-biological-bridge")]
+     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: expected values for `feature` are: `core-only`, `cpu`, `cuda`, `debug`, `default`, `dialoguer`, `env_logger`, `js-sys`, `memmap2`, `metal`, `phase6-core`, `phase6-experimental`, `phase6-sprint2`, `phase7-sprint1`, `phase7-sprint2`, `phase8-sprint1`, `phase8-sprint2`, `phase9-sprint1`, `proptest`, `stable`, `test-mocks`, `v1.1-sprint1`, `v1.1-sprint2`, `v1.1-sprint3`, `v1.1-sprint4`, `v1.1-sprint5`, `v1.2-sprint1`, `v1.2-sprint2`, `v1.2-sprint3`, `v1.2-sprint4`, `v1.3-sprint1`, `v1.3-sprint2`, `v1.3-sprint3`, `v1.4-sprint1`, and `v1.4-sprint2` and 147 more
+     = help: consider adding `v9.17-biological-bridge` as a feature in `Cargo.toml`
+     = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `v9.17-biological-bridge`
+    --> src\lib.rs:1479:7
+     |
+1479 | #[cfg(feature = "v9.17-biological-bridge")]
+     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: expected values for `feature` are: `core-only`, `cpu`, `cuda`, `debug`, `default`, `dialoguer`, `env_logger`, `js-sys`, `memmap2`, `metal`, `phase6-core`, `phase6-experimental`, `phase6-sprint2`, `phase7-sprint1`, `phase7-sprint2`, `phase8-sprint1`, `phase8-sprint2`, `phase9-sprint1`, `proptest`, `stable`, `test-mocks`, `v1.1-sprint1`, `v1.1-sprint2`, `v1.1-sprint3`, `v1.1-sprint4`, `v1.1-sprint5`, `v1.2-sprint1`, `v1.2-sprint2`, `v1.2-sprint3`, `v1.2-sprint4`, `v1.3-sprint1`, `v1.3-sprint2`, `v1.3-sprint3`, `v1.4-sprint1`, and `v1.4-sprint2` and 147 more
+     = help: consider adding `v9.17-biological-bridge` as a feature in `Cargo.toml`
+     = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `v9.17-biological-bridge`
+    --> src\lib.rs:1485:7
+     |
+1485 | #[cfg(feature = "v9.17-biological-bridge")]
+     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: expected values for `feature` are: `core-only`, `cpu`, `cuda`, `debug`, `default`, `dialoguer`, `env_logger`, `js-sys`, `memmap2`, `metal`, `phase6-core`, `phase6-experimental`, `phase6-sprint2`, `phase7-sprint1`, `phase7-sprint2`, `phase8-sprint1`, `phase8-sprint2`, `phase9-sprint1`, `proptest`, `stable`, `test-mocks`, `v1.1-sprint1`, `v1.1-sprint2`, `v1.1-sprint3`, `v1.1-sprint4`, `v1.1-sprint5`, `v1.2-sprint1`, `v1.2-sprint2`, `v1.2-sprint3`, `v1.2-sprint4`, `v1.3-sprint1`, `v1.3-sprint2`, `v1.3-sprint3`, `v1.4-sprint1`, and `v1.4-sprint2` and 147 more
+     = help: consider adding `v9.17-biological-bridge` as a feature in `Cargo.toml`
+     = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `v9.18-mvp-deployment`
+    --> src\lib.rs:1500:7
+     |
+1500 | #[cfg(feature = "v9.18-mvp-deployment")]
+     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: expected values for `feature` are: `core-only`, `cpu`, `cuda`, `debug`, `default`, `dialoguer`, `env_logger`, `js-sys`, `memmap2`, `metal`, `phase6-core`, `phase6-experimental`, `phase6-sprint2`, `phase7-sprint1`, `phase7-sprint2`, `phase8-sprint1`, `phase8-sprint2`, `phase9-sprint1`, `proptest`, `stable`, `test-mocks`, `v1.1-sprint1`, `v1.1-sprint2`, `v1.1-sprint3`, `v1.1-sprint4`, `v1.1-sprint5`, `v1.2-sprint1`, `v1.2-sprint2`, `v1.2-sprint3`, `v1.2-sprint4`, `v1.3-sprint1`, `v1.3-sprint2`, `v1.3-sprint3`, `v1.4-sprint1`, and `v1.4-sprint2` and 147 more
+     = help: consider adding `v9.18-mvp-deployment` as a feature in `Cargo.toml`
+     = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `v9.18-mvp-deployment`
+    --> src\lib.rs:1506:7
+     |
+1506 | #[cfg(feature = "v9.18-mvp-deployment")]
+     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: expected values for `feature` are: `core-only`, `cpu`, `cuda`, `debug`, `default`, `dialoguer`, `env_logger`, `js-sys`, `memmap2`, `metal`, `phase6-core`, `phase6-experimental`, `phase6-sprint2`, `phase7-sprint1`, `phase7-sprint2`, `phase8-sprint1`, `phase8-sprint2`, `phase9-sprint1`, `proptest`, `stable`, `test-mocks`, `v1.1-sprint1`, `v1.1-sprint2`, `v1.1-sprint3`, `v1.1-sprint4`, `v1.1-sprint5`, `v1.2-sprint1`, `v1.2-sprint2`, `v1.2-sprint3`, `v1.2-sprint4`, `v1.3-sprint1`, `v1.3-sprint2`, `v1.3-sprint3`, `v1.4-sprint1`, and `v1.4-sprint2` and 147 more
+     = help: consider adding `v9.18-mvp-deployment` as a feature in `Cargo.toml`
+     = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `v9.18-mvp-deployment`
+    --> src\lib.rs:1512:7
+     |
+1512 | #[cfg(feature = "v9.18-mvp-deployment")]
+     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: expected values for `feature` are: `core-only`, `cpu`, `cuda`, `debug`, `default`, `dialoguer`, `env_logger`, `js-sys`, `memmap2`, `metal`, `phase6-core`, `phase6-experimental`, `phase6-sprint2`, `phase7-sprint1`, `phase7-sprint2`, `phase8-sprint1`, `phase8-sprint2`, `phase9-sprint1`, `proptest`, `stable`, `test-mocks`, `v1.1-sprint1`, `v1.1-sprint2`, `v1.1-sprint3`, `v1.1-sprint4`, `v1.1-sprint5`, `v1.2-sprint1`, `v1.2-sprint2`, `v1.2-sprint3`, `v1.2-sprint4`, `v1.3-sprint1`, `v1.3-sprint2`, `v1.3-sprint3`, `v1.4-sprint1`, and `v1.4-sprint2` and 147 more
+     = help: consider adding `v9.18-mvp-deployment` as a feature in `Cargo.toml`
+     = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `v9.19-empirical-strike`
+    --> src\lib.rs:1522:7
+     |
+1522 | #[cfg(feature = "v9.19-empirical-strike")]
+     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: expected values for `feature` are: `core-only`, `cpu`, `cuda`, `debug`, `default`, `dialoguer`, `env_logger`, `js-sys`, `memmap2`, `metal`, `phase6-core`, `phase6-experimental`, `phase6-sprint2`, `phase7-sprint1`, `phase7-sprint2`, `phase8-sprint1`, `phase8-sprint2`, `phase9-sprint1`, `proptest`, `stable`, `test-mocks`, `v1.1-sprint1`, `v1.1-sprint2`, `v1.1-sprint3`, `v1.1-sprint4`, `v1.1-sprint5`, `v1.2-sprint1`, `v1.2-sprint2`, `v1.2-sprint3`, `v1.2-sprint4`, `v1.3-sprint1`, `v1.3-sprint2`, `v1.3-sprint3`, `v1.4-sprint1`, and `v1.4-sprint2` and 147 more
+     = help: consider adding `v9.19-empirical-strike` as a feature in `Cargo.toml`
+     = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `v9.19-empirical-strike`
+    --> src\lib.rs:1528:7
+     |
+1528 | #[cfg(feature = "v9.19-empirical-strike")]
+     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: expected values for `feature` are: `core-only`, `cpu`, `cuda`, `debug`, `default`, `dialoguer`, `env_logger`, `js-sys`, `memmap2`, `metal`, `phase6-core`, `phase6-experimental`, `phase6-sprint2`, `phase7-sprint1`, `phase7-sprint2`, `phase8-sprint1`, `phase8-sprint2`, `phase9-sprint1`, `proptest`, `stable`, `test-mocks`, `v1.1-sprint1`, `v1.1-sprint2`, `v1.1-sprint3`, `v1.1-sprint4`, `v1.1-sprint5`, `v1.2-sprint1`, `v1.2-sprint2`, `v1.2-sprint3`, `v1.2-sprint4`, `v1.3-sprint1`, `v1.3-sprint2`, `v1.3-sprint3`, `v1.4-sprint1`, and `v1.4-sprint2` and 147 more
+     = help: consider adding `v9.19-empirical-strike` as a feature in `Cargo.toml`
+     = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: `ed2kia` (lib) generated 10 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.66s

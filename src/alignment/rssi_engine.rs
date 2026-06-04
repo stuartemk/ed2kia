@@ -46,7 +46,7 @@ pub struct ImprovementResult {
     /// Human correlation score (higher = better alignment).
     pub human_correlation: f64,
     /// Byzantine_Eviction was triggered.
-    pub Byzantine_Eviction_triggered: bool,
+    pub byzantine_eviction_triggered: bool,
 }
 
 /// Configuration for the RSSI Engine.
@@ -98,7 +98,7 @@ pub enum RssiError {
     /// Invalid configuration.
     InvalidConfig(&'static str),
     /// Byzantine_Eviction error during rollback.
-    Byzantine_EvictionFailed(&'static str),
+    ByzantineEvictionFailed(&'static str),
 }
 
 #[cfg(feature = "v3.3-rssi-evolution")]
@@ -125,7 +125,7 @@ impl core::fmt::Display for RssiError {
                 write!(f, "Maximum iterations reached â€” forced review required")
             }
             RssiError::InvalidConfig(msg) => write!(f, "Invalid config: {}", msg),
-            RssiError::Byzantine_EvictionFailed(msg) => {
+            RssiError::ByzantineEvictionFailed(msg) => {
                 write!(f, "Byzantine_Eviction failed: {}", msg)
             }
         }
@@ -135,7 +135,7 @@ impl core::fmt::Display for RssiError {
 /// Errors specific to Byzantine_Eviction (rollback) operations.
 #[cfg(feature = "v3.3-rssi-evolution")]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Byzantine_EvictionError {
+pub enum ByzantineEvictionError {
     /// Layer index out of bounds.
     LayerOutOfBounds { index: usize, max: usize },
     /// Rollback state unavailable.
@@ -143,13 +143,13 @@ pub enum Byzantine_EvictionError {
 }
 
 #[cfg(feature = "v3.3-rssi-evolution")]
-impl core::fmt::Display for Byzantine_EvictionError {
+impl core::fmt::Display for ByzantineEvictionError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            Byzantine_EvictionError::LayerOutOfBounds { index, max } => {
+            ByzantineEvictionError::LayerOutOfBounds { index, max } => {
                 write!(f, "Layer {} out of bounds (max {})", index, max)
             }
-            Byzantine_EvictionError::NoRollbackState => {
+            ByzantineEvictionError::NoRollbackState => {
                 write!(f, "No rollback state available for Byzantine_Eviction")
             }
         }
@@ -389,7 +389,7 @@ impl RssiEngine {
             step_size,
             contraction_held,
             human_correlation,
-            Byzantine_Eviction_triggered: false,
+            byzantine_eviction_triggered: false,
         };
 
         // Commit the improvement
@@ -451,24 +451,24 @@ impl RssiEngine {
     // --- Byzantine_Eviction Mechanism ---
 
     /// Trigger Byzantine_Eviction: rollback to previous state and reset unstable SAE layers.
-    pub fn trigger_Byzantine_Eviction(
+    pub fn trigger_byzantine_eviction(
         &mut self,
         unstable_layers: &[usize],
-    ) -> Result<(), Byzantine_EvictionError> {
+    ) -> Result<(), ByzantineEvictionError> {
         // Rollback interpretation state
         match self.previous_state.take() {
             Some(previous) => {
                 self.current_state = previous;
             }
             None => {
-                return Err(Byzantine_EvictionError::NoRollbackState);
+                return Err(ByzantineEvictionError::NoRollbackState);
             }
         }
 
         // Reset unstable SAE layer weights to baseline
         for &layer_idx in unstable_layers {
             if layer_idx >= MAX_SAE_LAYERS {
-                return Err(Byzantine_EvictionError::LayerOutOfBounds {
+                return Err(ByzantineEvictionError::LayerOutOfBounds {
                     index: layer_idx,
                     max: MAX_SAE_LAYERS,
                 });
@@ -639,7 +639,7 @@ mod tests {
         assert!(result.is_ok());
         let r = result.unwrap();
         assert!(r.contraction_held);
-        assert!(r.Byzantine_Eviction_triggered == false);
+        assert!(r.byzantine_eviction_triggered == false);
     }
 
     #[test]
@@ -682,7 +682,7 @@ mod tests {
         engine.current_state = Vector3::new(0.5, 0.5, 0.5);
         engine.sae_weights[0] = 0.9;
 
-        let result = engine.trigger_Byzantine_Eviction(&[0]);
+        let result = engine.trigger_byzantine_eviction(&[0]);
         assert!(result.is_ok());
         // State should be rolled back
         assert!((engine.current_state().x - 0.2).abs() < 1e-10);
@@ -694,18 +694,18 @@ mod tests {
     fn test_Byzantine_Eviction_no_rollback_state() {
         let mut engine = RssiEngine::new();
         engine.previous_state = None;
-        let result = engine.trigger_Byzantine_Eviction(&[0]);
-        assert_eq!(result, Err(Byzantine_EvictionError::NoRollbackState));
+        let result = engine.trigger_byzantine_eviction(&[0]);
+        assert_eq!(result, Err(ByzantineEvictionError::NoRollbackState));
     }
 
     #[test]
     fn test_Byzantine_Eviction_layer_out_of_bounds() {
         let mut engine = RssiEngine::new();
         engine.previous_state = Some(Vector3::new(0.2, 0.3, 0.4));
-        let result = engine.trigger_Byzantine_Eviction(&[100]);
+        let result = engine.trigger_byzantine_eviction(&[100]);
         assert_eq!(
             result,
-            Err(Byzantine_EvictionError::LayerOutOfBounds {
+            Err(ByzantineEvictionError::LayerOutOfBounds {
                 index: 100,
                 max: MAX_SAE_LAYERS
             })
@@ -752,7 +752,7 @@ mod tests {
 
     #[test]
     fn test_Byzantine_Eviction_error_display() {
-        let e = Byzantine_EvictionError::NoRollbackState;
+        let e = ByzantineEvictionError::NoRollbackState;
         assert!(format!("{}", e).contains("rollback"));
     }
 

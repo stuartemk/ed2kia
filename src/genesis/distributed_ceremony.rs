@@ -168,7 +168,7 @@ pub struct CeremonyConfig {
 }
 
 impl CeremonyConfig {
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             threshold: 3,
             max_contributors: 1_000_000,
@@ -193,7 +193,7 @@ impl CeremonyConfig {
 
 impl Default for CeremonyConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -232,7 +232,7 @@ pub struct DistributedCeremony {
 impl DistributedCeremony {
     pub fn new() -> Self {
         Self {
-            config: CeremonyConfig::default_Topological(),
+            config: CeremonyConfig::default_topological(),
             contributors: HashMap::new(),
             records: Vec::new(),
             genesis: None,
@@ -428,7 +428,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = CeremonyConfig::default_Topological();
+        let config = CeremonyConfig::default_topological();
         assert_eq!(config.threshold, 3);
         assert_eq!(config.max_contributors, 1_000_000);
         assert_eq!(config.min_entropy_bytes, 16);
@@ -437,27 +437,27 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = CeremonyConfig::default_Topological();
+        let config = CeremonyConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
     #[test]
     fn test_config_zero_threshold() {
-        let mut config = CeremonyConfig::default_Topological();
+        let mut config = CeremonyConfig::default_topological();
         config.threshold = 0;
         assert!(config.validate().is_err());
     }
 
     #[test]
     fn test_config_zero_entropy() {
-        let mut config = CeremonyConfig::default_Topological();
+        let mut config = CeremonyConfig::default_topological();
         config.min_entropy_bytes = 0;
         assert!(config.validate().is_err());
     }
 
     #[test]
     fn test_config_zero_anchors() {
-        let mut config = CeremonyConfig::default_Topological();
+        let mut config = CeremonyConfig::default_topological();
         config.anchor_count = 0;
         assert!(config.validate().is_err());
     }
@@ -517,7 +517,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = CeremonyConfig::default_Topological();
+        let config = CeremonyConfig::default_topological();
         let engine = DistributedCeremony::with_config(config).unwrap();
         assert_eq!(engine.contributor_count(), 0);
     }

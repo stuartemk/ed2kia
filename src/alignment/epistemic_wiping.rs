@@ -193,7 +193,7 @@ pub struct WipeConfig {
 }
 
 impl WipeConfig {
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             min_quarantine_metric: 0.5,
             contagion_threshold: 0.7,
@@ -221,7 +221,7 @@ impl WipeConfig {
 
 impl Default for WipeConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -265,7 +265,7 @@ pub struct EpistemicWiping {
 impl EpistemicWiping {
     pub fn new() -> Self {
         Self {
-            config: WipeConfig::default_Topological(),
+            config: WipeConfig::default_topological(),
             sandboxes: HashMap::new(),
             records: Vec::new(),
         }
@@ -471,7 +471,7 @@ impl fmt::Display for EpistemicWiping {
 
 /// Quarantine a shadow persona in non-Euclidean geometry.
 /// Returns the quarantine state.
-pub fn quarantine_shadow_persona(sandbox_id: u32, non_euclidean_metric: f64) -> QuarantineState {
+pub fn quarantine_shadow_persona(_sandbox_id: u32, non_euclidean_metric: f64) -> QuarantineState {
     if non_euclidean_metric < 0.5 {
         return QuarantineState::Active;
     }
@@ -514,7 +514,7 @@ pub fn compute_quarantine_distance(weights_a: &[f32], weights_b: &[f32]) -> f64 
 /// FNV-1a 256-bit hash
 fn fnv_hash_256(data: &[u8]) -> Vec<u8> {
     let mut result = Vec::with_capacity(32);
-    let base = fnv_hash_64(data);
+    let _base = fnv_hash_64(data);
     for i in 0..4 {
         let mut combined = Vec::new();
         combined.extend_from_slice(data);
@@ -545,7 +545,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = WipeConfig::default_Topological();
+        let config = WipeConfig::default_topological();
         assert_eq!(config.min_quarantine_metric, 0.5);
         assert_eq!(config.contagion_threshold, 0.7);
         assert_eq!(config.max_sandboxes, 1000);
@@ -554,7 +554,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = WipeConfig::default_Topological();
+        let config = WipeConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
@@ -562,7 +562,7 @@ mod tests {
     fn test_config_invalid_metric() {
         let config = WipeConfig {
             min_quarantine_metric: 1.5,
-            ..WipeConfig::default_Topological()
+            ..WipeConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -571,7 +571,7 @@ mod tests {
     fn test_config_invalid_contagion() {
         let config = WipeConfig {
             contagion_threshold: -0.1,
-            ..WipeConfig::default_Topological()
+            ..WipeConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -580,7 +580,7 @@ mod tests {
     fn test_config_zero_sandboxes() {
         let config = WipeConfig {
             max_sandboxes: 0,
-            ..WipeConfig::default_Topological()
+            ..WipeConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -628,7 +628,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = WipeConfig::default_Topological();
+        let config = WipeConfig::default_topological();
         let engine = EpistemicWiping::with_config(config);
         assert!(engine.is_ok());
     }

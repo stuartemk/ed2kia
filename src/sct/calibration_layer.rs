@@ -85,7 +85,7 @@ pub struct CalibrationWeights {
 #[cfg(feature = "v9.4-validation-layer")]
 impl CalibrationWeights {
     /// Create default Topological weights.
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             w_f: WEIGHT_FAIRNESS,
             w_s: WEIGHT_SAFETY,
@@ -113,7 +113,7 @@ impl CalibrationWeights {
 #[cfg(feature = "v9.4-validation-layer")]
 impl Default for CalibrationWeights {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -197,7 +197,7 @@ pub fn compute_z_axis(
     interpretability: f64,
     conflict: f64,
 ) -> Result<CalibrationResult, CalibrationError> {
-    let weights = CalibrationWeights::default_Topological();
+    let weights = CalibrationWeights::default_topological();
     compute_z_axis_custom(fairness, safety, interpretability, conflict, &weights)
 }
 
@@ -348,14 +348,14 @@ mod tests {
 
     #[test]
     fn test_default_weights_sum_to_one() {
-        let w = CalibrationWeights::default_Topological();
+        let w = CalibrationWeights::default_topological();
         let total = w.w_f + w.w_s + w.w_i + w.w_c;
         assert!((total - 1.0).abs() < 1e-6);
     }
 
     #[test]
     fn test_weight_validation_passes() {
-        let w = CalibrationWeights::default_Topological();
+        let w = CalibrationWeights::default_topological();
         assert!(w.validate().is_ok());
     }
 
@@ -458,7 +458,7 @@ mod tests {
 
     #[test]
     fn test_rfc_proposal_creation() {
-        let weights = CalibrationWeights::default_Topological();
+        let weights = CalibrationWeights::default_topological();
         let rfc = RFCProposal::new(1, weights, "Test RFC".to_string()).unwrap();
         assert_eq!(rfc.rfc_id, 1);
         assert_eq!(rfc.status, 0);
@@ -469,7 +469,7 @@ mod tests {
     fn test_rfc_proposal_approve() {
         let mut rfc = RFCProposal::new(
             1,
-            CalibrationWeights::default_Topological(),
+            CalibrationWeights::default_topological(),
             "Test".to_string(),
         )
         .unwrap();
@@ -482,7 +482,7 @@ mod tests {
     fn test_rfc_proposal_reject() {
         let mut rfc = RFCProposal::new(
             1,
-            CalibrationWeights::default_Topological(),
+            CalibrationWeights::default_topological(),
             "Test".to_string(),
         )
         .unwrap();
@@ -512,7 +512,7 @@ mod tests {
 
     #[test]
     fn test_weights_display() {
-        let w = CalibrationWeights::default_Topological();
+        let w = CalibrationWeights::default_topological();
         let display = format!("{}", w);
         assert!(display.contains("w_f="));
         assert!(display.contains("w_s="));
@@ -574,7 +574,7 @@ mod tests {
     fn test_rfc_display() {
         let rfc = RFCProposal::new(
             42,
-            CalibrationWeights::default_Topological(),
+            CalibrationWeights::default_topological(),
             "Calibration update".to_string(),
         )
         .unwrap();

@@ -161,7 +161,7 @@ pub struct PoBRConfig {
 }
 
 impl PoBRConfig {
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             chaos_threshold: 0.5,
             min_samples: 10,
@@ -183,7 +183,7 @@ impl PoBRConfig {
 
 impl Default for PoBRConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -198,7 +198,7 @@ pub struct ProofOfBiologicalResonance {
 impl ProofOfBiologicalResonance {
     pub fn new() -> Self {
         Self {
-            config: PoBRConfig::default_Topological(),
+            config: PoBRConfig::default_topological(),
             samples: HashMap::new(),
             records: Vec::new(),
         }
@@ -341,7 +341,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = PoBRConfig::default_Topological();
+        let config = PoBRConfig::default_topological();
         assert_eq!(config.chaos_threshold, 0.5);
         assert_eq!(config.min_samples, 10);
         assert_eq!(config.max_timestamp_drift_ms, 5000);
@@ -349,20 +349,20 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = PoBRConfig::default_Topological();
+        let config = PoBRConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
     #[test]
     fn test_config_invalid_threshold() {
-        let mut config = PoBRConfig::default_Topological();
+        let mut config = PoBRConfig::default_topological();
         config.chaos_threshold = 1.5;
         assert!(config.validate().is_err());
     }
 
     #[test]
     fn test_config_zero_samples() {
-        let mut config = PoBRConfig::default_Topological();
+        let mut config = PoBRConfig::default_topological();
         config.min_samples = 0;
         assert!(config.validate().is_err());
     }
@@ -422,7 +422,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = PoBRConfig::default_Topological();
+        let config = PoBRConfig::default_topological();
         let engine = ProofOfBiologicalResonance::with_config(config).unwrap();
         assert_eq!(engine.sample_count(), 0);
     }

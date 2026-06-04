@@ -58,7 +58,7 @@ pub struct VdfConfig {
 
 impl VdfConfig {
     /// Default Topological configuration.
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             max_iterations: 1_000_000,
             sae_dim: 256,
@@ -87,7 +87,7 @@ impl VdfConfig {
 
 impl Default for VdfConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -186,7 +186,7 @@ impl UsefulVdf {
     /// Create with default configuration.
     pub fn new() -> Self {
         Self {
-            config: VdfConfig::default_Topological(),
+            config: VdfConfig::default_topological(),
             computation_counter: 0,
             records: Vec::new(),
             verified_cache: HashMap::new(),
@@ -440,14 +440,14 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = VdfConfig::default_Topological();
+        let config = VdfConfig::default_topological();
         assert!(config.max_iterations > 0);
         assert!(config.sae_dim > 0);
     }
 
     #[test]
     fn test_config_validate_ok() {
-        let config = VdfConfig::default_Topological();
+        let config = VdfConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
@@ -455,7 +455,7 @@ mod tests {
     fn test_config_zero_iterations() {
         let config = VdfConfig {
             max_iterations: 0,
-            ..VdfConfig::default_Topological()
+            ..VdfConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -464,7 +464,7 @@ mod tests {
     fn test_config_zero_dim() {
         let config = VdfConfig {
             sae_dim: 0,
-            ..VdfConfig::default_Topological()
+            ..VdfConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -477,7 +477,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = VdfConfig::default_Topological();
+        let config = VdfConfig::default_topological();
         let engine = UsefulVdf::with_config(config);
         assert!(engine.is_ok());
     }

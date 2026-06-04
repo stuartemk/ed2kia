@@ -12,22 +12,4 @@ pub use cooperative_objective::{
     EPSILON, LAMBDA, MU,
 };
 
-// â”€â”€â”€ Sprint80: Undecidable Grace (paradox detection + singularity marking) â”€â”€â”€
-#[cfg(feature = "v9.16-undecidable-synthesis")]
-pub mod undecidable_grace;
-
-#[cfg(feature = "v9.16-undecidable-synthesis")]
-pub use undecidable_grace::{
-    detect_undecidable_paradox, invoke_undecidable_grace, undecidableGrace, undecidableNode,
-    GraceConfig, GraceRecord, GraceState, NodeId,
-};
-
-// â”€â”€â”€ Sprint81: Paradox Cost & Fractal Triage (CE burning + anti-DDoS Undecidable) â”€â”€â”€
-#[cfg(feature = "v9.17-biological-bridge")]
-pub mod paradox_cost_triage;
-
-#[cfg(feature = "v9.17-biological-bridge")]
-pub use paradox_cost_triage::{
-    apply_paradox_cost, cluster_paradoxes, CEBurnResult, MetaParadox, ParadoxCostTriage,
-    TriageConfig,
-};
+// Sprint 87: Zombie modules removed (undecidable_grace, paradox_cost_triage)

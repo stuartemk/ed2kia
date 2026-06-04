@@ -67,7 +67,7 @@ pub struct ParetoConfig {
 
 impl ParetoConfig {
     /// Default Topological configuration.
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             lambda: 0.5,
             min_diversity: 0.1,
@@ -90,7 +90,7 @@ impl ParetoConfig {
 
 impl Default for ParetoConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -130,7 +130,7 @@ impl SymbioticDiversityLoss {
     /// Create a new engine with default Topological configuration.
     pub fn new() -> Self {
         Self {
-            config: ParetoConfig::default_Topological(),
+            config: ParetoConfig::default_topological(),
             records: Vec::new(),
         }
     }
@@ -344,7 +344,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = ParetoConfig::default_Topological();
+        let config = ParetoConfig::default_topological();
         assert!(config.validate().is_ok());
         assert_eq!(config.lambda, 0.5);
     }
@@ -353,7 +353,7 @@ mod tests {
     fn test_config_negative_lambda() {
         let config = ParetoConfig {
             lambda: -1.0,
-            ..ParetoConfig::default_Topological()
+            ..ParetoConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -448,7 +448,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = ParetoConfig::default_Topological();
+        let config = ParetoConfig::default_topological();
         let engine = SymbioticDiversityLoss::with_config(config).unwrap();
         assert_eq!(engine.record_count(), 0);
     }

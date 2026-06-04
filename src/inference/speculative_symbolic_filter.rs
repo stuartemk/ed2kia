@@ -57,7 +57,7 @@ pub struct SpeculativeConfig {
 }
 
 impl SpeculativeConfig {
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             max_queue_size: 256,
             alignment_threshold: 0.6,
@@ -87,7 +87,7 @@ impl SpeculativeConfig {
 
 impl Default for SpeculativeConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -200,7 +200,7 @@ pub struct SpeculativeSymbolicFilter {
 impl SpeculativeSymbolicFilter {
     pub fn new() -> Self {
         Self {
-            config: SpeculativeConfig::default_Topological(),
+            config: SpeculativeConfig::default_topological(),
             queue: BinaryHeap::new(),
             gei_cache: [0.0; 8],
             gei_timestamp_ms: 0,
@@ -473,7 +473,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = SpeculativeConfig::default_Topological();
+        let config = SpeculativeConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 

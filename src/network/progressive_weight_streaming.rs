@@ -73,7 +73,7 @@ pub struct StreamingConfig {
 
 impl StreamingConfig {
     /// Default Topological configuration.
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             max_chunk_size: 64 * 1024, // 64 KB chunks
             min_transfer_rate_kb: 10.0,
@@ -100,7 +100,7 @@ impl StreamingConfig {
 
 impl Default for StreamingConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -261,7 +261,7 @@ impl ProgressiveWeightStreaming {
     /// Create a new streaming engine with default config.
     pub fn new() -> Self {
         Self {
-            config: StreamingConfig::default_Topological(),
+            config: StreamingConfig::default_topological(),
             peers: HashMap::new(),
             chunks: HashMap::new(),
             downloaded_chunks: HashMap::new(),
@@ -550,7 +550,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = StreamingConfig::default_Topological();
+        let config = StreamingConfig::default_topological();
         assert!(config.max_chunk_size > 0);
         assert!(config.min_transfer_rate_kb > 0.0);
         assert!(config.micro_load_timeout_ms > 0);
@@ -558,7 +558,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = StreamingConfig::default_Topological();
+        let config = StreamingConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
@@ -566,7 +566,7 @@ mod tests {
     fn test_config_zero_chunk_size() {
         let config = StreamingConfig {
             max_chunk_size: 0,
-            ..StreamingConfig::default_Topological()
+            ..StreamingConfig::default_topological()
         };
         assert!(matches!(
             config.validate(),
@@ -578,7 +578,7 @@ mod tests {
     fn test_config_zero_rate() {
         let config = StreamingConfig {
             min_transfer_rate_kb: 0.0,
-            ..StreamingConfig::default_Topological()
+            ..StreamingConfig::default_topological()
         };
         assert!(matches!(
             config.validate(),
@@ -590,7 +590,7 @@ mod tests {
     fn test_config_zero_timeout() {
         let config = StreamingConfig {
             micro_load_timeout_ms: 0,
-            ..StreamingConfig::default_Topological()
+            ..StreamingConfig::default_topological()
         };
         assert!(matches!(
             config.validate(),
@@ -666,7 +666,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = StreamingConfig::default_Topological();
+        let config = StreamingConfig::default_topological();
         let engine = ProgressiveWeightStreaming::with_config(config);
         assert!(engine.is_ok());
     }

@@ -1,0 +1,13 @@
+    Checking ed2kia v9.23.0-sprint87 (C:\Users\cualo\Desktop\PROYECTOS\ed2kIA)
+error: variable does not need to be mutable
+    --> src\lib.rs:1473:9
+     |
+1473 |     let mut features = vec!["core"];
+     |         ----^^^^^^^^
+     |         |
+     |         help: remove this `mut`
+     |
+     = note: `-D unused-mut` implied by `-D warnings`
+     = help: to override `-D warnings` add `#[allow(unused_mut)]`
+
+error: could not compile `ed2kia` (lib) due to 1 previous error

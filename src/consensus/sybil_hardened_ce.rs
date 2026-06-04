@@ -61,7 +61,7 @@ pub struct HardenedCeConfig {
 }
 
 impl HardenedCeConfig {
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             max_nodes: 10000,
             ce_decay_rate: 0.00001,
@@ -92,7 +92,7 @@ impl HardenedCeConfig {
 
 impl Default for HardenedCeConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -215,7 +215,7 @@ pub struct SybilHardenedCe {
 impl SybilHardenedCe {
     pub fn new() -> Self {
         Self {
-            config: HardenedCeConfig::default_Topological(),
+            config: HardenedCeConfig::default_topological(),
             nodes: HashMap::new(),
             proofs: HashMap::new(),
             consensus_history: Vec::new(),
@@ -493,7 +493,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = HardenedCeConfig::default_Topological();
+        let config = HardenedCeConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 

@@ -1,0 +1,104 @@
+warning: file `c:\Users\cualo\Desktop\PROYECTOS\ed2kIA\tests\load\sprint3_stress.rs` found to be present in multiple build targets:
+warning: variant `Byzantine_EvictionFailed` should have an upper camel case name
+warning: type `Byzantine_EvictionError` should have an upper camel case name
+warning: variant `Byzantine_EvictionActive` should have an upper camel case name
+warning: variant `Byzantine_EvictionActive` should have an upper camel case name
+warning: type `Byzantine_EvictionError` should have an upper camel case name
+warning: type `Byzantine_EvictionState` should have an upper camel case name
+warning: type `Byzantine_EvictionConfig` should have an upper camel case name
+warning: type `Byzantine_EvictionNodeState` should have an upper camel case name
+warning: type `Byzantine_EvictionRecord` should have an upper camel case name
+warning: type `GracefulByzantine_Eviction` should have an upper camel case name
+warning: unused import: `std::collections::HashMap`
+warning: unused variable: `round_id`
+warning: unused variable: `base`
+warning: unused variable: `current_ms`
+warning: variable does not need to be mutable
+warning: variable does not need to be mutable
+warning: unused variable: `base`
+warning: unused variable: `sandbox_id`
+warning: unused variable: `base`
+warning: unused variable: `sync_vector`
+warning: unused variable: `fractal_threshold`
+warning: unused variable: `fractal_threshold`
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: function `inject_Topological_noise` should have a snake case name
+warning: function `inject_Topological_noise_internal` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: trait method `to_Topological_tensor` should have a snake case name
+warning: structure field `Byzantine_Eviction_triggered` should have a snake case name
+warning: method `trigger_Byzantine_Eviction` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `from_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: structure field `Byzantine_Eviction_threshold` should have a snake case name
+warning: structure field `Byzantine_Eviction_consecutive_ticks` should have a snake case name
+warning: structure field `Byzantine_Eviction_triggered` should have a snake case name
+warning: structure field `Byzantine_Eviction_counter` should have a snake case name
+warning: method `Byzantine_Eviction_counter` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: structure field `Topological_laws_hash` should have a snake case name
+warning: method `Topological_laws_text` should have a snake case name
+warning: constant `Topological_LAWS_HASH` should have an upper case name
+warning: constant `Topological_LAWS_TEXT` should have an upper case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: structure field `Byzantine_Eviction_threshold` should have a snake case name
+warning: structure field `max_concurrent_Byzantine_Eviction` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: function `evaluate_Byzantine_Eviction_trigger` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: method `default_Topological` should have a snake case name
+warning: comparison is useless due to type limits
+warning: `ed2kia` (lib) generated 105 warnings (3 duplicates) (run `cargo fix --lib -p ed2kia` to apply 13 suggestions)

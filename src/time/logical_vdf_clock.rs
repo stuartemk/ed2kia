@@ -59,7 +59,7 @@ pub struct VdfConfig {
 }
 
 impl VdfConfig {
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             default_iterations: 1000,
             min_iterations: 100,
@@ -81,7 +81,7 @@ impl VdfConfig {
 
 impl Default for VdfConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -179,7 +179,7 @@ pub struct LogicalVdfClock {
 impl LogicalVdfClock {
     pub fn new() -> Self {
         Self {
-            config: VdfConfig::default_Topological(),
+            config: VdfConfig::default_topological(),
             clocks: HashMap::new(),
             public_params: 0xDEAD_BEEF_CAFE_BABE,
         }
@@ -353,7 +353,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = VdfConfig::default_Topological();
+        let config = VdfConfig::default_topological();
         assert!(config.validate().is_ok());
         assert_eq!(config.default_iterations, 1000);
     }
@@ -362,7 +362,7 @@ mod tests {
     fn test_config_invalid_min() {
         let config = VdfConfig {
             min_iterations: 0,
-            ..VdfConfig::default_Topological()
+            ..VdfConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -372,7 +372,7 @@ mod tests {
         let config = VdfConfig {
             max_iterations: 50,
             min_iterations: 100,
-            ..VdfConfig::default_Topological()
+            ..VdfConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }

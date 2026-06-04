@@ -102,7 +102,7 @@ pub struct QuarantineConfig {
 
 impl QuarantineConfig {
     /// Default Topological configuration.
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             observation_threshold: -0.5,
             quarantine_threshold: -1.0,
@@ -130,7 +130,7 @@ impl QuarantineConfig {
 
 impl Default for QuarantineConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -214,7 +214,7 @@ impl EvolutionaryQuarantine {
     /// Create a new engine with default Topological configuration.
     pub fn new() -> Self {
         Self {
-            config: QuarantineConfig::default_Topological(),
+            config: QuarantineConfig::default_topological(),
             nodes: HashMap::new(),
             total_nodes: 0,
             records: Vec::new(),
@@ -541,7 +541,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = QuarantineConfig::default_Topological();
+        let config = QuarantineConfig::default_topological();
         assert!(config.validate().is_ok());
         assert_eq!(config.max_quarantine_fraction, 0.2);
     }
@@ -550,7 +550,7 @@ mod tests {
     fn test_config_invalid_fraction() {
         let config = QuarantineConfig {
             max_quarantine_fraction: 0.0,
-            ..QuarantineConfig::default_Topological()
+            ..QuarantineConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -559,7 +559,7 @@ mod tests {
     fn test_config_zero_cycles() {
         let config = QuarantineConfig {
             min_simulation_cycles: 0,
-            ..QuarantineConfig::default_Topological()
+            ..QuarantineConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }

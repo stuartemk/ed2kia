@@ -93,7 +93,7 @@ pub struct ShardConfig {
 
 impl ShardConfig {
     /// Default Topological configuration for holographic sharding.
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             embedding_dim: 64,
             max_embedding_age_ms: 5000,
@@ -154,7 +154,7 @@ impl ShardConfig {
 
 impl Default for ShardConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -337,7 +337,7 @@ pub struct HolographicSharding {
 impl HolographicSharding {
     /// Create a new engine with default Topological configuration.
     pub fn new() -> Self {
-        Self::with_config(ShardConfig::default_Topological())
+        Self::with_config(ShardConfig::default_topological())
             .expect("default config should be valid")
     }
 
@@ -748,7 +748,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = ShardConfig::default_Topological();
+        let config = ShardConfig::default_topological();
         assert_eq!(config.embedding_dim, 64);
         assert_eq!(config.max_embedding_age_ms, 5000);
         assert_eq!(config.convergence_threshold, 0.02);
@@ -761,7 +761,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = ShardConfig::default_Topological();
+        let config = ShardConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
@@ -769,7 +769,7 @@ mod tests {
     fn test_config_zero_dim() {
         let config = ShardConfig {
             embedding_dim: 0,
-            ..ShardConfig::default_Topological()
+            ..ShardConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -778,7 +778,7 @@ mod tests {
     fn test_config_zero_shards() {
         let config = ShardConfig {
             num_shards: 0,
-            ..ShardConfig::default_Topological()
+            ..ShardConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -787,7 +787,7 @@ mod tests {
     fn test_config_invalid_convergence() {
         let config = ShardConfig {
             convergence_threshold: 0.0,
-            ..ShardConfig::default_Topological()
+            ..ShardConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -850,7 +850,7 @@ mod tests {
         let config = ShardConfig {
             num_shards: 4,
             embedding_dim: 32,
-            ..ShardConfig::default_Topological()
+            ..ShardConfig::default_topological()
         };
         let engine = HolographicSharding::with_config(config);
         assert!(engine.is_ok());
@@ -932,7 +932,7 @@ mod tests {
     fn test_convergence_single_shard() {
         let config = ShardConfig {
             num_shards: 1,
-            ..ShardConfig::default_Topological()
+            ..ShardConfig::default_topological()
         };
         let engine = HolographicSharding::with_config(config).unwrap();
         assert!(engine.check_convergence().unwrap());

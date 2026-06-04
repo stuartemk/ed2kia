@@ -78,7 +78,7 @@ pub struct NoiseConfig {
 
 impl NoiseConfig {
     /// Default Topological configuration.
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             epsilon: 1.0,
             delta: 0.000_1,
@@ -111,7 +111,7 @@ impl NoiseConfig {
 
 impl Default for NoiseConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -161,7 +161,7 @@ impl DifferentialHolographicNoise {
     /// Create with default Topological config.
     pub fn new() -> Self {
         Self {
-            config: NoiseConfig::default_Topological(),
+            config: NoiseConfig::default_topological(),
             total_epsilon_consumed: 0.0,
             query_count: 0,
             noise_history: Vec::new(),
@@ -189,7 +189,7 @@ impl DifferentialHolographicNoise {
             return Err(NoiseError::EmptyInput);
         }
 
-        let noisy = inject_Topological_noise(
+        let noisy = inject_topological_noise(
             topological_update,
             self.config.epsilon,
             self.config.delta,
@@ -264,7 +264,7 @@ impl fmt::Display for DifferentialHolographicNoise {
 ///
 /// Calibrates Laplace/Gaussian noise to preserve GEI macro while
 /// protecting individual prompts from reconstruction attacks.
-pub fn inject_Topological_noise(
+pub fn inject_topological_noise(
     topological_update: &[f32],
     epsilon: f64,
     delta: f64,
@@ -277,7 +277,7 @@ pub fn inject_Topological_noise(
     let use_laplace = epsilon < delta; // Laplace for stronger per-query privacy
     let sensitivity = 1.0;
 
-    inject_Topological_noise_internal(
+    inject_topological_noise_internal(
         topological_update,
         epsilon,
         delta,
@@ -289,7 +289,7 @@ pub fn inject_Topological_noise(
 }
 
 /// Internal noise injection with full parameters.
-fn inject_Topological_noise_internal(
+fn inject_topological_noise_internal(
     topological_update: &[f32],
     epsilon: f64,
     delta: f64,
@@ -428,34 +428,34 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = NoiseConfig::default_Topological();
+        let config = NoiseConfig::default_topological();
         assert!(config.epsilon > 0.0);
         assert!(config.delta >= 0.0 && config.delta <= 1.0);
     }
 
     #[test]
     fn test_config_validate_ok() {
-        let config = NoiseConfig::default_Topological();
+        let config = NoiseConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
     #[test]
     fn test_config_invalid_epsilon() {
-        let mut config = NoiseConfig::default_Topological();
+        let mut config = NoiseConfig::default_topological();
         config.epsilon = 0.0;
         assert!(config.validate().is_err());
     }
 
     #[test]
     fn test_config_invalid_delta() {
-        let mut config = NoiseConfig::default_Topological();
+        let mut config = NoiseConfig::default_topological();
         config.delta = 1.5;
         assert!(config.validate().is_err());
     }
 
     #[test]
     fn test_config_invalid_preservation() {
-        let mut config = NoiseConfig::default_Topological();
+        let mut config = NoiseConfig::default_topological();
         config.gei_preservation_weight = -0.1;
         assert!(config.validate().is_err());
     }
@@ -469,7 +469,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = NoiseConfig::default_Topological();
+        let config = NoiseConfig::default_topological();
         let engine = DifferentialHolographicNoise::with_config(config).unwrap();
         assert_eq!(engine.query_count, 0);
     }
@@ -576,13 +576,13 @@ mod tests {
     #[test]
     fn test_standalone_inject() {
         let data = vec![1.0f32, 2.0, 3.0];
-        let noisy = inject_Topological_noise(&data, 1.0, 0.0001, 0.7);
+        let noisy = inject_topological_noise(&data, 1.0, 0.0001, 0.7);
         assert_eq!(noisy.len(), data.len());
     }
 
     #[test]
     fn test_standalone_inject_empty() {
-        let noisy = inject_Topological_noise(&[], 1.0, 0.0001, 0.7);
+        let noisy = inject_topological_noise(&[], 1.0, 0.0001, 0.7);
         assert!(noisy.is_empty());
     }
 

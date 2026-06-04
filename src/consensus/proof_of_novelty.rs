@@ -154,7 +154,7 @@ pub struct NoveltyConfig {
 }
 
 impl NoveltyConfig {
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             embedding_dim: 768,
             entropy_threshold: 0.3,
@@ -180,7 +180,7 @@ impl NoveltyConfig {
 
 impl Default for NoveltyConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -196,7 +196,7 @@ pub struct ProofOfNovelty {
 
 impl ProofOfNovelty {
     pub fn new() -> Self {
-        let config = NoveltyConfig::default_Topological();
+        let config = NoveltyConfig::default_topological();
         Self {
             coverage: CoverageMap::new(
                 config.embedding_dim,
@@ -455,7 +455,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = NoveltyConfig::default_Topological();
+        let config = NoveltyConfig::default_topological();
         assert_eq!(config.embedding_dim, 768);
         assert_eq!(config.entropy_threshold, 0.3);
         assert_eq!(config.max_ce_reward, 100.0);
@@ -463,7 +463,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = NoveltyConfig::default_Topological();
+        let config = NoveltyConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
@@ -471,7 +471,7 @@ mod tests {
     fn test_config_zero_dim() {
         let config = NoveltyConfig {
             embedding_dim: 0,
-            ..NoveltyConfig::default_Topological()
+            ..NoveltyConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -480,7 +480,7 @@ mod tests {
     fn test_config_invalid_entropy() {
         let config = NoveltyConfig {
             entropy_threshold: 1.5,
-            ..NoveltyConfig::default_Topological()
+            ..NoveltyConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -557,7 +557,7 @@ mod tests {
     fn test_engine_with_config() {
         let config = NoveltyConfig {
             embedding_dim: 3,
-            ..NoveltyConfig::default_Topological()
+            ..NoveltyConfig::default_topological()
         };
         let engine = ProofOfNovelty::with_config(config);
         assert!(engine.is_ok());
@@ -576,7 +576,7 @@ mod tests {
         let mut engine = ProofOfNovelty::with_config(NoveltyConfig {
             embedding_dim: 3,
             coverage_radius: 2.0,
-            ..NoveltyConfig::default_Topological()
+            ..NoveltyConfig::default_topological()
         })
         .unwrap();
         let embedding = vec![1.0, 2.0, 3.0];

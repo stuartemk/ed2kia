@@ -184,7 +184,7 @@ pub struct RoleConfig {
 
 impl RoleConfig {
     /// Default Topological configuration.
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             wasm_memory_limit_mb: 512,
             native_memory_limit_mb: 0, // Unlimited
@@ -204,7 +204,7 @@ impl RoleConfig {
 
 impl Default for RoleConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -234,7 +234,7 @@ impl RoleAsymmetry {
     /// Create a new engine with default Topological configuration.
     pub fn new() -> Self {
         Self {
-            config: RoleConfig::default_Topological(),
+            config: RoleConfig::default_topological(),
             node_registry: Vec::new(),
         }
     }
@@ -425,7 +425,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = RoleConfig::default_Topological();
+        let config = RoleConfig::default_topological();
         assert!(config.validate().is_ok());
         assert_eq!(config.wasm_memory_limit_mb, 512);
     }
@@ -434,7 +434,7 @@ mod tests {
     fn test_config_zero_wasm_limit() {
         let config = RoleConfig {
             wasm_memory_limit_mb: 0,
-            ..RoleConfig::default_Topological()
+            ..RoleConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }

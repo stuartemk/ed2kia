@@ -71,7 +71,7 @@ pub struct DasConfig {
 
 impl DasConfig {
     /// Default Topological configuration for production DAS.
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             sample_rate: 0.15,
             min_samples: 8,
@@ -103,7 +103,7 @@ impl DasConfig {
 
 impl Default for DasConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -146,7 +146,7 @@ impl DasSampler {
     /// Create a new DAS sampler with default configuration.
     pub fn new() -> Self {
         Self {
-            config: DasConfig::default_Topological(),
+            config: DasConfig::default_topological(),
             records: Vec::new(),
         }
     }
@@ -366,7 +366,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = DasConfig::default_Topological();
+        let config = DasConfig::default_topological();
         assert_eq!(config.sample_rate, 0.15);
         assert_eq!(config.min_samples, 8);
         assert_eq!(config.max_samples, 256);
@@ -375,7 +375,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = DasConfig::default_Topological();
+        let config = DasConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
@@ -383,7 +383,7 @@ mod tests {
     fn test_config_invalid_sample_rate() {
         let config = DasConfig {
             sample_rate: 1.5,
-            ..DasConfig::default_Topological()
+            ..DasConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -392,7 +392,7 @@ mod tests {
     fn test_config_invalid_threshold() {
         let config = DasConfig {
             confidence_threshold: 0.0,
-            ..DasConfig::default_Topological()
+            ..DasConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -402,7 +402,7 @@ mod tests {
         let config = DasConfig {
             min_samples: 100,
             max_samples: 50,
-            ..DasConfig::default_Topological()
+            ..DasConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -415,7 +415,7 @@ mod tests {
 
     #[test]
     fn test_sampler_with_config() {
-        let config = DasConfig::default_Topological();
+        let config = DasConfig::default_topological();
         let sampler = DasSampler::with_config(config).unwrap();
         assert!(sampler.records().is_empty());
     }

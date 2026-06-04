@@ -1,0 +1,2 @@
+    Checking ed2kia v9.23.0-sprint87 (C:\Users\cualo\Desktop\PROYECTOS\ed2kIA)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 7.97s

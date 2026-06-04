@@ -59,7 +59,7 @@ pub struct ProxyConfig {
 
 impl ProxyConfig {
     /// Default Topological configuration
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             max_simplices: 4096,
             sample_rate: 0.5,
@@ -85,7 +85,7 @@ impl ProxyConfig {
 
 impl Default for ProxyConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -122,7 +122,7 @@ impl LightweightGeiProxy {
     /// Create a new proxy with default Topological config
     pub fn new() -> Self {
         Self {
-            config: ProxyConfig::default_Topological(),
+            config: ProxyConfig::default_topological(),
             records: Vec::new(),
         }
     }
@@ -392,7 +392,7 @@ mod tests {
 
     #[test]
     fn test_config_validate() {
-        let config = ProxyConfig::default_Topological();
+        let config = ProxyConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
@@ -422,7 +422,7 @@ mod tests {
 
     #[test]
     fn test_proxy_with_config() {
-        let config = ProxyConfig::default_Topological();
+        let config = ProxyConfig::default_topological();
         let proxy = LightweightGeiProxy::with_config(config);
         assert!(proxy.is_ok());
     }

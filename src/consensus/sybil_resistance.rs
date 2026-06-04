@@ -72,7 +72,7 @@ pub struct SybilConfig {
 }
 
 impl SybilConfig {
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             min_ce_threshold: 0.1,
             ce_decay_rate: 0.999,
@@ -110,7 +110,7 @@ impl SybilConfig {
 
 impl Default for SybilConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -265,7 +265,7 @@ pub struct SybilResistance {
 impl SybilResistance {
     pub fn new() -> Self {
         Self {
-            config: SybilConfig::default_Topological(),
+            config: SybilConfig::default_topological(),
             nodes: HashMap::new(),
             proof_history: Vec::new(),
             consensus_history: Vec::new(),
@@ -580,14 +580,14 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = SybilConfig::default_Topological();
+        let config = SybilConfig::default_topological();
         assert_eq!(config.bft_epsilon, 0.33);
         assert!(config.min_ce_threshold > 0.0);
     }
 
     #[test]
     fn test_config_validate_ok() {
-        let config = SybilConfig::default_Topological();
+        let config = SybilConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
@@ -595,7 +595,7 @@ mod tests {
     fn test_config_invalid_ce() {
         let config = SybilConfig {
             min_ce_threshold: -0.1,
-            ..SybilConfig::default_Topological()
+            ..SybilConfig::default_topological()
         };
         assert_eq!(config.validate(), Err(SybilError::InvalidConfig));
     }
@@ -604,7 +604,7 @@ mod tests {
     fn test_config_invalid_bft() {
         let config = SybilConfig {
             bft_epsilon: 0.6,
-            ..SybilConfig::default_Topological()
+            ..SybilConfig::default_topological()
         };
         assert_eq!(config.validate(), Err(SybilError::InvalidConfig));
     }
@@ -613,7 +613,7 @@ mod tests {
     fn test_config_zero_nodes() {
         let config = SybilConfig {
             max_nodes: 0,
-            ..SybilConfig::default_Topological()
+            ..SybilConfig::default_topological()
         };
         assert_eq!(config.validate(), Err(SybilError::InvalidConfig));
     }
@@ -623,7 +623,7 @@ mod tests {
         let config = SybilConfig {
             diversity_weight: 0.6,
             ce_weight: 0.6,
-            ..SybilConfig::default_Topological()
+            ..SybilConfig::default_topological()
         };
         assert_eq!(config.validate(), Err(SybilError::InvalidConfig));
     }
@@ -689,7 +689,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = SybilConfig::default_Topological();
+        let config = SybilConfig::default_topological();
         let engine = SybilResistance::with_config(config).unwrap();
         assert_eq!(engine.node_count(), 0);
     }
@@ -698,7 +698,7 @@ mod tests {
     fn test_engine_with_bad_config() {
         let config = SybilConfig {
             max_nodes: 0,
-            ..SybilConfig::default_Topological()
+            ..SybilConfig::default_topological()
         };
         assert_eq!(
             SybilResistance::with_config(config),

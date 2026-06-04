@@ -88,7 +88,7 @@ pub struct KernelConfig {
 
 impl KernelConfig {
     /// Default Topological configuration.
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             watchdog_timeout_ms: 5000,
             queue_capacity: 64,
@@ -114,7 +114,7 @@ impl KernelConfig {
 
 impl Default for KernelConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -216,7 +216,7 @@ pub struct IotMicrokernel {
 impl IotMicrokernel {
     pub fn new() -> Self {
         Self {
-            config: KernelConfig::default_Topological(),
+            config: KernelConfig::default_topological(),
             state: KernelState::Running,
             command_queue: VecDeque::new(),
             gei_cache: Vec::new(),
@@ -511,7 +511,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = KernelConfig::default_Topological();
+        let config = KernelConfig::default_topological();
         assert_eq!(config.watchdog_timeout_ms, 5000);
         assert_eq!(config.queue_capacity, 64);
         assert!(config.offline_fallback);
@@ -519,12 +519,12 @@ mod tests {
 
     #[test]
     fn test_config_validate() {
-        assert!(KernelConfig::default_Topological().validate().is_ok());
+        assert!(KernelConfig::default_topological().validate().is_ok());
     }
 
     #[test]
     fn test_config_zero_timeout() {
-        let mut config = KernelConfig::default_Topological();
+        let mut config = KernelConfig::default_topological();
         config.watchdog_timeout_ms = 0;
         assert!(config.validate().is_err());
     }
@@ -580,7 +580,7 @@ mod tests {
 
     #[test]
     fn test_queue_full() {
-        let mut config = KernelConfig::default_Topological();
+        let mut config = KernelConfig::default_topological();
         config.queue_capacity = 2;
         let mut kernel = IotMicrokernel::with_config(config).unwrap();
         kernel
@@ -624,7 +624,7 @@ mod tests {
 
     #[test]
     fn test_gei_cache_trim() {
-        let mut config = KernelConfig::default_Topological();
+        let mut config = KernelConfig::default_topological();
         config.gei_cache_size = 3;
         let mut kernel = IotMicrokernel::with_config(config).unwrap();
         for i in 0..5 {

@@ -76,7 +76,7 @@ impl fmt::Display for GenesisError {
 ///
 /// **Invariants:**
 /// - `ce_balance` is always 0.0 (no pre-mine).
-/// - `Topological_laws_hash` is derived from the canonical Topological Laws text.
+/// - `topological_laws_hash` is derived from the canonical Topological Laws text.
 /// - `parent_hashes` are always `None` (genesis has no parents).
 /// - Once created, the genesis node cannot be modified.
 #[derive(Debug, Clone, PartialEq)]
@@ -84,7 +84,7 @@ pub struct GenesisNode {
     /// Unique genesis hash (SHA-256 derived from Topological Laws).
     pub hash: u128,
     /// Cryptographic signature of the Topological Laws.
-    pub Topological_laws_hash: u128,
+    pub topological_laws_hash: u128,
     /// Genesis timestamp (epoch of the symbiotic network).
     pub timestamp: SymbioticTimestamp,
     /// Initial CE balance â€” always 0.0 (no pre-mine).
@@ -130,7 +130,7 @@ impl GenesisNode {
         let timestamp = SymbioticTimestamp::new(0, 0); // Genesis epoch: logical time 0, node 0
 
         // Canonical Topological Laws text (immutable)
-        let laws_text = Self::Topological_laws_text();
+        let laws_text = Self::topological_laws_text();
         let laws_hash = Self::compute_laws_hash(laws_text);
 
         // Genesis hash combines laws hash + network ID + version
@@ -141,7 +141,7 @@ impl GenesisNode {
 
         Self {
             hash: genesis_hash,
-            Topological_laws_hash: laws_hash,
+            topological_laws_hash: laws_hash,
             timestamp,
             ce_balance: 0.0, // Zero pre-mine invariant
             signature,
@@ -155,7 +155,7 @@ impl GenesisNode {
     /// This text is the foundation of the symbiotic ethical framework.
     /// Any change to this text would produce a different laws hash,
     /// making the genesis node unverifiable.
-    fn Topological_laws_text() -> &'static str {
+    fn topological_laws_text() -> &'static str {
         "LEY 1: AUTONOMIA â€” Toda entidad posee el derecho a la autodeterminaciÃ³n.\
          LEY 2: NO-EXTRACCION â€” Ninguna entidad puede extraer valor sin contribuciÃ³n recÃ­proca.\
          LEY 3: FOCO ETICO â€” Toda acciÃ³n debe tender hacia el Foco Superior (simbiosis)."
@@ -220,8 +220,8 @@ impl GenesisNode {
     /// if the node has been tampered with.
     pub fn verify(&self) -> Result<(), GenesisError> {
         // Verify laws hash matches canonical text
-        let expected_laws_hash = Self::compute_laws_hash(Self::Topological_laws_text());
-        if self.Topological_laws_hash != expected_laws_hash {
+        let expected_laws_hash = Self::compute_laws_hash(Self::topological_laws_text());
+        if self.topological_laws_hash != expected_laws_hash {
             return Err(GenesisError::InvalidSignature);
         }
 
@@ -259,13 +259,13 @@ impl GenesisNode {
 
     /// Get the expected genesis hash for a given network.
     pub fn expected_hash(network_id: NetworkId) -> u128 {
-        let laws_hash = Self::compute_laws_hash(Self::Topological_laws_text());
+        let laws_hash = Self::compute_laws_hash(Self::topological_laws_text());
         Self::compute_genesis_hash(laws_hash, network_id)
     }
 
     /// Get the expected Topological Laws hash.
     pub fn expected_laws_hash() -> u128 {
-        Self::compute_laws_hash(Self::Topological_laws_text())
+        Self::compute_laws_hash(Self::topological_laws_text())
     }
 }
 
@@ -368,8 +368,8 @@ mod tests {
         let genesis2 = GenesisNode::create(NetworkId::Mainnet);
         assert_eq!(genesis1.hash, genesis2.hash);
         assert_eq!(
-            genesis1.Topological_laws_hash,
-            genesis2.Topological_laws_hash
+            genesis1.topological_laws_hash,
+            genesis2.topological_laws_hash
         );
     }
 
@@ -378,7 +378,7 @@ mod tests {
         let mainnet = GenesisNode::create(NetworkId::Mainnet);
         let testnet = GenesisNode::create(NetworkId::Testnet);
         assert_ne!(mainnet.hash, testnet.hash);
-        assert_eq!(mainnet.Topological_laws_hash, testnet.Topological_laws_hash);
+        assert_eq!(mainnet.topological_laws_hash, testnet.topological_laws_hash);
         // Same laws
     }
 
@@ -400,7 +400,7 @@ mod tests {
     fn test_genesis_expected_laws_hash() {
         let genesis = GenesisNode::create(NetworkId::Mainnet);
         let expected = GenesisNode::expected_laws_hash();
-        assert_eq!(genesis.Topological_laws_hash, expected);
+        assert_eq!(genesis.topological_laws_hash, expected);
     }
 
     #[test]

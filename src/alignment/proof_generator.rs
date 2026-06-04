@@ -55,7 +55,7 @@ pub struct ProofConfig {
 
 impl ProofConfig {
     /// Default Topological configuration.
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             max_proofs: 128,
             backend: "lean4".to_string(),
@@ -90,7 +90,7 @@ impl ProofConfig {
 
 impl Default for ProofConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -142,7 +142,7 @@ impl ProofGenerator {
     /// Create a new proof generator with default configuration.
     pub fn new() -> Self {
         Self {
-            config: ProofConfig::default_Topological(),
+            config: ProofConfig::default_topological(),
             proofs: HashMap::new(),
             next_id: 1,
         }
@@ -308,7 +308,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = ProofConfig::default_Topological();
+        let config = ProofConfig::default_topological();
         assert_eq!(config.max_proofs, 128);
         assert_eq!(config.backend, "lean4");
         assert_eq!(config.gei_dim, 8);
@@ -317,13 +317,13 @@ mod tests {
 
     #[test]
     fn test_config_validate_valid() {
-        let config = ProofConfig::default_Topological();
+        let config = ProofConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
     #[test]
     fn test_config_validate_zero_proofs() {
-        let mut config = ProofConfig::default_Topological();
+        let mut config = ProofConfig::default_topological();
         config.max_proofs = 0;
         match config.validate() {
             Err(ProofError::InvalidGeometry(msg)) => {
@@ -335,7 +335,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_zero_dim() {
-        let mut config = ProofConfig::default_Topological();
+        let mut config = ProofConfig::default_topological();
         config.gei_dim = 0;
         match config.validate() {
             Err(ProofError::InvalidGeometry(msg)) => {
@@ -347,7 +347,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_bad_threshold() {
-        let mut config = ProofConfig::default_Topological();
+        let mut config = ProofConfig::default_topological();
         config.contraction_threshold = 1.5;
         match config.validate() {
             Err(ProofError::InvalidGeometry(msg)) => {
@@ -359,7 +359,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_unsupported_backend() {
-        let mut config = ProofConfig::default_Topological();
+        let mut config = ProofConfig::default_topological();
         config.backend = "coq".to_string();
         match config.validate() {
             Err(ProofError::UnsupportedBackend(b)) => {
@@ -371,7 +371,7 @@ mod tests {
 
     #[test]
     fn test_config_display() {
-        let config = ProofConfig::default_Topological();
+        let config = ProofConfig::default_topological();
         let s = format!("{}", config);
         assert!(s.contains("lean4"));
         assert!(s.contains("8"));
@@ -430,7 +430,7 @@ mod tests {
 
     #[test]
     fn test_proof_limit() {
-        let mut config = ProofConfig::default_Topological();
+        let mut config = ProofConfig::default_topological();
         config.max_proofs = 2;
         let mut gen = ProofGenerator::with_config(config).unwrap();
         gen.generate_proof(&aligned_gei(), 1000).unwrap();
@@ -477,7 +477,7 @@ mod tests {
 
     #[test]
     fn test_isabelle_backend() {
-        let mut config = ProofConfig::default_Topological();
+        let mut config = ProofConfig::default_topological();
         config.backend = "isabelle".to_string();
         let mut gen = ProofGenerator::with_config(config).unwrap();
         let proof = gen.generate_proof(&aligned_gei(), 1000).unwrap();

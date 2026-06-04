@@ -128,11 +128,11 @@ impl TopologicalTensor {
 /// Trait para convertir `candle::Tensor` (logits) â†’ `TopologicalTensor`.
 pub trait SCTEvaluator {
     /// Convierte un tensor de logits 3D a `TopologicalTensor`.
-    fn to_Topological_tensor(&self) -> Result<TopologicalTensor, SctError>;
+    fn to_topological_tensor(&self) -> Result<TopologicalTensor, SctError>;
 }
 
 impl SCTEvaluator for Tensor {
-    fn to_Topological_tensor(&self) -> Result<TopologicalTensor, SctError> {
+    fn to_topological_tensor(&self) -> Result<TopologicalTensor, SctError> {
         let shape: Vec<usize> = self.shape().dims().to_vec();
         if shape.len() > 2 || (shape.len() == 1 && shape[0] != 3) {
             return Err(SctError::InvalidTensorShape {

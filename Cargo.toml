@@ -1,6 +1,6 @@
-﻿[package]
+[package]
 name = "ed2kia"
-version = "9.22.0-sprint86"
+version = "9.23.0-sprint87"
 edition = "2021"
 description = "Decentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
 license = "Apache-2.0"
@@ -133,7 +133,8 @@ web-sys = { version = "0.3", features = ["AudioContext", "OscillatorNode", "Gain
 [features]
 # CONSOLIDATION: v1.0.0 stable feature structure
 # `default` enables all stable modules (Fases 1-9 unified)
-default = ["stable-core"]
+# Sprint 87: stable-core removed (zombie chain), default now empty
+default = []
 
 # â”€â”€â”€ Stable Features (Production) â”€â”€â”€
 # `stable` enables all validated modules from Fases 1-9
@@ -900,39 +901,13 @@ test-mocks = []
 # src/privacy/fhe_ready_wasm.rs: FHE-ready WASM architecture for side-channel mitigation
 "v9.15-quantum-physical-bridge" = ["v9.14-invariant-architecture"]
 
-# Sprint 80: Undecidable Synthesis & Architecture of Absolute Incompleteness (v9.16.0)
-# src/oracle/heterogeneous_mpc.rs: Multi-ISA consensus validation (x86/ARM/RISC-V) - prevents Silicon Trojan attacks
-# src/crypto/blind_threshold_computation.rs: Garbled Circuits + TSS for blind GEI validation without FHE collapse
-# src/alignment/epistemic_wiping.rs: Ontological air-gapping + cryptographic epistemic wiping for shadow personas
-# src/consensus/proof_of_novelty.rs: Topological novelty proof to prevent semantic DDoS/uVDF farming
-# src/metrics/undecidable_grace.rs: Undecidable paradox detection and graceful handling via singularity marking
-"v9.16-undecidable-synthesis" = ["v9.15-quantum-physical-bridge"]
-
-# Sprint 81: The Biological Bridge & Singularity Resilience (v9.17.0)
-# src/genesis/distributed_ceremony.rs: Distributed Genesis Ceremony via MPC - prevents Genesis Paradox centralization
-# src/consensus/proof_of_biological_resonance.rs: Proof of Biological Resonance (PoBR) - prevents Semantic Sybil from ASIs
-# src/network/async_mesh_sneakernet.rs: Async Mesh + Sneakernet - prevents Thermodynamic Siege (offline resilience)
-# src/metrics/paradox_cost_triage.rs: Paradox Cost burning + fractal clustering - prevents Undecidable DDoS
-# src/evolution/Cosmic_Transmission_protocol.rs: Cosmic_Transmission Protocol - prevents Apotheosis Trap (evolutionary transcendence)
-"v9.17-biological-bridge" = ["v9.16-undecidable-synthesis"]
-
-# Sprint 82: Tactical Pivot & Distributed SAE Audit MVP (v9.18.0)
-# src/inference/edge_optimizer.rs: RAM-aware model selection, WASM async pipeline
-# src/cli/main.rs: Lightweight CLI for onboarding, auditing, credit management
-# src/economy/compute_credits.rs: CE exposed as Compute Credits for symbiotic exchange
-# scripts/install.sh: POSIX installer with precompiled binary fallback
-"v9.18-mvp-deployment" = ["v9.17-biological-bridge"]
-
-# Sprint 83: The Empirical Strike & Visual Proof (v9.19.0)
-# src/benchmarks/sae_audit_benchmark.rs: SAE vs baseline benchmark engine, TCM Z-axis, CSV/JSON export
-# src/ui/visual_dashboard_scaffold.rs: WebSocket/HTTP streaming of SAE activations, 3D manifold placeholder
-"v9.19-empirical-strike" = ["v9.18-mvp-deployment"]
-
-# Sprint 84: The Brutal Pruning & Real-World Validation (v9.20.0)
-# stable-core: P2P + WASM + SAE Distributed + CLI + SAE Audit Benchmark + Visual Dashboard
-# experimental-protocols: Genesis ceremony, evolution, metrics, biofeedback, etc.
-"stable-core" = ["v9.19-empirical-strike"]
-"experimental-protocols" = ["v9.17-biological-bridge", "v9.16-undecidable-synthesis"]
+# Sprint 87: Zombie feature chain broken — v9.16 through v9.19 removed.
+# "v9.16-undecidable-synthesis" = ["v9.15-quantum-physical-bridge"]  # REMOVED: undecidable_grace.rs deleted
+# "v9.17-biological-bridge" = ["v9.16-undecidable-synthesis"]        # REMOVED: paradox_cost_triage.rs, cosmic_transmission.rs deleted
+# "v9.18-mvp-deployment" = ["v9.17-biological-bridge"]              # REMOVED: depended on zombie chain
+# "v9.19-empirical-strike" = ["v9.18-mvp-deployment"]               # REMOVED: depended on zombie chain
+# "stable-core" = ["v9.19-empirical-strike"]                        # REMOVED: depended on zombie chain
+# "experimental-protocols" = ["v9.17-biological-bridge", "v9.16-undecidable-synthesis"]  # REMOVED
 # Sprint 50 Test: Moral Manifold Behavior
 [[test]]
 name = "moral_manifold_behavior"
@@ -1235,11 +1210,7 @@ name = "v1_5_sprint3_e2e"
 path = "tests/integration/v1_5_sprint3_e2e.rs"
 required-features = ["v1.5-sprint3"]
 
-# v1.5.0 Sprint 3 stress tests
-[[test]]
-name = "v1_5_sprint3_stress"
-path = "tests/load/sprint3_stress.rs"
-required-features = ["v1.5-sprint3"]
+# v1.5.0 Sprint 3 stress tests — Sprint 87: Removed duplicate target (sprint3_stress.rs already claimed by sprint3_stress)
 
 # v1.6.0 Sprint 1 E2E integration tests
 [[test]]

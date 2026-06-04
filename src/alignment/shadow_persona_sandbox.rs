@@ -81,7 +81,7 @@ pub struct SandboxConfig {
 }
 
 impl SandboxConfig {
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             max_personas: 16,
             max_divergence: 0.3,
@@ -110,7 +110,7 @@ impl SandboxConfig {
 
 impl Default for SandboxConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -204,7 +204,7 @@ pub struct ShadowPersonaSandbox {
 impl ShadowPersonaSandbox {
     pub fn new() -> Self {
         Self {
-            config: SandboxConfig::default_Topological(),
+            config: SandboxConfig::default_topological(),
             personas: HashMap::new(),
             records: Vec::new(),
             next_id: 1,
@@ -542,7 +542,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = SandboxConfig::default_Topological();
+        let config = SandboxConfig::default_topological();
         assert_eq!(config.max_personas, 16);
         assert_eq!(config.max_divergence, 0.3);
         assert!(config.enforce_muzzle);
@@ -550,7 +550,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = SandboxConfig::default_Topological();
+        let config = SandboxConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
@@ -558,7 +558,7 @@ mod tests {
     fn test_config_zero_personas() {
         let config = SandboxConfig {
             max_personas: 0,
-            ..SandboxConfig::default_Topological()
+            ..SandboxConfig::default_topological()
         };
         assert!(matches!(
             config.validate(),
@@ -570,7 +570,7 @@ mod tests {
     fn test_config_divergence_too_high() {
         let config = SandboxConfig {
             max_divergence: 1.5,
-            ..SandboxConfig::default_Topological()
+            ..SandboxConfig::default_topological()
         };
         assert!(matches!(
             config.validate(),
@@ -646,7 +646,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = SandboxConfig::default_Topological();
+        let config = SandboxConfig::default_topological();
         let sandbox = ShadowPersonaSandbox::with_config(config);
         assert!(sandbox.is_ok());
     }
@@ -663,7 +663,7 @@ mod tests {
     fn test_create_shadow_full() {
         let config = SandboxConfig {
             max_personas: 1,
-            ..SandboxConfig::default_Topological()
+            ..SandboxConfig::default_topological()
         };
         let mut sandbox = ShadowPersonaSandbox::with_config(config).unwrap();
         sandbox.create_shadow(0, &[1]).unwrap();

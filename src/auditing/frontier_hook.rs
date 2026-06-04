@@ -48,7 +48,7 @@ pub struct HookConfig {
 }
 
 impl HookConfig {
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             max_hooks: 64,
             activation_threshold: 0.1,
@@ -61,7 +61,7 @@ impl HookConfig {
 
 impl Default for HookConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 

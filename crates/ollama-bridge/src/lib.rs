@@ -1,4 +1,4 @@
-//! Ollama/LM Studio Bridge — Sprint 86: The Epistemic Annihilation & Pure Engineering Core
+//! Ollama/LM Studio Bridge — Sprint 87: The Reality Engine & Zero-Warning Production Core
 //!
 //! HTTP API wrapper intercepting Ollama/LM Studio local inferences,
 //! injecting SAE audit pipeline + TCM Z-axis calculation.

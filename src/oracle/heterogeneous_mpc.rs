@@ -83,7 +83,7 @@ pub struct MpcConfig {
 }
 
 impl MpcConfig {
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             threshold: 2,
             max_age_ms: 60_000,
@@ -111,7 +111,7 @@ impl MpcConfig {
 
 impl Default for MpcConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -206,7 +206,7 @@ pub struct HeterogeneousMpc {
 impl HeterogeneousMpc {
     pub fn new() -> Self {
         Self {
-            config: MpcConfig::default_Topological(),
+            config: MpcConfig::default_topological(),
             proofs: HashMap::new(),
             records: Vec::new(),
             next_round: 1,
@@ -427,7 +427,7 @@ pub fn fnv_hash_64(data: &[u8]) -> u64 {
 /// FNV-1a 256-bit hash (4x 64-bit)
 fn fnv_hash_256(data: &[u8]) -> Vec<u8> {
     let mut result = Vec::with_capacity(32);
-    let base = fnv_hash_64(data);
+    let _base = fnv_hash_64(data);
     for i in 0..4 {
         let mut combined = Vec::new();
         combined.extend_from_slice(data);
@@ -448,7 +448,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = MpcConfig::default_Topological();
+        let config = MpcConfig::default_topological();
         assert_eq!(config.threshold, 2);
         assert_eq!(config.max_age_ms, 60_000);
         assert!(config.enforce_nonce);
@@ -457,7 +457,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = MpcConfig::default_Topological();
+        let config = MpcConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
@@ -465,7 +465,7 @@ mod tests {
     fn test_config_threshold_too_low() {
         let config = MpcConfig {
             threshold: 1,
-            ..MpcConfig::default_Topological()
+            ..MpcConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -474,7 +474,7 @@ mod tests {
     fn test_config_threshold_too_high() {
         let config = MpcConfig {
             threshold: 4,
-            ..MpcConfig::default_Topological()
+            ..MpcConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -483,7 +483,7 @@ mod tests {
     fn test_config_zero_max_age() {
         let config = MpcConfig {
             max_age_ms: 0,
-            ..MpcConfig::default_Topological()
+            ..MpcConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -492,7 +492,7 @@ mod tests {
     fn test_config_zero_hash_size() {
         let config = MpcConfig {
             hash_size: 0,
-            ..MpcConfig::default_Topological()
+            ..MpcConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -577,7 +577,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = MpcConfig::default_Topological();
+        let config = MpcConfig::default_topological();
         let engine = HeterogeneousMpc::with_config(config);
         assert!(engine.is_ok());
     }

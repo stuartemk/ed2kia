@@ -76,7 +76,7 @@ pub struct AnchorConfig {
 
 impl AnchorConfig {
     /// Default Topological configuration.
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             max_geodesic_drift: 0.15,
             curvature_damping: 0.85,
@@ -102,7 +102,7 @@ impl AnchorConfig {
 
 impl Default for AnchorConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -198,7 +198,7 @@ impl EthicalAnchors {
     /// Create a new ethical anchors engine with default config.
     pub fn new() -> Self {
         Self {
-            config: AnchorConfig::default_Topological(),
+            config: AnchorConfig::default_topological(),
             anchors: HashMap::new(),
             records: Vec::new(),
         }
@@ -450,7 +450,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = AnchorConfig::default_Topological();
+        let config = AnchorConfig::default_topological();
         assert!(config.max_geodesic_drift > 0.0);
         assert!(config.curvature_damping > 0.0);
         assert!(config.min_anchor_count >= 3);
@@ -458,7 +458,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = AnchorConfig::default_Topological();
+        let config = AnchorConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
@@ -466,7 +466,7 @@ mod tests {
     fn test_config_invalid_drift() {
         let config = AnchorConfig {
             max_geodesic_drift: 0.0,
-            ..AnchorConfig::default_Topological()
+            ..AnchorConfig::default_topological()
         };
         assert!(matches!(
             config.validate(),
@@ -478,7 +478,7 @@ mod tests {
     fn test_config_invalid_damping() {
         let config = AnchorConfig {
             curvature_damping: 0.0,
-            ..AnchorConfig::default_Topological()
+            ..AnchorConfig::default_topological()
         };
         assert!(matches!(
             config.validate(),
@@ -490,7 +490,7 @@ mod tests {
     fn test_config_insufficient_min_anchors() {
         let config = AnchorConfig {
             min_anchor_count: 2,
-            ..AnchorConfig::default_Topological()
+            ..AnchorConfig::default_topological()
         };
         assert!(matches!(
             config.validate(),
@@ -526,7 +526,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = AnchorConfig::default_Topological();
+        let config = AnchorConfig::default_topological();
         let engine = EthicalAnchors::with_config(config);
         assert!(engine.is_ok());
     }

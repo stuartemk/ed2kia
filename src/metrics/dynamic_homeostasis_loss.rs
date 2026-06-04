@@ -83,7 +83,7 @@ pub struct HomeostasisConfig {
 
 impl HomeostasisConfig {
     /// Default Topological configuration tuned for asymptotic homeostasis.
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             friction_weight: 0.3,
             entropy_injection_rate: 0.05,
@@ -138,7 +138,7 @@ impl HomeostasisConfig {
 
 impl Default for HomeostasisConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -253,7 +253,7 @@ pub struct DynamicHomeostasisLoss {
 impl DynamicHomeostasisLoss {
     /// Create a new engine with default Topological configuration.
     pub fn new() -> Self {
-        Self::with_config(HomeostasisConfig::default_Topological())
+        Self::with_config(HomeostasisConfig::default_topological())
             .expect("default config should be valid")
     }
 
@@ -541,7 +541,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = HomeostasisConfig::default_Topological();
+        let config = HomeostasisConfig::default_topological();
         assert_eq!(config.friction_weight, 0.3);
         assert_eq!(config.entropy_injection_rate, 0.05);
         assert_eq!(config.max_entropy_budget, 0.5);
@@ -553,7 +553,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = HomeostasisConfig::default_Topological();
+        let config = HomeostasisConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
@@ -561,7 +561,7 @@ mod tests {
     fn test_config_zero_friction_weight() {
         let config = HomeostasisConfig {
             friction_weight: 0.0,
-            ..HomeostasisConfig::default_Topological()
+            ..HomeostasisConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -570,7 +570,7 @@ mod tests {
     fn test_config_friction_weight_too_high() {
         let config = HomeostasisConfig {
             friction_weight: 1.1,
-            ..HomeostasisConfig::default_Topological()
+            ..HomeostasisConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -579,7 +579,7 @@ mod tests {
     fn test_config_zero_entropy_rate() {
         let config = HomeostasisConfig {
             entropy_injection_rate: 0.0,
-            ..HomeostasisConfig::default_Topological()
+            ..HomeostasisConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -588,7 +588,7 @@ mod tests {
     fn test_config_zero_budget() {
         let config = HomeostasisConfig {
             max_entropy_budget: 0.0,
-            ..HomeostasisConfig::default_Topological()
+            ..HomeostasisConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -597,7 +597,7 @@ mod tests {
     fn test_config_zero_history() {
         let config = HomeostasisConfig {
             max_history_entries: 0,
-            ..HomeostasisConfig::default_Topological()
+            ..HomeostasisConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -641,7 +641,7 @@ mod tests {
 
     #[test]
     fn test_engine_with_config() {
-        let config = HomeostasisConfig::default_Topological();
+        let config = HomeostasisConfig::default_topological();
         let engine = DynamicHomeostasisLoss::with_config(config);
         assert!(engine.is_ok());
     }

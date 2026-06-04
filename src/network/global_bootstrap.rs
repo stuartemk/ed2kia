@@ -94,7 +94,7 @@ pub struct BootstrapProtocolConfig {
 
 impl BootstrapProtocolConfig {
     /// Default Topological configuration.
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             min_seeds: 3,
             diversity_threshold: 0.5,
@@ -122,7 +122,7 @@ impl BootstrapProtocolConfig {
 
 impl Default for BootstrapProtocolConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -225,7 +225,7 @@ pub struct GlobalBootstrap {
 impl GlobalBootstrap {
     pub fn new() -> Self {
         Self {
-            config: BootstrapProtocolConfig::default_Topological(),
+            config: BootstrapProtocolConfig::default_topological(),
             phase: BootstrapPhase::Stealth,
             nodes: HashMap::new(),
             active_seeds: Vec::new(),
@@ -614,7 +614,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = BootstrapProtocolConfig::default_Topological();
+        let config = BootstrapProtocolConfig::default_topological();
         assert_eq!(config.min_seeds, 3);
         assert_eq!(config.diversity_threshold, 0.5);
         assert_eq!(config.max_nodes_per_fingerprint, 3);
@@ -622,14 +622,14 @@ mod tests {
 
     #[test]
     fn test_config_validate() {
-        assert!(BootstrapProtocolConfig::default_Topological()
+        assert!(BootstrapProtocolConfig::default_topological()
             .validate()
             .is_ok());
     }
 
     #[test]
     fn test_config_zero_seeds() {
-        let mut config = BootstrapProtocolConfig::default_Topological();
+        let mut config = BootstrapProtocolConfig::default_topological();
         config.min_seeds = 0;
         assert!(config.validate().is_err());
     }
@@ -696,7 +696,7 @@ mod tests {
 
     #[test]
     fn test_sybil_on_register() {
-        let mut config = BootstrapProtocolConfig::default_Topological();
+        let mut config = BootstrapProtocolConfig::default_topological();
         config.max_nodes_per_fingerprint = 2;
         let mut bootstrap = GlobalBootstrap::with_config(config).unwrap();
         let seeds = vec![
@@ -717,7 +717,7 @@ mod tests {
 
     #[test]
     fn test_phase_advancement() {
-        let mut config = BootstrapProtocolConfig::default_Topological();
+        let mut config = BootstrapProtocolConfig::default_topological();
         config.min_nodes_per_phase = 2;
         let mut bootstrap = GlobalBootstrap::with_config(config).unwrap();
         let seeds = vec![

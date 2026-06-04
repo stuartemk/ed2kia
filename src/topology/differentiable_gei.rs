@@ -52,7 +52,7 @@ pub struct DiffGeiConfig {
 }
 
 impl DiffGeiConfig {
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             smoothing: 0.1,
             max_simplices: 2048,
@@ -77,7 +77,7 @@ impl DiffGeiConfig {
 
 impl Default for DiffGeiConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -119,7 +119,7 @@ pub struct DifferentiableGei {
 impl DifferentiableGei {
     pub fn new() -> Self {
         Self {
-            config: DiffGeiConfig::default_Topological(),
+            config: DiffGeiConfig::default_topological(),
             records: Vec::new(),
         }
     }
@@ -363,7 +363,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = DiffGeiConfig::default_Topological();
+        let config = DiffGeiConfig::default_topological();
         assert!(config.smoothing > 0.0);
         assert!(config.max_simplices > 0);
         assert!(config.gradients_enabled);
@@ -371,7 +371,7 @@ mod tests {
 
     #[test]
     fn test_config_validate() {
-        let config = DiffGeiConfig::default_Topological();
+        let config = DiffGeiConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
@@ -379,7 +379,7 @@ mod tests {
     fn test_config_invalid_smoothing() {
         let config = DiffGeiConfig {
             smoothing: -0.1,
-            ..DiffGeiConfig::default_Topological()
+            ..DiffGeiConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -388,7 +388,7 @@ mod tests {
     fn test_config_zero_simplices() {
         let config = DiffGeiConfig {
             max_simplices: 0,
-            ..DiffGeiConfig::default_Topological()
+            ..DiffGeiConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -401,7 +401,7 @@ mod tests {
 
     #[test]
     fn test_proxy_with_config() {
-        let config = DiffGeiConfig::default_Topological();
+        let config = DiffGeiConfig::default_topological();
         let proxy = DifferentiableGei::with_config(config).unwrap();
         assert_eq!(proxy.records.len(), 0);
     }
@@ -434,7 +434,7 @@ mod tests {
     fn test_approximation_with_gradients() {
         let config = DiffGeiConfig {
             gradients_enabled: true,
-            ..DiffGeiConfig::default_Topological()
+            ..DiffGeiConfig::default_topological()
         };
         let mut proxy = DifferentiableGei::with_config(config).unwrap();
         let activations = make_activations(10, 8);

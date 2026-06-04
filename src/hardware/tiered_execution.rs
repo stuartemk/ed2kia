@@ -197,7 +197,7 @@ pub struct TieredConfig {
 }
 
 impl TieredConfig {
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             memory_pool_size: 1024 * 1024 * 64, // 64 MB
             max_nodes_per_tier: 256,
@@ -229,7 +229,7 @@ impl TieredConfig {
 
 impl Default for TieredConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -374,7 +374,7 @@ pub struct TieredExecutor {
 impl TieredExecutor {
     pub fn new() -> Self {
         Self {
-            config: TieredConfig::default_Topological(),
+            config: TieredConfig::default_topological(),
             nodes: HashMap::new(),
             memory_pool: MemoryPool::new(1024 * 1024 * 64),
             tier_counts: HashMap::new(),
@@ -621,14 +621,14 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = TieredConfig::default_Topological();
+        let config = TieredConfig::default_topological();
         assert!(config.auto_tier);
         assert!(config.memory_pooling);
     }
 
     #[test]
     fn test_config_validate_ok() {
-        let config = TieredConfig::default_Topological();
+        let config = TieredConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
@@ -636,7 +636,7 @@ mod tests {
     fn test_config_zero_pool() {
         let config = TieredConfig {
             memory_pool_size: 0,
-            ..TieredConfig::default_Topological()
+            ..TieredConfig::default_topological()
         };
         assert_eq!(config.validate(), Err(TierError::InvalidMemorySize(0)));
     }
@@ -645,7 +645,7 @@ mod tests {
     fn test_config_zero_nodes() {
         let config = TieredConfig {
             max_nodes_per_tier: 0,
-            ..TieredConfig::default_Topological()
+            ..TieredConfig::default_topological()
         };
         assert_eq!(config.validate(), Err(TierError::InvalidConfig));
     }
@@ -764,7 +764,7 @@ mod tests {
 
     #[test]
     fn test_executor_with_config() {
-        let config = TieredConfig::default_Topological();
+        let config = TieredConfig::default_topological();
         let executor = TieredExecutor::with_config(config).unwrap();
         assert_eq!(executor.node_count(), 0);
     }

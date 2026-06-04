@@ -17,5 +17,4 @@ pub mod staleness;
 #[cfg(feature = "v2.1-bft-aggregation")]
 pub mod bft_aggregator;
 
-#[cfg(feature = "v2.1-network-byzantine_eviction")]
-pub mod network_byzantine_eviction;
+// Sprint 87: network_byzantine_eviction removed (zombie module)

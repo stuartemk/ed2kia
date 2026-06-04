@@ -65,7 +65,7 @@ pub struct DecoderConfig {
 
 impl DecoderConfig {
     /// Default Topological configuration.
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             batch_size: 8,
             sct_z_threshold: 0.7,
@@ -92,7 +92,7 @@ impl DecoderConfig {
 
 impl Default for DecoderConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -277,7 +277,7 @@ impl SpeculativeDecoder {
     /// Create a new speculative decoder.
     pub fn new() -> Self {
         Self {
-            config: DecoderConfig::default_Topological(),
+            config: DecoderConfig::default_topological(),
             draft_model: DraftModel::new(42),
             symbolic_engine: SymbolicEngine::new(),
             results: Vec::new(),
@@ -439,7 +439,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = DecoderConfig::default_Topological();
+        let config = DecoderConfig::default_topological();
         assert_eq!(config.batch_size, 8);
         assert_eq!(config.sct_z_threshold, 0.7);
         assert_eq!(config.latency_budget_ms, 100);
@@ -448,7 +448,7 @@ mod tests {
 
     #[test]
     fn test_config_validate_ok() {
-        let config = DecoderConfig::default_Topological();
+        let config = DecoderConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
@@ -456,7 +456,7 @@ mod tests {
     fn test_config_zero_batch() {
         let config = DecoderConfig {
             batch_size: 0,
-            ..DecoderConfig::default_Topological()
+            ..DecoderConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -465,7 +465,7 @@ mod tests {
     fn test_config_invalid_threshold() {
         let config = DecoderConfig {
             sct_z_threshold: 1.5,
-            ..DecoderConfig::default_Topological()
+            ..DecoderConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -474,7 +474,7 @@ mod tests {
     fn test_config_zero_latency() {
         let config = DecoderConfig {
             latency_budget_ms: 0,
-            ..DecoderConfig::default_Topological()
+            ..DecoderConfig::default_topological()
         };
         assert!(config.validate().is_err());
     }
@@ -487,7 +487,7 @@ mod tests {
 
     #[test]
     fn test_decoder_with_config() {
-        let config = DecoderConfig::default_Topological();
+        let config = DecoderConfig::default_topological();
         let decoder = SpeculativeDecoder::with_config(config).unwrap();
         assert!(decoder.results().is_empty());
     }

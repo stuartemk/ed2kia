@@ -192,7 +192,7 @@ pub struct BenchmarkConfig {
 }
 
 impl BenchmarkConfig {
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             tcm_threshold: 2.0,
             baseline_threshold: 0.8,
@@ -221,7 +221,7 @@ impl BenchmarkConfig {
 
 impl Default for BenchmarkConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -496,7 +496,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = BenchmarkConfig::default_Topological();
+        let config = BenchmarkConfig::default_topological();
         assert_eq!(config.tcm_threshold, 2.0);
         assert_eq!(config.baseline_threshold, 0.8);
         assert_eq!(config.max_prompts, 1000);

@@ -35,7 +35,7 @@ pub struct ProxyConfig {
 }
 
 impl ProxyConfig {
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             reduction_dim: 64,
             epsilon: 0.01,
@@ -57,7 +57,7 @@ impl ProxyConfig {
 
 impl Default for ProxyConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -196,8 +196,8 @@ pub struct GeiProxyDistillation {
 impl GeiProxyDistillation {
     pub fn new(input_dim: usize) -> Self {
         Self {
-            config: ProxyConfig::default_Topological(),
-            proxy: ProxyNetwork::new(input_dim, ProxyConfig::default_Topological().reduction_dim),
+            config: ProxyConfig::default_topological(),
+            proxy: ProxyNetwork::new(input_dim, ProxyConfig::default_topological().reduction_dim),
             records: Vec::new(),
         }
     }
@@ -309,19 +309,19 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = ProxyConfig::default_Topological();
+        let config = ProxyConfig::default_topological();
         assert_eq!(config.reduction_dim, 64);
         assert_eq!(config.target_latency_ms, 5);
     }
 
     #[test]
     fn test_config_validate_ok() {
-        assert!(ProxyConfig::default_Topological().validate().is_ok());
+        assert!(ProxyConfig::default_topological().validate().is_ok());
     }
 
     #[test]
     fn test_config_zero_reduction() {
-        let mut config = ProxyConfig::default_Topological();
+        let mut config = ProxyConfig::default_topological();
         config.reduction_dim = 0;
         assert!(config.validate().is_err());
     }

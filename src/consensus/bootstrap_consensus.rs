@@ -104,7 +104,7 @@ pub struct BootstrapConfig {
 
 impl BootstrapConfig {
     /// Default Topological configuration.
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             pow_difficulty: 4,
             min_trust_endorsements: 2,
@@ -131,7 +131,7 @@ impl BootstrapConfig {
 
 impl Default for BootstrapConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -257,7 +257,7 @@ pub struct BootstrapConsensus {
 impl BootstrapConsensus {
     pub fn new() -> Self {
         Self {
-            config: BootstrapConfig::default_Topological(),
+            config: BootstrapConfig::default_topological(),
             trust_graph: TrustGraph::new(),
             nodes: HashMap::new(),
             records: Vec::new(),
@@ -555,7 +555,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = BootstrapConfig::default_Topological();
+        let config = BootstrapConfig::default_topological();
         assert_eq!(config.pow_difficulty, 4);
         assert_eq!(config.min_trust_endorsements, 2);
         assert_eq!(config.morphic_threshold, 0.7);
@@ -563,19 +563,19 @@ mod tests {
 
     #[test]
     fn test_config_validate() {
-        assert!(BootstrapConfig::default_Topological().validate().is_ok());
+        assert!(BootstrapConfig::default_topological().validate().is_ok());
     }
 
     #[test]
     fn test_config_invalid_difficulty_zero() {
-        let mut config = BootstrapConfig::default_Topological();
+        let mut config = BootstrapConfig::default_topological();
         config.pow_difficulty = 0;
         assert_eq!(config.validate(), Err(BootstrapError::InvalidDifficulty(0)));
     }
 
     #[test]
     fn test_config_invalid_difficulty_high() {
-        let mut config = BootstrapConfig::default_Topological();
+        let mut config = BootstrapConfig::default_topological();
         config.pow_difficulty = 25;
         assert_eq!(
             config.validate(),
@@ -654,7 +654,7 @@ mod tests {
         consensus.add_seed_node(1, make_fingerprint(1), 1000);
 
         // Lower morphic threshold for testing
-        let mut config = BootstrapConfig::default_Topological();
+        let mut config = BootstrapConfig::default_topological();
         config.morphic_threshold = 0.0;
         consensus = BootstrapConsensus::with_config(config).unwrap();
         consensus.add_seed_node(1, make_fingerprint(1), 1000);
@@ -666,7 +666,7 @@ mod tests {
 
     #[test]
     fn test_validate_bootstrap_insufficient_trust() {
-        let mut config = BootstrapConfig::default_Topological();
+        let mut config = BootstrapConfig::default_topological();
         config.morphic_threshold = 0.0;
         let mut consensus = BootstrapConsensus::with_config(config).unwrap();
 
@@ -725,7 +725,7 @@ mod tests {
         let mut graph = TrustGraph::new();
         graph.endorse(1, 100);
         graph.endorse(2, 100);
-        let config = BootstrapConfig::default_Topological();
+        let config = BootstrapConfig::default_topological();
         // With nonce 0, hash may or may not pass â€” just verify no panic
         let _ = validate_bootstrap_node(0, &make_fingerprint(1), &graph, &config, 100);
     }

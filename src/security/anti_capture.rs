@@ -74,7 +74,7 @@ pub struct CaptureConfig {
 
 impl CaptureConfig {
     /// Default Topological configuration.
-    pub fn default_Topological() -> Self {
+    pub fn default_topological() -> Self {
         Self {
             max_region_weight: 0.3,
             pow_difficulty: 4,
@@ -112,7 +112,7 @@ impl CaptureConfig {
 
 impl Default for CaptureConfig {
     fn default() -> Self {
-        Self::default_Topological()
+        Self::default_topological()
     }
 }
 
@@ -188,7 +188,7 @@ impl AntiCapture {
     /// Create with default configuration.
     pub fn new() -> Self {
         Self {
-            config: CaptureConfig::default_Topological(),
+            config: CaptureConfig::default_topological(),
             nodes: HashMap::new(),
             region_weights: HashMap::new(),
             fingerprint_counts: HashMap::new(),
@@ -386,20 +386,20 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = CaptureConfig::default_Topological();
+        let config = CaptureConfig::default_topological();
         assert!((config.max_region_weight - 0.3).abs() < 1e-6);
         assert_eq!(config.pow_difficulty, 4);
     }
 
     #[test]
     fn test_config_validate_valid() {
-        let config = CaptureConfig::default_Topological();
+        let config = CaptureConfig::default_topological();
         assert!(config.validate().is_ok());
     }
 
     #[test]
     fn test_config_validate_bad_difficulty() {
-        let mut config = CaptureConfig::default_Topological();
+        let mut config = CaptureConfig::default_topological();
         config.pow_difficulty = 25;
         match config.validate() {
             Err(CaptureError::InvalidDifficulty(25)) => {}
@@ -409,7 +409,7 @@ mod tests {
 
     #[test]
     fn test_config_display() {
-        let config = CaptureConfig::default_Topological();
+        let config = CaptureConfig::default_topological();
         let s = format!("{}", config);
         assert!(s.contains("max_region: 30%"));
     }
@@ -433,7 +433,7 @@ mod tests {
 
     #[test]
     fn test_sybil_detection() {
-        let mut config = CaptureConfig::default_Topological();
+        let mut config = CaptureConfig::default_topological();
         config.max_nodes_per_fingerprint = 2;
         let mut ac = AntiCapture::with_config(config).unwrap();
         ac.register_node(1, "na".to_string(), "same_fp".to_string())
@@ -448,7 +448,7 @@ mod tests {
 
     #[test]
     fn test_region_weight_limit() {
-        let mut config = CaptureConfig::default_Topological();
+        let mut config = CaptureConfig::default_topological();
         config.max_region_weight = 0.4;
         let mut ac = AntiCapture::with_config(config).unwrap();
         // Register multiple nodes in same region.
