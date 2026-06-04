@@ -1,8 +1,8 @@
 [package]
-name = "ollama-bridge"
+name = "llamacpp-bridge"
 version = "0.1.0"
 edition = "2021"
-description = "Ollama/LM Studio bridge API for ed2kIA SAE audit pipeline"
+description = "llama.cpp bridge API for ed2kIA SAE audit pipeline (OpenAI-compatible, localhost:8080)"
 license = "MIT"
 
 [dependencies]

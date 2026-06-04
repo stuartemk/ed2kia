@@ -1477,8 +1477,16 @@ pub fn enabled_features() -> Vec<&'static str> {
     #[cfg(feature = "stable")]
     {
         features.extend([
-            "stable", "p2p", "sae", "consensus", "alignment",
-            "federation", "marketplace", "ui", "slo", "governance",
+            "stable",
+            "p2p",
+            "sae",
+            "consensus",
+            "alignment",
+            "federation",
+            "marketplace",
+            "ui",
+            "slo",
+            "governance",
         ]);
     }
 

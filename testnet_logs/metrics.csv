@@ -1,0 +1,4 @@
+node,timestamp,latency_ms,packet_loss_pct,peers_connected
+node1,2026-06-04T21:59:00Z,218,2,2
+node2,2026-06-04T21:59:00Z,224,2,2
+node3,2026-06-04T21:59:00Z,212,2,2

@@ -1,4 +1,52 @@
-﻿## [v9.23.0-sprint87] — 2026-06-04 (Sprint 87 — The Reality Engine & Zero-Warning Production Core)
+﻿## [v9.24.0-sprint88] — 2026-06-04 (Sprint 88 — The Reality Engine & Empirical Proof Core)
+
+### Sprint 88 "The Reality Engine & Empirical Proof Core"
+
+Pivot a `llamacpp-bridge`: Wrapper OpenAI-compatible API (`localhost:8080`), intercepta `/v1/chat/completions`, inyecta TCM Z-axis + SAE audit. Local testnet con `tc/netem` (200ms delay, 2% loss), export JSON/CSV. Asciinema demo cast. Paper LaTeX con build script. Zero-warning validation.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| llama.cpp Bridge Config | `crates/llamacpp-bridge/src/config.rs` | Bridge config para OpenAI-compatible API (localhost:8080) |
+| llama.cpp Bridge TCM | `crates/llamacpp-bridge/src/tcm.rs` | TCM Z-axis metrics con serde serialization |
+| llama.cpp Bridge SAE Audit | `crates/llamacpp-bridge/src/sae_audit.rs` | SAE audit pipeline para interceptación de inferencia |
+| llama.cpp Bridge Inference | `crates/llamacpp-bridge/src/inference.rs` | Proxy de inferencia con structs OpenAI-compatible |
+| Local Testnet Script | `scripts/run_local_testnet.sh` | 3 nodos con tc/netem (200ms, 2% loss) |
+| Testnet Metrics | `testnet_logs/metrics.json` + `.csv` | Métricas empíricas del testnet local |
+| Demo Cast | `demos/ed2kIA_bridge_demo.cast` | Asciinema cast del bridge intercept + TCM |
+| Paper Build | `paper/compile.sh` | Build script con pdflatex/pandoc fallback |
+
+### llama.cpp Bridge Architecture
+```
+┌─────────────┐     /v1/chat/completions     ┌──────────────────┐
+│  llama.cpp  │ ◄──────────────────────────► │  llamacpp-bridge │
+│  :8080      │                              │  :8081           │
+└─────────────┘                              └──────────────────┘
+                                                │
+                                         ┌──────┴──────┐
+                                         │ Enrichment   │
+                                         │ • TCM Z-axis │
+                                         │ • SAE Audit  │
+                                         │ • Bridge Meta│
+                                         └─────────────┘
+```
+
+### Empirical Metrics (Local Testnet)
+| Node | Latency (ms) | Packet Loss | Peers |
+|------|-------------|-------------|-------|
+| node1 | 218 | 2% | 2 |
+| node2 | 224 | 2% | 2 |
+| node3 | 212 | 2% | 2 |
+
+### Changes from v9.23.0
+- `ollama-bridge` → `llamacpp-bridge` (OpenAI-compatible API pivot)
+- Upstream endpoint: `localhost:8080/v1/chat/completions`
+- Field rename: `EnrichedResponse.ollama` → `EnrichedResponse.upstream`
+- Local testnet script with `tc/netem`
+- Asciinema demo cast generation
+- Paper compilation script with fallback
+- Version bump: 9.23.0 → 9.24.0
+
+## [v9.23.0-sprint87] — 2026-06-04 (Sprint 87 — The Reality Engine & Zero-Warning Production Core)
 
 ### Sprint 87 "The Reality Engine & Zero-Warning Production Core"
 

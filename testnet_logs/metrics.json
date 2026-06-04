@@ -1,0 +1,29 @@
+{
+  "sprint": "v9.24.0-sprint88",
+  "timestamp": "2026-06-04T21:59:00Z",
+  "config": {
+    "delay": "200ms",
+    "loss": "2%",
+    "nodes": 3
+  },
+  "nodes": [
+    {
+      "node": "node1",
+      "latency_ms": 218,
+      "packet_loss_pct": 2,
+      "peers_connected": 2
+    },
+    {
+      "node": "node2",
+      "latency_ms": 224,
+      "packet_loss_pct": 2,
+      "peers_connected": 2
+    },
+    {
+      "node": "node3",
+      "latency_ms": 212,
+      "packet_loss_pct": 2,
+      "peers_connected": 2
+    }
+  ]
+}
