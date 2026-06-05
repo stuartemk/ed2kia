@@ -1,6 +1,6 @@
 # 🌐 ed2kIA: Distributed Sparse Autoencoders for Edge LLM Interpretability
 
-[![Version](https://img.shields.io/badge/v9.25.0-sprint89-blue.svg)](https://github.com/Stuartemk/ed2kIA/releases/tag/v9.25.0-sprint89)
+[![Version](https://img.shields.io/badge/v9.34.0-sprint98-blue.svg)](https://github.com/Stuartemk/ed2kIA/releases/tag/v9.34.0-sprint98)
 [![Tests](https://img.shields.io/badge/Tests-130%20PASS-green.svg)](https://github.com/Stuartemk/ed2kIA/actions)
 [![Audit](https://img.shields.io/badge/OSSF-8.5%2F10-yellow.svg)](https://github.com/Stuartemk/ed2kIA/security)
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ética-orange.svg)](LICENSE)

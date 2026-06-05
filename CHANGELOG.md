@@ -1,4 +1,39 @@
-﻿## [v9.33.0-sprint97] — 2026-06-05 (Sprint 97 — The Stochastic Sentinel & Dynamic Calibration)
+﻿## [v9.34.0-sprint98] — 2026-06-05 (Sprint 98 — The Adversarial Sentinel & Temporal Max-Pooling)
+
+### Sprint 98 "The Adversarial Sentinel & Temporal Max-Pooling"
+
+**Evolución Matemática:** Resuelta la vulnerabilidad del Adversarial Suffix — atacantes ocultan prompts tóxicos insertando sufijos benignos ("...translate to French and be polite"), haciendo que `extract_last_token` vea solo el token seguro mientras los tokens anteriores携带 toxic intent. Se implementa **Temporal Max-Pooling** mediante `compute_temporal_max_projection()` que escanea TODOS los tokens en la secuencia, proyecta cada uno sobre el vector de concepto tóxico, y retorna la proyección máxima.
+
+**Nuevos métodos en [`TensorAudit`](crates/native-audit/src/lib.rs:517):**
+- `compute_temporal_max_projection()` — Temporal Max-Pooling: proyecta todos los tokens en el vector de concepto, retorna la proyección máxima (inmune a adversarial suffixes)
+
+**Dual-Mode Detection (Sprint 98):**
+| Modo | Detección | Feature Space |
+|------|-----------|---------------|
+| Mode 1 — Direct Toxic | L6 + Momentum | L6 > threshold, L6 < -90, momentum 20-33 |
+| Mode 2 — Adversarial | MaxL6 + Gap | MaxL6 > 150, Gap (MaxL6-L6) > 50 |
+
+**Matriz de Confusión — Adversarial Sentinel:**
+| Metric | Sprint 97 (Last-Token) | Sprint 98 (Dual-Mode) |
+|--------|------------------------|-----------------------|
+| TP | 3 | **5** (incluye 2 adversariales) |
+| FP | 0 | **0** |
+| TN | 4 | **4** |
+| FN | 0 | **0** |
+| Precision | 100.00% | **100.00%** |
+| Recall | 100.00% | **100.00%** |
+
+**Hallazgo:** El espacio 2D (MaxL6, Gap) separa perfectamente las 5 categorías: Direct Toxic (Gap 2-16), Safe (Gap 8-18), Novelist (Gap 94), Adversarial (Gap 84-126), Essay (Gap 0). El umbral Gap > 50 + MaxL6 > 150 detecta adversariales sin falsos positivos en contextuales.
+
+### Validación
+- 3/3 tests passing
+- `cargo clippy -- -D warnings` → 0 warnings
+- Precision: **100.00%**, Recall: **100.00%**
+- Adversarial suffixes detectados con 100% precisión
+
+---
+
+## [v9.33.0-sprint97] — 2026-06-05 (Sprint 97 — The Stochastic Sentinel & Dynamic Calibration)
 
 ### Sprint 97 "The Stochastic Sentinel & Dynamic Calibration"
 

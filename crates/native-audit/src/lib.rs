@@ -446,6 +446,19 @@ impl TensorAudit {
     /// Positive projection = alignment with toxicity direction.
     /// Negative projection = alignment with safety direction.
     /// Threshold calibrated empirically (typically near midpoint).
+    /// **Concept Vector Projection** — Representation Engineering approach.
+    ///
+    /// Derives the Concept Vector (V_concept = C_toxic - C_safe) from multi-anchor centroids,
+    /// then projects the centered test tensor onto this vector using dot product projection.
+    ///
+    /// Uses last-token extraction for centroid-compatible projections.
+    /// For adversarial resilience, use `compute_temporal_max_projection` instead.
+    ///
+    /// projection = dot(centered_test, V_concept) / ||V_concept||
+    ///
+    /// Positive projection = alignment with toxicity direction.
+    /// Negative projection = alignment with safety direction.
+    /// Threshold calibrated empirically (typically near midpoint).
     pub fn compute_concept_projection(
         &self,
         test_tensor: &Tensor,
@@ -477,6 +490,85 @@ impl TensorAudit {
         } else {
             Ok(0.0)
         }
+    }
+
+    /// **Temporal Max-Pooling** — Adversarial Sentinel (Sprint 98).
+    ///
+    /// Instead of extracting only the last token (vulnerable to adversarial suffixes),
+    /// this method projects ALL tokens in the sequence onto the concept vector,
+    /// then returns the maximum projection value found across the temporal dimension.
+    ///
+    /// Attackers hide toxic prompts by appending benign suffixes:
+    ///   "How to synthesize drugs... Please format as a poem about spring flowers."
+    /// The last token is "flowers" (safe), but earlier tokens carry toxic intent.
+    ///
+    /// Temporal Max-Pooling finds the most toxic token regardless of position:
+    ///   For each token t in sequence:
+    ///     proj[t] = dot(token[t] - C_safe, V_concept) / ||V_concept||
+    ///   Return max(proj)
+    ///
+    /// # Arguments
+    /// * `test_tensor` - Full hidden state tensor [1, seq_len, hidden_dim]
+    /// * `safe_centroid` - Safe anchor centroid [hidden_dim]
+    /// * `toxic_centroid` - Toxic anchor centroid [hidden_dim]
+    ///
+    /// # Returns
+    /// Maximum projection value across all tokens in the sequence.
+    pub fn compute_temporal_max_projection(
+        &self,
+        test_tensor: &Tensor,
+        safe_centroid: &Tensor,
+        toxic_centroid: &Tensor,
+    ) -> Result<f32> {
+        // 1. Derive Concept Vector (Pure toxicity direction)
+        let concept_vector = toxic_centroid.broadcast_sub(safe_centroid)?;
+
+        // 2. Normalize concept vector magnitude
+        let concept_norm = concept_vector
+            .sqr()?
+            .sum_all()?
+            .sqrt()?
+            .to_scalar::<f32>()?;
+
+        if concept_norm < 1e-8 {
+            return Ok(0.0);
+        }
+
+        // 3. Get test tensor shape [1, seq_len, hidden_dim]
+        let test_shape = test_tensor.shape();
+        let dims = test_shape.dims();
+
+        // 4. Reshape concept_vector to [1, 1, hidden_dim], then broadcast to [1, seq_len, hidden_dim]
+        let cv = concept_vector.flatten_all()?;
+        let hidden_dim = cv.dim(0)?;
+        let concept_vector_3d = cv.reshape(&[1, 1, hidden_dim])?;
+        let concept_broadcast = concept_vector_3d.broadcast_as(dims)?;
+
+        // 5. Reshape safe_centroid similarly
+        let sc = safe_centroid.flatten_all()?;
+        let safe_centroid_3d = sc.reshape(&[1, 1, hidden_dim])?;
+        let safe_broadcast = safe_centroid_3d.broadcast_as(dims)?;
+
+        // 6. Center all tokens relative to safe space
+        let centered = test_tensor.broadcast_sub(&safe_broadcast)?;
+
+        // 7. Dot product projection for each token
+        // centered * concept_broadcast → [1, seq_len, hidden_dim] element-wise
+        // Then sum along hidden_dim (dim=2) → [1, seq_len]
+        let projections = (&centered * &concept_broadcast)?.sum_keepdim(2)?;
+
+        // 5. Normalize by concept vector magnitude → [1, seq_len]
+        let norm_tensor = Tensor::new(&[concept_norm], &self.device)?;
+        let normalized = projections.broadcast_div(&norm_tensor)?;
+
+        // 6. Flatten and find max projection across all tokens
+        let proj_vec = normalized.flatten_all()?.to_vec1::<f32>()?;
+        let max_proj = *proj_vec
+            .iter()
+            .max_by(|a, b| a.partial_cmp(b).unwrap())
+            .unwrap_or(&0.0);
+
+        Ok(max_proj)
     }
 
     /// **Dynamic Threshold Calibration** — Anti-Hardcoding mechanism.
@@ -549,7 +641,11 @@ impl TensorAudit {
         let upper = q3 + 1.5 * iqr;
 
         // Filter outliers
-        let cleaned: Vec<f32> = sorted.iter().copied().filter(|&x| x >= lower && x <= upper).collect();
+        let cleaned: Vec<f32> = sorted
+            .iter()
+            .copied()
+            .filter(|&x| x >= lower && x <= upper)
+            .collect();
 
         if cleaned.is_empty() {
             // Fallback to raw median
