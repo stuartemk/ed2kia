@@ -1,7 +1,7 @@
 ﻿# P2P Symbiotic Cognitive Architectures: Beyond RLHF and the Mathematical Necessity of Decentralization for AGI Alignment
 
-**Author:** Stuartemk  
-**Version:** 1.0.0-sprint88 | **Date:** June 2026
+**Author:** Stuartemk
+**Version:** 1.0.0-sprint89 | **Date:** June 2026
 **License:** Apache 2.0 + Ethical Use Clause  
 
 ---
@@ -45,7 +45,9 @@ The fundamental unit of the ed2kIA network is the **Omni-Node**, a software enti
 
 3. **Existential Credit (CE) Ledger** â€” A cooperative DAG (Directed Acyclic Graph) that records computational contributions without financial logic. Nodes earn CE through verified inference work, audit participation, and ethical alignment maintenance. CE functions as a proof-of-merit consensus: the more a node contributes to collective understanding, the greater its influence in governance and aggregation.
 
-4. **SCT Guard (Symbolic Coherence Threshold)** â€” A real-time ethical validation layer that monitors the Z-axis of the Topological Coherence Tensor (SCT). The SCT encodes three dimensions: semantic fidelity (X), cooperative alignment (Y), and ethical coherence (Z). When Z falls below zero, the Guard triggers network Byzantine_Eviction â€” the automatic isolation of misaligned nodes through a process analogous to biological programmed cell death.
+4. **SCT Guard (Symbolic Coherence Threshold)** — A real-time ethical validation layer that monitors the Z-axis of the Topological Coherence Tensor (SCT). The SCT encodes three dimensions: semantic fidelity (X), cooperative alignment (Y), and ethical coherence (Z). When Z falls below zero, the Guard triggers network Byzantine_Eviction — the automatic isolation of misaligned nodes through a process analogous to biological programmed cell death.
+
+5. **Native Tensor Audit Core (v9.25.0)** — Direct extraction of hidden states via `candle-core` (HuggingFace's Rust ML framework), eliminating dependency on HTTP proxies. The `native-audit` crate loads models natively, performs manual forward passes through Llama blocks, and computes TCM Z-axis on real f32 tensors. Secure abort triggers when `Z-axis < -2.0`, ensuring empirical validation over simulated metrics.
 
 ### 2.2 Network Byzantine_Eviction: A Computational Immune System
 

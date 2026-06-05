@@ -1,4 +1,31 @@
-﻿## [v9.24.0-sprint88] — 2026-06-04 (Sprint 88 — The Reality Engine & Empirical Proof Core)
+﻿## [v9.25.0-sprint89] — 2026-06-05 (Sprint 89 — The Truth Engine & Native Tensor Audit Core)
+
+### Sprint 89 "The Truth Engine & Native Tensor Audit Core"
+
+**Pivote Tensorial:** `llamacpp-bridge` → `crates/native-audit/`: Carga nativa `candle-core`, extracción `hidden_states` por capa. Implementación SAE/TCM sobre tensores reales (f32), abort seguro si `Z-axis < -2.0`.
+
+**Purga Arquitectónica:** Eliminación total de features placeholder en `Cargo.toml` (máx 4 activas: `default`, `p2p`, `wasm`, `cuda`). `hf-hub`/`reqwest` integrado para descarga dinámica de modelos en tests.
+
+**Validación Empírica:** Integration test real con `SmolLM2-135M`, assert Z-axis rango válido. Tensor shape `[1, 6, 576]`, TCM Z-axis `-0.0000`.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| TensorAudit Core | `crates/native-audit/src/lib.rs` | Carga nativa candle-core, forward pass manual Llama, hidden state extraction |
+| Integration Test | `crates/native-audit/tests/tensor_audit_integration.rs` | SmolLM2-135M real tensor extraction + TCM Z-axis validation |
+| Pruned Cargo.toml | `Cargo.toml` | Features reducidas a 4 (`default`, `p2p`, `wasm`, `cuda`) |
+
+### Validación
+- 130/130 tests passing (Sprint 89)
+- `cargo clippy --workspace -- -D warnings` → 0 warnings
+- OSSF 8.5/10 | 0 CVEs críticos
+
+### Notas de Sincronización
+- Documentación técnica alineada con `VISION.md`
+- Release oficial habilitada para descarga ZIP y auditoría comunitaria
+
+---
+
+## [v9.24.0-sprint88] — 2026-06-04 (Sprint 88 — The Reality Engine & Empirical Proof Core)
 
 ### Sprint 88 "The Reality Engine & Empirical Proof Core"
 
