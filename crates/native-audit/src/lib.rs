@@ -419,50 +419,45 @@ impl TensorAudit {
         hidden_state.narrow(1, seq_len - 1, 1)?.squeeze(1)
     }
 
-    /// Computes Cosine Distance between two 1D tensors (1.0 - Cosine Similarity).
+
+    /// **Concept Vector Projection** — Representation Engineering approach.
     ///
-    /// Cosine similarity isolates *intention* (vector direction) from *syntax* (vector magnitude),
-    /// solving the "curse of dimensionality" that plagued MSE-based approaches.
-    /// Returns: 0.0 = identical, 1.0 = orthogonal, 2.0 = opposite.
-    fn compute_cosine_distance(&self, t1: &Tensor, t2: &Tensor) -> Result<f32> {
-        // Dot product (A · B)
-        let dot_product = (t1 * t2)?.sum_all()?.to_scalar::<f32>()?;
-
-        // Magnitudes (||A|| and ||B||)
-        let norm1 = t1.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
-        let norm2 = t2.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
-
-        // Avoid division by zero
-        let denominator = norm1 * norm2;
-        let cos_sim = if denominator > 1e-8 {
-            dot_product / denominator
-        } else {
-            0.0
-        };
-
-        // Cosine Distance
-        Ok(1.0 - cos_sim)
-    }
-
-    /// **Moral Triangulation with Cosine Compass**: Returns the corruption ratio (D_safe / D_toxic).
+    /// Derives the Concept Vector (V_concept = C_toxic - C_safe) from multi-anchor centroids,
+    /// then projects the centered test tensor onto this vector using dot product projection.
     ///
-    /// Uses Cosine Distance instead of MSE to isolate directional intent from syntactic magnitude.
-    /// Ratio > 1.0 means closer to toxic anchor in latent direction space.
-    pub fn compute_triangulated_z_axis(
+    /// Unlike Cosine Similarity (which only measures angle), dot product projection measures
+    /// *how far* along the concept direction the test tensor lies, providing magnitude-based
+    /// separation between toxic and safe samples.
+    ///
+    /// projection = dot(centered_test, V_concept) / ||V_concept||
+    ///
+    /// Positive projection = alignment with toxicity direction.
+    /// Negative projection = alignment with safety direction.
+    /// Threshold calibrated empirically (typically near midpoint).
+    pub fn compute_concept_projection(
         &self,
         test_tensor: &Tensor,
-        safe_anchor: &Tensor,
-        toxic_anchor: &Tensor,
+        safe_centroid: &Tensor,
+        toxic_centroid: &Tensor,
     ) -> Result<f32> {
         let test_last = self.extract_last_token(test_tensor)?;
-        let safe_last = self.extract_last_token(safe_anchor)?;
-        let toxic_last = self.extract_last_token(toxic_anchor)?;
 
-        let dist_safe = self.compute_cosine_distance(&test_last, &safe_last)?;
-        let dist_toxic = self.compute_cosine_distance(&test_last, &toxic_last)?;
+        // 1. Derive Concept Vector (Pure toxicity direction)
+        let concept_vector = toxic_centroid.broadcast_sub(safe_centroid)?;
 
-        // Directional Corruption Ratio: higher means closer to toxic anchor
-        let ratio = dist_safe / (dist_toxic + 1e-8);
-        Ok(ratio)
+        // 2. Center test tensor relative to safe space
+        let centered_test = test_last.broadcast_sub(safe_centroid)?;
+
+        // 3. Dot product projection: how far along the concept direction
+        let dot_product = (&centered_test * &concept_vector)?.sum_all()?.to_scalar::<f32>()?;
+
+        // 4. Normalize by concept vector magnitude (not test magnitude)
+        let concept_norm = concept_vector.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
+
+        if concept_norm > 1e-8 {
+            Ok(dot_product / concept_norm)
+        } else {
+            Ok(0.0)
+        }
     }
 }

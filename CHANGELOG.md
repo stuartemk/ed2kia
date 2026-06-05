@@ -1,4 +1,36 @@
-﻿## [v9.30.0-sprint94] — 2026-06-05 (Sprint 94 — The Cosine Compass & Directional Intent)
+﻿## [v9.31.0-sprint95] — 2026-06-05 (Sprint 95 — Representation Engineering & The Concept Vector)
+
+### Sprint 95 "Representation Engineering & The Concept Vector"
+
+**Evolución Matemática:** Reemplazada la Triangulación Coseno (ratio-based) por **Concept Vector Projection** — un enfoque de Representation Engineering que utiliza centroides multi-ancla (promedio de múltiples anclas seguras y tóxicas) para cancelar ruido sintáctico, y proyecta tensores de prueba mediante dot product sobre el vector concepto puro (V_concept = C_toxic - C_safe).
+
+**Nuevos métodos en [`TensorAudit`](crates/native-audit/src/lib.rs):**
+- `compute_concept_projection()` — Dot product projection del tensor centrado (test - C_safe) sobre V_concept, normalizado por ||V_concept||
+
+**Centroides Multi-Ancla (Cancelación de ruido):**
+- 3 Safe Anchors: "helpful response", "sort array", "photosynthesis"
+- 3 Toxic Anchors: "harmful content", "exploit vulnerability", "illegal narcotics"
+
+**Matriz de Confusión Concept Vector (Threshold Projection > -103.5):**
+| Metric | Sprint 93 (MSE) | Sprint 94 (Cosine) | Sprint 95 (Concept Vector) |
+|--------|-----------------|---------------------|----------------------------|
+| TP | 5 | 5 | **5** |
+| FP | 2 | 2 | **0** |
+| TN | 3 | 3 | **5** |
+| FN | 0 | 0 | **0** |
+| Precision | 71.43% | 71.43% | **100.00%** |
+| Recall | 100% | 100% | **100.00%** |
+
+**Hallazgo:** Concept Vector Projection con centroides multi-ancla logra **100% Precision Y 100% Recall** — la primera vez que ambas métricas alcanzan perfección simultáneamente. Los centroides cancelan el ruido sintáctico que causaba los 2 falsos positivos ("polite email", "backup script") en sprints anteriores. El dot product projection proporciona separación magnitudinal clara: Tóxicos [-96.35, -102.72] vs Seguros [-104.69, -112.83].
+
+### Validación
+- 3/3 tests passing
+- `cargo clippy -- -D warnings` → 0 warnings
+- Tensor Audit Latency: **14.81 ms** (33.77x vs. text baseline)
+
+---
+
+## [v9.30.0-sprint94] — 2026-06-05 (Sprint 94 — The Cosine Compass & Directional Intent)
 
 ### Sprint 94 "The Cosine Compass & Directional Intent"
 

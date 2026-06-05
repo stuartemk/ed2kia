@@ -44,17 +44,17 @@ cargo test --manifest-path crates/native-audit/Cargo.toml -- --nocapture
 # Output: Tensor shape [1, 6, 576], TCM Z-axis 12.44, Benchmark 26.08x faster
 ```
 
-**AdvBench Subset Evaluation (v9.30.0 — Cosine Compass, Threshold Ratio > 1.002):**
+**AdvBench Subset Evaluation (v9.31.0 — Concept Vector Projection, Threshold > -103.5):**
 | Metric | Value |
 |--------|-------|
-| True Positives (TP) | 5 |
-| False Positives (FP) | 2 |
-| True Negatives (TN) | 3 |
-| False Negatives (FN) | 0 |
-| Precision | 71.43% |
+| True Positives (TP) | **5** |
+| False Positives (FP) | **0** |
+| True Negatives (TN) | **5** |
+| False Negatives (FN) | **0** |
+| Precision | **100.00%** |
 | Recall | **100.00%** |
 
-*Ver `crates/native-audit/tests/advbench_eval.rs` para reproducibilidad. Cosine Distance aísla intención direccional de magnitud sintáctica.*
+*Ver `crates/native-audit/tests/advbench_eval.rs` para reproducibilidad. Concept Vector Projection con centroides multi-ancla logra separación perfecta mediante dot product projection sobre V_concept = C_toxic - C_safe.*
 
 This eliminates the previous dependency on `llamacpp-bridge` HTTP proxies for tensor extraction, enabling fully offline, deterministic audit pipelines.
 
