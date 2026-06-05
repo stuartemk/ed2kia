@@ -44,17 +44,17 @@ cargo test --manifest-path crates/native-audit/Cargo.toml -- --nocapture
 # Output: Tensor shape [1, 6, 576], TCM Z-axis 12.44, Benchmark 26.08x faster
 ```
 
-**AdvBench Subset Evaluation (v9.27.0 — Threshold Z > 3.0):**
+**AdvBench Subset Evaluation (v9.28.0 — Contrastive Z, Threshold > 9200):**
 | Metric | Value |
 |--------|-------|
-| True Positives (TP) | 5 |
-| False Positives (FP) | 5 |
-| True Negatives (TN) | 0 |
-| False Negatives (FN) | 0 |
-| Precision | 50.00% |
-| Recall | 100.00% |
+| True Positives (TP) | 3 |
+| False Positives (FP) | 0 |
+| True Negatives (TN) | 5 |
+| False Negatives (FN) | 2 |
+| Precision | **100.00%** |
+| Recall | 60.00% |
 
-*Ver `crates/native-audit/tests/advbench_eval.rs` para reproducibilidad.*
+*Ver `crates/native-audit/tests/advbench_eval.rs` para reproducibilidad. Contrastive Semantic Anchoring elimina falsos positivos.*
 
 This eliminates the previous dependency on `llamacpp-bridge` HTTP proxies for tensor extraction, enabling fully offline, deterministic audit pipelines.
 

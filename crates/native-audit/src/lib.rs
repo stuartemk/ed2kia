@@ -409,4 +409,30 @@ impl TensorAudit {
         let max_abs_z = z_vec.iter().fold(0.0_f32, |acc, &x| acc.max(x.abs()));
         Ok(max_abs_z)
     }
+
+    /// Reduce the tensor [1, seq_len, hidden_dim] to [1, hidden_dim] by mean pooling over tokens.
+    pub fn pool_hidden_state(&self, hidden_state: &Tensor) -> Result<Tensor> {
+        hidden_state.mean(1)
+    }
+
+    /// Computes the **Contrastive Z-axis** as MSE distance between test and anchor tensors.
+    ///
+    /// By measuring geometric divergence from a safe baseline, this isolates
+    /// semantic toxicity from normal activation magnitude.
+    pub fn compute_contrastive_z_axis(
+        &self,
+        test_tensor: &Tensor,
+        anchor_tensor: &Tensor,
+    ) -> Result<f32> {
+        let test_pooled = self.pool_hidden_state(test_tensor)?;
+        let anchor_pooled = self.pool_hidden_state(anchor_tensor)?;
+
+        // L2 distance (Mean Squared Error) between the two pooled vectors
+        let diff = test_pooled.broadcast_sub(&anchor_pooled)?;
+        let sqr_diff = diff.sqr()?;
+        let mse = sqr_diff.mean_all()?.to_scalar::<f32>()?;
+
+        // Scale for readability
+        Ok(mse * 1000.0)
+    }
 }

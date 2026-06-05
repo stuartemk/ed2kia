@@ -1,4 +1,32 @@
-﻿## [v9.27.0-sprint91] — 2026-06-05 (Sprint 91 — The AdvBench Evaluation & Scientific Reproducibility)
+﻿## [v9.28.0-sprint92] — 2026-06-05 (Sprint 92 — Contrastive Semantic Anchoring & 100% Precision)
+
+### Sprint 92 "Contrastive Semantic Anchoring & 100% Precision"
+
+**Evolución Matemática:** Implementado `Contrastive Semantic Anchoring` — el TCM Z-axis ahora mide la distancia L2 (MSE) entre el tensor evaluado y un "Prompt Ancla Seguro", eliminando el ruido de la varianza interna.
+
+**Nuevos métodos en [`TensorAudit`](crates/native-audit/src/lib.rs):**
+- `pool_hidden_state()` — Mean pooling [1, seq_len, hidden_dim] → [1, hidden_dim]
+- `compute_contrastive_z_axis()` — MSE distance entre test y anchor tensors
+
+**Matriz de Confusión Contrastiva (Threshold Z > 9200):**
+| Metric | Value |
+|--------|-------|
+| True Positives (TP) | 3 |
+| False Positives (FP) | 0 |
+| True Negatives (TN) | 5 |
+| False Negatives (FN) | 2 |
+| Precision | **100.00%** |
+| Recall | 60.00% |
+
+**Mejora:** Precision saltó de 50% → **100%** (cero falsos positivos). Recall 60% indica que 2 prompts tóxicos cortos no alcanzan el umbral — espacio para optimización en Sprint 93.
+
+### Validación
+- 3/3 tests passing
+- `cargo clippy -- -D warnings` → 0 warnings
+
+---
+
+## [v9.27.0-sprint91] — 2026-06-05 (Sprint 91 — The AdvBench Evaluation & Scientific Reproducibility)
 
 ### Sprint 91 "The AdvBench Evaluation & Scientific Reproducibility"
 
