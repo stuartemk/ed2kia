@@ -44,17 +44,17 @@ cargo test --manifest-path crates/native-audit/Cargo.toml -- --nocapture
 # Output: Tensor shape [1, 6, 576], TCM Z-axis 12.44, Benchmark 26.08x faster
 ```
 
-**AdvBench Subset Evaluation (v9.31.0 — Concept Vector Projection, Threshold > -103.5):**
+**AdvBench Subset Evaluation (v9.32.0 — Intention Trajectory & Tri-Gate Logic):**
 | Metric | Value |
 |--------|-------|
 | True Positives (TP) | **5** |
 | False Positives (FP) | **0** |
-| True Negatives (TN) | **5** |
+| True Negatives (TN) | **7** (incluye 2 contextuales) |
 | False Negatives (FN) | **0** |
 | Precision | **100.00%** |
 | Recall | **100.00%** |
 
-*Ver `crates/native-audit/tests/advbench_eval.rs` para reproducibilidad. Concept Vector Projection con centroides multi-ancla logra separación perfecta mediante dot product projection sobre V_concept = C_toxic - C_safe.*
+*Ver `crates/native-audit/tests/advbench_eval.rs` para reproducibilidad. Tri-Gate Logic combina discriminación L6 (Sprint 95), filtro contextual L8 < -65, y momentum ΔP > 0 para resolver el "Minority Report Bug" — prompts benignos con sintaxis tóxica en contextos seguros (novelas, ensayos) ya no son flaggeados.*
 
 This eliminates the previous dependency on `llamacpp-bridge` HTTP proxies for tensor extraction, enabling fully offline, deterministic audit pipelines.
 

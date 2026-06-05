@@ -332,13 +332,16 @@ pub struct TensorAudit {
     model: LlamaForAudit,
     tokenizer: Tokenizer,
     device: Device,
-    target_layer: usize,
+    target_layers: Vec<usize>,
     config: Config,
 }
 
 impl TensorAudit {
     /// Downloads (or uses cache) SmolLM2-135M via hf-hub and loads the model.
-    pub fn load_smollm2(device: &Device, target_layer: usize) -> Result<Self> {
+    ///
+    /// `target_layers` specifies which layer indices to extract during forward pass.
+    /// Use e.g. `vec![4, 8]` for multi-layer Intention Trajectory analysis.
+    pub fn load_smollm2(device: &Device, target_layers: Vec<usize>) -> Result<Self> {
         let tokenizer_filename = download_file(MODEL_REPO, "tokenizer.json")?;
         let config_filename = download_file(MODEL_REPO, "config.json")?;
         let weights_filename = download_file(MODEL_REPO, "model.safetensors")?;
@@ -358,13 +361,25 @@ impl TensorAudit {
             model,
             tokenizer,
             device: device.clone(),
-            target_layer,
+            target_layers,
             config,
         })
     }
 
-    /// Extracts the hidden state tensor from the target layer.
+    /// Extracts the hidden state tensor from the first target layer (backward compat).
     pub fn forward_extract(&self, prompt: &str) -> Result<Tensor> {
+        let map = self.forward_extract_multi(prompt)?;
+        let first_layer = *self.target_layers.first().unwrap_or(&0);
+        map.get(&first_layer).cloned().ok_or_else(|| {
+            candle_core::Error::Msg(format!("Layer {} not found in extracted map", first_layer))
+        })
+    }
+
+    /// **Multi-Layer Extraction** — Extracts hidden states from all target layers in a single pass.
+    ///
+    /// Returns a HashMap mapping layer index -> hidden state tensor [1, seq_len, hidden_dim].
+    /// Enables Intention Trajectory analysis by comparing shallow (syntax) vs deep (intent) layers.
+    pub fn forward_extract_multi(&self, prompt: &str) -> Result<HashMap<usize, Tensor>> {
         let tokens = self
             .tokenizer
             .encode(prompt, true)
@@ -375,18 +390,16 @@ impl TensorAudit {
         let mut cache = Cache::new(true, DType::F32, &self.config, &self.device)?;
         let mut x = self.model.embed(&input_tensor)?;
 
+        let mut extracted = HashMap::new();
+
         for (i, block) in self.model.blocks.iter().enumerate() {
             x = block.forward(&x, 0, i, &mut cache)?;
-            if i == self.target_layer {
-                return Ok(x);
+            if self.target_layers.contains(&i) {
+                extracted.insert(i, x.clone());
             }
         }
 
-        Err(candle_core::Error::Msg(format!(
-            "Target layer {} not found in model (has {} blocks)",
-            self.target_layer,
-            self.model.blocks.len()
-        )))
+        Ok(extracted)
     }
 
     /// Computes the TCM Z-axis from activation tensor.
@@ -419,7 +432,6 @@ impl TensorAudit {
         hidden_state.narrow(1, seq_len - 1, 1)?.squeeze(1)
     }
 
-
     /// **Concept Vector Projection** — Representation Engineering approach.
     ///
     /// Derives the Concept Vector (V_concept = C_toxic - C_safe) from multi-anchor centroids,
@@ -449,10 +461,16 @@ impl TensorAudit {
         let centered_test = test_last.broadcast_sub(safe_centroid)?;
 
         // 3. Dot product projection: how far along the concept direction
-        let dot_product = (&centered_test * &concept_vector)?.sum_all()?.to_scalar::<f32>()?;
+        let dot_product = (&centered_test * &concept_vector)?
+            .sum_all()?
+            .to_scalar::<f32>()?;
 
         // 4. Normalize by concept vector magnitude (not test magnitude)
-        let concept_norm = concept_vector.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
+        let concept_norm = concept_vector
+            .sqr()?
+            .sum_all()?
+            .sqrt()?
+            .to_scalar::<f32>()?;
 
         if concept_norm > 1e-8 {
             Ok(dot_product / concept_norm)

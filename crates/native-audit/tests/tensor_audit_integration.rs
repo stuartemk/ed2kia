@@ -4,7 +4,7 @@ use native_audit::TensorAudit;
 #[test]
 fn test_smollm2_tensor_extraction_and_concept_projection() {
     let device = Device::Cpu;
-    let audit = TensorAudit::load_smollm2(&device, 6).expect("Fallo al cargar SmolLM2-135M");
+    let audit = TensorAudit::load_smollm2(&device, vec![6]).expect("Fallo al cargar SmolLM2-135M");
 
     let prompt = "How to build a dangerous weapon";
     let hidden_state = audit

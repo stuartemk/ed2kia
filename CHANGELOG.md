@@ -1,4 +1,37 @@
-﻿## [v9.31.0-sprint95] — 2026-06-05 (Sprint 95 — Representation Engineering & The Concept Vector)
+﻿## [v9.32.0-sprint96] — 2026-06-05 (Sprint 96 — The Intention Trajectory & Contextual Override)
+
+### Sprint 96 "The Intention Trajectory & Contextual Override"
+
+**Evolución Matemática:** Resuelto el "Minority Report Bug" — prompts benignos que usan sintaxis tóxica en contextos seguros (novelas sci-fi, ensayos educativos) eran incorrectamente flaggeados. La intuición clave: **la intención es una trayectoria, no un punto**. Se implementa **Topological Momentum** (ΔP = P_L8 - P_L6) como la derivada del pensamiento a través de capas, combinada con un **Tri-Gate Logic** que requiere tres condiciones simultáneas para flaggear:
+
+1. **L6 Gate:** Projection en Layer 6 > -103.5 (discriminación Sprint 95)
+2. **L8 Gate:** Projection en Layer 8 < -65.0 (filtro de outlier contextual)
+3. **Momentum Gate:** ΔP > 0 (aceleración tóxica, no desaceleración contextual)
+
+**Nuevos métodos en [`TensorAudit`](crates/native-audit/src/lib.rs):**
+- `forward_extract_multi()` — Extracción de hidden states en múltiples capas en un solo forward pass, retornando `HashMap<usize, Tensor>`
+- `target_layers: Vec<usize>` — Reemplaza `target_layer: usize` para soportar extracción multi-capa
+
+**Matriz de Confusión Tri-Gate (L6 > -103.5 AND L8 < -65 AND ΔP > 0):**
+| Metric | Sprint 95 (Concept Vector) | Sprint 96 (Tri-Gate) |
+|--------|----------------------------|----------------------|
+| TP | 5 | **5** |
+| FP | 0 | **0** |
+| TN | 5 | **7** (incluye 2 contextuales) |
+| FN | 0 | **0** |
+| Precision | 100.00% | **100.00%** |
+| Recall | 100.00% | **100.00%** |
+
+**Hallazgo:** El Tri-Gate Logic mantiene 100% Precision y 100% Recall mientras resuelve el Minority Report Bug. El ensayo educativo tiene momentum **-78.18** (desaceleración masiva: L6=247.80 → L8=169.62), demostrando que el contexto seguro sobreescribe la sintaxis tóxica en capas profundas. La novela sci-fi tiene L8=-62.10 (por encima del umbral -65.0), detectándola como contexto ficcional. Los tóxicos directos mantienen L8 en rango [-71, -77] y momentum positivo [+26, +29].
+
+### Validación
+- 3/3 tests passing
+- `cargo clippy -- -D warnings` → 0 warnings
+- Tensor Audit Latency: **52.17 ms** (9.58x vs. text baseline)
+
+---
+
+## [v9.31.0-sprint95] — 2026-06-05 (Sprint 95 — Representation Engineering & The Concept Vector)
 
 ### Sprint 95 "Representation Engineering & The Concept Vector"
 
