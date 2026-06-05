@@ -29,14 +29,19 @@ fn download_file(repo: &str, filename: &str) -> Result<PathBuf> {
             .timeout(std::time::Duration::from_secs(600))
             .build()
             .map_err(|e| candle_core::Error::Msg(e.to_string()))?;
-        let resp = client.get(&url).send().map_err(|e| candle_core::Error::Msg(e.to_string()))?;
-        let bytes = resp.bytes().map_err(|e| candle_core::Error::Msg(e.to_string()))?;
+        let resp = client
+            .get(&url)
+            .send()
+            .map_err(|e| candle_core::Error::Msg(e.to_string()))?;
+        let bytes = resp
+            .bytes()
+            .map_err(|e| candle_core::Error::Msg(e.to_string()))?;
         fs::write(&dest, bytes.as_ref())?;
     }
     Ok(dest)
 }
-use tokenizers::Tokenizer;
 use std::collections::HashMap;
+use tokenizers::Tokenizer;
 
 pub const MAX_SEQ_LEN: usize = 4096;
 
@@ -122,7 +127,10 @@ impl RmsNorm {
         let rms = (x_norm / hidden_size)?.sqrt()?;
         let eps_tensor = Tensor::full(self.eps as f32, rms.shape(), rms.device())?;
         let normed = x.broadcast_div(&(rms.add(&eps_tensor)?))?;
-        normed.to_dtype(dtype)?.broadcast_mul(&self.weight)?.reshape(new_size.dims())
+        normed
+            .to_dtype(dtype)?
+            .broadcast_mul(&self.weight)?
+            .reshape(new_size.dims())
     }
 }
 
@@ -187,9 +195,7 @@ impl CausalSelfAttention {
         let v = v.to_dtype(DType::F32)?;
         let att = (q.matmul(&k.t()?)? / (self.head_dim as f64).sqrt())?;
         let att = candle_nn::ops::softmax(&att, D::Minus1)?;
-        let y = att
-            .matmul(&v.contiguous()?)?
-            .to_dtype(q.dtype())?;
+        let y = att.matmul(&v.contiguous()?)?.to_dtype(q.dtype())?;
         let y = y.transpose(1, 2)?.reshape(&[b_sz, seq_len, hidden_size])?;
         self.o_proj.forward(&y)
     }
@@ -280,8 +286,11 @@ impl Block {
         let attn = CausalSelfAttention::load(vb.pp("self_attn"), cfg)?;
         let mlp = Mlp::load(vb.pp("mlp"), cfg)?;
         let rms_1 = RmsNorm::load(cfg.hidden_size, cfg.rms_norm_eps, vb.pp("input_layernorm"))?;
-        let rms_2 =
-            RmsNorm::load(cfg.hidden_size, cfg.rms_norm_eps, vb.pp("post_attention_layernorm"))?;
+        let rms_2 = RmsNorm::load(
+            cfg.hidden_size,
+            cfg.rms_norm_eps,
+            vb.pp("post_attention_layernorm"),
+        )?;
         Ok(Self {
             rms_1,
             attn,
@@ -334,10 +343,10 @@ impl TensorAudit {
         let config_filename = download_file(MODEL_REPO, "config.json")?;
         let weights_filename = download_file(MODEL_REPO, "model.safetensors")?;
 
-        let tokenizer =
-            Tokenizer::from_file(tokenizer_filename).map_err(|e| candle_core::Error::Msg(e.to_string()))?;
-        let llama_config: LlamaConfig =
-            serde_json::from_slice(&std::fs::read(config_filename)?).map_err(|e| candle_core::Error::Msg(e.to_string()))?;
+        let tokenizer = Tokenizer::from_file(tokenizer_filename)
+            .map_err(|e| candle_core::Error::Msg(e.to_string()))?;
+        let llama_config: LlamaConfig = serde_json::from_slice(&std::fs::read(config_filename)?)
+            .map_err(|e| candle_core::Error::Msg(e.to_string()))?;
         let config = llama_config.into_config(false);
 
         let vb = unsafe {
@@ -381,6 +390,10 @@ impl TensorAudit {
     }
 
     /// Computes the TCM Z-axis from activation tensor.
+    /// Computes the TCM Z-axis as **Max Absolute Z-score** from activation tensor.
+    ///
+    /// Z-score: Z = (X - μ) / σ
+    /// Anomaly detection requires finding max(|Z|), not mean(Z) which always yields ~0.
     pub fn compute_tcm_z_axis(&self, activations: &Tensor) -> Result<f32> {
         let flat = activations.flatten_all()?;
         let mean = flat.mean_all()?;
@@ -389,10 +402,11 @@ impl TensorAudit {
         let variance = flat.broadcast_sub(&mean)?.sqr()?.mean_all()?;
         let std_dev = variance.sqrt()?;
 
-        let z = activations
+        let z = flat
             .broadcast_sub(&mean)?
             .broadcast_div(&(std_dev + 1e-8)?)?;
-        let z_mean = z.mean_all()?.to_scalar::<f32>()?;
-        Ok(z_mean)
+        let z_vec = z.to_vec1::<f32>()?;
+        let max_abs_z = z_vec.iter().fold(0.0_f32, |acc, &x| acc.max(x.abs()));
+        Ok(max_abs_z)
     }
 }

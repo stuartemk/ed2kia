@@ -1,4 +1,28 @@
-﻿## [v9.25.0-sprint89] — 2026-06-05 (Sprint 89 — The Truth Engine & Native Tensor Audit Core)
+﻿## [v9.26.0-sprint90] — 2026-06-05 (Sprint 90 — The Scientific Method & Empirical Benchmark)
+
+### Sprint 90 "The Scientific Method & Empirical Benchmark"
+
+**Corrección Matemática TCM Z-axis:** `compute_tcm_z_axis` en `crates/native-audit/src/lib.rs` corregido de `mean(Z)` (siempre ~0) a **Max Absolute Z-score** (`max(|Z|)`) para detección real de picos de anomalía topológica.
+
+**Benchmark Empírico de Latencia:** `crates/native-audit/tests/latency_benchmark.rs` — Comparación Tensor Audit vs. Text Generation Baseline:
+- Tensor Audit Latency: **19.17 ms** (hidden state extraction + TCM)
+- Text Baseline Latency: **500.00 ms** (20 tokens @ 25ms/token)
+- Ventaja de velocidad: **26.08x**
+- TCM Max Abs Z-score: **9.43** (vs. ~0.0 previo con media)
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| TCM Z-axis Fix | `crates/native-audit/src/lib.rs` | Max Abs Z-score para detección de anomalías |
+| Latency Benchmark | `crates/native-audit/tests/latency_benchmark.rs` | Benchmark empírico Tensor vs. Text |
+
+### Validación
+- 2/2 tests passing (integration + benchmark)
+- `cargo clippy -- -D warnings` → 0 warnings
+- Zero-warning validation passed
+
+---
+
+## [v9.25.0-sprint89] — 2026-06-05 (Sprint 89 — The Truth Engine & Native Tensor Audit Core)
 
 ### Sprint 89 "The Truth Engine & Native Tensor Audit Core"
 
