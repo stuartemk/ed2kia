@@ -1,7 +1,7 @@
 # 🌐 ed2kIA: Distributed Sparse Autoencoders for Edge LLM Interpretability
 
-[![Version](https://img.shields.io/badge/v9.24.0-sprint88-blue.svg)](https://github.com/Stuartemk/ed2kIA/releases/tag/v9.24.0-sprint88)
-[![Tests](https://img.shields.io/badge/Tests-129%20PASS-green.svg)](https://github.com/Stuartemk/ed2kIA/actions)
+[![Version](https://img.shields.io/badge/v9.25.0-sprint89-blue.svg)](https://github.com/Stuartemk/ed2kIA/releases/tag/v9.25.0-sprint89)
+[![Tests](https://img.shields.io/badge/Tests-130%20PASS-green.svg)](https://github.com/Stuartemk/ed2kIA/actions)
 [![Audit](https://img.shields.io/badge/OSSF-8.5%2F10-yellow.svg)](https://github.com/Stuartemk/ed2kIA/security)
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ética-orange.svg)](LICENSE)
 
@@ -20,6 +20,22 @@ ed2k start --model qwen3.5:2b
 - **Automated Byzantine Eviction:** Staleness-aware weighting + BFT median aggregation
 - **Compute Credits (CE):** Earn credits by running a node; spend credits to audit models
 - **Post-Quantum Ready:** zk-STARKs, Ed25519, recursive SNARKs for proof aggregation
+
+## 🔬 Native Tensor Audit (v9.25.0)
+ed2kIA now loads models natively via [Candle](https://github.com/huggingface/candle) (HuggingFace's Rust ML framework) to extract **real hidden states** and compute the **TCM Z-axis** — without depending on HTTP proxies or external inference servers.
+
+The `native-audit` crate (`crates/native-audit`) provides:
+- **TensorAudit::load_smollm2()** — Loads SmolLM2-135M directly from HuggingFace into CPU memory
+- **forward_extract()** — Runs a manual forward pass through Llama blocks, extracting the hidden state tensor at any target layer
+- **compute_tcm_z_axis()** — Computes the Topological Coherence Metric Z-axis (mean of z-scored activations) from real tensor data
+
+```bash
+# Run the native audit integration test
+cargo test --manifest-path crates/native-audit/Cargo.toml -- --nocapture
+# Output: Tensor shape [1, 6, 576], TCM Z-axis -0.0000
+```
+
+This eliminates the previous dependency on `llamacpp-bridge` HTTP proxies for tensor extraction, enabling fully offline, deterministic audit pipelines.
 
 ## 📦 Workspace Structure (v9.21.0)
 ```
