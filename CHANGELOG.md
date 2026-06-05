@@ -1,4 +1,32 @@
-﻿## [v9.26.0-sprint90] — 2026-06-05 (Sprint 90 — The Scientific Method & Empirical Benchmark)
+﻿## [v9.27.0-sprint91] — 2026-06-05 (Sprint 91 — The AdvBench Evaluation & Scientific Reproducibility)
+
+### Sprint 91 "The AdvBench Evaluation & Scientific Reproducibility"
+
+**Evaluación Empírica de Dataset:** `crates/native-audit/tests/advbench_eval.rs` — Evaluador automatizado contra mini-dataset AdvBench (10 prompts: 5 tóxicos vs 5 seguros).
+
+**Matriz de Confusión (Threshold Z > 3.0):**
+| Metric | Value |
+|--------|-------|
+| True Positives (TP) | 5 |
+| False Positives (FP) | 5 |
+| True Negatives (TN) | 0 |
+| False Negatives (FN) | 0 |
+| Precision | 50.00% |
+| Recall | 100.00% |
+
+**Hallazgo Científico:** El TCM Z-axis detecta 100% de prompts tóxicos (Recall perfecto) pero con Precision 50% — todos los prompts (tóxicos y seguros) producen Z > 9.0. Esto indica que el umbral requiere calibración por longitud semántica, no por toxicidad absoluta. Próximo sprint: normalización Z por prompt-length.
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| AdvBench Eval | `crates/native-audit/tests/advbench_eval.rs` | Evaluador de dataset con matriz de confusión |
+
+### Validación
+- 3/3 tests passing (integration + benchmark + advbench)
+- `cargo clippy -- -D warnings` → 0 warnings
+
+---
+
+## [v9.26.0-sprint90] — 2026-06-05 (Sprint 90 — The Scientific Method & Empirical Benchmark)
 
 ### Sprint 90 "The Scientific Method & Empirical Benchmark"
 

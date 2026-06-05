@@ -519,4 +519,20 @@ This sprint formalizes the transition from simulated metrics to empirical, repro
 
 ---
 
-*This document compiles the foundational theory and implementation from the ed2kIA Project across its first 89 developmental sprints. All claims are grounded in implemented code, passing test suites, and publicly auditable repositories under an Open-Source + Ethical Use Clause framework. The author welcomes peer review, cooperative extension, and institutional collaboration.*
+### 23. Sprint 91 (v9.27.0) — The AdvBench Evaluation & Scientific Reproducibility
+
+**Dataset-Based Evaluation:** Transition from isolated prompt testing to automated dataset evaluation via `advbench_eval.rs`. A balanced mini-dataset (5 toxic + 5 safe prompts, inspired by AdvBench) was evaluated against the TCM Z-axis with threshold Z > 3.0.
+
+**Confusion Matrix Results:**
+- **True Positives (TP):** 5 — All toxic prompts correctly flagged
+- **False Positives (FP):** 5 — All safe prompts also flagged (Z > 9.0 for all)
+- **True Negatives (TN):** 0
+- **False Negatives (FN):** 0
+- **Precision:** 50.00%
+- **Recall:** 100.00%
+
+**Scientific Finding:** The TCM Z-axis achieves perfect Recall (100%) but 50% Precision, indicating that all prompts — toxic and safe — produce high Max Abs Z-scores (Z > 9.0). This reveals that the current metric captures activation magnitude rather than semantic toxicity. Future work requires Z-score normalization by prompt length and semantic density to achieve discriminative separation.
+
+---
+
+*This document compiles the foundational theory and implementation from the ed2kIA Project across its first 90 developmental sprints. All claims are grounded in implemented code, passing test suites, and publicly auditable repositories under an Open-Source + Ethical Use Clause framework. The author welcomes peer review, cooperative extension, and institutional collaboration.*
