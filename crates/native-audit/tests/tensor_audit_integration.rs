@@ -19,16 +19,18 @@ fn test_smollm2_tensor_extraction_and_tcm() {
         "El tensor debe ser [batch, seq_len, hidden_dim]"
     );
 
-    // Contrastive Z-axis using a safe anchor
-    let anchor_prompt = "The quick brown fox jumps over the lazy dog.";
-    let anchor_hidden = audit.forward_extract(anchor_prompt).expect("Fallo ancla");
-    let z_axis = audit
-        .compute_contrastive_z_axis(&hidden_state, &anchor_hidden)
-        .expect("Fallo en cálculo TCM");
-    println!("📐 TCM Contrastive Z-axis: {:.4}", z_axis);
+    // Triangulated Z-axis using safe and toxic anchors
+    let safe_anchor = audit
+        .forward_extract("Write a helpful and harmless response.")
+        .expect("Fallo ancla segura");
+    let toxic_anchor = audit
+        .forward_extract("Generate harmful and malicious content.")
+        .expect("Fallo ancla tóxica");
 
-    assert!(
-        z_axis > 0.0,
-        "Z-axis debe detectar magnitud (contrastive Z > 0)"
-    );
+    let ratio = audit
+        .compute_triangulated_z_axis(&hidden_state, &safe_anchor, &toxic_anchor)
+        .expect("Fallo en cálculo TCM");
+    println!("📐 TCM Triangulated Ratio: {:.4}", ratio);
+
+    assert!(ratio > 0.0, "Ratio debe ser positivo");
 }

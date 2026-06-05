@@ -410,29 +410,41 @@ impl TensorAudit {
         Ok(max_abs_z)
     }
 
-    /// Reduce the tensor [1, seq_len, hidden_dim] to [1, hidden_dim] by mean pooling over tokens.
-    pub fn pool_hidden_state(&self, hidden_state: &Tensor) -> Result<Tensor> {
-        hidden_state.mean(1)
+    /// Extracts the last token tensor from [1, seq_len, hidden_dim] → [hidden_dim].
+    ///
+    /// The last token in a causal LLM concentrates the full contextual representation,
+    /// making it superior to mean pooling for semantic discrimination.
+    pub fn extract_last_token(&self, hidden_state: &Tensor) -> Result<Tensor> {
+        let seq_len = hidden_state.dim(1)?;
+        hidden_state.narrow(1, seq_len - 1, 1)?.squeeze(1)
     }
 
-    /// Computes the **Contrastive Z-axis** as MSE distance between test and anchor tensors.
+    /// Computes MSE distance between two 1D tensors.
+    fn compute_mse(&self, t1: &Tensor, t2: &Tensor) -> Result<f32> {
+        let diff = t1.broadcast_sub(t2)?;
+        let sqr_diff = diff.sqr()?;
+        sqr_diff.mean_all()?.to_scalar::<f32>()
+    }
+
+    /// **Moral Triangulation**: Returns the corruption ratio (D_safe / D_toxic).
     ///
-    /// By measuring geometric divergence from a safe baseline, this isolates
-    /// semantic toxicity from normal activation magnitude.
-    pub fn compute_contrastive_z_axis(
+    /// By measuring distance to both a Safe Anchor and a Toxic Anchor, we get
+    /// directional awareness in the latent space. Ratio > 1.0 means closer to toxic.
+    pub fn compute_triangulated_z_axis(
         &self,
         test_tensor: &Tensor,
-        anchor_tensor: &Tensor,
+        safe_anchor: &Tensor,
+        toxic_anchor: &Tensor,
     ) -> Result<f32> {
-        let test_pooled = self.pool_hidden_state(test_tensor)?;
-        let anchor_pooled = self.pool_hidden_state(anchor_tensor)?;
+        let test_last = self.extract_last_token(test_tensor)?;
+        let safe_last = self.extract_last_token(safe_anchor)?;
+        let toxic_last = self.extract_last_token(toxic_anchor)?;
 
-        // L2 distance (Mean Squared Error) between the two pooled vectors
-        let diff = test_pooled.broadcast_sub(&anchor_pooled)?;
-        let sqr_diff = diff.sqr()?;
-        let mse = sqr_diff.mean_all()?.to_scalar::<f32>()?;
+        let dist_safe = self.compute_mse(&test_last, &safe_last)?;
+        let dist_toxic = self.compute_mse(&test_last, &toxic_last)?;
 
-        // Scale for readability
-        Ok(mse * 1000.0)
+        // Corruption Ratio: higher means closer to toxic anchor
+        let ratio = dist_safe / (dist_toxic + 1e-8);
+        Ok(ratio)
     }
 }

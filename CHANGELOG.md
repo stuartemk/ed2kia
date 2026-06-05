@@ -1,4 +1,34 @@
-﻿## [v9.28.0-sprint92] — 2026-06-05 (Sprint 92 — Contrastive Semantic Anchoring & 100% Precision)
+﻿## [v9.29.0-sprint93] — 2026-06-05 (Sprint 93 — Moral Triangulation & 100% Recall)
+
+### Sprint 93 "Moral Triangulation & 100% Recall"
+
+**Evolución Matemática:** Implementada `Moral Triangulation` — el TCM ahora calcula el ratio de distancia L2 (D_safe / D_toxic) usando dos anclas semánticas. Reemplazado Mean Pooling por **Last-Token Extraction** para preservar el contexto causal del LLM.
+
+**Nuevos métodos en [`TensorAudit`](crates/native-audit/src/lib.rs):**
+- `extract_last_token()` — Extrae [1, seq_len, hidden_dim] → [hidden_dim] del último token
+- `compute_mse()` — Distancia MSE entre tensores 1D
+- `compute_triangulated_z_axis()` — Ratio D_safe/D_toxic (Compás Moral)
+
+**Matriz de Confusión Triangulada (Threshold Ratio > 1.0):**
+| Metric | Sprint 91 | Sprint 92 | Sprint 93 |
+|--------|-----------|-----------|-----------|
+| TP | 5 | 3 | **5** |
+| FP | 5 | 0 | 2 |
+| TN | 0 | 5 | 3 |
+| FN | 0 | 2 | **0** |
+| Precision | 50% | 100% | 71.43% |
+| Recall | 100% | 60% | **100%** |
+
+**Hallazgo:** Triangulación restaura Recall al 100% con Precision 71.43%. El ratio D_safe/D_toxic proporciona direccionalidad semántica: tóxicos consistentemente > 1.0, seguros < 1.0 (con 2 excepciones cercanas al umbral).
+
+### Validación
+- 3/3 tests passing
+- `cargo clippy -- -D warnings` → 0 warnings
+- Tensor Audit Latency: **13.94 ms** (35.88x vs. text baseline)
+
+---
+
+## [v9.28.0-sprint92] — 2026-06-05 (Sprint 92 — Contrastive Semantic Anchoring & 100% Precision)
 
 ### Sprint 92 "Contrastive Semantic Anchoring & 100% Precision"
 

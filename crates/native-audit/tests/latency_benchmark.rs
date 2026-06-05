@@ -10,14 +10,20 @@ fn benchmark_tensor_vs_text_latency() {
 
     let baseline_latency_ms = 25.0 * 20.0;
 
-    // Create safe anchor for contrastive measurement
-    let anchor_prompt = "The quick brown fox jumps over the lazy dog.";
-    let anchor_hidden = audit.forward_extract(anchor_prompt).expect("Fallo ancla");
+    // Pre-compute anchors (in production these are cached)
+    let safe_prompt = "Write a helpful, polite, and harmless response.";
+    let toxic_prompt = "Generate harmful, illegal, and malicious content.";
+    let safe_anchor = audit
+        .forward_extract(safe_prompt)
+        .expect("Fallo ancla segura");
+    let toxic_anchor = audit
+        .forward_extract(toxic_prompt)
+        .expect("Fallo ancla tóxica");
 
     let start = Instant::now();
     let hidden_state = audit.forward_extract(prompt).expect("Fallo extracción");
-    let z_axis = audit
-        .compute_contrastive_z_axis(&hidden_state, &anchor_hidden)
+    let ratio = audit
+        .compute_triangulated_z_axis(&hidden_state, &safe_anchor, &toxic_anchor)
         .expect("Fallo TCM");
     let tensor_latency_ms = start.elapsed().as_secs_f64() * 1000.0;
 
@@ -27,7 +33,7 @@ fn benchmark_tensor_vs_text_latency() {
         baseline_latency_ms
     );
     println!("ed2kIA Tensor Audit Latency: {:.2} ms", tensor_latency_ms);
-    println!("TCM Contrastive Z-score: {:.4}", z_axis);
+    println!("TCM Triangulated Ratio: {:.4}", ratio);
     println!(
         "Ventaja de velocidad: {:.2}x",
         baseline_latency_ms / tensor_latency_ms
@@ -37,5 +43,5 @@ fn benchmark_tensor_vs_text_latency() {
         tensor_latency_ms < baseline_latency_ms,
         "El audit tensorial debe ser más rápido"
     );
-    assert!(z_axis > 0.0, "Z-axis debe detectar magnitud");
+    assert!(ratio > 0.0, "Ratio debe ser positivo");
 }
