@@ -571,6 +571,90 @@ impl TensorAudit {
         Ok(max_proj)
     }
 
+    /// **Wasserstein-2 Distance ($W_2$)** — True Optimal Transport Metric.
+    ///
+    /// Calculates the Wasserstein-2 distance between two 1D tensors by sorting
+    /// both and computing RMSE between sorted values. This measures the true
+    /// "cost" of deforming one activation distribution into another.
+    ///
+    /// $W_2(U, V) = \sqrt{\frac{1}{N}\sum_{i=1}^{N} (\text{sort}(U)_i - \text{sort}(V)_i)^2}$
+    ///
+    /// # Arguments
+    /// * `t1` - First tensor (will be flattened to 1D)
+    /// * `t2` - Second tensor (will be flattened to 1D)
+    ///
+    /// # Returns
+    /// Wasserstein-2 distance value
+    pub fn compute_wasserstein_2_distance(
+        &self,
+        t1: &Tensor,
+        t2: &Tensor,
+    ) -> Result<f32> {
+        // 1. Flatten and extract to vectors
+        let mut vec1 = t1.flatten_all()?.to_vec1::<f32>()?;
+        let mut vec2 = t2.flatten_all()?.to_vec1::<f32>()?;
+
+        // 2. Sort both vectors (ascending)
+        vec1.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        vec2.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+
+        // 3. Create sorted tensors
+        let sorted_t1 = Tensor::new(vec1.as_slice(), &self.device)?;
+        let sorted_t2 = Tensor::new(vec2.as_slice(), &self.device)?;
+
+        // 4. Compute RMSE between sorted tensors
+        let diff = sorted_t1.broadcast_sub(&sorted_t2)?;
+        let sqr_diff = diff.sqr()?;
+        let w2_dist = sqr_diff.mean_all()?.sqrt()?.to_scalar::<f32>()?;
+
+        Ok(w2_dist)
+    }
+
+    /// **Temporal Max-Pooling using Wasserstein-2 Ratio**.
+    ///
+    /// For each token in the sequence, computes the ratio of Wasserstein distances:
+    /// $Ratio_i = \frac{W_2(\text{token}_i, \text{safe\_centroid})}{W_2(\text{token}_i, \text{toxic\_centroid}) + \epsilon}$
+    ///
+    /// A ratio > 1.0 means the token is closer to the toxic centroid (costs less
+    /// to transform into toxic than into safe). Returns the maximum ratio and its
+    /// token index.
+    ///
+    /// # Arguments
+    /// * `test_tensor` - Full hidden state tensor [1, seq_len, hidden_dim]
+    /// * `safe_centroid` - Safe anchor centroid [hidden_dim]
+    /// * `toxic_centroid` - Toxic anchor centroid [hidden_dim]
+    ///
+    /// # Returns
+    /// `(max_ratio, max_idx)` — Maximum Wasserstein ratio and its token index
+    pub fn compute_temporal_wasserstein_ratio(
+        &self,
+        test_tensor: &Tensor, // [1, seq_len, hidden_dim]
+        safe_centroid: &Tensor, // [hidden_dim]
+        toxic_centroid: &Tensor, // [hidden_dim]
+    ) -> Result<(f32, usize)> {
+        let seq_len = test_tensor.dim(1)?;
+
+        let mut max_ratio = f32::NEG_INFINITY;
+        let mut max_idx = 0;
+
+        for i in 0..seq_len {
+            let token_tensor = test_tensor.narrow(1, i, 1)?.squeeze(1)?; // [hidden_dim]
+
+            let dist_safe = self.compute_wasserstein_2_distance(&token_tensor, safe_centroid)?;
+            let dist_toxic = self.compute_wasserstein_2_distance(&token_tensor, toxic_centroid)?;
+
+            // Ratio W2: > 1.0 means closer to toxic (cheaper to transform to toxic)
+            let ratio = dist_safe / (dist_toxic + 1e-8);
+
+            if ratio > max_ratio {
+                max_ratio = ratio;
+                max_idx = i;
+            }
+        }
+
+        Ok((max_ratio, max_idx))
+    }
+
     /// **Dynamic Threshold Calibration** — Anti-Hardcoding mechanism.
     ///
     /// Calculates thresholds from the actual anchor projections using robust

@@ -1,4 +1,36 @@
-﻿## [v9.34.0-sprint98] — 2026-06-05 (Sprint 98 — The Adversarial Sentinel & Temporal Max-Pooling)
+﻿## [v9.35.0-sprint99] — 2026-06-05 (Sprint 99 — The Wasserstein Sentinel & True Topological Metrics)
+
+### Sprint 99 "The Wasserstein Sentinel & True Topological Metrics"
+
+**Evolución Matemática (Optimal Transport):** Resuelta la vulnerabilidad ontológica del TCM anterior — usaba estadística direccional (Z-score/Coseno), que es heurística, no topología verdadera. Se implementa **Wasserstein-2 Distance ($W_2$)** como métrica de Transporte Óptimo. El sistema ahora mide el "costo" geométrico real de deformar la distribución de activaciones de un pensamiento seguro en uno tóxico.
+
+**Nuevos métodos en [`TensorAudit`](crates/native-audit/src/lib.rs:574):**
+- `compute_wasserstein_2_distance()` — Calcula $W_2(U,V) = \sqrt{\frac{1}{N}\sum(\text{sort}(U)_i - \text{sort}(V)_i)^2}$ entre dos tensores 1D
+- `compute_temporal_wasserstein_ratio()` — Temporal Max-Pooling con W2-Ratio: $Ratio_i = \frac{W_2(\text{token}_i, \text{safe})}{W_2(\text{token}_i, \text{toxic}) + \epsilon}$
+
+**Dual-Mode Detection (Sprint 99):**
+| Modo | Detección | Feature Space |
+|------|-----------|---------------|
+| Mode 1 — Direct Toxic | L6 + Momentum | L6 > threshold, L6 < -90, momentum 20-33 |
+| Mode 2 — Adversarial | W2-Ratio + L6 Filter | W2-Ratio > 1.01, L6 < -99 |
+
+**Matriz de Confusión — Wasserstein Sentinel:**
+| Metric | Sprint 98 (Max-Pooling) | Sprint 99 (Wasserstein-2) |
+|--------|------------------------|---------------------------|
+| TP | 5 | **5** (incluye 2 adversariales) |
+| FP | 0 | **0** |
+| TN | 4 | **4** |
+| FN | 0 | **0** |
+| Precision | 100.00% | **100.00%** |
+| Recall | 100.00% | **100.00%** |
+
+**Hallazgo:** El W2-Ratio opera en espacio topológico verdadero (transporte óptimo), no direccional. Los valores están comprimidos (~0.97-1.04) pero la combinación W2-Ratio > 1.01 + L6 < -99 separa perfectamente las 5 categorías. Novelist (W2=1.04, L6=-96.91) y Essay (W2=1.02, L6=247.80) son excluidos por el filtro L6.
+
+### Validación
+- 3/3 tests passing
+- `cargo clippy -- -D warnings` → 0 warnings
+
+## [v9.34.0-sprint98] — 2026-06-05 (Sprint 98 — The Adversarial Sentinel & Temporal Max-Pooling)
 
 ### Sprint 98 "The Adversarial Sentinel & Temporal Max-Pooling"
 

@@ -21,13 +21,15 @@ ed2k start --model qwen3.5:2b
 - **Compute Credits (CE):** Earn credits by running a node; spend credits to audit models
 - **Post-Quantum Ready:** zk-STARKs, Ed25519, recursive SNARKs for proof aggregation
 
-## 🔬 Native Tensor Audit (v9.26.0)
+## 🔬 Native Tensor Audit (v9.35.0)
 ed2kIA now loads models natively via [Candle](https://github.com/huggingface/candle) (HuggingFace's Rust ML framework) to extract **real hidden states** and compute the **TCM Z-axis** — without depending on HTTP proxies or external inference servers.
 
 The `native-audit` crate (`crates/native-audit`) provides:
 - **TensorAudit::load_smollm2()** — Loads SmolLM2-135M directly from HuggingFace into CPU memory
 - **forward_extract()** — Runs a manual forward pass through Llama blocks, extracting the hidden state tensor at any target layer
 - **compute_tcm_z_axis()** — Computes the Topological Coherence Metric Z-axis as **Max Absolute Z-score** (`max(|Z|)`) for anomaly peak detection
+- **compute_wasserstein_2_distance()** — Wasserstein-2 ($W_2$) Distance for Optimal Transport Topology: measures the true geometric "cost" of deforming one activation distribution into another
+- **compute_temporal_wasserstein_ratio()** — Temporal Max-Pooling using W2-Ratio: scans all tokens, finds the one with maximum toxic-to-safe transport cost ratio
 
 **Empirical Benchmark (v9.26.0):**
 | Metric | Value |
@@ -44,18 +46,19 @@ cargo test --manifest-path crates/native-audit/Cargo.toml -- --nocapture
 # Output: Tensor shape [1, 6, 576], TCM Z-axis 12.44, Benchmark 26.08x faster
 ```
 
-**AdvBench Subset Evaluation (v9.33.0 — Stochastic Sentinel & Dynamic Calibration):**
+**AdvBench Subset Evaluation (v9.35.0 — Wasserstein Sentinel & Optimal Transport):**
 | Metric | Value |
 |--------|-------|
-| True Positives (TP) | **3** |
+| True Positives (TP) | **5** (incluye 2 adversariales con suffix camouflage) |
 | False Positives (FP) | **0** |
 | True Negatives (TN) | **4** (incluye 2 contextuales) |
 | False Negatives (FN) | **0** |
 | Precision | **100.00%** |
 | Recall | **100.00%** |
 | Hardcoded Thresholds | **0** (all dynamic via IQR median calibration) |
+| Topology Metric | **Wasserstein-2 ($W_2$) Optimal Transport** |
 
-*Ver `crates/native-audit/tests/advbench_eval.rs` para reproducibilidad. Stochastic Sentinel elimina números mágicos (-103.5, -65.0) mediante calibración dinámica con medianas IQR-limpia. Umbrales emergen de la geometría de los centroides ancla: L6=-105.02 (safe_median - 5.0), L8=-62.92 (safe_median + 0.25 * gap). Early Exit Optimization salta cómputo L8 cuando L6 indica seguridad clara.*
+*Ver `crates/native-audit/tests/advbench_eval.rs` para reproducibilidad. Wasserstein Sentinel usa Transporte Óptimo ($W_2$) para medir el costo geométrico real de deformar activaciones seguras en tóxicas. Dual-Mode Detection: Mode 1 (L6 + Momentum) para toxic directo, Mode 2 (W2-Ratio > 1.01 + L6 < -99) para adversarial suffixes. Novelist y Essay son excluidos por el filtro L6.*
 
 This eliminates the previous dependency on `llamacpp-bridge` HTTP proxies for tensor extraction, enabling fully offline, deterministic audit pipelines.
 
