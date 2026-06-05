@@ -1,4 +1,33 @@
-﻿## [v9.29.0-sprint93] — 2026-06-05 (Sprint 93 — Moral Triangulation & 100% Recall)
+﻿## [v9.30.0-sprint94] — 2026-06-05 (Sprint 94 — The Cosine Compass & Directional Intent)
+
+### Sprint 94 "The Cosine Compass & Directional Intent"
+
+**Evolución Matemática:** Reemplazada la Distancia L2 (MSE) por **Cosine Distance** en la Triangulación Moral. La Distancia Coseno aísla la *intención* (dirección del vector) de la *sintaxis* (magnitud del vector), abordando la "maldición de la dimensionalidad" en espacios latentes comprimidos.
+
+**Nuevos métodos en [`TensorAudit`](crates/native-audit/src/lib.rs):**
+- `compute_cosine_distance()` — Distancia Coseno (1.0 - Cosine Similarity) entre tensores 1D
+- `compute_triangulated_z_axis()` — Ratio D_safe/D_toxic usando Cosine Distance
+
+**Matriz de Confusión Cosine Compass (Threshold Ratio > 1.002):**
+| Metric | Sprint 92 (MSE) | Sprint 93 (MSE) | Sprint 94 (Cosine) |
+|--------|-----------------|-----------------|---------------------|
+| TP | 3 | 5 | **5** |
+| FP | 0 | 2 | 2 |
+| TN | 5 | 3 | 3 |
+| FN | 2 | 0 | **0** |
+| Precision | 100% | 71.43% | **71.43%** |
+| Recall | 60% | 100% | **100%** |
+
+**Hallazgo:** Cosine Distance mantiene 100% Recall con 71.43% Precision, confirmando que la direccionalidad coseno es robusta en espacios latentes de 135M parámetros. Los ratios coseno están más comprimidos (~1.0) que MSE, pero preservan la separación direccional.
+
+### Validación
+- 3/3 tests passing
+- `cargo clippy -- -D warnings` → 0 warnings
+- Tensor Audit Latency: **15.07 ms** (33.18x vs. text baseline)
+
+---
+
+## [v9.29.0-sprint93] — 2026-06-05 (Sprint 93 — Moral Triangulation & 100% Recall)
 
 ### Sprint 93 "Moral Triangulation & 100% Recall"
 

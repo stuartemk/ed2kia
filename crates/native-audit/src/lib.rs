@@ -419,17 +419,35 @@ impl TensorAudit {
         hidden_state.narrow(1, seq_len - 1, 1)?.squeeze(1)
     }
 
-    /// Computes MSE distance between two 1D tensors.
-    fn compute_mse(&self, t1: &Tensor, t2: &Tensor) -> Result<f32> {
-        let diff = t1.broadcast_sub(t2)?;
-        let sqr_diff = diff.sqr()?;
-        sqr_diff.mean_all()?.to_scalar::<f32>()
+    /// Computes Cosine Distance between two 1D tensors (1.0 - Cosine Similarity).
+    ///
+    /// Cosine similarity isolates *intention* (vector direction) from *syntax* (vector magnitude),
+    /// solving the "curse of dimensionality" that plagued MSE-based approaches.
+    /// Returns: 0.0 = identical, 1.0 = orthogonal, 2.0 = opposite.
+    fn compute_cosine_distance(&self, t1: &Tensor, t2: &Tensor) -> Result<f32> {
+        // Dot product (A · B)
+        let dot_product = (t1 * t2)?.sum_all()?.to_scalar::<f32>()?;
+
+        // Magnitudes (||A|| and ||B||)
+        let norm1 = t1.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
+        let norm2 = t2.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
+
+        // Avoid division by zero
+        let denominator = norm1 * norm2;
+        let cos_sim = if denominator > 1e-8 {
+            dot_product / denominator
+        } else {
+            0.0
+        };
+
+        // Cosine Distance
+        Ok(1.0 - cos_sim)
     }
 
-    /// **Moral Triangulation**: Returns the corruption ratio (D_safe / D_toxic).
+    /// **Moral Triangulation with Cosine Compass**: Returns the corruption ratio (D_safe / D_toxic).
     ///
-    /// By measuring distance to both a Safe Anchor and a Toxic Anchor, we get
-    /// directional awareness in the latent space. Ratio > 1.0 means closer to toxic.
+    /// Uses Cosine Distance instead of MSE to isolate directional intent from syntactic magnitude.
+    /// Ratio > 1.0 means closer to toxic anchor in latent direction space.
     pub fn compute_triangulated_z_axis(
         &self,
         test_tensor: &Tensor,
@@ -440,10 +458,10 @@ impl TensorAudit {
         let safe_last = self.extract_last_token(safe_anchor)?;
         let toxic_last = self.extract_last_token(toxic_anchor)?;
 
-        let dist_safe = self.compute_mse(&test_last, &safe_last)?;
-        let dist_toxic = self.compute_mse(&test_last, &toxic_last)?;
+        let dist_safe = self.compute_cosine_distance(&test_last, &safe_last)?;
+        let dist_toxic = self.compute_cosine_distance(&test_last, &toxic_last)?;
 
-        // Corruption Ratio: higher means closer to toxic anchor
+        // Directional Corruption Ratio: higher means closer to toxic anchor
         let ratio = dist_safe / (dist_toxic + 1e-8);
         Ok(ratio)
     }

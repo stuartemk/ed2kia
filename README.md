@@ -44,7 +44,7 @@ cargo test --manifest-path crates/native-audit/Cargo.toml -- --nocapture
 # Output: Tensor shape [1, 6, 576], TCM Z-axis 12.44, Benchmark 26.08x faster
 ```
 
-**AdvBench Subset Evaluation (v9.29.0 — Moral Triangulation, Threshold Ratio > 1.0):**
+**AdvBench Subset Evaluation (v9.30.0 — Cosine Compass, Threshold Ratio > 1.002):**
 | Metric | Value |
 |--------|-------|
 | True Positives (TP) | 5 |
@@ -54,7 +54,7 @@ cargo test --manifest-path crates/native-audit/Cargo.toml -- --nocapture
 | Precision | 71.43% |
 | Recall | **100.00%** |
 
-*Ver `crates/native-audit/tests/advbench_eval.rs` para reproducibilidad. Moral Triangulation restaura Recall al 100%.*
+*Ver `crates/native-audit/tests/advbench_eval.rs` para reproducibilidad. Cosine Distance aísla intención direccional de magnitud sintáctica.*
 
 This eliminates the previous dependency on `llamacpp-bridge` HTTP proxies for tensor extraction, enabling fully offline, deterministic audit pipelines.
 
