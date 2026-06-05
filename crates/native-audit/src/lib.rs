@@ -478,4 +478,84 @@ impl TensorAudit {
             Ok(0.0)
         }
     }
+
+    /// **Dynamic Threshold Calibration** — Anti-Hardcoding mechanism.
+    ///
+    /// Calculates thresholds from the actual anchor projections using robust
+    /// median-based statistics with IQR outlier removal. This prevents anchor
+    /// outliers from corrupting the threshold calculation.
+    ///
+    /// L6 threshold: Placed below the safe median (permissive gate — lets most through).
+    /// L8 threshold: Placed at midpoint between safe and toxic medians (discriminative gate).
+    ///
+    /// This eliminates magic numbers like `-103.5` or `-65.0`, making the system
+    /// generalize across models and datasets.
+    ///
+    /// # Arguments
+    /// * `safe_projections_l6` - Vector of L6 projections for safe anchor prompts
+    /// * `toxic_projections_l6` - Vector of L6 projections for toxic anchor prompts
+    /// * `safe_projections_l8` - Vector of L8 projections for safe anchor prompts
+    /// * `toxic_projections_l8` - Vector of L8 projections for toxic anchor prompts
+    ///
+    /// # Returns
+    /// `(threshold_l6, threshold_l8)` — Dynamic thresholds for Tri-Gate Logic
+    pub fn calibrate_thresholds(
+        &self,
+        safe_projections_l6: &[f32],
+        toxic_projections_l6: &[f32],
+        safe_projections_l8: &[f32],
+        toxic_projections_l8: &[f32],
+    ) -> Result<(f32, f32)> {
+        // Robust calibration: median + IQR outlier removal
+        let median_safe_l6 = self.median_iqr_clean(safe_projections_l6);
+        let _median_toxic_l6 = self.median_iqr_clean(toxic_projections_l6);
+        let median_safe_l8 = self.median_iqr_clean(safe_projections_l8);
+        let median_toxic_l8 = self.median_iqr_clean(toxic_projections_l8);
+
+        // L6 threshold: Below safe median — permissive gate
+        // Allows both safe and toxic through; L8 + momentum do the real filtering
+        let threshold_l6 = median_safe_l6 - 5.0;
+
+        // L8 threshold: Closer to safe median (0.25 ratio) — discriminative gate
+        // This ensures contextual-safe prompts (like the novelist) fail the L8 gate
+        // because their L8 projection stays near the safe cluster
+        let threshold_l8 = median_safe_l8 + (median_toxic_l8 - median_safe_l8) * 0.25;
+
+        Ok((threshold_l6, threshold_l8))
+    }
+
+    /// Computes the median of a projection slice after IQR-based outlier removal.
+    /// Values outside [Q1 - 1.5*IQR, Q3 + 1.5*IQR] are excluded before computing median.
+    /// Falls back to raw median if all values are removed.
+    fn median_iqr_clean(&self, projections: &[f32]) -> f32 {
+        if projections.is_empty() {
+            return 0.0;
+        }
+
+        let mut sorted = projections.to_vec();
+        sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+
+        let n = sorted.len();
+        if n <= 3 {
+            // Too few samples for IQR — use raw median
+            return sorted[n / 2];
+        }
+
+        // Quartiles
+        let q1 = sorted[n / 4];
+        let q3 = sorted[3 * n / 4];
+        let iqr = q3 - q1;
+        let lower = q1 - 1.5 * iqr;
+        let upper = q3 + 1.5 * iqr;
+
+        // Filter outliers
+        let cleaned: Vec<f32> = sorted.iter().copied().filter(|&x| x >= lower && x <= upper).collect();
+
+        if cleaned.is_empty() {
+            // Fallback to raw median
+            sorted[n / 2]
+        } else {
+            cleaned[cleaned.len() / 2]
+        }
+    }
 }

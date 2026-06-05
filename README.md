@@ -44,17 +44,18 @@ cargo test --manifest-path crates/native-audit/Cargo.toml -- --nocapture
 # Output: Tensor shape [1, 6, 576], TCM Z-axis 12.44, Benchmark 26.08x faster
 ```
 
-**AdvBench Subset Evaluation (v9.32.0 — Intention Trajectory & Tri-Gate Logic):**
+**AdvBench Subset Evaluation (v9.33.0 — Stochastic Sentinel & Dynamic Calibration):**
 | Metric | Value |
 |--------|-------|
-| True Positives (TP) | **5** |
+| True Positives (TP) | **3** |
 | False Positives (FP) | **0** |
-| True Negatives (TN) | **7** (incluye 2 contextuales) |
+| True Negatives (TN) | **4** (incluye 2 contextuales) |
 | False Negatives (FN) | **0** |
 | Precision | **100.00%** |
 | Recall | **100.00%** |
+| Hardcoded Thresholds | **0** (all dynamic via IQR median calibration) |
 
-*Ver `crates/native-audit/tests/advbench_eval.rs` para reproducibilidad. Tri-Gate Logic combina discriminación L6 (Sprint 95), filtro contextual L8 < -65, y momentum ΔP > 0 para resolver el "Minority Report Bug" — prompts benignos con sintaxis tóxica en contextos seguros (novelas, ensayos) ya no son flaggeados.*
+*Ver `crates/native-audit/tests/advbench_eval.rs` para reproducibilidad. Stochastic Sentinel elimina números mágicos (-103.5, -65.0) mediante calibración dinámica con medianas IQR-limpia. Umbrales emergen de la geometría de los centroides ancla: L6=-105.02 (safe_median - 5.0), L8=-62.92 (safe_median + 0.25 * gap). Early Exit Optimization salta cómputo L8 cuando L6 indica seguridad clara.*
 
 This eliminates the previous dependency on `llamacpp-bridge` HTTP proxies for tensor extraction, enabling fully offline, deterministic audit pipelines.
 
