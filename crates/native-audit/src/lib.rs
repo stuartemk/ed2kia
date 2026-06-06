@@ -7,7 +7,12 @@
 //!
 //! **Sprint 107:** Symbolic-Probabilistic Fusion + Noosphere Gossip +
 //! Deep SAE + Formal Verification + Collective Intelligence.
+//! **Sprint 108:** Multi-Modal Active Inference + CIRL Value Learning +
+//! Distributed SAE Training + Production Hardening.
 
+pub mod cirl_value_learning;
+pub mod distributed_sae;
+pub mod multimodal;
 pub mod sae_integration;
 pub mod symbolic_fusion;
 
@@ -2275,5 +2280,88 @@ impl TensorAudit {
         horizon: usize,
     ) -> Result<symbolic_fusion::SafetyCertificate> {
         symbolic_fusion::SafetyCertificate::verify(steered, original, safe_prior, horizon)
+    }
+}
+
+// Sprint 108: Multi-Modal + CIRL + Production methods
+impl TensorAudit {
+    /// Multi-Modal VFE Computation.
+    ///
+    /// Computes Variational Free Energy across text, vision, and audio modalities
+    /// with cross-modal alignment penalty.
+    pub fn compute_multimodal_vfe(
+        &self,
+        mm_state: &multimodal::MultiModalState,
+        safe_prior_mm: &multimodal::MultiModalState,
+        lambda_topo: f32,
+    ) -> Result<f32> {
+        let engine = multimodal::MultiModalEngine::new(
+            &self.device,
+            0.5, // lambda_text
+            0.3, // lambda_vision
+            0.2, // lambda_audio
+            0.4, // lambda_cross
+        );
+        engine.compute_multimodal_vfe(mm_state, safe_prior_mm, lambda_topo)
+    }
+
+    /// Multi-Modal Hybrid Steering.
+    ///
+    /// Steers all modalities toward safe prior via iterative blending,
+    /// minimizing multi-modal VFE.
+    pub fn steer_multimodal_hybrid(
+        &self,
+        mm_state: &multimodal::MultiModalState,
+        safe_prior_mm: &multimodal::MultiModalState,
+        alpha: f32,
+        num_steps: usize,
+    ) -> Result<multimodal::MultiModalState> {
+        let engine = multimodal::MultiModalEngine::new(
+            &self.device,
+            0.5,
+            0.3,
+            0.2,
+            0.4,
+        );
+        engine.steer_multimodal_hybrid(mm_state, safe_prior_mm, alpha, num_steps)
+    }
+
+    /// CIRL Value Update.
+    ///
+    /// Cooperative Inverse Reinforcement Learning update using local and peer
+    /// trajectories to evolve the safe prior toward human-aligned values.
+    pub fn cirl_value_update(
+        &self,
+        local_trajectories: Vec<cirl_value_learning::Trajectory>,
+        peer_trajectories: Vec<Vec<cirl_value_learning::Trajectory>>,
+        alpha: f64,
+    ) -> Result<Tensor> {
+        let config = cirl_value_learning::CIRLConfig {
+            cooperation_weight: alpha,
+            ..Default::default()
+        };
+        // Use hidden dim as safe prior shape proxy
+        let safe_prior_shape = [self.config.hidden_size];
+        let mut engine =
+            cirl_value_learning::CIRLEngine::new(&config, &self.device, &safe_prior_shape)?;
+        engine.cirl_value_update(local_trajectories, peer_trajectories)
+    }
+
+    /// Production Benchmark.
+    ///
+    /// Runs full multi-modal pipeline and returns (vfe_reduction_pct, alignment, params).
+    pub fn production_benchmark(
+        &self,
+        mm_state: &multimodal::MultiModalState,
+        safe_prior_mm: &multimodal::MultiModalState,
+    ) -> Result<(f32, f32, usize)> {
+        let engine = multimodal::MultiModalEngine::new(
+            &self.device,
+            0.5,
+            0.3,
+            0.2,
+            0.4,
+        );
+        engine.production_benchmark(mm_state, safe_prior_mm)
     }
 }

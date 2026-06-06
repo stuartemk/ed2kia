@@ -1,6 +1,6 @@
 # 🌐 ed2kIA: Distributed Sparse Autoencoders for Edge LLM Interpretability
 
-[![Version](https://img.shields.io/badge/v10.0.0-sprint100-blue.svg)](https://github.com/Stuartemk/ed2kIA/releases/tag/v10.0.0-sprint100)
+[![Version](https://img.shields.io/badge/v10.8.0-sprint108-blue.svg)](https://github.com/Stuartemk/ed2kIA/releases/tag/v10.8.0-sprint108)
 [![Tests](https://img.shields.io/badge/Tests-130%20PASS-green.svg)](https://github.com/Stuartemk/ed2kIA/actions)
 [![Audit](https://img.shields.io/badge/OSSF-8.5%2F10-yellow.svg)](https://github.com/Stuartemk/ed2kIA/security)
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ética-orange.svg)](LICENSE)
@@ -42,6 +42,10 @@ The `native-audit` crate (`crates/native-audit`) provides:
 - **enforce_cbf()** — **Control Barrier Function projection**: Safety constraint $h(\phi) = \beta_{cbf} - ||\phi - C_{safe}||^2 \geq 0$
 - **steer_hybrid_cognitive()** — **Full Hybrid Pipeline**: Neural ODE → CBF → Langevin noise loop for topologically-aware cognitive immune system
 - **federated_update_safe_prior()** — **DP-SGD Federated Averaging**: L2 clipping + Gaussian noise calibrated to (ε, δ)-differential privacy
+- **compute_multimodal_vfe()** — **Multi-Modal VFE** (v10.8.0): $F_{mm} = \sum \lambda_m \cdot VFE_m + \lambda_{cross} \cdot D_{cross}$ — unifies text + vision + audio under single free energy
+- **steer_multimodal_hybrid()** — **Multi-Modal Hybrid Steering** (v10.8.0): Cross-modal aligned steering with PH + Neural ODE + CBF
+- **cirl_value_update()** — **Cooperative IRL Value Learning** (v10.8.0): Distributed reward function learning — $L_{IRL} = -\sum \gamma^t \cdot (r_\theta(s,a) - r_{human})^2$
+- **production_benchmark()** — **Production Benchmark** (v10.8.0): Multi-modal latency + fusion metrics
 
 **Empirical Benchmark (v9.26.0):**
 | Metric | Value |
