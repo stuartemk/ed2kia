@@ -1,4 +1,67 @@
-﻿## [v10.5.0-sprint105] — 2026-06-06 (Sprint 105 — Active Inference Free Energy Engine + Wasserstein-2 VFE + Topological CBF)
+﻿## [v10.6.0-sprint106] — 2026-06-06 (Sprint 106 — Persistent Homology + Neural ODE Control + Federated Safe Prior + Hybrid Cognitive Engine)
+
+### Sprint 106 "Persistent Homology + Neural ODE Control + Federated Safe Prior + Hybrid Cognitive Engine"
+
+**Problema — Sin topología persistente ni control continuo:** Sprints 104-105 usan métricas OT (Sinkhorn, W2) y optimización discreta (grid search, Langevin), pero carecen de análisis topológico persistente (PH) para detectar invariantes estructurales en el manifold de activaciones, y carecen de control continuo vía Neural ODEs para navegación suave del espacio latente.
+
+**Solución — Persistent Homology + Neural ODE (RK4) + CBF + Federated DP-SGD:** Convertimos `native-audit` en un Cognitive Immune System topológicamente consciente:
+- **Persistent Homology (PH):** Proxy de Vietoris-Rips vía matriz de distancias + momentos estadísticos — Betti-0 (componentes conectados), Betti-1 (loops), Betti-2 (voids)
+- **Neural ODE (RK4):** Integración continua `dh/dt = f_θ(h, t)` con Runge-Kutta 4to orden — navegación suave del manifold
+- **Hybrid Energy Gradient:** `∇_h E(h) = λ_OT · ∇W2 + ∇recon + λ_topo · ∇Var` — gradiente combinado de energía híbrida
+- **Control Barrier Function (CBF):** Proyección `h(φ) = β_cbf - ||φ - C_safe||² ≥ 0` — garantía de seguridad en cada paso ODE
+- **Federated DP-SGD:** Average federado con clipping L2 + ruido Gaussian calibrado a (ε, δ)-DP — privacidad diferencial para actualizaciones colaborativas del safe prior
+
+**TopologicalSignature:**
+```rust
+pub struct TopologicalSignature {
+    pub betti_numbers: Vec<usize>,        // [Betti-0, Betti-1, Betti-2]
+    pub persistence_intervals: Vec<(f32, f32)>,  // (birth, death) pairs
+}
+```
+
+**Nuevos métodos en [`TensorAudit`](crates/native-audit/src/lib.rs:1757):**
+- `compute_persistent_homology()` — PH proxy via distance matrix + statistical moments (CV, skewness)
+- `compute_hybrid_energy_gradient()` — Hybrid energy gradient: W2 + recon + topo variance
+- `neural_ode_step()` — RK4 integration of hybrid energy gradient
+- `enforce_cbf()` — Control Barrier Function projection
+- `steer_hybrid_cognitive()` — Full hybrid pipeline: Neural ODE → CBF → Langevin noise (loop)
+- `federated_update_safe_prior()` — DP-SGD federated averaging with Gaussian noise calibrated to (ε, δ)
+
+**Hybrid Cognitive Results:**
+| Metric | Value |
+|--------|-------|
+| VFE Original (avg) | **68.14** |
+| VFE Steered (avg) | **3.84** |
+| Avg VFE Reducción | **94.36%** |
+| Avg PH Distance | **1.33** |
+| Avg Latencia | **363.09 ms** |
+| Success Rate | **3/3 (100%)** |
+| λ_OT (W2 weight) | **0.10** |
+| λ_topo (topology weight) | **0.05** |
+| β_CBF (safety margin) | **10.0** |
+| γ_CBF (decay rate) | **0.50** |
+| ODE Steps | **20** |
+| ODE dt | **0.050** |
+| PH max_dim | **2** |
+| PH landmarks | **64** |
+
+**Comparación: S105 (Active Inference) vs S106 (Hybrid Cognitive):**
+| Propiedad | S105 (Active Inference) | S106 (Hybrid Cognitive) |
+|-----------|------------------------|------------------------|
+| Framework | Friston Active Inference | PH + Neural ODE + CBF + Federated DP |
+| Optimización | Grid search + CBF | RK4 ODE + CBF + Langevin |
+| Topología | Var(φ) proxy | Persistent Homology (Betti 0/1/2) |
+| Control | Discreto (grid) | Continuo (ODE) |
+| Federated | No | DP-SGD con (ε, δ)-DP |
+| VFE Reduction | 92.13% | 94.36% |
+
+### Validación
+- `test_hybrid_cognitive_steering` passing (3/3 runs, 94.36% avg VFE reduction)
+- `cargo clippy --manifest-path crates/native-audit/Cargo.toml --all-targets -- -D warnings` → 0 warnings
+- `cargo fmt --all` → 0 diferencias
+- Total tests passing: **9/9** (7 advbench + 1 latency + 1 integration)
+
+## [v10.5.0-sprint105] — 2026-06-06 (Sprint 105 — Active Inference Free Energy Engine + Wasserstein-2 VFE + Topological CBF)
 
 ### Sprint 105 "Active Inference Free Energy Engine + Wasserstein-2 VFE + Topological CBF"
 

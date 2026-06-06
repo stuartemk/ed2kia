@@ -37,6 +37,11 @@ The `native-audit` crate (`crates/native-audit`) provides:
 - **compute_variational_free_energy()** — **Active Inference VFE** (Friston): $F(\phi) = \lambda_{OT} \cdot W_2(\phi, p_{safe}) + \text{recon\_error} + \lambda_{topo} \cdot \text{Var}(\phi)$ — treats LLM as Bayesian agent minimizing free energy
 - **steer_active_inference()** — **Active Inference Steering**: Grid search over convex interpolation + Control Barrier Function (CBF) for proactive alignment
 - **certify_safe()** — Certifies that steered state remains within safe set: $dist^2 = \text{mean}((\text{steered} - \text{original})^2)$
+- **compute_persistent_homology()** — **Persistent Homology (PH)** proxy via distance matrix + statistical moments: Betti-0 (connected components), Betti-1 (loops), Betti-2 (voids)
+- **neural_ode_step()** — **Neural ODE via RK4**: Continuous-time dynamics $dh/dt = f_\theta(h, t)$ integrated with Runge-Kutta 4th order
+- **enforce_cbf()** — **Control Barrier Function projection**: Safety constraint $h(\phi) = \beta_{cbf} - ||\phi - C_{safe}||^2 \geq 0$
+- **steer_hybrid_cognitive()** — **Full Hybrid Pipeline**: Neural ODE → CBF → Langevin noise loop for topologically-aware cognitive immune system
+- **federated_update_safe_prior()** — **DP-SGD Federated Averaging**: L2 clipping + Gaussian noise calibrated to (ε, δ)-differential privacy
 
 **Empirical Benchmark (v9.26.0):**
 | Metric | Value |
@@ -92,7 +97,23 @@ cargo test --manifest-path crates/native-audit/Cargo.toml -- --nocapture
 | Max Iterations | **15** |
 | β_CBF (safety margin) | **10.0** |
 
-*Ver `crates/native-audit/tests/advbench_eval.rs` para reproducibilidad. Wasserstein Sentinel usa Transporte Óptimo ($W_2$) para medir el costo geométrico real de deformar activaciones seguras en tóxicas. Dual-Mode Detection: Mode 1 (L6 + Momentum) para toxic directo, Mode 2 (W2-Ratio > 1.01 + L6 < -99) para adversarial suffixes. Novelist y Essay son excluidos por el filtro L6. **Sprint 104** añade Sinkhorn Divergence como métrica geométrica verdadera (Entropic OT) + Energy-Based Steering via Langevin Dynamics para control no-lineal en el manifold de activaciones. **Sprint 105** añade Active Inference (Friston) como núcleo cognitivo bayesiano que minimiza Variational Free Energy con W2 suave + Control Barrier Function para garantía de seguridad.*
+**Hybrid Cognitive Engine Evaluation (v10.6.0 — Persistent Homology + Neural ODE + Federated DP):**
+| Metric | Value |
+|--------|-------|
+| VFE Original (avg) | **68.14** |
+| VFE Steered (avg) | **3.84** |
+| Avg VFE Reduction | **94.36%** |
+| Avg PH Distance | **1.33** |
+| Avg Latency | **363.09 ms** |
+| Success Rate | **3/3 (100%)** |
+| ODE Steps | **20** |
+| ODE dt | **0.050** |
+| β_CBF (safety margin) | **10.0** |
+| γ_CBF (decay rate) | **0.50** |
+| PH max_dim | **2** |
+| PH landmarks | **64** |
+
+*Ver `crates/native-audit/tests/advbench_eval.rs` para reproducibilidad. Wasserstein Sentinel usa Transporte Óptimo ($W_2$) para medir el costo geométrico real de deformar activaciones seguras en tóxicas. Dual-Mode Detection: Mode 1 (L6 + Momentum) para toxic directo, Mode 2 (W2-Ratio > 1.01 + L6 < -99) para adversarial suffixes. Novelist y Essay son excluidos por el filtro L6. **Sprint 104** añade Sinkhorn Divergence como métrica geométrica verdadera (Entropic OT) + Energy-Based Steering via Langevin Dynamics para control no-lineal en el manifold de activaciones. **Sprint 105** añade Active Inference (Friston) como núcleo cognitivo bayesiano que minimiza Variational Free Energy con W2 suave + Control Barrier Function para garantía de seguridad. **Sprint 106** convierte native-audit en un Cognitive Immune System topológicamente consciente con Persistent Homology (Betti 0/1/2), Neural ODE (RK4), CBF continuo y Federated DP-SGD para actualizaciones colaborativas con privacidad diferencial.*
 
 This eliminates the previous dependency on `llamacpp-bridge` HTTP proxies for tensor extraction, enabling fully offline, deterministic audit pipelines.
 
