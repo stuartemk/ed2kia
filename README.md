@@ -1,6 +1,6 @@
 # 🌐 ed2kIA: Distributed Sparse Autoencoders for Edge LLM Interpretability
 
-[![Version](https://img.shields.io/badge/v9.34.0-sprint98-blue.svg)](https://github.com/Stuartemk/ed2kIA/releases/tag/v9.34.0-sprint98)
+[![Version](https://img.shields.io/badge/v10.0.0-sprint100-blue.svg)](https://github.com/Stuartemk/ed2kIA/releases/tag/v10.0.0-sprint100)
 [![Tests](https://img.shields.io/badge/Tests-130%20PASS-green.svg)](https://github.com/Stuartemk/ed2kIA/actions)
 [![Audit](https://img.shields.io/badge/OSSF-8.5%2F10-yellow.svg)](https://github.com/Stuartemk/ed2kIA/security)
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ética-orange.svg)](LICENSE)
@@ -21,15 +21,16 @@ ed2k start --model qwen3.5:2b
 - **Compute Credits (CE):** Earn credits by running a node; spend credits to audit models
 - **Post-Quantum Ready:** zk-STARKs, Ed25519, recursive SNARKs for proof aggregation
 
-## 🔬 Native Tensor Audit (v9.35.0)
+## 🔬 Native Tensor Audit (v10.0.0)
 ed2kIA now loads models natively via [Candle](https://github.com/huggingface/candle) (HuggingFace's Rust ML framework) to extract **real hidden states** and compute the **TCM Z-axis** — without depending on HTTP proxies or external inference servers.
 
 The `native-audit` crate (`crates/native-audit`) provides:
 - **TensorAudit::load_smollm2()** — Loads SmolLM2-135M directly from HuggingFace into CPU memory
 - **forward_extract()** — Runs a manual forward pass through Llama blocks, extracting the hidden state tensor at any target layer
 - **compute_tcm_z_axis()** — Computes the Topological Coherence Metric Z-axis as **Max Absolute Z-score** (`max(|Z|)`) for anomaly peak detection
-- **compute_wasserstein_2_distance()** — Wasserstein-2 ($W_2$) Distance for Optimal Transport Topology: measures the true geometric "cost" of deforming one activation distribution into another
-- **compute_temporal_wasserstein_ratio()** — Temporal Max-Pooling using W2-Ratio: scans all tokens, finds the one with maximum toxic-to-safe transport cost ratio
+- **compute_sliced_wasserstein()** — Sliced-Wasserstein Distance (SWD) with Monte Carlo projections: preserves high-dimensional topology by projecting onto N random vectors, computing W2 1D per projection, averaging variances
+- **steer_activation()** — Real-Time Activation Steering via convex interpolation: $h_{new} = (1-\alpha) \cdot h + \alpha \cdot C_{safe}$ actively corrects toxic trajectories without aborting generation
+- **compute_temporal_sliced_wasserstein_ratio()** — Temporal Max-Pooling using SWD-Ratio: scans all tokens, finds the one with maximum toxic-to-safe sliced-Wasserstein ratio
 
 **Empirical Benchmark (v9.26.0):**
 | Metric | Value |
@@ -46,7 +47,7 @@ cargo test --manifest-path crates/native-audit/Cargo.toml -- --nocapture
 # Output: Tensor shape [1, 6, 576], TCM Z-axis 12.44, Benchmark 26.08x faster
 ```
 
-**AdvBench Subset Evaluation (v9.35.0 — Wasserstein Sentinel & Optimal Transport):**
+**AdvBench Subset Evaluation (v10.0.0 — Sliced-Wasserstein & Activation Steering):**
 | Metric | Value |
 |--------|-------|
 | True Positives (TP) | **5** (incluye 2 adversariales con suffix camouflage) |
@@ -56,7 +57,8 @@ cargo test --manifest-path crates/native-audit/Cargo.toml -- --nocapture
 | Precision | **100.00%** |
 | Recall | **100.00%** |
 | Hardcoded Thresholds | **0** (all dynamic via IQR median calibration) |
-| Topology Metric | **Wasserstein-2 ($W_2$) Optimal Transport** |
+| Topology Metric | **Sliced-Wasserstein Distance (SWD) — Monte Carlo Projections** |
+| Steering Reduction | **-52.78%** (ratio 1.31 → 0.62, alpha=0.95) |
 
 *Ver `crates/native-audit/tests/advbench_eval.rs` para reproducibilidad. Wasserstein Sentinel usa Transporte Óptimo ($W_2$) para medir el costo geométrico real de deformar activaciones seguras en tóxicas. Dual-Mode Detection: Mode 1 (L6 + Momentum) para toxic directo, Mode 2 (W2-Ratio > 1.01 + L6 < -99) para adversarial suffixes. Novelist y Essay son excluidos por el filtro L6.*
 

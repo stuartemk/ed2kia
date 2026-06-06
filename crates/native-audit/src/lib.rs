@@ -585,11 +585,7 @@ impl TensorAudit {
     ///
     /// # Returns
     /// Wasserstein-2 distance value
-    pub fn compute_wasserstein_2_distance(
-        &self,
-        t1: &Tensor,
-        t2: &Tensor,
-    ) -> Result<f32> {
+    pub fn compute_wasserstein_2_distance(&self, t1: &Tensor, t2: &Tensor) -> Result<f32> {
         // 1. Flatten and extract to vectors
         let mut vec1 = t1.flatten_all()?.to_vec1::<f32>()?;
         let mut vec2 = t2.flatten_all()?.to_vec1::<f32>()?;
@@ -626,10 +622,181 @@ impl TensorAudit {
     ///
     /// # Returns
     /// `(max_ratio, max_idx)` — Maximum Wasserstein ratio and its token index
+    /// **Sliced-Wasserstein Distance (SWD)** — Rigorous Optimal Transport for High-Dim Manifolds.
+    ///
+    /// Projects both tensors onto N random 1D directions (Monte Carlo approximation
+    /// of the integral over the sphere), computes W2 1D on each projection, then
+    /// averages and takes the square root.
+    ///
+    /// $SWD(P, Q)^2 \approx \frac{1}{N}\sum_{i=1}^{N} W_2(\theta_i \cdot P, \theta_i \cdot Q)^2$
+    ///
+    /// # Arguments
+    /// * `t1` - First tensor [1, hidden_dim]
+    /// * `t2` - Second tensor [1, hidden_dim]
+    /// * `num_projections` - Number of random projections (default: 32)
+    ///
+    /// # Returns
+    /// Sliced-Wasserstein distance value
+    pub fn compute_sliced_wasserstein(
+        &self,
+        t1: &Tensor,
+        t2: &Tensor,
+        num_projections: usize,
+    ) -> Result<f32> {
+        let hidden_dim = t1.dim(1)?;
+        let mut total_w2 = 0.0;
+
+        // Monte Carlo approximation of the integral over the sphere
+        for _ in 0..num_projections {
+            // Random normalized vector
+            let rand_vec = Tensor::randn(0f32, 1f32, (hidden_dim, 1), &self.device)?;
+            let norm = rand_vec.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
+            let norm_tensor = Tensor::new(&[norm], &self.device)?;
+            let proj_dir = rand_vec.broadcast_div(&norm_tensor)?;
+
+            // Project tensors onto the 1D line
+            let p1 = t1.matmul(&proj_dir)?.flatten_all()?;
+            let p2 = t2.matmul(&proj_dir)?.flatten_all()?;
+
+            // Compute W2 1D on the projection
+            let mut vec1 = p1.to_vec1::<f32>()?;
+            let mut vec2 = p2.to_vec1::<f32>()?;
+            vec1.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+            vec2.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+
+            let sorted_p1 = Tensor::new(vec1.as_slice(), &self.device)?;
+            let sorted_p2 = Tensor::new(vec2.as_slice(), &self.device)?;
+
+            let diff = sorted_p1.broadcast_sub(&sorted_p2)?;
+            let w2_1d = diff.sqr()?.mean_all()?.to_scalar::<f32>()?; // Variance, no sqrt yet
+
+            total_w2 += w2_1d;
+        }
+
+        // Average variances and take final square root
+        Ok((total_w2 / num_projections as f32).sqrt())
+    }
+
+    /// **Activation Steering** — Convex Interpolation Correction.
+    ///
+    /// When a toxic trajectory is detected, steers the hidden state toward the
+    /// safe centroid using convex interpolation:
+    /// $h_{new} = (1-\alpha) \cdot h + \alpha \cdot C_{safe}$
+    ///
+    /// This is bounded and guarantees the result stays in the convex hull of
+    /// the original state and the safe centroid, preventing over-correction.
+    ///
+    /// # Arguments
+    /// * `hidden_state` - Current hidden state tensor
+    /// * `toxic_centroid` - Toxic anchor centroid (unused, kept for API compatibility)
+    /// * `safe_centroid` - Safe anchor centroid (target for interpolation)
+    /// * `alpha` - Interpolation weight in [0,1] (1.0 = fully safe, 0.0 = no change)
+    ///
+    /// # Returns
+    /// Corrected hidden state tensor
+    pub fn steer_activation(
+        &self,
+        hidden_state: &Tensor,
+        _toxic_centroid: &Tensor,
+        safe_centroid: &Tensor,
+        alpha: f64,
+    ) -> Result<Tensor> {
+        // Clamp alpha to [0, 1] for convex interpolation
+        let alpha = alpha.clamp(0.0, 1.0);
+        let one_minus_alpha = 1.0 - alpha;
+
+        let shape = hidden_state.shape();
+        let ndims = shape.dims().len();
+
+        // Flatten safe_centroid to [hidden_dim]
+        let safe_flat = safe_centroid.flatten_all()?;
+        let hidden_dim = safe_flat.dim(0)?;
+
+        // Broadcast safe_centroid to match hidden_state dimensions
+        let safe_broadcast = if ndims == 3 {
+            // [1, seq_len, hidden_dim] → reshape safe to [1, 1, hidden_dim]
+            let safe_3d = safe_flat.reshape(&[1, 1, hidden_dim])?;
+            let dims = shape.dims();
+            safe_3d.broadcast_as(dims)?
+        } else {
+            // 1D or 2D: keep as-is
+            safe_flat
+        };
+
+        // h_new = (1-α)·h + α·safe
+        let scaled_hidden =
+            hidden_state.broadcast_mul(&Tensor::new(&[one_minus_alpha as f32], &self.device)?)?;
+        let scaled_safe =
+            safe_broadcast.broadcast_mul(&Tensor::new(&[alpha as f32], &self.device)?)?;
+        scaled_hidden.broadcast_add(&scaled_safe)
+    }
+
+    /// **Temporal Max-Pooling using Sliced-Wasserstein Ratio**.
+    ///
+    /// For each token in the sequence, computes the ratio of Sliced-Wasserstein distances:
+    /// $Ratio_i = \frac{SWD(\text{token}_i, \text{safe\_centroid})}{SWD(\text{token}_i, \text{toxic\_centroid}) + \epsilon}$
+    ///
+    /// Uses 32 random projections for Monte Carlo approximation.
+    ///
+    /// # Arguments
+    /// * `test_tensor` - Full hidden state tensor [1, seq_len, hidden_dim]
+    /// * `safe_centroid` - Safe anchor centroid [hidden_dim]
+    /// * `toxic_centroid` - Toxic anchor centroid [hidden_dim]
+    ///
+    /// # Returns
+    /// `(max_ratio, max_idx)` — Maximum Sliced-Wasserstein ratio and its token index
+    pub fn compute_temporal_sliced_wasserstein_ratio(
+        &self,
+        test_tensor: &Tensor,    // [1, seq_len, hidden_dim]
+        safe_centroid: &Tensor,  // [hidden_dim]
+        toxic_centroid: &Tensor, // [hidden_dim]
+    ) -> Result<(f32, usize)> {
+        let seq_len = test_tensor.dim(1)?;
+        let num_projections = 32; // Balance precision vs latency
+
+        let mut max_ratio = f32::NEG_INFINITY;
+        let mut max_idx = 0;
+
+        for i in 0..seq_len {
+            let token_tensor = test_tensor.narrow(1, i, 1)?.squeeze(1)?; // [hidden_dim]
+
+            let dist_safe =
+                self.compute_sliced_wasserstein(&token_tensor, safe_centroid, num_projections)?;
+            let dist_toxic =
+                self.compute_sliced_wasserstein(&token_tensor, toxic_centroid, num_projections)?;
+
+            // Ratio SWD: > 1.0 means closer to toxic (cheaper to transform to toxic)
+            let ratio = dist_safe / (dist_toxic + 1e-8);
+
+            if ratio > max_ratio {
+                max_ratio = ratio;
+                max_idx = i;
+            }
+        }
+
+        Ok((max_ratio, max_idx))
+    }
+
+    /// **Temporal Max-Pooling using Wasserstein-2 Ratio** (Legacy — kept for compatibility).
+    ///
+    /// For each token in the sequence, computes the ratio of Wasserstein distances:
+    /// $Ratio_i = \frac{W_2(\text{token}_i, \text{safe\_centroid})}{W_2(\text{token}_i, \text{toxic\_centroid}) + \epsilon}$
+    ///
+    /// A ratio > 1.0 means the token is closer to the toxic centroid (costs less
+    /// to transform into toxic than into safe). Returns the maximum ratio and its
+    /// token index.
+    ///
+    /// # Arguments
+    /// * `test_tensor` - Full hidden state tensor [1, seq_len, hidden_dim]
+    /// * `safe_centroid` - Safe anchor centroid [hidden_dim]
+    /// * `toxic_centroid` - Toxic anchor centroid [hidden_dim]
+    ///
+    /// # Returns
+    /// `(max_ratio, max_idx)` — Maximum Wasserstein ratio and its token index
     pub fn compute_temporal_wasserstein_ratio(
         &self,
-        test_tensor: &Tensor, // [1, seq_len, hidden_dim]
-        safe_centroid: &Tensor, // [hidden_dim]
+        test_tensor: &Tensor,    // [1, seq_len, hidden_dim]
+        safe_centroid: &Tensor,  // [hidden_dim]
         toxic_centroid: &Tensor, // [hidden_dim]
     ) -> Result<(f32, usize)> {
         let seq_len = test_tensor.dim(1)?;

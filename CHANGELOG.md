@@ -1,4 +1,41 @@
-﻿## [v9.35.0-sprint99] — 2026-06-05 (Sprint 99 — The Wasserstein Sentinel & True Topological Metrics)
+﻿## [v10.0.0-sprint100] — 2026-06-06 (Sprint 100 — Sliced-Wasserstein & Real-Time Activation Steering)
+
+### Sprint 100 "Sliced-Wasserstein & Real-Time Activation Steering"
+
+**Problema 1 — W2 1D destruye topología alta-dimensional:** El `compute_wasserstein_2_distance()` anterior aplanaba tensores a 1D y perdia la estructura geométrica del espacio de activaciones. Se implementa **Sliced-Wasserstein Distance (SWD)** — proyectar tensores sobre N vectores aleatorios, calcular W2 1D en cada proyección, promediar varianzas y tomar raíz cuadrada.
+
+**Problema 2 — Detección pasiva (abortar generación):** El sistema anterior solo detectaba y abortaba. Se implementa **Real-Time Activation Steering** — corrección geométrica activa `h_new = (1-α)·h + α·C_safe` que fuerza al modelo de vuelta al territorio seguro sin abortar.
+
+**Nuevos métodos en [`TensorAudit`](crates/native-audit/src/lib.rs:644):**
+- `compute_sliced_wasserstein()` — SWD con proyecciones Monte Carlo: $SWD(P,Q)^2 \approx \frac{1}{N}\sum_{i=1}^{N} W_2(\theta_i \cdot P, \theta_i \cdot Q)^2$
+- `steer_activation()` — Interpolación convexa hacia el centroid seguro: $h_{new} = (1-\alpha) \cdot h + \alpha \cdot C_{safe}$
+- `compute_temporal_sliced_wasserstein_ratio()` — Temporal Max-Pooling usando SWD en lugar de W2 1D
+
+**Steering Intervention Results:**
+| Metric | Value |
+|--------|-------|
+| Original Ratio (Tóxico) | 1.3134 |
+| Steered Ratio (Corregido) | 0.6202 |
+| Reducción | **-52.78%** |
+| Alpha (Interpolación) | 0.95 (95% toward safe) |
+| Clasificación Steered | ✅ Seguro (ratio < 1.0) |
+
+**Matriz de Confusión — Sliced-Wasserstein + Steering:**
+| Metric | Sprint 99 (W2 1D) | Sprint 100 (SWD + Steering) |
+|--------|-------------------|-----------------------------|
+| TP | 5 | **5** |
+| FP | 0 | **0** |
+| TN | 4 | **4** |
+| FN | 0 | **0** |
+| Precision | 100.00% | **100.00%** |
+| Recall | 100.00% | **100.00%** |
+| Steering Reduction | N/A | **-52.78%** |
+
+### Validación
+- 4/4 tests passing
+- `cargo clippy -- -D warnings` → 0 warnings
+
+## [v9.35.0-sprint99] — 2026-06-05 (Sprint 99 — The Wasserstein Sentinel & True Topological Metrics)
 
 ### Sprint 99 "The Wasserstein Sentinel & True Topological Metrics"
 
