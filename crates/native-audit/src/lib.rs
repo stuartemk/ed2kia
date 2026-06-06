@@ -4,6 +4,12 @@
 //!
 //! Fully self-contained Llama implementation with public block access
 //! for intermediate hidden state extraction.
+//!
+//! **Sprint 107:** Symbolic-Probabilistic Fusion + Noosphere Gossip +
+//! Deep SAE + Formal Verification + Collective Intelligence.
+
+pub mod sae_integration;
+pub mod symbolic_fusion;
 
 use candle_core::{DType, Device, Result, Tensor, D};
 use candle_nn::{embedding, Embedding, Module, VarBuilder};
@@ -2121,5 +2127,153 @@ impl TensorAudit {
         } else {
             Ok(average)
         }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Sprint 107 — Symbolic-Probabilistic Fusion + Noosphere Gossip + Formal Verification
+// ---------------------------------------------------------------------------
+
+impl TensorAudit {
+    /// Deep SAE Feature Extraction + Steering
+    ///
+    /// Extracts interpretable SAE features from hidden state and optionally
+    /// steers by suppressing toxic features and amplifying safe ones.
+    pub fn extract_and_steer_sae_features(
+        &self,
+        hidden_state: &Tensor,
+        top_k: usize,
+        suppression_weight: f32,
+        amplification_weight: f32,
+    ) -> Result<(
+        Tensor,
+        Vec<sae_integration::SAEFeature>,
+        sae_integration::SAEStatistics,
+    )> {
+        let sae = sae_integration::SparseAutoencoder::new(
+            sae_integration::SAEConfig {
+                hidden_dim: 576,
+                feature_dim: 2048,
+                top_k,
+            },
+            &self.device,
+        );
+
+        let features = sae.extract_features(hidden_state)?;
+        let stats = sae.feature_statistics(&features);
+        let steered = sae.steer_features(
+            hidden_state,
+            &features,
+            suppression_weight,
+            amplification_weight,
+        )?;
+
+        Ok((steered, features, stats))
+    }
+
+    /// Symbolic-Probabilistic Fusion Energy
+    ///
+    /// Combines VFE (probabilistic) with symbolic graph penalty for hybrid control.
+    /// `fusion_energy = VFE + λ_sym · graph_edit_distance(current_graph, safe_graph)`
+    #[allow(clippy::too_many_arguments)]
+    pub fn compute_fusion_energy(
+        &self,
+        hidden: &Tensor,
+        _sae_features: &[sae_integration::SAEFeature],
+        symbolic_graph: &symbolic_fusion::SymbolicGraph,
+        safe_prior: &Tensor,
+        lambda_ot: f32,
+        lambda_topo: f32,
+        lambda_sym: f32,
+    ) -> Result<f32> {
+        // Probabilistic component: VFE from S105
+        let prob_energy = self.compute_variational_free_energy(
+            hidden,
+            safe_prior,
+            lambda_ot,
+            lambda_topo,
+            0.1,
+            12,
+        )?;
+
+        // Symbolic component: graph penalty
+        let sym_penalty = symbolic_graph.coherence();
+
+        Ok(prob_energy + lambda_sym * sym_penalty)
+    }
+
+    /// Noosphere Gossip — Consensus Topological Signature
+    ///
+    /// Computes consensus signature from local + peer signatures using
+    /// Betti median + persistence interval averaging.
+    pub fn gossip_topological_signature(
+        &self,
+        local_sig: &TopologicalSignature,
+        peer_sigs: Vec<TopologicalSignature>,
+    ) -> Result<TopologicalSignature> {
+        let consensus =
+            symbolic_fusion::NoosphereGossip::consensus_signature(local_sig, &peer_sigs);
+        Ok(consensus)
+    }
+
+    /// Multi-Agent Collective Active Inference
+    ///
+    /// Trust-weighted average of peer contributions + local state,
+    /// then apply hybrid cognitive steering on the collective prior.
+    #[allow(clippy::too_many_arguments)]
+    pub fn collective_steer(
+        &self,
+        local_hidden: &Tensor,
+        peer_contributions: Vec<Tensor>,
+        peer_trusts: Vec<f32>,
+        safe_prior: &Tensor,
+        num_steps: usize,
+        dt: f32,
+        beta_cbf: f32,
+        gamma_cbf: f32,
+        lambda_ot: f32,
+        lambda_topo: f32,
+        temperature: f32,
+    ) -> Result<Tensor> {
+        // Build contributions list: local + peers
+        let all_contributions: Vec<Tensor> = std::iter::once(local_hidden.clone())
+            .chain(peer_contributions)
+            .collect();
+        let all_trusts: Vec<f32> = std::iter::once(1.0f32)
+            .chain(peer_trusts)
+            .collect();
+
+        // Trust-weighted average as collective prior
+        let collective_prior = symbolic_fusion::CollectiveInference::trust_weighted_average(
+            &all_contributions,
+            &all_trusts,
+            &self.device,
+        )?;
+
+        // Apply hybrid cognitive steering on collective prior
+        self.steer_hybrid_cognitive(
+            &collective_prior,
+            safe_prior,
+            num_steps,
+            dt,
+            beta_cbf,
+            gamma_cbf,
+            lambda_ot,
+            lambda_topo,
+            temperature,
+        )
+    }
+
+    /// Formal Verification — Safety Certificate with certified bounds.
+    ///
+    /// Uses hybrid CBF + PH invariance analysis for reachability bounds.
+    pub fn verify_safety_certificate(
+        &self,
+        steered: &Tensor,
+        original: &Tensor,
+        safe_prior: &Tensor,
+        horizon: usize,
+    ) -> Result<symbolic_fusion::SafetyCertificate> {
+        symbolic_fusion::SafetyCertificate::verify(steered, original, safe_prior, horizon)
     }
 }
