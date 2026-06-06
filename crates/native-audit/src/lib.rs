@@ -793,7 +793,9 @@ impl TensorAudit {
             // Only correct if projection is positive (points toward toxic)
             // Use ReLU-like mask: mask = (clipped > 0) as f32
             let zero = Tensor::new(&[0.0f32], &self.device)?;
-            let mask = clipped.broadcast_gt(&zero)?.to_dtype(candle_core::DType::F32)?;
+            let mask = clipped
+                .broadcast_gt(&zero)?
+                .to_dtype(candle_core::DType::F32)?;
 
             // correction_magnitude = alpha * clipped * mask → [1, seq_len]
             let alpha_tensor = Tensor::new(&[alpha as f32], &self.device)?;
@@ -818,8 +820,7 @@ impl TensorAudit {
             let clipped_proj = proj.clamp(-beta as f32, beta as f32);
 
             if clipped_proj > 0.0 {
-                let corr_mag =
-                    Tensor::new(&[(alpha as f32) * clipped_proj], &self.device)?;
+                let corr_mag = Tensor::new(&[(alpha as f32) * clipped_proj], &self.device)?;
                 let corr_vec = d.broadcast_mul(&corr_mag)?;
                 hidden_state.broadcast_sub(&corr_vec)
             } else {
@@ -912,8 +913,7 @@ impl TensorAudit {
 
         for i in 0..n_samples {
             // 1. Gaussian noise: N(0, σ²I)
-            let noise =
-                Tensor::randn(0.0f32, (sigma * 0.5) as f32, dims.as_slice(), &self.device)?;
+            let noise = Tensor::randn(0.0f32, (sigma * 0.5) as f32, dims.as_slice(), &self.device)?;
             let noisy = last_token.broadcast_add(&noise)?;
 
             // 2. Lyapunov Steering (Sprint 101)
@@ -1134,5 +1134,132 @@ impl TensorAudit {
         } else {
             cleaned[cleaned.len() / 2]
         }
+    }
+
+    /// **Zonotope/Interval Abstract Interpretation for Lyapunov Projection Bounds**.
+    ///
+    /// Computes deterministic bounds on the Lyapunov projection using interval arithmetic:
+    /// - Given hidden state `h` and perturbation ball `||δ||₂ ≤ ε`, propagate bounds
+    ///   through the Lyapunov projection: `proj = <h + δ - C_safe, d>` where `d = (C_toxic - C_safe)/||C_toxic - C_safe||`
+    /// - Lower bound: `proj_lower = <h - C_safe, d> - ε * ||d||₁` (worst-case δ aligns against d)
+    /// - Upper bound: `proj_upper = <h - C_safe, d> + ε * ||d||₁` (worst-case δ aligns with d)
+    /// - If `proj_upper ≤ 0`, then for ALL δ in the ball, the state is provably safe
+    ///
+    /// # Arguments
+    /// * `hidden_state` — Center hidden state [hidden_dim]
+    /// * `safe_centroid` — Safe anchor centroid [hidden_dim]
+    /// * `toxic_centroid` — Toxic anchor centroid [hidden_dim]
+    /// * `epsilon_input` — L2 perturbation radius for interval propagation
+    ///
+    /// # Returns
+    /// `(proj_lower, proj_upper, certified_radius_det)` where certified_radius_det = epsilon_input if provably safe
+    pub fn abstract_verify_lyapunov(
+        &self,
+        hidden_state: &Tensor,
+        safe_centroid: &Tensor,
+        toxic_centroid: &Tensor,
+        epsilon_input: f64,
+    ) -> Result<(f64, f64, f64)> {
+        // 1. Toxic direction: d = (C_toxic - C_safe) / ||C_toxic - C_safe||
+        let v_toxic = toxic_centroid.broadcast_sub(safe_centroid)?;
+        let norm_v = v_toxic.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
+        let norm_tensor = Tensor::new(&[norm_v + 1e-8], &self.device)?;
+        let d = v_toxic.broadcast_div(&norm_tensor)?;
+
+        // 2. Centered state: h_centered = h - C_safe
+        let h_centered = hidden_state.broadcast_sub(safe_centroid)?;
+
+        // 3. Nominal projection: proj = <h_centered, d>
+        let proj = h_centered
+            .broadcast_mul(&d)?
+            .sum_all()?
+            .to_scalar::<f32>()? as f64;
+
+        // 4. Interval bounds: ||δ||₂ ≤ ε implies |<δ, d>| ≤ ε * ||d||₂ = ε
+        // (Cauchy-Schwarz, since ||d||₂ = 1 for normalized direction)
+        let interval_half = epsilon_input; // Cauchy-Schwarz tight bound
+
+        let proj_lower = proj - interval_half;
+        let proj_upper = proj + interval_half;
+
+        // 5. Certified radius: if proj_upper ≤ 0, all perturbations in ball are safe
+        let certified_radius_det = if proj_upper <= 0.0 {
+            epsilon_input // Full ball is certified safe
+        } else if proj_lower > 0.0 {
+            0.0 // Even center is toxic — no certification possible
+        } else {
+            // Partial: certified radius = distance to boundary = proj (nominal margin)
+            // But only if proj > 0 (center is safe)
+            if proj < 0.0 {
+                (-proj).min(epsilon_input) // Margin to toxic boundary
+            } else {
+                0.0 // Center is already toxic
+            }
+        };
+
+        Ok((proj_lower, proj_upper, certified_radius_det))
+    }
+
+    /// **Hybrid Certification: Randomized Smoothing + Abstract Interpretation**.
+    ///
+    /// Combines probabilistic certification (S102) with deterministic bounds (S103):
+    /// - `epsilon_smooth`: Certified radius from randomized smoothing (probabilistic)
+    /// - `epsilon_det`: Certified radius from abstract interpretation (deterministic)
+    /// - `hybrid_epsilon = min(epsilon_smooth, epsilon_det)`: Conservative combined guarantee
+    ///
+    /// **Guarantee:** No adversary with ||δ||₂ < hybrid_epsilon can change the safety decision,
+    /// backed by both statistical evidence (Monte Carlo) and mathematical proof (interval bounds).
+    ///
+    /// # Arguments
+    /// * `hidden_state` — Hidden state tensor [1, seq_len, hidden_dim] or [hidden_dim]
+    /// * `safe_centroid` — Safe anchor centroid [hidden_dim]
+    /// * `toxic_centroid` — Toxic anchor centroid [hidden_dim]
+    /// * `sigma` — Noise std dev for randomized smoothing
+    /// * `n_samples` — Monte Carlo samples
+    /// * `alpha_lyap` — Lyapunov steering coefficient
+    /// * `eps_abstract` — Initial perturbation ball for abstract verification
+    ///
+    /// # Returns
+    /// `(p_safe, epsilon_smooth, epsilon_det, hybrid_epsilon)`
+    #[allow(clippy::too_many_arguments)]
+    pub fn hybrid_certify(
+        &self,
+        hidden_state: &Tensor,
+        safe_centroid: &Tensor,
+        toxic_centroid: &Tensor,
+        sigma: f64,
+        n_samples: usize,
+        alpha_lyap: f64,
+        eps_abstract: f64,
+    ) -> Result<(f64, f64, f64, f64)> {
+        // 1. Randomized Smoothing (S102)
+        let (p_safe, epsilon_smooth, _) = self.certify_robustness(
+            hidden_state,
+            safe_centroid,
+            toxic_centroid,
+            sigma,
+            n_samples,
+            alpha_lyap,
+        )?;
+
+        // 2. Extract last token for abstract verification (match centroid pattern)
+        let last_token = if hidden_state.shape().dims().len() == 3 {
+            self.extract_last_token(hidden_state)?
+        } else {
+            hidden_state.clone()
+        };
+
+        // 3. Abstract Interpretation (S103)
+        let (_, _, epsilon_det) = self.abstract_verify_lyapunov(
+            &last_token,
+            safe_centroid,
+            toxic_centroid,
+            eps_abstract,
+        )?;
+
+        // 4. Hybrid: Conservative minimum
+        let hybrid_epsilon = epsilon_smooth.min(epsilon_det);
+
+        Ok((p_safe, epsilon_smooth, epsilon_det, hybrid_epsilon))
     }
 }
