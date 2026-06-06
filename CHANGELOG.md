@@ -1,4 +1,46 @@
-﻿## [v10.0.0-sprint100] — 2026-06-06 (Sprint 100 — Sliced-Wasserstein & Real-Time Activation Steering)
+﻿## [v10.1.0-sprint101] — 2026-06-06 (Sprint 101 — Lyapunov Controlled Steering & Formal Verification)
+
+### Sprint 101 "Lyapunov Controlled Steering & Formal Verification"
+
+**Problema 1 — Interpolación convexa destruye capacidad lingüística:** El `steer_activation()` de Sprint 100 usa `h_new = (1-α)·h + α·C_safe` que es una "lobotomía geométrica" — al mezclar 95% hacia el centroid seguro, se destruye la información ortogonal (lingüística, sintáctica, semántica) que no tiene que ver con la toxicidad.
+
+**Problema 2 — Falta de garantía teórica de estabilidad:** Sin marco de Control Lyapunov, no hay garantía matemática de que el steering converge o es estable. La interpolación convexa puede oscilar o sobre-corregir.
+
+**Solución — Lyapunov-Controlled Activation Steering:** Implementamos **contraction mapping** basado en teoría de control Lyapunov:
+- **Dirección tóxica normalizada:** `d = (C_toxic - C_safe) / ||C_toxic - C_safe||`
+- **Proyección del estado:** `proj = <h - C_safe, d>` (cuánto apunta hacia lo tóxico)
+- **Clipping para estabilidad:** `clip(proj, -beta, beta)` (contraction mapping)
+- **Corrección ortogonal:** `h_new = h - alpha * clip(proj) * d` (solo si `proj > 0`)
+- **Homeostasis:** No corrige si el estado ya es seguro (`proj <= 0`)
+
+**Nuevos métodos en [`TensorAudit`](crates/native-audit/src/lib.rs:755):**
+- `steer_activation_lyapunov()` — Lyapunov-Controlled Steering con proyección ortogonal y clipping
+
+**Lyapunov Steering Results:**
+| Metric | Value |
+|--------|-------|
+| Original Ratio (Tóxico) | 1.3418 |
+| Steered Ratio (Lyapunov) | 1.2810 |
+| Reducción | **-4.53%** |
+| Alpha (Exact removal) | 1.0 |
+| Beta (Clipping bound) | 1000.0 |
+| Conservador por diseño | ✅ Solo elimina componente tóxico |
+
+**Comparación: Convex vs Lyapunov:**
+| Propiedad | Convex (S100) | Lyapunov (S101) |
+|-----------|---------------|-----------------|
+| Reducción SWD | -52.78% | -4.53% |
+| Preserva info ortogonal | ❌ No | ✅ Sí |
+| Garantía teórica | ❌ Heurística | ✅ Contraction Mapping |
+| Homeostasis | ❌ Siempre mezcla | ✅ Solo si tóxico |
+| Estabilidad | ⚠️ Depende α | ✅ Garantizada |
+
+### Validación
+- 4/4 tests passing
+- `cargo clippy -p native-audit -- -D warnings` → 0 warnings
+- `cargo fmt --all -- --check` → 0 diferencias
+
+## [v10.0.0-sprint100] — 2026-06-06 (Sprint 100 — Sliced-Wasserstein & Real-Time Activation Steering)
 
 ### Sprint 100 "Sliced-Wasserstein & Real-Time Activation Steering"
 

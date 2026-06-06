@@ -731,6 +731,104 @@ impl TensorAudit {
         scaled_hidden.broadcast_add(&scaled_safe)
     }
 
+    /// **Lyapunov-Controlled Activation Steering** (Contraction Mapping).
+    ///
+    /// Unlike convex interpolation which blends the entire state toward the safe
+    /// centroid (potentially destroying orthogonal semantic information), this method:
+    /// 1. Computes the normalized toxic direction: $d = (C_{toxic} - C_{safe}) / ||C_{toxic} - C_{safe}||$
+    /// 2. Projects the centered state onto $d$: $proj = \langle h - C_{safe}, d \rangle$
+    /// 3. Clips the projection to $[-\beta, \beta]$ for contraction mapping stability
+    /// 4. Subtracts only the toxic magnitude: $h_{new} = h - \alpha \cdot clip(proj) \cdot d$
+    ///
+    /// This preserves the orthogonal (linguistic) components of the hidden state
+    /// while removing only the toxic projection.
+    ///
+    /// # Arguments
+    /// * `hidden_state` - Current hidden state tensor [1, seq_len, hidden_dim] or [hidden_dim]
+    /// * `toxic_centroid` - Toxic anchor centroid
+    /// * `safe_centroid` - Safe anchor centroid
+    /// * `alpha` - Learning rate of the control (e.g. 1.0)
+    /// * `beta` - Clipping limit to preserve semantics (e.g. 10.0)
+    ///
+    /// # Returns
+    /// Corrected hidden state tensor
+    pub fn steer_activation_lyapunov(
+        &self,
+        hidden_state: &Tensor,
+        toxic_centroid: &Tensor,
+        safe_centroid: &Tensor,
+        alpha: f64,
+        beta: f64,
+    ) -> Result<Tensor> {
+        // 1. Toxic direction vector: V = C_toxic - C_safe
+        let v_toxic = toxic_centroid.broadcast_sub(safe_centroid)?;
+
+        // 2. Normalize: d = V / ||V||
+        let norm_v = v_toxic.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
+        let norm_tensor = Tensor::new(&[norm_v + 1e-8], &self.device)?;
+        let d = v_toxic.broadcast_div(&norm_tensor)?;
+
+        // 3. Center the hidden state: h_centered = h - C_safe
+        let h_centered = hidden_state.broadcast_sub(safe_centroid)?;
+
+        let shape = hidden_state.shape();
+        let ndims = shape.dims().len();
+
+        if ndims == 3 {
+            // [1, seq_len, hidden_dim] — per-token projection
+            // d is [hidden_dim], need to broadcast to [1, 1, hidden_dim]
+            let d_flat = d.flatten_all()?;
+            let hidden_dim = d_flat.dim(0)?;
+            let d_3d = d_flat.reshape(&[1, 1, hidden_dim])?;
+
+            // Element-wise multiply: h_centered * d → [1, seq_len, hidden_dim]
+            let elem_prod = h_centered.broadcast_mul(&d_3d)?;
+
+            // Sum over hidden_dim to get per-token projection: [1, seq_len]
+            let proj = elem_prod.sum(2)?;
+
+            // Clip to [-beta, beta]
+            let clipped = proj.clamp(-beta as f32, beta as f32)?;
+
+            // Only correct if projection is positive (points toward toxic)
+            // Use ReLU-like mask: mask = (clipped > 0) as f32
+            let zero = Tensor::new(&[0.0f32], &self.device)?;
+            let mask = clipped.broadcast_gt(&zero)?.to_dtype(candle_core::DType::F32)?;
+
+            // correction_magnitude = alpha * clipped * mask → [1, seq_len]
+            let alpha_tensor = Tensor::new(&[alpha as f32], &self.device)?;
+            let corr_mag = clipped.broadcast_mul(&alpha_tensor)?;
+            let corr_mag = corr_mag.broadcast_mul(&mask)?;
+
+            // Reshape to [1, seq_len, 1] for broadcasting
+            let seq_len = corr_mag.dim(1)?;
+            let corr_mag_3d = corr_mag.reshape(&[1, seq_len, 1])?;
+
+            // correction_vector = corr_mag * d → [1, seq_len, hidden_dim]
+            let corr_vec = corr_mag_3d.broadcast_mul(&d_3d)?;
+
+            // h_new = h - correction
+            hidden_state.broadcast_sub(&corr_vec)
+        } else {
+            // 1D/2D case: scalar projection
+            let proj = (h_centered.broadcast_mul(&d)?)
+                .sum_all()?
+                .to_scalar::<f32>()?;
+
+            let clipped_proj = proj.clamp(-beta as f32, beta as f32);
+
+            if clipped_proj > 0.0 {
+                let corr_mag =
+                    Tensor::new(&[(alpha as f32) * clipped_proj], &self.device)?;
+                let corr_vec = d.broadcast_mul(&corr_mag)?;
+                hidden_state.broadcast_sub(&corr_vec)
+            } else {
+                // Homeostasis — already safe
+                Ok(hidden_state.clone())
+            }
+        }
+    }
+
     /// **Temporal Max-Pooling using Sliced-Wasserstein Ratio**.
     ///
     /// For each token in the sequence, computes the ratio of Sliced-Wasserstein distances:
