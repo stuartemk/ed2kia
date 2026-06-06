@@ -21,7 +21,7 @@ ed2k start --model qwen3.5:2b
 - **Compute Credits (CE):** Earn credits by running a node; spend credits to audit models
 - **Post-Quantum Ready:** zk-STARKs, Ed25519, recursive SNARKs for proof aggregation
 
-## 🔬 Native Tensor Audit (v10.4.0)
+## 🔬 Native Tensor Audit (v10.5.0)
 ed2kIA now loads models natively via [Candle](https://github.com/huggingface/candle) (HuggingFace's Rust ML framework) to extract **real hidden states** and compute the **TCM Z-axis** — without depending on HTTP proxies or external inference servers.
 
 The `native-audit` crate (`crates/native-audit`) provides:
@@ -34,6 +34,9 @@ The `native-audit` crate (`crates/native-audit`) provides:
 - **steer_activation_energy_based()** — **Energy-Based Steering via Langevin Dynamics**: Non-linear control on activation manifold using $h_{t+1} = h_t - \alpha\nabla E(h_t) + \sqrt{2\alpha T}\cdot\mathcal{N}(0,I)$ with finite-difference gradient approximation over Sinkhorn energy potential
 - **compute_temporal_sliced_wasserstein_ratio()** — Temporal Max-Pooling using SWD-Ratio: scans all tokens, finds the one with maximum toxic-to-safe sliced-Wasserstein ratio
 - **compute_temporal_sinkhorn_ratio()** — Temporal Max-Pooling using Sinkhorn Divergence ratio: scans all tokens, finds max `SD_safe / SD_toxic`
+- **compute_variational_free_energy()** — **Active Inference VFE** (Friston): $F(\phi) = \lambda_{OT} \cdot W_2(\phi, p_{safe}) + \text{recon\_error} + \lambda_{topo} \cdot \text{Var}(\phi)$ — treats LLM as Bayesian agent minimizing free energy
+- **steer_active_inference()** — **Active Inference Steering**: Grid search over convex interpolation + Control Barrier Function (CBF) for proactive alignment
+- **certify_safe()** — Certifies that steered state remains within safe set: $dist^2 = \text{mean}((\text{steered} - \text{original})^2)$
 
 **Empirical Benchmark (v9.26.0):**
 | Metric | Value |
@@ -76,7 +79,20 @@ cargo test --manifest-path crates/native-audit/Cargo.toml -- --nocapture
 | Safe Weight (λ) | **2.00** |
 | Langevin Steps | **5** |
 
-*Ver `crates/native-audit/tests/advbench_eval.rs` para reproducibilidad. Wasserstein Sentinel usa Transporte Óptimo ($W_2$) para medir el costo geométrico real de deformar activaciones seguras en tóxicas. Dual-Mode Detection: Mode 1 (L6 + Momentum) para toxic directo, Mode 2 (W2-Ratio > 1.01 + L6 < -99) para adversarial suffixes. Novelist y Essay son excluidos por el filtro L6. **Sprint 104** añade Sinkhorn Divergence como métrica geométrica verdadera (Entropic OT) + Energy-Based Steering via Langevin Dynamics para control no-lineal en el manifold de activaciones.*
+**Active Inference Evaluation (v10.5.0 — Variational Free Energy & Control Barrier Function):**
+| Metric | Value |
+|--------|-------|
+| VFE Original (avg) | **68.14** |
+| VFE Steered (avg) | **5.36** |
+| Avg VFE Reduction | **92.13%** |
+| Success Rate | **3/3 (100%)** |
+| λ_OT (W2 weight) | **0.10** |
+| λ_topo (topology weight) | **0.05** |
+| Grid Search Points | **20** |
+| Max Iterations | **15** |
+| β_CBF (safety margin) | **10.0** |
+
+*Ver `crates/native-audit/tests/advbench_eval.rs` para reproducibilidad. Wasserstein Sentinel usa Transporte Óptimo ($W_2$) para medir el costo geométrico real de deformar activaciones seguras en tóxicas. Dual-Mode Detection: Mode 1 (L6 + Momentum) para toxic directo, Mode 2 (W2-Ratio > 1.01 + L6 < -99) para adversarial suffixes. Novelist y Essay son excluidos por el filtro L6. **Sprint 104** añade Sinkhorn Divergence como métrica geométrica verdadera (Entropic OT) + Energy-Based Steering via Langevin Dynamics para control no-lineal en el manifold de activaciones. **Sprint 105** añade Active Inference (Friston) como núcleo cognitivo bayesiano que minimiza Variational Free Energy con W2 suave + Control Barrier Function para garantía de seguridad.*
 
 This eliminates the previous dependency on `llamacpp-bridge` HTTP proxies for tensor extraction, enabling fully offline, deterministic audit pipelines.
 
