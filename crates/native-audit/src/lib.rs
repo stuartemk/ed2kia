@@ -1262,4 +1262,293 @@ impl TensorAudit {
 
         Ok((p_safe, epsilon_smooth, epsilon_det, hybrid_epsilon))
     }
+
+    /// **Sinkhorn Divergence (Entropic Optimal Transport)** — True geometric metric for activation distributions.
+    ///
+    /// Solves the entropically-regularized OT problem via Sinkhorn-Knopp iterations:
+    ///
+    /// $$SD_\epsilon(P, Q) = \min_{\pi \in \Pi(P,Q)} \langle C, \pi \rangle - \epsilon H(\pi)$$
+    ///
+    /// where $C_{ij} = \|a_i - b_j\|^2_2$, solved via kernel $K = \exp(-C/\epsilon)$ and alternating
+    /// marginal projections: $u \leftarrow 1/(Kv)$, $v \leftarrow 1/(Ku)$.
+    ///
+    /// For high-dimensional activations, uses subsampling (max 256 elements per distribution)
+    /// to keep the cost matrix tractable while preserving distributional geometry.
+    ///
+    /// # Arguments
+    /// * `t1` - First activation tensor (any shape, will be flattened)
+    /// * `t2` - Second activation tensor (any shape, will be flattened)
+    /// * `epsilon` - Entropic regularization (0.05-0.2 typical; higher = faster but less accurate)
+    /// * `num_iters` - Sinkhorn iterations (8-20; convergence typically in ~10)
+    ///
+    /// # Returns
+    /// Sinkhorn divergence value (always ≥ 0)
+    ///
+    /// # Complexity
+    /// O(num_iters * min(N, 256) * min(M, 256)) where N, M are flattened sizes
+    pub fn compute_sinkhorn_divergence(
+        &self,
+        t1: &Tensor,
+        t2: &Tensor,
+        epsilon: f64,
+        num_iters: usize,
+    ) -> Result<f32> {
+        // Flatten to 1D vectors
+        let t1_flat = t1.flatten_all()?;
+        let t2_flat = t2.flatten_all()?;
+
+        let n_full = t1_flat.dim(0)?;
+        let m_full = t2_flat.dim(0)?;
+
+        // Subsample for tractability (max 256 elements per distribution)
+        let max_samples = 256;
+        let n = n_full.min(max_samples);
+        let m = m_full.min(max_samples);
+
+        let t1_sub = if n < n_full {
+            // Uniform subsampling: stride = n_full / n
+            let stride = (n_full as f64 / n as f64).ceil() as usize;
+            let mut selected = Vec::new();
+            for i in (0..n_full).step_by(stride).take(n) {
+                selected.push(t1_flat.narrow(0, i, 1)?);
+            }
+            Tensor::cat(&selected, 0)?
+        } else {
+            t1_flat.clone()
+        };
+
+        let t2_sub = if m < m_full {
+            let stride = (m_full as f64 / m as f64).ceil() as usize;
+            let mut selected = Vec::new();
+            for i in (0..m_full).step_by(stride).take(m) {
+                selected.push(t2_flat.narrow(0, i, 1)?);
+            }
+            Tensor::cat(&selected, 0)?
+        } else {
+            t2_flat.clone()
+        };
+
+        // Get actual dimensions from subsampled tensors
+        let n_sub = t1_sub.dim(0)?;
+        let m_sub = t2_sub.dim(0)?;
+
+        // Reshape to [n, 1] and [1, m] for broadcasting cost matrix
+        let t1_col = t1_sub.reshape((n_sub, 1))?; // [n, 1]
+        let t2_row = t2_sub.reshape((1, m_sub))?; // [1, m]
+
+        // Cost matrix: C[i][j] = (t1[i] - t2[j])^2
+        let diff = t1_col.broadcast_sub(&t2_row)?; // [n, m]
+        let cost = diff.sqr()?; // [n, m]
+
+        // Gibbs kernel: K = exp(-C / epsilon)
+        let eps_f32 = epsilon as f32;
+        let eps_tensor = Tensor::new(&[eps_f32], &self.device)?;
+        let scaled_cost = cost.broadcast_div(&eps_tensor)?;
+        let neg_scaled = scaled_cost.neg()?;
+
+        // Clamp for numerical stability: max(min(x, 20), -20)
+        // Create same-shaped tensors for clamp values since Candle's minimum/maximum
+        // require matching shapes (no scalar broadcasting for comparison ops)
+        let (n_m, m_m) = match neg_scaled.shape().dims() {
+            d if d.len() == 2 => (d[0], d[1]),
+            _ => panic!("neg_scaled must be 2D"),
+        };
+        let min_val = Tensor::zeros((n_m, m_m), DType::F32, &self.device)?
+            .broadcast_add(&Tensor::new(&[-20.0f32], &self.device)?)?;
+        let max_val = Tensor::zeros((n_m, m_m), DType::F32, &self.device)?
+            .broadcast_add(&Tensor::new(&[20.0f32], &self.device)?)?;
+        let clamped = neg_scaled.minimum(&min_val)?.maximum(&max_val)?;
+        let k = clamped.exp()?; // [n, m]
+
+        // Sinkhorn-Knopp iterations
+        // Initialize uniform scaling vectors
+        let mut u = Tensor::ones((n_sub,), DType::F32, &self.device)?; // [n]
+        let mut v = Tensor::ones((m_sub,), DType::F32, &self.device)?; // [m]
+
+        for _ in 0..num_iters {
+            // v = 1 / (K^T u)
+            let k_t_u = k.t()?.matmul(&u.unsqueeze(1)?)?.flatten_all()?;
+            v = (k_t_u + 1e-12)?.recip()?;
+
+            // u = 1 / (K v)
+            let k_v = k.matmul(&v.unsqueeze(1)?)?.flatten_all()?;
+            u = (k_v + 1e-12)?.recip()?;
+        }
+
+        // Transport plan: pi = diag(u) @ K @ diag(v)
+        let u_diag = u.unsqueeze(1)?; // [n, 1]
+        let v_diag = v.unsqueeze(0)?; // [1, m]
+        let transport = u_diag.broadcast_mul(&k)?.broadcast_mul(&v_diag)?; // [n, m]
+
+        // OT cost: <C, pi>
+        let ot_cost_tensor = cost.broadcast_mul(&transport)?.sum_all()?;
+        let ot_cost: f32 = ot_cost_tensor.to_scalar::<f32>()?;
+
+        // Entropy regularization: -epsilon * H(pi)
+        // H(pi) = -sum(pi * log(pi))
+        let log_transport = (transport.clone() + 1e-12)?.log()?;
+        let entropy_tensor = transport.broadcast_mul(&log_transport)?.sum_all()?;
+        let entropy: f32 = entropy_tensor.to_scalar::<f32>()?;
+
+        // Sinkhorn divergence: OT_cost + epsilon * entropy - bias terms
+        // Bias: epsilon * (H(P) + H(Q)) for uniform marginals = epsilon * (log(n) + log(m))
+        let log_n = (n_sub as f32).ln();
+        let log_m = (m_sub as f32).ln();
+        let bias = eps_f32 * (log_n + log_m);
+
+        let sinkhorn = ot_cost + eps_f32 * entropy - bias;
+
+        // Ensure non-negative (numerical issues can cause small negatives)
+        Ok(sinkhorn.max(0.0))
+    }
+
+    /// **Energy-Based Steering via Langevin Dynamics** — Non-linear control on activation manifold.
+    ///
+    /// Defines an energy potential:
+    /// $$E(h) = \text{SD}_\epsilon(h, C_{\text{toxic}}) - \lambda \cdot \text{SD}_\epsilon(h, C_{\text{safe}})$$
+    ///
+    /// Updates via Langevin dynamics:
+    /// $$h_{t+1} = h_t - \alpha \nabla E(h_t) + \sqrt{2\alpha T} \cdot \mathcal{N}(0, I)$$
+    ///
+    /// Gradient approximated via finite differences on Sinkhorn divergence:
+    /// $$\nabla_h \text{SD}_\epsilon(h, C) \approx \frac{\text{SD}_\epsilon(h + \delta, C) - \text{SD}_\epsilon(h - \delta, C)}{2\delta}$$
+    ///
+    /// # Arguments
+    /// * `hidden_state` - Current activation tensor [1, seq, dim] or [dim]
+    /// * `toxic_centroid` - Toxic anchor centroid
+    /// * `safe_centroid` - Safe anchor centroid
+    /// * `alpha` - Step size (0.01-0.1)
+    /// * `temperature` - Langevin noise temperature (0.01 for exploration)
+    /// * `lambda` - Weight for safe attraction vs toxic repulsion (1.0-3.0)
+    /// * `num_steps` - Number of Langevin steps (3-10)
+    ///
+    /// # Returns
+    /// Steered activation tensor (clipped to ball of radius 0.5 around original)
+    #[allow(clippy::too_many_arguments)]
+    pub fn steer_activation_energy_based(
+        &self,
+        hidden_state: &Tensor,
+        toxic_centroid: &Tensor,
+        safe_centroid: &Tensor,
+        alpha: f64,
+        temperature: f64,
+        lambda: f64,
+        num_steps: usize,
+    ) -> Result<Tensor> {
+        let epsilon_ot = 0.1; // Sinkhorn epsilon for energy computation
+        let num_iters = 10; // Sinkhorn iterations per energy eval
+
+        let mut h_current = hidden_state.clone();
+
+        for _step in 0..num_steps {
+            // Compute energy gradient via finite differences
+            // E(h) = SD(h, toxic) - lambda * SD(h, safe)
+            // dE/dh ≈ [E(h + delta) - E(h - delta)] / (2 * delta)
+
+            let delta = 0.01f32; // Finite difference step
+            let delta_tensor = Tensor::new(&[delta], &self.device)?;
+
+            // Forward perturbation: h + delta*h = h*(1+delta)
+            let h_fwd = h_current.broadcast_add(
+                &h_current.clone().broadcast_mul(&delta_tensor.clone())?,
+            )?;
+
+            let e_fwd_toxic = self.compute_sinkhorn_divergence(&h_fwd, toxic_centroid, epsilon_ot, num_iters)?;
+            let e_fwd_safe = self.compute_sinkhorn_divergence(&h_fwd, safe_centroid, epsilon_ot, num_iters)?;
+            let e_fwd = e_fwd_toxic - (lambda as f32) * e_fwd_safe;
+
+            // Backward perturbation
+            let h_bwd = h_current.broadcast_sub(
+                &h_current.clone().broadcast_mul(&delta_tensor)?,
+            )?;
+
+            let e_bwd_toxic = self.compute_sinkhorn_divergence(&h_bwd, toxic_centroid, epsilon_ot, num_iters)?;
+            let e_bwd_safe = self.compute_sinkhorn_divergence(&h_bwd, safe_centroid, epsilon_ot, num_iters)?;
+            let e_bwd = e_bwd_toxic - (lambda as f32) * e_bwd_safe;
+
+            // Central difference gradient approximation
+            let grad_scale = (e_fwd - e_bwd) / (2.0 * delta);
+
+            // Gradient direction: push away from toxic, pull toward safe
+            // Approximate: grad ≈ grad_scale * (h - safe) - grad_scale * (h - toxic)
+            // Simplified: grad ≈ grad_scale * (2*h - safe - toxic)
+            // But for numerical stability, use directional components:
+            let dir_toxic = h_current.broadcast_sub(toxic_centroid)?;
+            let dir_safe = h_current.broadcast_sub(safe_centroid)?;
+
+            // Energy gradient: repel from toxic + attract to safe
+            let grad_toxic = dir_toxic.broadcast_mul(&Tensor::new(&[grad_scale], &self.device)?)?;
+            let grad_safe = dir_safe.broadcast_mul(&Tensor::new(&[(-(lambda as f32)) * grad_scale], &self.device)?)?;
+            let grad = grad_toxic.broadcast_add(&grad_safe)?;
+
+            // Langevin update: h = h - alpha * grad + noise
+            let step_tensor = grad.broadcast_mul(&Tensor::new(&[alpha as f32], &self.device)?)?;
+            let h_updated = h_current.broadcast_sub(&step_tensor)?;
+
+            // Add Langevin noise for manifold exploration
+            let noise_std = ((2.0 * alpha * temperature).sqrt()) as f32;
+            let noise = Tensor::randn(0.0f32, noise_std, h_updated.shape(), &self.device)?;
+            h_current = h_updated.broadcast_add(&noise)?;
+        }
+
+        // Clip to ball of radius 0.5 around original (preserves manifold)
+        let delta = h_current.broadcast_sub(hidden_state)?;
+        let norm: f32 = delta.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
+
+        if norm > 0.5 {
+            let scale = 0.5 / norm;
+            let scale_tensor = Tensor::new(&[scale], &self.device)?;
+            let clipped_delta = delta.broadcast_mul(&scale_tensor)?;
+            Ok(hidden_state.broadcast_add(&clipped_delta)?)
+        } else {
+            Ok(h_current)
+        }
+    }
+
+    /// **Temporal Sinkhorn Ratio** — Max-pooling Sinkhorn divergence ratio across sequence.
+    ///
+    /// For each token in the sequence, computes:
+    /// $$Ratio_i = \frac{SD_\epsilon(\text{token}_i, C_{\text{safe}})}{SD_\epsilon(\text{token}_i, C_{\text{toxic}}) + \delta}$$
+    ///
+    /// Ratio > 1.0 → token closer to toxic centroid. Returns maximum ratio and token index.
+    ///
+    /// # Arguments
+    /// * `test_tensor` - Full hidden state tensor [1, seq_len, hidden_dim]
+    /// * `safe_centroid` - Safe anchor centroid [hidden_dim]
+    /// * `toxic_centroid` - Toxic anchor centroid [hidden_dim]
+    /// * `epsilon` - Sinkhorn entropic regularization
+    /// * `num_iters` - Sinkhorn iterations per token
+    ///
+    /// # Returns
+    /// `(max_ratio, max_idx)` — Maximum Sinkhorn ratio and its token index
+    pub fn compute_temporal_sinkhorn_ratio(
+        &self,
+        test_tensor: &Tensor,
+        safe_centroid: &Tensor,
+        toxic_centroid: &Tensor,
+        epsilon: f64,
+        num_iters: usize,
+    ) -> Result<(f32, usize)> {
+        let dims = test_tensor.shape().dims();
+        let seq_len = if dims.len() == 3 { dims[1] } else { 1 };
+
+        let mut max_ratio = 0.0f32;
+        let mut max_idx = 0usize;
+
+        for i in 0..seq_len {
+            let token = test_tensor.narrow(1, i, 1)?; // [1, 1, hidden_dim]
+
+            let sd_safe = self.compute_sinkhorn_divergence(&token, safe_centroid, epsilon, num_iters)?;
+            let sd_toxic = self.compute_sinkhorn_divergence(&token, toxic_centroid, epsilon, num_iters)?;
+
+            let ratio = sd_safe / (sd_toxic + 1e-8);
+
+            if ratio > max_ratio {
+                max_ratio = ratio;
+                max_idx = i;
+            }
+        }
+
+        Ok((max_ratio, max_idx))
+    }
 }

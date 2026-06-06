@@ -33,7 +33,7 @@ fn benchmark_tensor_vs_text_latency() {
             }
             let count = prompts.len() as f32;
             let count_tensor = Tensor::new(&[count], device)?;
-            Ok(sum_tensor.unwrap().broadcast_div(&count_tensor)?)
+            sum_tensor.unwrap().broadcast_div(&count_tensor)
         };
 
     let safe_centroid =
