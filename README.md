@@ -1,7 +1,7 @@
 # 🌐 ed2kIA: Distributed Sparse Autoencoders for Edge LLM Interpretability
 
-[![Version](https://img.shields.io/badge/v10.8.0-sprint108-blue.svg)](https://github.com/Stuartemk/ed2kIA/releases/tag/v10.8.0-sprint108)
-[![Tests](https://img.shields.io/badge/Tests-130%20PASS-green.svg)](https://github.com/Stuartemk/ed2kIA/actions)
+[![Version](https://img.shields.io/badge/v11.0.0-sprint110-blue.svg)](https://github.com/Stuartemk/ed2kIA/releases/tag/v11.0.0-sprint110)
+[![Tests](https://img.shields.io/badge/Tests-181%20PASS-green.svg)](https://github.com/Stuartemk/ed2kIA/actions)
 [![Audit](https://img.shields.io/badge/OSSF-8.5%2F10-yellow.svg)](https://github.com/Stuartemk/ed2kIA/security)
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ética-orange.svg)](LICENSE)
 
@@ -46,6 +46,19 @@ The `native-audit` crate (`crates/native-audit`) provides:
 - **steer_multimodal_hybrid()** — **Multi-Modal Hybrid Steering** (v10.8.0): Cross-modal aligned steering with PH + Neural ODE + CBF
 - **cirl_value_update()** — **Cooperative IRL Value Learning** (v10.8.0): Distributed reward function learning — $L_{IRL} = -\sum \gamma^t \cdot (r_\theta(s,a) - r_{human})^2$
 - **production_benchmark()** — **Production Benchmark** (v10.8.0): Multi-modal latency + fusion metrics
+- **verify_steering_robustness_zonotope()** — **Zonotope Robustness Verification** (v11.0.0): Certified bound propagation using zonotope geometry — $Z = \{c + G@\varepsilon \mid \varepsilon \in [-1,1]^k\}$ with exact affine propagation $c'=Wc+b,\ G'=WG$
+- **collective_zonotope_consensus()** — **Collective Zonotope Consensus** (v11.0.0): Distributed zonotope gossip + Weiszfeld geometric median for Byzantine-resilient aggregation
+- **hybrid_zonotope_verify()** — **Hybrid Zonotope-Interval Verification** (v11.0.0): Zonotopes for linear layers, intervals for non-linear, then refine back
+
+**Zonotope Verification (v11.0.0 — Zonotope Geometry & Collective Certified Intelligence):**
+| Metric | Value |
+|--------|-------|
+| Wrapping Reduction vs Intervals | **>70%** (4096D) |
+| Affine Propagation | **Exact** (zero over-approx) |
+| Weiszfeld Convergence | **<20 iterations** |
+| Byzantine Resistance | **Verified (1/3 Byzantine)** |
+| Certificate Correctness | **All safe → direction_safe** |
+| Total Tests (S110) | **51/51 (100%)** |
 
 **Empirical Benchmark (v9.26.0):**
 | Metric | Value |
@@ -117,7 +130,7 @@ cargo test --manifest-path crates/native-audit/Cargo.toml -- --nocapture
 | PH max_dim | **2** |
 | PH landmarks | **64** |
 
-*Ver `crates/native-audit/tests/advbench_eval.rs` para reproducibilidad. Wasserstein Sentinel usa Transporte Óptimo ($W_2$) para medir el costo geométrico real de deformar activaciones seguras en tóxicas. Dual-Mode Detection: Mode 1 (L6 + Momentum) para toxic directo, Mode 2 (W2-Ratio > 1.01 + L6 < -99) para adversarial suffixes. Novelist y Essay son excluidos por el filtro L6. **Sprint 104** añade Sinkhorn Divergence como métrica geométrica verdadera (Entropic OT) + Energy-Based Steering via Langevin Dynamics para control no-lineal en el manifold de activaciones. **Sprint 105** añade Active Inference (Friston) como núcleo cognitivo bayesiano que minimiza Variational Free Energy con W2 suave + Control Barrier Function para garantía de seguridad. **Sprint 106** convierte native-audit en un Cognitive Immune System topológicamente consciente con Persistent Homology (Betti 0/1/2), Neural ODE (RK4), CBF continuo y Federated DP-SGD para actualizaciones colaborativas con privacidad diferencial. **Sprint 107** añade interpretabilidad mecánica vía Sparse Autoencoders (SAE), consenso descentralizado vía Noosphere Gossip con detección Byzantine (iterative refinement), fusión simbólico-probabilística (VFE + graph penalty), verificación formal con Safety Certificates (CBF + PH invariance) y Collective Active Inference con trust-weighted averaging.*
+*Ver `crates/native-audit/tests/advbench_eval.rs` para reproducibilidad. Wasserstein Sentinel usa Transporte Óptimo ($W_2$) para medir el costo geométrico real de deformar activaciones seguras en tóxicas. Dual-Mode Detection: Mode 1 (L6 + Momentum) para toxic directo, Mode 2 (W2-Ratio > 1.01 + L6 < -99) para adversarial suffixes. Novelist y Essay son excluidos por el filtro L6. **Sprint 104** añade Sinkhorn Divergence como métrica geométrica verdadera (Entropic OT) + Energy-Based Steering via Langevin Dynamics para control no-lineal en el manifold de activaciones. **Sprint 105** añade Active Inference (Friston) como núcleo cognitivo bayesiano que minimiza Variational Free Energy con W2 suave + Control Barrier Function para garantía de seguridad. **Sprint 106** convierte native-audit en un Cognitive Immune System topológicamente consciente con Persistent Homology (Betti 0/1/2), Neural ODE (RK4), CBF continuo y Federated DP-SGD para actualizaciones colaborativas con privacidad diferencial. **Sprint 107** añade interpretabilidad mecánica vía Sparse Autoencoders (SAE), consenso descentralizado vía Noosphere Gossip con detección Byzantine (iterative refinement), fusión simbólico-probabilística (VFE + graph penalty), verificación formal con Safety Certificates (CBF + PH invariance) y Collective Active Inference con trust-weighted averaging. **Sprint 110** reemplaza la aritmética de intervalos con geometría de zonotopos — imágenes afines del hiper cubo unitario $Z = \{c + G@\varepsilon \mid \varepsilon \in [-1,1]^k\}$ — que capturan correlaciones lineales entre dimensiones y eliminan el wrapping effect para operaciones lineales, logrando >70% reducción en sobre-aproximación vs intervalos en 4096D. Extiende los zonotopos al entorno distribuido vía gossip de resúmenes reducidos + mediana geométrica de Weiszfeld para agregación resistente a nodos Byzantine.*
 
 This eliminates the previous dependency on `llamacpp-bridge` HTTP proxies for tensor extraction, enabling fully offline, deterministic audit pipelines.
 

@@ -11,8 +11,11 @@
 //! Distributed SAE Training + Production Hardening.
 //! **Sprint 109:** Meta-Active Inference + Formal Barrier Certificates +
 //! Cross-Attention Multi-Modal Fusion + Self-Improving Collective.
+//! **Sprint 110:** Zonotope Verification + Symbolic Bound Propagation +
+//! Collective Certified Intelligence + Hybrid Zonotope-Interval.
 
 pub mod cirl_value_learning;
+pub mod collective_zonotope;
 pub mod cross_attention;
 pub mod distributed_sae;
 pub mod formal_barrier;
@@ -20,6 +23,7 @@ pub mod meta_active_inference;
 pub mod multimodal;
 pub mod sae_integration;
 pub mod symbolic_fusion;
+pub mod zonotope;
 
 use candle_core::{DType, Device, Result, Tensor, D};
 use candle_nn::{embedding, Embedding, Module, VarBuilder};
@@ -2416,5 +2420,59 @@ impl TensorAudit {
         let improvement = engine.improvement_ratio();
 
         Ok((initial_vfe, final_vfe, improvement))
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Sprint 110: Zonotope Verification + Collective Certified Intelligence
+// ---------------------------------------------------------------------------
+impl TensorAudit {
+    /// Zonotope-Certified Steering Robustness.
+    ///
+    /// Creates a zonotope around the activation tensor and verifies that
+    /// all perturbed states remain within the safe region defined by CBF.
+    /// Returns the robustness certificate with certified=true if safe.
+    pub fn verify_steering_robustness_zonotope(
+        &self,
+        activation: &Tensor,
+        safe_centroid: &Tensor,
+        toxic_centroid: &Tensor,
+        epsilon: f32,
+        max_gens: usize,
+        cbf_beta: f32,
+    ) -> Result<zonotope::RobustnessCertificate> {
+        let z = zonotope::Zonotope::new_from_epsilon(activation, epsilon, max_gens)?;
+        z.verify_steering_robustness(safe_centroid, toxic_centroid, cbf_beta)
+    }
+
+    /// Collective Zonotope Consensus.
+    ///
+    /// Aggregates peer zonotope summaries using geometric median
+    /// and verifies collective safety consensus.
+    pub fn collective_zonotope_consensus(
+        &self,
+        peer_summaries: &[collective_zonotope::ZonotopeSummary],
+        safe_centroid: &Tensor,
+        toxic_centroid: &Tensor,
+        cbf_beta: f32,
+    ) -> Result<collective_zonotope::ConsensusResult> {
+        let config = collective_zonotope::CollectiveZonotopeConfig::default();
+        let engine =
+            collective_zonotope::CollectiveZonotopeEngine::with_device(&config, &self.device);
+        engine.consensus_verify(peer_summaries, safe_centroid, toxic_centroid, cbf_beta)
+    }
+
+    /// Hybrid Zonotope-Interval Verification.
+    ///
+    /// Uses zonotopes for linear propagation and intervals for non-linear ops,
+    /// then refines with interval bounds for tighter certificates.
+    pub fn hybrid_zonotope_verify(
+        &self,
+        activation: &Tensor,
+        epsilon: f32,
+        max_gens: usize,
+    ) -> Result<zonotope::HybridZonotope> {
+        let z = zonotope::Zonotope::new_from_epsilon(activation, epsilon, max_gens)?;
+        zonotope::HybridZonotope::from_zonotope(&z)
     }
 }
