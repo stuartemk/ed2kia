@@ -7,8 +7,14 @@
 //! ```text
 //! θ_meta ← θ_meta - α_meta * ∇_meta E[VFE_t+H | θ_meta]
 //! ```
-//! where H is the planning horizon and the gradient is approximated via finite differences
-//! or evolutionary strategies.
+//! where H is the planning horizon and the gradient is approximated via finite differences,
+//! evolutionary strategies, or Natural Evolution Strategies (NES).
+//!
+//! **NES Gradient (Sprint 111):**
+//! ```text
+//! ∇J(θ) ≈ (1/Nσ²) Σᵢ (Rᵢ - b) (εᵢ/σ)
+//! ```
+//! with antithetic sampling (εᵢ and -εᵢ pairs) + moving-average baseline b.
 
 use candle_core::Result;
 use std::f32::consts::PI;
@@ -85,6 +91,8 @@ pub struct MetaActiveInferenceConfig {
     pub population_size: usize,
     /// Use evolutionary strategy instead of finite differences.
     pub use_es: bool,
+    /// Use Natural Evolution Strategies (NES) with antithetic sampling + baseline.
+    pub use_nes: bool,
     /// Decay factor for meta-VFE history (exponential moving average).
     pub history_decay: f32,
 }
@@ -98,6 +106,7 @@ impl Default for MetaActiveInferenceConfig {
             perturbation_eps: 1e-3,
             population_size: 20,
             use_es: true,
+            use_nes: false,
             history_decay: 0.9,
         }
     }
@@ -123,6 +132,9 @@ pub struct MetaActiveInferenceEngine {
     best_meta_vfe: f32,
     history: Vec<HistoryEntry>,
     round: usize,
+    // NES state: moving-average baseline for variance reduction
+    nes_baseline: f32,
+    nes_baseline_decay: f32,
 }
 
 impl MetaActiveInferenceEngine {
@@ -135,6 +147,8 @@ impl MetaActiveInferenceEngine {
             best_meta_vfe: f32::MAX,
             history: Vec::new(),
             round: 0,
+            nes_baseline: 0.0,
+            nes_baseline_decay: 0.9,
         }
     }
 
@@ -294,10 +308,8 @@ impl MetaActiveInferenceEngine {
         }
 
         // Rank-based ES gradient
-        let mut pop: Vec<(f32, Vec<f32>)> = population_vfes
-            .into_iter()
-            .zip(population_dirs)
-            .collect();
+        let mut pop: Vec<(f32, Vec<f32>)> =
+            population_vfes.into_iter().zip(population_dirs).collect();
         pop.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
 
         let mut gradient = vec![0.0; num_params];
@@ -322,17 +334,134 @@ impl MetaActiveInferenceEngine {
         gradient
     }
 
+    /// Compute meta-gradient via Natural Evolution Strategies (NES).
+    ///
+    /// **NES Formula:**
+    /// ```text
+    /// ∇J(θ) ≈ (1/Nσ²) Σᵢ (Rᵢ - b) (εᵢ/σ)
+    /// ```
+    /// where:
+    /// - εᵢ ~ N(0, I) are isotropic Gaussian perturbations
+    /// - Rᵢ = -VFE(θ + σ·εᵢ) is the reward (negative VFE = better)
+    /// - b is a moving-average baseline for variance reduction
+    /// - Antithetic sampling: for each εᵢ, also sample -εᵢ
+    ///
+    /// Antithetic sampling halves variance: Cov(ε, -ε) = -I → cancels common noise.
+    fn compute_meta_gradient_nes(
+        &mut self,
+        params: &MetaHyperParams,
+        peer_vfes: &[f32],
+    ) -> Vec<f32> {
+        let pop_size = self.config.population_size;
+        let num_params = params.bounds().len();
+        let sigma = self.config.perturbation_eps;
+
+        // Antithetic pairs: pop_size/2 pairs → pop_size total samples
+        let num_pairs = pop_size / 2;
+        let mut gradient = vec![0.0f32; num_params];
+        let mut rewards = Vec::with_capacity(num_pairs);
+
+        for i in 0..num_pairs {
+            // Generate Gaussian perturbation εᵢ via Box-Muller
+            let mut eps = Vec::with_capacity(num_params);
+            for j in 0..num_params {
+                let r1 = ((i as u64 * 100 + j as u64)
+                    .wrapping_mul(6364136223846793005)
+                    .wrapping_add(777)
+                    % 1_000_000) as f32
+                    / 1_000_000.0;
+                let r2 = ((i as u64 * 100 + j as u64)
+                    .wrapping_mul(6364136223846793005)
+                    .wrapping_add(888)
+                    % 1_000_000) as f32
+                    / 1_000_000.0;
+                let u1 = r1.clamp(1e-6, 1.0 - 1e-6);
+                let z = ((-2.0_f32 * u1.ln()).sqrt()) * (2.0 * PI * r2).cos();
+                eps.push(z);
+            }
+
+            // Perturb: θ⁺ = θ + σ·ε
+            let perturbed_plus = Self::apply_perturbation(params, &eps, sigma);
+            // Antithetic: θ⁻ = θ - σ·ε
+            let perturbed_minus = Self::apply_antithetic_perturbation(params, &eps, sigma);
+
+            // Evaluate VFE (lower is better → reward = -VFE)
+            let vfe_plus = self.estimate_meta_vfe(&perturbed_plus, peer_vfes);
+            let vfe_minus = self.estimate_meta_vfe(&perturbed_minus, peer_vfes);
+            let r_plus = -vfe_plus;
+            let r_minus = -vfe_minus;
+
+            rewards.push(r_plus);
+
+            // NES gradient contribution: (Rᵢ - b) · εᵢ / σ²
+            // Antithetic pair: (R⁺ - b)·ε + (R⁻ - b)·(-ε) = (R⁺ - R⁻)·ε
+            // Baseline cancels out with antithetic sampling!
+            let diff = (r_plus - r_minus) / (2.0 * sigma * sigma).max(1e-10);
+            for (j, e) in eps.iter().enumerate().take(num_params) {
+                gradient[j] += diff * e;
+            }
+        }
+
+        // Average over pairs
+        let scale = num_pairs as f32;
+        for g in gradient.iter_mut() {
+            *g /= scale.max(1.0);
+        }
+
+        // Update moving-average baseline: b ← decay·b + (1-decay)·mean(R)
+        if !rewards.is_empty() {
+            let mean_reward = rewards.iter().sum::<f32>() / rewards.len() as f32;
+            self.nes_baseline = self.nes_baseline_decay * self.nes_baseline
+                + (1.0 - self.nes_baseline_decay) * mean_reward;
+        }
+
+        gradient
+    }
+
+    /// Apply perturbation to params: θ + σ·ε (clamped to bounds).
+    fn apply_perturbation(params: &MetaHyperParams, eps: &[f32], sigma: f32) -> MetaHyperParams {
+        let mut p = params.clone();
+        let bounds = params.bounds();
+        for (j, e) in eps.iter().enumerate().take(bounds.len()) {
+            let (min_b, max_b) = bounds[j];
+            let perturbation = sigma * e * (max_b - min_b) / 2.0;
+            match j {
+                0 => p.lr = (p.lr + perturbation).max(min_b).min(max_b),
+                1 => p.lambda_ot = (p.lambda_ot + perturbation).max(min_b).min(max_b),
+                2 => p.beta_cbf = (p.beta_cbf + perturbation).max(min_b).min(max_b),
+                3 => p.sae_sparsity = (p.sae_sparsity + perturbation).max(min_b).min(max_b),
+                4 => p.lambda_cross = (p.lambda_cross + perturbation).max(min_b).min(max_b),
+                5 => p.beta_cirl = (p.beta_cirl + perturbation).max(min_b).min(max_b),
+                _ => {}
+            }
+        }
+        p
+    }
+
+    /// Apply antithetic perturbation: θ - σ·ε.
+    fn apply_antithetic_perturbation(
+        params: &MetaHyperParams,
+        eps: &[f32],
+        sigma: f32,
+    ) -> MetaHyperParams {
+        let neg_eps: Vec<f32> = eps.iter().map(|e| -e).collect();
+        Self::apply_perturbation(params, &neg_eps, sigma)
+    }
+
     /// Perform one meta-optimization round.
     ///
     /// Returns the meta-VFE reduction achieved (positive = improvement).
     pub fn meta_optimize(&mut self, peer_vfes: &[f32]) -> Result<f32> {
         let old_vfe = self.estimate_meta_vfe(&self.current_params, peer_vfes);
 
-        // Compute gradient
-        let gradient = if self.config.use_es {
-            self.compute_meta_gradient_es(&self.current_params, peer_vfes)
+        // Compute gradient — clone params to avoid borrow conflict with NES's &mut self
+        let params_clone = self.current_params.clone();
+        let gradient = if self.config.use_nes {
+            self.compute_meta_gradient_nes(&params_clone, peer_vfes)
+        } else if self.config.use_es {
+            self.compute_meta_gradient_es(&params_clone, peer_vfes)
         } else {
-            self.compute_meta_gradient_fd(&self.current_params, peer_vfes)
+            self.compute_meta_gradient_fd(&params_clone, peer_vfes)
         };
 
         // Update parameters
@@ -349,8 +478,7 @@ impl MetaActiveInferenceEngine {
             self.current_params.beta_cbf = (self.current_params.beta_cbf - meta_lr * g_cbf)
                 .max(bounds[2].0)
                 .min(bounds[2].1);
-            self.current_params.sae_sparsity = (self.current_params.sae_sparsity
-                - meta_lr * g_sae)
+            self.current_params.sae_sparsity = (self.current_params.sae_sparsity - meta_lr * g_sae)
                 .max(bounds[3].0)
                 .min(bounds[3].1);
             self.current_params.lambda_cross = (self.current_params.lambda_cross

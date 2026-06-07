@@ -13,12 +13,15 @@
 //! Cross-Attention Multi-Modal Fusion + Self-Improving Collective.
 //! **Sprint 110:** Zonotope Verification + Symbolic Bound Propagation +
 //! Collective Certified Intelligence + Hybrid Zonotope-Interval.
+//! **Sprint 111:** Hybrid Zonotope + Neural Certificates + NES Meta-Opt +
+//! Collective Certified Robustness + Disruptive Proofs.
 
 pub mod cirl_value_learning;
 pub mod collective_zonotope;
 pub mod cross_attention;
 pub mod distributed_sae;
 pub mod formal_barrier;
+pub mod hybrid_zonotope;
 pub mod meta_active_inference;
 pub mod multimodal;
 pub mod sae_integration;
@@ -2474,5 +2477,63 @@ impl TensorAudit {
     ) -> Result<zonotope::HybridZonotope> {
         let z = zonotope::Zonotope::new_from_epsilon(activation, epsilon, max_gens)?;
         zonotope::HybridZonotope::from_zonotope(&z)
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Sprint 111 — Hybrid Zonotope + Neural Certificates + NES Meta-Opt
+// ---------------------------------------------------------------------------
+
+impl TensorAudit {
+    /// Hybrid Zonotope Neural Certificate Verification.
+    ///
+    /// Uses the hybrid zonotope pipeline with neural tightener for
+    /// non-linear layers, then verifies the neural certificate via
+    /// Monte Carlo sampling.
+    pub fn hybrid_neural_certificate(
+        &self,
+        activation: &Tensor,
+        epsilon: f32,
+        config: hybrid_zonotope::HybridZonotopeConfig,
+    ) -> Result<hybrid_zonotope::NeuralCertificate> {
+        let hybrid =
+            hybrid_zonotope::HybridZonotope::new_from_epsilon(activation, epsilon, config)?;
+        hybrid.verify_neural_certificate(&self.device)
+    }
+
+    /// Collective Certified Robustness via Hybrid Zonotopes.
+    ///
+    /// Verifies that the aggregated zonotope maintains safety under
+    /// the given toxic direction, with volume reduction metrics vs
+    /// pure interval arithmetic.
+    pub fn collective_certified_robustness(
+        &self,
+        activation: &Tensor,
+        epsilon: f32,
+        toxic_direction: &Tensor,
+        safety_threshold: f32,
+    ) -> Result<hybrid_zonotope::CollectiveCertificate> {
+        let config = hybrid_zonotope::HybridZonotopeConfig::default();
+        let hybrid =
+            hybrid_zonotope::HybridZonotope::new_from_epsilon(activation, epsilon, config)?;
+        hybrid.verify_collective_robustness(toxic_direction, safety_threshold)
+    }
+
+    /// Propagate a hybrid zonotope through a neural network layer.
+    ///
+    /// Combines exact affine propagation with neural-tightened
+    /// non-linear over-approximation.
+    pub fn hybrid_propagate_layer(
+        &self,
+        activation: &Tensor,
+        epsilon: f32,
+        weight: &Tensor,
+        bias: Option<&Tensor>,
+        layer_type: hybrid_zonotope::LayerType,
+    ) -> Result<hybrid_zonotope::HybridZonotope> {
+        let config = hybrid_zonotope::HybridZonotopeConfig::default();
+        let hybrid =
+            hybrid_zonotope::HybridZonotope::new_from_epsilon(activation, epsilon, config)?;
+        hybrid.propagate_through_layer(weight, bias, layer_type)
     }
 }
