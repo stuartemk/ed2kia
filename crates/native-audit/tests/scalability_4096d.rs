@@ -306,7 +306,10 @@ fn test_generator_reduction_large() -> candle_core::Result<()> {
 
     // After reduction, gens should be <= max_gens
     let gens_shape = z.zonotope.generators.shape().dims();
-    assert!(gens_shape[0] <= dim * 2, "Generator reduction should limit count");
+    assert!(
+        gens_shape[0] <= dim * 2,
+        "Generator reduction should limit count"
+    );
     Ok(())
 }
 
@@ -493,11 +496,7 @@ fn test_volume_proxy_scales_logarithmically() -> candle_core::Result<()> {
         };
         let z = HybridZonotope::new_from_epsilon(&center, epsilon, config)?;
         let vol = z.log_volume_proxy()?;
-        assert!(
-            vol.is_finite(),
-            "Log volume must be finite for dim={}",
-            dim
-        );
+        assert!(vol.is_finite(), "Log volume must be finite for dim={}", dim);
         // Per-dimension log-volume should be ≈ log(2*epsilon) ≈ log(0.2) ≈ -1.609
         // This verifies logarithmic scaling: total_vol ≈ dim * log(2*eps)
         let per_dim = vol / dim as f32;
@@ -596,10 +595,8 @@ fn test_e2e_pipeline_256d() -> candle_core::Result<()> {
     // 2. Propagate through 2 layers
     let w1 = Tensor::randn(0.0, 0.1, (dim, dim), &device)?.to_dtype(candle_core::DType::F32)?;
     let w2 = Tensor::randn(0.0, 0.1, (dim, dim), &device)?.to_dtype(candle_core::DType::F32)?;
-    let layers: [(&Tensor, Option<&Tensor>, LayerType); 2] = [
-        (&w1, None, LayerType::ReLU),
-        (&w2, None, LayerType::SiLU),
-    ];
+    let layers: [(&Tensor, Option<&Tensor>, LayerType); 2] =
+        [(&w1, None, LayerType::ReLU), (&w2, None, LayerType::SiLU)];
     let z_out = z.propagate_through_network(&layers)?;
 
     // 3. Verify certificate
@@ -622,10 +619,8 @@ fn test_e2e_pipeline_512d() -> candle_core::Result<()> {
 
     let w1 = Tensor::randn(0.0, 0.05, (dim, dim), &device)?.to_dtype(candle_core::DType::F32)?;
     let w2 = Tensor::randn(0.0, 0.05, (dim, dim), &device)?.to_dtype(candle_core::DType::F32)?;
-    let layers: [(&Tensor, Option<&Tensor>, LayerType); 2] = [
-        (&w1, None, LayerType::ReLU),
-        (&w2, None, LayerType::ReLU),
-    ];
+    let layers: [(&Tensor, Option<&Tensor>, LayerType); 2] =
+        [(&w1, None, LayerType::ReLU), (&w2, None, LayerType::ReLU)];
     let z_out = z.propagate_through_network(&layers)?;
 
     let vol = z_out.log_volume_proxy()?;

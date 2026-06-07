@@ -22,7 +22,12 @@ fn f32_row(vec: Vec<f32>, device: &Device) -> candle_core::Result<Tensor> {
 }
 
 // Helper: create F32 matrix from vec
-fn f32_mat(vec: Vec<f32>, rows: usize, cols: usize, device: &Device) -> candle_core::Result<Tensor> {
+fn f32_mat(
+    vec: Vec<f32>,
+    rows: usize,
+    cols: usize,
+    device: &Device,
+) -> candle_core::Result<Tensor> {
     Tensor::from_vec(vec, (rows, cols), device)?.to_dtype(DType::F32)
 }
 
@@ -95,7 +100,9 @@ fn test_affine_exact() -> candle_core::Result<()> {
 
     // Identity transform: should preserve bounds
     let weight = f32_mat(
-        vec![1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0],
+        vec![
+            1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+        ],
         4,
         4,
         &device,
@@ -164,7 +171,10 @@ fn test_relu_tight() -> candle_core::Result<()> {
 
     let (lo, _) = z_relu.compute_bounds()?;
     let lo_v: Vec<f32> = lo.flatten_all()?.to_vec1()?;
-    assert!(lo_v[0] > 0.8, "ReLU of positive center should stay positive");
+    assert!(
+        lo_v[0] > 0.8,
+        "ReLU of positive center should stay positive"
+    );
     Ok(())
 }
 
@@ -235,10 +245,8 @@ fn test_propagate_through_network() -> candle_core::Result<()> {
 
     let w1 = Tensor::randn(0.0, 0.5, (4, 4), &device)?.to_dtype(DType::F32)?;
     let w2 = Tensor::randn(0.0, 0.5, (4, 4), &device)?.to_dtype(DType::F32)?;
-    let layers: [(&Tensor, Option<&Tensor>, LayerType); 2] = [
-        (&w1, None, LayerType::ReLU),
-        (&w2, None, LayerType::SiLU),
-    ];
+    let layers: [(&Tensor, Option<&Tensor>, LayerType); 2] =
+        [(&w1, None, LayerType::ReLU), (&w2, None, LayerType::SiLU)];
     let z_out = z.propagate_through_network(&layers)?;
     assert!(z_out.compute_bounds().is_ok());
     Ok(())
@@ -268,7 +276,8 @@ fn test_neural_tightener_batch() -> candle_core::Result<()> {
 
     let center = Tensor::randn(0.0, 0.5, (8,), &device)?;
     let widths = Tensor::randn(0.0, 0.3, (8,), &device)?;
-    let (lo_bounds, hi_bounds) = nt.predict_bounds_batch(&center, &widths, LayerType::ReLU, &device)?;
+    let (lo_bounds, hi_bounds) =
+        nt.predict_bounds_batch(&center, &widths, LayerType::ReLU, &device)?;
     assert_eq!(lo_bounds.shape().dims(), &[8]);
     assert_eq!(hi_bounds.shape().dims(), &[8]);
     Ok(())
@@ -379,7 +388,9 @@ fn test_volume_reduces_after_contraction() -> candle_core::Result<()> {
 
     // Contraction: scale by 0.5
     let weight = f32_mat(
-        vec![0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.5],
+        vec![
+            0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.5,
+        ],
         4,
         4,
         &device,
@@ -553,7 +564,10 @@ fn test_propagation_stays_finite() -> candle_core::Result<()> {
 
     let z_out = z.propagate_through_network(&layers)?;
     let vol = z_out.log_volume_proxy()?;
-    assert!(vol.is_finite(), "Volume should stay finite through propagation");
+    assert!(
+        vol.is_finite(),
+        "Volume should stay finite through propagation"
+    );
     Ok(())
 }
 
@@ -584,7 +598,10 @@ fn test_point_hybrid() -> candle_core::Result<()> {
     let config = HybridZonotopeConfig::default();
     let z = HybridZonotope::point(&pt, config)?;
     let vol = z.log_volume_proxy()?;
-    assert!(vol <= 0.0, "Point zonotope should have zero/negative log volume");
+    assert!(
+        vol <= 0.0,
+        "Point zonotope should have zero/negative log volume"
+    );
     Ok(())
 }
 

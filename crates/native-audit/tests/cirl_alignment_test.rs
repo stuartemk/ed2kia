@@ -4,7 +4,7 @@
 //! reward model training, and value alignment scores.
 
 use candle_core::{Device, Tensor};
-use native_audit::cirl_value_learning::{CIRLEngine, CIRLConfig, RewardModel, Trajectory};
+use native_audit::cirl_value_learning::{CIRLConfig, CIRLEngine, RewardModel, Trajectory};
 
 #[test]
 fn test_reward_model_initialization() {
@@ -42,12 +42,13 @@ fn test_cirl_value_update() {
         engine.generate_stub_trajectories(2, &[8], &[4]).unwrap(),
     ];
 
-    let updated_prior = engine
-        .cirl_value_update(local_trajs, peer_trajs)
-        .unwrap();
+    let updated_prior = engine.cirl_value_update(local_trajs, peer_trajs).unwrap();
 
     assert_eq!(updated_prior.shape().dims(), &[8]);
-    println!("CIRL value update completed — prior shape: {:?}", updated_prior.shape().dims());
+    println!(
+        "CIRL value update completed — prior shape: {:?}",
+        updated_prior.shape().dims()
+    );
 }
 
 #[test]
@@ -89,10 +90,7 @@ fn test_cooperative_update_stability() {
 
         if i % 3 == 0 {
             let current_alignment = engine.compute_value_alignment(&shared_trajs).unwrap();
-            println!(
-                "Round {}: alignment = {:.4}",
-                i, current_alignment
-            );
+            println!("Round {}: alignment = {:.4}", i, current_alignment);
         }
     }
 

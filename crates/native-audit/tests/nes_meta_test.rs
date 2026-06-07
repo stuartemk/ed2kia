@@ -6,9 +6,7 @@
 //! - Baseline tracking
 //! - Gradient quality comparison (NES vs ES vs FD)
 
-use native_audit::meta_active_inference::{
-    MetaActiveInferenceConfig, MetaActiveInferenceEngine,
-};
+use native_audit::meta_active_inference::{MetaActiveInferenceConfig, MetaActiveInferenceEngine};
 
 // ============================================================================
 // NES Configuration Tests
@@ -166,11 +164,8 @@ fn test_nes_variance_reduction() {
 
     // Compute variance of final VFE across runs
     let mean = reductions.iter().sum::<f32>() / reductions.len() as f32;
-    let variance = reductions
-        .iter()
-        .map(|r| (r - mean).powi(2))
-        .sum::<f32>()
-        / reductions.len() as f32;
+    let variance =
+        reductions.iter().map(|r| (r - mean).powi(2)).sum::<f32>() / reductions.len() as f32;
 
     // NES should have low variance due to antithetic sampling
     assert!(variance < 0.1, "NES variance should be low: {}", variance);
@@ -197,7 +192,9 @@ fn test_antithetic_consistency() {
     }
 
     // All runs should reach similar optima
-    let max_diff = (finals[0] - finals[1]).abs().max((finals[0] - finals[2]).abs());
+    let max_diff = (finals[0] - finals[1])
+        .abs()
+        .max((finals[0] - finals[2]).abs());
     assert!(
         max_diff < 0.5,
         "Antithetic NES should be consistent: max_diff={}",
@@ -393,7 +390,10 @@ fn test_nes_best_params_improve() {
     // Best params should differ from initial after optimization
     let param_diff = (initial_params.lr - final_params.lr).abs()
         + (initial_params.beta_cbf - final_params.beta_cbf).abs();
-    assert!(param_diff > 1e-6, "Params should change during NES optimization");
+    assert!(
+        param_diff > 1e-6,
+        "Params should change during NES optimization"
+    );
 }
 
 // ============================================================================

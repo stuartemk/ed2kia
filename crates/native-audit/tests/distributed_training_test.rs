@@ -4,7 +4,7 @@
 //! and secure aggregation over simulated P2P network.
 
 use candle_core::{Device, IndexOp, Tensor};
-use native_audit::distributed_sae::{DistSAEConfig, DistributedSAETrainer, DPAccountant};
+use native_audit::distributed_sae::{DPAccountant, DistSAEConfig, DistributedSAETrainer};
 
 #[test]
 fn test_distributed_sae_creation() {
@@ -32,12 +32,8 @@ fn test_local_train_step() {
     };
     let trainer = DistributedSAETrainer::new(&config, &device).unwrap();
 
-    let batch = Tensor::from_vec(
-        (0..32).map(|i| i as f32 * 0.01).collect(),
-        (2, 16),
-        &device,
-    )
-    .unwrap();
+    let batch =
+        Tensor::from_vec((0..32).map(|i| i as f32 * 0.01).collect(), (2, 16), &device).unwrap();
 
     let update = trainer.local_train_step(&batch).unwrap();
     assert_eq!(update.shape(), trainer.encoder.shape());
@@ -56,7 +52,12 @@ fn test_secure_aggregation() {
     // Mean of [0, 0.25, 0.5, 0.75] = 0.375
     let expected = 0.375f32;
     let actual: f32 = aggregated.i(0).unwrap().to_scalar().unwrap();
-    assert!((actual - expected).abs() < 1e-5, "Aggregation: expected={}, got={}", expected, actual);
+    assert!(
+        (actual - expected).abs() < 1e-5,
+        "Aggregation: expected={}, got={}",
+        expected,
+        actual
+    );
 }
 
 #[test]
@@ -71,12 +72,8 @@ fn test_federated_round() {
     };
     let mut trainer = DistributedSAETrainer::new(&config, &device).unwrap();
 
-    let batch = Tensor::from_vec(
-        (0..16).map(|i| i as f32 * 0.01).collect(),
-        (2, 8),
-        &device,
-    )
-    .unwrap();
+    let batch =
+        Tensor::from_vec((0..16).map(|i| i as f32 * 0.01).collect(), (2, 8), &device).unwrap();
     let update = trainer.local_train_step(&batch).unwrap();
 
     let loss = trainer.federated_round(&[update]).unwrap();
@@ -129,12 +126,8 @@ fn test_reconstruction_fidelity() {
     };
     let trainer = DistributedSAETrainer::new(&config, &device).unwrap();
 
-    let input = Tensor::from_vec(
-        (0..16).map(|i| i as f32 * 0.1).collect(),
-        (2, 8),
-        &device,
-    )
-    .unwrap();
+    let input =
+        Tensor::from_vec((0..16).map(|i| i as f32 * 0.1).collect(), (2, 8), &device).unwrap();
 
     let fidelity = trainer.reconstruction_fidelity(&input).unwrap();
     assert!(
@@ -155,12 +148,8 @@ fn test_extract_and_reconstruct() {
     };
     let trainer = DistributedSAETrainer::new(&config, &device).unwrap();
 
-    let input = Tensor::from_vec(
-        (0..16).map(|i| i as f32 * 0.05).collect(),
-        (2, 8),
-        &device,
-    )
-    .unwrap();
+    let input =
+        Tensor::from_vec((0..16).map(|i| i as f32 * 0.05).collect(), (2, 8), &device).unwrap();
 
     let features = trainer.extract_features(&input).unwrap();
     let recon = trainer.reconstruct(&features).unwrap();
@@ -183,15 +172,16 @@ fn test_extract_and_reconstruct() {
 
     println!(
         "Features: total={}, nonzero={}, sparsity={:.2}%",
-        feature_count, nonzero, sparsity * 100.0
+        feature_count,
+        nonzero,
+        sparsity * 100.0
     );
 }
 
 #[test]
 fn test_dp_accountant_budget() {
     let config = DistSAEConfig::default();
-    let mut accountant =
-        DPAccountant::new(config.dp_epsilon, config.dp_delta, config.num_rounds);
+    let mut accountant = DPAccountant::new(config.dp_epsilon, config.dp_delta, config.num_rounds);
 
     // Consume half the budget
     for _ in 0..(config.num_rounds / 2) {
@@ -220,16 +210,20 @@ fn test_gradient_clipping_effect() {
     let trainer = DistributedSAETrainer::new(&config, &device).unwrap();
 
     // Large batch → large gradient
-    let batch = Tensor::from_vec(
-        (0..64).map(|i| i as f32 * 1.0).collect(),
-        (8, 8),
-        &device,
-    )
-    .unwrap();
+    let batch =
+        Tensor::from_vec((0..64).map(|i| i as f32 * 1.0).collect(), (8, 8), &device).unwrap();
     let update = trainer.local_train_step(&batch).unwrap();
 
     let clipped = trainer.clip_gradient(&update).unwrap();
-    let norm: f32 = clipped.sqr().unwrap().sum_all().unwrap().sqrt().unwrap().to_scalar().unwrap();
+    let norm: f32 = clipped
+        .sqr()
+        .unwrap()
+        .sum_all()
+        .unwrap()
+        .sqrt()
+        .unwrap()
+        .to_scalar()
+        .unwrap();
 
     assert!(
         norm <= config.clip_norm + 1e-5,
@@ -257,12 +251,8 @@ fn test_multi_peer_federation() {
 
     let mut all_updates = Vec::new();
     for trainer in &trainers {
-        let batch = Tensor::from_vec(
-            (0..16).map(|i| i as f32 * 0.01).collect(),
-            (2, 8),
-            &device,
-        )
-        .unwrap();
+        let batch =
+            Tensor::from_vec((0..16).map(|i| i as f32 * 0.01).collect(), (2, 8), &device).unwrap();
         let update = trainer.local_train_step(&batch).unwrap();
         all_updates.push(update);
     }

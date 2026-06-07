@@ -264,11 +264,12 @@ impl CrossAttentionFusion {
 
         // Gating — softmax over modality dimension (with temperature scaling)
         let temp = self.config.gate_temperature;
-        let gated = self
-            .gating_weights
-            .mul(&Tensor::full(1.0 / temp, self.gating_weights.shape(), device)?)?;
-        let gate_scores_tensor =
-            candle_nn::ops::softmax_last_dim(&gated)?.contiguous()?;
+        let gated = self.gating_weights.mul(&Tensor::full(
+            1.0 / temp,
+            self.gating_weights.shape(),
+            device,
+        )?)?;
+        let gate_scores_tensor = candle_nn::ops::softmax_last_dim(&gated)?.contiguous()?;
         let mut gate_scores = Vec::with_capacity(num_m);
         for i in 0..num_m {
             let score = gate_scores_tensor.i(i)?.to_scalar::<f32>().unwrap_or(0.0);

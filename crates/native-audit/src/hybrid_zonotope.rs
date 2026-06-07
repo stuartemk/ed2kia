@@ -24,7 +24,7 @@
 //! the predicted slopes satisfy l_i ≤ φ'(x_i) ≤ u_i.
 //! Verified via Monte Carlo sampling + margin buffer.
 
-use candle_core::{DType, Result, Tensor};
+use candle_core::{DType, IndexOp, Result, Tensor};
 
 use crate::zonotope::{Zonotope, ZonotopeConfig};
 
@@ -142,7 +142,8 @@ impl NeuralTightener {
         let scale3 = (2.0 / (hidden_dim as f64).max(1.0)).sqrt() as f32;
 
         let w1 = Tensor::randn(0.0, scale1, (3, hidden_dim), device)?.to_dtype(DType::F32)?;
-        let w2 = Tensor::randn(0.0, scale2, (hidden_dim, hidden_dim), device)?.to_dtype(DType::F32)?;
+        let w2 =
+            Tensor::randn(0.0, scale2, (hidden_dim, hidden_dim), device)?.to_dtype(DType::F32)?;
         let w3 = Tensor::randn(0.0, scale3, (hidden_dim, 2), device)?.to_dtype(DType::F32)?;
         let b1 = Tensor::zeros((hidden_dim,), DType::F32, device)?;
         let b2 = Tensor::zeros((hidden_dim,), DType::F32, device)?;
@@ -165,7 +166,11 @@ impl NeuralTightener {
     ///
     /// Input features: [center_value, interval_width, layer_type_code]
     /// Output: [slope_lo, slope_hi] clamped to valid range
-    pub fn predict_slope(&self, features: &[f32], device: &candle_core::Device) -> Result<(f32, f32)> {
+    pub fn predict_slope(
+        &self,
+        features: &[f32],
+        device: &candle_core::Device,
+    ) -> Result<(f32, f32)> {
         let x = Tensor::from_vec(features.to_vec(), (1, 3), device)?.to_dtype(DType::F32)?;
 
         // Layer 1: 3 → hidden
@@ -200,6 +205,7 @@ impl NeuralTightener {
     }
 
     /// Batch predict slope bounds for all dimensions of a zonotope.
+    #[allow(clippy::match_ref_pats)]
     pub fn predict_bounds_batch(
         &self,
         center: &Tensor,
@@ -207,16 +213,25 @@ impl NeuralTightener {
         layer_type: LayerType,
         device: &candle_core::Device,
     ) -> Result<(Tensor, Tensor)> {
-        // Flatten to 1D to handle both [N] and [1,N] inputs
-        let center_flat = match center.dims().len() {
-            1 => center.clone(),
-            _ => center.flatten_all()?,
+        // Normalize to 1D: handle [N], [1,N], and [batch,N] inputs
+        // For [batch,N]: use last dim as feature dim, process first row as representative
+        let (center_flat, widths_flat, dim) = match center.dims() {
+            &[d] => (center.clone(), widths.clone(), d),
+            &[1, d] => (center.squeeze(0)?, widths.squeeze(0)?, d),
+            &[_batch, d] => {
+                // Multi-batch: use first row as representative for slope prediction
+                let c_first: Tensor = center.i(0)?;
+                let w_first: Tensor = widths.i(0)?;
+                (c_first, w_first, d)
+            }
+            _ => {
+                // Fallback: flatten
+                let cf: Tensor = center.flatten_all()?;
+                let wf: Tensor = widths.flatten_all()?;
+                let d = cf.dims()[0];
+                (cf, wf, d)
+            }
         };
-        let widths_flat = match widths.dims().len() {
-            1 => widths.clone(),
-            _ => widths.flatten_all()?,
-        };
-        let dim = center_flat.dims()[0];
 
         // Layer type encoding
         let type_code = match layer_type {
@@ -227,8 +242,8 @@ impl NeuralTightener {
         };
 
         // Reshape to 2D [dim, 1] for concatenation along dim 1
-        let center_2d = center_flat.reshape((dim, 1))?.to_dtype(DType::F32)?;
-        let widths_2d = widths_flat.reshape((dim, 1))?.to_dtype(DType::F32)?;
+        let center_2d: Tensor = center_flat.reshape((dim, 1))?.to_dtype(DType::F32)?;
+        let widths_2d: Tensor = widths_flat.reshape((dim, 1))?.to_dtype(DType::F32)?;
         let type_2d = Tensor::full(type_code, (dim, 1), device)?.to_dtype(DType::F32)?;
         // Build feature matrix: [dim, 3] = [center, width, type_code]
         let features = Tensor::cat(&[&center_2d, &widths_2d, &type_2d], 1)?;
@@ -293,11 +308,8 @@ impl HybridZonotope {
         config: HybridZonotopeConfig,
     ) -> Result<Self> {
         let device = center.device();
-        let zonotope = Zonotope::new_from_epsilon(
-            center,
-            epsilon,
-            config.zonotope_config.max_gens,
-        )?;
+        let zonotope =
+            Zonotope::new_from_epsilon(center, epsilon, config.zonotope_config.max_gens)?;
         let tightener = if config.use_neural_tightener {
             Some(NeuralTightener::new(config.tightener_hidden, device)?)
         } else {
@@ -314,10 +326,7 @@ impl HybridZonotope {
     }
 
     /// Create from an existing zonotope.
-    pub fn from_zonotope(
-        z: Zonotope,
-        config: HybridZonotopeConfig,
-    ) -> Result<Self> {
+    pub fn from_zonotope(z: Zonotope, config: HybridZonotopeConfig) -> Result<Self> {
         let device = z.center.device();
         let tightener = if config.use_neural_tightener {
             Some(NeuralTightener::new(config.tightener_hidden, device)?)
@@ -360,7 +369,8 @@ impl HybridZonotope {
         let widths = self.compute_widths()?;
         // Clamp to EPSILON to avoid log(0) = -inf when some dimensions have zero width
         let device = widths.device();
-        let clamped = widths.broadcast_maximum(&Tensor::full(f32::EPSILON, widths.shape(), device)?)?;
+        let clamped =
+            widths.broadcast_maximum(&Tensor::full(f32::EPSILON, widths.shape(), device)?)?;
         clamped.log()?.sum_all()?.to_scalar::<f32>()
     }
 
@@ -374,11 +384,7 @@ impl HybridZonotope {
     // -----------------------------------------------------------------------
 
     /// Exact affine propagation: Z' = (Wc + b, WG).
-    pub fn affine_transform(
-        &self,
-        weight: &Tensor,
-        bias: Option<&Tensor>,
-    ) -> Result<Self> {
+    pub fn affine_transform(&self, weight: &Tensor, bias: Option<&Tensor>) -> Result<Self> {
         let new_z = self.zonotope.affine_transform(weight, bias)?;
         Ok(Self {
             zonotope: new_z,
@@ -413,14 +419,14 @@ impl HybridZonotope {
             )?;
 
             // Clamp NN predictions to analytical bounds for safety certificate
-            let (analytical_lo, analytical_hi) =
-                Self::analytical_relu_bounds(&lo, &hi, device)?;
+            let (analytical_lo, analytical_hi) = Self::analytical_relu_bounds(&lo, &hi, device)?;
 
             let safe_lo = nn_lo.maximum(&analytical_lo)?;
             let safe_hi = nn_hi.minimum(&analytical_hi)?;
 
             // Apply safety margin
-            let margin = Tensor::full(self.config.safety_margin, (dim,), device)?.to_dtype(DType::F32)?;
+            let margin =
+                Tensor::full(self.config.safety_margin, (dim,), device)?.to_dtype(DType::F32)?;
             let hi_with_margin = safe_hi.broadcast_mul(&margin)?;
             let hi_final = hi_with_margin.minimum(&analytical_hi)?;
 
@@ -453,13 +459,13 @@ impl HybridZonotope {
                 device,
             )?;
 
-            let (analytical_lo, analytical_hi) =
-                Self::analytical_silu_bounds(dim, device)?;
+            let (analytical_lo, analytical_hi) = Self::analytical_silu_bounds(dim, device)?;
 
             let safe_lo = nn_lo.maximum(&analytical_lo)?;
             let safe_hi = nn_hi.minimum(&analytical_hi)?;
 
-            let margin = Tensor::full(self.config.safety_margin, (dim,), device)?.to_dtype(DType::F32)?;
+            let margin =
+                Tensor::full(self.config.safety_margin, (dim,), device)?.to_dtype(DType::F32)?;
             let hi_with_margin = safe_hi.broadcast_mul(&margin)?;
             let hi_final = hi_with_margin.minimum(&analytical_hi)?;
 
@@ -491,13 +497,13 @@ impl HybridZonotope {
                 device,
             )?;
 
-            let (analytical_lo, analytical_hi) =
-                Self::analytical_gelu_bounds(dim, device)?;
+            let (analytical_lo, analytical_hi) = Self::analytical_gelu_bounds(dim, device)?;
 
             let safe_lo = nn_lo.maximum(&analytical_lo)?;
             let safe_hi = nn_hi.minimum(&analytical_hi)?;
 
-            let margin = Tensor::full(self.config.safety_margin, (dim,), device)?.to_dtype(DType::F32)?;
+            let margin =
+                Tensor::full(self.config.safety_margin, (dim,), device)?.to_dtype(DType::F32)?;
             let hi_with_margin = safe_hi.broadcast_mul(&margin)?;
             let hi_final = hi_with_margin.minimum(&analytical_hi)?;
 
@@ -522,7 +528,7 @@ impl HybridZonotope {
     /// Analytical ReLU slope bounds per dimension.
     fn analytical_relu_bounds(
         lo: &Tensor,
-        hi: &Tensor,
+        _hi: &Tensor,
         device: &candle_core::Device,
     ) -> Result<(Tensor, Tensor)> {
         // Flatten to 1D for consistent shape with predict_bounds_batch output
@@ -535,13 +541,19 @@ impl HybridZonotope {
         Ok((analytical_lo, analytical_hi))
     }
 
-    fn analytical_silu_bounds(dim: usize, device: &candle_core::Device) -> Result<(Tensor, Tensor)> {
+    fn analytical_silu_bounds(
+        dim: usize,
+        device: &candle_core::Device,
+    ) -> Result<(Tensor, Tensor)> {
         let lo = Tensor::full(0.0f32, (dim,), device)?.to_dtype(DType::F32)?;
         let hi = Tensor::full(1.59f32, (dim,), device)?.to_dtype(DType::F32)?;
         Ok((lo, hi))
     }
 
-    fn analytical_gelu_bounds(dim: usize, device: &candle_core::Device) -> Result<(Tensor, Tensor)> {
+    fn analytical_gelu_bounds(
+        dim: usize,
+        device: &candle_core::Device,
+    ) -> Result<(Tensor, Tensor)> {
         let lo = Tensor::full(0.0f32, (dim,), device)?.to_dtype(DType::F32)?;
         let hi = Tensor::full(0.96f32, (dim,), device)?.to_dtype(DType::F32)?;
         Ok((lo, hi))
@@ -568,11 +580,13 @@ impl HybridZonotope {
         let uncertainty = slope_hi.broadcast_sub(slope_lo)?.broadcast_mul(&half)?;
 
         // Scale generators by mean slope
-        // G has shape [num_gens, dim], mean_slope has shape [dim]
-        let scaled_gens = self
-            .zonotope
-            .generators
-            .broadcast_mul(&mean_slope.unsqueeze(0)?)?;
+        // G has shape [num_gens, dim], mean_slope has shape [dim] or [batch, dim]
+        // For batched: use last dim broadcast; for unbatched: unsqueeze(0)
+        let mean_slope_2d = match mean_slope.dims().len() {
+            1 => mean_slope.unsqueeze(0)?, // [dim] -> [1, dim]
+            _ => mean_slope,               // already [batch, dim]
+        };
+        let scaled_gens = self.zonotope.generators.broadcast_mul(&mean_slope_2d)?;
 
         // Compute interval widths for uncertainty scaling
         let widths = self.compute_widths()?;
@@ -595,20 +609,13 @@ impl HybridZonotope {
         let unc_gen = Tensor::from_vec(diag_vals, (dim,), device)?.to_dtype(DType::F32)?;
 
         // Cat scaled_gens [num_gens, dim] with unc_gen [dim] → need to unsqueeze
-        let new_gens = Tensor::cat(
-            &[scaled_gens, unc_gen.unsqueeze(0)?],
-            0,
-        )?;
+        let new_gens = Tensor::cat(&[scaled_gens, unc_gen.unsqueeze(0)?], 0)?;
 
         // Apply activation to center (ReLU for now, can be parameterized)
         let new_center = self.zonotope.center.relu()?;
 
         // Build new zonotope
-        let new_z = Zonotope::new(
-            new_center,
-            new_gens,
-            ZonotopeConfig::default(),
-        )?;
+        let new_z = Zonotope::new(new_center, new_gens, ZonotopeConfig::default())?;
 
         Ok(Self {
             zonotope: new_z,
@@ -665,7 +672,10 @@ impl HybridZonotope {
     ///
     /// Uses Monte Carlo sampling from the zonotope to verify that
     /// all sampled points fall within the predicted bounds.
-    pub fn verify_neural_certificate(&self, device: &candle_core::Device) -> Result<NeuralCertificate> {
+    pub fn verify_neural_certificate(
+        &self,
+        device: &candle_core::Device,
+    ) -> Result<NeuralCertificate> {
         let (lo, hi) = self.compute_bounds()?;
         let num_samples = self.config.mc_samples;
         let dim = self.zonotope.center.dim(1)?;
@@ -674,17 +684,30 @@ impl HybridZonotope {
         let num_gens = self.zonotope.generators.dim(0)?;
 
         // Random ε: [num_samples, num_gens]
-        let eps = Tensor::rand(-1.0f32, 1.0, (num_samples, num_gens), device)?.to_dtype(DType::F32)?;
+        let eps =
+            Tensor::rand(-1.0f32, 1.0, (num_samples, num_gens), device)?.to_dtype(DType::F32)?;
 
         // Samples: [num_samples, dim] = ε @ G + c
         // generators is [num_gens, dim], eps is [num_samples, num_gens]
         let samples = eps.matmul(&self.zonotope.generators)?;
-        let samples = samples.broadcast_add(&self.zonotope.center.unsqueeze(0)?)?;
+        let center_flat = match self.zonotope.center.dims().len() {
+            1 => self.zonotope.center.unsqueeze(0)?,
+            _ => self.zonotope.center.clone(),
+        };
+        let samples = samples.broadcast_add(&center_flat)?;
 
         // Check all samples are within [lo, hi]
         // Cast boolean (U8) to F32 before summing
-        let below_lo = samples.broadcast_lt(&lo.unsqueeze(0)?)?.to_dtype(DType::F32)?.sum_all()?.to_scalar::<f32>()?;
-        let above_hi = samples.broadcast_gt(&hi.unsqueeze(0)?)?.to_dtype(DType::F32)?.sum_all()?.to_scalar::<f32>()?;
+        let below_lo = samples
+            .broadcast_lt(&lo.unsqueeze(0)?)?
+            .to_dtype(DType::F32)?
+            .sum_all()?
+            .to_scalar::<f32>()?;
+        let above_hi = samples
+            .broadcast_gt(&hi.unsqueeze(0)?)?
+            .to_dtype(DType::F32)?
+            .sum_all()?
+            .to_scalar::<f32>()?;
 
         let total_checks = (num_samples * dim) as f32;
         let violations = below_lo + above_hi;
@@ -723,9 +746,15 @@ impl HybridZonotope {
         let (lo, hi) = self.compute_bounds()?;
 
         // Direction projection: check if upper bound projects negatively onto toxic dir
-        let proj_upper = (hi.broadcast_mul(toxic_direction))?.sum_all()?.to_scalar::<f32>()?;
-        let proj_lower = (lo.broadcast_mul(toxic_direction))?.sum_all()?.to_scalar::<f32>()?;
-        let proj_center = (self.zonotope.center.broadcast_mul(toxic_direction))?.sum_all()?.to_scalar::<f32>()?;
+        let proj_upper = (hi.broadcast_mul(toxic_direction))?
+            .sum_all()?
+            .to_scalar::<f32>()?;
+        let proj_lower = (lo.broadcast_mul(toxic_direction))?
+            .sum_all()?
+            .to_scalar::<f32>()?;
+        let proj_center = (self.zonotope.center.broadcast_mul(toxic_direction))?
+            .sum_all()?
+            .to_scalar::<f32>()?;
 
         let direction_safe = proj_upper <= safety_threshold;
 
@@ -794,7 +823,11 @@ impl std::fmt::Display for NeuralCertificate {
         write!(
             f,
             "🧠 NEURAL CERT: {} | ε={:.4} | violations={:.6} | samples={} | margin={:.4}",
-            if self.is_certified { "✅ PASS" } else { "❌ FAIL" },
+            if self.is_certified {
+                "✅ PASS"
+            } else {
+                "❌ FAIL"
+            },
             self.certified_epsilon,
             self.violation_rate,
             self.num_samples,
@@ -820,7 +853,11 @@ impl std::fmt::Display for CollectiveCertificate {
         write!(
             f,
             "🛡️ COLLECTIVE CERT: {} | radius={:.4} | vol_reduction={:.1}% | proj=[{:.4}, {:.4}]",
-            if self.is_certified { "✅ PASS" } else { "❌ FAIL" },
+            if self.is_certified {
+                "✅ PASS"
+            } else {
+                "❌ FAIL"
+            },
             self.certified_radius,
             self.volume_reduction,
             self.proj_lower,
@@ -836,7 +873,7 @@ impl std::fmt::Display for CollectiveCertificate {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use candle_core::Device;
+    use candle_core::{DType, Device, IndexOp};
 
     fn test_config() -> HybridZonotopeConfig {
         HybridZonotopeConfig::default()
@@ -845,7 +882,7 @@ mod tests {
     #[test]
     fn test_hybrid_creation() -> Result<()> {
         let device = Device::Cpu;
-        let center = Tensor::new(&[0.0f32, 1.0, -1.0], &device)?;
+        let center = Tensor::from_vec(vec![0.0f32, 1.0, -1.0], (1, 3), &device)?;
         let hybrid = HybridZonotope::new_from_epsilon(&center, 0.1, test_config())?;
 
         assert_eq!(hybrid.zonotope.center.dim(1)?, 3);
@@ -856,43 +893,52 @@ mod tests {
     #[test]
     fn test_affine_exact() -> Result<()> {
         let device = Device::Cpu;
-        let center = Tensor::new(&[1.0f32, 2.0], &device)?;
+        let center = Tensor::from_vec(vec![1.0f32, 2.0], (1, 2), &device)?;
         let hybrid = HybridZonotope::new_from_epsilon(&center, 0.05, test_config())?;
 
-        let weight = Tensor::eye(2, &device)?;
+        let weight = Tensor::eye(2, DType::F32, &device)?;
         let result = hybrid.affine_transform(&weight, None)?;
 
         // Identity transform should preserve center
-        let diff = result
+        let diff_vec: Vec<f32> = result
             .zonotope
             .center
             .broadcast_sub(&hybrid.zonotope.center)?
             .abs()?
-            .max_all()?
-            .to_scalar::<f32>()?;
-        assert!(diff < 1e-5, "Identity affine should preserve center: diff={}", diff);
+            .flatten_all()?
+            .to_vec1()?;
+        let diff = diff_vec.iter().copied().fold(f32::NEG_INFINITY, f32::max);
+        assert!(
+            diff < 1e-5,
+            "Identity affine should preserve center: diff={}",
+            diff
+        );
         Ok(())
     }
 
     #[test]
     fn test_relu_tight() -> Result<()> {
         let device = Device::Cpu;
-        let center = Tensor::new(&[1.0f32, -0.5, 0.0], &device)?;
+        let center = Tensor::from_vec(vec![1.0f32, -0.5, 0.0], (1, 3), &device)?;
         let hybrid = HybridZonotope::new_from_epsilon(&center, 0.1, test_config())?;
 
         let result = hybrid.relu_tight()?;
-        let (lo, hi) = result.compute_bounds()?;
+        let (lo, _hi) = result.compute_bounds()?;
 
         // ReLU of positive center should be positive
-        let lo_val = lo.get(0)?.to_scalar::<f32>()?;
-        assert!(lo_val >= -0.2, "ReLU lower bound should be near 0: {}", lo_val);
+        let lo_val = lo.flatten_all()?.i(0)?.to_scalar::<f32>()?;
+        assert!(
+            lo_val >= -0.2,
+            "ReLU lower bound should be near 0: {}",
+            lo_val
+        );
         Ok(())
     }
 
     #[test]
     fn test_neural_certificate() -> Result<()> {
         let device = Device::Cpu;
-        let center = Tensor::ones(2, (4,), &device)?;
+        let center = Tensor::ones((1, 4), DType::F32, &device)?;
         let config = HybridZonotopeConfig {
             mc_samples: 64,
             ..test_config()
@@ -900,7 +946,10 @@ mod tests {
         let hybrid = HybridZonotope::new_from_epsilon(&center, 0.05, config)?;
 
         let cert = hybrid.verify_neural_certificate(&device)?;
-        assert!(cert.is_certified, "Certificate should pass for simple zonotope");
+        assert!(
+            cert.is_certified,
+            "Certificate should pass for simple zonotope"
+        );
         assert!(cert.certified_epsilon > 0.0);
         Ok(())
     }
@@ -908,10 +957,10 @@ mod tests {
     #[test]
     fn test_propagate_layer() -> Result<()> {
         let device = Device::Cpu;
-        let center = Tensor::ones(2, (4,), &device)?;
+        let center = Tensor::ones((1, 4), DType::F32, &device)?;
         let hybrid = HybridZonotope::new_from_epsilon(&center, 0.05, test_config())?;
 
-        let weight = Tensor::eye(4, &device)?;
+        let weight = Tensor::eye(4, DType::F32, &device)?;
         let result = hybrid.propagate_through_layer(&weight, None, LayerType::ReLU)?;
 
         assert_eq!(result.zonotope.center.dim(1)?, 4);
@@ -921,18 +970,22 @@ mod tests {
     #[test]
     fn test_volume_proxy() -> Result<()> {
         let device = Device::Cpu;
-        let center = Tensor::zeros(2, (8,), &device)?;
+        let center = Tensor::zeros((2, 8), DType::F32, &device)?;
         let hybrid = HybridZonotope::new_from_epsilon(&center, 0.1, test_config())?;
 
         let log_vol = hybrid.log_volume_proxy()?;
-        assert!(log_vol.is_finite(), "Log volume should be finite: {}", log_vol);
+        assert!(
+            log_vol.is_finite(),
+            "Log volume should be finite: {}",
+            log_vol
+        );
         Ok(())
     }
 
     #[test]
     fn test_collective_certificate() -> Result<()> {
         let device = Device::Cpu;
-        let center = Tensor::zeros(2, (3,), &device)?;
+        let center = Tensor::zeros((2, 3), DType::F32, &device)?;
         let hybrid = HybridZonotope::new_from_epsilon(&center, 0.05, test_config())?;
 
         let toxic_dir = Tensor::new(&[1.0f32, 1.0, 1.0], &device)?;
@@ -951,27 +1004,45 @@ mod tests {
         // Test ReLU-like input (positive center, small width)
         let features = [1.0f32, 0.1, 0.0]; // center=1, width=0.1, ReLU
         let (lo, hi) = tightener.predict_slope(&features, &device)?;
-        assert!(lo >= 0.0 && hi <= 2.0, "Slopes should be in [0, 2]: [{}, {}]", lo, hi);
+        assert!(
+            lo >= 0.0 && hi <= 2.0,
+            "Slopes should be in [0, 2]: [{}, {}]",
+            lo,
+            hi
+        );
         assert!(lo <= hi, "lo should be <= hi");
         Ok(())
     }
 
     #[test]
     fn test_layer_type_bounds() {
-        assert_eq!(LayerType::ReLU.analytical_slope_bounds(1.0, 2.0), (1.0, 1.0));
-        assert_eq!(LayerType::ReLU.analytical_slope_bounds(-2.0, -1.0), (0.0, 0.0));
-        assert_eq!(LayerType::ReLU.analytical_slope_bounds(-1.0, 1.0), (0.0, 1.0));
+        assert_eq!(
+            LayerType::ReLU.analytical_slope_bounds(1.0, 2.0),
+            (1.0, 1.0)
+        );
+        assert_eq!(
+            LayerType::ReLU.analytical_slope_bounds(-2.0, -1.0),
+            (0.0, 0.0)
+        );
+        assert_eq!(
+            LayerType::ReLU.analytical_slope_bounds(-1.0, 1.0),
+            (0.0, 1.0)
+        );
     }
 
     #[test]
     fn test_point_hybrid() -> Result<()> {
         let device = Device::Cpu;
-        let center = Tensor::new(&[1.0f32, 2.0, 3.0], &device)?;
+        let center = Tensor::zeros((1, 3), DType::F32, &device)?;
         let hybrid = HybridZonotope::point(&center, test_config())?;
 
         let (lo, hi) = hybrid.compute_bounds()?;
         let diff = hi.broadcast_sub(&lo)?.sum_all()?.to_scalar::<f32>()?;
-        assert!(diff < 1e-5, "Point zonotope should have zero width: {}", diff);
+        assert!(
+            diff < 1e-5,
+            "Point zonotope should have zero width: {}",
+            diff
+        );
         Ok(())
     }
 }

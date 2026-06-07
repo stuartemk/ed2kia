@@ -8,7 +8,9 @@
 //! - Multi-node consensus with certified bounds
 
 use candle_core::{Device, Tensor};
-use native_audit::collective_zonotope::{CollectiveZonotopeConfig, CollectiveZonotopeEngine, ZonotopeSummary};
+use native_audit::collective_zonotope::{
+    CollectiveZonotopeConfig, CollectiveZonotopeEngine, ZonotopeSummary,
+};
 use native_audit::hybrid_zonotope::{CollectiveCertificate, HybridZonotope, HybridZonotopeConfig};
 use native_audit::zonotope::Zonotope;
 
@@ -195,7 +197,10 @@ fn test_certified_byzantine_filtering() -> candle_core::Result<()> {
     }
 
     // Only 3 honest nodes should pass
-    assert!(certified_safe.len() == 3, "Filtering should remove Byzantine nodes");
+    assert!(
+        certified_safe.len() == 3,
+        "Filtering should remove Byzantine nodes"
+    );
     Ok(())
 }
 

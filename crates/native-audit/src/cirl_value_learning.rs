@@ -67,7 +67,9 @@ impl RewardModel {
         let scale = 1.0 / (config.reward_dim as f32).sqrt();
         let data: Vec<f32> = (0..config.reward_dim)
             .map(|i| {
-                let x = ((i as u64).wrapping_mul(6364136223846793005).wrapping_add(99)) as f32
+                let x = ((i as u64)
+                    .wrapping_mul(6364136223846793005)
+                    .wrapping_add(99)) as f32
                     / (u32::MAX as f32);
                 (x * 2.0 - 1.0) * scale
             })
@@ -183,7 +185,8 @@ impl CIRLEngine {
             let perturbed = orig_val + epsilon;
 
             // Build perturbed weights tensor
-            let mut weights_data: Vec<f32> = Vec::with_capacity(self.reward_model.config.reward_dim);
+            let mut weights_data: Vec<f32> =
+                Vec::with_capacity(self.reward_model.config.reward_dim);
             for j in 0..self.reward_model.config.reward_dim {
                 let w = self.reward_model.weights.i(j)?;
                 let v: f32 = w.to_scalar()?;
@@ -193,7 +196,11 @@ impl CIRLEngine {
                     weights_data.push(v);
                 }
             }
-            let mut perturbed_weights = Tensor::from_vec(weights_data, self.reward_model.config.reward_dim, &self.device)?;
+            let mut perturbed_weights = Tensor::from_vec(
+                weights_data,
+                self.reward_model.config.reward_dim,
+                &self.device,
+            )?;
             std::mem::swap(&mut self.reward_model.weights, &mut perturbed_weights);
 
             let mut loss_plus = self.reward_model.compute_irl_loss(&local_trajectories)?;
@@ -204,7 +211,8 @@ impl CIRLEngine {
             }
 
             // Restore original weights
-            let mut orig_weights_vec: Vec<f32> = Vec::with_capacity(self.reward_model.config.reward_dim);
+            let mut orig_weights_vec: Vec<f32> =
+                Vec::with_capacity(self.reward_model.config.reward_dim);
             for j in 0..self.reward_model.config.reward_dim {
                 let w = self.reward_model.weights.i(j)?;
                 let v: f32 = w.to_scalar()?;
@@ -214,7 +222,11 @@ impl CIRLEngine {
                     orig_weights_vec.push(v);
                 }
             }
-            let mut orig_weights_tensor = Tensor::from_vec(orig_weights_vec, self.reward_model.config.reward_dim, &self.device)?;
+            let mut orig_weights_tensor = Tensor::from_vec(
+                orig_weights_vec,
+                self.reward_model.config.reward_dim,
+                &self.device,
+            )?;
             std::mem::swap(&mut self.reward_model.weights, &mut orig_weights_tensor);
 
             grad_data[i] = (loss_plus - combined_loss) / epsilon;
@@ -239,7 +251,10 @@ impl CIRLEngine {
         // Update safe prior using reward gradient signal
         // C_safe ← C_safe - η · reward_gradient_signal
         let reward_signal = combined_loss;
-        let prior_update = Tensor::new(reward_signal * self.config.learning_rate as f32, &self.device)?;
+        let prior_update = Tensor::new(
+            reward_signal * self.config.learning_rate as f32,
+            &self.device,
+        )?;
         self.safe_prior = self.safe_prior.broadcast_sub(&prior_update)?;
 
         Ok(self.safe_prior.clone())
@@ -248,10 +263,7 @@ impl CIRLEngine {
     /// Compute value alignment score between local and peer reward models.
     ///
     /// Uses cosine similarity of reward estimates on shared trajectories.
-    pub fn compute_value_alignment(
-        &self,
-        shared_trajectories: &[Trajectory],
-    ) -> Result<f32> {
+    pub fn compute_value_alignment(&self, shared_trajectories: &[Trajectory]) -> Result<f32> {
         if shared_trajectories.is_empty() {
             return Ok(1.0);
         }
@@ -261,8 +273,7 @@ impl CIRLEngine {
             .map(|t| self.reward_model.estimate_reward(t).unwrap_or(0.0))
             .collect();
 
-        let rewards: Vec<f32> =
-            shared_trajectories.iter().map(|t| t.reward_proxy).collect();
+        let rewards: Vec<f32> = shared_trajectories.iter().map(|t| t.reward_proxy).collect();
 
         // Cosine similarity
         let dot: f32 = estimates
@@ -293,8 +304,9 @@ impl CIRLEngine {
         for i in 0..count {
             let state_data: Vec<f32> = (0..state_shape.iter().product())
                 .map(|j| {
-                    let x = ((j as u64).wrapping_mul(6364136223846793005).wrapping_add(i as u64))
-                        as f32
+                    let x = ((j as u64)
+                        .wrapping_mul(6364136223846793005)
+                        .wrapping_add(i as u64)) as f32
                         / (u32::MAX as f32);
                     (x * 2.0 - 1.0) * 0.1
                 })
@@ -303,9 +315,9 @@ impl CIRLEngine {
 
             let action_data: Vec<f32> = (0..action_shape.iter().product())
                 .map(|j| {
-                    let x = ((j as u64).wrapping_mul(6364136223846793005).wrapping_add(
-                        (i + 100) as u64,
-                    )) as f32
+                    let x = ((j as u64)
+                        .wrapping_mul(6364136223846793005)
+                        .wrapping_add((i + 100) as u64)) as f32
                         / (u32::MAX as f32);
                     (x * 2.0 - 1.0) * 0.1
                 })
@@ -313,7 +325,11 @@ impl CIRLEngine {
             let action = Tensor::from_vec(action_data, action_shape, &self.device)?;
 
             // Reward proxy: higher for "safer" trajectories (lower magnitude states)
-            let state_mean = state.mean_all().unwrap_or(Tensor::new(0.0f32, &self.device)?).to_scalar::<f32>().unwrap_or(0.0);
+            let state_mean = state
+                .mean_all()
+                .unwrap_or(Tensor::new(0.0f32, &self.device)?)
+                .to_scalar::<f32>()
+                .unwrap_or(0.0);
             let reward_proxy = 1.0 - state_mean.abs();
 
             trajectories.push(Trajectory::new(state, action, reward_proxy));
@@ -361,9 +377,7 @@ mod tests {
             engine.generate_stub_trajectories(2, &[4], &[2]).unwrap(),
         ];
 
-        let updated_prior = engine
-            .cirl_value_update(local_trajs, peer_trajs)
-            .unwrap();
+        let updated_prior = engine.cirl_value_update(local_trajs, peer_trajs).unwrap();
         assert_eq!(updated_prior.shape().dims(), &[4]);
     }
 
@@ -375,10 +389,7 @@ mod tests {
 
         let trajs = engine.generate_stub_trajectories(5, &[4], &[2]).unwrap();
         let alignment = engine.compute_value_alignment(&trajs).unwrap();
-        assert!(
-            (-1.0..=1.0).contains(&alignment),
-            "Alignment in [-1, 1]"
-        );
+        assert!((-1.0..=1.0).contains(&alignment), "Alignment in [-1, 1]");
     }
 
     #[test]

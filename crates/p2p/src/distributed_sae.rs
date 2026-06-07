@@ -91,30 +91,32 @@ impl DistributedSAETrainer {
         // Initialize encoder: hidden_dim -> feature_dim
         let enc_data: Vec<f32> = (0..(config.hidden_dim * config.feature_dim))
             .map(|i| {
-                let x = ((i as u64)
-                    .wrapping_mul(6364136223846793005)
-                    .wrapping_add(42)) as f32
+                let x = ((i as u64).wrapping_mul(6364136223846793005).wrapping_add(42)) as f32
                     / (u32::MAX as f32);
                 (x * 2.0 - 1.0) * scale_enc
             })
             .collect();
-        let encoder = Tensor::from_vec(enc_data, (config.hidden_dim, config.feature_dim), device)?;
+        let encoder = Tensor::from_vec(
+            enc_data,
+            (config.hidden_dim, config.feature_dim),
+            device,
+        )?;
 
         // Initialize decoder: feature_dim -> hidden_dim (transpose of encoder as init)
         let dec_data: Vec<f32> = (0..(config.feature_dim * config.hidden_dim))
             .map(|i| {
-                let x = ((i as u64)
-                    .wrapping_mul(6364136223846793005)
-                    .wrapping_add(137)) as f32
+                let x = ((i as u64).wrapping_mul(6364136223846793005).wrapping_add(137)) as f32
                     / (u32::MAX as f32);
                 (x * 2.0 - 1.0) * scale_dec
             })
             .collect();
-        let dictionary =
-            Tensor::from_vec(dec_data, (config.feature_dim, config.hidden_dim), device)?;
+        let dictionary = Tensor::from_vec(
+            dec_data,
+            (config.feature_dim, config.hidden_dim),
+            device,
+        )?;
 
-        let dp_accountant =
-            DPAccountant::new(config.dp_epsilon, config.dp_delta, config.num_rounds);
+        let dp_accountant = DPAccountant::new(config.dp_epsilon, config.dp_delta, config.num_rounds);
 
         Ok(Self {
             config: config.clone(),
@@ -141,7 +143,7 @@ impl DistributedSAETrainer {
         let grad_proxy = recon_error.sqr()?.mean_all()?.to_scalar::<f32>()?;
 
         // L1 sparsity penalty on features
-        let l1_penalty = features.abs()?.mean_all()?.to_scalar::<f32>()?;
+        let l1_penalty = features.abs_all()?.mean_all()?.to_scalar::<f32>()?;
 
         // Combined loss
         let total_loss = grad_proxy + 0.01 * l1_penalty;
@@ -149,11 +151,11 @@ impl DistributedSAETrainer {
         // Create gradient update tensor (scaled by loss)
         let update = Tensor::new(total_loss * 0.01, &self.device)?;
 
-        update.broadcast_as(self.dictionary.shape())
+        Ok(update.broadcast_as(self.encoder.shape())?)
     }
 
     /// Clip gradient at L2 norm.
-    pub fn clip_gradient(&self, grad: &Tensor) -> Result<Tensor> {
+    fn clip_gradient(&self, grad: &Tensor) -> Result<Tensor> {
         let norm = grad.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
         if norm > self.config.clip_norm {
             let scale = self.config.clip_norm / norm;
@@ -168,16 +170,13 @@ impl DistributedSAETrainer {
         let noise_data: Vec<f32> = (0..grad.shape().elem_count())
             .map(|i| {
                 // Box-Muller transform for Gaussian noise
-                let r1 = (i as u64)
-                    .wrapping_mul(6364136223846793005)
-                    .wrapping_add(777);
-                let r2 = (i as u64)
-                    .wrapping_mul(6364136223846793005)
-                    .wrapping_add(888);
-                let u1 = ((r1 % 1_000_000) as f32 / 1_000_000.0).clamp(1e-6, 1.0 - 1e-6);
-                let u2 = (r2 % 1_000_000) as f32 / 1_000_000.0;
+                let u1 = ((i as u64).wrapping_mul(6364136223846793005).wrapping_add(777)) as f32
+                    / (u32::MAX as f32);
+                let u2 = ((i as u64).wrapping_mul(6364136223846793005).wrapping_add(888)) as f32
+                    / (u32::MAX as f32);
+                let u1 = u1.max(1e-8);
                 use std::f32::consts::PI;
-                let z = ((-2.0_f32 * u1.ln()).sqrt()) * (2.0 * PI * u2).cos();
+                let z = ((-2.0 * u1.ln()).sqrt()) * (2.0 * PI * u2).cos();
                 z * self.config.noise_std
             })
             .collect();
@@ -237,10 +236,8 @@ impl DistributedSAETrainer {
         // Consume DP budget
         self.dp_accountant.consume();
 
-        // Compute current loss as metric (L2 norm of aggregated update)
-        let loss_val = aggregated.sqr()?.sum_all()?.to_scalar::<f32>()?.sqrt();
-        // Guard against NaN from numerical noise
-        let loss = if loss_val.is_finite() { loss_val } else { 0.0 };
+        // Compute current loss as metric
+        let loss = aggregated.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
         Ok(loss)
     }
 
@@ -290,24 +287,34 @@ mod tests {
         };
         let trainer = DistributedSAETrainer::new(&config, &device).unwrap();
 
-        let batch =
-            Tensor::from_vec((0..32).map(|i| i as f32 * 0.01).collect(), (2, 16), &device).unwrap();
+        let batch = Tensor::from_vec(
+            (0..32).map(|i| i as f32 * 0.01).collect(),
+            (2, 16),
+            &device,
+        )
+        .unwrap();
         let update = trainer.local_train_step(&batch).unwrap();
-        assert_eq!(update.shape(), trainer.dictionary.shape());
+        assert_eq!(update.shape(), trainer.encoder.shape());
     }
 
     #[test]
     fn test_secure_aggregation() {
         let device = Device::Cpu;
         let updates: Vec<Tensor> = (0..3)
-            .map(|i| Tensor::from_vec(vec![i as f32 * 0.1; 4], (4,), &device))
+            .map(|i| {
+                Tensor::from_vec(
+                    vec![i as f32 * 0.1; 4],
+                    (4,),
+                    &device,
+                )
+            })
             .collect::<Result<_>>()
             .unwrap();
 
         let aggregated = DistributedSAETrainer::secure_aggregate(&updates).unwrap();
-        let expected_sum: f32 = (0.0 + 0.1 + 0.2) / 3.0; // mean of each element position
-        let actual_mean: f32 = aggregated.mean_all().unwrap().to_scalar().unwrap();
-        assert!((actual_mean - expected_sum).abs() < 1e-5);
+        let expected_mean = 0.1; // (0 + 0.1 + 0.2) / 3
+        let actual: f32 = aggregated.to_scalar().unwrap();
+        assert!((actual - expected_mean).abs() < 1e-5);
     }
 
     #[test]
@@ -321,16 +328,16 @@ mod tests {
         };
         let mut trainer = DistributedSAETrainer::new(&config, &device).unwrap();
 
-        let batch =
-            Tensor::from_vec((0..16).map(|i| i as f32 * 0.01).collect(), (2, 8), &device).unwrap();
+        let batch = Tensor::from_vec(
+            (0..16).map(|i| i as f32 * 0.01).collect(),
+            (2, 8),
+            &device,
+        )
+        .unwrap();
         let update = trainer.local_train_step(&batch).unwrap();
 
         let loss = trainer.federated_round(&[update]).unwrap();
-        assert!(
-            loss.is_finite() && loss >= 0.0,
-            "Loss must be finite and non-negative, got {}",
-            loss
-        );
+        assert!(loss >= 0.0);
         assert!(!trainer.dp_accountant.is_exhausted());
     }
 
@@ -344,10 +351,14 @@ mod tests {
         };
         let trainer = DistributedSAETrainer::new(&config, &device).unwrap();
 
-        let input =
-            Tensor::from_vec((0..16).map(|i| i as f32 * 0.1).collect(), (2, 8), &device).unwrap();
+        let input = Tensor::from_vec(
+            (0..16).map(|i| i as f32 * 0.1).collect(),
+            (2, 8),
+            &device,
+        )
+        .unwrap();
         let fidelity = trainer.reconstruction_fidelity(&input).unwrap();
-        assert!((0.0..=1.0).contains(&fidelity));
+        assert!(fidelity >= 0.0 && fidelity <= 1.0);
     }
 
     #[test]

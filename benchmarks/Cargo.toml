@@ -2,7 +2,7 @@
 name = "ed2kIA-benchmarks"
 version = "0.1.0"
 edition = "2021"
-description = "ed2kIA v2.1.0 — Performance benchmarks for SAE, CRDT, P2P sync, and tensor serialization"
+description = "ed2kIA v11.2.0 — Performance benchmarks for SAE, CRDT, P2P, Neural ODE, and Mechanism Design"
 license = "Apache-2.0"
 
 [[bench]]
@@ -25,6 +25,10 @@ harness = false
 name = "crdt_merge"
 harness = false
 
+[[bench]]
+name = "neural_ode_mechanism"
+harness = false
+
 [dependencies]
 # Reference main library for types
 ed2kia = { path = "..", features = ["stable"] }
@@ -39,6 +43,9 @@ flatbuffers = "23.5"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 bincode = "1.3"
+
+# Random (for mechanism design benchmarks)
+rand = { version = "0.8", features = ["small_rng"] }
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }

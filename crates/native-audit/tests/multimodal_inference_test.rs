@@ -4,9 +4,7 @@
 //! and hybrid steering across text + vision + audio modalities.
 
 use candle_core::{Device, Tensor};
-use native_audit::multimodal::{
-    generate_stub_embeddings, MultiModalEngine, MultiModalState,
-};
+use native_audit::multimodal::{generate_stub_embeddings, MultiModalEngine, MultiModalState};
 
 #[test]
 fn test_multimodal_vfe_computation() {
@@ -33,7 +31,9 @@ fn test_multimodal_steering_reduces_vfe() {
     let steered = engine
         .steer_multimodal_hybrid(&state, &prior, 0.1, 10)
         .unwrap();
-    let vfe_after = engine.compute_multimodal_vfe(&steered, &prior, 0.1).unwrap();
+    let vfe_after = engine
+        .compute_multimodal_vfe(&steered, &prior, 0.1)
+        .unwrap();
 
     assert!(
         vfe_after <= vfe_before,
@@ -73,7 +73,11 @@ fn test_cross_modal_divergence() {
     let engine = MultiModalEngine::default();
     let div = engine.compute_cross_modal_divergence(&state).unwrap();
 
-    assert!((0.0..=1.0).contains(&div), "Divergence in [0, 1]: {:.4}", div);
+    assert!(
+        (0.0..=1.0).contains(&div),
+        "Divergence in [0, 1]: {:.4}",
+        div
+    );
     println!("Cross-modal divergence: {:.4}", div);
 }
 
@@ -84,14 +88,10 @@ fn test_production_benchmark() {
     let prior = generate_stub_embeddings(&[2, 8], &[2, 6], &[2, 4], &device).unwrap();
 
     let engine = MultiModalEngine::default();
-    let (reduction, alignment, params) =
-        engine.production_benchmark(&state, &prior).unwrap();
+    let (reduction, alignment, params) = engine.production_benchmark(&state, &prior).unwrap();
 
     assert!(reduction >= 0.0, "VFE reduction should be non-negative");
-    assert!(
-        (-1.0..=1.0).contains(&alignment),
-        "Alignment in [-1, 1]"
-    );
+    assert!((-1.0..=1.0).contains(&alignment), "Alignment in [-1, 1]");
     assert!(params > 0, "Params should be positive");
 
     println!(
@@ -142,7 +142,9 @@ fn test_steering_convergence() {
         let steered = engine
             .steer_multimodal_hybrid(&state, &prior, 0.1, steps)
             .unwrap();
-        let vfe = engine.compute_multimodal_vfe(&steered, &prior, 0.1).unwrap();
+        let vfe = engine
+            .compute_multimodal_vfe(&steered, &prior, 0.1)
+            .unwrap();
 
         assert!(
             vfe <= prev_vfe,

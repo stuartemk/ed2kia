@@ -144,7 +144,10 @@ impl MultiModalEngine {
 
         // Handle shape mismatch by broadcasting to common shape
         let dot = if a_flat.shape().dims() == b_flat.shape().dims() {
-            a_flat.broadcast_mul(&b_flat)?.sum_all()?.to_scalar::<f32>()?
+            a_flat
+                .broadcast_mul(&b_flat)?
+                .sum_all()?
+                .to_scalar::<f32>()?
         } else {
             // Different shapes: use mean of each as proxy
             let a_mean = a.mean_all()?.to_scalar::<f32>()?;
@@ -182,9 +185,7 @@ impl MultiModalEngine {
         lambda_topo: f32,
     ) -> Result<f32> {
         // Text VFE
-        let text_diff = state
-            .text_hidden
-            .broadcast_sub(&prior.text_hidden)?;
+        let text_diff = state.text_hidden.broadcast_sub(&prior.text_hidden)?;
         let text_recon = text_diff.sqr()?.mean_all()?.to_scalar::<f32>()?;
         let text_var = self.compute_variance(&state.text_hidden)?;
         let text_vfe = text_recon + lambda_topo * text_var;
@@ -313,7 +314,9 @@ pub fn generate_stub_embeddings(
     // Text: use hash-based pseudo-random
     let text_data: Vec<f32> = (0..text_shape.iter().product())
         .map(|i| {
-            let x = ((i as u64).wrapping_mul(6364136223846793005).wrapping_add(42)) as f32
+            let x = ((i as u64)
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(42)) as f32
                 / (u32::MAX as f32);
             (x * 2.0 - 1.0) * 0.1
         })
@@ -323,7 +326,9 @@ pub fn generate_stub_embeddings(
     // Vision: slightly different seed
     let vision_data: Vec<f32> = (0..vision_shape.iter().product())
         .map(|i| {
-            let x = ((i as u64).wrapping_mul(6364136223846793005).wrapping_add(137)) as f32
+            let x = ((i as u64)
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(137)) as f32
                 / (u32::MAX as f32);
             (x * 2.0 - 1.0) * 0.1
         })
@@ -333,7 +338,9 @@ pub fn generate_stub_embeddings(
     // Audio: another seed
     let audio_data: Vec<f32> = (0..audio_shape.iter().product())
         .map(|i| {
-            let x = ((i as u64).wrapping_mul(6364136223846793005).wrapping_add(256)) as f32
+            let x = ((i as u64)
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(256)) as f32
                 / (u32::MAX as f32);
             (x * 2.0 - 1.0) * 0.1
         })
@@ -378,7 +385,10 @@ mod tests {
 
         let engine = MultiModalEngine::default();
         let corr = engine.cross_modal_correlation(&a, &b).unwrap();
-        assert!((corr - 1.0).abs() < 1e-5, "Identical vectors should have correlation 1.0");
+        assert!(
+            (corr - 1.0).abs() < 1e-5,
+            "Identical vectors should have correlation 1.0"
+        );
     }
 
     #[test]
@@ -390,8 +400,12 @@ mod tests {
         let engine = MultiModalEngine::default();
         let vfe_before = engine.compute_multimodal_vfe(&state, &prior, 0.1).unwrap();
 
-        let steered = engine.steer_multimodal_hybrid(&state, &prior, 0.1, 10).unwrap();
-        let vfe_after = engine.compute_multimodal_vfe(&steered, &prior, 0.1).unwrap();
+        let steered = engine
+            .steer_multimodal_hybrid(&state, &prior, 0.1, 10)
+            .unwrap();
+        let vfe_after = engine
+            .compute_multimodal_vfe(&steered, &prior, 0.1)
+            .unwrap();
 
         assert!(
             vfe_after <= vfe_before,
