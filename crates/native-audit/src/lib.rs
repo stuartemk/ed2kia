@@ -9,9 +9,14 @@
 //! Deep SAE + Formal Verification + Collective Intelligence.
 //! **Sprint 108:** Multi-Modal Active Inference + CIRL Value Learning +
 //! Distributed SAE Training + Production Hardening.
+//! **Sprint 109:** Meta-Active Inference + Formal Barrier Certificates +
+//! Cross-Attention Multi-Modal Fusion + Self-Improving Collective.
 
 pub mod cirl_value_learning;
+pub mod cross_attention;
 pub mod distributed_sae;
+pub mod formal_barrier;
+pub mod meta_active_inference;
 pub mod multimodal;
 pub mod sae_integration;
 pub mod symbolic_fusion;
@@ -2244,9 +2249,7 @@ impl TensorAudit {
         let all_contributions: Vec<Tensor> = std::iter::once(local_hidden.clone())
             .chain(peer_contributions)
             .collect();
-        let all_trusts: Vec<f32> = std::iter::once(1.0f32)
-            .chain(peer_trusts)
-            .collect();
+        let all_trusts: Vec<f32> = std::iter::once(1.0f32).chain(peer_trusts).collect();
 
         // Trust-weighted average as collective prior
         let collective_prior = symbolic_fusion::CollectiveInference::trust_weighted_average(
@@ -2316,13 +2319,7 @@ impl TensorAudit {
         alpha: f32,
         num_steps: usize,
     ) -> Result<multimodal::MultiModalState> {
-        let engine = multimodal::MultiModalEngine::new(
-            &self.device,
-            0.5,
-            0.3,
-            0.2,
-            0.4,
-        );
+        let engine = multimodal::MultiModalEngine::new(&self.device, 0.5, 0.3, 0.2, 0.4);
         engine.steer_multimodal_hybrid(mm_state, safe_prior_mm, alpha, num_steps)
     }
 
@@ -2355,13 +2352,69 @@ impl TensorAudit {
         mm_state: &multimodal::MultiModalState,
         safe_prior_mm: &multimodal::MultiModalState,
     ) -> Result<(f32, f32, usize)> {
-        let engine = multimodal::MultiModalEngine::new(
-            &self.device,
-            0.5,
-            0.3,
-            0.2,
-            0.4,
-        );
+        let engine = multimodal::MultiModalEngine::new(&self.device, 0.5, 0.3, 0.2, 0.4);
         engine.production_benchmark(mm_state, safe_prior_mm)
+    }
+}
+
+// Sprint 109: Meta-Active Inference + Formal Barrier + Cross-Attention methods
+impl TensorAudit {
+    /// Meta-Active Inference Optimization.
+    ///
+    /// Optimizes node hyperparameters (lr, lambda_OT, beta_CBF, sae_sparsity)
+    /// to minimize long-term meta-VFE across the collective.
+    pub fn meta_active_inference(&self, peer_vfes: &[f32], num_rounds: usize) -> Result<Vec<f32>> {
+        let config = meta_active_inference::MetaActiveInferenceConfig::default();
+        let mut engine = meta_active_inference::MetaActiveInferenceEngine::new(&config);
+        engine.meta_optimize_sequence(num_rounds, peer_vfes)
+    }
+
+    /// Formal Barrier Certificate.
+    ///
+    /// Computes a Lyapunov-like safety certificate with interval arithmetic
+    /// providing formal guarantees that activations remain within safe bounds.
+    pub fn formal_barrier_certificate(
+        &self,
+        tensor: &Tensor,
+    ) -> Result<formal_barrier::BarrierCertificate> {
+        let config = formal_barrier::BarrierConfig::default();
+        let engine = formal_barrier::FormalBarrierEngine::new(&config);
+        engine.formal_barrier_certificate(tensor)
+    }
+
+    /// Cross-Attention Multi-Modal Fusion.
+    ///
+    /// Fuses multiple modality embeddings using true cross-attention mechanisms
+    /// with modality-specific gating for adaptive fusion weights.
+    pub fn cross_attention_fuse(
+        &self,
+        modalities: &[Tensor],
+    ) -> Result<cross_attention::FusionResult> {
+        let config = cross_attention::CrossAttentionConfig {
+            num_modalities: modalities.len().max(2),
+            ..Default::default()
+        };
+        let fusion = cross_attention::CrossAttentionFusion::new(&config, &self.device)?;
+        fusion.fuse(modalities)
+    }
+
+    /// Self-Improvement Verification.
+    ///
+    /// Runs meta-optimization and verifies that collective VFE improves
+    /// over N rounds, demonstrating self-improving behavior.
+    pub fn verify_self_improvement(
+        &self,
+        peer_vfes: &[f32],
+        num_rounds: usize,
+    ) -> Result<(f32, f32, f32)> {
+        let config = meta_active_inference::MetaActiveInferenceConfig::default();
+        let mut engine = meta_active_inference::MetaActiveInferenceEngine::new(&config);
+
+        let initial_vfe = engine.estimate_meta_vfe(engine.current_params(), peer_vfes);
+        engine.meta_optimize_sequence(num_rounds, peer_vfes)?;
+        let final_vfe = engine.best_meta_vfe();
+        let improvement = engine.improvement_ratio();
+
+        Ok((initial_vfe, final_vfe, improvement))
     }
 }
