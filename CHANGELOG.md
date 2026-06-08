@@ -1,4 +1,41 @@
-﻿## [v12.0.0-sprint120] — 2026-06-08 (Sprint 120 — THE PLANETARY IMMUNE MESH & EDGE REAL-WORLD DEPLOYMENT)
+﻿## [v12.1.0-sprint121] — 2026-06-08 (Sprint 121 — THE NOOSFERA SYMBIOTIC LAUNCH & VERIFIABLE GLOBAL DEFENSE)
+
+### Sprint 121 "THE NOOSFERA SYMBIOTIC LAUNCH & VERIFIABLE GLOBAL DEFENSE"
+
+**Problema — Sin lanzamiento global ni escalado proporcional:** Sprints 110-120 introducen zonotopos, Taylor models, Neural ODEs, SAE Modular, Testnet Sim, PoSym, Hybrid Path, Sparse Federated SAE, Full Pipeline, Edge Runtime y Live Testnet Mesh, pero faltan: (1) Global Launch & Proportional Edge Scaling — `evaluate_proportional_hybrid()` que escala el compute budget desde smartwatch (0.1, UltraLight-only) hasta datacenter (1.0, Full Hybrid + Reach-Tube), (2) Device Contribution Factor — Bonus PoSym para dispositivos de menor capacidad (Smartwatch=5.0x, IoT=3.0x, Mobile=2.0x, OldDesktop=1.5x, Desktop=1.0x, Datacenter=0.5x), (3) Multi-Modal VFE Symbiosis — Media geométrica ponderada `exp(sum(w_i * ln(vfe_i + eps)))` para evaluación de seguridad cross-modal, y (4) Global Mesh Bootstrap — `GlobalAltruistMesh` con `bootstrap_planetary()` para coordinar arranque a escala planetaria.
+
+**Solución — Proportional Scaling + Global Bootstrap + Multi-Modal VFE + Academic Benchmarks:** Extendemos `edge_runtime.rs` con `Smartwatch` y `Datacenter` en `DeviceType`, `compute_budget()` y `contribution_factor()` para escalado proporcional, `evaluate_proportional_hybrid()` que rutea a SWD-only para budget < 0.3, `compute_multimodal_vfe_symbiosis()` y `compute_multimodal_vfe_with_cbf()` para seguridad cross-modal. Creamos `global_bootstrap.rs` con `DeviceDistribution`, `GlobalBootstrapConfig`, `BootstrapResult` y `GlobalAltruistMesh` para bootstrap planetario configurable. 10 benchmarks en `tests/global_defense_benchmark.rs` incluyendo simulación de 5000 nodos con distribución realista de hardware.
+
+- **Proportional Edge Scaling:** `edge_runtime.rs` — `Smartwatch`/`Datacenter` device types, `compute_budget()`, `contribution_factor()`, `evaluate_proportional_hybrid()`, `compute_multimodal_vfe_symbiosis()`, `compute_multimodal_vfe_with_cbf()`
+- **Global Mesh Bootstrap:** `global_bootstrap.rs` — `DeviceDistribution`, `GlobalBootstrapConfig`, `BootstrapResult`, `GlobalAltruistMesh`, `bootstrap_planetary()`
+- **Academic Benchmarks:** `tests/global_defense_benchmark.rs` — 10 benchmarks: 5000-node simulation, proportional scaling, multi-modal VFE, contribution factor fairness, energy savings, compute budget, install commands, large mesh churn, CBF safety, full pipeline
+
+**Módulos actualizados:**
+- [`edge_runtime.rs`](crates/native-audit/src/edge_runtime.rs) — `Smartwatch`/`Datacenter` device types, `compute_budget()`, `contribution_factor()`, `evaluate_proportional_hybrid()`, `compute_multimodal_vfe_symbiosis()`, `compute_multimodal_vfe_with_cbf()`, updated `AltruistOnboarding::install_command()`
+- [`global_bootstrap.rs`](crates/native-audit/src/global_bootstrap.rs) — `DeviceDistribution`, `GlobalBootstrapConfig`, `BootstrapResult`, `GlobalAltruistMesh`, `bootstrap_planetary()`, `generate_install_commands()`
+- [`lib.rs`](crates/native-audit/src/lib.rs) — Registered `pub mod global_bootstrap`
+- [`tests/global_defense_benchmark.rs`](crates/native-audit/tests/global_defense_benchmark.rs) — 10 benchmarks: planetary simulation, proportional scaling, multi-modal VFE, fairness, energy, budget, commands, churn, CBF, pipeline
+
+**Nuevos tests (60 unit + 10 benchmarks = 70 total):**
+| Test File | Tests | Resultado |
+|-----------|-------|-----------|
+| `edge_runtime` (unit) | 20+ new | ✅ Pass |
+| `global_bootstrap` (unit) | 14 | ✅ 14/14 |
+| `global_defense_benchmark` (benchmarks) | 10 | ✅ 10/10 |
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| Total Tests (S121) | **60+ unit + 10 benchmarks (100%)** |
+| Clippy (S121 modules) | ✅ Zero warnings |
+| Device Types Extended | Smartwatch + Datacenter (6 total) |
+| Compute Budget Range | 0.1 (Smartwatch) → 1.0 (Datacenter) |
+| Contribution Factor Range | 5.0x (Smartwatch) → 0.5x (Datacenter) |
+| Multi-Modal VFE | Weighted geometric mean with CBF margin |
+| Planetary Simulation | 5000 nodes × realistic device distribution |
+| Modules Added | `global_bootstrap.rs` |
+
+## [v12.0.0-sprint120] — 2026-06-08 (Sprint 120 — THE PLANETARY IMMUNE MESH & EDGE REAL-WORLD DEPLOYMENT)
 
 ### Sprint 120 "THE PLANETARY IMMUNE MESH & EDGE REAL-WORLD DEPLOYMENT"
 

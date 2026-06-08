@@ -4,6 +4,8 @@
 //! 5-year-old PCs, 3G connections, mobile devices with limited battery, and IoT sensors.
 //!
 //! **Sprint 120:** Planetary Immune Mesh & Edge Real-World Deployment.
+//! **Sprint 121:** Noosfera Symbiotic Launch — Proportional efficiency across full hardware spectrum
+//! (smartwatch → datacenter), multi-modal VFE symbiosis, device contribution factor for PoSym.
 
 use candle_core::{Result, Tensor};
 
@@ -128,6 +130,10 @@ pub enum DeviceType {
     Mobile,
     /// IoT sensor/edge device
     Iot,
+    /// Smartwatch/wearable — extreme constraints
+    Smartwatch,
+    /// Datacenter server — full capabilities, donated altruistically
+    Datacenter,
 }
 
 impl DeviceType {
@@ -138,6 +144,8 @@ impl DeviceType {
             DeviceType::OldDesktop => 0.08,
             DeviceType::Mobile => 0.03,
             DeviceType::Iot => 0.01,
+            DeviceType::Smartwatch => 0.005,
+            DeviceType::Datacenter => 5.0,
         }
     }
 
@@ -148,6 +156,34 @@ impl DeviceType {
             DeviceType::OldDesktop => 1.0,
             DeviceType::Mobile => 0.6,
             DeviceType::Iot => 0.4,
+            DeviceType::Smartwatch => 0.3,
+            DeviceType::Datacenter => 50.0,
+        }
+    }
+
+    /// Proportional compute budget for this device type (0.0 to 1.0).
+    /// Determines which compute path is available.
+    pub fn compute_budget(&self) -> f32 {
+        match self {
+            DeviceType::Smartwatch => 0.1,
+            DeviceType::Iot => 0.15,
+            DeviceType::Mobile => 0.4,
+            DeviceType::OldDesktop => 0.6,
+            DeviceType::Desktop => 1.0,
+            DeviceType::Datacenter => 1.0,
+        }
+    }
+
+    /// Device contribution factor for PoSym scoring.
+    /// Lower-capability devices get bonus for participating.
+    pub fn contribution_factor(&self) -> f64 {
+        match self {
+            DeviceType::Smartwatch => 5.0,
+            DeviceType::Iot => 3.0,
+            DeviceType::Mobile => 2.0,
+            DeviceType::OldDesktop => 1.5,
+            DeviceType::Desktop => 1.0,
+            DeviceType::Datacenter => 0.5,
         }
     }
 }
@@ -379,6 +415,85 @@ pub fn estimate_energy_impact(certified_calls: u64, device_type: DeviceType) -> 
     }
 }
 
+/// Proportional Efficiency Engine — Scales compute from smartwatch to datacenter.
+///
+/// Returns `(safe, certified, steered, trust_delta, energy_mwh)`.
+pub fn evaluate_proportional_hybrid(
+    hidden_state: &Tensor,
+    safe_centroid: &Tensor,
+    toxic_centroid: &Tensor,
+    device_profile: DeviceType,
+    battery_level: f32,
+    network_quality: f32,
+) -> Result<(bool, bool, Tensor, f64, f64)> {
+    let compute_budget = device_profile.compute_budget();
+    let base_cost = device_profile.base_energy_cost();
+    let dc_baseline = device_profile.dc_baseline_cost();
+
+    // Ultra-light: Smartwatch/IoT — only minimal SWD
+    if compute_budget < 0.3 {
+        let swd_ratio = compute_fast_swd_ratio(hidden_state, safe_centroid, toxic_centroid)?;
+        let safe = swd_ratio > 0.5;
+        let energy_used = base_cost * 0.05; // 5% of base for ultra-light
+        let _energy_saved = dc_baseline - energy_used;
+        let trust_delta = device_profile.contribution_factor() * 0.01;
+        return Ok((safe, false, hidden_state.clone(), trust_delta, energy_used));
+    }
+
+    // Full proportional: delegate to planetary hybrid
+    let (safe, _slow_path, steered, energy_used, energy_saved) = evaluate_planetary_hybrid(
+        hidden_state,
+        safe_centroid,
+        toxic_centroid,
+        battery_level,
+        network_quality,
+        false,
+        device_profile,
+    )?;
+
+    let certified = energy_saved > 0.0;
+    let trust_delta = device_profile.contribution_factor() * (energy_saved / dc_baseline);
+    Ok((safe, certified, steered, trust_delta, energy_used))
+}
+
+/// Multi-Modal VFE Symbiosis — Cross-modal Variational Free Energy.
+///
+/// Combines VFE from multiple modalities (text, vision, audio) into a single
+/// planetary safety metric using weighted geometric mean.
+///
+/// # Arguments
+/// * `modal_vfes` — VFE values per modality (must be non-negative)
+/// * `modal_weights` — Weight per modality (normalized to sum to 1.0)
+pub fn compute_multimodal_vfe_symbiosis(modal_vfes: &[f64], modal_weights: &[f64]) -> f64 {
+    if modal_vfes.is_empty() || modal_weights.is_empty() || modal_vfes.len() != modal_weights.len()
+    {
+        return 0.0;
+    }
+
+    // Weighted geometric mean: exp(sum(w_i * ln(vfe_i + eps)))
+    let eps = 1e-12;
+    let log_sum: f64 = modal_vfes
+        .iter()
+        .zip(modal_weights.iter())
+        .map(|(vfe, weight)| weight * (vfe + eps).ln())
+        .sum();
+    log_sum.exp()
+}
+
+/// Multi-modal VFE with cross-modal CBF margin check.
+///
+/// Returns `(combined_vfe, cbf_margin, is_safe)`.
+pub fn compute_multimodal_vfe_with_cbf(
+    modal_vfes: &[f64],
+    modal_weights: &[f64],
+    safe_threshold: f64,
+) -> (f64, f64, bool) {
+    let combined = compute_multimodal_vfe_symbiosis(modal_vfes, modal_weights);
+    let cbf_margin = safe_threshold - combined;
+    let is_safe = cbf_margin >= 0.0;
+    (combined, cbf_margin, is_safe)
+}
+
 /// Record certified steer with energy delta for PoSym integration.
 #[derive(Debug, Clone)]
 pub struct CertifiedSteerRecord {
@@ -464,6 +579,8 @@ impl AltruistOnboarding {
             DeviceType::OldDesktop => "--old-desktop",
             DeviceType::Mobile => "--mobile",
             DeviceType::Iot => "--iot",
+            DeviceType::Smartwatch => "--smartwatch",
+            DeviceType::Datacenter => "--datacenter",
         };
 
         let peers = if self.bootstrap_peers.is_empty() {
@@ -688,6 +805,225 @@ mod tests {
         // Should be near boundary (ratio ~0.5)
         // Equidistant → ratio ≈ 0.5 → safe = (ratio > 0.5) → false
         assert!(!safe);
+        Ok(())
+    }
+
+    // ===== Sprint 121 (v12.1.0) — Noosfera Symbiotic Launch Tests =====
+
+    #[test]
+    fn test_device_type_smartwatch() {
+        let d = DeviceType::Smartwatch;
+        assert_eq!(d.base_energy_cost(), 0.005);
+        assert_eq!(d.dc_baseline_cost(), 0.3);
+        assert_eq!(d.compute_budget(), 0.1);
+        assert_eq!(d.contribution_factor(), 5.0);
+    }
+
+    #[test]
+    fn test_device_type_datacenter() {
+        let d = DeviceType::Datacenter;
+        assert_eq!(d.base_energy_cost(), 5.0);
+        assert_eq!(d.dc_baseline_cost(), 50.0);
+        assert_eq!(d.compute_budget(), 1.0);
+        assert_eq!(d.contribution_factor(), 0.5);
+    }
+
+    #[test]
+    fn test_contribution_factor_rewards_low_capability() {
+        // Lower capability devices get higher contribution factor (PoSym bonus)
+        assert!(DeviceType::Smartwatch.contribution_factor() > DeviceType::Desktop.contribution_factor());
+        assert!(DeviceType::Iot.contribution_factor() > DeviceType::Desktop.contribution_factor());
+        assert!(DeviceType::Mobile.contribution_factor() > DeviceType::Desktop.contribution_factor());
+        assert!(DeviceType::Datacenter.contribution_factor() < DeviceType::Desktop.contribution_factor());
+        assert_eq!(DeviceType::Desktop.contribution_factor(), 1.0);
+    }
+
+    #[test]
+    fn test_compute_budget_range() {
+        assert_eq!(DeviceType::Smartwatch.compute_budget(), 0.1);
+        assert_eq!(DeviceType::Iot.compute_budget(), 0.15);
+        assert_eq!(DeviceType::Mobile.compute_budget(), 0.4);
+        assert_eq!(DeviceType::OldDesktop.compute_budget(), 0.6);
+        assert_eq!(DeviceType::Desktop.compute_budget(), 1.0);
+        assert_eq!(DeviceType::Datacenter.compute_budget(), 1.0);
+    }
+
+    #[test]
+    fn test_evaluate_proportional_hybrid_smartwatch() -> Result<()> {
+        let device = Device::Cpu;
+        let hidden = Tensor::new(vec![1.0f32, 2.0, 3.0], &device)?;
+        let safe = Tensor::new(vec![1.0f32, 2.0, 3.0], &device)?;
+        let toxic = Tensor::new(vec![10.0f32, 20.0, 30.0], &device)?;
+
+        let (safe, certified, _steered, trust_delta, energy_used) = evaluate_proportional_hybrid(
+            &hidden, &safe, &toxic,
+            DeviceType::Smartwatch,
+            0.5, 0.5,
+        )?;
+
+        // Smartwatch has budget 0.1 < 0.3 → ultra-light path
+        assert!(safe); // Hidden == safe centroid → ratio > 0.5
+        assert!(!certified); // Ultra-light path doesn't certify
+        assert!(trust_delta > 0.0); // Contribution factor bonus
+        assert!(energy_used < 0.01); // Very low energy for smartwatch
+        Ok(())
+    }
+
+    #[test]
+    fn test_evaluate_proportional_hybrid_datacenter() -> Result<()> {
+        let device = Device::Cpu;
+        let hidden = Tensor::new(vec![1.0f32, 2.0, 3.0], &device)?;
+        let safe = Tensor::new(vec![1.0f32, 2.0, 3.0], &device)?;
+        let toxic = Tensor::new(vec![10.0f32, 20.0, 30.0], &device)?;
+
+        let (safe, certified, _steered, trust_delta, energy_used) = evaluate_proportional_hybrid(
+            &hidden, &safe, &toxic,
+            DeviceType::Datacenter,
+            0.9, 0.9,
+        )?;
+
+        // Datacenter has budget 1.0 → full hybrid path
+        assert!(safe);
+        assert!(certified); // Full hybrid path certifies
+        assert!(trust_delta > 0.0);
+        assert!(energy_used > 0.0);
+        Ok(())
+    }
+
+    #[test]
+    fn test_evaluate_proportional_hybrid_iot_ultra_light() -> Result<()> {
+        let device = Device::Cpu;
+        let hidden = Tensor::new(vec![1.0f32, 2.0, 3.0], &device)?;
+        let safe = Tensor::new(vec![1.0f32, 2.0, 3.0], &device)?;
+        let toxic = Tensor::new(vec![10.0f32, 20.0, 30.0], &device)?;
+
+        let (safe, certified, _steered, trust_delta, _energy_used) = evaluate_proportional_hybrid(
+            &hidden, &safe, &toxic,
+            DeviceType::Iot,
+            0.3, 0.3,
+        )?;
+
+        // IoT has budget 0.15 < 0.3 → ultra-light path
+        assert!(safe);
+        assert!(!certified);
+        assert_eq!(trust_delta, DeviceType::Iot.contribution_factor() * 0.01);
+        Ok(())
+    }
+
+    #[test]
+    fn test_evaluate_proportional_hybrid_mobile_full_hybrid() -> Result<()> {
+        let device = Device::Cpu;
+        let hidden = Tensor::new(vec![1.0f32, 2.0, 3.0], &device)?;
+        let safe = Tensor::new(vec![1.0f32, 2.0, 3.0], &device)?;
+        let toxic = Tensor::new(vec![10.0f32, 20.0, 30.0], &device)?;
+
+        let (safe, certified, _steered, _trust_delta, _energy_used) = evaluate_proportional_hybrid(
+            &hidden, &safe, &toxic,
+            DeviceType::Mobile,
+            0.8, 0.8,
+        )?;
+
+        // Mobile has budget 0.4 >= 0.3 → full hybrid path
+        assert!(safe);
+        assert!(certified);
+        Ok(())
+    }
+
+    #[test]
+    fn test_multimodal_vfe_symbiosis_empty() {
+        let vfe = compute_multimodal_vfe_symbiosis(&[], &[0.5, 0.5]);
+        assert_eq!(vfe, 0.0);
+
+        let vfe2 = compute_multimodal_vfe_symbiosis(&[0.1, 0.2], &[]);
+        assert_eq!(vfe2, 0.0);
+
+        let vfe3 = compute_multimodal_vfe_symbiosis(&[0.1], &[0.5, 0.5]);
+        assert_eq!(vfe3, 0.0);
+    }
+
+    #[test]
+    fn test_multimodal_vfe_symbiosis_single_modality() {
+        let vfe = compute_multimodal_vfe_symbiosis(&[0.1], &[1.0]);
+        assert!((vfe - 0.1).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_multimodal_vfe_symbiosis_equal_weights() {
+        // Two modalities with equal VFEs → combined VFE ≈ individual VFE
+        let vfe = compute_multimodal_vfe_symbiosis(&[0.1, 0.1], &[0.5, 0.5]);
+        assert!((vfe - 0.1).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_multimodal_vfe_symbiosis_weighted_geometric_mean() {
+        // Weighted geometric mean: exp(0.5*ln(0.1) + 0.5*ln(0.4)) = sqrt(0.04) = 0.2
+        let vfe = compute_multimodal_vfe_symbiosis(&[0.1, 0.4], &[0.5, 0.5]);
+        assert!((vfe - 0.2).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_multimodal_vfe_with_cbf_safe() {
+        let (combined, margin, is_safe) = compute_multimodal_vfe_with_cbf(&[0.1], &[1.0], 0.5);
+        assert!((combined - 0.1).abs() < 1e-10);
+        assert!((margin - 0.4).abs() < 1e-10);
+        assert!(is_safe);
+    }
+
+    #[test]
+    fn test_multimodal_vfe_with_cbf_unsafe() {
+        let (combined, margin, is_safe) = compute_multimodal_vfe_with_cbf(&[0.6], &[1.0], 0.5);
+        assert!((combined - 0.6).abs() < 1e-10);
+        assert!((margin - (-0.1)).abs() < 1e-10);
+        assert!(!is_safe);
+    }
+
+    #[test]
+    fn test_multimodal_vfe_with_cbf_boundary() {
+        // Due to eps=1e-12 in geometric mean, combined ≈ 0.5 + tiny
+        // so margin is slightly negative → unsafe at exact boundary
+        let (combined, margin, is_safe) = compute_multimodal_vfe_with_cbf(&[0.5], &[1.0], 0.5);
+        assert!((combined - 0.5).abs() < 1e-8);
+        // The eps term makes combined slightly > 0.5, so margin is slightly < 0
+        assert!(!is_safe); // eps shifts combined above threshold
+        assert!(margin.abs() < 1e-8); // Margin is near-zero
+    }
+
+    #[test]
+    fn test_install_command_smartwatch() {
+        let onboarding = AltruistOnboarding::new(42, DeviceType::Smartwatch)
+            .add_bootstrap_peer("192.168.1.1:9000".to_string());
+        let cmd = onboarding.install_command();
+        assert!(cmd.contains("--smartwatch"));
+        assert!(cmd.contains("ed2k start --altruist"));
+        assert!(cmd.contains("192.168.1.1:9000"));
+    }
+
+    #[test]
+    fn test_install_command_datacenter() {
+        let onboarding = AltruistOnboarding::new(100, DeviceType::Datacenter)
+            .add_bootstrap_peer("10.0.0.1:9000".to_string());
+        let cmd = onboarding.install_command();
+        assert!(cmd.contains("--datacenter"));
+        assert!(cmd.contains("ed2k start --altruist"));
+        assert!(cmd.contains("10.0.0.1:9000"));
+    }
+
+    #[test]
+    fn test_proportional_scaling_energy_savings() -> Result<()> {
+        let device = Device::Cpu;
+        let hidden = Tensor::new(vec![1.0f32, 2.0, 3.0], &device)?;
+        let safe = Tensor::new(vec![1.0f32, 2.0, 3.0], &device)?;
+        let toxic = Tensor::new(vec![10.0f32, 20.0, 30.0], &device)?;
+
+        // Smartwatch should use less energy than Datacenter
+        let (_, _, _, _, sw_energy) = evaluate_proportional_hybrid(
+            &hidden, &safe, &toxic, DeviceType::Smartwatch, 0.5, 0.5,
+        )?;
+        let (_, _, _, _, dc_energy) = evaluate_proportional_hybrid(
+            &hidden, &safe, &toxic, DeviceType::Datacenter, 0.9, 0.9,
+        )?;
+
+        assert!(sw_energy < dc_energy);
         Ok(())
     }
 }

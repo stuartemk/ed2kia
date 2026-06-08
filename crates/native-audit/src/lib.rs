@@ -19,10 +19,13 @@
 //! Full Certified Pipeline Integration.
 //! **Sprint 120:** Planetary Immune Mesh & Edge Real-World Deployment — Battery-aware scheduling,
 //! energy impact estimation, live testnet mesh, altruistic onboarding.
+//! **Sprint 121:** Noosfera Symbiotic Launch — Proportional efficiency (smartwatch→datacenter),
+//! multi-modal VFE symbiosis, device contribution factor, global altruist mesh bootstrap.
 
 pub mod cirl_value_learning;
 pub mod edge_runtime;
 pub mod live_testnet;
+pub mod global_bootstrap;
 pub mod collective_zonotope;
 pub mod cross_attention;
 pub mod distributed_sae;
