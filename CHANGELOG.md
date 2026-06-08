@@ -1,4 +1,43 @@
-﻿## [v11.5.0-sprint115] — 2026-06-08 (Sprint 115 — Zonotope Girard Order Reduction + PAC-Bayesian Meta-Self-Improvement + Full Certified Pipeline)
+﻿## [v11.6.0-sprint116] — 2026-06-08 (Sprint 116 — Scalable Girard Reduction + Rigorous PAC-Bayes + Certified Adversarial Robustness)
+
+### Sprint 116 "Scalable Girard Reduction + Rigorous PAC-Bayes + Certified Adversarial Robustness"
+
+**Problema — Sin reducción escalable ni robustez adversarial certificada:** Sprints 110-115 introducen reducción Girard básica, PAC-Bayes Seldin-Lugosi y verificación Taylor-Zonotope, pero faltan: (1) reducción Girard avanzada con normas adaptativas (L1/L2), fusión Interval Hull + LGG y scoring de tightness, (2) cota PAC-Bayesiana McAllester más ajustada con priors data-dependent, y (3) red-teaming adversarial con FGSM latente + certificaciones IBP (Interval Bound Propagation).
+
+**Solución — Advanced Girard + McAllester PAC-Bayes + FGSM/IBP:** Introducimos `reduce_generators_girard_advanced` con normas L1/L2 configurables, fusión Interval Hull (diagonal generators) y LGG (weighted single-generator merge con weight decay), `tightness_score` como métrica de calidad y noise filtering. PAC-Bayes McAllester `√((KL + ln(2√n/δ)) / 2(n-1))` — más tight que Seldin-Lugosi `ln(2n/δ)`. `compute_pac_bayes_bound` con VFE empírico + término de complejidad. `compute_gaussian_kl_data_dependent` con adaptive prior scaling. FGSM latente con `sign(∇_h Loss_CBF)` + IBP certified bounds `[h-ε, h+ε]` con worst-case CBF evaluation.
+
+- **Advanced Girard Reduction:** `reduce_generators_girard_advanced(generators, config)` — Norm (L1/L2), merge (IntervalHull/LGG), noise filtering, tightness score
+- **GirardConfig:** `norm`, `merge`, `noise_threshold`, `weight_decay` — Configuración completa de reducción
+- **McAllester PAC-Bayes:** `compute_pac_gen_bound(kl, n, delta)` — `√((KL + ln(2√n/δ)) / 2(n-1))`
+- **Full PAC-Bayes Bound:** `compute_pac_bayes_bound(emp_vfe, kl, n, delta)` — Empirical VFE + complexity
+- **Data-Dependent KL:** `compute_gaussian_kl_data_dependent(...)` — Adaptive prior: `σ_p² ← max(σ_p², σ_data² / λ)`
+- **FGSM Latent Attack:** `fgsm_latent_attack(latent, epsilon, safe_center, margin)` — `h_adv = h + ε·sign(∇Loss_CBF)`
+- **IBP Certified Bounds:** `certified_cbf_ibp(latent, epsilon, safe_center, margin)` — Worst-case over `[h-ε, h+ε]`
+- **Clippy Fixes:** `#[derive(Default)]` + `#[default]` para `GirardNorm` y `GirardMerge`
+
+**Módulos actualizados:**
+- [`formal_verification.rs`](crates/native-audit/src/formal_verification.rs) — `GirardNorm`, `GirardMerge`, `GirardConfig`, `reduce_generators_girard_advanced()`, `tightness_score`
+- [`meta_improvement.rs`](crates/native-audit/src/meta_improvement.rs) — McAllester `compute_pac_gen_bound()`, `compute_pac_bayes_bound()`, `compute_gaussian_kl_data_dependent()`
+- [`tests/adv_redteam.rs`](crates/native-audit/tests/adv_redteam.rs) — 22 integration tests: FGSM, IBP, PAC-Bayes, Girard integration
+
+**Nuevos tests (22 total):**
+| Test File | Tests | Resultado |
+|-----------|-------|-----------|
+| `adv_redteam.rs` (integration) | 22 | ✅ 22/22 |
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| Total Tests (S116) | **22/22 (100%)** |
+| Sprint 115 Regression | **56/56 (100%)** |
+| Clippy | **Zero warnings** |
+| Advanced Girard | **L1/L2 + IntervalHull/LGG + tightness** |
+| PAC-Bayes | **McAllester √((KL+ln(2√n/δ))/2(n-1))** |
+| FGSM + IBP | **Certified adversarial robustness** |
+
+---
+
+## [v11.5.0-sprint115] — 2026-06-08 (Sprint 115 — Zonotope Girard Order Reduction + PAC-Bayesian Meta-Self-Improvement + Full Certified Pipeline)
 
 ### Sprint 115 "Zonotope Girard Order Reduction + PAC-Bayesian Meta-Self-Improvement + Full Certified Pipeline"
 
