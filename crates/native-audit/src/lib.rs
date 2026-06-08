@@ -17,8 +17,12 @@
 //! Collective Certified Robustness + Disruptive Proofs.
 //! **Sprint 115:** Zonotope Girard Order Reduction + PAC-Bayesian Meta-Self-Improvement +
 //! Full Certified Pipeline Integration.
+//! **Sprint 120:** Planetary Immune Mesh & Edge Real-World Deployment — Battery-aware scheduling,
+//! energy impact estimation, live testnet mesh, altruistic onboarding.
 
 pub mod cirl_value_learning;
+pub mod edge_runtime;
+pub mod live_testnet;
 pub mod collective_zonotope;
 pub mod cross_attention;
 pub mod distributed_sae;

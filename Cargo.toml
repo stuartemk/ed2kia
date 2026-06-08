@@ -1,6 +1,6 @@
 [package]
 name = "ed2kia"
-version = "9.24.0-sprint88"
+version = "12.0.0-sprint120"
 edition = "2021"
 description = "Decentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
 license = "Apache-2.0"
