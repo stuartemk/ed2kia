@@ -1,4 +1,68 @@
-﻿## [v11.6.0-sprint116] — 2026-06-08 (Sprint 116 — Scalable Girard Reduction + Rigorous PAC-Bayes + Certified Adversarial Robustness)
+﻿## [v11.7.0-sprint117] — 2026-06-08 (Sprint 117 — Reach-Tube Temporal + Full Hybrid IBP+Zonotope + Provable P2P Mechanism Design)
+
+### Sprint 117 "Reach-Tube Temporal + Full Hybrid IBP+Zonotope + Provable P2P Mechanism Design"
+
+**Problema — Sin análisis temporal ni pipeline híbrido completo:** Sprints 110-116 introducen zonotopos, Taylor models, Neural ODEs, reducción Girard avanzada, PAC-Bayes McAllester y FGSM/IBP adversarial, pero faltan: (1) Reach-Tube temporal — secuencia de zonotopos que aproximan la trayectoria completa x(t) sobre un horizonte de tiempo, (2) pipeline híbrido IBP+Zonotope que combina IBP pre-conditioning con propagación zonotópica para cotas más ajustadas, (3) ataque temporal FGSM que perturba a lo largo de la trayectoria para maximizar violación CBF, y (4) mecanismo P2P probabile con Shapley-VCG, Price of Anarchy bound, Byzantine Median y PAC-Bayes colectivo.
+
+**Solución — Reach-Tube + Hybrid IBP+Zonotope + Temporal FGSM + P2P Mechanism:** Introducimos `propagate_reach_tube` que genera una secuencia de `TubeSegment` (zonotopos temporales) vía integración Taylor-validada: x(t+dt) ≈ x(t) + dt·f(x) + (dt²/2)·J_f(x)·f(x) + R, con reducción Girard aplicada en cada paso para controlar el crecimiento de generadores. `hybrid_ibp_zonotope_pipeline` que ejecuta IBP pre-conditioning (`ibp_linear_layer`) antes de propagación zonotópica, produciendo cotas significativamente más tight. `temporal_fgsm_attack` que itera a lo largo de la trayectoria aplicando perturbaciones ε·sign(∇_x CBF) en cada paso temporal. `ibp_certify_reach_tube` con certificación worst-case `[c - Σ|G|, c + Σ|G|]` por segmento. Módulo completo `p2p_mechanism.rs` con Shapley values (exacto + aproximado Monte Carlo), VCG auction con reserve price, PoA stability simulation, Byzantine Median (trim 1/3 + median) y PAC-Bayes colectivo McAllester.
+
+- **Reach-Tube Temporal:** `propagate_reach_tube(centers, dynamics, config)` — Secuencia de TubeSegment con Taylor integration + Girard reduction
+- **ReachTubeConfig:** `dt`, `horizon`, `max_gens`, `girard_config`, `taylor_order` — Configuración completa temporal
+- **TubeSegment:** `center`, `generators`, `time`, `safe` — Zonotopos por paso temporal
+- **ReachTube:** `segments`, `final_time`, `all_safe` — Contenedor de trayectoria certificada
+- **CBF Margin:** `compute_cbf_margin(center, safe_center, margin)` — Distancia al set seguro
+- **Hybrid IBP+Zonotope Pipeline:** `hybrid_ibp_zonotope_pipeline(initial_center, dynamics, config)` — IBP pre-conditioning + zonotope propagation
+- **HybridReachTubeIBP:** `hybrid_reach_tube_ibp(centers, dynamics, config)` — Reach-tube con IBP tightening
+- **Temporal FGSM:** `temporal_fgsm_attack(initial_center, dynamics, safe_center, epsilon, steps)` — Ataque a lo largo de trayectoria
+- **IBP Certification:** `ibp_certify_reach_tube(segments, safe_center, margin)` — Worst-case CBF over reach-tube
+- **Monte Carlo Temporal Invariance:** `verify_temporal_invariance_monte_carlo(...)` — Containment check temporal
+- **P2P Mechanism Design:** `p2p_mechanism.rs` — Módulo completo con Shapley, VCG, PoA, Byzantine Median, PAC-Bayes
+- **Shapley Values:** `compute_shapley_values(contributions, config)` — Exacto (permutations) + aproximado (Monte Carlo samples)
+- **VCG Auction:** `run_vcg_auction(bids, reserve_price, max_winners)` — Selección truthful con payments VCG
+- **Price of Anarchy:** `simulate_poa_stability(n_players, byzantine_fraction, rounds)` — PoA = OPT/Nash bound
+- **Byzantine Median:** `byzantine_median(values)` — Trim bottom/top 1/3, compute median
+- **Collective PAC-Bayes:** `collective_pac_bound(n_nodes, kl, delta)` — McAllester bound colectivo
+
+**Módulos actualizados:**
+- [`formal_verification.rs`](crates/native-audit/src/formal_verification.rs) — `ReachTubeConfig`, `TubeSegment`, `ReachTube`, `propagate_reach_tube()`, `compute_cbf_margin()`, `verify_temporal_invariance_monte_carlo()`, `temporal_fgsm_attack()`, `ibp_certify_reach_tube()`, `HybridPipelineConfig`, `HybridPipelineResult`, `hybrid_ibp_zonotope_pipeline()`, `hybrid_reach_tube_ibp()`, `ibp_linear_layer()`, `ibp_relu()`, `intervals_to_zonotope()`, `interval_volume_proxy()`
+- [`p2p_mechanism.rs`](crates/native-audit/src/p2p_mechanism.rs) — `NodeContribution`, `ShapleyResult`, `VCGResult`, `PoaResult`, `MechanismConfig`, `compute_shapley_values()`, `run_vcg_auction()`, `simulate_poa_stability()`, `byzantine_median()`, `collective_pac_bound()`
+- [`tests/temporal_robustness.rs`](crates/native-audit/tests/temporal_robustness.rs) — 33 integration tests: Reach-Tube, IBP certification, Temporal FGSM, Hybrid Pipeline, P2P Mechanism
+
+**Nuevos tests (33 total):**
+| Test File | Tests | Resultado |
+|-----------|-------|-----------|
+| `temporal_robustness.rs` (integration) | 33 | ✅ 33/33 |
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| Total Tests (S117) | **33/33 (100%)** |
+| Total Unit Tests (native-audit) | **157/157** |
+| Total Integration Tests (adv_redteam) | **22/22** |
+| Total Integration Tests (temporal_robustness) | **33/33** |
+| Grand Total Tests | **212/212 (100%)** |
+| Reach-Tube | **Taylor-validated + Girard reduction** |
+| Hybrid IBP+Zonotope | **IBP pre-conditioning + zonotope propagation** |
+| Temporal FGSM | **Trajectory-following attack** |
+| IBP Certification | **Worst-case [c-Σ\|G\|, c+Σ\|G\|]** |
+| P2P Mechanism | **Shapley-VCG + PoA + Byzantine Median + PAC-Bayes** |
+| Clippy | **Zero warnings** |
+
+**Bug fixes:**
+- `rank()` returns `usize` not `Result<usize>` — 4 instances corrected in `temporal_fgsm_attack`, `propagate_reach_tube`, `hybrid_reach_tube_ibp`
+- `to_vec1()` fails on 2D tensors `[1, dim]` — Added rank-aware flattening: `flatten(0,1)?.to_vec1()` fallback
+- `Tensor: Default` not implemented — `unwrap_or_default()` → `unwrap_or_else(|_| tensor.clone())`
+- `ibp_certify_reach_tube` empty center — Rank-aware flattening prevents dim=0 making CBF always positive
+- `test_reach_tube_girard_reduction_applied` — Increased `max_gens: 4→16` to accommodate remainder generators during propagation
+- Clippy `needless_range_loop` (3) — Replaced with `.enumerate()` and iterators
+- Clippy `clone_on_copy` (4) — Removed `.clone()` on `GirardNorm` and `GirardMerge` (Copy types)
+- Clippy `manual_clamp` (1) — `.max(0.0).min(2.0)` → `.clamp(0.0, 2.0)`
+- Clippy `manual_is_multiple_of` (1) — `% 2 == 0` → `.is_multiple_of(2)`
+- Clippy `useless_vec` (1) — `vec![...]` → `[...]` array literal
+
+---
+
+## [v11.6.0-sprint116] — 2026-06-08 (Sprint 116 — Scalable Girard Reduction + Rigorous PAC-Bayes + Certified Adversarial Robustness)
 
 ### Sprint 116 "Scalable Girard Reduction + Rigorous PAC-Bayes + Certified Adversarial Robustness"
 

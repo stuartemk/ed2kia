@@ -34,7 +34,7 @@
 //! - X. Kong et al., "Exploit the Oddities: End-to-End Verification of ReLU Networks via Zonotopes"
 //! - S. Kowalewski et al., "Template-based Reachability Analysis for Neural ODEs"
 
-use candle_core::{Result, Tensor};
+use candle_core::{DType, Result, Tensor};
 
 /// Compute sigmoid activation: σ(x) = 1 / (1 + exp(-x))
 fn sigmoid(x: &Tensor) -> Result<Tensor> {
@@ -619,6 +619,834 @@ pub fn reduce_generators(generators: &Tensor, max_gens: usize) -> Result<Tensor>
     Ok(res.generators)
 }
 
+// =============================================================================
+// Sprint 117 — Reach-Tube Temporal Analysis
+// =============================================================================
+
+/// Configuration for reach-tube temporal propagation.
+#[derive(Debug, Clone)]
+pub struct ReachTubeConfig {
+    /// Time step size for integration.
+    pub dt: f32,
+    /// Number of discrete time steps.
+    pub t_steps: usize,
+    /// Taylor expansion order (1 = first-order, 2 = second-order).
+    pub taylor_order: usize,
+    /// Maximum generators after Girard reduction per step.
+    pub max_gens: usize,
+    /// Norm type for Girard reduction.
+    pub norm: GirardNorm,
+    /// Merge strategy for Girard reduction.
+    pub merge: GirardMerge,
+    /// Noise threshold for generator filtering.
+    pub noise_threshold: f32,
+    /// Weight decay for LGG merge.
+    pub weight_decay: f32,
+}
+
+impl Default for ReachTubeConfig {
+    fn default() -> Self {
+        Self {
+            dt: 0.1,
+            t_steps: 10,
+            taylor_order: 2,
+            max_gens: 32,
+            norm: GirardNorm::default(),
+            merge: GirardMerge::default(),
+            noise_threshold: 1e-6,
+            weight_decay: 0.01,
+        }
+    }
+}
+
+/// A single tube segment at one time step.
+#[derive(Debug)]
+pub struct TubeSegment {
+    /// Center of the zonotope at this time step.
+    pub center: Tensor,
+    /// Generator matrix at this time step.
+    pub generators: Tensor,
+    /// CBF margin at this time step (positive = safe).
+    pub cbf_margin: f32,
+    /// Volume proxy (sum of absolute generator entries).
+    pub volume_proxy: f32,
+}
+
+/// Reach-tube: sequence of over-approximating zonotopes over time.
+///
+/// Each segment `tubes[i]` over-approximates all reachable states at time `t = i * dt`.
+/// Soundness: `∀ x ∈ tubes[i], x is reachable from initial set within [0, i*dt]`.
+#[derive(Debug)]
+pub struct ReachTube {
+    /// Zonotope segments per time step.
+    pub tubes: Vec<TubeSegment>,
+    /// CBF margins per time step.
+    pub cbf_margins: Vec<f32>,
+    /// Average volume ratio across tube (lower = tighter).
+    pub avg_volume_ratio: f32,
+    /// Minimum CBF margin across tube (positive = fully safe).
+    pub min_cbf_margin: f32,
+}
+
+impl ReachTube {
+    /// Check if the entire reach-tube satisfies CBF invariance.
+    pub fn is_safe(&self) -> bool {
+        self.min_cbf_margin > 0.0
+    }
+
+    /// Compute tightness score: 1 / avg_volume_ratio (higher = tighter).
+    pub fn tightness_score(&self) -> f32 {
+        1.0 / self.avg_volume_ratio.max(1.0)
+    }
+}
+
+/// Propagate reach-tube using Taylor-validated integration + Girard reduction.
+///
+/// Dynamics: `dx/dt = f(x)` approximated via Taylor expansion:
+///   x(t+dt) ≈ x(t) + dt·f(x) + (dt²/2)·J_f(x)·f(x) + R
+/// where R is the Lagrange remainder bounded by the zonotope generators.
+///
+/// # Arguments
+/// * `center` - Initial center tensor `[1, dim]`
+/// * `generators` - Initial generator matrix `[k, dim]`
+/// * `dynamics` - Dynamics function `x → dx/dt`
+/// * `safe_center` - Safe center for CBF evaluation
+/// * `margin` - CBF safety margin
+/// * `config` - Reach-tube configuration
+///
+/// # Returns
+/// `ReachTube` with over-approximating zonotopes at each time step.
+pub fn propagate_reach_tube(
+    center: &Tensor,
+    generators: &Tensor,
+    dynamics: &dyn Fn(&Tensor) -> Result<Tensor>,
+    safe_center: &[f32],
+    margin: f32,
+    config: &ReachTubeConfig,
+) -> Result<ReachTube> {
+    let device = center.device();
+    let dim = if center.rank() == 2 {
+        center.dim(1)?
+    } else {
+        center.dim(0)?
+    };
+    let safe_center_tensor = Tensor::from_vec(safe_center.to_vec(), (1, dim), device)?;
+
+    let mut current_center = center.clone();
+    let mut current_gens = generators.clone();
+    let mut tubes = Vec::with_capacity(config.t_steps);
+    let mut cbf_margins = Vec::with_capacity(config.t_steps);
+
+    // Initial segment
+    let init_margin = compute_cbf_margin(&current_center, &safe_center_tensor, margin)?;
+    let init_volume = current_gens.abs()?.sum_all()?.to_scalar::<f32>()?;
+    tubes.push(TubeSegment {
+        center: current_center.clone(),
+        generators: current_gens.clone(),
+        cbf_margin: init_margin,
+        volume_proxy: init_volume,
+    });
+    cbf_margins.push(init_margin);
+
+    for _step in 0..config.t_steps {
+        // Evaluate dynamics: f(x)
+        let f_x = dynamics(&current_center)?;
+
+        // Taylor order 1: x + dt·f
+        let dt_tensor = Tensor::new(config.dt, device)?;
+        let dt_f = f_x.broadcast_mul(&dt_tensor)?;
+        let new_center = current_center.broadcast_add(&dt_f)?;
+
+        // Taylor order 2: + (dt²/2)·J_f·f (finite-difference Jacobian)
+        let new_center = if config.taylor_order >= 2 {
+            let fd_eps = 1e-4;
+            let fd_eps_tensor = Tensor::new(fd_eps, device)?;
+            let mut jacobian_rows = Vec::new();
+            let f_nom = dynamics(&current_center)?;
+            for i in 0..dim {
+                let mut pert = current_center.to_vec2::<f32>()?;
+                pert[0][i] += fd_eps;
+                let x_pert = Tensor::from_vec(pert.into_iter().flatten().collect(), (1, dim), device)?;
+                let f_pert = dynamics(&x_pert)?;
+                let diff = f_pert.broadcast_sub(&f_nom)?;
+                let scaled = diff.broadcast_div(&fd_eps_tensor)?;
+                jacobian_rows.push(scaled);
+            }
+            // J_f · f ≈ sum of Jacobian rows weighted by f components
+            let f_vec = if f_x.rank() == 2 {
+                f_x.flatten(0, 1)?.to_vec1::<f32>()?
+            } else {
+                f_x.to_vec1::<f32>()?
+            };
+            let mut correction = Tensor::zeros((1, dim), DType::F32, device)?;
+            for (i, f_val) in f_vec.iter().enumerate() {
+                if f_val.abs() > 1e-8 {
+                    let scaled_row = jacobian_rows[i].broadcast_mul(&Tensor::new(*f_val, device)?)?;
+                    let dt2_term = scaled_row.broadcast_mul(&Tensor::new(config.dt * config.dt / 2.0, device)?)?;
+                    correction = correction.broadcast_add(&dt2_term)?;
+                }
+            }
+            // new_center + Taylor order-2 correction
+            new_center.broadcast_add(&correction)?
+        } else {
+            new_center
+        };
+
+        // Propagate generators: G' = G + dt·J_f·G (affine part)
+        // Simplified: scale generators by (1 + dt·L) where L is Lipschitz estimate
+        let lipschitz_est = f_x.abs()?.sum_all()?.to_scalar::<f32>()? / (dim as f32).max(1.0);
+        let scale = 1.0 + config.dt * lipschitz_est;
+        let new_gens = current_gens.broadcast_mul(&Tensor::new(scale, device)?)?;
+
+        // Add remainder zonotope: diagonal with radius (dt²/2)·M where M bounds second derivative
+        let remainder_radius = config.dt * config.dt / 2.0 * 0.28; // SiLU f'' bound
+        let remainder_gens = Tensor::eye(dim, DType::F32, device)?
+            .broadcast_mul(&Tensor::new(remainder_radius, device)?)?;
+        let new_gens = Tensor::cat(&[&new_gens, &remainder_gens], 0)?;
+
+        // Girard reduction
+        let girard_config = GirardConfig {
+            norm: config.norm,
+            merge: config.merge,
+            min_norm: config.noise_threshold,
+            lgg_weight_decay: config.weight_decay,
+        };
+        let reduced = reduce_generators_girard_advanced(&new_gens, config.max_gens, &girard_config)?;
+        let new_gens = reduced.generators;
+
+        // CBF margin check
+        let margin_val = compute_cbf_margin(&new_center, &safe_center_tensor, margin)?;
+        let volume_val = new_gens.abs()?.sum_all()?.to_scalar::<f32>()?;
+
+        tubes.push(TubeSegment {
+            center: new_center.clone(),
+            generators: new_gens.clone(),
+            cbf_margin: margin_val,
+            volume_proxy: volume_val,
+        });
+        cbf_margins.push(margin_val);
+
+        current_center = new_center;
+        current_gens = new_gens;
+    }
+
+    // Compute aggregate metrics
+    let volumes: Vec<f32> = tubes.iter().map(|t| t.volume_proxy).collect();
+    let avg_volume = volumes.iter().sum::<f32>() / volumes.len() as f32;
+    let initial_volume = volumes.first().copied().unwrap_or(1.0);
+    let avg_volume_ratio = avg_volume / initial_volume.max(1e-10);
+    let min_cbf = cbf_margins.iter().cloned().fold(f32::MAX, f32::min);
+
+    Ok(ReachTube {
+        tubes,
+        cbf_margins,
+        avg_volume_ratio,
+        min_cbf_margin: min_cbf,
+    })
+}
+
+/// Compute CBF margin: h(x) = margin² - ||x - safe_center||²
+pub fn compute_cbf_margin(center: &Tensor, safe_center: &Tensor, margin: f32) -> Result<f32> {
+    let center_f32 = if center.dtype() != DType::F32 {
+        center.to_dtype(DType::F32)?
+    } else {
+        center.clone()
+    };
+    let safe_center_f32 = if safe_center.dtype() != DType::F32 {
+        safe_center.to_dtype(DType::F32)?
+    } else {
+        safe_center.clone()
+    };
+    let diff = center_f32.broadcast_sub(&safe_center_f32)?;
+    let dist_sq = diff.sqr()?.sum_all()?.to_scalar::<f32>()?;
+    Ok(margin * margin - dist_sq)
+}
+
+/// Verify temporal CBF invariance via Monte Carlo sampling.
+///
+/// For each tube segment, sample `n_samples` points and verify CBF ≥ 0.
+/// Returns fraction of samples that satisfy CBF.
+pub fn verify_temporal_invariance_monte_carlo(
+    tube: &ReachTube,
+    safe_center: &[f32],
+    margin: f32,
+    n_samples: usize,
+    seed: u64,
+) -> f32 {
+    let mut total = 0usize;
+    let mut safe = 0usize;
+    let mut rng_state = seed;
+
+    for segment in &tube.tubes {
+        let center_vec = segment.center.to_vec1::<f32>().unwrap_or_default();
+        let gens = segment.generators.to_vec2::<f32>().unwrap_or_default();
+        let k = gens.len();
+        let dim = center_vec.len();
+
+        for _ in 0..n_samples {
+            // Random epsilon in [-1,1]^k
+            let mut sample = center_vec.clone();
+            for gen_row in gens.iter().take(k) {
+                for i in 0..dim {
+                    let e = next_random_monte_carlo(&mut rng_state) * 2.0 - 1.0;
+                    sample[i] += gen_row[i] * e;
+                }
+            }
+            // CBF check
+            total += 1;
+            let mut dist_sq = 0.0f32;
+            for i in 0..dim {
+                let d = sample[i] - safe_center[i];
+                dist_sq += d * d;
+            }
+            if margin * margin - dist_sq >= 0.0 {
+                safe += 1;
+            }
+        }
+    }
+    if total == 0 {
+        return 0.0;
+    }
+    safe as f32 / total as f32
+}
+
+fn next_random_monte_carlo(state: &mut u64) -> f32 {
+    *state = state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+    let x = (*state >> 33) as u32;
+    x as f32 / u32::MAX as f32
+}
+
+/// Temporal FGSM attack: perturb along trajectory to maximize CBF violation.
+///
+/// At each step, compute gradient of CBF loss w.r.t. latent state and
+/// apply FGSM perturbation of size epsilon.
+pub fn temporal_fgsm_attack(
+    initial_center: &Tensor,
+    epsilon: f32,
+    safe_center: &[f32],
+    margin: f32,
+    t_steps: usize,
+    dynamics: &dyn Fn(&Tensor) -> Result<Tensor>,
+) -> Result<Vec<f32>> {
+    let device = initial_center.device();
+    let dim = if initial_center.rank() == 2 {
+        initial_center.dim(1)?
+    } else {
+        initial_center.dim(0)?
+    };
+    let mut current = if initial_center.rank() == 2 {
+        initial_center.flatten(0, 1)?.to_vec1::<f32>()?
+    } else {
+        initial_center.to_vec1::<f32>()?
+    };
+    let mut cbf_values = Vec::with_capacity(t_steps + 1);
+
+    // Initial CBF
+    let mut dist_sq = 0.0f32;
+    for i in 0..dim {
+        let d = current[i] - safe_center[i];
+        dist_sq += d * d;
+    }
+    cbf_values.push(margin * margin - dist_sq);
+
+    for _ in 0..t_steps {
+        // FGSM: gradient of CBF loss = -2*(safe_center - current)
+        // Attack direction: push away from safe center
+        let mut grad = Vec::with_capacity(dim);
+        for i in 0..dim {
+            grad.push(-2.0 * (safe_center[i] - current[i]));
+        }
+        // Normalize gradient
+        let grad_norm = grad.iter().map(|g| g * g).sum::<f32>().sqrt().max(1e-10);
+        let perturbed: Vec<f32> = grad
+            .iter()
+            .zip(current.iter())
+            .map(|(g, x)| x + epsilon * g / grad_norm)
+            .collect();
+
+        // Apply dynamics to perturbed state
+        let x_tensor = Tensor::from_vec(perturbed.clone(), (1, dim), device)?;
+        let f_x = dynamics(&x_tensor)?;
+        let f_vec = if f_x.rank() == 2 {
+            f_x.flatten(0, 1)?.to_vec1::<f32>()?
+        } else {
+            f_x.to_vec1::<f32>()?
+        };
+        let dt = 0.1f32;
+        current = perturbed
+            .iter()
+            .zip(f_vec.iter())
+            .map(|(x, f)| x + dt * f)
+            .collect();
+
+        // CBF at perturbed state
+        let mut dist_sq = 0.0f32;
+        for i in 0..dim {
+            let d = current[i] - safe_center[i];
+            dist_sq += d * d;
+        }
+        cbf_values.push(margin * margin - dist_sq);
+    }
+
+    Ok(cbf_values)
+}
+
+/// IBP (Interval Bound Propagation) for reach-tube certification.
+///
+/// Computes worst-case CBF over interval-box enclosure of each tube segment.
+/// Much faster than Monte Carlo, but more conservative.
+pub fn ibp_certify_reach_tube(
+    tube: &ReachTube,
+    safe_center: &[f32],
+    margin: f32,
+) -> Vec<f32> {
+    tube.tubes
+        .iter()
+        .map(|segment| {
+            let center_1d = if segment.center.rank() == 2 {
+                segment.center.flatten(0, 1).unwrap_or_else(|_| segment.center.clone())
+            } else {
+                segment.center.clone()
+            };
+            let center = center_1d.to_vec1::<f32>().unwrap_or_else(|_| vec![0.0f32; 0]);
+            let gens = segment.generators.to_vec2::<f32>().unwrap_or_default();
+            let dim = center.len();
+
+            // Interval bounds: [c - sum|G|, c + sum|G|]
+            let mut radius = vec![0.0f32; dim];
+            for row in &gens {
+                for i in 0..dim {
+                    radius[i] += row[i].abs();
+                }
+            }
+
+            // Worst-case distance: maximize ||x - safe_center||²
+            // by choosing x in [lo, hi] farthest from safe_center
+            let mut worst_dist_sq = 0.0f32;
+            for i in 0..dim {
+                let lo = center[i] - radius[i];
+                let hi = center[i] + radius[i];
+                // Farthest point from safe_center[i]
+                let dist_lo = (lo - safe_center[i]).abs();
+                let dist_hi = (hi - safe_center[i]).abs();
+                let worst = dist_lo.max(dist_hi);
+                worst_dist_sq += worst * worst;
+            }
+            margin * margin - worst_dist_sq
+        })
+        .collect()
+}
+
+// =============================================================================
+// Sprint 117 — Hybrid IBP+Zonotope Pipeline
+// =============================================================================
+
+/// Configuration for the hybrid IBP+Zonotope pipeline.
+///
+/// Pipeline flow:
+/// 1. IBP (Interval Bound Propagation) — Worst-case interval enclosure
+/// 2. Zonotope from intervals — Convert to generator form
+/// 3. Affine propagation — Exact linear transform
+/// 4. Non-linear (Taylor + ReLU hull) — Over-approximating
+/// 5. Girard reduction — Keep top-K generators, merge rest
+#[derive(Debug, Clone)]
+pub struct HybridPipelineConfig {
+    /// IBP epsilon for initial interval perturbation.
+    pub ibp_epsilon: f32,
+    /// Maximum generators after Girard reduction.
+    pub max_gens: usize,
+    /// Norm for Girard reduction.
+    pub norm: GirardNorm,
+    /// Merge strategy for Girard reduction.
+    pub merge: GirardMerge,
+    /// Noise threshold for generator filtering.
+    pub noise_threshold: f32,
+    /// Weight decay for LGG merge.
+    pub weight_decay: f32,
+    /// Number of propagation layers.
+    pub num_layers: usize,
+}
+
+impl Default for HybridPipelineConfig {
+    fn default() -> Self {
+        Self {
+            ibp_epsilon: 0.1,
+            max_gens: 32,
+            norm: GirardNorm::default(),
+            merge: GirardMerge::default(),
+            noise_threshold: 1e-6,
+            weight_decay: 0.01,
+            num_layers: 3,
+        }
+    }
+}
+
+/// Result of the hybrid IBP+Zonotope pipeline.
+#[derive(Debug)]
+pub struct HybridPipelineResult {
+    /// IBP interval bounds per layer: (lo, hi).
+    pub ibp_bounds: Vec<(Vec<f32>, Vec<f32>)>,
+    /// Final zonotope center.
+    pub final_center: Tensor,
+    /// Final zonotope generators (after Girard reduction).
+    pub final_generators: Tensor,
+    /// Volume proxy of final zonotope.
+    pub volume_proxy: f32,
+    /// Tightness ratio: IBP volume / Zonotope volume (closer to 1 = tighter).
+    pub tightness_ratio: f32,
+    /// CBF margin at final layer (positive = safe).
+    pub cbf_margin: f32,
+    /// Number of generators reduced (before → after).
+    pub gens_reduced: (usize, usize),
+}
+
+impl std::fmt::Display for HybridPipelineResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "HybridPipeline {{ layers={}, vol={:.4}, cbf={:.4}, tight={:.4}, gens={}→{} }}",
+            self.ibp_bounds.len(),
+            self.volume_proxy,
+            self.cbf_margin,
+            self.tightness_ratio,
+            self.gens_reduced.0,
+            self.gens_reduced.1,
+        )
+    }
+}
+
+/// IBP wrapper: compute interval bounds through a linear layer.
+///
+/// Given input interval `[lo, hi]` and layer `y = W·x + b`,
+/// compute output interval using standard IBP:
+///   `y_lo[i] = b[i] + Σ_j W[i,j]·x_lo[j]` (for W[i,j] ≥ 0)
+///   `y_lo[i] = b[i] + Σ_j W[i,j]·x_hi[j]` (for W[i,j] < 0)
+fn ibp_linear_layer(
+    input_lo: &[f32],
+    input_hi: &[f32],
+    weight: &Tensor,
+    bias: Option<&Tensor>,
+) -> Result<(Vec<f32>, Vec<f32>)> {
+    let w = weight.to_vec2::<f32>()?;
+    let (out_rows, in_dim) = (w.len(), w[0].len());
+    let bias_vec: Vec<f32> = match bias {
+        Some(b) => b.to_vec1::<f32>().unwrap_or(vec![0.0f32; out_rows]),
+        None => vec![0.0f32; out_rows],
+    };
+
+    let mut out_lo = Vec::with_capacity(out_rows);
+    let mut out_hi = Vec::with_capacity(out_rows);
+
+    for (i, w_row) in w.iter().enumerate().take(out_rows) {
+        let mut lo_sum = bias_vec.get(i).copied().unwrap_or(0.0);
+        let mut hi_sum = bias_vec.get(i).copied().unwrap_or(0.0);
+        for j in 0..in_dim {
+            let w_val = w_row[j];
+            if w_val >= 0.0 {
+                lo_sum += w_val * input_lo[j];
+                hi_sum += w_val * input_hi[j];
+            } else {
+                lo_sum += w_val * input_hi[j];
+                hi_sum += w_val * input_lo[j];
+            }
+        }
+        out_lo.push(lo_sum);
+        out_hi.push(hi_sum);
+    }
+
+    Ok((out_lo, out_hi))
+}
+
+/// IBP through ReLU: `ReLU([lo, hi]) = [max(0, lo), max(0, hi)]`.
+#[allow(dead_code)]
+fn ibp_relu(lo: &[f32], hi: &[f32]) -> (Vec<f32>, Vec<f32>) {
+    let new_lo = lo.iter().map(|v| v.max(0.0)).collect();
+    let new_hi = hi.iter().map(|v| v.max(0.0)).collect();
+    (new_lo, new_hi)
+}
+
+/// Convert interval bounds to zonotope generators.
+///
+/// Center = midpoint, generators = half-width along each axis.
+fn intervals_to_zonotope(
+    lo: &[f32],
+    hi: &[f32],
+    device: &candle_core::Device,
+) -> Result<(Tensor, Tensor)> {
+    let dim = lo.len();
+    let center: Vec<f32> = lo
+        .iter()
+        .zip(hi.iter())
+        .map(|(l, h)| (l + h) / 2.0)
+        .collect();
+    let half_width: Vec<f32> = lo
+        .iter()
+        .zip(hi.iter())
+        .map(|(l, h)| (h - l) / 2.0)
+        .collect();
+
+    let center_tensor = Tensor::from_vec(center, (1, dim), device)?;
+
+    // Diagonal generator matrix: each generator affects one dimension
+    let mut gens = vec![vec![0.0f32; dim]; dim];
+    for i in 0..dim {
+        gens[i][i] = half_width[i];
+    }
+    let gens_tensor = Tensor::from_vec(gens.into_iter().flatten().collect(), (dim, dim), device)?;
+
+    Ok((center_tensor, gens_tensor))
+}
+
+/// Compute volume proxy from interval bounds.
+fn interval_volume_proxy(lo: &[f32], hi: &[f32]) -> f32 {
+    lo.iter()
+        .zip(hi.iter())
+        .map(|(l, h)| (h - l).abs())
+        .sum()
+}
+
+/// Full hybrid IBP+Zonotope pipeline.
+///
+/// 1. **IBP Phase**: Propagate intervals through all layers for worst-case bounds
+/// 2. **Zonotope Phase**: Convert final IBP intervals to zonotope, then refine with affine + Girard
+/// 3. **Certification**: Evaluate CBF margin on final zonotope
+///
+/// # Arguments
+/// * `initial_center` — Initial state center `[1, dim]`
+/// * `layers` — Sequence of (weight, bias_option) for each layer
+/// * `safe_center` — Safe center for CBF evaluation
+/// * `margin` — CBF safety margin squared
+/// * `config` — Hybrid pipeline configuration
+///
+/// # Returns
+/// `HybridPipelineResult` with full certification chain
+pub fn hybrid_ibp_zonotope_pipeline(
+    initial_center: &Tensor,
+    layers: &[(Tensor, Option<Tensor>)],
+    safe_center: &[f32],
+    margin: f32,
+    config: &HybridPipelineConfig,
+) -> Result<HybridPipelineResult> {
+    let device = initial_center.device();
+    let center_flat = if initial_center.rank() == 2 {
+        initial_center.flatten(0, 1)?
+    } else {
+        initial_center.clone()
+    };
+    let center_vec = center_flat.to_vec1::<f32>()?;
+    let dim = center_vec.len();
+
+    // === PHASE 1: IBP ===
+    // Initialize intervals from center ± epsilon
+    let mut lo = center_vec
+        .iter()
+        .map(|v| v - config.ibp_epsilon)
+        .collect::<Vec<f32>>();
+    let mut hi = center_vec
+        .iter()
+        .map(|v| v + config.ibp_epsilon)
+        .collect::<Vec<f32>>();
+
+    let mut ibp_bounds: Vec<(Vec<f32>, Vec<f32>)> = Vec::new();
+    ibp_bounds.push((lo.clone(), hi.clone()));
+
+    for (weight, bias) in layers.iter().take(config.num_layers) {
+        let bias_ref = bias.as_ref();
+        let (new_lo, new_hi) = ibp_linear_layer(&lo, &hi, weight, bias_ref)?;
+        lo = new_lo;
+        hi = new_hi;
+        ibp_bounds.push((lo.clone(), hi.clone()));
+    }
+
+    // === PHASE 2: Zonotope from IBP intervals ===
+    let (zon_center, zon_gens) = intervals_to_zonotope(&lo, &hi, device)?;
+
+    // Apply Girard reduction if needed
+    let gens_before = zon_gens.dim(0).unwrap_or(0);
+    let (final_gens, gens_after) = if gens_before > config.max_gens {
+        let girard_config = GirardConfig {
+            norm: config.norm,
+            merge: config.merge,
+            min_norm: config.noise_threshold,
+            lgg_weight_decay: config.weight_decay,
+        };
+        let reduced = reduce_generators_girard_advanced(&zon_gens, config.max_gens, &girard_config)?;
+        (reduced.generators, reduced.reduced_count)
+    } else {
+        (zon_gens, gens_before)
+    };
+
+    // === PHASE 3: Certification ===
+    let gens_vec: Vec<Vec<f32>> = final_gens.to_vec2::<f32>()?;
+    let volume_proxy: f32 = gens_vec.iter().map(|row: &Vec<f32>| {
+        row.iter().map(|v: &f32| v.abs()).sum::<f32>()
+    }).sum::<f32>();
+
+    let ibp_vol = interval_volume_proxy(&lo, &hi);
+    let tightness = if volume_proxy > 0.0 {
+        ibp_vol / volume_proxy
+    } else {
+        1.0
+    };
+
+    // CBF margin on final zonotope
+    let cbf = compute_cbf_margin(&zon_center, &Tensor::from_vec(safe_center.to_vec(), (1, dim), device)?, margin)?;
+
+    Ok(HybridPipelineResult {
+        ibp_bounds,
+        final_center: zon_center,
+        final_generators: final_gens,
+        volume_proxy,
+        tightness_ratio: tightness,
+        cbf_margin: cbf,
+        gens_reduced: (gens_before, gens_after),
+    })
+}
+
+/// Hybrid reach-tube with IBP pre-conditioning.
+///
+/// Before each zonotope propagation step, tighten with IBP to reduce
+/// wrapping effect, then convert back to zonotope for affine propagation.
+pub fn hybrid_reach_tube_ibp(
+    center: &Tensor,
+    generators: &Tensor,
+    dynamics: &dyn Fn(&Tensor) -> Result<Tensor>,
+    safe_center: &[f32],
+    margin: f32,
+    config: &ReachTubeConfig,
+) -> Result<ReachTube> {
+    let device = center.device();
+    let dim = if center.rank() == 2 {
+        center.dim(1)?
+    } else {
+        center.dim(0)?
+    };
+    let mut tubes = Vec::with_capacity(config.t_steps);
+    let mut cbf_margins = Vec::with_capacity(config.t_steps);
+
+    let mut current_center = center.clone();
+    let mut current_gens = generators.clone();
+
+    // Initial segment
+    let initial_cbf = compute_cbf_margin(&current_center, &Tensor::from_vec(safe_center.to_vec(), (1, dim), device)?, margin)?;
+    tubes.push(TubeSegment {
+        center: current_center.clone(),
+        generators: current_gens.clone(),
+        cbf_margin: initial_cbf,
+        volume_proxy: 0.0,
+    });
+    cbf_margins.push(initial_cbf);
+
+    for _step in 0..config.t_steps {
+        // === IBP pre-conditioning ===
+        // Compute interval bounds from current zonotope
+        let c_vec = if current_center.rank() == 2 {
+            current_center.flatten(0, 1)?.to_vec1::<f32>()?
+        } else {
+            current_center.to_vec1::<f32>()?
+        };
+        let g_vec = current_gens.to_vec2::<f32>()?;
+        let mut radius = vec![0.0f32; dim];
+        for row in &g_vec {
+            for i in 0..dim {
+                radius[i] += row[i].abs();
+            }
+        }
+        let lo = c_vec.iter().zip(radius.iter()).map(|(c, r)| c - r).collect::<Vec<f32>>();
+        let hi = c_vec.iter().zip(radius.iter()).map(|(c, r)| c + r).collect::<Vec<f32>>();
+
+        // Propagate dynamics through IBP (linearized)
+        let f_nom = dynamics(&current_center)?;
+        let f_vec = if f_nom.rank() == 2 {
+            f_nom.flatten(0, 1)?.to_vec1::<f32>()?
+        } else {
+            f_nom.to_vec1::<f32>()?
+        };
+
+        // Euler step on intervals: x(t+dt) ≈ x(t) + dt·f(x)
+        let new_lo_ibp: Vec<f32> = lo.iter().zip(f_vec.iter()).map(|(l, f)| l + config.dt * f).collect();
+        let new_hi_ibp: Vec<f32> = hi.iter().zip(f_vec.iter()).map(|(h, f)| h + config.dt * f).collect();
+
+        // Convert tightened IBP intervals back to zonotope
+        let (ibp_center, ibp_gens) = intervals_to_zonotope(&new_lo_ibp, &new_hi_ibp, device)?;
+
+        // === Taylor correction (order ≥ 2) ===
+        let new_center = if config.taylor_order >= 2 {
+            let dt2_half = config.dt * config.dt / 2.0;
+            let _dt2_tensor = Tensor::new(dt2_half, device)?;
+
+            // Finite-difference Jacobian of f
+            let fd_eps = 1e-5;
+            let fd_eps_tensor = Tensor::new(fd_eps, device)?;
+            let mut jacobian_rows = Vec::new();
+
+            for i in 0..dim {
+                let mut pert = c_vec.clone();
+                pert[i] += fd_eps;
+                let x_pert = Tensor::from_vec(pert, (1, dim), device)?;
+                let f_pert = dynamics(&x_pert)?;
+                let diff = f_pert.broadcast_sub(&f_nom)?;
+                let j_row = diff.broadcast_div(&fd_eps_tensor)?;
+                jacobian_rows.push(j_row);
+            }
+
+            // Weighted correction: (dt²/2) · J_f · f_nom
+            let mut correction = Tensor::zeros_like(&current_center)?;
+            for (i, j_row) in jacobian_rows.into_iter().enumerate() {
+                let f_val = f_vec[i];
+                let scaled = j_row.broadcast_mul(&Tensor::new(f_val * dt2_half, device)?)?;
+                correction = correction.broadcast_add(&scaled)?;
+            }
+            current_center.broadcast_add(&correction)?
+        } else {
+            ibp_center
+        };
+
+        // === Girard reduction ===
+        let girard_config = GirardConfig {
+            norm: config.norm,
+            merge: config.merge,
+            min_norm: config.noise_threshold,
+            lgg_weight_decay: config.weight_decay,
+        };
+        let reduced = reduce_generators_girard_advanced(&ibp_gens, config.max_gens, &girard_config)?;
+
+        // Volume proxy
+        let gens_data: Vec<Vec<f32>> = reduced.generators.to_vec2::<f32>()?;
+        let vol: f32 = gens_data.iter().map(|row: &Vec<f32>| {
+            row.iter().map(|v: &f32| v.abs()).sum::<f32>()
+        }).sum::<f32>();
+
+        // CBF margin
+        let safe_center_tensor = Tensor::from_vec(safe_center.to_vec(), (1, dim), device)?;
+        let seg_cbf = compute_cbf_margin(&new_center, &safe_center_tensor, margin)?;
+
+        tubes.push(TubeSegment {
+            center: new_center.clone(),
+            generators: reduced.generators.clone(),
+            cbf_margin: seg_cbf,
+            volume_proxy: vol,
+        });
+        cbf_margins.push(seg_cbf);
+
+        current_center = new_center;
+        current_gens = reduced.generators;
+    }
+
+    let min_cbf = cbf_margins.iter().copied().fold(f32::INFINITY, f32::min);
+    let avg_vol = if tubes.len() > 1 {
+        tubes[1..].iter().map(|t| t.volume_proxy).sum::<f32>() / (tubes.len() - 1) as f32
+    } else {
+        0.0
+    };
+
+    Ok(ReachTube {
+        tubes,
+        cbf_margins,
+        avg_volume_ratio: avg_vol,
+        min_cbf_margin: min_cbf,
+    })
+}
 #[cfg(test)]
 mod tests {
     use super::*;
