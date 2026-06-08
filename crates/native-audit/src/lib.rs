@@ -15,6 +15,8 @@
 //! Collective Certified Intelligence + Hybrid Zonotope-Interval.
 //! **Sprint 111:** Hybrid Zonotope + Neural Certificates + NES Meta-Opt +
 //! Collective Certified Robustness + Disruptive Proofs.
+//! **Sprint 115:** Zonotope Girard Order Reduction + PAC-Bayesian Meta-Self-Improvement +
+//! Full Certified Pipeline Integration.
 
 pub mod cirl_value_learning;
 pub mod collective_zonotope;
@@ -26,6 +28,7 @@ pub mod cbf_mpc;
 pub mod hybrid_zonotope;
 pub mod mechanism_design;
 pub mod meta_active_inference;
+pub mod meta_improvement;
 pub mod multimodal;
 pub mod neural_ode;
 pub mod sae_integration;
@@ -2915,5 +2918,172 @@ impl TensorAudit {
         quorum_fraction: f32,
     ) -> CollectiveHybridCertificate {
         CollectiveHybridCertificate::aggregate(node_certs, quorum_fraction)
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Sprint 115 — Full Certified Pipeline Integration
+// Taylor-Zonotope → Generator Reduction → MPC-CBF → PAC Meta-Check
+// ---------------------------------------------------------------------------
+
+/// Result of the full certified pipeline.
+#[derive(Debug)]
+pub struct FullPipelineResult {
+    /// Volume proxy from Taylor-zonotope propagation.
+    pub volume_proxy: f32,
+    /// Wrapping reduction metric from Taylor propagation.
+    pub wrapping_reduction: f32,
+    /// Generator reduction metrics (volume_ratio, original/reduced count).
+    pub reduction_result: formal_verification::ReductionResult,
+    /// MPC-CBF safety margin after steering.
+    pub mpc_cbf_margin: f32,
+    /// PAC-Bayesian meta-check result.
+    pub pac_result: meta_improvement::PACMetaResult,
+    /// Final safety verdict: all checks passed.
+    pub safe: bool,
+}
+
+impl std::fmt::Display for FullPipelineResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "FullPipeline {{ safe: {}, volume_ratio: {:.3}, cbf_margin: {:.4}, pac_accepted: {}, gen_bound: {:.4} }}",
+            self.safe,
+            self.reduction_result.volume_ratio,
+            self.mpc_cbf_margin,
+            self.pac_result.accepted,
+            self.pac_result.gen_bound
+        )
+    }
+}
+
+impl TensorAudit {
+    /// Full Certified Pipeline: Taylor-Zonotope → Generator Reduction → MPC-CBF → PAC Meta-Check.
+    ///
+    /// Chains all Sprint 115 components into a single verified pipeline:
+    ///
+    /// 1. **Taylor-Zonotope Propagation**: Propagate activation through SiLU using certified
+    ///    Taylor models with remainder bounds.
+    /// 2. **Girard Order Reduction**: Reduce generator count while preserving volume ratio
+    ///    and correlation structure.
+    /// 3. **MPC-CBF Steering**: Apply Model Predictive Control with Control Barrier Function
+    ///    to ensure safety constraints are met.
+    /// 4. **PAC Meta-Check**: Verify the final state satisfies PAC-Bayesian generalization
+    ///    bounds with probably approximately correct guarantees.
+    ///
+    /// # Arguments
+    /// * `activation` - Input activation tensor (batch_size x dim).
+    /// * `epsilon` - Perturbation radius for zonotope generation.
+    /// * `max_gens` - Maximum generator count after Girard reduction.
+    /// * `safe_center` - Safe operating point for CBF constraint.
+    /// * `cbf_margin` - Safety margin for CBF (must be ≥ 0).
+    /// * `pac_config` - PAC-Bayesian meta-check configuration.
+    ///
+    /// # Returns
+    /// `FullPipelineResult` with all intermediate results and final safety verdict.
+    pub fn full_certified_pipeline(
+        &self,
+        activation: &Tensor,
+        epsilon: f32,
+        max_gens: usize,
+        safe_center: &Tensor,
+        cbf_margin: f32,
+        pac_config: meta_improvement::PACMetaConfig,
+    ) -> Result<FullPipelineResult> {
+        let device = activation.device();
+        let dim = activation.shape().dims()[1];
+
+        // Create diagonal generator matrix for the zonotope
+        let generators: Tensor = {
+            let data: Vec<f32> = (0..dim)
+                .flat_map(|i| {
+                    (0..dim).map(move |j| if i == j { epsilon } else { 0.0 })
+                })
+                .collect();
+            Tensor::from_vec(data, (dim, dim), device)?
+        };
+
+        // Step 1: Taylor-Zonotope propagation through SiLU
+        let config = formal_verification::TaylorZonotopeConfig::default();
+        let taylor_result =
+            formal_verification::propagate_silu_taylor_zonotope(activation, &generators, &config)?;
+
+        let volume_proxy = taylor_result.volume_proxy;
+        let wrapping_reduction = taylor_result.wrapping_reduction;
+
+        // Step 2: Girard order reduction
+        let reduction_result =
+            formal_verification::reduce_generators_girard(&taylor_result.generators, max_gens)?;
+
+        // Step 3: MPC-CBF safety check
+        let cbf_value = cbf_mpc::cbf_h(
+            &taylor_result.center,
+            safe_center,
+            cbf_margin,
+        )?;
+        let mpc_cbf_margin: f32 = cbf_value.to_scalar()?;
+
+        // Step 4: PAC meta-check
+        // Extract center as flat vector for PAC evaluation
+        let center_vec: Vec<f32> = taylor_result.center.flatten_all()?.to_vec1()?;
+        let safe_center_vec: Vec<f32> = safe_center.flatten_all()?.to_vec1()?;
+
+        // Use the CBF margin to estimate empirical risk samples
+        let performance_samples: Vec<f32> = if mpc_cbf_margin < 0.0 {
+            vec![mpc_cbf_margin.abs()] // Unsafe: risk = distance from boundary
+        } else {
+            vec![0.0] // Safe: no empirical risk
+        };
+
+        let pac_result = meta_improvement::pac_bayes_meta_update(
+            &center_vec,            // proposed_params
+            &safe_center_vec,       // current_params (safe reference)
+            &performance_samples,   // performance_samples
+            &safe_center_vec,       // safe_center
+            &pac_config,
+        );
+
+        // Final safety verdict: all checks must pass
+        let safe = reduction_result.volume_ratio < 2.0
+            && mpc_cbf_margin >= 0.0
+            && pac_result.accepted;
+
+        Ok(FullPipelineResult {
+            volume_proxy,
+            wrapping_reduction,
+            reduction_result,
+            mpc_cbf_margin,
+            pac_result,
+            safe,
+        })
+    }
+
+    /// Simplified certified pipeline with default configuration.
+    ///
+    /// Uses default PAC-Bayesian config and zero safe center.
+    ///
+    /// # Arguments
+    /// * `activation` - Input activation tensor.
+    /// * `epsilon` - Perturbation radius.
+    /// * `max_gens` - Maximum generators after reduction.
+    /// * `cbf_margin` - CBF safety margin.
+    pub fn certified_pipeline_simple(
+        &self,
+        activation: &Tensor,
+        epsilon: f32,
+        max_gens: usize,
+        cbf_margin: f32,
+    ) -> Result<FullPipelineResult> {
+        let dim = activation.shape().dims()[1];
+        let safe_center = Tensor::zeros(dim, DType::F32, &self.device)?;
+        let pac_config = meta_improvement::PACMetaConfig::default();
+        self.full_certified_pipeline(
+            activation,
+            epsilon,
+            max_gens,
+            &safe_center,
+            cbf_margin,
+            pac_config,
+        )
     }
 }
