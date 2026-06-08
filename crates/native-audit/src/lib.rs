@@ -21,6 +21,8 @@ pub mod collective_zonotope;
 pub mod cross_attention;
 pub mod distributed_sae;
 pub mod formal_barrier;
+pub mod formal_verification;
+pub mod cbf_mpc;
 pub mod hybrid_zonotope;
 pub mod mechanism_design;
 pub mod meta_active_inference;

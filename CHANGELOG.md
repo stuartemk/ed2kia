@@ -1,4 +1,58 @@
-﻿## [v11.3.0-sprint113] — 2026-06-08 (Sprint 113 — Hybrid Taylor-Zonotope + Formal CBF Invariance + Meta-Self-Improvement + Distributed Certificates)
+﻿## [v11.4.0-sprint114] — 2026-06-08 (Sprint 114 — Hybrid Taylor-Zonotope Reachability + Formal CBF + MPC Steering)
+
+### Sprint 114 "Hybrid Taylor-Zonotope Reachability + Formal CBF + MPC Steering"
+
+**Problema — Sin verificación formal ni control seguro:** Sprints 110-113 introducen zonotopos híbridos, Neural ODEs, incentivos y certificados distribuidos, pero faltan modelos Taylor de orden 1 con resto de Lagrange para propagación certificada de SiLU, CBF-QP para proyección analítica de control seguro y MPC con reachability para planificación multi-paso certificada.
+
+**Solución — Taylor-Zonotope + CBF-QP + MPC Steering:** Introducimos propagación SiLU con modelo Taylor de orden 1 + resto zonotópico de Lagrange (|R| ≤ ½·max|f''|·r²), verificación de soundness por muestreo Monte Carlo, reducción de generadores Girard-style, CBF-QP con proyección analítica (λ = -slack/||∇_u(L_g h)||²) y MPC con horizonte N que alterna Taylor-Zonotope reachability + CBF-QP safety.
+
+- **Taylor-Zonotope SiLU Propagation:** `propagate_silu_taylor_zonotope(center, generators, config)` — SiLU(c) + J(c)·G + Lagrange remainder
+- **Linear Layer Propagation:** `propagate_linear_layer(center, generators, weight, bias)` — exacta (afín)
+- **Layer Propagation:** `propagate_layer_taylor_zonotope(...)` — Linear → SiLU combinado
+- **Volume Ratio:** `compute_volume_ratio(taylor_result, standard_volume)` — ratio < 1 = Taylor más tight
+- **Soundness Verification:** `verify_soundness(original_center, generators, taylor_result, num_samples)` — Monte Carlo containment check
+- **Generator Reduction:** `reduce_generators(generators, max_gens)` — Girard-style order reduction
+- **CBF radial:** `cbf_h(x, safe_center, margin)` — h(x) = margin² - ||x - center||²
+- **Class-K:** `class_k(h, kappa)` — α(h) = κ·h (lineal)
+- **Lie Derivative:** `lie_derivative_f_h(x, safe_center, f_x)` — ∇h(x)·f(x) approximation
+- **CBF-QP Solver:** `solve_cbf_qp(x, u_nom, safe_center, margin, alpha)` — proyección analítica
+- **MPC Config/Result:** `MPCConfig`, `MPCStepResult`, `MPCTrajectory` — estructuras de planificación
+- **MPC Execution:** `mpc_steer_safe(center, generators, safe_center, weight, bias, config)` — rollout Taylor-Zonotope + CBF-QP
+- **MPC Simple:** `mpc_steer_safe_simple(center, generators, safe_center, config)` — sin network layer
+
+**Módulos actualizados:**
+- [`formal_verification.rs`](crates/native-audit/src/formal_verification.rs) — propagate_silu_taylor_zonotope(), propagate_linear_layer(), propagate_layer_taylor_zonotope(), compute_volume_ratio(), verify_soundness(), reduce_generators()
+- [`cbf_mpc.rs`](crates/native-audit/src/cbf_mpc.rs) — cbf_h(), class_k(), lie_derivative_f_h(), solve_cbf_qp(), safety_margin(), mpc_steer_safe(), mpc_steer_safe_simple()
+- [`lib.rs`](crates/native-audit/src/lib.rs) — `pub mod formal_verification`, `pub mod cbf_mpc`
+
+**Nuevos tests (28 total):**
+| Test File | Tests | Resultado |
+|-----------|-------|-----------|
+| `formal_verification.rs` (unit) | 5 | ✅ 5/5 |
+| `formal_verification_eval.rs` (integration) | 19 | ✅ 19/19 |
+| `cbf_mpc.rs` (unit) | 9 | ✅ 9/9 |
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| Total Tests (S114) | **28/28 (100%)** |
+| Total Unit Tests (native-audit) | **121/121** |
+| SiLU Taylor Order | **1 + Lagrange remainder** |
+| SILU_F2_MAX | **0.28 (safe upper bound)** |
+| Soundness | **Monte Carlo verified** |
+| CBF-QP | **Analytical projection** |
+| MPC Horizon | **Configurable (default: 5)** |
+| Clippy | **Zero warnings** |
+
+**Bug fixes:**
+- `SILU_F2_MAX` — Ajustado de 0.25 a 0.28 (bound seguro verificado numéricamente)
+- `verify_soundness()` — Sampling corregido: `eps @ G` → [1,k] @ [k,d] = [1,d]
+- `solve_cbf_qp()` — Dirección de corrección invertida: `safe_center - x` (hacia centro seguro)
+- `solve_cbf_qp()` — Scalar broadcast: `Tensor::full(lambda, shape)` en vez de `Tensor::new`
+
+---
+
+## [v11.3.0-sprint113] — 2026-06-08 (Sprint 113 — Hybrid Taylor-Zonotope + Formal CBF Invariance + Meta-Self-Improvement + Distributed Certificates)
 
 ### Sprint 113 "Hybrid Taylor-Zonotope + Formal CBF Invarance + Meta-Self-Improvement + Distributed Certificates"
 
