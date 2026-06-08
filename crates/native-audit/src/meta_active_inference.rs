@@ -112,6 +112,52 @@ impl Default for MetaActiveInferenceConfig {
     }
 }
 
+/// Safety constraints for meta-optimization.
+///
+/// Defines the reachable parameter region using Taylor-model-inspired bounds.
+/// Only parameter updates that keep the projected reach-set within the safe
+/// hyper-rectangle are accepted.
+#[derive(Debug, Clone)]
+pub struct MetaSafetyConstraints {
+    /// Maximum allowed per-parameter deviation from current params in a single step.
+    pub max_step_size: f32,
+    /// Minimum safety margin: beta_cbf must stay above this threshold.
+    pub min_beta_cbf: f32,
+    /// Maximum learning rate to avoid unstable updates.
+    pub max_lr: f32,
+    /// Minimum VFE improvement required to accept a step.
+    pub min_vfe_improvement: f32,
+    /// Look-ahead horizon for reach-set projection (number of simulated steps).
+    pub reach_horizon: usize,
+}
+
+impl Default for MetaSafetyConstraints {
+    fn default() -> Self {
+        Self {
+            max_step_size: 0.05,
+            min_beta_cbf: 0.1,
+            max_lr: 0.1,
+            min_vfe_improvement: 0.0,
+            reach_horizon: 3,
+        }
+    }
+}
+
+/// Result of a safe meta-optimization step.
+#[derive(Debug, Clone)]
+pub struct SafeOptResult {
+    /// Meta-VFE reduction achieved (positive = improvement).
+    pub vfe_reduction: f32,
+    /// Whether the update was accepted (true) or rejected for safety (false).
+    pub accepted: bool,
+    /// Reason for rejection if not accepted.
+    pub rejection_reason: Option<String>,
+    /// Safety margin after the update (beta_cbf distance from min).
+    pub safety_margin: f32,
+    /// Reach-set diameter proxy (max projected deviation over horizon).
+    pub reach_diameter: f32,
+}
+
 /// History entry for meta-VFE tracking.
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
@@ -511,6 +557,253 @@ impl MetaActiveInferenceEngine {
         self.round += 1;
 
         Ok(reduction)
+    }
+
+    /// Project a parameter update through a Taylor-model-inspired reach-set over `horizon` steps.
+    ///
+    /// Uses a first-order Taylor expansion of the meta-dynamics:
+    /// ```text
+    /// θ_{t+1} ≈ θ_t + Δθ
+    /// reach(θ_t) = [θ_t - h·|Δθ|, θ_t + h·|Δθ|]
+    /// ```
+    /// where `h` is the reach horizon. Returns the reach-set diameter (max width across params).
+    fn project_reach_set(
+        &self,
+        current: &MetaHyperParams,
+        candidate: &MetaHyperParams,
+        horizon: usize,
+    ) -> f32 {
+        let mut max_diameter = 0.0f32;
+        let deltas = [
+            (candidate.lr - current.lr).abs(),
+            (candidate.lambda_ot - current.lambda_ot).abs(),
+            (candidate.beta_cbf - current.beta_cbf).abs(),
+            (candidate.sae_sparsity - current.sae_sparsity).abs(),
+            (candidate.lambda_cross - current.lambda_cross).abs(),
+            (candidate.beta_cirl - current.beta_cirl).abs(),
+        ];
+        for &d in &deltas {
+            let diameter = 2.0 * horizon as f32 * d;
+            if diameter > max_diameter {
+                max_diameter = diameter;
+            }
+        }
+        max_diameter
+    }
+
+    /// Check whether a candidate parameter set satisfies all safety constraints.
+    ///
+    /// Returns `true` if the candidate is within the safe reach-set,
+    /// along with an optional rejection reason.
+    fn check_safety(
+        &self,
+        current: &MetaHyperParams,
+        candidate: &MetaHyperParams,
+        constraints: &MetaSafetyConstraints,
+    ) -> (bool, Option<String>) {
+        // 1. Step-size constraint: max per-param deviation
+        let deltas = [
+            (candidate.lr - current.lr).abs(),
+            (candidate.lambda_ot - current.lambda_ot).abs(),
+            (candidate.beta_cbf - current.beta_cbf).abs(),
+            (candidate.sae_sparsity - current.sae_sparsity).abs(),
+            (candidate.lambda_cross - current.lambda_cross).abs(),
+            (candidate.beta_cirl - current.beta_cirl).abs(),
+        ];
+        for (i, &d) in deltas.iter().enumerate() {
+            if d > constraints.max_step_size {
+                return (
+                    false,
+                    Some(format!(
+                        "Step size {:.4} exceeds max {:.4} on param {}",
+                        d,
+                        constraints.max_step_size,
+                        i
+                    )),
+                );
+            }
+        }
+
+        // 2. CBF constraint: beta_cbf must stay above minimum
+        if candidate.beta_cbf < constraints.min_beta_cbf {
+            return (
+                false,
+                Some(format!(
+                    "beta_cbf {:.4} below min {:.4}",
+                    candidate.beta_cbf, constraints.min_beta_cbf
+                )),
+            );
+        }
+
+        // 3. LR constraint: learning rate must stay below maximum
+        if candidate.lr > constraints.max_lr {
+            return (
+                false,
+                Some(format!(
+                    "lr {:.4} exceeds max {:.4}",
+                    candidate.lr, constraints.max_lr
+                )),
+            );
+        }
+
+        // 4. Reach-set constraint: projected reach-set must fit within bounds
+        let reach_diameter = self.project_reach_set(current, candidate, constraints.reach_horizon);
+        if reach_diameter > constraints.max_step_size * 2.0 {
+            return (
+                false,
+                Some(format!(
+                    "Reach-set diameter {:.4} exceeds bound {:.4}",
+                    reach_diameter,
+                    constraints.max_step_size * 2.0
+                )),
+            );
+        }
+
+        (true, None)
+    }
+
+    /// Perform one **safe** meta-optimization round with reach-set constraints.
+    ///
+    /// This method extends [`Self::meta_optimize`] with formal safety guarantees:
+    /// 1. Computes the meta-gradient (FD/ES/NES as configured).
+    /// 2. Proposes a candidate update.
+    /// 3. Projects the candidate through a Taylor-model-inspired reach-set.
+    /// 4. Verifies that the reach-set stays within the safe hyper-rectangle.
+    /// 5. Only applies the update if all safety constraints are satisfied.
+    ///
+    /// Returns a [`SafeOptResult`] with detailed safety information.
+    ///
+    /// # Arguments
+    /// * `peer_vfes` - Peer VFE observations for meta-gradient computation.
+    /// * `constraints` - Safety constraints for the optimization step.
+    ///
+    /// # Safety Guarantees
+    /// - beta_cbf always stays above `constraints.min_beta_cbf`.
+    /// - Step size is bounded by `constraints.max_step_size`.
+    /// - Reach-set projection over `constraints.reach_horizon` steps remains feasible.
+    pub fn meta_optimize_safe(
+        &mut self,
+        peer_vfes: &[f32],
+        constraints: &MetaSafetyConstraints,
+    ) -> Result<SafeOptResult> {
+        let old_vfe = self.estimate_meta_vfe(&self.current_params, peer_vfes);
+
+        // Compute gradient using the same strategy as meta_optimize
+        let params_clone = self.current_params.clone();
+        let gradient = if self.config.use_nes {
+            self.compute_meta_gradient_nes(&params_clone, peer_vfes)
+        } else if self.config.use_es {
+            self.compute_meta_gradient_es(&params_clone, peer_vfes)
+        } else {
+            self.compute_meta_gradient_fd(&params_clone, peer_vfes)
+        };
+
+        // Propose candidate update
+        let bounds = self.current_params.bounds();
+        let meta_lr = self.config.meta_lr;
+        let mut candidate = self.current_params.clone();
+
+        if let [g_lr, g_ot, g_cbf, g_sae, g_cross, g_cirl] = &gradient[..] {
+            candidate.lr = (candidate.lr - meta_lr * g_lr).max(bounds[0].0).min(bounds[0].1);
+            candidate.lambda_ot = (candidate.lambda_ot - meta_lr * g_ot)
+                .max(bounds[1].0)
+                .min(bounds[1].1);
+            candidate.beta_cbf = (candidate.beta_cbf - meta_lr * g_cbf)
+                .max(bounds[2].0)
+                .min(bounds[2].1);
+            candidate.sae_sparsity = (candidate.sae_sparsity - meta_lr * g_sae)
+                .max(bounds[3].0)
+                .min(bounds[3].1);
+            candidate.lambda_cross = (candidate.lambda_cross - meta_lr * g_cross)
+                .max(bounds[4].0)
+                .min(bounds[4].1);
+            candidate.beta_cirl = (candidate.beta_cirl - meta_lr * g_cirl)
+                .max(bounds[5].0)
+                .min(bounds[5].1);
+        }
+
+        candidate = candidate.clamp();
+
+        // Compute reach-set projection
+        let reach_diameter =
+            self.project_reach_set(&self.current_params, &candidate, constraints.reach_horizon);
+
+        // Safety check
+        let (is_safe, rejection_reason) =
+            self.check_safety(&self.current_params, &candidate, constraints);
+
+        if !is_safe {
+            // Reject update — return without modifying state
+            let safety_margin = self.current_params.beta_cbf - constraints.min_beta_cbf;
+            return Ok(SafeOptResult {
+                vfe_reduction: 0.0,
+                accepted: false,
+                rejection_reason,
+                safety_margin,
+                reach_diameter,
+            });
+        }
+
+        // Compute VFE improvement
+        let new_vfe = self.estimate_meta_vfe(&candidate, peer_vfes);
+        let reduction = old_vfe - new_vfe;
+
+        // Check minimum improvement threshold
+        if reduction < constraints.min_vfe_improvement {
+            return Ok(SafeOptResult {
+                vfe_reduction: reduction,
+                accepted: false,
+                rejection_reason: Some(format!(
+                    "VFE improvement {:.6} below min {:.6}",
+                    reduction, constraints.min_vfe_improvement
+                )),
+                safety_margin: candidate.beta_cbf - constraints.min_beta_cbf,
+                reach_diameter,
+            });
+        }
+
+        // Accept update
+        self.current_params = candidate;
+
+        // Track best
+        if new_vfe < self.best_meta_vfe {
+            self.best_meta_vfe = new_vfe;
+            self.best_params = self.current_params.clone();
+        }
+
+        // Record history
+        self.history.push(HistoryEntry {
+            round: self.round,
+            meta_vfe: new_vfe,
+            params: self.current_params.clone(),
+        });
+
+        self.round += 1;
+
+        let safety_margin = self.current_params.beta_cbf - constraints.min_beta_cbf;
+
+        Ok(SafeOptResult {
+            vfe_reduction: reduction,
+            accepted: true,
+            rejection_reason: None,
+            safety_margin,
+            reach_diameter,
+        })
+    }
+
+    /// Run multiple safe meta-optimization rounds and return convergence curve.
+    pub fn meta_optimize_safe_sequence(
+        &mut self,
+        num_rounds: usize,
+        peer_vfes: &[f32],
+        constraints: &MetaSafetyConstraints,
+    ) -> Result<Vec<SafeOptResult>> {
+        let mut results = Vec::with_capacity(num_rounds);
+        for _ in 0..num_rounds {
+            let result = self.meta_optimize_safe(peer_vfes, constraints)?;
+            results.push(result);
+        }
+        Ok(results)
     }
 
     /// Run multiple meta-optimization rounds and return convergence curve.

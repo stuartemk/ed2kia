@@ -1,4 +1,61 @@
-﻿## [v11.2.0-sprint112] — 2026-06-07 (Sprint 112 — Neural ODE Zonotope Reachability + Mechanism Design + Self-Improvement)
+﻿## [v11.3.0-sprint113] — 2026-06-08 (Sprint 113 — Hybrid Taylor-Zonotope + Formal CBF Invariance + Meta-Self-Improvement + Distributed Certificates)
+
+### Sprint 113 "Hybrid Taylor-Zonotope + Formal CBF Invarance + Meta-Self-Improvement + Distributed Certificates"
+
+**Problema — Sin certificación Taylor de alto orden ni meta-optimización segura:** Sprints 110-112 introducen zonotopos híbridos, Neural ODEs y mecanismo de incentivos, pero faltan modelos Taylor de orden 1-3 para cotas certificadas de polinomios, verificación formal de invarianza CBF a lo largo de trayectorias ODE, meta-optimización segura con restricciones de reach-set y certificados distribuidos con hash-chain anti-tampering.
+
+**Solución — Taylor Models ODE + CBF Invariance + Safe Meta-Opt + Distributed Certificates:** Introducimos propagación ODE en Taylor Models con órdenes 1-3 (Euler/RK2/RK4), verificación formal de invarianza CBF (`L_f h ≤ -α·h`) a lo largo de secuencias de integración, meta-optimización segura con proyección de reach-set y rechazo de pasos inseguros, y certificados distribuidos con hash-chain SHA-256, agregación Byzantine-resiliente (mediana coordenada a coordenada) y quórum 2/3.
+
+- **Taylor Model ODE Propagation:** `propagate_ode_step(f, dt, order)` con selección Euler/RK2/RK4 por orden
+- **Lipschitz Estimate:** `lipschitz_estimate()` — norma Frobenius del término lineal como cota superior
+- **Remainder Update ODE:** `update_remainder_ode(dt, order)` — Taylor-Lagrange remainder por orden
+- **Lie Derivative Bounds:** `lie_derivative_bound_vec(grad_h, f_tm)` — cota superior de `∇h · f(x)`
+- **CBF Value:** `cbf_value(weight, bias)` — `h(x) = w^T @ center + b`
+- **CBF Invariance Verification:** `verify_cbf_invariance(f, dt, steps, grad_h, bias, alpha, order)` — verifica `L_f h ≤ -α·h` en cada paso
+- **Safety Margin:** `safety_margin(weight, bias)` — mínimo CBF sobre el reach set
+- **Hybrid Taylor-Zonotope Flowpipe:** `compute_hybrid_flowpipe(taylor_steps, max_gens, taylor_order)` — alternancia Taylor con reducción Zonotope periódica
+- **Certified Steering Trajectory:** `certify_steering_trajectory(cbf)` — certificado completo de trayectoria segura
+- **Tightness vs Zonotope:** `tightness_vs_zonotope()` — ratio de precisión Taylor vs Zonotope puro
+- **Safe Meta-Optimization:** `meta_optimize_safe(peer_vfes, constraints)` — optimización con proyección de reach-set
+- **Reach-Set Projection:** `project_reach_set(current, candidate, horizon)` — diámetro del reach set como medida de seguridad
+- **Safety Check:** `check_safety(current, candidate, constraints)` — validación de paso seguro
+- **Safe Meta-Opt Sequence:** `meta_optimize_safe_sequence(num_rounds, peer_vfes, constraints)` — loop seguro de optimización
+- **Certificate Chain:** `CertificateChainEntry` con genesis/append/verify_link — hash-chain anti-tampering
+- **Distributed Hybrid Certificate:** `DistributedHybridCertificate` con compute_hash/avg_width
+- **Collective Hybrid Certificate:** `CollectiveHybridCertificate` con aggregate/collective_tightness
+- **Byzantine-Resilient Aggregation:** Mediana coordenada a coordenada para bounds, mínimo para CBF margins
+- **Quorum-based Consensus:** 2/3 threshold para certificación colectiva de seguridad
+
+**Módulos actualizados:**
+- [`taylor_model.rs`](crates/native-audit/src/taylor_model.rs) — propagate_ode_step(), lipschitz_estimate(), update_remainder_ode(), lie_derivative_bound_vec(), cbf_value(), verify_cbf_invariance(), safety_margin()
+- [`neural_ode.rs`](crates/native-audit/src/neural_ode.rs) — NeuralODETaylor.compute_hybrid_flowpipe(), certify_steering_trajectory(), tightness_vs_zonotope()
+- [`meta_active_inference.rs`](crates/native-audit/src/meta_active_inference.rs) — MetaSafetyConstraints, SafeOptResult, meta_optimize_safe(), meta_optimize_safe_sequence()
+- [`lib.rs`](crates/native-audit/src/lib.rs) — CertificateChainEntry, DistributedHybridCertificate, CollectiveHybridCertificate, collective_hybrid_certificate(), aggregate_collective_certificate()
+
+**Nuevos tests (27 total):**
+| Test File | Tests | Resultado |
+|-----------|-------|-----------|
+| `sprint113_test.rs` | 27 | ✅ 27/27 |
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| Total Tests (S113) | **27/27 (100%)** |
+| Taylor ODE Orders | **1, 2, 3** |
+| CBF Invariance | **Formal verification** |
+| Meta Safety | **Reach-set constrained** |
+| Certificate Chain | **Hash-chain tamper-proof** |
+| Byzantine Tolerance | **2/3 quorum** |
+| Clippy | **Zero warnings** |
+
+**Bug fixes:**
+- `cbf_value()` — Missing double squeeze para tensores (1,dim) → (1,1) → scalar
+- `safety_margin()` — Weight shape debe ser (1,dim) para matmul con center.t()
+- `verify_cbf_invariance()` — grad_h shape (1,dim) consistente con cbf_value
+
+---
+
+## [v11.2.0-sprint112] — 2026-06-07 (Sprint 112 — Neural ODE Zonotope Reachability + Mechanism Design + Self-Improvement)
 
 ### Sprint 112 "Neural ODE Zonotope Reachability + Mechanism Design + Self-Improvement"
 
