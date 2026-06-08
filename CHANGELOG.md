@@ -1,4 +1,41 @@
-﻿## [v11.7.0-sprint117] — 2026-06-08 (Sprint 117 — Reach-Tube Temporal + Full Hybrid IBP+Zonotope + Provable P2P Mechanism Design)
+﻿## [v11.8.0-sprint118] — 2026-06-08 (Sprint 118 — SAE Modular Low-Dim + Distributed Testnet Sim + Formal Proofs + Full Pipeline Benchmarks)
+
+### Sprint 118 "SAE Modular Low-Dim + Distributed Testnet Sim + Formal Proofs + Full Pipeline Benchmarks"
+
+**Problema — Sin proyección SAE modular ni simulación distribuida:** Sprints 110-117 introducen zonotopos, Taylor models, Neural ODEs, reducción Girard, PAC-Bayes, FGSM/IBP, Reach-Tube temporal, Hybrid IBP+Zonotope y P2P Mechanism Design, pero faltan: (1) SAE Modular — Sparse Autoencoder para proyectar estados hidden de alta dimensión a espacios latentes de baja dimensión con sparsificación top-k verificable, (2) Distributed Testnet Simulator — Simulación realista de red P2P con gossip, fallos bizantinos, modelo de latencia exponencial y churn de nodos, (3) Formal Proof Sketches — Bocetos de prueba estilo Lean4 para los teoremas clave del sistema, y (4) Full Pipeline Benchmarks — Tests de integración end-to-end que combinan SAE + verificación colectiva + certificación híbrida.
+
+**Solución — SAE Modular + Testnet Sim + Formal Proofs + Full Pipeline:** Introducimos `sae_modular.rs` con `SAE` que implementa `z = topk(ReLU(W_e @ x + b_e), k)` y `x_hat = W_d @ z + b_d`, con soporte para inputs batched [batch, input_dim] y sparsificación top-k configurable. `testnet_sim.rs` con `run_testnet_simulation` que simula redes P2P de 1k-5k nodos con gossipSub-style propagation, Byzantine faults (≤33%), latencia exponencial configurable y churn de nodos. `docs/formal_proofs/sprint118_proofs.md` con 6 teoremas de prueba estilo Lean4: SAE Projection Soundness, Byzantine Median Robustness, Gini Coefficient Bounds, Gossip Convergence, PAC-Bayes Collective Bound y Full Pipeline Safety. 40+ tests de integración en `sprint118_test.rs` cubriendo SAE, testnet sim y pipeline completo.
+
+- **SAE Modular:** `sae_modular.rs` — Sparse Autoencoder con top-k sparsificación verificable
+- **SAEConfig:** `input_dim`, `latent_dim`, `top_k`, `recon_threshold` — Configuración completa SAE
+- **SAE:** `new()`, `identity_projection()`, `encode()`, `decode()`, `project()` — API completa
+- **ProjectionResult:** `latents`, `reconstruction`, `recon_errors`, `active_features`, `soundness`
+- **Testnet Simulator:** `testnet_sim.rs` — Simulación P2P realista con gossip + Byzantine faults
+- **SimConfig:** `num_nodes`, `byzantine_fraction`, `gossip_fanout`, `churn_rate`, `latency_mean`
+- **SimResult:** `final_vfes`, `converged`, `gini`, `consensus_value`, `pac_bound`
+- **Byzantine Median:** `byzantine_median(values)` — Trim bottom/top 1/3, compute median
+- **Gini Coefficient:** `compute_gini(values)` — Standard formula para distribución de VFEs
+- **Formal Proofs:** `docs/formal_proofs/sprint118_proofs.md` — 6 teoremas Lean4-style
+
+**Módulos actualizados:**
+- [`sae_modular.rs`](crates/native-audit/src/sae_modular.rs) — `SAEConfig`, `SAE`, `ProjectionResult`, `new()`, `identity_projection()`, `encode()`, `decode()`, `project()`, `apply_topk()`, `add_bias_2d()`
+- [`testnet_sim.rs`](crates/native-audit/src/testnet_sim.rs) — `SimConfig`, `Node`, `SimResult`, `run_testnet_simulation()`, `byzantine_median()`, `compute_gini()`, `exponential_sample()`
+- [`docs/formal_proofs/sprint118_proofs.md`](docs/formal_proofs/sprint118_proofs.md) — 6 teoremas de prueba formal Lean4-style
+- [`tests/sprint118_test.rs`](crates/native-audit/tests/sprint118_test.rs) — 40 integration tests: SAE, Testnet Sim, Full Pipeline
+
+**Nuevos tests (40 total):**
+| Test File | Tests | Resultado |
+|-----------|-------|-----------|
+| `sprint118_test.rs` (integration) | 40 | ✅ 40/40 |
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| Total Tests (S118) | **40/40 (100%)** |
+| Clippy | ✅ Zero warnings |
+| Modules Added | `sae_modular.rs`, `testnet_sim.rs`, `sprint118_proofs.md` |
+
+## [v11.7.0-sprint117] — 2026-06-08 (Sprint 117 — Reach-Tube Temporal + Full Hybrid IBP+Zonotope + Provable P2P Mechanism Design)
 
 ### Sprint 117 "Reach-Tube Temporal + Full Hybrid IBP+Zonotope + Provable P2P Mechanism Design"
 
