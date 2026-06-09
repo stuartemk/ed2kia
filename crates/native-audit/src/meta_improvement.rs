@@ -11,7 +11,9 @@
 //! For a posterior distribution q(θ) over parameters and prior p(θ),
 //! with probability at least 1 - δ:
 //!
-//!     E_{θ~q}[R(θ)] ≤ Ĥ + √((KL(q‖p) + ln(2√n/δ)) / (2(n-1)))
+//! ```text
+//! E_{θ~q}[R(θ)] ≤ Ĥ + √((KL(q‖p) + ln(2√n/δ)) / (2(n-1)))
+//! ```
 //!
 //! where:
 //! - R(θ): True risk (expected VFE under θ)
@@ -20,7 +22,7 @@
 //! - n: Number of performance samples
 //! - δ: Confidence parameter (e.g., 0.01 for 99% confidence)
 //!
-//! **McAllester Refinement:** Uses `ln(2√n/δ)` instead of `ln(2n/δ)` for
+//! **McAllester Refinement:** Uses `ln(2*sqrt(n)/δ)` instead of `ln(2n/δ)` for
 //! tighter generalization bounds, especially beneficial at moderate sample sizes.
 //!
 //! **Data-Dependent Prior:** Prior variance adaptively scaled by observed

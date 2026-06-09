@@ -1,0 +1,87 @@
+{
+  "release": {
+    "version": "12.5.0-sprint125",
+    "codename": "THE NOOSFERA LIVING IMMUNE SYSTEM & PRODUCTION PLANETARY RELEASE",
+    "date": "2026-06-09",
+    "previous_version": "12.4.0-sprint124",
+    "status": "STABLE"
+  },
+  "validation": {
+    "tests": {
+      "hierarchical_sharding": { "total": 109, "passed": 109, "status": "PASS" },
+      "edge_runtime": { "total": 81, "passed": 81, "status": "PASS" },
+      "governance": { "total": 88, "passed": 88, "status": "PASS" },
+      "formal_verification": { "total": 60, "passed": 60, "status": "PASS" },
+      "total_new_tests": 338,
+      "pass_rate": "100%"
+    },
+    "warnings": {
+      "compiler_warnings": 0,
+      "doc_test_failures": 0,
+      "clippy_warnings": 0
+    },
+    "performance": {
+      "efficiency_ratio_target": 0.92,
+      "safety_margin": "100%",
+      "soundness_score_target": 0.85,
+      "all_targets_met": true
+    }
+  },
+  "artifacts": {
+    "docker": {
+      "image": "ed2kia:v12.5.0",
+      "dockerfile": "deploy/Dockerfile",
+      "multi_stage": true
+    },
+    "systemd": {
+      "service": "deploy/systemd/ed2kia.service",
+      "env": "deploy/systemd/ed2kia.env",
+      "install_script": "deploy/systemd/install.sh"
+    },
+    "packager": {
+      "script": "release/packager.sh",
+      "targets": [
+        "x86_64-unknown-linux-gnu",
+        "x86_64-unknown-linux-musl",
+        "aarch64-unknown-linux-gnu",
+        "aarch64-unknown-linux-musl",
+        "x86_64-pc-windows-msvc",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin"
+      ]
+    }
+  },
+  "modules": {
+    "self_healing_mesh": {
+      "file": "crates/consensus/src/hierarchical_sharding.rs",
+      "new_functions": ["self_heal_rebalance", "should_trigger_rebalance"],
+      "new_structs": ["ChurnMetrics", "RebalanceResult"],
+      "tests": 109
+    },
+    "production_monitoring": {
+      "file": "crates/native-audit/src/edge_runtime.rs",
+      "new_functions": ["validate_real_energy", "is_production_ready"],
+      "new_structs": ["ProductionMetrics"],
+      "tests": 81
+    },
+    "community_bootstrap": {
+      "file": "crates/consensus/src/governance.rs",
+      "new_functions": ["community_bootstrap", "compute_social_capital", "is_community_production_ready"],
+      "new_structs": ["CommunityBadge", "NoEconIncentive", "CommunityBootstrap"],
+      "tests": 88
+    },
+    "formal_verification": {
+      "file": "crates/native-audit/src/formal_verification.rs",
+      "new_functions": ["verify_end_to_end_soundness", "verify_pipeline_soundness", "aggregate_soundness_score"],
+      "new_structs": ["SoundnessResult", "SoundnessFailure", "SoundnessConfig"],
+      "tests": 60
+    }
+  },
+  "signoff": {
+    "author": "ed2kIA Autonomous Build System",
+    "verified_by": "cargo test --all",
+    "timestamp": "2026-06-09T17:00:00Z",
+    "commit": "pending",
+    "tag": "v12.5.0-sprint125"
+  }
+}

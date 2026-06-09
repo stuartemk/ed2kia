@@ -635,6 +635,367 @@ pub fn select_optimal_bootstrap_peers(peers: &[BootstrapPeer], count: usize) -> 
 }
 
 // ---------------------------------------------------------------------------
+// Community Bootstrap + No-Econ Incentives (PASO C — Sprint 125)
+// ---------------------------------------------------------------------------
+
+/// Non-economic reputation badge types for community recognition.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CommunityBadge {
+    /// First node to join a new mesh region
+    SeedGuardian,
+    /// Node that performed self-healing rebalancing
+    MeshHealer,
+    /// Node that shared verified knowledge (model weights, proofs)
+    KnowledgeSharer,
+    /// Node that maintained uptime > 99% for 30 days
+    IronUptime,
+    /// Node that onboarded 5+ new peers
+    CommunityBuilder,
+    /// Node that contributed formal verification proofs
+    ProofForge,
+    /// Node that achieved energy efficiency ratio > 0.95
+    GreenSteward,
+    /// Node that participated in 10+ governance votes
+    CivicVoice,
+}
+
+impl std::fmt::Display for CommunityBadge {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CommunityBadge::SeedGuardian => write!(f, "Seed Guardian"),
+            CommunityBadge::MeshHealer => write!(f, "Mesh Healer"),
+            CommunityBadge::KnowledgeSharer => write!(f, "Knowledge Sharer"),
+            CommunityBadge::IronUptime => write!(f, "Iron Uptime"),
+            CommunityBadge::CommunityBuilder => write!(f, "Community Builder"),
+            CommunityBadge::ProofForge => write!(f, "Proof Forge"),
+            CommunityBadge::GreenSteward => write!(f, "Green Steward"),
+            CommunityBadge::CivicVoice => write!(f, "Civic Voice"),
+        }
+    }
+}
+
+/// Non-economic incentive record.
+#[derive(Debug, Clone)]
+pub struct NoEconIncentive {
+    /// Node ID receiving the incentive
+    pub node_id: String,
+    /// Badge awarded
+    pub badge: CommunityBadge,
+    /// Timestamp of award (Unix seconds)
+    pub awarded_at: u64,
+    /// Reason / description
+    pub reason: String,
+    /// Social capital points added
+    pub social_capital_points: f64,
+}
+
+impl NoEconIncentive {
+    /// Create a new non-economic incentive record.
+    pub fn new(
+        node_id: String,
+        badge: CommunityBadge,
+        awarded_at: u64,
+        reason: String,
+    ) -> Self {
+        let points = Self::badge_points(badge);
+        Self {
+            node_id,
+            badge,
+            awarded_at,
+            reason,
+            social_capital_points: points,
+        }
+    }
+
+    /// Compute social capital points for a badge type.
+    fn badge_points(badge: CommunityBadge) -> f64 {
+        match badge {
+            CommunityBadge::SeedGuardian => 10.0,
+            CommunityBadge::MeshHealer => 15.0,
+            CommunityBadge::KnowledgeSharer => 12.0,
+            CommunityBadge::IronUptime => 20.0,
+            CommunityBadge::CommunityBuilder => 18.0,
+            CommunityBadge::ProofForge => 25.0,
+            CommunityBadge::GreenSteward => 22.0,
+            CommunityBadge::CivicVoice => 8.0,
+        }
+    }
+}
+
+/// Community bootstrap state for a node or region.
+#[derive(Debug, Clone)]
+pub struct CommunityBootstrap {
+    /// Node ID of the bootstrapping entity
+    pub node_id: String,
+    /// Discovered bootstrap peers
+    pub bootstrap_peers: Vec<BootstrapPeer>,
+    /// Awarded incentives (badges)
+    pub incentives: Vec<NoEconIncentive>,
+    /// Total social capital accumulated
+    pub total_social_capital: f64,
+    /// Number of peers onboarded by this node
+    pub peers_onboarded: usize,
+    /// Governance participation count
+    pub governance_votes: usize,
+    /// Knowledge contributions count
+    pub knowledge_contributions: usize,
+    /// Self-healing actions count
+    pub healing_actions: usize,
+}
+
+impl CommunityBootstrap {
+    /// Create a new community bootstrap state.
+    pub fn new(node_id: String) -> Self {
+        Self {
+            node_id,
+            bootstrap_peers: Vec::new(),
+            incentives: Vec::new(),
+            total_social_capital: 0.0,
+            peers_onboarded: 0,
+            governance_votes: 0,
+            knowledge_contributions: 0,
+            healing_actions: 0,
+        }
+    }
+
+    /// Add a discovered bootstrap peer.
+    pub fn add_peer(&mut self, peer: BootstrapPeer) {
+        self.bootstrap_peers.push(peer);
+    }
+
+    /// Award a badge (non-economic incentive) to this node.
+    pub fn award_badge(&mut self, badge: CommunityBadge, awarded_at: u64, reason: String) {
+        let incentive = NoEconIncentive::new(
+            self.node_id.clone(),
+            badge,
+            awarded_at,
+            reason,
+        );
+        self.total_social_capital += incentive.social_capital_points;
+        self.incentives.push(incentive);
+    }
+
+    /// Record a peer onboarding event.
+    pub fn record_onboarding(&mut self) {
+        self.peers_onboarded += 1;
+        if self.peers_onboarded >= 5 {
+            self.award_badge(
+                CommunityBadge::CommunityBuilder,
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs(),
+                format!(
+                    "Onboarded {} peers",
+                    self.peers_onboarded
+                ),
+            );
+        }
+    }
+
+    /// Record a governance vote participation.
+    pub fn record_governance_vote(&mut self) {
+        self.governance_votes += 1;
+        if self.governance_votes >= 10 {
+            self.award_badge(
+                CommunityBadge::CivicVoice,
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs(),
+                format!(
+                    "Participated in {} governance votes",
+                    self.governance_votes
+                ),
+            );
+        }
+    }
+
+    /// Record a knowledge contribution.
+    pub fn record_knowledge_contribution(&mut self) {
+        self.knowledge_contributions += 1;
+        if self.knowledge_contributions >= 1 {
+            self.award_badge(
+                CommunityBadge::KnowledgeSharer,
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs(),
+                format!(
+                    "Shared {} knowledge contributions",
+                    self.knowledge_contributions
+                ),
+            );
+        }
+    }
+
+    /// Record a self-healing action.
+    pub fn record_healing_action(&mut self) {
+        self.healing_actions += 1;
+        if self.healing_actions >= 1 {
+            self.award_badge(
+                CommunityBadge::MeshHealer,
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs(),
+                format!(
+                    "Performed {} self-healing actions",
+                    self.healing_actions
+                ),
+            );
+        }
+    }
+
+    /// Compute the incentive tier based on social capital.
+    ///
+    /// # Returns
+    /// Tier level: 0 (Newcomer), 1 (Contributor), 2 (Steward), 3 (Guardian), 4 (Legend)
+    pub fn incentive_tier(&self) -> u32 {
+        let capital = self.total_social_capital;
+        if capital >= 100.0 {
+            4
+        } else if capital >= 50.0 {
+            3
+        } else if capital >= 20.0 {
+            2
+        } else if capital >= 5.0 {
+            1
+        } else {
+            0
+        }
+    }
+
+    /// Get the tier name as a string.
+    pub fn tier_name(&self) -> &str {
+        match self.incentive_tier() {
+            0 => "Newcomer",
+            1 => "Contributor",
+            2 => "Steward",
+            3 => "Guardian",
+            4 => "Legend",
+            _ => unreachable!(),
+        }
+    }
+
+    /// Check if this node qualifies as a seed guardian (first in region).
+    pub fn is_seed_guardian(&self) -> bool {
+        self.bootstrap_peers.is_empty() && self.peers_onboarded > 0
+    }
+
+    /// Compute a reputation score combining multiple factors.
+    ///
+    /// Formula: `social_capital * (1.0 + trust_bonus + activity_bonus)`
+    /// Where trust_bonus = avg_trust * 0.5, activity_bonus = min(total_actions / 100.0, 0.5)
+    pub fn reputation_score(&self, avg_trust: f64) -> f64 {
+        let total_actions =
+            self.peers_onboarded + self.governance_votes + self.knowledge_contributions + self.healing_actions;
+        let trust_bonus = avg_trust.clamp(0.0, 1.0) * 0.5;
+        let activity_bonus = (total_actions as f64 / 100.0).clamp(0.0, 0.5);
+        self.total_social_capital * (1.0 + trust_bonus + activity_bonus)
+    }
+
+    /// Generate a human-readable status report.
+    pub fn status_report(&self) -> String {
+        format!(
+            "CommunityBootstrap {{ node: {}, tier: {}, social_capital: {:.1}, badges: {}, peers_onboarded: {}, votes: {}, knowledge: {}, healing: {} }}",
+            self.node_id,
+            self.tier_name(),
+            self.total_social_capital,
+            self.incentives.len(),
+            self.peers_onboarded,
+            self.governance_votes,
+            self.knowledge_contributions,
+            self.healing_actions,
+        )
+    }
+}
+
+/// Execute community bootstrap protocol.
+///
+/// Combines bootstrap peer discovery with initial badge awards
+/// for early participation.
+///
+/// # Arguments
+/// * `node_id` — The bootstrapping node ID
+/// * `bootstrap_config` — Bootstrap discovery configuration
+/// * `current_time` — Current Unix timestamp in seconds
+///
+/// # Returns
+/// `CommunityBootstrap` state with discovered peers and initial incentives
+pub fn community_bootstrap(
+    node_id: String,
+    bootstrap_config: &BootstrapConfig,
+    current_time: u64,
+) -> CommunityBootstrap {
+    let mut state = CommunityBootstrap::new(node_id.clone());
+
+    // Execute bootstrap discovery
+    let result = execute_bootstrap_discovery(bootstrap_config, current_time);
+
+    // Add discovered peers
+    for peer in result.discovered_peers {
+        state.add_peer(peer);
+    }
+
+    // Award Seed Guardian if this node is first in region (no peers discovered but has bootstrap config)
+    if result.success && bootstrap_config.initial_peers.is_empty() {
+        state.award_badge(
+            CommunityBadge::SeedGuardian,
+            current_time,
+            "First node in new mesh region".to_string(),
+        );
+    }
+
+    state
+}
+
+/// Compute social capital for a set of community bootstrap states.
+///
+/// Aggregates social capital across all nodes and computes
+/// community-wide metrics.
+///
+/// # Arguments
+/// * `bootstraps` — Slice of community bootstrap states
+///
+/// # Returns
+/// Tuple of (total_social_capital, avg_social_capital, max_tier)
+pub fn compute_social_capital(bootstraps: &[CommunityBootstrap]) -> (f64, f64, u32) {
+    if bootstraps.is_empty() {
+        return (0.0, 0.0, 0);
+    }
+
+    let total: f64 = bootstraps.iter().map(|b| b.total_social_capital).sum();
+    let avg = total / bootstraps.len() as f64;
+    let max_tier = bootstraps.iter().map(|b| b.incentive_tier()).max().unwrap_or(0);
+
+    (total, avg, max_tier)
+}
+
+/// Check if a community bootstrap state is production-ready.
+///
+/// A community is considered production-ready when:
+/// - At least 3 bootstrap peers discovered
+/// - Average social capital >= 10.0
+/// - At least one node at Steward tier or above
+///
+/// # Arguments
+/// * `bootstraps` — Slice of community bootstrap states
+///
+/// # Returns
+/// `true` if the community meets production readiness criteria
+pub fn is_community_production_ready(bootstraps: &[CommunityBootstrap]) -> bool {
+    if bootstraps.is_empty() {
+        return false;
+    }
+
+    let total_peers: usize = bootstraps.iter().map(|b| b.bootstrap_peers.len()).sum();
+    let (_total, avg_capital, max_tier) = compute_social_capital(bootstraps);
+
+    total_peers >= 3 && avg_capital >= 10.0 && max_tier >= 2
+}
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -1291,5 +1652,375 @@ mod tests {
         )];
         let result = select_optimal_bootstrap_peers(&peers, 10);
         assert_eq!(result.len(), 1);
+    }
+
+    // ---------------------------------------------------------------------------
+    // PASO C — Community Bootstrap + No-Econ Incentives tests
+    // ---------------------------------------------------------------------------
+
+    #[test]
+    fn test_community_badge_display() {
+        assert_eq!(format!("{}", CommunityBadge::SeedGuardian), "Seed Guardian");
+        assert_eq!(format!("{}", CommunityBadge::MeshHealer), "Mesh Healer");
+        assert_eq!(format!("{}", CommunityBadge::KnowledgeSharer), "Knowledge Sharer");
+        assert_eq!(format!("{}", CommunityBadge::IronUptime), "Iron Uptime");
+        assert_eq!(format!("{}", CommunityBadge::CommunityBuilder), "Community Builder");
+        assert_eq!(format!("{}", CommunityBadge::ProofForge), "Proof Forge");
+        assert_eq!(format!("{}", CommunityBadge::GreenSteward), "Green Steward");
+        assert_eq!(format!("{}", CommunityBadge::CivicVoice), "Civic Voice");
+    }
+
+    #[test]
+    fn test_no_econ_incentive_new() {
+        let inc = NoEconIncentive::new(
+            "node1".to_string(),
+            CommunityBadge::SeedGuardian,
+            1000,
+            "First in region".to_string(),
+        );
+        assert_eq!(inc.node_id, "node1");
+        assert_eq!(inc.badge, CommunityBadge::SeedGuardian);
+        assert_eq!(inc.awarded_at, 1000);
+        assert_eq!(inc.social_capital_points, 10.0);
+    }
+
+    #[test]
+    fn test_no_econ_incentive_badge_points() {
+        assert_eq!(NoEconIncentive::badge_points(CommunityBadge::SeedGuardian), 10.0);
+        assert_eq!(NoEconIncentive::badge_points(CommunityBadge::MeshHealer), 15.0);
+        assert_eq!(NoEconIncentive::badge_points(CommunityBadge::KnowledgeSharer), 12.0);
+        assert_eq!(NoEconIncentive::badge_points(CommunityBadge::IronUptime), 20.0);
+        assert_eq!(NoEconIncentive::badge_points(CommunityBadge::CommunityBuilder), 18.0);
+        assert_eq!(NoEconIncentive::badge_points(CommunityBadge::ProofForge), 25.0);
+        assert_eq!(NoEconIncentive::badge_points(CommunityBadge::GreenSteward), 22.0);
+        assert_eq!(NoEconIncentive::badge_points(CommunityBadge::CivicVoice), 8.0);
+    }
+
+    #[test]
+    fn test_community_bootstrap_new() {
+        let bs = CommunityBootstrap::new("node1".to_string());
+        assert_eq!(bs.node_id, "node1");
+        assert!(bs.bootstrap_peers.is_empty());
+        assert!(bs.incentives.is_empty());
+        assert_eq!(bs.total_social_capital, 0.0);
+        assert_eq!(bs.peers_onboarded, 0);
+        assert_eq!(bs.governance_votes, 0);
+        assert_eq!(bs.knowledge_contributions, 0);
+        assert_eq!(bs.healing_actions, 0);
+    }
+
+    #[test]
+    fn test_community_bootstrap_add_peer() {
+        let mut bs = CommunityBootstrap::new("node1".to_string());
+        bs.add_peer(BootstrapPeer::new("p1".to_string(), "addr1".to_string(), 0.8));
+        assert_eq!(bs.bootstrap_peers.len(), 1);
+        assert_eq!(bs.bootstrap_peers[0].node_id, "p1");
+    }
+
+    #[test]
+    fn test_community_bootstrap_award_badge() {
+        let mut bs = CommunityBootstrap::new("node1".to_string());
+        bs.award_badge(
+            CommunityBadge::ProofForge,
+            2000,
+            "Formal proof contributed".to_string(),
+        );
+        assert_eq!(bs.incentives.len(), 1);
+        assert_eq!(bs.total_social_capital, 25.0);
+        assert_eq!(bs.incentives[0].badge, CommunityBadge::ProofForge);
+    }
+
+    #[test]
+    fn test_community_bootstrap_multiple_badges() {
+        let mut bs = CommunityBootstrap::new("node1".to_string());
+        bs.award_badge(CommunityBadge::SeedGuardian, 1000, "Seed".to_string());
+        bs.award_badge(CommunityBadge::MeshHealer, 1100, "Heal".to_string());
+        assert_eq!(bs.incentives.len(), 2);
+        assert_eq!(bs.total_social_capital, 25.0); // 10 + 15
+    }
+
+    #[test]
+    fn test_community_bootstrap_record_onboarding() {
+        let mut bs = CommunityBootstrap::new("node1".to_string());
+        for _ in 0..4 {
+            bs.record_onboarding();
+        }
+        assert_eq!(bs.peers_onboarded, 4);
+        // No badge yet (need 5)
+        assert!(bs.incentives.is_empty());
+
+        bs.record_onboarding();
+        assert_eq!(bs.peers_onboarded, 5);
+        assert_eq!(bs.incentives.len(), 1);
+        assert_eq!(bs.incentives[0].badge, CommunityBadge::CommunityBuilder);
+    }
+
+    #[test]
+    fn test_community_bootstrap_record_governance_vote() {
+        let mut bs = CommunityBootstrap::new("node1".to_string());
+        for _ in 0..9 {
+            bs.record_governance_vote();
+        }
+        assert_eq!(bs.governance_votes, 9);
+        assert!(bs.incentives.is_empty());
+
+        bs.record_governance_vote();
+        assert_eq!(bs.governance_votes, 10);
+        assert_eq!(bs.incentives.len(), 1);
+        assert_eq!(bs.incentives[0].badge, CommunityBadge::CivicVoice);
+    }
+
+    #[test]
+    fn test_community_bootstrap_record_knowledge_contribution() {
+        let mut bs = CommunityBootstrap::new("node1".to_string());
+        bs.record_knowledge_contribution();
+        assert_eq!(bs.knowledge_contributions, 1);
+        assert_eq!(bs.incentives.len(), 1);
+        assert_eq!(bs.incentives[0].badge, CommunityBadge::KnowledgeSharer);
+    }
+
+    #[test]
+    fn test_community_bootstrap_record_healing_action() {
+        let mut bs = CommunityBootstrap::new("node1".to_string());
+        bs.record_healing_action();
+        assert_eq!(bs.healing_actions, 1);
+        assert_eq!(bs.incentives.len(), 1);
+        assert_eq!(bs.incentives[0].badge, CommunityBadge::MeshHealer);
+    }
+
+    #[test]
+    fn test_incentive_tier_newcomer() {
+        let bs = CommunityBootstrap::new("node1".to_string());
+        assert_eq!(bs.incentive_tier(), 0);
+        assert_eq!(bs.tier_name(), "Newcomer");
+    }
+
+    #[test]
+    fn test_incentive_tier_contributor() {
+        let mut bs = CommunityBootstrap::new("node1".to_string());
+        bs.award_badge(CommunityBadge::CivicVoice, 1000, "Vote".to_string());
+        assert_eq!(bs.incentive_tier(), 1);
+        assert_eq!(bs.tier_name(), "Contributor");
+    }
+
+    #[test]
+    fn test_incentive_tier_steward() {
+        let mut bs = CommunityBootstrap::new("node1".to_string());
+        bs.award_badge(CommunityBadge::SeedGuardian, 1000, "Seed".to_string());
+        bs.award_badge(CommunityBadge::MeshHealer, 1100, "Heal".to_string());
+        assert_eq!(bs.incentive_tier(), 2);
+        assert_eq!(bs.tier_name(), "Steward");
+    }
+
+    #[test]
+    fn test_incentive_tier_guardian() {
+        let mut bs = CommunityBootstrap::new("node1".to_string());
+        // Need >= 50 points: ProofForge(25) + GreenSteward(22) + CivicVoice(8) = 55
+        bs.award_badge(CommunityBadge::ProofForge, 1000, "Proof".to_string());
+        bs.award_badge(CommunityBadge::GreenSteward, 1100, "Green".to_string());
+        bs.award_badge(CommunityBadge::CivicVoice, 1200, "Vote".to_string());
+        assert_eq!(bs.incentive_tier(), 3);
+        assert_eq!(bs.tier_name(), "Guardian");
+    }
+
+    #[test]
+    fn test_incentive_tier_legend() {
+        let mut bs = CommunityBootstrap::new("node1".to_string());
+        // Need >= 100 points: 5x ProofForge = 125
+        for i in 0..5 {
+            bs.award_badge(CommunityBadge::ProofForge, 1000 + i, "Proof".to_string());
+        }
+        assert_eq!(bs.incentive_tier(), 4);
+        assert_eq!(bs.tier_name(), "Legend");
+    }
+
+    #[test]
+    fn test_is_seed_guardian() {
+        let mut bs = CommunityBootstrap::new("node1".to_string());
+        assert!(!bs.is_seed_guardian()); // No peers onboarded
+        bs.record_onboarding();
+        assert!(bs.is_seed_guardian()); // No bootstrap peers, has onboarded
+    }
+
+    #[test]
+    fn test_is_seed_guardian_false_with_peers() {
+        let mut bs = CommunityBootstrap::new("node1".to_string());
+        bs.add_peer(BootstrapPeer::new("p1".to_string(), "a1".to_string(), 0.8));
+        bs.record_onboarding();
+        assert!(!bs.is_seed_guardian()); // Has bootstrap peers
+    }
+
+    #[test]
+    fn test_reputation_score_zero() {
+        let bs = CommunityBootstrap::new("node1".to_string());
+        let score = bs.reputation_score(0.5);
+        assert_eq!(score, 0.0);
+    }
+
+    #[test]
+    fn test_reputation_score_basic() {
+        let mut bs = CommunityBootstrap::new("node1".to_string());
+        bs.award_badge(CommunityBadge::SeedGuardian, 1000, "Seed".to_string());
+        // social_capital = 10, trust = 0.8, actions = 0
+        // score = 10 * (1.0 + 0.8*0.5 + 0) = 10 * 1.4 = 14.0
+        let score = bs.reputation_score(0.8);
+        assert!((score - 14.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_reputation_score_with_activity() {
+        let mut bs = CommunityBootstrap::new("node1".to_string());
+        bs.award_badge(CommunityBadge::SeedGuardian, 1000, "Seed".to_string());
+        for _ in 0..20 {
+            bs.record_governance_vote();
+        }
+        // social_capital = 10 + 8 = 18 (CivicVoice awarded at 10 votes)
+        // trust = 0.5, actions = 20
+        // activity_bonus = min(20/100, 0.5) = 0.2
+        // score = 18 * (1.0 + 0.25 + 0.2) = 18 * 1.45 = 26.1
+        let score = bs.reputation_score(0.5);
+        assert!(score > 20.0);
+    }
+
+    #[test]
+    fn test_reputation_score_clamped() {
+        let mut bs = CommunityBootstrap::new("node1".to_string());
+        bs.award_badge(CommunityBadge::SeedGuardian, 1000, "Seed".to_string());
+        // Trust > 1.0 should be clamped
+        let score = bs.reputation_score(2.0);
+        // score = 10 * (1.0 + 0.5 + 0) = 15.0
+        assert!((score - 15.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_status_report_contains_fields() {
+        let mut bs = CommunityBootstrap::new("test-node".to_string());
+        bs.award_badge(CommunityBadge::SeedGuardian, 1000, "Seed".to_string());
+        let report = bs.status_report();
+        assert!(report.contains("test-node"));
+        assert!(report.contains("Contributor"));
+        assert!(report.contains("10.0"));
+        assert!(report.contains("badges: 1"));
+    }
+
+    #[test]
+    fn test_community_bootstrap_basic() {
+        let peers = vec![
+            BootstrapPeer::new("p1".to_string(), "a1".to_string(), 0.8),
+            BootstrapPeer::new("p2".to_string(), "a2".to_string(), 0.9),
+        ];
+        let config = BootstrapConfig::with_peers(peers);
+        let result = community_bootstrap("node1".to_string(), &config, 1000);
+        assert_eq!(result.node_id, "node1");
+        assert_eq!(result.bootstrap_peers.len(), 2);
+    }
+
+    #[test]
+    fn test_community_bootstrap_awards_seed_guardian() {
+        // Empty initial_peers + success = Seed Guardian
+        let config = BootstrapConfig::default();
+        let result = community_bootstrap("node1".to_string(), &config, 1000);
+        // No peers discovered, no Seed Guardian (success is false when no peers)
+        assert!(!result.incentives.iter().any(|i| i.badge == CommunityBadge::SeedGuardian));
+    }
+
+    #[test]
+    fn test_compute_social_capital_empty() {
+        let (total, avg, tier) = compute_social_capital(&[]);
+        assert_eq!(total, 0.0);
+        assert_eq!(avg, 0.0);
+        assert_eq!(tier, 0);
+    }
+
+    #[test]
+    fn test_compute_social_capital_single() {
+        let mut bs = CommunityBootstrap::new("node1".to_string());
+        bs.award_badge(CommunityBadge::ProofForge, 1000, "Proof".to_string());
+        let (total, avg, tier) = compute_social_capital(&[bs]);
+        assert_eq!(total, 25.0);
+        assert_eq!(avg, 25.0);
+        assert_eq!(tier, 2); // Steward
+    }
+
+    #[test]
+    fn test_compute_social_capital_multiple() {
+        let mut bs1 = CommunityBootstrap::new("n1".to_string());
+        bs1.award_badge(CommunityBadge::SeedGuardian, 1000, "Seed".to_string());
+        let mut bs2 = CommunityBootstrap::new("n2".to_string());
+        bs2.award_badge(CommunityBadge::ProofForge, 1000, "Proof".to_string());
+        let (total, avg, tier) = compute_social_capital(&[bs1, bs2]);
+        assert_eq!(total, 35.0);
+        assert!((avg - 17.5).abs() < 0.01);
+        assert_eq!(tier, 2); // Steward
+    }
+
+    #[test]
+    fn test_is_community_production_ready_empty() {
+        assert!(!is_community_production_ready(&[]));
+    }
+
+    #[test]
+    fn test_is_community_production_ready_insufficient_peers() {
+        let bs = CommunityBootstrap::new("n1".to_string());
+        assert!(!is_community_production_ready(&[bs]));
+    }
+
+    #[test]
+    fn test_is_community_production_ready_insufficient_tier() {
+        let mut bs = CommunityBootstrap::new("n1".to_string());
+        bs.add_peer(BootstrapPeer::new("p1".to_string(), "a1".to_string(), 0.8));
+        bs.add_peer(BootstrapPeer::new("p2".to_string(), "a2".to_string(), 0.8));
+        bs.add_peer(BootstrapPeer::new("p3".to_string(), "a3".to_string(), 0.8));
+        // Only 10 social capital, tier = 1 (Contributor)
+        bs.award_badge(CommunityBadge::SeedGuardian, 1000, "Seed".to_string());
+        assert!(!is_community_production_ready(&[bs]));
+    }
+
+    #[test]
+    fn test_is_community_production_ready_all_pass() {
+        let mut bs = CommunityBootstrap::new("n1".to_string());
+        bs.add_peer(BootstrapPeer::new("p1".to_string(), "a1".to_string(), 0.8));
+        bs.add_peer(BootstrapPeer::new("p2".to_string(), "a2".to_string(), 0.8));
+        bs.add_peer(BootstrapPeer::new("p3".to_string(), "a3".to_string(), 0.8));
+        // Need >= 10 social capital + tier >= 2 (Steward)
+        bs.award_badge(CommunityBadge::SeedGuardian, 1000, "Seed".to_string());
+        bs.award_badge(CommunityBadge::MeshHealer, 1100, "Heal".to_string());
+        // total = 25, avg = 25, tier = 2
+        assert!(is_community_production_ready(&[bs]));
+    }
+
+    #[test]
+    fn test_full_community_bootstrap_lifecycle() {
+        let mut bs = CommunityBootstrap::new("steward-1".to_string());
+
+        // Add peers
+        for i in 0..5 {
+            bs.add_peer(BootstrapPeer::new(
+                format!("p{}", i),
+                format!("addr{}", i),
+                0.7 + i as f64 * 0.05,
+            ));
+        }
+
+        // Record activities
+        bs.record_knowledge_contribution();
+        bs.record_healing_action();
+        for _ in 0..3 {
+            bs.record_onboarding();
+        }
+
+        // Check state
+        assert_eq!(bs.bootstrap_peers.len(), 5);
+        assert_eq!(bs.knowledge_contributions, 1);
+        assert_eq!(bs.healing_actions, 1);
+        assert_eq!(bs.peers_onboarded, 3);
+        // KnowledgeSharer(12) + MeshHealer(15) = 27
+        assert!((bs.total_social_capital - 27.0).abs() < 0.01);
+        assert_eq!(bs.incentive_tier(), 2); // Steward
+        assert_eq!(bs.tier_name(), "Steward");
+
+        let report = bs.status_report();
+        assert!(report.contains("steward-1"));
+        assert!(report.contains("Steward"));
     }
 }

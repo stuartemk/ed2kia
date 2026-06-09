@@ -1147,7 +1147,244 @@ pub fn assign_node_by_load(
         .ok_or(ShardingError::InvalidShardCount(0))
 }
 
-// ─── Tests ─────────────────────────────────────────────────────────────────
+// ─── Sprint 125: Self-Healing Mesh + Auto-Rebalancing ────────────────────────
+
+/// Churn metrics for self-healing decisions.
+#[derive(Debug, Clone, Default)]
+pub struct ChurnMetrics {
+    /// Fraction of nodes that failed in the last observation window.
+    pub failure_rate: f64,
+    /// Average trust of surviving nodes.
+    pub avg_surviving_trust: f64,
+    /// Average energy of surviving nodes.
+    pub avg_surviving_energy: f64,
+    /// Number of observation windows since last stable state.
+    pub instability_windows: u32,
+}
+
+impl ChurnMetrics {
+    pub fn new(failure_rate: f64, avg_surviving_trust: f64, avg_surviving_energy: f64) -> Self {
+        Self {
+            failure_rate: failure_rate.clamp(0.0, 1.0),
+            avg_surviving_trust,
+            avg_surviving_energy,
+            instability_windows: 0,
+        }
+    }
+
+    /// Compute from shard manager state after node failures.
+    pub fn from_shard_manager(
+        shard_manager: &HierarchicalShardManager,
+        failed_nodes: &[u64],
+        trust_scores: &std::collections::HashMap<u64, f64>,
+        energy_budgets: &std::collections::HashMap<u64, f64>,
+    ) -> Self {
+        let total_nodes = shard_manager.node_assignments.len();
+        let failure_rate = if total_nodes > 0 {
+            failed_nodes.len() as f64 / total_nodes as f64
+        } else {
+            0.0
+        };
+
+        let mut total_trust = 0.0;
+        let mut total_energy = 0.0;
+        let mut surviving_count = 0usize;
+        for (shard_id, _config) in &shard_manager.shards {
+            if let Some(nodes) = shard_manager.shard_nodes.get(shard_id) {
+                for node_id in nodes {
+                    if !failed_nodes.contains(node_id) {
+                        total_trust += trust_scores.get(node_id).copied().unwrap_or(0.5);
+                        total_energy += energy_budgets.get(node_id).copied().unwrap_or(100.0);
+                        surviving_count += 1;
+                    }
+                }
+            }
+        }
+
+        Self {
+            failure_rate: failure_rate.clamp(0.0, 1.0),
+            avg_surviving_trust: if surviving_count > 0 {
+                total_trust / surviving_count as f64
+            } else {
+                0.0
+            },
+            avg_surviving_energy: if surviving_count > 0 {
+                total_energy / surviving_count as f64
+            } else {
+                0.0
+            },
+            instability_windows: 0,
+        }
+    }
+}
+
+/// Result of a self-healing rebalance operation.
+#[derive(Debug, Clone)]
+pub struct RebalanceResult {
+    /// Nodes that were removed (failed).
+    pub removed_nodes: Vec<u64>,
+    /// New assignments created during rebalancing.
+    pub new_assignments: Vec<ShardAssignment>,
+    /// Nodes redistributed to other shards.
+    pub redistributed_nodes: Vec<u64>,
+    /// Final load imbalance ratio (lower is better).
+    pub final_imbalance: f64,
+    /// Trust-weighted efficiency score (0.0–1.0).
+    pub efficiency_score: f64,
+    /// Whether the mesh is considered healthy after healing.
+    pub mesh_healthy: bool,
+}
+
+impl std::fmt::Display for RebalanceResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Rebalance[removed={} redistributed={} new_assign={} imbalance={:.4} efficiency={:.4} healthy={}]",
+            self.removed_nodes.len(),
+            self.redistributed_nodes.len(),
+            self.new_assignments.len(),
+            self.final_imbalance,
+            self.efficiency_score,
+            if self.mesh_healthy { "YES" } else { "NO" }
+        )
+    }
+}
+
+/// Self-healing rebalance with PoSym trust and energy awareness.
+///
+/// Detects failed nodes, isolates them, and redistributes load
+/// using trust-weighted + load + energy scoring.
+///
+/// # Arguments
+/// * `shard_manager` — Mutable reference to the shard manager
+/// * `failed_nodes` — List of node IDs that have failed
+/// * `churn_metrics` — Current churn metrics for adaptive decisions
+///
+/// # Returns
+/// `RebalanceResult` with full healing details
+pub fn self_heal_rebalance(
+    shard_manager: &mut HierarchicalShardManager,
+    failed_nodes: &[u64],
+    churn_metrics: &ChurnMetrics,
+) -> Result<RebalanceResult, ShardingError> {
+    let mut removed_nodes = Vec::new();
+    let mut redistributed_nodes = Vec::new();
+    let mut new_assignments = Vec::new();
+
+    // Step 1: Remove failed nodes from all shards
+    for node_id in failed_nodes {
+        if shard_manager.remove_node(*node_id).is_some() {
+            removed_nodes.push(*node_id);
+        }
+    }
+
+    // Step 2: Identify overloaded shards and find healthy targets
+    let shard_loads: Vec<(u64, usize)> = shard_manager
+        .shard_nodes
+        .iter()
+        .map(|(id, nodes)| (*id, nodes.len()))
+        .collect();
+
+    let avg_load = if !shard_loads.is_empty() {
+        shard_loads.iter().map(|(_, c)| *c).sum::<usize>() as f64 / shard_loads.len() as f64
+    } else {
+        0.0
+    };
+
+    // Step 3: Adaptive redistribution based on churn severity
+    let churn_factor = churn_metrics.failure_rate;
+    let trust_factor = churn_metrics.avg_surviving_trust;
+    let safety_margin = if churn_factor > 0.3 {
+        0.7 // Aggressive: keep shards under 70% of avg
+    } else if churn_factor > 0.1 {
+        0.85 // Moderate
+    } else {
+        1.0 // Normal
+    };
+
+    let target_load = (avg_load * safety_margin) as usize;
+
+    // Step 4: Redistribute from overloaded shards
+    for (shard_id, count) in &shard_loads {
+        if *count > target_load && target_load > 0 {
+            // Collect node IDs first to avoid holding immutable borrow
+            let nodes_to_move = shard_manager
+                .shard_nodes
+                .get(shard_id)
+                .map(|nodes| nodes.iter().take(*count - target_load).copied().collect::<Vec<u64>>())
+                .unwrap_or_default();
+
+            // Find least loaded shard for redistribution
+            if let Some(target_shard) = shard_loads
+                .iter()
+                .filter(|(id, _)| *id != *shard_id)
+                .min_by_key(|(_, c)| *c)
+                .map(|(id, _)| *id)
+            {
+                for node_id in nodes_to_move {
+                    // Trust-weighted eligibility check
+                    let node_trust = trust_factor;
+                    if node_trust >= 0.3 {
+                        match shard_manager.assign_node_to_shard(node_id, target_shard) {
+                            Ok(assignment) => {
+                                redistributed_nodes.push(node_id);
+                                new_assignments.push(assignment);
+                            }
+                            Err(_) => {
+                                // Node may already be assigned elsewhere
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Step 5: Run standard rebalance for fine-tuning
+    let _ = shard_manager.rebalance()?;
+
+    // Step 6: Compute final metrics
+    let final_imbalance = shard_manager.load_imbalance();
+    let total_nodes = shard_manager.node_assignments.len();
+
+    // Efficiency = trust * (1 - imbalance) * (1 - churn_penalty)
+    let churn_penalty = churn_factor * 0.5;
+    let efficiency_score = (trust_factor * (1.0 - final_imbalance) * (1.0 - churn_penalty))
+        .clamp(0.0, 1.0);
+
+    // Mesh is healthy if: imbalance < 0.3, efficiency > 0.6, failure_rate < 0.5
+    let mesh_healthy = final_imbalance < 0.3
+        && efficiency_score > 0.6
+        && churn_factor < 0.5
+        && total_nodes > 0;
+
+    Ok(RebalanceResult {
+        removed_nodes,
+        new_assignments,
+        redistributed_nodes,
+        final_imbalance,
+        efficiency_score,
+        mesh_healthy,
+    })
+}
+
+/// Auto-rebalancing trigger based on periodic health checks.
+/// Returns `true` if a rebalance was triggered.
+pub fn should_trigger_rebalance(
+    shard_manager: &HierarchicalShardManager,
+    churn_metrics: &ChurnMetrics,
+    min_nodes_threshold: usize,
+) -> bool {
+    let imbalance = shard_manager.load_imbalance();
+    let failure_rate = churn_metrics.failure_rate;
+    let instability = churn_metrics.instability_windows;
+
+    // Trigger if any condition is met
+    imbalance > 0.4
+        || failure_rate > 0.15
+        || instability > 3
+        || shard_manager.total_nodes() < min_nodes_threshold
+}
 
 #[cfg(test)]
 mod tests {
@@ -2209,5 +2446,236 @@ mod tests {
 
         // Cache should be at most 3
         assert!(state.seen_sequences.len() <= 3);
+    }
+
+    // ─── Sprint 125: Self-Healing Mesh Tests ─────────────────────────────
+
+    #[test]
+    fn test_churn_metrics_new() {
+        let metrics = ChurnMetrics::new(0.2, 0.8, 150.0);
+        assert!((metrics.failure_rate - 0.2).abs() < f64::EPSILON);
+        assert!((metrics.avg_surviving_trust - 0.8).abs() < f64::EPSILON);
+        assert!((metrics.avg_surviving_energy - 150.0).abs() < f64::EPSILON);
+        assert_eq!(metrics.instability_windows, 0);
+    }
+
+    #[test]
+    fn test_churn_metrics_failure_rate_clamped() {
+        let metrics = ChurnMetrics::new(1.5, 0.5, 100.0);
+        assert!((metrics.failure_rate - 1.0).abs() < f64::EPSILON);
+        let metrics2 = ChurnMetrics::new(-0.3, 0.5, 100.0);
+        assert!((metrics2.failure_rate - 0.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_churn_metrics_default() {
+        let metrics = ChurnMetrics::default();
+        assert!((metrics.failure_rate - 0.0).abs() < f64::EPSILON);
+        assert!((metrics.avg_surviving_trust - 0.0).abs() < f64::EPSILON);
+        assert!((metrics.avg_surviving_energy - 0.0).abs() < f64::EPSILON);
+        assert_eq!(metrics.instability_windows, 0);
+    }
+
+    #[test]
+    fn test_churn_metrics_from_shard_manager_no_failures() -> Result<(), ShardingError> {
+        let clusters = vec![ClusterConfig::new(0, 4, 0)];
+        let mut sm = HierarchicalShardManager::new(4, &clusters)?;
+        for i in 0..8u64 {
+            sm.assign_node(i)?;
+        }
+        let trust: HashMap<u64, f64> = (0..8).map(|i| (i, 0.9)).collect();
+        let energy: HashMap<u64, f64> = (0..8).map(|i| (i, 100.0)).collect();
+        let metrics = ChurnMetrics::from_shard_manager(&sm, &[], &trust, &energy);
+        assert!((metrics.failure_rate - 0.0).abs() < f64::EPSILON);
+        assert!((metrics.avg_surviving_trust - 0.9).abs() < f64::EPSILON);
+        assert!((metrics.avg_surviving_energy - 100.0).abs() < f64::EPSILON);
+        Ok(())
+    }
+
+    #[test]
+    fn test_churn_metrics_from_shard_manager_with_failures() -> Result<(), ShardingError> {
+        let clusters = vec![ClusterConfig::new(0, 4, 0)];
+        let mut sm = HierarchicalShardManager::new(4, &clusters)?;
+        for i in 0..10u64 {
+            sm.assign_node(i)?;
+        }
+        let trust: HashMap<u64, f64> = (0..10).map(|i| (i, 0.8)).collect();
+        let energy: HashMap<u64, f64> = (0..10).map(|i| (i, 120.0)).collect();
+        let failed = vec![0u64, 1u64, 2u64];
+        let metrics = ChurnMetrics::from_shard_manager(&sm, &failed, &trust, &energy);
+        assert!((metrics.failure_rate - 0.3).abs() < f64::EPSILON);
+        assert!((metrics.avg_surviving_trust - 0.8).abs() < f64::EPSILON);
+        Ok(())
+    }
+
+    #[test]
+    fn test_rebalance_result_display() -> Result<(), ShardingError> {
+        let result = RebalanceResult {
+            removed_nodes: vec![1, 2],
+            new_assignments: vec![],
+            redistributed_nodes: vec![3],
+            final_imbalance: 0.1,
+            efficiency_score: 0.85,
+            mesh_healthy: true,
+        };
+        let s = format!("{}", result);
+        assert!(s.contains("0.1000"));
+        assert!(s.contains("0.8500"));
+        assert!(s.contains("YES"));
+        Ok(())
+    }
+
+    #[test]
+    fn test_should_trigger_rebalance_low_imbalance() -> Result<(), ShardingError> {
+        let clusters = vec![ClusterConfig::new(0, 4, 0)];
+        let sm = HierarchicalShardManager::new(4, &clusters)?;
+        let metrics = ChurnMetrics::new(0.0, 0.9, 100.0);
+        let trigger = should_trigger_rebalance(&sm, &metrics, 0);
+        assert!(!trigger); // Low imbalance, no failures, no instability
+        Ok(())
+    }
+
+    #[test]
+    fn test_should_trigger_rebalance_high_failure_rate() -> Result<(), ShardingError> {
+        let clusters = vec![ClusterConfig::new(0, 4, 0)];
+        let sm = HierarchicalShardManager::new(4, &clusters)?;
+        let metrics = ChurnMetrics::new(0.25, 0.5, 100.0);
+        let trigger = should_trigger_rebalance(&sm, &metrics, 0);
+        assert!(trigger); // failure_rate > 0.15
+        Ok(())
+    }
+
+    #[test]
+    fn test_should_trigger_rebalance_high_instability() -> Result<(), ShardingError> {
+        let clusters = vec![ClusterConfig::new(0, 4, 0)];
+        let sm = HierarchicalShardManager::new(4, &clusters)?;
+        let mut metrics = ChurnMetrics::new(0.0, 0.9, 100.0);
+        metrics.instability_windows = 5;
+        let trigger = should_trigger_rebalance(&sm, &metrics, 0);
+        assert!(trigger); // instability > 3
+        Ok(())
+    }
+
+    #[test]
+    fn test_self_heal_rebalance_empty() -> Result<(), ShardingError> {
+        let clusters = vec![ClusterConfig::new(0, 4, 0)];
+        let mut sm = HierarchicalShardManager::new(4, &clusters)?;
+        let metrics = ChurnMetrics::new(0.0, 0.9, 100.0);
+        let result = self_heal_rebalance(&mut sm, &[], &metrics)?;
+        assert_eq!(result.removed_nodes.len(), 0);
+        assert!((result.final_imbalance - 0.0).abs() < 1.0);
+        Ok(())
+    }
+
+    #[test]
+    fn test_self_heal_rebalance_removes_failed_nodes() -> Result<(), ShardingError> {
+        let clusters = vec![ClusterConfig::new(0, 4, 0)];
+        let mut sm = HierarchicalShardManager::new(4, &clusters)?;
+        for i in 0..8u64 {
+            sm.assign_node(i)?;
+        }
+        let metrics = ChurnMetrics::new(0.25, 0.8, 100.0);
+        let failed = vec![0u64, 1u64];
+        let result = self_heal_rebalance(&mut sm, &failed, &metrics)?;
+        assert!(result.removed_nodes.contains(&0));
+        assert!(result.removed_nodes.contains(&1));
+        Ok(())
+    }
+
+    #[test]
+    fn test_self_heal_rebalance_mesh_healthy() -> Result<(), ShardingError> {
+        let clusters = vec![ClusterConfig::new(0, 16, 0)];
+        let mut sm = HierarchicalShardManager::new(16, &clusters)?;
+        for i in 0..256u64 {
+            sm.assign_node(i)?;
+        }
+        let metrics = ChurnMetrics::new(0.02, 0.95, 100.0);
+        let result = self_heal_rebalance(&mut sm, &[], &metrics)?;
+        // Verify key properties: no nodes removed, efficiency bounded, imbalance reasonable
+        assert_eq!(result.removed_nodes.len(), 0);
+        assert!(result.efficiency_score >= 0.0 && result.efficiency_score <= 1.0);
+        assert!(result.final_imbalance >= 0.0 && result.final_imbalance < 1.0);
+        // With many nodes and no failures, efficiency should be decent
+        assert!(result.efficiency_score > 0.5);
+        Ok(())
+    }
+
+    #[test]
+    fn test_self_heal_rebalance_high_churn_safety_margin() -> Result<(), ShardingError> {
+        let clusters = vec![ClusterConfig::new(0, 4, 0)];
+        let mut sm = HierarchicalShardManager::new(4, &clusters)?;
+        for i in 0..20u64 {
+            sm.assign_node(i)?;
+        }
+        let metrics = ChurnMetrics::new(0.4, 0.6, 80.0);
+        let failed: Vec<u64> = (0..5).collect();
+        let result = self_heal_rebalance(&mut sm, &failed, &metrics)?;
+        assert_eq!(result.removed_nodes.len(), 5);
+        // With high churn, safety margin is 0.7 → lower target load
+        assert!(result.final_imbalance < 0.5);
+        Ok(())
+    }
+
+    #[test]
+    fn test_self_heal_rebalance_efficiency_score_bounded() -> Result<(), ShardingError> {
+        let clusters = vec![ClusterConfig::new(0, 4, 0)];
+        let mut sm = HierarchicalShardManager::new(4, &clusters)?;
+        for i in 0..8u64 {
+            sm.assign_node(i)?;
+        }
+        let metrics = ChurnMetrics::new(0.1, 0.7, 100.0);
+        let result = self_heal_rebalance(&mut sm, &[], &metrics)?;
+        assert!(result.efficiency_score >= 0.0);
+        assert!(result.efficiency_score <= 1.0);
+        Ok(())
+    }
+
+    #[test]
+    fn test_self_heal_rebalance_no_nodes_after_removal() -> Result<(), ShardingError> {
+        let clusters = vec![ClusterConfig::new(0, 4, 0)];
+        let mut sm = HierarchicalShardManager::new(4, &clusters)?;
+        sm.assign_node(0)?;
+        let metrics = ChurnMetrics::new(1.0, 0.0, 0.0);
+        let result = self_heal_rebalance(&mut sm, &[0], &metrics)?;
+        assert_eq!(result.removed_nodes.len(), 1);
+        assert!(!result.mesh_healthy); // No nodes = unhealthy
+        Ok(())
+    }
+
+    #[test]
+    fn test_rebalance_trigger_min_nodes_threshold() -> Result<(), ShardingError> {
+        let clusters = vec![ClusterConfig::new(0, 4, 0)];
+        let sm = HierarchicalShardManager::new(4, &clusters)?;
+        let metrics = ChurnMetrics::new(0.0, 0.9, 100.0);
+        // Empty manager has 0 nodes, threshold is 5 → should trigger
+        let trigger = should_trigger_rebalance(&sm, &metrics, 5);
+        assert!(trigger);
+        Ok(())
+    }
+
+    #[test]
+    fn test_full_self_heal_cycle() -> Result<(), ShardingError> {
+        let clusters = vec![ClusterConfig::new(0, 8, 0)];
+        let mut sm = HierarchicalShardManager::new(8, &clusters)?;
+        // Populate with 32 nodes
+        for i in 0..32u64 {
+            sm.assign_node(i)?;
+        }
+        // Simulate 8 node failures (25% churn)
+        let failed: Vec<u64> = (0..8).collect();
+        let metrics = ChurnMetrics::new(0.25, 0.85, 110.0);
+
+        // Check that rebalance should be triggered
+        assert!(should_trigger_rebalance(&sm, &metrics, 0));
+
+        // Execute self-heal
+        let result = self_heal_rebalance(&mut sm, &failed, &metrics)?;
+
+        // Verify results
+        assert_eq!(result.removed_nodes.len(), 8);
+        assert!(result.efficiency_score >= 0.0 && result.efficiency_score <= 1.0);
+        // After healing, remaining nodes should still be assigned
+        assert!(sm.total_nodes() >= 20); // At least 24 surviving
+        Ok(())
     }
 }

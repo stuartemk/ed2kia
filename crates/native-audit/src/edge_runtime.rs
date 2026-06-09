@@ -1336,6 +1336,158 @@ pub fn validate_edge_deploy(
     )
 }
 
+// ─── Sprint 125: Real Hardware Energy Validation + Production Monitoring ──
+
+/// Production-grade energy validation that cross-checks estimated vs real hardware energy.
+///
+/// Validates that the estimated energy from `validate_edge_deploy` falls within
+/// acceptable bounds of the real hardware energy measurement.
+///
+/// # Arguments
+/// * `estimated_mwh` — Estimated energy in milliwatt-hours from simulation
+/// * `measured_mwh` — Actual measured energy from hardware sensors
+/// * `tolerance` — Maximum allowed deviation ratio (default 0.3 = ±30%)
+///
+/// # Returns
+/// `true` if the estimate is within tolerance of the measurement
+pub fn validate_real_energy(estimated_mwh: f64, measured_mwh: f64, tolerance: f64) -> bool {
+    if measured_mwh <= 0.0 {
+        return estimated_mwh <= 0.0;
+    }
+    let deviation = (estimated_mwh - measured_mwh).abs() / measured_mwh;
+    deviation <= tolerance
+}
+
+/// Production monitoring metrics for a running edge node.
+#[derive(Debug, Clone)]
+pub struct ProductionMetrics {
+    /// Node uptime in seconds
+    pub uptime_seconds: u64,
+    /// Total inferences processed
+    pub total_inferences: u64,
+    /// Average inference latency in milliseconds
+    pub avg_latency_ms: f64,
+    /// Current energy consumption rate (mWh/s)
+    pub energy_rate_mwh_per_s: f64,
+    /// Current trust score
+    pub trust_score: f64,
+    /// P99 latency in milliseconds
+    pub p99_latency_ms: f64,
+    /// Error rate (0.0 to 1.0)
+    pub error_rate: f64,
+    /// Memory utilization (0.0 to 1.0)
+    pub memory_utilization: f64,
+    /// CPU utilization (0.0 to 1.0)
+    pub cpu_utilization: f64,
+}
+
+impl ProductionMetrics {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Record a new inference completion with its latency and energy cost.
+    pub fn record_inference(&mut self, latency_ms: f64, energy_mwh: f64, success: bool) {
+        self.total_inferences += 1;
+        // Exponential moving average for latency
+        let alpha = 0.1;
+        self.avg_latency_ms = alpha * latency_ms + (1.0 - alpha) * self.avg_latency_ms;
+        // Track p99 as running max with decay
+        if latency_ms > self.p99_latency_ms * 0.95 {
+            self.p99_latency_ms = latency_ms;
+        }
+        // Update error rate with EMA
+        let error = if success { 0.0 } else { 1.0 };
+        self.error_rate = alpha * error + (1.0 - alpha) * self.error_rate;
+        // Update energy rate
+        self.energy_rate_mwh_per_s = energy_mwh / (latency_ms / 1000.0).max(0.001);
+    }
+
+    /// Update resource utilization metrics.
+    pub fn update_utilization(&mut self, memory_util: f64, cpu_util: f64) {
+        self.memory_utilization = memory_util.clamp(0.0, 1.0);
+        self.cpu_utilization = cpu_util.clamp(0.0, 1.0);
+    }
+
+    /// Check if the node is healthy for production operation.
+    pub fn is_healthy(&self) -> bool {
+        self.error_rate < 0.05
+            && self.memory_utilization < 0.9
+            && self.cpu_utilization < 0.95
+            && self.trust_score >= 0.3
+            && self.avg_latency_ms > 0.0
+    }
+
+    /// Compute a health score from 0.0 (critical) to 1.0 (excellent).
+    pub fn health_score(&self) -> f64 {
+        let error_penalty = self.error_rate * 2.0;
+        let memory_penalty = if self.memory_utilization > 0.8 {
+            (self.memory_utilization - 0.8) * 5.0
+        } else {
+            0.0
+        };
+        let cpu_penalty = if self.cpu_utilization > 0.85 {
+            (self.cpu_utilization - 0.85) * 6.67
+        } else {
+            0.0
+        };
+        let latency_penalty = if self.avg_latency_ms > 1000.0 {
+            (self.avg_latency_ms - 1000.0) / 10000.0
+        } else {
+            0.0
+        };
+        let trust_bonus = self.trust_score * 0.1;
+        (1.0 - error_penalty - memory_penalty - cpu_penalty - latency_penalty + trust_bonus)
+            .clamp(0.0, 1.0)
+    }
+
+    /// Generate a human-readable status report.
+    pub fn status_report(&self) -> String {
+        format!(
+            "ProdMetrics[uptime={}s inferences={} avg_lat={:.2}ms p99={:.2}ms \
+             err={:.4} mem={:.2} cpu={:.2} trust={:.3} health={:.3}]",
+            self.uptime_seconds,
+            self.total_inferences,
+            self.avg_latency_ms,
+            self.p99_latency_ms,
+            self.error_rate,
+            self.memory_utilization * 100.0,
+            self.cpu_utilization * 100.0,
+            self.trust_score,
+            self.health_score(),
+        )
+    }
+}
+
+impl Default for ProductionMetrics {
+    fn default() -> Self {
+        Self {
+            uptime_seconds: 0,
+            total_inferences: 0,
+            avg_latency_ms: 0.0,
+            energy_rate_mwh_per_s: 0.0,
+            trust_score: 0.5,
+            p99_latency_ms: 0.0,
+            error_rate: 0.0,
+            memory_utilization: 0.0,
+            cpu_utilization: 0.0,
+        }
+    }
+}
+
+/// Validate that an edge deployment result meets production readiness criteria.
+///
+/// # Arguments
+/// * `deploy` — Result from `validate_edge_deploy`
+/// * `metrics` — Current production metrics
+/// * `min_health_score` — Minimum acceptable health score
+///
+/// # Returns
+/// `true` if the deployment is production-ready
+pub fn is_production_ready(deploy: &EdgeDeployResult, metrics: &ProductionMetrics, min_health_score: f64) -> bool {
+    deploy.ready && metrics.is_healthy() && metrics.health_score() >= min_health_score
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1945,5 +2097,263 @@ mod tests {
     fn test_mpc_config_with_safety_radius() {
         let cfg = MpcConfig::with_safety_radius(5.0);
         assert!((cfg.beta - 5.0).abs() < 1e-6);
+    }
+
+    // ─── Sprint 125: Production Monitoring Tests ─────────────────────────
+
+    #[test]
+    fn test_validate_real_energy_exact_match() {
+        assert!(validate_real_energy(1.0, 1.0, 0.3));
+    }
+
+    #[test]
+    fn test_validate_real_energy_within_tolerance() {
+        assert!(validate_real_energy(1.2, 1.0, 0.3)); // 20% deviation < 30%
+    }
+
+    #[test]
+    fn test_validate_real_energy_exceeds_tolerance() {
+        assert!(!validate_real_energy(1.5, 1.0, 0.3)); // 50% deviation > 30%
+    }
+
+    #[test]
+    fn test_validate_real_energy_zero_measured() {
+        assert!(validate_real_energy(0.0, 0.0, 0.3));
+        assert!(!validate_real_energy(1.0, 0.0, 0.3));
+    }
+
+    #[test]
+    fn test_validate_real_energy_strict_tolerance() {
+        assert!(validate_real_energy(1.01, 1.0, 0.05)); // 1% < 5%
+        assert!(!validate_real_energy(1.06, 1.0, 0.05)); // 6% > 5%
+    }
+
+    #[test]
+    fn test_production_metrics_default() {
+        let m = ProductionMetrics::default();
+        assert_eq!(m.uptime_seconds, 0);
+        assert_eq!(m.total_inferences, 0);
+        assert!((m.avg_latency_ms - 0.0).abs() < 1e-9);
+        assert!((m.trust_score - 0.5).abs() < 1e-9);
+        assert!(!m.is_healthy()); // avg_latency_ms == 0
+    }
+
+    #[test]
+    fn test_production_metrics_new() {
+        let m = ProductionMetrics::new();
+        assert_eq!(m.total_inferences, 0);
+    }
+
+    #[test]
+    fn test_production_metrics_record_inference() {
+        let mut m = ProductionMetrics::default();
+        m.avg_latency_ms = 100.0; // Seed initial latency
+        m.record_inference(50.0, 0.05, true);
+        assert_eq!(m.total_inferences, 1);
+        // EMA: 0.1 * 50 + 0.9 * 100 = 5 + 90 = 95
+        assert!((m.avg_latency_ms - 95.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_production_metrics_record_error() {
+        let mut m = ProductionMetrics::default();
+        m.record_inference(100.0, 0.1, false);
+        assert!((m.error_rate - 0.1).abs() < 0.01); // alpha * 1.0
+    }
+
+    #[test]
+    fn test_production_metrics_healthy() {
+        let mut m = ProductionMetrics::default();
+        m.avg_latency_ms = 50.0;
+        m.memory_utilization = 0.5;
+        m.cpu_utilization = 0.4;
+        m.trust_score = 0.8;
+        m.error_rate = 0.01;
+        assert!(m.is_healthy());
+    }
+
+    #[test]
+    fn test_production_metrics_unhealthy_high_memory() {
+        let mut m = ProductionMetrics::default();
+        m.avg_latency_ms = 50.0;
+        m.memory_utilization = 0.95; // > 0.9
+        m.cpu_utilization = 0.4;
+        m.trust_score = 0.8;
+        assert!(!m.is_healthy());
+    }
+
+    #[test]
+    fn test_production_metrics_unhealthy_high_error() {
+        let mut m = ProductionMetrics::default();
+        m.avg_latency_ms = 50.0;
+        m.memory_utilization = 0.5;
+        m.cpu_utilization = 0.4;
+        m.trust_score = 0.8;
+        m.error_rate = 0.1; // > 0.05
+        assert!(!m.is_healthy());
+    }
+
+    #[test]
+    fn test_production_metrics_unhealthy_low_trust() {
+        let mut m = ProductionMetrics::default();
+        m.avg_latency_ms = 50.0;
+        m.memory_utilization = 0.5;
+        m.cpu_utilization = 0.4;
+        m.trust_score = 0.1; // < 0.3
+        assert!(!m.is_healthy());
+    }
+
+    #[test]
+    fn test_health_score_perfect() {
+        let m = ProductionMetrics {
+            uptime_seconds: 3600,
+            total_inferences: 10000,
+            avg_latency_ms: 100.0,
+            energy_rate_mwh_per_s: 0.05,
+            trust_score: 1.0,
+            p99_latency_ms: 200.0,
+            error_rate: 0.0,
+            memory_utilization: 0.3,
+            cpu_utilization: 0.2,
+        };
+        let score = m.health_score();
+        assert!(score > 0.9);
+        assert!(score <= 1.0);
+    }
+
+    #[test]
+    fn test_health_score_critical() {
+        let m = ProductionMetrics {
+            uptime_seconds: 10,
+            total_inferences: 5,
+            avg_latency_ms: 5000.0,
+            energy_rate_mwh_per_s: 10.0,
+            trust_score: 0.0,
+            p99_latency_ms: 8000.0,
+            error_rate: 0.5,
+            memory_utilization: 0.98,
+            cpu_utilization: 0.99,
+        };
+        let score = m.health_score();
+        assert!(score < 0.3);
+    }
+
+    #[test]
+    fn test_health_score_bounded() {
+        let m = ProductionMetrics::default();
+        let score = m.health_score();
+        assert!(score >= 0.0 && score <= 1.0);
+    }
+
+    #[test]
+    fn test_status_report_contains_fields() {
+        let m = ProductionMetrics {
+            uptime_seconds: 3600,
+            total_inferences: 5000,
+            avg_latency_ms: 75.5,
+            energy_rate_mwh_per_s: 0.08,
+            trust_score: 0.85,
+            p99_latency_ms: 150.0,
+            error_rate: 0.02,
+            memory_utilization: 0.6,
+            cpu_utilization: 0.45,
+        };
+        let report = m.status_report();
+        assert!(report.contains("3600"));
+        assert!(report.contains("5000"));
+        assert!(report.contains("75.5"));
+    }
+
+    #[test]
+    fn test_update_utilization_clamps() {
+        let mut m = ProductionMetrics::default();
+        m.update_utilization(1.5, -0.3);
+        assert!((m.memory_utilization - 1.0).abs() < 1e-9);
+        assert!((m.cpu_utilization - 0.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn test_is_production_ready_all_pass() {
+        let deploy = EdgeDeployResult::new(
+            WasmTarget::Native, true, true, 0.5, true, 0.0,
+        );
+        let metrics = ProductionMetrics {
+            uptime_seconds: 3600,
+            total_inferences: 10000,
+            avg_latency_ms: 50.0,
+            energy_rate_mwh_per_s: 0.05,
+            trust_score: 0.9,
+            p99_latency_ms: 100.0,
+            error_rate: 0.01,
+            memory_utilization: 0.4,
+            cpu_utilization: 0.3,
+        };
+        assert!(is_production_ready(&deploy, &metrics, 0.7));
+    }
+
+    #[test]
+    fn test_is_production_ready_deploy_not_ready() {
+        let deploy = EdgeDeployResult::new(
+            WasmTarget::Native, false, true, 0.5, true, 0.0,
+        );
+        let metrics = ProductionMetrics::default();
+        assert!(!is_production_ready(&deploy, &metrics, 0.7));
+    }
+
+    #[test]
+    fn test_is_production_ready_health_too_low() {
+        let deploy = EdgeDeployResult::new(
+            WasmTarget::Native, true, true, 0.5, true, 0.0,
+        );
+        let metrics = ProductionMetrics {
+            uptime_seconds: 100,
+            total_inferences: 10,
+            avg_latency_ms: 3000.0,
+            energy_rate_mwh_per_s: 5.0,
+            trust_score: 0.2,
+            p99_latency_ms: 5000.0,
+            error_rate: 0.3,
+            memory_utilization: 0.95,
+            cpu_utilization: 0.98,
+        };
+        assert!(!is_production_ready(&deploy, &metrics, 0.7));
+    }
+
+    #[test]
+    fn test_production_metrics_p99_tracking() {
+        let mut m = ProductionMetrics::default();
+        m.avg_latency_ms = 100.0;
+        for _ in 0..10 {
+            m.record_inference(100.0, 0.05, true);
+        }
+        m.record_inference(500.0, 0.2, true); // Spike
+        assert!(m.p99_latency_ms >= 400.0);
+    }
+
+    #[test]
+    fn test_production_metrics_energy_rate() {
+        let mut m = ProductionMetrics::default();
+        m.record_inference(200.0, 0.1, true); // 200ms, 0.1mWh
+        // energy_rate = 0.1 / (200/1000) = 0.1 / 0.2 = 0.5 mWh/s
+        assert!((m.energy_rate_mwh_per_s - 0.5).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_validate_real_energy_symmetric() {
+        // Deviation is absolute, so direction shouldn't matter
+        let a = validate_real_energy(1.3, 1.0, 0.3);
+        let b = validate_real_energy(0.7, 1.0, 0.3);
+        assert_eq!(a, b); // Both 30% deviation
+    }
+
+    #[test]
+    fn test_production_metrics_ema_convergence() {
+        let mut m = ProductionMetrics::default();
+        m.avg_latency_ms = 0.0;
+        // Record same latency many times → should converge
+        for _ in 0..50 {
+            m.record_inference(100.0, 0.05, true);
+        }
+        assert!((m.avg_latency_ms - 100.0).abs() < 1.0);
     }
 }

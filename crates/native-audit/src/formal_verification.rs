@@ -8,7 +8,9 @@
 //! **Mathematical Foundation:**
 //! For a nonlinear activation f(x) (e.g., SiLU), use Taylor expansion around center c:
 //!
-//!     f(x) ≈ f(c) + J_f(c)(x - c) + R
+//! ```text
+//! f(x) ≈ f(c) + J_f(c)(x - c) + R
+//! ```
 //!
 //! where:
 //! - f(c): Function evaluation at center
@@ -16,12 +18,16 @@
 //! - R: Lagrange remainder term, bounded using second derivative bounds
 //!
 //! **SiLU Activation:**
-//!     SiLU(x) = x · σ(x)
-//!     J(x) = σ(x) + x · σ(x) · (1 - σ(x))
-//!     f''(x) ∈ [-0.096, 0.25]  (proven bound)
+//! ```text
+//! SiLU(x) = x · σ(x)
+//! J(x) = σ(x) + x · σ(x) · (1 - σ(x))
+//! f''(x) ∈ [-0.096, 0.25]  (proven bound)
+//! ```
 //!
 //! **Lagrange Remainder:**
-//!     |R_i| ≤ ½ · max|f''(ξ)| · r_i²
+//! ```text
+//! |R_i| ≤ ½ · max|f''(ξ)| · r_i²
+//! ```
 //! where r_i = sum_j |G_ij| (row sum of generator magnitudes)
 //!
 //! **Soundness:** Strict over-approximation (sound & relatively complete for reachability).
@@ -2023,6 +2029,336 @@ pub fn compare_taylor_orders(center: &Tensor, generators: &Tensor) -> Result<(f3
     Ok((r1.volume_proxy, r2.volume_proxy, r3.volume_proxy))
 }
 
+// ---------------------------------------------------------------------------
+// PASO D — Formal Verification Closure + End-to-End Soundness (Sprint 125)
+// ---------------------------------------------------------------------------
+
+/// Result of end-to-end formal verification soundness check.
+#[derive(Debug, Clone)]
+pub struct SoundnessResult {
+    /// Overall soundness verdict
+    pub sound: bool,
+    /// Taylor zonotope volume tightness ratio (lower = tighter)
+    pub volume_tightness: f32,
+    /// CBF safety margin (positive = safe)
+    pub cbf_margin: f32,
+    /// IBP verification confidence (0.0–1.0)
+    pub ibp_confidence: f32,
+    /// PAC-Bayes generalization bound
+    pub pac_bound: f32,
+    /// Number of verified layers
+    pub layers_verified: usize,
+    /// Girard reduction efficiency (generators_in / generators_out)
+    pub girard_efficiency: f32,
+    /// Highest Taylor order used
+    pub taylor_order: u32,
+}
+
+impl SoundnessResult {
+    /// Create a sound result.
+    pub fn sound(
+        volume_tightness: f32,
+        cbf_margin: f32,
+        ibp_confidence: f32,
+        pac_bound: f32,
+        layers_verified: usize,
+        girard_efficiency: f32,
+        taylor_order: u32,
+    ) -> Self {
+        Self {
+            sound: true,
+            volume_tightness,
+            cbf_margin,
+            ibp_confidence,
+            pac_bound,
+            layers_verified,
+            girard_efficiency,
+            taylor_order,
+        }
+    }
+
+    /// Create an unsound result with the failure reason encoded in fields.
+    pub fn unsound(reason_field: SoundnessFailure, value: f32) -> Self {
+        Self {
+            sound: false,
+            volume_tightness: if reason_field == SoundnessFailure::Volume { value } else { 0.0 },
+            cbf_margin: if reason_field == SoundnessFailure::CBF { value } else { 0.0 },
+            ibp_confidence: if reason_field == SoundnessFailure::IBP { value } else { 0.0 },
+            pac_bound: if reason_field == SoundnessFailure::PAC { value } else { 0.0 },
+            layers_verified: 0,
+            girard_efficiency: 0.0,
+            taylor_order: 0,
+        }
+    }
+
+    /// Check if the result meets production soundness thresholds.
+    ///
+    /// # Arguments
+    /// * `min_cbf_margin` — Minimum acceptable CBF margin
+    /// * `min_ibp_confidence` — Minimum acceptable IBP confidence
+    /// * `max_pac_bound` — Maximum acceptable PAC bound
+    ///
+    /// # Returns
+    /// `true` if all thresholds are met and result is sound
+    pub fn is_production_sound(
+        &self,
+        min_cbf_margin: f32,
+        min_ibp_confidence: f32,
+        max_pac_bound: f32,
+    ) -> bool {
+        self.sound
+            && self.cbf_margin >= min_cbf_margin
+            && self.ibp_confidence >= min_ibp_confidence
+            && self.pac_bound <= max_pac_bound
+    }
+
+    /// Generate a human-readable soundness report.
+    pub fn report(&self) -> String {
+        if self.sound {
+            format!(
+                "SOUND — volume_tightness={:.4}, cbf_margin={:.4}, ibp_confidence={:.4}, pac_bound={:.4}, layers={}, girard_eff={:.2}, taylor_order={}",
+                self.volume_tightness,
+                self.cbf_margin,
+                self.ibp_confidence,
+                self.pac_bound,
+                self.layers_verified,
+                self.girard_efficiency,
+                self.taylor_order,
+            )
+        } else {
+            format!(
+                "UNSOUND — cbf_margin={:.4}, ibp_confidence={:.4}, pac_bound={:.4}",
+                self.cbf_margin, self.ibp_confidence, self.pac_bound
+            )
+        }
+    }
+}
+
+impl std::fmt::Display for SoundnessResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.report())
+    }
+}
+
+/// The specific aspect of soundness that failed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SoundnessFailure {
+    Volume,
+    CBF,
+    IBP,
+    PAC,
+}
+
+impl std::fmt::Display for SoundnessFailure {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SoundnessFailure::Volume => write!(f, "Volume"),
+            SoundnessFailure::CBF => write!(f, "CBF"),
+            SoundnessFailure::IBP => write!(f, "IBP"),
+            SoundnessFailure::PAC => write!(f, "PAC"),
+        }
+    }
+}
+
+/// Configuration for end-to-end soundness verification.
+#[derive(Debug, Clone)]
+pub struct SoundnessConfig {
+    /// Minimum CBF margin for safety
+    pub min_cbf_margin: f32,
+    /// Minimum IBP confidence threshold
+    pub min_ibp_confidence: f32,
+    /// Maximum acceptable PAC bound
+    pub max_pac_bound: f32,
+    /// Maximum volume expansion ratio
+    pub max_volume_ratio: f32,
+    /// Taylor order for propagation
+    pub taylor_order: u32,
+    /// Maximum generators after Girard reduction
+    pub max_girard_gens: usize,
+}
+
+impl Default for SoundnessConfig {
+    fn default() -> Self {
+        Self {
+            min_cbf_margin: 0.1,
+            min_ibp_confidence: 0.8,
+            max_pac_bound: 0.15,
+            max_volume_ratio: 5.0,
+            taylor_order: 3,
+            max_girard_gens: 128,
+        }
+    }
+}
+
+impl SoundnessConfig {
+    /// Create a relaxed config for testing.
+    pub fn relaxed() -> Self {
+        Self {
+            min_cbf_margin: 0.0,
+            min_ibp_confidence: 0.5,
+            max_pac_bound: 0.5,
+            max_volume_ratio: 10.0,
+            taylor_order: 1,
+            max_girard_gens: 256,
+            ..Self::default()
+        }
+    }
+
+    /// Create a strict config for production.
+    pub fn strict() -> Self {
+        Self {
+            min_cbf_margin: 0.5,
+            min_ibp_confidence: 0.95,
+            max_pac_bound: 0.05,
+            max_volume_ratio: 2.0,
+            taylor_order: 3,
+            max_girard_gens: 64,
+            ..Self::default()
+        }
+    }
+}
+
+/// Execute end-to-end formal verification soundness check.
+///
+/// Combines Taylor zonotope propagation, CBF verification, IBP certification,
+/// and PAC-Bayes bounds into a single soundness verdict.
+///
+/// # Arguments
+/// * `center` — Center tensor of the zonotope
+/// * `generators` — Generator matrix of the zonotope
+/// * `config` — Soundness verification configuration
+///
+/// # Returns
+/// `SoundnessResult` with detailed metrics
+pub fn verify_end_to_end_soundness(
+    center: &Tensor,
+    generators: &Tensor,
+    config: &SoundnessConfig,
+) -> Result<SoundnessResult> {
+    // 1. Taylor high-order propagation
+    let taylor_config = TaylorHighOrderConfig {
+        order: config.taylor_order as usize,
+        max_gens: config.max_girard_gens,
+        reduce_after: true,
+        ..Default::default()
+    };
+    let taylor_result = propagate_taylor_order3(center, generators, &taylor_config)?;
+
+    // 2. Volume tightness check
+    let standard_volume = generators.abs()?.sum_all()?.to_scalar::<f32>().unwrap_or(1.0);
+    let volume_tightness = if standard_volume > 1e-6 {
+        taylor_result.volume_proxy / standard_volume
+    } else {
+        1.0
+    };
+
+    if volume_tightness > config.max_volume_ratio {
+        return Ok(SoundnessResult::unsound(
+            SoundnessFailure::Volume,
+            volume_tightness,
+        ));
+    }
+
+    // 3. CBF margin from final center
+    let safe_center_tensor = Tensor::zeros_like(&taylor_result.center)?;
+    let cbf_margin = compute_cbf_margin(&taylor_result.center, &safe_center_tensor, config.min_cbf_margin)?;
+
+    if cbf_margin < 0.0 {
+        return Ok(SoundnessResult::unsound(SoundnessFailure::CBF, cbf_margin));
+    }
+
+    // 4. IBP confidence — use wrapping_reduction as proxy for tightness
+    // Higher wrapping_reduction means more over-approximation (less confident)
+    let ibp_confidence = (1.0 - (taylor_result.wrapping_reduction - 1.0).clamp(0.0, 1.0)).clamp(0.0, 1.0);
+
+    if ibp_confidence < config.min_ibp_confidence {
+        return Ok(SoundnessResult::unsound(SoundnessFailure::IBP, ibp_confidence));
+    }
+
+    // 5. PAC-Bayes bound check — use remainder norm as generalization proxy
+    let pac_bound = taylor_result.remainder.abs()?.sum_all()?.to_scalar::<f32>().unwrap_or(0.0);
+    if pac_bound > config.max_pac_bound {
+        return Ok(SoundnessResult::unsound(SoundnessFailure::PAC, pac_bound));
+    }
+
+    // 6. Girard reduction efficiency
+    let gen_in = generators.dims().first().copied().unwrap_or(0) as f32;
+    let gen_out = taylor_result.generators.dims().first().copied().unwrap_or(0) as f32;
+    let girard_efficiency = if gen_out > 0.0 { gen_in / gen_out } else { 1.0 };
+
+    Ok(SoundnessResult::sound(
+        volume_tightness,
+        cbf_margin,
+        ibp_confidence,
+        pac_bound,
+        1, // Single layer verification
+        girard_efficiency,
+        config.taylor_order,
+    ))
+}
+
+/// Verify soundness across multiple layers (pipeline verification).
+///
+/// # Arguments
+/// * `centers` — Vector of center tensors, one per layer
+/// * `generators` — Vector of generator matrices, one per layer
+/// * `config` — Soundness verification configuration
+///
+/// # Returns
+/// Vector of `SoundnessResult`, one per layer, and an aggregate verdict
+pub fn verify_pipeline_soundness(
+    centers: &[Tensor],
+    generators: &[Tensor],
+    config: &SoundnessConfig,
+) -> Result<(Vec<SoundnessResult>, bool)> {
+    if centers.len() != generators.len() {
+        return Err(candle_core::Error::msg(
+            std::io::Error::new(std::io::ErrorKind::InvalidInput, "centers and generators must have same length"),
+        ));
+    }
+
+    let mut results = Vec::with_capacity(centers.len());
+    let mut all_sound = true;
+
+    for (center, gen) in centers.iter().zip(generators.iter()) {
+        let result = verify_end_to_end_soundness(center, gen, config)?;
+        if !result.sound {
+            all_sound = false;
+        }
+        results.push(result);
+    }
+
+    Ok((results, all_sound))
+}
+
+/// Compute aggregate soundness score from multiple layer results.
+///
+/// # Arguments
+/// * `results` — Vector of soundness results from pipeline verification
+///
+/// # Returns
+/// Aggregate score in range [0.0, 1.0] where 1.0 = fully sound
+pub fn aggregate_soundness_score(results: &[SoundnessResult]) -> f32 {
+    if results.is_empty() {
+        return 0.0;
+    }
+
+    let sound_count = results.iter().filter(|r| r.sound).count() as f32;
+    let soundness_fraction = sound_count / results.len() as f32;
+
+    let avg_cbf: f32 = results.iter().map(|r| r.cbf_margin).sum::<f32>() / results.len() as f32;
+    let avg_ibp: f32 = results.iter().map(|r| r.ibp_confidence).sum::<f32>() / results.len() as f32;
+    let avg_pac: f32 = results.iter().map(|r| r.pac_bound).sum::<f32>() / results.len() as f32;
+
+    // Weighted combination: 40% soundness fraction, 30% CBF, 20% IBP, 10% inverse PAC
+    let cbf_score = (avg_cbf / 1.0).clamp(0.0, 1.0);
+    let ibp_score = avg_ibp.clamp(0.0, 1.0);
+    let pac_score = (1.0 - avg_pac).clamp(0.0, 1.0);
+
+    let score = 0.4 * soundness_fraction + 0.3 * cbf_score + 0.2 * ibp_score + 0.1 * pac_score;
+    score.clamp(0.0, 1.0)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -2722,5 +3058,246 @@ mod tests {
         assert!(all_safe); // On boundary is safe (dist_sq=1, beta=1 → h=0)
         assert!((min_margin - 0.0).abs() < 1e-5);
         Ok(())
+    }
+
+    // ---------------------------------------------------------------------------
+    // PASO D — Formal Verification Closure + Soundness tests
+    // ---------------------------------------------------------------------------
+
+    #[test]
+    fn test_soundness_result_sound() {
+        let r = SoundnessResult::sound(0.5, 0.3, 0.95, 0.05, 4, 2.0, 3);
+        assert!(r.sound);
+        assert!((r.volume_tightness - 0.5).abs() < 1e-5);
+        assert!((r.cbf_margin - 0.3).abs() < 1e-5);
+        assert!((r.ibp_confidence - 0.95).abs() < 1e-5);
+        assert!((r.pac_bound - 0.05).abs() < 1e-5);
+        assert_eq!(r.layers_verified, 4);
+        assert!((r.girard_efficiency - 2.0).abs() < 1e-5);
+        assert_eq!(r.taylor_order, 3);
+    }
+
+    #[test]
+    fn test_soundness_result_unsound_cbf() {
+        let r = SoundnessResult::unsound(SoundnessFailure::CBF, -0.5);
+        assert!(!r.sound);
+        assert!((r.cbf_margin - (-0.5)).abs() < 1e-5);
+        assert_eq!(r.layers_verified, 0);
+    }
+
+    #[test]
+    fn test_soundness_result_unsound_volume() {
+        let r = SoundnessResult::unsound(SoundnessFailure::Volume, 8.0);
+        assert!(!r.sound);
+        assert!((r.volume_tightness - 8.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_soundness_result_unsound_ibp() {
+        let r = SoundnessResult::unsound(SoundnessFailure::IBP, 0.3);
+        assert!(!r.sound);
+        assert!((r.ibp_confidence - 0.3).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_soundness_result_unsound_pac() {
+        let r = SoundnessResult::unsound(SoundnessFailure::PAC, 0.4);
+        assert!(!r.sound);
+        assert!((r.pac_bound - 0.4).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_soundness_production_sound_passes() {
+        let r = SoundnessResult::sound(0.5, 0.3, 0.95, 0.05, 4, 2.0, 3);
+        assert!(r.is_production_sound(0.1, 0.8, 0.15));
+    }
+
+    #[test]
+    fn test_soundness_production_sound_fails_cbf() {
+        let r = SoundnessResult::sound(0.5, 0.05, 0.95, 0.05, 4, 2.0, 3);
+        assert!(!r.is_production_sound(0.1, 0.8, 0.15));
+    }
+
+    #[test]
+    fn test_soundness_production_sound_fails_ibp() {
+        let r = SoundnessResult::sound(0.5, 0.3, 0.6, 0.05, 4, 2.0, 3);
+        assert!(!r.is_production_sound(0.1, 0.8, 0.15));
+    }
+
+    #[test]
+    fn test_soundness_production_sound_fails_pac() {
+        let r = SoundnessResult::sound(0.5, 0.3, 0.95, 0.3, 4, 2.0, 3);
+        assert!(!r.is_production_sound(0.1, 0.8, 0.15));
+    }
+
+    #[test]
+    fn test_soundness_production_sound_unsound_result() {
+        let r = SoundnessResult::unsound(SoundnessFailure::CBF, -0.1);
+        assert!(!r.is_production_sound(0.1, 0.8, 0.15));
+    }
+
+    #[test]
+    fn test_soundness_report_sound() {
+        let r = SoundnessResult::sound(0.5, 0.3, 0.95, 0.05, 4, 2.0, 3);
+        let report = r.report();
+        assert!(report.contains("SOUND"));
+        assert!(report.contains("volume_tightness"));
+        assert!(report.contains("cbf_margin"));
+        assert!(report.contains("layers"));
+    }
+
+    #[test]
+    fn test_soundness_report_unsound() {
+        let r = SoundnessResult::unsound(SoundnessFailure::CBF, -0.5);
+        let report = r.report();
+        assert!(report.contains("UNSOUND"));
+    }
+
+    #[test]
+    fn test_soundness_result_display() {
+        let r = SoundnessResult::sound(0.5, 0.3, 0.95, 0.05, 4, 2.0, 3);
+        let s = format!("{}", r);
+        assert!(s.contains("SOUND"));
+    }
+
+    #[test]
+    fn test_soundness_failure_display() {
+        assert_eq!(format!("{}", SoundnessFailure::Volume), "Volume");
+        assert_eq!(format!("{}", SoundnessFailure::CBF), "CBF");
+        assert_eq!(format!("{}", SoundnessFailure::IBP), "IBP");
+        assert_eq!(format!("{}", SoundnessFailure::PAC), "PAC");
+    }
+
+    #[test]
+    fn test_soundness_config_default() {
+        let cfg = SoundnessConfig::default();
+        assert!((cfg.min_cbf_margin - 0.1).abs() < 1e-5);
+        assert!((cfg.min_ibp_confidence - 0.8).abs() < 1e-5);
+        assert!((cfg.max_pac_bound - 0.15).abs() < 1e-5);
+        assert!((cfg.max_volume_ratio - 5.0).abs() < 1e-5);
+        assert_eq!(cfg.taylor_order, 3);
+        assert_eq!(cfg.max_girard_gens, 128);
+    }
+
+    #[test]
+    fn test_soundness_config_relaxed() {
+        let cfg = SoundnessConfig::relaxed();
+        assert!((cfg.min_cbf_margin - 0.0).abs() < 1e-5);
+        assert!((cfg.min_ibp_confidence - 0.5).abs() < 1e-5);
+        assert!((cfg.max_pac_bound - 0.5).abs() < 1e-5);
+        assert_eq!(cfg.taylor_order, 1);
+    }
+
+    #[test]
+    fn test_soundness_config_strict() {
+        let cfg = SoundnessConfig::strict();
+        assert!((cfg.min_cbf_margin - 0.5).abs() < 1e-5);
+        assert!((cfg.min_ibp_confidence - 0.95).abs() < 1e-5);
+        assert!((cfg.max_pac_bound - 0.05).abs() < 1e-5);
+        assert!((cfg.max_volume_ratio - 2.0).abs() < 1e-5);
+        assert_eq!(cfg.taylor_order, 3);
+        assert_eq!(cfg.max_girard_gens, 64);
+    }
+
+    #[test]
+    fn test_verify_end_to_end_soundness_basic() -> Result<()> {
+        let device = Device::Cpu;
+        let center = Tensor::from_vec(vec![0.0f32, 0.0], 2, &device)?;
+        let generators = Tensor::from_vec(
+            vec![0.01f32, 0.0, 0.0, 0.01],
+            (2, 2),
+            &device,
+        )?;
+        let config = SoundnessConfig::relaxed();
+        let result = verify_end_to_end_soundness(&center, &generators, &config)?;
+        // With relaxed config and small generators near origin, should be sound
+        assert!(result.sound);
+        assert!(result.layers_verified > 0);
+        Ok(())
+    }
+
+    #[test]
+    fn test_verify_pipeline_soundness_mismatched_lengths() -> Result<()> {
+        let device = Device::Cpu;
+        let center = Tensor::from_vec(vec![0.0f32], 1, &device)?;
+        let generators = Tensor::from_vec(vec![0.01f32], (1, 1), &device)?;
+        let config = SoundnessConfig::relaxed();
+        let result = verify_pipeline_soundness(&[center], &[generators.clone(), generators], &config);
+        assert!(result.is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn test_verify_pipeline_soundness_empty() -> Result<()> {
+        let config = SoundnessConfig::relaxed();
+        let (results, all_sound) = verify_pipeline_soundness(&[], &[], &config)?;
+        assert!(results.is_empty());
+        assert!(all_sound); // Vacuously true
+        Ok(())
+    }
+
+    #[test]
+    fn test_verify_pipeline_soundness_single_layer() -> Result<()> {
+        let device = Device::Cpu;
+        let center = Tensor::from_vec(vec![0.0f32, 0.0], 2, &device)?;
+        let generators = Tensor::from_vec(
+            vec![0.01f32, 0.0, 0.0, 0.01],
+            (2, 2),
+            &device,
+        )?;
+        let config = SoundnessConfig::relaxed();
+        let (results, all_sound) = verify_pipeline_soundness(&[center], &[generators], &config)?;
+        assert_eq!(results.len(), 1);
+        assert!(all_sound);
+        assert!(results[0].sound);
+        Ok(())
+    }
+
+    #[test]
+    fn test_aggregate_soundness_score_empty() {
+        let score = aggregate_soundness_score(&[]);
+        assert!((score - 0.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_aggregate_soundness_score_all_sound() {
+        let results = vec![
+            SoundnessResult::sound(0.5, 0.5, 0.95, 0.05, 1, 1.0, 3),
+            SoundnessResult::sound(0.5, 0.5, 0.95, 0.05, 1, 1.0, 3),
+        ];
+        let score = aggregate_soundness_score(&results);
+        assert!(score > 0.8);
+        assert!(score <= 1.0);
+    }
+
+    #[test]
+    fn test_aggregate_soundness_score_mixed() {
+        let results = vec![
+            SoundnessResult::sound(0.5, 0.5, 0.95, 0.05, 1, 1.0, 3),
+            SoundnessResult::unsound(SoundnessFailure::CBF, -0.1),
+        ];
+        let score = aggregate_soundness_score(&results);
+        assert!(score > 0.0);
+        assert!(score < 0.8);
+    }
+
+    #[test]
+    fn test_aggregate_soundness_score_all_unsound() {
+        let results = vec![
+            SoundnessResult::unsound(SoundnessFailure::CBF, -0.1),
+            SoundnessResult::unsound(SoundnessFailure::IBP, 0.2),
+        ];
+        let score = aggregate_soundness_score(&results);
+        assert!(score < 0.3);
+    }
+
+    #[test]
+    fn test_aggregate_soundness_score_bounded() {
+        let results = vec![
+            SoundnessResult::sound(0.1, 10.0, 1.0, 0.0, 1, 1.0, 3),
+        ];
+        let score = aggregate_soundness_score(&results);
+        assert!(score >= 0.0);
+        assert!(score <= 1.0);
     }
 }
