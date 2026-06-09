@@ -293,11 +293,7 @@ impl SymbioticCouncil {
         if trust_weight < self.config.min_trust_to_vote {
             return false;
         }
-        if let Some(proposal) = self
-            .proposals
-            .iter_mut()
-            .find(|p| p.id == *proposal_id)
-        {
+        if let Some(proposal) = self.proposals.iter_mut().find(|p| p.id == *proposal_id) {
             proposal.cast_vote(voter_id, trust_weight, vote);
             true
         } else {
@@ -575,11 +571,7 @@ impl BootstrapResult {
         if self.discovered_peers.is_empty() {
             return 0.0;
         }
-        let total: f64 = self
-            .discovered_peers
-            .iter()
-            .map(|p| p.trust_score)
-            .sum();
+        let total: f64 = self.discovered_peers.iter().map(|p| p.trust_score).sum();
         total / self.discovered_peers.len() as f64
     }
 }
@@ -595,7 +587,10 @@ impl BootstrapResult {
 ///
 /// # Returns
 /// `BootstrapResult` with discovered peers
-pub fn execute_bootstrap_discovery(config: &BootstrapConfig, _current_time: u64) -> BootstrapResult {
+pub fn execute_bootstrap_discovery(
+    config: &BootstrapConfig,
+    _current_time: u64,
+) -> BootstrapResult {
     let start = std::time::Instant::now();
 
     let active_peers: Vec<BootstrapPeer> = config
@@ -691,12 +686,7 @@ pub struct NoEconIncentive {
 
 impl NoEconIncentive {
     /// Create a new non-economic incentive record.
-    pub fn new(
-        node_id: String,
-        badge: CommunityBadge,
-        awarded_at: u64,
-        reason: String,
-    ) -> Self {
+    pub fn new(node_id: String, badge: CommunityBadge, awarded_at: u64, reason: String) -> Self {
         let points = Self::badge_points(badge);
         Self {
             node_id,
@@ -765,12 +755,7 @@ impl CommunityBootstrap {
 
     /// Award a badge (non-economic incentive) to this node.
     pub fn award_badge(&mut self, badge: CommunityBadge, awarded_at: u64, reason: String) {
-        let incentive = NoEconIncentive::new(
-            self.node_id.clone(),
-            badge,
-            awarded_at,
-            reason,
-        );
+        let incentive = NoEconIncentive::new(self.node_id.clone(), badge, awarded_at, reason);
         self.total_social_capital += incentive.social_capital_points;
         self.incentives.push(incentive);
     }
@@ -785,10 +770,7 @@ impl CommunityBootstrap {
                     .duration_since(std::time::UNIX_EPOCH)
                     .unwrap_or_default()
                     .as_secs(),
-                format!(
-                    "Onboarded {} peers",
-                    self.peers_onboarded
-                ),
+                format!("Onboarded {} peers", self.peers_onboarded),
             );
         }
     }
@@ -803,10 +785,7 @@ impl CommunityBootstrap {
                     .duration_since(std::time::UNIX_EPOCH)
                     .unwrap_or_default()
                     .as_secs(),
-                format!(
-                    "Participated in {} governance votes",
-                    self.governance_votes
-                ),
+                format!("Participated in {} governance votes", self.governance_votes),
             );
         }
     }
@@ -839,10 +818,7 @@ impl CommunityBootstrap {
                     .duration_since(std::time::UNIX_EPOCH)
                     .unwrap_or_default()
                     .as_secs(),
-                format!(
-                    "Performed {} self-healing actions",
-                    self.healing_actions
-                ),
+                format!("Performed {} self-healing actions", self.healing_actions),
             );
         }
     }
@@ -888,8 +864,10 @@ impl CommunityBootstrap {
     /// Formula: `social_capital * (1.0 + trust_bonus + activity_bonus)`
     /// Where trust_bonus = avg_trust * 0.5, activity_bonus = min(total_actions / 100.0, 0.5)
     pub fn reputation_score(&self, avg_trust: f64) -> f64 {
-        let total_actions =
-            self.peers_onboarded + self.governance_votes + self.knowledge_contributions + self.healing_actions;
+        let total_actions = self.peers_onboarded
+            + self.governance_votes
+            + self.knowledge_contributions
+            + self.healing_actions;
         let trust_bonus = avg_trust.clamp(0.0, 1.0) * 0.5;
         let activity_bonus = (total_actions as f64 / 100.0).clamp(0.0, 0.5);
         self.total_social_capital * (1.0 + trust_bonus + activity_bonus)
@@ -967,7 +945,11 @@ pub fn compute_social_capital(bootstraps: &[CommunityBootstrap]) -> (f64, f64, u
 
     let total: f64 = bootstraps.iter().map(|b| b.total_social_capital).sum();
     let avg = total / bootstraps.len() as f64;
-    let max_tier = bootstraps.iter().map(|b| b.incentive_tier()).max().unwrap_or(0);
+    let max_tier = bootstraps
+        .iter()
+        .map(|b| b.incentive_tier())
+        .max()
+        .unwrap_or(0);
 
     (total, avg, max_tier)
 }
@@ -1452,10 +1434,7 @@ mod tests {
 
     #[test]
     fn test_value_distribution_zero_contribution() {
-        let nodes = vec![
-            ("n1".to_string(), 0.8, 0.0),
-            ("n2".to_string(), 0.5, 0.0),
-        ];
+        let nodes = vec![("n1".to_string(), 0.8, 0.0), ("n2".to_string(), 0.5, 0.0)];
         let result = compute_value_distribution(&nodes, 1000.0);
         // Equal distribution weighted by trust
         assert_eq!(result[0].value_allocated, 400.0); // 500 * 0.8
@@ -1609,13 +1588,7 @@ mod tests {
     #[test]
     fn test_execute_bootstrap_discovery_respects_max() {
         let peers: Vec<_> = (0..10)
-            .map(|i| {
-                BootstrapPeer::new(
-                    format!("n{}", i),
-                    format!("a{}", i),
-                    0.8,
-                )
-            })
+            .map(|i| BootstrapPeer::new(format!("n{}", i), format!("a{}", i), 0.8))
             .collect();
         let cfg = BootstrapConfig::with_peers(peers).with_max_peers(5);
         let result = execute_bootstrap_discovery(&cfg, 1000);
@@ -1645,11 +1618,7 @@ mod tests {
 
     #[test]
     fn test_select_optimal_peers_count_exceeds() {
-        let peers = vec![BootstrapPeer::new(
-            "n1".to_string(),
-            "a1".to_string(),
-            0.8,
-        )];
+        let peers = vec![BootstrapPeer::new("n1".to_string(), "a1".to_string(), 0.8)];
         let result = select_optimal_bootstrap_peers(&peers, 10);
         assert_eq!(result.len(), 1);
     }
@@ -1662,9 +1631,15 @@ mod tests {
     fn test_community_badge_display() {
         assert_eq!(format!("{}", CommunityBadge::SeedGuardian), "Seed Guardian");
         assert_eq!(format!("{}", CommunityBadge::MeshHealer), "Mesh Healer");
-        assert_eq!(format!("{}", CommunityBadge::KnowledgeSharer), "Knowledge Sharer");
+        assert_eq!(
+            format!("{}", CommunityBadge::KnowledgeSharer),
+            "Knowledge Sharer"
+        );
         assert_eq!(format!("{}", CommunityBadge::IronUptime), "Iron Uptime");
-        assert_eq!(format!("{}", CommunityBadge::CommunityBuilder), "Community Builder");
+        assert_eq!(
+            format!("{}", CommunityBadge::CommunityBuilder),
+            "Community Builder"
+        );
         assert_eq!(format!("{}", CommunityBadge::ProofForge), "Proof Forge");
         assert_eq!(format!("{}", CommunityBadge::GreenSteward), "Green Steward");
         assert_eq!(format!("{}", CommunityBadge::CivicVoice), "Civic Voice");
@@ -1686,14 +1661,38 @@ mod tests {
 
     #[test]
     fn test_no_econ_incentive_badge_points() {
-        assert_eq!(NoEconIncentive::badge_points(CommunityBadge::SeedGuardian), 10.0);
-        assert_eq!(NoEconIncentive::badge_points(CommunityBadge::MeshHealer), 15.0);
-        assert_eq!(NoEconIncentive::badge_points(CommunityBadge::KnowledgeSharer), 12.0);
-        assert_eq!(NoEconIncentive::badge_points(CommunityBadge::IronUptime), 20.0);
-        assert_eq!(NoEconIncentive::badge_points(CommunityBadge::CommunityBuilder), 18.0);
-        assert_eq!(NoEconIncentive::badge_points(CommunityBadge::ProofForge), 25.0);
-        assert_eq!(NoEconIncentive::badge_points(CommunityBadge::GreenSteward), 22.0);
-        assert_eq!(NoEconIncentive::badge_points(CommunityBadge::CivicVoice), 8.0);
+        assert_eq!(
+            NoEconIncentive::badge_points(CommunityBadge::SeedGuardian),
+            10.0
+        );
+        assert_eq!(
+            NoEconIncentive::badge_points(CommunityBadge::MeshHealer),
+            15.0
+        );
+        assert_eq!(
+            NoEconIncentive::badge_points(CommunityBadge::KnowledgeSharer),
+            12.0
+        );
+        assert_eq!(
+            NoEconIncentive::badge_points(CommunityBadge::IronUptime),
+            20.0
+        );
+        assert_eq!(
+            NoEconIncentive::badge_points(CommunityBadge::CommunityBuilder),
+            18.0
+        );
+        assert_eq!(
+            NoEconIncentive::badge_points(CommunityBadge::ProofForge),
+            25.0
+        );
+        assert_eq!(
+            NoEconIncentive::badge_points(CommunityBadge::GreenSteward),
+            22.0
+        );
+        assert_eq!(
+            NoEconIncentive::badge_points(CommunityBadge::CivicVoice),
+            8.0
+        );
     }
 
     #[test]
@@ -1712,7 +1711,11 @@ mod tests {
     #[test]
     fn test_community_bootstrap_add_peer() {
         let mut bs = CommunityBootstrap::new("node1".to_string());
-        bs.add_peer(BootstrapPeer::new("p1".to_string(), "addr1".to_string(), 0.8));
+        bs.add_peer(BootstrapPeer::new(
+            "p1".to_string(),
+            "addr1".to_string(),
+            0.8,
+        ));
         assert_eq!(bs.bootstrap_peers.len(), 1);
         assert_eq!(bs.bootstrap_peers[0].node_id, "p1");
     }
@@ -1921,7 +1924,10 @@ mod tests {
         let config = BootstrapConfig::default();
         let result = community_bootstrap("node1".to_string(), &config, 1000);
         // No peers discovered, no Seed Guardian (success is false when no peers)
-        assert!(!result.incentives.iter().any(|i| i.badge == CommunityBadge::SeedGuardian));
+        assert!(!result
+            .incentives
+            .iter()
+            .any(|i| i.badge == CommunityBadge::SeedGuardian));
     }
 
     #[test]

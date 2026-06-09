@@ -1,7 +1,7 @@
 # 🌐 ed2kIA: Distributed Sparse Autoencoders for Edge LLM Interpretability
 
-[![Version](https://img.shields.io/badge/v12.4.0-sprint124-blue.svg)](https://github.com/Stuartemk/ed2kIA/releases/tag/v12.4.0-sprint124)
-[![Tests](https://img.shields.io/badge/Tests-400%2B%20PASS-green.svg)](https://github.com/Stuartemk/ed2kIA/actions)
+[![Version](https://img.shields.io/badge/v12.7.0-sprint127-blue.svg)](https://github.com/Stuartemk/ed2kIA/releases/tag/v12.7.0-sprint127)
+[![Tests](https://img.shields.io/badge/Tests-450%2B%20PASS-green.svg)](https://github.com/Stuartemk/ed2kIA/actions)
 [![Audit](https://img.shields.io/badge/OSSF-8.5%2F10-yellow.svg)](https://github.com/Stuartemk/ed2kIA/security)
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ética-orange.svg)](LICENSE)
 
@@ -50,6 +50,19 @@ The `native-audit` crate (`crates/native-audit`) provides:
 - **collective_zonotope_consensus()** — **Collective Zonotope Consensus** (v11.0.0): Distributed zonotope gossip + Weiszfeld geometric median for Byzantine-resilient aggregation
 - **hybrid_zonotope_verify()** — **Hybrid Zonotope-Interval Verification** (v11.0.0): Zonotopes for linear layers, intervals for non-linear, then refine back
 
+**Evolutionary Game Dynamics (v12.7.0 — The Thermodynamic Sun & PoUS):**
+| Feature | Module | Description |
+|---------|--------|-------------|
+| PoUS Fitness | `consensus/pous.rs` | `compute_pous_fitness()` — Thermodynamic score: `α·ΔVFE + β·Efficiency + γ·Uptime - δ·Byzantine` |
+| Entropy Diversity | `consensus/pous.rs` | `compute_pous_fitness_with_entropy()` — `Fitness_i += η·(-Σ p_j·log(p_j))` anti-monopolization |
+| Replicator Dynamics (Euler) | `consensus/pous.rs` | `update_influence_share()` — `dx_i/dt = x_i·(f_i - f̄)` evolutionary dynamics |
+| Replicator Dynamics (Heun RK2) | `consensus/pous.rs` | `update_influence_share_heun()` — RK2 integration for stability |
+| Shapley Values (50/50) | `consensus/pous.rs` | `compute_shapley_credit_allocation()` — Fair-merit mix: `0.5·(1/N) + 0.5·(marginal/total)` |
+| Shapley Monte Carlo | `consensus/pous.rs` | `compute_shapley_monte_carlo()` — O(log N) random coalition sampling |
+| Nash Equilibrium | `consensus/pous.rs` | `is_nash_equilibrium()`, `converge_to_nash()` — Stability verification |
+| Taylor Zonotope Propagation | `native-audit/zonotope.rs` | `propagate_taylor_zonotope()` — Formal Neural ODE reachability with remainder bounds |
+| Taylor CBF Safety | `native-audit/zonotope.rs` | `verify_taylor_cbf_safety()` — CBF verification over propagated zonotope |
+
 **Full Edge Deployment Immunity (v12.4.0 — Planetary Symbiotic Mesh):**
 | Feature | Module | Description |
 |---------|--------|-------------|
@@ -61,6 +74,14 @@ The `native-audit` crate (`crates/native-audit`) provides:
 | Succinct Proofs | `posym.rs` | `SuccinctProof`, SNARK/STARK/Halo2 stubs, SHA-256 commitments |
 | Symbiotic Governance | `governance.rs` | Quorum proposals, trust-weighted voting, value distribution |
 | Global Bootstrap | `governance.rs` | `execute_bootstrap_discovery()`, trust-filtered peer selection |
+
+**Sprint 127 Validation:**
+| Metric | Value |
+|--------|-------|
+| PoUS Fitness + Replicator Dynamics Tests | **41/41 (100%)** |
+| Taylor Zonotope Propagation Tests | **13/13 (100%)** |
+| Total New Tests (S127) | **54/54 (100%)** |
+| Warnings | **0** |
 
 **Sprint 124 Validation:**
 | Metric | Value |
@@ -162,7 +183,7 @@ ed2kIA/
 ├── crates/
 │   ├── sae/            # Sparse Autoencoder module
 │   ├── p2p/            # P2P networking layer (libp2p)
-│   ├── consensus/      # Consensus (PoN, ZKP, MPC)
+│   ├── consensus/      # Consensus (PoN, ZKP, MPC, PoUS, Evolutionary Game Dynamics)
 │   └── cli/            # CLI interface
 ├── src/                # Core library (feature-gated modules)
 ├── config/             # Bootstrap peers, node config

@@ -2081,10 +2081,26 @@ impl SoundnessResult {
     pub fn unsound(reason_field: SoundnessFailure, value: f32) -> Self {
         Self {
             sound: false,
-            volume_tightness: if reason_field == SoundnessFailure::Volume { value } else { 0.0 },
-            cbf_margin: if reason_field == SoundnessFailure::CBF { value } else { 0.0 },
-            ibp_confidence: if reason_field == SoundnessFailure::IBP { value } else { 0.0 },
-            pac_bound: if reason_field == SoundnessFailure::PAC { value } else { 0.0 },
+            volume_tightness: if reason_field == SoundnessFailure::Volume {
+                value
+            } else {
+                0.0
+            },
+            cbf_margin: if reason_field == SoundnessFailure::CBF {
+                value
+            } else {
+                0.0
+            },
+            ibp_confidence: if reason_field == SoundnessFailure::IBP {
+                value
+            } else {
+                0.0
+            },
+            pac_bound: if reason_field == SoundnessFailure::PAC {
+                value
+            } else {
+                0.0
+            },
             layers_verified: 0,
             girard_efficiency: 0.0,
             taylor_order: 0,
@@ -2245,7 +2261,11 @@ pub fn verify_end_to_end_soundness(
     let taylor_result = propagate_taylor_order3(center, generators, &taylor_config)?;
 
     // 2. Volume tightness check
-    let standard_volume = generators.abs()?.sum_all()?.to_scalar::<f32>().unwrap_or(1.0);
+    let standard_volume = generators
+        .abs()?
+        .sum_all()?
+        .to_scalar::<f32>()
+        .unwrap_or(1.0);
     let volume_tightness = if standard_volume > 1e-6 {
         taylor_result.volume_proxy / standard_volume
     } else {
@@ -2261,7 +2281,11 @@ pub fn verify_end_to_end_soundness(
 
     // 3. CBF margin from final center
     let safe_center_tensor = Tensor::zeros_like(&taylor_result.center)?;
-    let cbf_margin = compute_cbf_margin(&taylor_result.center, &safe_center_tensor, config.min_cbf_margin)?;
+    let cbf_margin = compute_cbf_margin(
+        &taylor_result.center,
+        &safe_center_tensor,
+        config.min_cbf_margin,
+    )?;
 
     if cbf_margin < 0.0 {
         return Ok(SoundnessResult::unsound(SoundnessFailure::CBF, cbf_margin));
@@ -2269,21 +2293,35 @@ pub fn verify_end_to_end_soundness(
 
     // 4. IBP confidence — use wrapping_reduction as proxy for tightness
     // Higher wrapping_reduction means more over-approximation (less confident)
-    let ibp_confidence = (1.0 - (taylor_result.wrapping_reduction - 1.0).clamp(0.0, 1.0)).clamp(0.0, 1.0);
+    let ibp_confidence =
+        (1.0 - (taylor_result.wrapping_reduction - 1.0).clamp(0.0, 1.0)).clamp(0.0, 1.0);
 
     if ibp_confidence < config.min_ibp_confidence {
-        return Ok(SoundnessResult::unsound(SoundnessFailure::IBP, ibp_confidence));
+        return Ok(SoundnessResult::unsound(
+            SoundnessFailure::IBP,
+            ibp_confidence,
+        ));
     }
 
     // 5. PAC-Bayes bound check — use remainder norm as generalization proxy
-    let pac_bound = taylor_result.remainder.abs()?.sum_all()?.to_scalar::<f32>().unwrap_or(0.0);
+    let pac_bound = taylor_result
+        .remainder
+        .abs()?
+        .sum_all()?
+        .to_scalar::<f32>()
+        .unwrap_or(0.0);
     if pac_bound > config.max_pac_bound {
         return Ok(SoundnessResult::unsound(SoundnessFailure::PAC, pac_bound));
     }
 
     // 6. Girard reduction efficiency
     let gen_in = generators.dims().first().copied().unwrap_or(0) as f32;
-    let gen_out = taylor_result.generators.dims().first().copied().unwrap_or(0) as f32;
+    let gen_out = taylor_result
+        .generators
+        .dims()
+        .first()
+        .copied()
+        .unwrap_or(0) as f32;
     let girard_efficiency = if gen_out > 0.0 { gen_in / gen_out } else { 1.0 };
 
     Ok(SoundnessResult::sound(
@@ -2312,9 +2350,10 @@ pub fn verify_pipeline_soundness(
     config: &SoundnessConfig,
 ) -> Result<(Vec<SoundnessResult>, bool)> {
     if centers.len() != generators.len() {
-        return Err(candle_core::Error::msg(
-            std::io::Error::new(std::io::ErrorKind::InvalidInput, "centers and generators must have same length"),
-        ));
+        return Err(candle_core::Error::msg(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "centers and generators must have same length",
+        )));
     }
 
     let mut results = Vec::with_capacity(centers.len());
@@ -2603,7 +2642,11 @@ impl AuditReport {
             self.checks_passed,
             self.checks_performed,
             self.findings.len(),
-            if self.passes_audit(0.8) { "✓ PASS" } else { "✗ FAIL" },
+            if self.passes_audit(0.8) {
+                "✓ PASS"
+            } else {
+                "✗ FAIL"
+            },
         )
     }
 }
@@ -2656,12 +2699,20 @@ impl InputValidationResult {
 }
 
 /// Validate input tensor data for security.
-pub fn validate_input_security(values: &[f64], max_size: usize, max_value: f64) -> InputValidationResult {
+pub fn validate_input_security(
+    values: &[f64],
+    max_size: usize,
+    max_value: f64,
+) -> InputValidationResult {
     let mut errors = vec![];
 
     // Check size
     if values.len() > max_size {
-        errors.push(format!("Size {} exceeds maximum {}", values.len(), max_size));
+        errors.push(format!(
+            "Size {} exceeds maximum {}",
+            values.len(),
+            max_size
+        ));
     }
 
     // Check for NaN and Inf
@@ -2771,7 +2822,9 @@ fn sha256_audit(data: &[u8]) -> [u8; 32] {
     }
     result[16..24].copy_from_slice(&xor_fold.to_le_bytes());
     // Final mix
-    let final_mix = hash_u64.wrapping_add(xor_fold).wrapping_mul(0x517cc1b727220a95);
+    let final_mix = hash_u64
+        .wrapping_add(xor_fold)
+        .wrapping_mul(0x517cc1b727220a95);
     result[24..32].copy_from_slice(&final_mix.to_le_bytes());
     result
 }
@@ -2817,10 +2870,7 @@ pub fn run_security_audit(
     // Check 4: Cryptographic integrity
     checks_performed += 1;
     let crypto_integrity = if verify_crypto {
-        let data: Vec<u8> = input_values
-            .iter()
-            .flat_map(|v| v.to_le_bytes())
-            .collect();
+        let data: Vec<u8> = input_values.iter().flat_map(|v| v.to_le_bytes()).collect();
         let hash = AuditTrailHash::new(&data, 0);
         hash.verify(&data)
     } else {
@@ -3745,11 +3795,7 @@ mod tests {
     fn test_verify_end_to_end_soundness_basic() -> Result<()> {
         let device = Device::Cpu;
         let center = Tensor::from_vec(vec![0.0f32, 0.0], 2, &device)?;
-        let generators = Tensor::from_vec(
-            vec![0.01f32, 0.0, 0.0, 0.01],
-            (2, 2),
-            &device,
-        )?;
+        let generators = Tensor::from_vec(vec![0.01f32, 0.0, 0.0, 0.01], (2, 2), &device)?;
         let config = SoundnessConfig::relaxed();
         let result = verify_end_to_end_soundness(&center, &generators, &config)?;
         // With relaxed config and small generators near origin, should be sound
@@ -3764,7 +3810,8 @@ mod tests {
         let center = Tensor::from_vec(vec![0.0f32], 1, &device)?;
         let generators = Tensor::from_vec(vec![0.01f32], (1, 1), &device)?;
         let config = SoundnessConfig::relaxed();
-        let result = verify_pipeline_soundness(&[center], &[generators.clone(), generators], &config);
+        let result =
+            verify_pipeline_soundness(&[center], &[generators.clone(), generators], &config);
         assert!(result.is_err());
         Ok(())
     }
@@ -3782,11 +3829,7 @@ mod tests {
     fn test_verify_pipeline_soundness_single_layer() -> Result<()> {
         let device = Device::Cpu;
         let center = Tensor::from_vec(vec![0.0f32, 0.0], 2, &device)?;
-        let generators = Tensor::from_vec(
-            vec![0.01f32, 0.0, 0.0, 0.01],
-            (2, 2),
-            &device,
-        )?;
+        let generators = Tensor::from_vec(vec![0.01f32, 0.0, 0.0, 0.01], (2, 2), &device)?;
         let config = SoundnessConfig::relaxed();
         let (results, all_sound) = verify_pipeline_soundness(&[center], &[generators], &config)?;
         assert_eq!(results.len(), 1);
@@ -3835,9 +3878,7 @@ mod tests {
 
     #[test]
     fn test_aggregate_soundness_score_bounded() {
-        let results = vec![
-            SoundnessResult::sound(0.1, 10.0, 1.0, 0.0, 1, 1.0, 3),
-        ];
+        let results = vec![SoundnessResult::sound(0.1, 10.0, 1.0, 0.0, 1, 1.0, 3)];
         let score = aggregate_soundness_score(&results);
         assert!(score >= 0.0);
         assert!(score <= 1.0);
@@ -3848,7 +3889,14 @@ mod tests {
     #[test]
     fn test_multi_modal_steer_result_new() {
         let result = MultiModalSteerResult::new(
-            3, 0.05, 0.15, true, vec![0.04, 0.06, 0.05], vec![0.2, 0.15, 0.1], 0.95, true,
+            3,
+            0.05,
+            0.15,
+            true,
+            vec![0.04, 0.06, 0.05],
+            vec![0.2, 0.15, 0.1],
+            0.95,
+            true,
         );
         assert_eq!(result.modalities_count, 3);
         assert!((result.weighted_vfe - 0.05).abs() < 0.001);
@@ -3859,7 +3907,14 @@ mod tests {
     #[test]
     fn test_multi_modal_steer_result_summary() {
         let result = MultiModalSteerResult::new(
-            2, 0.08, 0.1, true, vec![0.07, 0.09], vec![0.12, 0.08], 0.9, true,
+            2,
+            0.08,
+            0.1,
+            true,
+            vec![0.07, 0.09],
+            vec![0.12, 0.08],
+            0.9,
+            true,
         );
         let summary = result.summary();
         assert!(summary.contains("2"));
@@ -3912,13 +3967,7 @@ mod tests {
 
     #[test]
     fn test_multi_modal_steer_weighted_vfe() {
-        let result = multi_modal_steer(
-            &[0.02, 0.08],
-            &[3.0, 1.0],
-            &[0.3, 0.2],
-            &[0.0, 0.0],
-            0.5,
-        );
+        let result = multi_modal_steer(&[0.02, 0.08], &[3.0, 1.0], &[0.3, 0.2], &[0.0, 0.0], 0.5);
         // Weighted geometric mean: 0.02^(3/4) * 0.08^(1/4) ≈ 0.035
         assert!(result.weighted_vfe > 0.01 && result.weighted_vfe < 0.08);
     }
@@ -3939,13 +3988,7 @@ mod tests {
 
     #[test]
     fn test_multi_modal_steer_production_ready() {
-        let result = multi_modal_steer(
-            &[0.03, 0.05],
-            &[1.0, 1.0],
-            &[0.25, 0.2],
-            &[0.0, 0.0],
-            0.5,
-        );
+        let result = multi_modal_steer(&[0.03, 0.05], &[1.0, 1.0], &[0.25, 0.2], &[0.0, 0.0], 0.5);
         assert!(result.production_ready);
         assert!(result.all_verified);
     }
@@ -3975,9 +4018,7 @@ mod tests {
 
     #[test]
     fn test_audit_report_passes_audit() {
-        let report = AuditReport::new(
-            0.95, true, true, true, true, true, true, 6, 6, vec![],
-        );
+        let report = AuditReport::new(0.95, true, true, true, true, true, true, 6, 6, vec![]);
         assert!(report.passes_audit(0.8));
         assert_eq!(report.checks_performed, 6);
         assert_eq!(report.checks_passed, 6);
@@ -3986,24 +4027,29 @@ mod tests {
     #[test]
     fn test_audit_report_fails_low_score() {
         let report = AuditReport::new(
-            0.5, true, true, true, true, true, true, 6, 3, vec!["Issue".to_string()],
+            0.5,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            6,
+            3,
+            vec!["Issue".to_string()],
         );
         assert!(!report.passes_audit(0.8));
     }
 
     #[test]
     fn test_audit_report_fails_missing_check() {
-        let report = AuditReport::new(
-            0.9, false, true, true, true, true, true, 6, 5, vec![],
-        );
+        let report = AuditReport::new(0.9, false, true, true, true, true, true, 6, 5, vec![]);
         assert!(!report.passes_audit(0.8));
     }
 
     #[test]
     fn test_audit_report_summary() {
-        let report = AuditReport::new(
-            1.0, true, true, true, true, true, true, 6, 6, vec![],
-        );
+        let report = AuditReport::new(1.0, true, true, true, true, true, true, 6, 6, vec![]);
         let summary = report.summary();
         assert!(summary.contains("PASS"));
         assert!(summary.contains("6/6"));

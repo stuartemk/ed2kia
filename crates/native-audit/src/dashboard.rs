@@ -353,9 +353,8 @@ pub fn generate_global_dashboard(
     let overall_health = health_components.iter().sum::<f64>() / health_components.len() as f64;
 
     // Check production readiness
-    let is_production_ready = prod_metrics.is_healthy()
-        && sim_result.resilience_score > 0.5
-        && overall_health > 0.6;
+    let is_production_ready =
+        prod_metrics.is_healthy() && sim_result.resilience_score > 0.5 && overall_health > 0.6;
 
     // Generate alerts
     if sim_result.resilience_score < 0.5 {
@@ -393,7 +392,10 @@ pub fn generate_global_dashboard(
 /// Generate a minimal dashboard from simulation results only.
 ///
 /// Convenience wrapper when production metrics are not available.
-pub fn generate_dashboard_from_sim(sim_result: &PlanetarySimResult, timestamp: u64) -> DashboardData {
+pub fn generate_dashboard_from_sim(
+    sim_result: &PlanetarySimResult,
+    timestamp: u64,
+) -> DashboardData {
     let default_prod = ProductionMetrics {
         uptime_seconds: sim_result.duration_seconds as u64,
         total_inferences: sim_result.total_steers,
@@ -571,9 +573,8 @@ mod tests {
         let sim = PlanetarySimResult::default();
         let prod = ProductionMetrics::default();
 
-        let awakening = AwakeningMetrics::new(
-            10000, 6000, 0.6, 8, true, 3.0, 0.8, 0.9, 500.0, 24, vec![],
-        );
+        let awakening =
+            AwakeningMetrics::new(10000, 6000, 0.6, 8, true, 3.0, 0.8, 0.9, 500.0, 24, vec![]);
 
         let dashboard = generate_global_dashboard(&sim, &prod, Some(&awakening), 2000);
 
@@ -640,9 +641,8 @@ mod tests {
         let sim = PlanetarySimResult::default();
         let prod = ProductionMetrics::default();
 
-        let awakening = AwakeningMetrics::new(
-            1000, 600, 0.6, 5, true, 2.0, 0.7, 0.8, 50.0, 12, vec![],
-        );
+        let awakening =
+            AwakeningMetrics::new(1000, 600, 0.6, 5, true, 2.0, 0.7, 0.8, 50.0, 12, vec![]);
 
         let dashboard = generate_global_dashboard(&sim, &prod, Some(&awakening), 0);
         let has_tipping_alert = dashboard.alerts.iter().any(|a| a.contains("tipping point"));
@@ -695,7 +695,10 @@ mod tests {
         let dashboard = generate_global_dashboard(&sim, &prod, None, 100);
 
         // Should have no critical or warning alerts
-        let has_warning = dashboard.alerts.iter().any(|a| a.contains("WARNING") || a.contains("CRITICAL"));
+        let has_warning = dashboard
+            .alerts
+            .iter()
+            .any(|a| a.contains("WARNING") || a.contains("CRITICAL"));
         assert!(!has_warning);
         assert!(dashboard.is_production_ready);
     }

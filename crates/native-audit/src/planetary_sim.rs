@@ -153,7 +153,14 @@ impl SimNode {
     }
 
     /// Simulate one step for this node.
-    pub fn step(&mut self, timestep: f64, base_latency: f64, latency_var: f64, churn_prob: f64, seed: u64) {
+    pub fn step(
+        &mut self,
+        timestep: f64,
+        base_latency: f64,
+        latency_var: f64,
+        churn_prob: f64,
+        seed: u64,
+    ) {
         if !self.active {
             return;
         }
@@ -262,7 +269,9 @@ impl Default for PlanetarySimResult {
 
 /// Deterministic PRNG for simulation.
 fn next_random_sim(state: &mut u64) -> f64 {
-    *state = state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+    *state = state
+        .wrapping_mul(6364136223846793005)
+        .wrapping_add(1442695040888963407);
     let x = (*state >> 33) as u32;
     x as f64 / u32::MAX as f64
 }
@@ -276,7 +285,10 @@ fn select_device_type(distribution: &[(DeviceType, f64)], roll: f64) -> DeviceTy
             return *device_type;
         }
     }
-    distribution.last().map(|(dt, _)| *dt).unwrap_or(DeviceType::Desktop)
+    distribution
+        .last()
+        .map(|(dt, _)| *dt)
+        .unwrap_or(DeviceType::Desktop)
 }
 
 /// Run the planetary mesh simulation.
@@ -351,7 +363,11 @@ pub fn simulate_planetary_mesh(
 
     // Compute final statistics
     let active_nodes = nodes.iter().filter(|n| n.active).count();
-    let active_trusts: Vec<f64> = nodes.iter().filter(|n| n.active).map(|n| n.trust_score).collect();
+    let active_trusts: Vec<f64> = nodes
+        .iter()
+        .filter(|n| n.active)
+        .map(|n| n.trust_score)
+        .collect();
     let avg_trust = if active_trusts.is_empty() {
         0.0
     } else {
@@ -360,7 +376,8 @@ pub fn simulate_planetary_mesh(
 
     let total_energy: f64 = nodes.iter().map(|n| n.energy_consumed_mwh).sum();
     let avg_latency = if active_nodes > 0 {
-        nodes.iter()
+        nodes
+            .iter()
             .filter(|n| n.active)
             .map(|n| n.latency_ms)
             .sum::<f64>()
@@ -407,7 +424,10 @@ pub fn simulate_planetary_mesh(
 ///
 /// # Returns
 /// `EnergyImpact` struct with energy statistics
-pub fn compute_sim_energy_impact(result: &PlanetarySimResult, device_type: DeviceType) -> EnergyImpact {
+pub fn compute_sim_energy_impact(
+    result: &PlanetarySimResult,
+    device_type: DeviceType,
+) -> EnergyImpact {
     let per_node_energy = if result.active_nodes > 0 {
         result.total_energy_mwh / result.active_nodes as f64
     } else {
@@ -953,7 +973,17 @@ mod tests {
     #[test]
     fn test_awakening_metrics_new() {
         let metrics = AwakeningMetrics::new(
-            1000, 500, 0.5, 6, true, 2.5, 0.75, 0.8, 50.0, 12, vec![(0, 0.1), (12, 0.5)],
+            1000,
+            500,
+            0.5,
+            6,
+            true,
+            2.5,
+            0.75,
+            0.8,
+            50.0,
+            12,
+            vec![(0, 0.1), (12, 0.5)],
         );
         assert_eq!(metrics.total_nodes, 1000);
         assert_eq!(metrics.awakened_nodes, 500);
@@ -965,9 +995,8 @@ mod tests {
 
     #[test]
     fn test_awakening_metrics_summary() {
-        let metrics = AwakeningMetrics::new(
-            10000, 6000, 0.6, 8, true, 3.0, 0.8, 0.9, 500.0, 24, vec![],
-        );
+        let metrics =
+            AwakeningMetrics::new(10000, 6000, 0.6, 8, true, 3.0, 0.8, 0.9, 500.0, 24, vec![]);
         let summary = metrics.summary();
         assert!(summary.contains("Awakening"));
         assert!(summary.contains("24"));
@@ -977,9 +1006,8 @@ mod tests {
 
     #[test]
     fn test_awakening_metrics_summary_no_tipping() {
-        let metrics = AwakeningMetrics::new(
-            1000, 200, 0.2, 0, false, 1.0, 0.5, 0.3, 20.0, 6, vec![],
-        );
+        let metrics =
+            AwakeningMetrics::new(1000, 200, 0.2, 0, false, 1.0, 0.5, 0.3, 20.0, 6, vec![]);
         let summary = metrics.summary();
         assert!(summary.contains("—"));
     }

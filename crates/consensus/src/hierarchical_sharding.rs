@@ -621,54 +621,55 @@ impl HierarchicalShardManager {
 
         // Migrate nodes from overloaded to underloaded shard
         // Collect node IDs first to avoid borrow conflicts
-        let candidate_nodes: Vec<u64> = self.shard_nodes
+        let candidate_nodes: Vec<u64> = self
+            .shard_nodes
             .get(&overloaded_shard)
             .map(|nodes| nodes.iter().take(max_migrations).copied().collect())
             .unwrap_or_default();
         for &node_id in &candidate_nodes {
-                if migrations.len() >= max_migrations || moved.contains(&node_id) {
-                    break;
-                }
-                // Prefer migrating low-trust, high-energy nodes
-                let trust = trust_scores.get(&node_id).copied().unwrap_or(0.5);
-                let energy = energy_budgets.get(&node_id).copied().unwrap_or(100.0);
-
-                // Only migrate if trust is reasonable and energy allows
-                if trust < 0.1 || energy < 10.0 {
-                    continue;
-                }
-
-                // Remove from overloaded shard
-                if let Some(nodes) = self.shard_nodes.get_mut(&overloaded_shard) {
-                    nodes.remove(&node_id);
-                }
-
-                // Add to underloaded shard
-                if let Some(nodes) = self.shard_nodes.get_mut(&underloaded_shard) {
-                    nodes.insert(node_id);
-                }
-
-                // Update assignment
-                let new_assignment = ShardAssignment {
-                    node_id,
-                    shard_id: underloaded_shard,
-                    cluster_id: self
-                        .get_shard_config(underloaded_shard)
-                        .map(|c| c.cluster_id)
-                        .unwrap_or(0),
-                    hash_position: 0,
-                    load_ratio: 0.0,
-                    rebalanced: true,
-                };
-
-                if let Some(assignment) = self.node_assignments.get_mut(&node_id) {
-                    assignment.shard_id = underloaded_shard;
-                    assignment.cluster_id = new_assignment.cluster_id;
-                }
-
-                migrations.push(new_assignment);
-                moved.insert(node_id);
+            if migrations.len() >= max_migrations || moved.contains(&node_id) {
+                break;
             }
+            // Prefer migrating low-trust, high-energy nodes
+            let trust = trust_scores.get(&node_id).copied().unwrap_or(0.5);
+            let energy = energy_budgets.get(&node_id).copied().unwrap_or(100.0);
+
+            // Only migrate if trust is reasonable and energy allows
+            if trust < 0.1 || energy < 10.0 {
+                continue;
+            }
+
+            // Remove from overloaded shard
+            if let Some(nodes) = self.shard_nodes.get_mut(&overloaded_shard) {
+                nodes.remove(&node_id);
+            }
+
+            // Add to underloaded shard
+            if let Some(nodes) = self.shard_nodes.get_mut(&underloaded_shard) {
+                nodes.insert(node_id);
+            }
+
+            // Update assignment
+            let new_assignment = ShardAssignment {
+                node_id,
+                shard_id: underloaded_shard,
+                cluster_id: self
+                    .get_shard_config(underloaded_shard)
+                    .map(|c| c.cluster_id)
+                    .unwrap_or(0),
+                hash_position: 0,
+                load_ratio: 0.0,
+                rebalanced: true,
+            };
+
+            if let Some(assignment) = self.node_assignments.get_mut(&node_id) {
+                assignment.shard_id = underloaded_shard;
+                assignment.cluster_id = new_assignment.cluster_id;
+            }
+
+            migrations.push(new_assignment);
+            moved.insert(node_id);
+        }
 
         Ok(migrations)
     }
@@ -1311,7 +1312,13 @@ pub fn self_heal_rebalance(
             let nodes_to_move = shard_manager
                 .shard_nodes
                 .get(shard_id)
-                .map(|nodes| nodes.iter().take(*count - target_load).copied().collect::<Vec<u64>>())
+                .map(|nodes| {
+                    nodes
+                        .iter()
+                        .take(*count - target_load)
+                        .copied()
+                        .collect::<Vec<u64>>()
+                })
                 .unwrap_or_default();
 
             // Find least loaded shard for redistribution
@@ -1349,14 +1356,12 @@ pub fn self_heal_rebalance(
 
     // Efficiency = trust * (1 - imbalance) * (1 - churn_penalty)
     let churn_penalty = churn_factor * 0.5;
-    let efficiency_score = (trust_factor * (1.0 - final_imbalance) * (1.0 - churn_penalty))
-        .clamp(0.0, 1.0);
+    let efficiency_score =
+        (trust_factor * (1.0 - final_imbalance) * (1.0 - churn_penalty)).clamp(0.0, 1.0);
 
     // Mesh is healthy if: imbalance < 0.3, efficiency > 0.6, failure_rate < 0.5
-    let mesh_healthy = final_imbalance < 0.3
-        && efficiency_score > 0.6
-        && churn_factor < 0.5
-        && total_nodes > 0;
+    let mesh_healthy =
+        final_imbalance < 0.3 && efficiency_score > 0.6 && churn_factor < 0.5 && total_nodes > 0;
 
     Ok(RebalanceResult {
         removed_nodes,
@@ -1966,7 +1971,11 @@ mod tests {
         let votes = vec![(1, 0, 0.9), (2, 0, 0.8), (3, 1, 0.5)];
         let result = trust_weighted_shard_vote(&votes, 1.0);
         assert_eq!(result.winning_shard, 0);
-        assert!((result.winning_weight - 1.7).abs() < 1e-10, "winning_weight = {}", result.winning_weight);
+        assert!(
+            (result.winning_weight - 1.7).abs() < 1e-10,
+            "winning_weight = {}",
+            result.winning_weight
+        );
         assert_eq!(result.total_votes, 3);
         assert!(result.quorum_met);
     }
@@ -2014,7 +2023,11 @@ mod tests {
         ];
         let result = trust_weighted_shard_vote(&votes, 0.0);
         assert_eq!(result.winning_shard, 0);
-        assert!((result.winning_weight - 1.7).abs() < 1e-10, "winning_weight = {}", result.winning_weight);
+        assert!(
+            (result.winning_weight - 1.7).abs() < 1e-10,
+            "winning_weight = {}",
+            result.winning_weight
+        );
     }
 
     // ─── Load-Based Assignment Tests ───────────────────────────────────
@@ -2241,7 +2254,11 @@ mod tests {
     fn test_shard_load_score_empty() -> Result<(), ShardingError> {
         let clusters = vec![ClusterConfig::new(0, 2, 0)];
         let manager = HierarchicalShardManager::new(2, &clusters)?;
-        let score = manager.shard_load_score(0, &std::collections::HashMap::new(), &std::collections::HashMap::new());
+        let score = manager.shard_load_score(
+            0,
+            &std::collections::HashMap::new(),
+            &std::collections::HashMap::new(),
+        );
         assert_eq!(score, 0.0);
         Ok(())
     }
@@ -2270,14 +2287,7 @@ mod tests {
     #[test]
     fn test_gossip_message_creation() {
         let sig = vec![0x42; 32];
-        let msg = GossipMessage::new(
-            1,
-            GossipMessageType::Heartbeat,
-            0,
-            vec![1, 2, 3],
-            sig,
-            100,
-        );
+        let msg = GossipMessage::new(1, GossipMessageType::Heartbeat, 0, vec![1, 2, 3], sig, 100);
         assert_eq!(msg.source, 1);
         assert_eq!(msg.shard_id, 0);
         assert_eq!(msg.sequence, 100);
@@ -2300,14 +2310,7 @@ mod tests {
     #[test]
     fn test_gossip_message_stale() {
         let sig = vec![0x42; 32];
-        let mut msg = GossipMessage::new(
-            1,
-            GossipMessageType::Heartbeat,
-            0,
-            vec![],
-            sig,
-            1,
-        );
+        let mut msg = GossipMessage::new(1, GossipMessageType::Heartbeat, 0, vec![], sig, 1);
         msg.timestamp = 100;
         assert!(msg.is_stale(30, 200)); // 200 - 100 = 100 > 30
     }
@@ -2315,14 +2318,7 @@ mod tests {
     #[test]
     fn test_gossip_message_not_stale() {
         let sig = vec![0x42; 32];
-        let mut msg = GossipMessage::new(
-            1,
-            GossipMessageType::Heartbeat,
-            0,
-            vec![],
-            sig,
-            1,
-        );
+        let mut msg = GossipMessage::new(1, GossipMessageType::Heartbeat, 0, vec![], sig, 1);
         msg.timestamp = 100;
         assert!(!msg.is_stale(30, 120)); // 120 - 100 = 20 <= 30
     }
@@ -2330,26 +2326,37 @@ mod tests {
     #[test]
     fn test_gossip_message_future_timestamp() {
         let sig = vec![0x42; 32];
-        let mut msg = GossipMessage::new(
-            1,
-            GossipMessageType::Heartbeat,
-            0,
-            vec![],
-            sig,
-            1,
-        );
+        let mut msg = GossipMessage::new(1, GossipMessageType::Heartbeat, 0, vec![], sig, 1);
         msg.timestamp = 500;
         assert!(!msg.is_stale(30, 100)); // Future — not stale
     }
 
     #[test]
     fn test_gossip_message_type_variants() {
-        assert!(matches!(GossipMessageType::NodeJoin, GossipMessageType::NodeJoin));
-        assert!(matches!(GossipMessageType::NodeLeave, GossipMessageType::NodeLeave));
-        assert!(matches!(GossipMessageType::Rebalance, GossipMessageType::Rebalance));
-        assert!(matches!(GossipMessageType::Heartbeat, GossipMessageType::Heartbeat));
-        assert!(matches!(GossipMessageType::StateSync, GossipMessageType::StateSync));
-        assert!(matches!(GossipMessageType::StateResponse, GossipMessageType::StateResponse));
+        assert!(matches!(
+            GossipMessageType::NodeJoin,
+            GossipMessageType::NodeJoin
+        ));
+        assert!(matches!(
+            GossipMessageType::NodeLeave,
+            GossipMessageType::NodeLeave
+        ));
+        assert!(matches!(
+            GossipMessageType::Rebalance,
+            GossipMessageType::Rebalance
+        ));
+        assert!(matches!(
+            GossipMessageType::Heartbeat,
+            GossipMessageType::Heartbeat
+        ));
+        assert!(matches!(
+            GossipMessageType::StateSync,
+            GossipMessageType::StateSync
+        ));
+        assert!(matches!(
+            GossipMessageType::StateResponse,
+            GossipMessageType::StateResponse
+        ));
     }
 
     #[test]
@@ -2412,7 +2419,8 @@ mod tests {
         let mut state = GossipSubState::new(100, 30);
         let sig = vec![0x42; 32];
 
-        let mut msg1 = GossipMessage::new(1, GossipMessageType::Heartbeat, 0, vec![], sig.clone(), 1);
+        let mut msg1 =
+            GossipMessage::new(1, GossipMessageType::Heartbeat, 0, vec![], sig.clone(), 1);
         msg1.timestamp = 970;
         state.process_message(&msg1, 1000);
 
@@ -2432,14 +2440,8 @@ mod tests {
         let current_time = 1000u64;
 
         for i in 0..5u64 {
-            let mut msg = GossipMessage::new(
-                i,
-                GossipMessageType::Heartbeat,
-                0,
-                vec![],
-                sig.clone(),
-                i,
-            );
+            let mut msg =
+                GossipMessage::new(i, GossipMessageType::Heartbeat, 0, vec![], sig.clone(), i);
             msg.timestamp = current_time - i * 10;
             state.process_message(&msg, current_time);
         }

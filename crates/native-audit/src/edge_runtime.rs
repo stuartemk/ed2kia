@@ -885,12 +885,11 @@ pub fn export_to_onnx(
     }
 
     // Build input/output shape descriptors
-    let input_shapes = vec![
-        (format!("input_hidden_{}", model_name), vec![1, input_dim]),
-    ];
-    let output_shapes = vec![
-        (format!("output_steered_{}", model_name), vec![1, output_dim]),
-    ];
+    let input_shapes = vec![(format!("input_hidden_{}", model_name), vec![1, input_dim])];
+    let output_shapes = vec![(
+        format!("output_steered_{}", model_name),
+        vec![1, output_dim],
+    )];
 
     // Create metadata
     let meta = OnnxExportMeta::new(
@@ -942,7 +941,9 @@ pub fn export_to_onnx(
 ///
 /// # Returns
 /// `Ok(OnnxExportMeta)` if the bundle is valid
-pub fn import_from_onnx(path: &str) -> std::result::Result<OnnxExportMeta, Box<dyn std::error::Error>> {
+pub fn import_from_onnx(
+    path: &str,
+) -> std::result::Result<OnnxExportMeta, Box<dyn std::error::Error>> {
     let content = std::fs::read_to_string(path)?;
     let bundle: serde_json::Value = serde_json::from_str(&content)?;
 
@@ -1025,10 +1026,7 @@ pub fn import_from_onnx(path: &str) -> std::result::Result<OnnxExportMeta, Box<d
     );
 
     // Override timestamp from file
-    let meta = OnnxExportMeta {
-        timestamp,
-        ..meta
-    };
+    let meta = OnnxExportMeta { timestamp, ..meta };
 
     Ok(meta)
 }
@@ -1124,7 +1122,7 @@ impl WasmTarget {
         match self {
             Self::Browser => 50 * 1024 * 1024, // 50 MB for browser
             Self::Wasi => 200 * 1024 * 1024,   // 200 MB for WASI
-            Self::Native => usize::MAX,         // No limit for native
+            Self::Native => usize::MAX,        // No limit for native
         }
     }
 
@@ -1485,7 +1483,11 @@ impl Default for ProductionMetrics {
 ///
 /// # Returns
 /// `true` if the deployment is production-ready
-pub fn is_production_ready(deploy: &EdgeDeployResult, metrics: &ProductionMetrics, min_health_score: f64) -> bool {
+pub fn is_production_ready(
+    deploy: &EdgeDeployResult,
+    metrics: &ProductionMetrics,
+    min_health_score: f64,
+) -> bool {
     deploy.ready && metrics.is_healthy() && metrics.health_score() >= min_health_score
 }
 
@@ -1812,7 +1814,8 @@ pub fn integrate_hf_model(model_id: &str, device: &DeviceConfig) -> IntegrationR
     let estimated_latency_ms = base_latency * latency_factor * gpu_factor;
 
     // Estimate energy based on latency and device
-    let estimated_energy_mwh = device.device_type.base_energy_cost() * (estimated_latency_ms / 1000.0);
+    let estimated_energy_mwh =
+        device.device_type.base_energy_cost() * (estimated_latency_ms / 1000.0);
 
     // Generate ONNX path
     let onnx_path = format!("models/{}/{}.onnx", model_id, precision);
@@ -1925,7 +1928,6 @@ pub fn build_tauri_mobile_custom(
         features,
     )
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -2713,9 +2715,7 @@ mod tests {
 
     #[test]
     fn test_is_production_ready_all_pass() {
-        let deploy = EdgeDeployResult::new(
-            WasmTarget::Native, true, true, 0.5, true, 0.0,
-        );
+        let deploy = EdgeDeployResult::new(WasmTarget::Native, true, true, 0.5, true, 0.0);
         let metrics = ProductionMetrics {
             uptime_seconds: 3600,
             total_inferences: 10000,
@@ -2732,18 +2732,14 @@ mod tests {
 
     #[test]
     fn test_is_production_ready_deploy_not_ready() {
-        let deploy = EdgeDeployResult::new(
-            WasmTarget::Native, false, true, 0.5, true, 0.0,
-        );
+        let deploy = EdgeDeployResult::new(WasmTarget::Native, false, true, 0.5, true, 0.0);
         let metrics = ProductionMetrics::default();
         assert!(!is_production_ready(&deploy, &metrics, 0.7));
     }
 
     #[test]
     fn test_is_production_ready_health_too_low() {
-        let deploy = EdgeDeployResult::new(
-            WasmTarget::Native, true, true, 0.5, true, 0.0,
-        );
+        let deploy = EdgeDeployResult::new(WasmTarget::Native, true, true, 0.5, true, 0.0);
         let metrics = ProductionMetrics {
             uptime_seconds: 100,
             total_inferences: 10,
@@ -2773,7 +2769,7 @@ mod tests {
     fn test_production_metrics_energy_rate() {
         let mut m = ProductionMetrics::default();
         m.record_inference(200.0, 0.1, true); // 200ms, 0.1mWh
-        // energy_rate = 0.1 / (200/1000) = 0.1 / 0.2 = 0.5 mWh/s
+                                              // energy_rate = 0.1 / (200/1000) = 0.1 / 0.2 = 0.5 mWh/s
         assert!((m.energy_rate_mwh_per_s - 0.5).abs() < 0.01);
     }
 
@@ -2949,10 +2945,8 @@ mod tests {
 
     #[test]
     fn test_integration_result_failure() {
-        let result = IntegrationResult::failure(
-            "bad-model".to_string(),
-            "Invalid format".to_string(),
-        );
+        let result =
+            IntegrationResult::failure("bad-model".to_string(), "Invalid format".to_string());
         assert!(!result.success);
         assert_eq!(result.model_id, "bad-model");
         assert_eq!(result.precision, ModelPrecision::None);
@@ -2979,10 +2973,7 @@ mod tests {
 
     #[test]
     fn test_integration_result_summary_failure() {
-        let result = IntegrationResult::failure(
-            "bad".to_string(),
-            "error msg".to_string(),
-        );
+        let result = IntegrationResult::failure("bad".to_string(), "error msg".to_string());
         let summary = result.summary();
         assert!(summary.contains("failed"));
         assert!(summary.contains("error msg"));
@@ -3008,10 +2999,7 @@ mod tests {
 
     #[test]
     fn test_mobile_build_result_failure() {
-        let result = MobileBuildResult::failure(
-            "android".to_string(),
-            "Build failed".to_string(),
-        );
+        let result = MobileBuildResult::failure("android".to_string(), "Build failed".to_string());
         assert!(!result.success);
         assert_eq!(result.platform, "android");
         assert_eq!(result.build_size_mb, 0.0);
@@ -3038,10 +3026,7 @@ mod tests {
 
     #[test]
     fn test_mobile_build_summary_failure() {
-        let result = MobileBuildResult::failure(
-            "unknown".to_string(),
-            "no sdk".to_string(),
-        );
+        let result = MobileBuildResult::failure("unknown".to_string(), "no sdk".to_string());
         let summary = result.summary();
         assert!(summary.contains("failed"));
         assert!(summary.contains("no sdk"));

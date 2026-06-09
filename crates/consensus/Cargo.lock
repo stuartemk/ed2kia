@@ -279,7 +279,7 @@ dependencies = [
 
 [[package]]
 name = "ed2k-consensus"
-version = "12.4.0"
+version = "12.5.0"
 dependencies = [
  "ark-bn254",
  "ark-ec",

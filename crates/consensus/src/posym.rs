@@ -721,10 +721,7 @@ impl SuccinctProof {
 ///
 /// # Returns
 /// `SuccinctProof` with proof bytes and metadata
-pub fn generate_succinct_proof(
-    proof: &SteeringProof,
-    config: &ZkProofConfig,
-) -> SuccinctProof {
+pub fn generate_succinct_proof(proof: &SteeringProof, config: &ZkProofConfig) -> SuccinctProof {
     let start = std::time::Instant::now();
 
     // Build public input from steering proof data
@@ -784,7 +781,8 @@ pub fn generate_succinct_proof(
     };
 
     // Enforce max proof size
-    let proof_bytes = proof_bytes.into_iter()
+    let proof_bytes = proof_bytes
+        .into_iter()
         .take(config.max_proof_size)
         .collect::<Vec<u8>>();
 
