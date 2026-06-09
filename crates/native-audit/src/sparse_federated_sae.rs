@@ -68,7 +68,12 @@ impl UpdateProof {
 
     /// Verify the proof hash matches the stored values.
     pub fn verify(&self) -> bool {
-        let expected = Self::compute_hash(self.node_id, self.timestamp, self.vfe_before, self.vfe_after);
+        let expected = Self::compute_hash(
+            self.node_id,
+            self.timestamp,
+            self.vfe_before,
+            self.vfe_after,
+        );
         self.proof_hash == expected
     }
 
@@ -99,12 +104,19 @@ impl SparseWeightUpdate {
 
         // Find top-k indices by absolute value
         let mut indexed: Vec<(usize, f32)> = values.iter().copied().enumerate().collect();
-        indexed.sort_by(|a, b| b.1.abs().partial_cmp(&a.1.abs()).unwrap_or(std::cmp::Ordering::Equal));
+        indexed.sort_by(|a, b| {
+            b.1.abs()
+                .partial_cmp(&a.1.abs())
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         indexed.truncate(top_k);
 
         let entries: Vec<SparseEntry> = indexed
             .into_iter()
-            .map(|(idx, val)| SparseEntry { index: idx, value: val })
+            .map(|(idx, val)| SparseEntry {
+                index: idx,
+                value: val,
+            })
             .collect();
 
         let hash = Self::compute_hash(matrix_id, &entries);
@@ -201,7 +213,8 @@ impl FederatedSAEAggregator {
         if update.verify() {
             self.pending_updates.push(update);
             if self.pending_updates.len() > self.max_pending {
-                self.pending_updates.drain(..self.pending_updates.len() - self.max_pending);
+                self.pending_updates
+                    .drain(..self.pending_updates.len() - self.max_pending);
             }
         }
     }
@@ -243,7 +256,10 @@ impl FederatedSAEAggregator {
         for (idx, mut values) in index_values {
             values.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
             let median = values[values.len() / 2];
-            result.push(SparseEntry { index: idx, value: median });
+            result.push(SparseEntry {
+                index: idx,
+                value: median,
+            });
         }
 
         result.sort_by_key(|e| e.index);
@@ -284,7 +300,10 @@ mod tests {
 
     #[test]
     fn test_sparse_entry_creation() {
-        let entry = SparseEntry { index: 5, value: 0.7 };
+        let entry = SparseEntry {
+            index: 5,
+            value: 0.7,
+        };
         assert_eq!(entry.index, 5);
         assert!((entry.value - 0.7).abs() < 1e-6);
     }

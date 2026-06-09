@@ -9,16 +9,14 @@
 
 use candle_core::{Device, Result, Tensor};
 use native_audit::formal_verification::{
-    compute_cbf_margin, GirardMerge, GirardNorm,
-    hybrid_ibp_zonotope_pipeline, hybrid_reach_tube_ibp,
-    ibp_certify_reach_tube, propagate_reach_tube,
-    temporal_fgsm_attack, verify_temporal_invariance_monte_carlo,
-    HybridPipelineConfig, ReachTube, ReachTubeConfig, TubeSegment,
+    compute_cbf_margin, hybrid_ibp_zonotope_pipeline, hybrid_reach_tube_ibp,
+    ibp_certify_reach_tube, propagate_reach_tube, temporal_fgsm_attack,
+    verify_temporal_invariance_monte_carlo, GirardMerge, GirardNorm, HybridPipelineConfig,
+    ReachTube, ReachTubeConfig, TubeSegment,
 };
 use native_audit::p2p_mechanism::{
-    byzantine_median, collective_pac_bound, MechanismConfig,
-    NodeContribution,
-    compute_shapley_values, run_vcg_auction, simulate_poa_stability,
+    byzantine_median, collective_pac_bound, compute_shapley_values, run_vcg_auction,
+    simulate_poa_stability, MechanismConfig, NodeContribution,
 };
 
 // =============================================================================
@@ -163,8 +161,14 @@ fn test_reach_tube_taylor_order_effect() -> Result<()> {
     let weight = make_identity_weight(dim, &device)?;
     let dynamics = linear_dynamics(&weight);
 
-    let config_order1 = ReachTubeConfig { taylor_order: 1, ..ReachTubeConfig::default() };
-    let config_order2 = ReachTubeConfig { taylor_order: 2, ..ReachTubeConfig::default() };
+    let config_order1 = ReachTubeConfig {
+        taylor_order: 1,
+        ..ReachTubeConfig::default()
+    };
+    let config_order2 = ReachTubeConfig {
+        taylor_order: 2,
+        ..ReachTubeConfig::default()
+    };
 
     let safe_center = vec![0.0; dim];
     let tube1 = propagate_reach_tube(&center, &gens, &dynamics, &safe_center, 1.0, &config_order1)?;
@@ -204,7 +208,12 @@ fn test_reach_tube_girard_reduction_applied() -> Result<()> {
     // Each segment should have ≤ max_gens generators
     for seg in &tube.tubes {
         let num_gens = seg.generators.dim(0)?;
-        assert!(num_gens <= config.max_gens, "Gens {} > max {}", num_gens, config.max_gens);
+        assert!(
+            num_gens <= config.max_gens,
+            "Gens {} > max {}",
+            num_gens,
+            config.max_gens
+        );
     }
     // Verify reduction is active: initial gens (4) < max_gens (8),
     // but after propagation with remainder, reduction keeps count bounded
@@ -345,7 +354,11 @@ fn test_compute_cbf_margin_unsafe() -> Result<()> {
     let margin = 1.0;
 
     let cbf = compute_cbf_margin(&center, &safe_center, margin)?;
-    assert!(cbf < 0.0, "CBF should be negative when far from center: {}", cbf);
+    assert!(
+        cbf < 0.0,
+        "CBF should be negative when far from center: {}",
+        cbf
+    );
     Ok(())
 }
 
@@ -398,7 +411,12 @@ fn test_temporal_fgsm_reduces_cbf() -> Result<()> {
     let adv_min = adv_cbf.iter().copied().fold(f32::INFINITY, f32::min);
 
     // FGSM should reduce (or keep equal) the CBF margin
-    assert!(adv_min <= orig_min + 1e-4, "FGSM should reduce CBF: {} > {}", adv_min, orig_min);
+    assert!(
+        adv_min <= orig_min + 1e-4,
+        "FGSM should reduce CBF: {} > {}",
+        adv_min,
+        orig_min
+    );
     Ok(())
 }
 
@@ -447,7 +465,11 @@ fn test_mc_temporal_invariance() -> Result<()> {
 
     // verify_temporal_invariance_monte_carlo returns f32 (fraction safe), not Result<Vec<f32>>
     let fraction_safe = verify_temporal_invariance_monte_carlo(&tube, &safe_center, 1.0, 100, 42);
-    assert!(fraction_safe >= 0.0 && fraction_safe <= 1.0, "Fraction should be in [0,1]: {}", fraction_safe);
+    assert!(
+        fraction_safe >= 0.0 && fraction_safe <= 1.0,
+        "Fraction should be in [0,1]: {}",
+        fraction_safe
+    );
     assert!(fraction_safe.is_finite());
     Ok(())
 }
@@ -581,7 +603,10 @@ fn test_hybrid_reach_tube_ibp_safety() -> Result<()> {
     let safe_center = vec![0.0; dim];
     let tube = hybrid_reach_tube_ibp(&center, &gens, &dynamics, &safe_center, 1.0, &config)?;
 
-    assert!(tube.is_safe(), "Hybrid IBP tube should be safe with small epsilon");
+    assert!(
+        tube.is_safe(),
+        "Hybrid IBP tube should be safe with small epsilon"
+    );
     Ok(())
 }
 
@@ -592,9 +617,24 @@ fn test_hybrid_reach_tube_ibp_safety() -> Result<()> {
 #[test]
 fn test_shapley_values_basic() {
     let contributions = vec![
-        NodeContribution { node_id: 0, tightness_improvement: 0.3, cost: 0.1, verified: true },
-        NodeContribution { node_id: 1, tightness_improvement: 0.5, cost: 0.2, verified: true },
-        NodeContribution { node_id: 2, tightness_improvement: 0.4, cost: 0.15, verified: true },
+        NodeContribution {
+            node_id: 0,
+            tightness_improvement: 0.3,
+            cost: 0.1,
+            verified: true,
+        },
+        NodeContribution {
+            node_id: 1,
+            tightness_improvement: 0.5,
+            cost: 0.2,
+            verified: true,
+        },
+        NodeContribution {
+            node_id: 2,
+            tightness_improvement: 0.4,
+            cost: 0.15,
+            verified: true,
+        },
     ];
 
     let config = MechanismConfig::default();
@@ -607,9 +647,12 @@ fn test_shapley_values_basic() {
 
 #[test]
 fn test_shapley_values_single_node() {
-    let contributions = vec![
-        NodeContribution { node_id: 0, tightness_improvement: 0.5, cost: 0.1, verified: true },
-    ];
+    let contributions = vec![NodeContribution {
+        node_id: 0,
+        tightness_improvement: 0.5,
+        cost: 0.1,
+        verified: true,
+    }];
 
     let config = MechanismConfig::default();
     let result = compute_shapley_values(&contributions, &config);
@@ -621,9 +664,24 @@ fn test_shapley_values_single_node() {
 #[test]
 fn test_vcg_auction_basic() {
     let contributions = vec![
-        NodeContribution { node_id: 0, tightness_improvement: 0.3, cost: 0.1, verified: true },
-        NodeContribution { node_id: 1, tightness_improvement: 0.5, cost: 0.2, verified: true },
-        NodeContribution { node_id: 2, tightness_improvement: 0.4, cost: 0.15, verified: true },
+        NodeContribution {
+            node_id: 0,
+            tightness_improvement: 0.3,
+            cost: 0.1,
+            verified: true,
+        },
+        NodeContribution {
+            node_id: 1,
+            tightness_improvement: 0.5,
+            cost: 0.2,
+            verified: true,
+        },
+        NodeContribution {
+            node_id: 2,
+            tightness_improvement: 0.4,
+            cost: 0.15,
+            verified: true,
+        },
     ];
 
     let config = MechanismConfig::default();
@@ -637,9 +695,24 @@ fn test_vcg_auction_basic() {
 #[test]
 fn test_vcg_selects_highest_value() {
     let contributions = vec![
-        NodeContribution { node_id: 0, tightness_improvement: 0.1, cost: 0.05, verified: true },
-        NodeContribution { node_id: 1, tightness_improvement: 0.9, cost: 0.1, verified: true },
-        NodeContribution { node_id: 2, tightness_improvement: 0.5, cost: 0.2, verified: true },
+        NodeContribution {
+            node_id: 0,
+            tightness_improvement: 0.1,
+            cost: 0.05,
+            verified: true,
+        },
+        NodeContribution {
+            node_id: 1,
+            tightness_improvement: 0.9,
+            cost: 0.1,
+            verified: true,
+        },
+        NodeContribution {
+            node_id: 2,
+            tightness_improvement: 0.5,
+            cost: 0.2,
+            verified: true,
+        },
     ];
 
     let config = MechanismConfig {
@@ -747,13 +820,24 @@ fn test_sprint117_full_pipeline() -> Result<()> {
         num_layers: 1,
         ..HybridPipelineConfig::default()
     };
-    let hybrid_result = hybrid_ibp_zonotope_pipeline(&center, &layers, &safe_center, 1.0, &hybrid_config)?;
+    let hybrid_result =
+        hybrid_ibp_zonotope_pipeline(&center, &layers, &safe_center, 1.0, &hybrid_config)?;
     assert!(hybrid_result.cbf_margin > 0.0);
 
     // 4. P2P mechanism
     let contributions = vec![
-        NodeContribution { node_id: 0, tightness_improvement: hybrid_result.tightness_ratio, cost: 0.1, verified: true },
-        NodeContribution { node_id: 1, tightness_improvement: 0.8, cost: 0.15, verified: true },
+        NodeContribution {
+            node_id: 0,
+            tightness_improvement: hybrid_result.tightness_ratio,
+            cost: 0.1,
+            verified: true,
+        },
+        NodeContribution {
+            node_id: 1,
+            tightness_improvement: 0.8,
+            cost: 0.15,
+            verified: true,
+        },
     ];
     let shapley = compute_shapley_values(&contributions, &MechanismConfig::default());
     assert!(shapley.values.iter().all(|v| *v >= 0.0));
@@ -794,7 +878,12 @@ fn test_sprint117_temporal_robustness() -> Result<()> {
     let ibp_min = ibp_cbf.iter().copied().fold(f32::INFINITY, f32::min);
 
     // IBP bound should be ≤ actual FGSM result (soundness)
-    assert!(ibp_min <= adv_min + 0.1, "IBP should be conservative: {} > {}", ibp_min, adv_min);
+    assert!(
+        ibp_min <= adv_min + 0.1,
+        "IBP should be conservative: {} > {}",
+        ibp_min,
+        adv_min
+    );
 
     Ok(())
 }

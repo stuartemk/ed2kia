@@ -19,11 +19,7 @@ fn bench_energy_savings_desktop() {
     let impact = DeviceType::Desktop.base_energy_cost();
     let baseline = DeviceType::Desktop.dc_baseline_cost();
     let savings = (baseline - impact) / baseline * 100.0;
-    assert!(
-        savings >= 80.0,
-        "Desktop savings {:.1}% < 80%",
-        savings
-    );
+    assert!(savings >= 80.0, "Desktop savings {:.1}% < 80%", savings);
     assert_eq!(impact, 0.05);
     assert_eq!(baseline, 0.8);
     assert_eq!(savings, 93.75);
@@ -34,11 +30,7 @@ fn bench_energy_savings_old_desktop() {
     let impact = DeviceType::OldDesktop.base_energy_cost();
     let baseline = DeviceType::OldDesktop.dc_baseline_cost();
     let savings = (baseline - impact) / baseline * 100.0;
-    assert!(
-        savings >= 80.0,
-        "OldDesktop savings {:.1}% < 80%",
-        savings
-    );
+    assert!(savings >= 80.0, "OldDesktop savings {:.1}% < 80%", savings);
     assert_eq!(impact, 0.08);
     assert_eq!(baseline, 1.0);
     assert_eq!(savings, 92.0);
@@ -49,11 +41,7 @@ fn bench_energy_savings_mobile() {
     let impact = DeviceType::Mobile.base_energy_cost();
     let baseline = DeviceType::Mobile.dc_baseline_cost();
     let savings = (baseline - impact) / baseline * 100.0;
-    assert!(
-        savings >= 80.0,
-        "Mobile savings {:.1}% < 80%",
-        savings
-    );
+    assert!(savings >= 80.0, "Mobile savings {:.1}% < 80%", savings);
     assert_eq!(impact, 0.03);
     assert_eq!(baseline, 0.6);
     assert_eq!(savings, 95.0);
@@ -64,11 +52,7 @@ fn bench_energy_savings_iot() {
     let impact = DeviceType::Iot.base_energy_cost();
     let baseline = DeviceType::Iot.dc_baseline_cost();
     let savings = (baseline - impact) / baseline * 100.0;
-    assert!(
-        savings >= 80.0,
-        "IoT savings {:.1}% < 80%",
-        savings
-    );
+    assert!(savings >= 80.0, "IoT savings {:.1}% < 80%", savings);
     assert_eq!(impact, 0.01);
     assert_eq!(baseline, 0.4);
     assert_eq!(savings, 97.5);
@@ -307,11 +291,7 @@ fn bench_mesh_simulation_multi_round() {
     let history = sim.run(10);
     assert_eq!(history.len(), 10);
     for (i, stats) in history.iter().enumerate() {
-        assert!(
-            stats.active_nodes > 0,
-            "Round {} has no active nodes",
-            i
-        );
+        assert!(stats.active_nodes > 0, "Round {} has no active nodes", i);
     }
 }
 
@@ -348,15 +328,26 @@ fn bench_mesh_3g_latency_range() {
 
 #[test]
 fn bench_mesh_device_distribution() {
-    let mut sim = LiveMeshSimulation::new(100)
-        .with_churn_probability(0.0);
+    let mut sim = LiveMeshSimulation::new(100).with_churn_probability(0.0);
     sim.step();
     // Verify realistic device mix: 20% desktop, 30% old desktop, 30% mobile, 20% IoT
     let total = sim.nodes.len();
     assert!(total > 0, "No devices in mesh");
-    let desktops = sim.nodes.iter().filter(|n| n.device_type == DeviceType::Desktop).count();
-    let mobiles = sim.nodes.iter().filter(|n| n.device_type == DeviceType::Mobile).count();
-    let iots = sim.nodes.iter().filter(|n| n.device_type == DeviceType::Iot).count();
+    let desktops = sim
+        .nodes
+        .iter()
+        .filter(|n| n.device_type == DeviceType::Desktop)
+        .count();
+    let mobiles = sim
+        .nodes
+        .iter()
+        .filter(|n| n.device_type == DeviceType::Mobile)
+        .count();
+    let iots = sim
+        .nodes
+        .iter()
+        .filter(|n| n.device_type == DeviceType::Iot)
+        .count();
     // 20% desktop, 30% mobile, 20% IoT of 100 = 20, 30, 20
     assert_eq!(desktops, 20);
     assert_eq!(mobiles, 30);
@@ -499,10 +490,15 @@ fn bench_sprint120_planetary_scale() {
     assert_eq!(history.len(), 50);
 
     let impact = sim.planetary_impact();
-    assert!(impact.global_energy_saved_mwh > 100.0, "Insufficient planetary savings");
-    assert!(impact.active_altruistic_nodes > 500, "Too many nodes churned");
+    assert!(
+        impact.global_energy_saved_mwh > 100.0,
+        "Insufficient planetary savings"
+    );
+    assert!(
+        impact.active_altruistic_nodes > 500,
+        "Too many nodes churned"
+    );
 }
-
 
 #[test]
 fn bench_sprint120_mesh_stats_summary() {

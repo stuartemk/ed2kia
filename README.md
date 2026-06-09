@@ -1,7 +1,7 @@
 # 🌐 ed2kIA: Distributed Sparse Autoencoders for Edge LLM Interpretability
 
-[![Version](https://img.shields.io/badge/v11.4.0-sprint114-blue.svg)](https://github.com/Stuartemk/ed2kIA/releases/tag/v11.4.0-sprint114)
-[![Tests](https://img.shields.io/badge/Tests-236%20PASS-green.svg)](https://github.com/Stuartemk/ed2kIA/actions)
+[![Version](https://img.shields.io/badge/v12.4.0-sprint124-blue.svg)](https://github.com/Stuartemk/ed2kIA/releases/tag/v12.4.0-sprint124)
+[![Tests](https://img.shields.io/badge/Tests-400%2B%20PASS-green.svg)](https://github.com/Stuartemk/ed2kIA/actions)
 [![Audit](https://img.shields.io/badge/OSSF-8.5%2F10-yellow.svg)](https://github.com/Stuartemk/ed2kIA/security)
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ética-orange.svg)](LICENSE)
 
@@ -49,6 +49,28 @@ The `native-audit` crate (`crates/native-audit`) provides:
 - **verify_steering_robustness_zonotope()** — **Zonotope Robustness Verification** (v11.0.0): Certified bound propagation using zonotope geometry — $Z = \{c + G@\varepsilon \mid \varepsilon \in [-1,1]^k\}$ with exact affine propagation $c'=Wc+b,\ G'=WG$
 - **collective_zonotope_consensus()** — **Collective Zonotope Consensus** (v11.0.0): Distributed zonotope gossip + Weiszfeld geometric median for Byzantine-resilient aggregation
 - **hybrid_zonotope_verify()** — **Hybrid Zonotope-Interval Verification** (v11.0.0): Zonotopes for linear layers, intervals for non-linear, then refine back
+
+**Full Edge Deployment Immunity (v12.4.0 — Planetary Symbiotic Mesh):**
+| Feature | Module | Description |
+|---------|--------|-------------|
+| WASM Edge Deploy | `edge_runtime.rs` | `EdgeDeployConfig` (browser/WASI/native), `validate_edge_deploy()`, `WasmTarget` |
+| ONNX Export/Import | `edge_runtime.rs` | `OnnxExportMeta`, `export_to_onnx()`, `import_from_onnx()` |
+| Differential Privacy | `sae_modular.rs` | `add_dp_noise()`, `compute_dp_sigma()`, `verify_dp_guarantee()` |
+| Adversarial Robustness | `sae_modular.rs` | `adversarial_steering_test()`, `compute_robustness_margin()` |
+| Planetary Simulation | `planetary_sim.rs` | `simulate_planetary_mesh()`, churn modeling, 10K+ nodes |
+| Succinct Proofs | `posym.rs` | `SuccinctProof`, SNARK/STARK/Halo2 stubs, SHA-256 commitments |
+| Symbiotic Governance | `governance.rs` | Quorum proposals, trust-weighted voting, value distribution |
+| Global Bootstrap | `governance.rs` | `execute_bootstrap_discovery()`, trust-filtered peer selection |
+
+**Sprint 124 Validation:**
+| Metric | Value |
+|--------|-------|
+| ed2k-consensus Tests | **220/220 (100%)** |
+| edge_runtime Tests | **56/56 (100%)** |
+| planetary_sim Tests | **34/34 (100%)** |
+| formal_verification Tests | **34/34 (100%)** |
+| governance Tests | **55/55 (100%)** |
+| Warnings | **0** |
 
 **Zonotope Verification (v11.0.0 — Zonotope Geometry & Collective Certified Intelligence):**
 | Metric | Value |

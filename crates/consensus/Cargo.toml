@@ -1,6 +1,6 @@
 [package]
 name = "ed2k-consensus"
-version = "12.2.0"
+version = "12.4.0"
 edition = "2021"
 description = "Consensus mechanisms for ed2kIA (PoN, ZKP, MPC, Hierarchical Sharding)"
 license = "Apache-2.0"

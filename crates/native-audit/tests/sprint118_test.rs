@@ -7,12 +7,18 @@
 //! - Edge case benchmarks
 
 use candle_core::Device;
-use native_audit::sae_modular::{SAE, SAEConfig};
-use native_audit::testnet_sim::{SimConfig, run_testnet_simulation, byzantine_median, compute_gini};
+use native_audit::sae_modular::{SAEConfig, SAE};
+use native_audit::testnet_sim::{
+    byzantine_median, compute_gini, run_testnet_simulation, SimConfig,
+};
 
 // --- Helper functions ---
 
-fn make_hidden_batch(batch: usize, dim: usize, device: &Device) -> candle_core::Result<candle_core::Tensor> {
+fn make_hidden_batch(
+    batch: usize,
+    dim: usize,
+    device: &Device,
+) -> candle_core::Result<candle_core::Tensor> {
     let data: Vec<f32> = (0..(batch * dim))
         .map(|i| (i as f32 % 13.0) / 13.0)
         .collect();
@@ -147,7 +153,11 @@ fn test_sae_sparsity_enforced() -> candle_core::Result<()> {
     // Output is 2D [1, 16], flatten to check sparsity
     let vals: Vec<Vec<f32>> = latents.to_vec2()?;
     let non_zero = vals.iter().flatten().filter(|v| **v != 0.0).count();
-    assert!(non_zero <= 3, "Expected at most 3 active features, got {}", non_zero);
+    assert!(
+        non_zero <= 3,
+        "Expected at most 3 active features, got {}",
+        non_zero
+    );
     Ok(())
 }
 
@@ -305,7 +315,10 @@ fn test_sim_byzantine_resistance_10pct() {
         seed: 42,
     };
     let result = run_testnet_simulation(&config);
-    assert!(result.certified_ratio > 0.5, "Should certify majority at 10% Byzantine");
+    assert!(
+        result.certified_ratio > 0.5,
+        "Should certify majority at 10% Byzantine"
+    );
     assert!(result.gini < 0.5, "Credits should be relatively fair");
 }
 
@@ -322,7 +335,10 @@ fn test_sim_byzantine_resistance_33pct() {
         seed: 42,
     };
     let result = run_testnet_simulation(&config);
-    assert!(result.certified_ratio > 0.0, "Should still certify some at 33% Byzantine");
+    assert!(
+        result.certified_ratio > 0.0,
+        "Should still certify some at 33% Byzantine"
+    );
     assert!(result.poa >= 1.0, "PoA should be >= 1");
 }
 
@@ -339,7 +355,10 @@ fn test_sim_honest_network_optimal() {
         seed: 42,
     };
     let result = run_testnet_simulation(&config);
-    assert!((result.poa - 1.0).abs() < 0.01, "PoA should be ~1.0 for honest network");
+    assert!(
+        (result.poa - 1.0).abs() < 0.01,
+        "PoA should be ~1.0 for honest network"
+    );
     assert!(result.certified_ratio > 0.8);
 }
 
@@ -356,7 +375,10 @@ fn test_sim_convergence_happens() {
         seed: 42,
     };
     let result = run_testnet_simulation(&config);
-    assert!(result.convergence_epochs < result.total_epochs, "Should converge before end");
+    assert!(
+        result.convergence_epochs < result.total_epochs,
+        "Should converge before end"
+    );
 }
 
 #[test]
@@ -372,7 +394,11 @@ fn test_sim_gini_fairness() {
         seed: 42,
     };
     let result = run_testnet_simulation(&config);
-    assert!(result.gini < 0.4, "Gini should be < 0.4 for fair credit distribution, got {}", result.gini);
+    assert!(
+        result.gini < 0.4,
+        "Gini should be < 0.4 for fair credit distribution, got {}",
+        result.gini
+    );
 }
 
 #[test]
@@ -433,7 +459,12 @@ fn test_sim_attack_intensity_effect() {
     let r_low = run_testnet_simulation(&low_attack);
     let r_high = run_testnet_simulation(&high_attack);
     // Higher attack → higher PoA
-    assert!(r_high.poa >= r_low.poa, "High attack PoA {:.3} >= low attack PoA {:.3}", r_high.poa, r_low.poa);
+    assert!(
+        r_high.poa >= r_low.poa,
+        "High attack PoA {:.3} >= low attack PoA {:.3}",
+        r_high.poa,
+        r_low.poa
+    );
 }
 
 #[test]
@@ -477,8 +508,11 @@ fn test_sim_pac_bound_reasonable() {
         seed: 42,
     };
     let result = run_testnet_simulation(&config);
-    assert!(result.final_pac_bound > 0.0 && result.final_pac_bound < 1.0,
-        "PAC bound should be in (0,1), got {}", result.final_pac_bound);
+    assert!(
+        result.final_pac_bound > 0.0 && result.final_pac_bound < 1.0,
+        "PAC bound should be in (0,1), got {}",
+        result.final_pac_bound
+    );
 }
 
 // ============================================================
@@ -496,7 +530,11 @@ fn test_byzantine_median_basic() {
 fn test_byzantine_median_outliers() {
     let values = vec![-1000.0, -1000.0, 4.0, 5.0, 6.0, 1000.0, 1000.0];
     let median = byzantine_median(&values);
-    assert!(median > 0.0 && median < 100.0, "Median {} should trim extreme outliers", median);
+    assert!(
+        median > 0.0 && median < 100.0,
+        "Median {} should trim extreme outliers",
+        median
+    );
 }
 
 #[test]
@@ -590,7 +628,12 @@ fn test_sprint118_sae_then_verify() -> candle_core::Result<()> {
 
     // Verify: sparsity is enforced
     for &active in &result.active_features {
-        assert!(active <= sae_config.top_k, "Active features {} > top_k {}", active, sae_config.top_k);
+        assert!(
+            active <= sae_config.top_k,
+            "Active features {} > top_k {}",
+            active,
+            sae_config.top_k
+        );
     }
 
     Ok(())
@@ -615,7 +658,10 @@ fn test_sprint118_collective_verification() {
     assert!(result.certified_ratio > 0.5, "Majority should be certified");
     assert!(result.gini < 0.5, "Credit distribution should be fair");
     assert!(result.poa < 2.0, "PoA should be bounded");
-    assert!(result.final_pac_bound < 0.5, "PAC bound should be reasonable");
+    assert!(
+        result.final_pac_bound < 0.5,
+        "PAC bound should be reasonable"
+    );
 }
 
 #[test]
@@ -635,9 +681,12 @@ fn test_sprint118_scale_comparison() {
     let r_large = run_testnet_simulation(&large);
 
     // Larger network should have tighter PAC bound (more samples)
-    assert!(r_large.final_pac_bound <= r_small.final_pac_bound * 2.0,
+    assert!(
+        r_large.final_pac_bound <= r_small.final_pac_bound * 2.0,
         "Large network PAC {:.4} should be tighter than small {:.4}",
-        r_large.final_pac_bound, r_small.final_pac_bound);
+        r_large.final_pac_bound,
+        r_small.final_pac_bound
+    );
 }
 
 #[test]

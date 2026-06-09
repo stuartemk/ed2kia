@@ -103,7 +103,10 @@ fn test_hybrid_efficiency_fast_vs_slow() -> Result<()> {
         let _swd_safe = hidden.narrow(0, 0, 1)?;
         // TCM Z: mean + std + max abs
         let _mean = hidden.mean_all()?;
-        let _var = hidden.broadcast_sub(&hidden.mean_all()?)?.sqr()?.mean_all()?;
+        let _var = hidden
+            .broadcast_sub(&hidden.mean_all()?)?
+            .sqr()?
+            .mean_all()?;
     }
 
     let fast_duration = fast_start.elapsed();
@@ -115,7 +118,10 @@ fn test_hybrid_efficiency_fast_vs_slow() -> Result<()> {
         // All Fast Path ops
         let _swd_safe = hidden.narrow(0, 0, 1)?;
         let _mean = hidden.mean_all()?;
-        let _var = hidden.broadcast_sub(&hidden.mean_all()?)?.sqr()?.mean_all()?;
+        let _var = hidden
+            .broadcast_sub(&hidden.mean_all()?)?
+            .sqr()?
+            .mean_all()?;
 
         // Additional Slow Path ops (VFE + Zonotope + CBF)
         let _diff = hidden.broadcast_sub(&safe_centroid)?;
@@ -145,7 +151,10 @@ fn test_hybrid_efficiency_fast_vs_slow() -> Result<()> {
     );
 
     // Both paths should have executed
-    assert!(fast_ms > 0.0 || slow_ms > 0.0, "At least one path should have measurable duration");
+    assert!(
+        fast_ms > 0.0 || slow_ms > 0.0,
+        "At least one path should have measurable duration"
+    );
     // Slow path has more ops so should generally be >= fast path
     // (not guaranteed on fast hardware with small tensors, so just log)
 
@@ -185,7 +194,8 @@ fn test_hybrid_efficiency_weighted_average() -> Result<()> {
     let anomalous_fraction = 0.05;
 
     // Hybrid approach
-    let hybrid_total = safe_fraction * fast_cost_per_token + anomalous_fraction * slow_cost_per_token;
+    let hybrid_total =
+        safe_fraction * fast_cost_per_token + anomalous_fraction * slow_cost_per_token;
 
     // Full-heavy approach (every token gets Slow Path)
     let full_heavy_total = slow_cost_per_token;
@@ -194,7 +204,9 @@ fn test_hybrid_efficiency_weighted_average() -> Result<()> {
 
     eprintln!(
         "Weighted Efficiency: Hybrid={:.1}, Full-Heavy={:.1}, Savings={:.1}%",
-        hybrid_total, full_heavy_total, savings * 100.0
+        hybrid_total,
+        full_heavy_total,
+        savings * 100.0
     );
 
     // With 95% safe tokens and 5x speedup:
@@ -238,12 +250,20 @@ fn test_sparse_federated_bandwidth_savings() -> Result<()> {
 
     eprintln!(
         "Sparse Federated: Dense={}B, Sparse={}B, Savings={:.1}%",
-        dense_bytes, sparse_bytes, savings * 100.0
+        dense_bytes,
+        sparse_bytes,
+        savings * 100.0
     );
 
     assert_eq!(dense_bytes, dim * dim * 4); // 256*256*4 = 262144
-    assert!(sparse_bytes < dense_bytes, "Sparse should be smaller than dense");
-    assert!(savings > 0.9, "Should save >90% bandwidth for sparse SAE weights");
+    assert!(
+        sparse_bytes < dense_bytes,
+        "Sparse should be smaller than dense"
+    );
+    assert!(
+        savings > 0.9,
+        "Should save >90% bandwidth for sparse SAE weights"
+    );
 
     Ok(())
 }
@@ -259,7 +279,10 @@ fn test_sparse_update_integrity() -> Result<()> {
     let update = SparseWeightUpdate::from_tensor("w", &tensor, 2)?.with_proof(proof);
 
     assert!(update.verify(), "Update hash should be valid");
-    assert!(update.proof.as_ref().unwrap().verify(), "Proof should be valid");
+    assert!(
+        update.proof.as_ref().unwrap().verify(),
+        "Proof should be valid"
+    );
 
     Ok(())
 }
@@ -363,7 +386,11 @@ fn test_sprint119_full_pipeline() -> Result<()> {
     let update = SparseWeightUpdate::from_tensor("test_w", &sparse_tensor, 5)?;
     assert!(update.verify());
     let compression = update.compression_ratio();
-    assert!(compression > 0.99, "Should have >99% compression for sparse data (got {:.2})", compression);
+    assert!(
+        compression > 0.99,
+        "Should have >99% compression for sparse data (got {:.2})",
+        compression
+    );
 
     // 3. Add PoSym proof
     let proof = UpdateProof::new(1, 1000, 1.0, 0.3);

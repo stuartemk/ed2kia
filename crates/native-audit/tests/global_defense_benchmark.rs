@@ -7,14 +7,14 @@
 //! - 20% Desktop (standard)
 //! - 10% Datacenter (heavy infrastructure)
 
+use candle_core::{Device, Tensor};
 use native_audit::edge_runtime::{
-    DeviceType, evaluate_proportional_hybrid,
     compute_multimodal_vfe_symbiosis, compute_multimodal_vfe_with_cbf,
+    evaluate_proportional_hybrid, DeviceType,
 };
 use native_audit::global_bootstrap::{
-    DeviceDistribution, GlobalBootstrapConfig, GlobalAltruistMesh,
+    DeviceDistribution, GlobalAltruistMesh, GlobalBootstrapConfig,
 };
-use candle_core::{Device, Tensor};
 
 /// Benchmark: Noosfera Symbiotic Launch — 5000-node planetary simulation.
 #[test]
@@ -44,8 +44,10 @@ fn benchmark_noosfera_symbiotic_launch() {
 
     // Validate device distribution matches target
     assert_eq!(
-        result.ultra_light_nodes + result.mid_tier_nodes
-            + result.standard_nodes + result.heavy_nodes,
+        result.ultra_light_nodes
+            + result.mid_tier_nodes
+            + result.standard_nodes
+            + result.heavy_nodes,
         5000
     );
 
@@ -92,8 +94,16 @@ fn benchmark_proportional_scaling_spectrum() -> candle_core::Result<()> {
         let (_safe, _certified, _steered, trust_delta, energy_used) =
             evaluate_proportional_hybrid(&hidden, &safe, &toxic, *dt, 0.8, 0.8)?;
 
-        assert!(trust_delta > 0.0, "Trust delta should be positive for {:?}", dt);
-        assert!(energy_used > 0.0, "Energy used should be positive for {:?}", dt);
+        assert!(
+            trust_delta > 0.0,
+            "Trust delta should be positive for {:?}",
+            dt
+        );
+        assert!(
+            energy_used > 0.0,
+            "Energy used should be positive for {:?}",
+            dt
+        );
 
         // Energy should generally increase with device capability
         // (Smartwatch uses ultra-light path, datacenter uses full hybrid)
@@ -120,11 +130,26 @@ fn benchmark_multimodal_vfe_symbiosis() {
     let combined = compute_multimodal_vfe_symbiosis(&modal_vfes, &modal_weights);
 
     // Combined VFE should be within the range of individual VFEs
-    assert!(combined >= modal_vfes.iter().min_by_key(|&&v| (v * 1000.0) as i64).unwrap() - 0.01);
-    assert!(combined <= modal_vfes.iter().max_by_key(|&&v| (v * 1000.0) as i64).unwrap() + 0.01);
+    assert!(
+        combined
+            >= modal_vfes
+                .iter()
+                .min_by_key(|&&v| (v * 1000.0) as i64)
+                .unwrap()
+                - 0.01
+    );
+    assert!(
+        combined
+            <= modal_vfes
+                .iter()
+                .max_by_key(|&&v| (v * 1000.0) as i64)
+                .unwrap()
+                + 0.01
+    );
 
     // With CBF safety threshold
-    let (combined_cbf, margin, is_safe) = compute_multimodal_vfe_with_cbf(&modal_vfes, &modal_weights, 0.5);
+    let (combined_cbf, margin, is_safe) =
+        compute_multimodal_vfe_with_cbf(&modal_vfes, &modal_weights, 0.5);
     assert!((combined_cbf - combined).abs() < 1e-10);
     assert!(margin > 0.0);
     assert!(is_safe);
@@ -150,15 +175,22 @@ fn benchmark_contribution_factor_fairness() {
 
     for (dt, expected) in &contributions {
         let actual = dt.contribution_factor();
-        assert!((actual - expected).abs() < 1e-9,
-            "Contribution factor mismatch for {:?}: expected {}, got {}", dt, expected, actual);
+        assert!(
+            (actual - expected).abs() < 1e-9,
+            "Contribution factor mismatch for {:?}: expected {}, got {}",
+            dt,
+            expected,
+            actual
+        );
     }
 
     // Verify monotonic decrease: lower capability → higher factor
     let factors: Vec<f64> = contributions.iter().map(|(_, f)| *f).collect();
     for i in 0..factors.len() - 1 {
-        assert!(factors[i] > factors[i + 1],
-            "Contribution factor should decrease with capability");
+        assert!(
+            factors[i] > factors[i + 1],
+            "Contribution factor should decrease with capability"
+        );
     }
 
     println!("=== Contribution Factor Fairness ===");
@@ -183,8 +215,13 @@ fn benchmark_energy_savings_by_device() {
         let estimated_savings = dc_baseline - base_cost;
         let savings_pct = (estimated_savings / dc_baseline) * 100.0;
 
-        assert!(savings_pct >= *min_savings_pct,
-            "{:?} energy savings {:.1}% below minimum {:.1}%", dt, savings_pct, min_savings_pct);
+        assert!(
+            savings_pct >= *min_savings_pct,
+            "{:?} energy savings {:.1}% below minimum {:.1}%",
+            dt,
+            savings_pct,
+            min_savings_pct
+        );
     }
 
     println!("=== Energy Savings by Device ===");
@@ -192,7 +229,10 @@ fn benchmark_energy_savings_by_device() {
         let base = dt.base_energy_cost();
         let baseline = dt.dc_baseline_cost();
         let savings_pct = ((baseline - base) / baseline) * 100.0;
-        println!("  {:12?}: {:.1}% savings (base={:.3}mWh, baseline={:.1}mWh)", dt, savings_pct, base, baseline);
+        println!(
+            "  {:12?}: {:.1}% savings (base={:.3}mWh, baseline={:.1}mWh)",
+            dt, savings_pct, base, baseline
+        );
     }
 }
 
@@ -210,8 +250,13 @@ fn benchmark_compute_budget_scaling() {
 
     for (dt, expected) in &budgets {
         let actual = dt.compute_budget();
-        assert!((actual - expected).abs() < 1e-9,
-            "Compute budget mismatch for {:?}: expected {}, got {}", dt, expected, actual);
+        assert!(
+            (actual - expected).abs() < 1e-9,
+            "Compute budget mismatch for {:?}: expected {}, got {}",
+            dt,
+            expected,
+            actual
+        );
     }
 
     // Verify ultra-light threshold
@@ -240,8 +285,13 @@ fn benchmark_install_commands_all_devices() {
     for (dt, expected_flag) in &devices {
         let onboarding = AltruistOnboarding::new(1, *dt);
         let cmd = onboarding.install_command();
-        assert!(cmd.contains(expected_flag),
-            "Install command for {:?} should contain '{}': {}", dt, expected_flag, cmd);
+        assert!(
+            cmd.contains(expected_flag),
+            "Install command for {:?} should contain '{}': {}",
+            dt,
+            expected_flag,
+            cmd
+        );
         assert!(cmd.contains("ed2k start --altruist"));
     }
 
@@ -265,8 +315,10 @@ fn benchmark_large_mesh_realistic_churn() {
     let result = mesh.bootstrap_planetary();
 
     assert_eq!(
-        result.ultra_light_nodes + result.mid_tier_nodes
-            + result.standard_nodes + result.heavy_nodes,
+        result.ultra_light_nodes
+            + result.mid_tier_nodes
+            + result.standard_nodes
+            + result.heavy_nodes,
         5000
     );
 
@@ -292,19 +344,33 @@ fn benchmark_cbf_safety_verification() {
 
     // Unsafe configuration: modalities exceed threshold
     let unsafe_vfes = vec![0.60, 0.70, 0.65, 0.80];
-    let (_, unsafe_margin, unsafe_ok) = compute_multimodal_vfe_with_cbf(&unsafe_vfes, &weights, 0.5);
+    let (_, unsafe_margin, unsafe_ok) =
+        compute_multimodal_vfe_with_cbf(&unsafe_vfes, &weights, 0.5);
     assert!(!unsafe_ok);
     assert!(unsafe_margin < 0.0);
 
     // Boundary: close to threshold
     let boundary_vfes = vec![0.48, 0.50, 0.49, 0.51];
-    let (_, boundary_margin, boundary_ok) = compute_multimodal_vfe_with_cbf(&boundary_vfes, &weights, 0.5);
+    let (_, boundary_margin, boundary_ok) =
+        compute_multimodal_vfe_with_cbf(&boundary_vfes, &weights, 0.5);
     assert!(boundary_margin.abs() < 0.1); // Near boundary
 
     println!("=== CBF Safety Verification ===");
-    println!("Safe margin: {:.4} ({})", safe_margin, if safe_ok { "SAFE" } else { "UNSAFE" });
-    println!("Unsafe margin: {:.4} ({})", unsafe_margin, if unsafe_ok { "SAFE" } else { "UNSAFE" });
-    println!("Boundary margin: {:.4} ({})", boundary_margin, if boundary_ok { "SAFE" } else { "UNSAFE" });
+    println!(
+        "Safe margin: {:.4} ({})",
+        safe_margin,
+        if safe_ok { "SAFE" } else { "UNSAFE" }
+    );
+    println!(
+        "Unsafe margin: {:.4} ({})",
+        unsafe_margin,
+        if unsafe_ok { "SAFE" } else { "UNSAFE" }
+    );
+    println!(
+        "Boundary margin: {:.4} ({})",
+        boundary_margin,
+        if boundary_ok { "SAFE" } else { "UNSAFE" }
+    );
 }
 
 /// Benchmark: Sprint 121 full pipeline integration.
@@ -320,7 +386,12 @@ fn benchmark_sprint121_full_pipeline() -> candle_core::Result<()> {
     let mut total_trust = 0.0;
     let mut total_energy = 0.0;
 
-    for dt in [DeviceType::Smartwatch, DeviceType::Mobile, DeviceType::Desktop, DeviceType::Datacenter] {
+    for dt in [
+        DeviceType::Smartwatch,
+        DeviceType::Mobile,
+        DeviceType::Desktop,
+        DeviceType::Datacenter,
+    ] {
         let (_safe, _certified, _steered, trust, energy) =
             evaluate_proportional_hybrid(&hidden, &safe, &toxic, dt, 0.7, 0.7)?;
         total_trust += trust;
@@ -342,8 +413,13 @@ fn benchmark_sprint121_full_pipeline() -> candle_core::Result<()> {
     };
     let mut mesh = GlobalAltruistMesh::new(config);
     let result = mesh.bootstrap_planetary();
-    assert_eq!(result.ultra_light_nodes + result.mid_tier_nodes
-        + result.standard_nodes + result.heavy_nodes, 100);
+    assert_eq!(
+        result.ultra_light_nodes
+            + result.mid_tier_nodes
+            + result.standard_nodes
+            + result.heavy_nodes,
+        100
+    );
 
     println!("=== Sprint 121 Full Pipeline ===");
     println!("Total trust delta: {:.4}", total_trust);

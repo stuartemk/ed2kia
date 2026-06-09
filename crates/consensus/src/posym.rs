@@ -679,6 +679,156 @@ impl ZkProofConfig {
     }
 }
 
+/// Succinct proof result from `generate_succinct_proof`.
+#[derive(Debug, Clone)]
+pub struct SuccinctProof {
+    /// Proof bytes (stub — hash-based commitment)
+    pub proof_bytes: Vec<u8>,
+    /// Public inputs commitment (SHA-256)
+    pub public_input_hash: [u8; 32],
+    /// Proof system type used
+    pub proof_type: ZkProofType,
+    /// Proof size in bytes
+    pub proof_size: usize,
+    /// Generation time in milliseconds
+    pub generation_time_ms: u64,
+}
+
+impl SuccinctProof {
+    /// Verify the succinct proof structure.
+    pub fn verify(&self) -> bool {
+        !self.proof_bytes.is_empty()
+            && self.proof_size == self.proof_bytes.len()
+            && self.proof_size <= 4096
+    }
+
+    /// Estimate verification cost (lightweight hash check).
+    pub fn verification_cost_estimate(&self) -> u64 {
+        // Stub: proportional to proof size (ceiling division, min 1 chunk)
+        (self.proof_size as u64 + 63) / 64
+    }
+}
+
+/// Generate a succinct proof (SNARK/Groth16/Halo2 stub).
+///
+/// Produces a compact zero-knowledge proof commitment for verified steering.
+/// Currently implements a hash-based stub that can be replaced with real
+/// zk-proof backends (snarkvm, halo2, arkworks) when available.
+///
+/// # Arguments
+/// * `proof` — Steering proof to generate succinct proof for
+/// * `config` — zk-proof configuration
+///
+/// # Returns
+/// `SuccinctProof` with proof bytes and metadata
+pub fn generate_succinct_proof(
+    proof: &SteeringProof,
+    config: &ZkProofConfig,
+) -> SuccinctProof {
+    let start = std::time::Instant::now();
+
+    // Build public input from steering proof data
+    let public_input_hash: [u8; 32] = {
+        let mut hasher = sha2::Sha256::new();
+        hasher.update(proof.node_id.as_bytes());
+        hasher.update(proof.timestamp.to_le_bytes());
+        hasher.update(proof.vfe_reduction.to_bits().to_be_bytes());
+        hasher.update(proof.energy_cost.to_bits().to_be_bytes());
+        hasher.update(&(proof.taylor_containment as u8).to_le_bytes());
+        hasher.update(&proof.data);
+        hasher.finalize().into()
+    };
+
+    // Generate proof bytes based on proof type (stub implementation)
+    let proof_bytes = match config.proof_type {
+        ZkProofType::ZkStark => {
+            // zk-STARK stub: hash-based commitment with transparency
+            let mut data = Vec::with_capacity(256);
+            data.extend_from_slice(b"STARK");
+            data.extend_from_slice(&public_input_hash);
+            data.extend_from_slice(&config.security_bits.to_le_bytes());
+            let mut hasher = sha2::Sha256::new();
+            hasher.update(&data);
+            hasher.finalize().to_vec()
+        }
+        ZkProofType::ZkSnark => {
+            // zk-SNARK stub: compact proof with trusted setup commitment
+            let mut data = Vec::with_capacity(128);
+            data.extend_from_slice(b"SNARK");
+            data.extend_from_slice(&public_input_hash);
+            // Simulate Groth16-style compact proof
+            let mut hasher = sha2::Sha256::new();
+            hasher.update(&data);
+            let h1 = hasher.finalize();
+            let mut hasher2 = sha2::Sha256::new();
+            hasher2.update(h1);
+            hasher2.update(b"groth16_commitment");
+            hasher2.finalize().to_vec()
+        }
+        ZkProofType::Halo2 => {
+            // Halo2 stub: production-ready placeholder
+            let mut data = Vec::with_capacity(512);
+            data.extend_from_slice(b"HALO2");
+            data.extend_from_slice(&public_input_hash);
+            data.extend_from_slice(&(config.max_proof_size as u64).to_le_bytes());
+            let mut hasher = sha2::Sha256::new();
+            hasher.update(&data);
+            hasher.finalize().to_vec()
+        }
+        ZkProofType::None => {
+            // No proof — just hash commitment
+            let mut hasher = sha2::Sha256::new();
+            hasher.update(public_input_hash);
+            hasher.finalize().to_vec()
+        }
+    };
+
+    // Enforce max proof size
+    let proof_bytes = proof_bytes.into_iter()
+        .take(config.max_proof_size)
+        .collect::<Vec<u8>>();
+
+    let elapsed = start.elapsed();
+    let generation_time_ms = elapsed.as_millis() as u64;
+
+    let proof_size = proof_bytes.len();
+    SuccinctProof {
+        proof_bytes,
+        public_input_hash,
+        proof_type: config.proof_type.clone(),
+        proof_size,
+        generation_time_ms,
+    }
+}
+
+/// Verify a succinct proof against a steering proof.
+///
+/// # Arguments
+/// * `succinct` — Succinct proof to verify
+/// * `steering` — Original steering proof
+///
+/// # Returns
+/// `true` if the proof is structurally valid
+pub fn verify_succinct_proof(succinct: &SuccinctProof, steering: &SteeringProof) -> bool {
+    if !succinct.verify() {
+        return false;
+    }
+
+    // Verify public input hash matches
+    let expected_hash: [u8; 32] = {
+        let mut hasher = sha2::Sha256::new();
+        hasher.update(steering.node_id.as_bytes());
+        hasher.update(steering.timestamp.to_le_bytes());
+        hasher.update(steering.vfe_reduction.to_bits().to_be_bytes());
+        hasher.update(steering.energy_cost.to_bits().to_be_bytes());
+        hasher.update(&(steering.taylor_containment as u8).to_le_bytes());
+        hasher.update(&steering.data);
+        hasher.finalize().into()
+    };
+
+    succinct.public_input_hash == expected_hash
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1238,5 +1388,109 @@ mod tests {
         let cfg = ZkProofConfig::halo2(2048);
         assert_eq!(cfg.proof_type, ZkProofType::Halo2);
         assert_eq!(cfg.max_proof_size, 2048);
+    }
+
+    // PASO D: Succinct Proof tests
+
+    #[test]
+    fn test_generate_succinct_proof_none() {
+        let proof = SteeringProof::new("test".to_string(), 0.5, 100.0, true, 1);
+        let cfg = ZkProofConfig::default();
+        let succinct = generate_succinct_proof(&proof, &cfg);
+        assert!(!succinct.proof_bytes.is_empty());
+        assert_eq!(succinct.proof_type, ZkProofType::None);
+        assert!(succinct.proof_size <= cfg.max_proof_size);
+        assert!(succinct.verify());
+    }
+
+    #[test]
+    fn test_generate_succinct_proof_stark() {
+        let proof = SteeringProof::new("stark".to_string(), 0.8, 200.0, true, 2);
+        let cfg = ZkProofConfig::stark(128);
+        let succinct = generate_succinct_proof(&proof, &cfg);
+        assert_eq!(succinct.proof_type, ZkProofType::ZkStark);
+        assert!(succinct.verify());
+    }
+
+    #[test]
+    fn test_generate_succinct_proof_snark() {
+        let proof = SteeringProof::new("snark".to_string(), 0.3, 50.0, false, 3);
+        let cfg = ZkProofConfig::default();
+        let mut cfg_snark = cfg.clone();
+        cfg_snark.proof_type = ZkProofType::ZkSnark;
+        let succinct = generate_succinct_proof(&proof, &cfg_snark);
+        assert_eq!(succinct.proof_type, ZkProofType::ZkSnark);
+        assert!(succinct.verify());
+    }
+
+    #[test]
+    fn test_generate_succinct_proof_halo2() {
+        let proof = SteeringProof::new("halo2".to_string(), 0.9, 300.0, true, 4);
+        let cfg = ZkProofConfig::halo2(4096);
+        let succinct = generate_succinct_proof(&proof, &cfg);
+        assert_eq!(succinct.proof_type, ZkProofType::Halo2);
+        assert!(succinct.verify());
+        assert!(succinct.proof_size <= 4096);
+    }
+
+    #[test]
+    fn test_verify_succinct_proof_valid() {
+        let proof = SteeringProof::new("verify".to_string(), 0.7, 150.0, true, 5);
+        let cfg = ZkProofConfig::default();
+        let succinct = generate_succinct_proof(&proof, &cfg);
+        assert!(verify_succinct_proof(&succinct, &proof));
+    }
+
+    #[test]
+    fn test_verify_succinct_proof_wrong_steering() {
+        let proof1 = SteeringProof::new("a".to_string(), 0.5, 100.0, true, 1);
+        let proof2 = SteeringProof::new("b".to_string(), 0.6, 200.0, false, 2);
+        let cfg = ZkProofConfig::default();
+        let succinct = generate_succinct_proof(&proof1, &cfg);
+        // Should fail — public input hash doesn't match proof2
+        assert!(!verify_succinct_proof(&succinct, &proof2));
+    }
+
+    #[test]
+    fn test_succinct_proof_verify_empty() {
+        let empty = SuccinctProof {
+            proof_bytes: vec![],
+            public_input_hash: [0u8; 32],
+            proof_type: ZkProofType::None,
+            proof_size: 0,
+            generation_time_ms: 0,
+        };
+        assert!(!empty.verify());
+    }
+
+    #[test]
+    fn test_succinct_proof_verification_cost() {
+        let proof = SteeringProof::new("cost".to_string(), 0.5, 100.0, true, 1);
+        let cfg = ZkProofConfig::default();
+        let succinct = generate_succinct_proof(&proof, &cfg);
+        let cost = succinct.verification_cost_estimate();
+        // Cost should be proportional to proof size (may be 0 for small proofs)
+        assert_eq!(cost, (succinct.proof_size as u64 + 63) / 64);
+    }
+
+    #[test]
+    fn test_succinct_proof_max_size_enforced() {
+        let proof = SteeringProof::new("size".to_string(), 0.5, 100.0, true, 1);
+        let cfg = ZkProofConfig {
+            max_proof_size: 16,
+            ..ZkProofConfig::default()
+        };
+        let succinct = generate_succinct_proof(&proof, &cfg);
+        assert!(succinct.proof_size <= 16);
+    }
+
+    #[test]
+    fn test_succinct_proof_deterministic() {
+        let proof = SteeringProof::new("det".to_string(), 0.5, 100.0, true, 1);
+        let cfg = ZkProofConfig::default();
+        let s1 = generate_succinct_proof(&proof, &cfg);
+        let s2 = generate_succinct_proof(&proof, &cfg);
+        assert_eq!(s1.public_input_hash, s2.public_input_hash);
+        assert_eq!(s1.proof_bytes, s2.proof_bytes);
     }
 }

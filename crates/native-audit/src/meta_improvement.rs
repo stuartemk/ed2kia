@@ -43,7 +43,6 @@
 //! - M. Sejdinovic, B. Sriperumbudur, "Equivalence of Distance-Based RKHS Norms"
 //! - G. Katz et al., "Reluplex: An Efficient SMT Solver for Verifying Deep Neural Networks"
 
-
 /// Configuration for PAC-Bayesian meta-improvement.
 #[derive(Debug, Clone)]
 pub struct PACMetaConfig {
@@ -102,8 +101,12 @@ impl std::fmt::Display for PACMetaResult {
             f,
             "PACMetaResult {{ accepted: {}, gen_bound: {:.4}, risk: {:.4}, kl: {:.4}, \
              cbf: {:.4}, violation: {:.4} }}",
-            self.accepted, self.gen_bound, self.empirical_risk,
-            self.kl_divergence, self.cbf_value, self.violation_prob
+            self.accepted,
+            self.gen_bound,
+            self.empirical_risk,
+            self.kl_divergence,
+            self.cbf_value,
+            self.violation_prob
         )
     }
 }
@@ -312,7 +315,9 @@ pub fn estimate_violation_prob(
 
 /// Simple Linear Congruential Generator for deterministic random sampling.
 fn next_random(state: &mut u64) -> f32 {
-    *state = (*state).wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+    *state = (*state)
+        .wrapping_mul(6364136223846793005)
+        .wrapping_add(1442695040888963407);
     ((*state >> 33) as u32) as f32 / u32::MAX as f32
 }
 
@@ -609,7 +614,11 @@ mod tests {
         let center = vec![0.0, 0.0];
         let margin = 1.0;
         let prob = estimate_violation_prob(&state, &center, margin, 0.1, 1000, 42);
-        assert!(prob > 0.5, "Outside-boundary state should mostly violate (got {})", prob);
+        assert!(
+            prob > 0.5,
+            "Outside-boundary state should mostly violate (got {})",
+            prob
+        );
     }
 
     #[test]
@@ -625,7 +634,11 @@ mod tests {
         let samples: Vec<f32> = (0..50).map(|i| 1.0 - i as f32 * 0.01).collect();
 
         let result = pac_bayes_meta_update(&proposed, &current, &samples, &safe_center, &config);
-        assert!(result.accepted, "Small safe update should be accepted: {}", result);
+        assert!(
+            result.accepted,
+            "Small safe update should be accepted: {}",
+            result
+        );
     }
 
     #[test]

@@ -740,7 +740,10 @@ fn test_full_pipeline() {
     let mut contributions2 = make_contributions(20);
     contributions2[0].vfe_reduction = 500.0;
     let r2 = mechanism.run_round(&contributions2, 5);
-    assert!(r2.clean_participants < r2.total_participants || r2.clean_participants == r2.total_participants);
+    assert!(
+        r2.clean_participants < r2.total_participants
+            || r2.clean_participants == r2.total_participants
+    );
 
     // Credits accumulate
     assert!(r1.credits.issued >= 0.0 || r2.credits.issued >= 0.0);

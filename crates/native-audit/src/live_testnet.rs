@@ -271,15 +271,20 @@ impl MeshStats {
         }
 
         let active_nodes = nodes.iter().filter(|n| n.active).count();
-        let trusted_nodes: Vec<&PlanetaryMeshNode> =
-            nodes.iter().filter(|n| n.meets_trust_threshold(trust_threshold)).collect();
+        let trusted_nodes: Vec<&PlanetaryMeshNode> = nodes
+            .iter()
+            .filter(|n| n.meets_trust_threshold(trust_threshold))
+            .collect();
 
         let avg_trust = nodes.iter().map(|n| n.trust_score).sum::<f64>() / total_nodes as f64;
         let avg_latency: u64 = nodes.iter().map(|n| n.latency_ms).sum::<u64>() / total_nodes as u64;
         let total_certs: u64 = nodes.iter().map(|n| n.total_certs).sum();
         let total_energy: f64 = nodes.iter().map(|n| n.energy_saved_mwh).sum();
         let total_vfe: f64 = nodes.iter().map(|n| n.vfe_reduction).sum();
-        let evicted = nodes.iter().filter(|n| !n.meets_trust_threshold(trust_threshold)).count();
+        let evicted = nodes
+            .iter()
+            .filter(|n| !n.meets_trust_threshold(trust_threshold))
+            .count();
         let churned = nodes.iter().filter(|n| !n.active).count();
 
         Self {
@@ -309,8 +314,10 @@ impl MeshStats {
              VFE Reduction: {:.4}\n\
              Churn Rate: {:.2}%\n\
              Steering Coverage: {:.1}%",
-            self.total_nodes, self.active_nodes,
-            self.avg_trust_score, self.evicted_nodes,
+            self.total_nodes,
+            self.active_nodes,
+            self.avg_trust_score,
+            self.evicted_nodes,
             self.avg_latency_ms,
             self.total_certifications,
             self.total_energy_saved_mwh,
@@ -609,10 +616,7 @@ mod tests {
 
     #[test]
     fn test_mesh_stats_summary() {
-        let stats = MeshStats::from_nodes(
-            &[PlanetaryMeshNode::new(1, DeviceType::Desktop)],
-            0.3,
-        );
+        let stats = MeshStats::from_nodes(&[PlanetaryMeshNode::new(1, DeviceType::Desktop)], 0.3);
         let summary = stats.summary();
         assert!(summary.contains("Mesh Stats"));
         assert!(summary.contains("Total Nodes"));
@@ -650,8 +654,16 @@ mod tests {
         let sim = LiveMeshSimulation::new(20);
         assert_eq!(sim.device_mix.len(), 20);
         // Check distribution
-        let desktops = sim.device_mix.iter().filter(|d| matches!(d, DeviceType::Desktop)).count();
-        let mobiles = sim.device_mix.iter().filter(|d| matches!(d, DeviceType::Mobile)).count();
+        let desktops = sim
+            .device_mix
+            .iter()
+            .filter(|d| matches!(d, DeviceType::Desktop))
+            .count();
+        let mobiles = sim
+            .device_mix
+            .iter()
+            .filter(|d| matches!(d, DeviceType::Mobile))
+            .count();
         assert!(desktops > 0);
         assert!(mobiles > 0);
     }

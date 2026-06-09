@@ -14,8 +14,8 @@
 use candle_core::{DType, Device, Result, Tensor};
 use native_audit::hybrid_zonotope::{HybridZonotopeConfig, LayerType};
 use native_audit::neural_ode::{
-    ControlBarrierFunction, NeuralODEConfig, NeuralODEField,
-    NeuralODEZonotope, SelfImprovementConfig, SelfImprovementEngine,
+    ControlBarrierFunction, NeuralODEConfig, NeuralODEField, NeuralODEZonotope,
+    SelfImprovementConfig, SelfImprovementEngine,
 };
 
 // ============================================================================
@@ -35,7 +35,11 @@ fn create_ode(dim: usize, device: &Device) -> Result<NeuralODEZonotope> {
     NeuralODEZonotope::from_epsilon(&center, 0.1, field, config)
 }
 
-fn create_ode_config(dim: usize, device: &Device, config: NeuralODEConfig) -> Result<NeuralODEZonotope> {
+fn create_ode_config(
+    dim: usize,
+    device: &Device,
+    config: NeuralODEConfig,
+) -> Result<NeuralODEZonotope> {
     let field = create_field(dim, device)?;
     let center = Tensor::zeros((1, dim), DType::F32, device)?;
     NeuralODEZonotope::from_epsilon(&center, 0.1, field, config)
@@ -113,7 +117,12 @@ fn test_field_activation_types() -> Result<()> {
     let weight = Tensor::eye(4, DType::F32, &device)?;
     let bias = Tensor::zeros(4, DType::F32, &device)?;
 
-    for activation in [LayerType::ReLU, LayerType::SiLU, LayerType::GeLU, LayerType::Affine] {
+    for activation in [
+        LayerType::ReLU,
+        LayerType::SiLU,
+        LayerType::GeLU,
+        LayerType::Affine,
+    ] {
         let field = NeuralODEField::new(&weight, Some(&bias), activation)?;
         let x = Tensor::ones((1, 4), DType::F32, &device)?;
         let fx = field.evaluate(&x)?;
@@ -278,7 +287,11 @@ fn test_flowpipe_volume_growth() -> Result<()> {
     let ode = create_ode_config(8, &device, config)?;
     let flowpipe = ode.compute_flowpipe()?;
     for (i, step) in flowpipe.steps.iter().enumerate() {
-        assert!(step.log_volume.is_finite(), "Step {} has non-finite volume", i);
+        assert!(
+            step.log_volume.is_finite(),
+            "Step {} has non-finite volume",
+            i
+        );
     }
     Ok(())
 }
@@ -513,7 +526,11 @@ fn test_cbf_evaluate_zonotope() -> Result<()> {
     let cbf = ControlBarrierFunction::new(vec![1.0, -1.0], 0.5, 1.0);
     let center = Tensor::zeros((1, 2), DType::F32, &device)?;
     let gens = Tensor::randn(0.0, 0.1, (2, 2), &device)?.to_dtype(DType::F32)?;
-    let zonotope = native_audit::zonotope::Zonotope::new(center, gens, native_audit::zonotope::ZonotopeConfig::default())?;
+    let zonotope = native_audit::zonotope::Zonotope::new(
+        center,
+        gens,
+        native_audit::zonotope::ZonotopeConfig::default(),
+    )?;
     let hybrid_config = HybridZonotopeConfig::default();
     let z = native_audit::hybrid_zonotope::HybridZonotope::from_zonotope(zonotope, hybrid_config)?;
     let lower = cbf.evaluate_zonotope_lower(&z)?;
@@ -785,7 +802,11 @@ fn test_all_methods_produce_results() -> Result<()> {
         };
         let ode = create_ode_config(8, &device, config)?;
         let next = ode.integrate_step()?;
-        assert!(next.log_volume_proxy()?.is_finite(), "Method {} failed", method);
+        assert!(
+            next.log_volume_proxy()?.is_finite(),
+            "Method {} failed",
+            method
+        );
     }
     Ok(())
 }
@@ -1363,7 +1384,11 @@ fn test_flowpipe_step_time() -> Result<()> {
     let flowpipe = ode.compute_flowpipe()?;
     for (i, step) in flowpipe.steps.iter().enumerate() {
         let expected_time = (i as f32) * dt;
-        assert!((step.time - expected_time).abs() < 1e-6, "Step {} time mismatch", i);
+        assert!(
+            (step.time - expected_time).abs() < 1e-6,
+            "Step {} time mismatch",
+            i
+        );
     }
     Ok(())
 }

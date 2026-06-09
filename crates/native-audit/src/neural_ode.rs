@@ -826,7 +826,9 @@ impl NeuralODETaylor {
         let dt = self.config.dt;
         let half_dt = dt / 2.0;
         // k1 = f(T)
-        let k1 = self.taylor.affine_transform(&self.field.weight, self.field.bias.as_ref())?;
+        let k1 = self
+            .taylor
+            .affine_transform(&self.field.weight, self.field.bias.as_ref())?;
         // T_mid = T + dt/2 * k1
         let half_k1 = k1.scale(half_dt)?;
         let t_mid = self.taylor.add(&half_k1)?;
@@ -841,7 +843,9 @@ impl NeuralODETaylor {
     pub fn rk4_step(&self) -> Result<crate::taylor_model::TaylorModel> {
         let dt = self.config.dt;
         // k1 = f(T)
-        let k1 = self.taylor.affine_transform(&self.field.weight, self.field.bias.as_ref())?;
+        let k1 = self
+            .taylor
+            .affine_transform(&self.field.weight, self.field.bias.as_ref())?;
         let half_k1 = k1.scale(dt / 2.0)?;
         let t_mid1 = self.taylor.add(&half_k1)?;
         // k2 = f(T + dt/2 * k1)
@@ -919,7 +923,9 @@ impl NeuralODETaylor {
             (1, cbf.weight.len()),
             &self.field.device,
         )?;
-        let f_t = self.taylor.affine_transform(&self.field.weight, self.field.bias.as_ref())?;
+        let f_t = self
+            .taylor
+            .affine_transform(&self.field.weight, self.field.bias.as_ref())?;
         f_t.lie_derivative_bound(
             &|t: &crate::taylor_model::TaylorModel| -> Result<crate::taylor_model::TaylorModel> {
                 Ok(t.clone())
@@ -1083,7 +1089,11 @@ impl NeuralODETaylor {
         // Build equivalent Zonotope
         let z = self.taylor.to_zonotope()?;
         let z_bounds = z.compute_bounds()?;
-        let z_width = z_bounds.1.broadcast_sub(&z_bounds.0)?.sum_all()?.to_scalar::<f32>()?;
+        let z_width = z_bounds
+            .1
+            .broadcast_sub(&z_bounds.0)?
+            .sum_all()?
+            .to_scalar::<f32>()?;
 
         Ok(tm_width / z_width.max(1e-10))
     }

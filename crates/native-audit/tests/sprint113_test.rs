@@ -7,15 +7,14 @@
 //! - Safe meta-optimization with reach-set constraints
 //! - Distributed hybrid certificates + hash-chain proofs
 
-use candle_core::{Device, DType, Tensor};
-use native_audit::taylor_model::TaylorModel;
-use native_audit::neural_ode::{NeuralODEField, NeuralODETaylor, NeuralODEConfig};
+use candle_core::{DType, Device, Tensor};
 use native_audit::meta_active_inference::{
-    MetaActiveInferenceEngine, MetaActiveInferenceConfig,
-    MetaSafetyConstraints,
+    MetaActiveInferenceConfig, MetaActiveInferenceEngine, MetaSafetyConstraints,
 };
+use native_audit::neural_ode::{NeuralODEConfig, NeuralODEField, NeuralODETaylor};
+use native_audit::taylor_model::TaylorModel;
 use native_audit::{
-    CertificateChainEntry, DistributedHybridCertificate, CollectiveHybridCertificate,
+    CertificateChainEntry, CollectiveHybridCertificate, DistributedHybridCertificate,
 };
 
 // ---------------------------------------------------------------------------
@@ -338,14 +337,32 @@ fn test_distributed_certificate_creation() {
 fn test_distributed_certificate_hash() {
     let chain = CertificateChainEntry::genesis([1u8; 32], 1000);
     let cert = DistributedHybridCertificate::new(
-        1, vec![-1.0], vec![1.0], 0.5, true, 2, 16, 10, 0.01, chain, 0.1,
+        1,
+        vec![-1.0],
+        vec![1.0],
+        0.5,
+        true,
+        2,
+        16,
+        10,
+        0.01,
+        chain,
+        0.1,
     );
     let hash = cert.compute_hash();
     assert_ne!(hash, [0u8; 32]); // Non-trivial hash
 
     // Same cert → same hash
     let cert2 = DistributedHybridCertificate::new(
-        1, vec![-1.0], vec![1.0], 0.5, true, 2, 16, 10, 0.01,
+        1,
+        vec![-1.0],
+        vec![1.0],
+        0.5,
+        true,
+        2,
+        16,
+        10,
+        0.01,
         CertificateChainEntry::genesis([1u8; 32], 1000),
         0.1,
     );
@@ -427,8 +444,7 @@ fn test_collective_certificate_byzantine() {
 
 #[test]
 fn test_collective_certificate_empty() {
-    let collective =
-        CollectiveHybridCertificate::aggregate(Vec::new(), 0.66);
+    let collective = CollectiveHybridCertificate::aggregate(Vec::new(), 0.66);
     assert_eq!(collective.node_count, 0);
     assert!(!collective.quorum_met);
     assert!(collective.collective_safe); // Vacuously true
@@ -512,4 +528,3 @@ fn test_sprint113_full_pipeline() -> candle_core::Result<()> {
 
     Ok(())
 }
-

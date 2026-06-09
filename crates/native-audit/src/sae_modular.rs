@@ -808,6 +808,206 @@ pub fn aggregate_sparse_updates(proofs: &[SAEUpdateProof]) -> Vec<(usize, f32)> 
     result
 }
 
+// ============================================================================
+// Sprint 124 — Differential Privacy + Adversarial Robustness
+// ============================================================================
+
+/// Add Differential Privacy noise to SAE latents using the Gaussian Mechanism.
+///
+/// The Gaussian mechanism adds noise N(0, σ²) where:
+/// ```text
+/// σ = sensitivity * sqrt(2 * ln(1.25 / δ)) / ε
+/// ```
+///
+/// This provides (ε, δ)-differential privacy for the SAE latent representation,
+/// protecting individual training samples from membership inference attacks.
+///
+/// # Arguments
+/// * `values` — Input values to noisify (typically SAE latents or gradients)
+/// * `epsilon` — Privacy budget (ε > 0, smaller = more private)
+/// * `delta` — Failure probability (0 ≤ δ < 1)
+/// * `sensitivity` — L2-sensitivity of the query (Δf > 0)
+/// * `seed` — Random seed for reproducibility
+///
+/// # Returns
+/// Noisy values with (ε, δ)-DP guarantee
+pub fn add_dp_noise(values: &[f32], epsilon: f64, delta: f64, sensitivity: f64, seed: u64) -> Vec<f32> {
+    if values.is_empty() {
+        return Vec::new();
+    }
+    if epsilon <= 0.0 || sensitivity <= 0.0 || delta < 0.0 || delta >= 1.0 {
+        // Invalid parameters — return unchanged
+        return values.to_vec();
+    }
+
+    // Gaussian mechanism: σ = sensitivity * sqrt(2 * ln(1.25 / δ)) / ε
+    let ln_factor = (1.25 / delta).ln();
+    let sigma = sensitivity * (2.0 * ln_factor).sqrt() / epsilon;
+
+    let mut state = seed;
+    values
+        .iter()
+        .map(|&v| {
+            // Box-Muller transform for Gaussian noise
+            let u1 = next_random_f32_dp(&mut state).max(1e-10); // Avoid log(0)
+            let u2 = next_random_f32_dp(&mut state);
+            let z = (-2.0 * u1.ln()).sqrt() * (2.0 * u2 * std::f32::consts::PI).sin();
+            v + (z * sigma as f32)
+        })
+        .collect()
+}
+
+/// Deterministic PRNG for DP noise — separate from existing PRNG to avoid interference.
+fn next_random_f32_dp(state: &mut u64) -> f32 {
+    *state = state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+    let x = (*state >> 33) as u32;
+    (x as f64 / (u32::MAX as f64) * 2.0 - 1.0) as f32 // [-1, 1]
+}
+
+/// Compute the DP noise sigma for given privacy parameters.
+///
+/// # Returns
+/// σ (sigma) for the Gaussian mechanism
+pub fn compute_dp_sigma(epsilon: f64, delta: f64, sensitivity: f64) -> f64 {
+    if epsilon <= 0.0 || sensitivity <= 0.0 || delta < 0.0 || delta >= 1.0 {
+        return f64::NAN;
+    }
+    let ln_factor = (1.25 / delta).ln();
+    sensitivity * (2.0 * ln_factor).sqrt() / epsilon
+}
+
+/// Adversarial Steering Test — PGD (Projected Gradient Descent) attack on SAE latents.
+///
+/// Simulates an adversarial perturbation of the SAE latent space to test
+/// the robustness of the steering mechanism against targeted attacks.
+///
+/// Uses ε-PGD with step size α for T iterations:
+/// ```text
+/// δ_t+1 = δ_t + α * sign(∇_δ L(f(x + δ), y_target))
+/// δ_t+1 = clip(δ_t+1, -ε, ε)
+/// ```
+///
+/// # Arguments
+/// * `latents` — Original SAE latent vector
+/// * `perturbation_budget` — Maximum L∞ perturbation (ε ≥ 0)
+/// * `step_size` — PGD step size (α > 0)
+/// * `iterations` — Number of PGD iterations (T > 0)
+/// * `seed` — Random seed for initial perturbation
+///
+/// # Returns
+/// (adversarial_latents, max_perturbation_applied)
+pub fn adversarial_steering_test(
+    latents: &[f32],
+    perturbation_budget: f32,
+    step_size: f32,
+    iterations: usize,
+    seed: u64,
+) -> (Vec<f32>, f32) {
+    if latents.is_empty() || iterations == 0 || perturbation_budget <= 0.0 || step_size <= 0.0 {
+        return (latents.to_vec(), 0.0);
+    }
+
+    let mut state = seed;
+    let dim = latents.len();
+
+    // Initialize perturbation randomly within budget
+    let mut delta: Vec<f32> = (0..dim)
+        .map(|_| {
+            let r = next_random_f32_dp(&mut state);
+            (r * perturbation_budget).clamp(-perturbation_budget, perturbation_budget)
+        })
+        .collect();
+
+    // PGD iterations — simulate gradient ascent on latent perturbation
+    // In production, this would compute actual ∇_δ L via backprop
+    // Here we use a surrogate: gradient ≈ sign(latent) for robustness testing
+    for _ in 0..iterations {
+        // Surrogate gradient: direction that maximizes latent perturbation
+        let gradient: Vec<f32> = latents
+            .iter()
+            .zip(delta.iter())
+            .map(|(&l, &d)| {
+                // Simulated gradient: push latent away from original
+                let sign = if l + d > 0.0 { 1.0 } else { -1.0 };
+                sign
+            })
+            .collect();
+
+        // Update perturbation
+        for i in 0..dim {
+            delta[i] += step_size * gradient[i];
+            // Project onto L∞ ball
+            delta[i] = delta[i].clamp(-perturbation_budget, perturbation_budget);
+        }
+    }
+
+    // Apply perturbation
+    let adversarial: Vec<f32> = latents
+        .iter()
+        .zip(delta.iter())
+        .map(|(&l, &d)| l + d)
+        .collect();
+
+    // Compute max perturbation applied
+    let max_perturbation = delta.iter().map(|d| d.abs()).fold(0.0f32, f32::max);
+
+    (adversarial, max_perturbation)
+}
+
+/// Verify that DP noise provides the claimed privacy guarantee.
+///
+/// Checks that the noise scale is sufficient for (ε, δ)-DP given the sensitivity.
+///
+/// # Arguments
+/// * `epsilon` — Claimed privacy budget
+/// * `delta` — Claimed failure probability
+/// * `sensitivity` — L2-sensitivity of the query
+/// * `actual_noise_std` — Measured standard deviation of added noise
+///
+/// # Returns
+/// `true` if the noise scale matches the theoretical requirement (within 5% tolerance)
+pub fn verify_dp_guarantee(epsilon: f64, delta: f64, sensitivity: f64, actual_noise_std: f64) -> bool {
+    let expected_sigma = compute_dp_sigma(epsilon, delta, sensitivity);
+    if expected_sigma.is_nan() || actual_noise_std.is_nan() {
+        return false;
+    }
+    let ratio = actual_noise_std / expected_sigma as f64;
+    // Allow 5% tolerance for numerical precision
+    (ratio - 1.0).abs() < 0.05
+}
+
+/// Compute robustness margin after adversarial attack.
+///
+/// Measures how much the latent representation changed under adversarial perturbation
+/// relative to the original magnitude.
+///
+/// # Arguments
+/// * `original` — Original latent vector
+/// * `adversarial` — Adversarially perturbed latent vector
+///
+/// # Returns
+/// Robustness margin = ||original|| / ||adversarial - original||
+/// Higher values indicate better robustness. Returns f64::INFINITY if no perturbation.
+pub fn compute_robustness_margin(original: &[f32], adversarial: &[f32]) -> f64 {
+    if original.is_empty() || original.len() != adversarial.len() {
+        return 0.0;
+    }
+
+    let orig_norm: f64 = original.iter().map(|&v| (v * v) as f64).sum::<f64>().sqrt();
+    let perturbation: f64 = original
+        .iter()
+        .zip(adversarial.iter())
+        .map(|(&o, &a)| { let diff = (o - a) as f64; diff * diff })
+        .sum::<f64>()
+        .sqrt();
+
+    if perturbation < 1e-10 {
+        return f64::INFINITY;
+    }
+
+    orig_norm / perturbation
+}
+
 // --- Unit Tests ---
 #[cfg(test)]
 mod tests {

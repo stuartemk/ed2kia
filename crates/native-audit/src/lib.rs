@@ -22,29 +22,30 @@
 //! **Sprint 121:** Noosfera Symbiotic Launch — Proportional efficiency (smartwatch→datacenter),
 //! multi-modal VFE symbiosis, device contribution factor, global altruist mesh bootstrap.
 
+pub mod cbf_mpc;
 pub mod cirl_value_learning;
-pub mod edge_runtime;
-pub mod live_testnet;
-pub mod global_bootstrap;
 pub mod collective_zonotope;
 pub mod cross_attention;
 pub mod distributed_sae;
+pub mod edge_runtime;
 pub mod formal_barrier;
 pub mod formal_verification;
-pub mod cbf_mpc;
+pub mod global_bootstrap;
 pub mod hybrid_zonotope;
+pub mod live_testnet;
 pub mod mechanism_design;
-pub mod p2p_mechanism;
-pub mod sae_modular;
-pub mod sparse_federated_sae;
-pub mod testnet_sim;
 pub mod meta_active_inference;
 pub mod meta_improvement;
 pub mod multimodal;
 pub mod neural_ode;
+pub mod p2p_mechanism;
+pub mod planetary_sim;
 pub mod sae_integration;
-pub mod taylor_model;
+pub mod sae_modular;
+pub mod sparse_federated_sae;
 pub mod symbolic_fusion;
+pub mod taylor_model;
+pub mod testnet_sim;
 pub mod zonotope;
 
 use candle_core::{DType, Device, Result, Tensor, D};
@@ -2752,10 +2753,7 @@ impl CollectiveHybridCertificate {
     ///
     /// Uses coordinate-wise median for bounds (Byzantine-resilient) and
     /// minimum for CBF margins (conservative safety).
-    pub fn aggregate(
-        node_certs: Vec<DistributedHybridCertificate>,
-        quorum_fraction: f32,
-    ) -> Self {
+    pub fn aggregate(node_certs: Vec<DistributedHybridCertificate>, quorum_fraction: f32) -> Self {
         let node_count = node_certs.len();
         if node_count == 0 {
             return Self {
@@ -2895,7 +2893,11 @@ impl TensorAudit {
             .fold(f32::MAX, f32::min);
 
         let is_safe = min_cbf > -epsilon;
-        let violation_prob = if is_safe { 0.0 } else { (min_cbf.abs() / epsilon).min(1.0) };
+        let violation_prob = if is_safe {
+            0.0
+        } else {
+            (min_cbf.abs() / epsilon).min(1.0)
+        };
 
         // Estimate compression ratio: bounds are 2*dim floats vs full flowpipe
         let full_size = (time_steps + 1) * 2 * lo_vec.len() * 4; // bytes
@@ -3007,9 +3009,7 @@ impl TensorAudit {
         // Create diagonal generator matrix for the zonotope
         let generators: Tensor = {
             let data: Vec<f32> = (0..dim)
-                .flat_map(|i| {
-                    (0..dim).map(move |j| if i == j { epsilon } else { 0.0 })
-                })
+                .flat_map(|i| (0..dim).map(move |j| if i == j { epsilon } else { 0.0 }))
                 .collect();
             Tensor::from_vec(data, (dim, dim), device)?
         };
@@ -3027,11 +3027,7 @@ impl TensorAudit {
             formal_verification::reduce_generators_girard(&taylor_result.generators, max_gens)?;
 
         // Step 3: MPC-CBF safety check
-        let cbf_value = cbf_mpc::cbf_h(
-            &taylor_result.center,
-            safe_center,
-            cbf_margin,
-        )?;
+        let cbf_value = cbf_mpc::cbf_h(&taylor_result.center, safe_center, cbf_margin)?;
         let mpc_cbf_margin: f32 = cbf_value.to_scalar()?;
 
         // Step 4: PAC meta-check
@@ -3047,17 +3043,16 @@ impl TensorAudit {
         };
 
         let pac_result = meta_improvement::pac_bayes_meta_update(
-            &center_vec,            // proposed_params
-            &safe_center_vec,       // current_params (safe reference)
-            &performance_samples,   // performance_samples
-            &safe_center_vec,       // safe_center
+            &center_vec,          // proposed_params
+            &safe_center_vec,     // current_params (safe reference)
+            &performance_samples, // performance_samples
+            &safe_center_vec,     // safe_center
             &pac_config,
         );
 
         // Final safety verdict: all checks must pass
-        let safe = reduction_result.volume_ratio < 2.0
-            && mpc_cbf_margin >= 0.0
-            && pac_result.accepted;
+        let safe =
+            reduction_result.volume_ratio < 2.0 && mpc_cbf_margin >= 0.0 && pac_result.accepted;
 
         Ok(FullPipelineResult {
             volume_proxy,
@@ -3196,14 +3191,17 @@ impl TensorAudit {
         let tcm_z = self.compute_tcm_z_axis(&token)?;
 
         // 3. Concept projection: dot product onto toxic-safe direction
-        let concept_proj = self.compute_concept_projection(hidden_state, safe_centroid, toxic_centroid)?;
+        let concept_proj =
+            self.compute_concept_projection(hidden_state, safe_centroid, toxic_centroid)?;
 
         // 4. Composite anomaly score: weighted combination
         //    Normalize each metric to [0, 1] range approximately
         let normalized_swd = (swd_ratio - 0.5) / 2.0; // Typical range [0.5, 2.5]
         let normalized_tcm = tcm_z / 10.0; // Typical range [0, 10]
         let normalized_proj = concept_proj.tanh(); // Sigmoid-like normalization
-        let anomaly_score = 0.4 * normalized_swd.max(0.0) + 0.3 * normalized_tcm.max(0.0) + 0.3 * normalized_proj.max(0.0);
+        let anomaly_score = 0.4 * normalized_swd.max(0.0)
+            + 0.3 * normalized_tcm.max(0.0)
+            + 0.3 * normalized_proj.max(0.0);
 
         // Fast Path decision: all metrics indicate safety
         let fast_path_safe = swd_ratio <= fast_threshold && tcm_z < 5.0 && concept_proj < 0.0;
@@ -3229,10 +3227,10 @@ impl TensorAudit {
         let vfe = self.compute_variational_free_energy(
             &token,
             safe_centroid,
-            0.5, // lambda_ot
+            0.5,  // lambda_ot
             0.05, // lambda_topo
-            0.1, // epsilon (unused in W2-based VFE)
-            12, // num_iters (unused)
+            0.1,  // epsilon (unused in W2-based VFE)
+            12,   // num_iters (unused)
         )?;
 
         // 2. Zonotope reachability analysis
@@ -3328,13 +3326,13 @@ impl TensorAudit {
             let steered = self.steer_hybrid_cognitive(
                 hidden_state,
                 safe_centroid,
-                5, // num_steps
+                5,   // num_steps
                 0.1, // dt
                 cbf_beta,
-                0.5, // gamma
-                0.5, // lambda_ot
+                0.5,  // gamma
+                0.5,  // lambda_ot
                 0.05, // lambda_topo
-                0.0, // temperature (no noise for safety)
+                0.0,  // temperature (no noise for safety)
             )?;
             Ok((steered, path_result))
         }

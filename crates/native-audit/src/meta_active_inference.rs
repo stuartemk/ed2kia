@@ -616,9 +616,7 @@ impl MetaActiveInferenceEngine {
                     false,
                     Some(format!(
                         "Step size {:.4} exceeds max {:.4} on param {}",
-                        d,
-                        constraints.max_step_size,
-                        i
+                        d, constraints.max_step_size, i
                     )),
                 );
             }
@@ -704,7 +702,9 @@ impl MetaActiveInferenceEngine {
         let mut candidate = self.current_params.clone();
 
         if let [g_lr, g_ot, g_cbf, g_sae, g_cross, g_cirl] = &gradient[..] {
-            candidate.lr = (candidate.lr - meta_lr * g_lr).max(bounds[0].0).min(bounds[0].1);
+            candidate.lr = (candidate.lr - meta_lr * g_lr)
+                .max(bounds[0].0)
+                .min(bounds[0].1);
             candidate.lambda_ot = (candidate.lambda_ot - meta_lr * g_ot)
                 .max(bounds[1].0)
                 .min(bounds[1].1);

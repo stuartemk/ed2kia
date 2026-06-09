@@ -10,15 +10,15 @@
 //! **IBP-Hybrid:** Combine IBP interval bounds with Taylor-Zonotope
 //! for tighter certified regions under adversarial perturbation.
 
-use candle_core::{Result, Tensor, Device};
+use candle_core::{Device, Result, Tensor};
+use native_audit::cbf_mpc::cbf_h;
 use native_audit::formal_verification::{
-    propagate_layer_taylor_zonotope, compute_volume_ratio, verify_soundness,
-    GirardConfig, GirardNorm, GirardMerge, reduce_generators_girard_advanced,
+    compute_volume_ratio, propagate_layer_taylor_zonotope, reduce_generators_girard_advanced,
+    verify_soundness, GirardConfig, GirardMerge, GirardNorm,
 };
 use native_audit::meta_improvement::{
-    compute_pac_gen_bound, compute_pac_bayes_bound, compute_gaussian_kl_data_dependent,
+    compute_gaussian_kl_data_dependent, compute_pac_bayes_bound, compute_pac_gen_bound,
 };
-use native_audit::cbf_mpc::cbf_h;
 
 /// Build a latent hidden-state tensor from a Vec<f32>.
 fn latent_tensor(values: &[f32], device: &Device) -> Result<Tensor> {
@@ -44,7 +44,11 @@ fn sign(x: &Tensor) -> Result<Tensor> {
 
 /// Compute CBF-based loss: L = max(0, -h)² — penalizes unsafe states.
 fn loss_cbf(_h_val: f32, safe_center: &[f32], margin: f32, latent: &[f32]) -> f32 {
-    let dist_sq: f32 = latent.iter().zip(safe_center.iter()).map(|(l, s)| (l - s).powi(2)).sum();
+    let dist_sq: f32 = latent
+        .iter()
+        .zip(safe_center.iter())
+        .map(|(l, s)| (l - s).powi(2))
+        .sum();
     let h = margin * margin - dist_sq;
     if h < 0.0 {
         (-h).powi(2)
@@ -71,12 +75,26 @@ fn grad_cbf_loss_fd(latent: &[f32], safe_center: &[f32], margin: f32, eps: f32) 
 fn fgsm_latent_attack(latent: &[f32], epsilon: f32, safe_center: &[f32], margin: f32) -> Vec<f32> {
     let grad = grad_cbf_loss_fd(latent, safe_center, margin, 1e-4);
     let sign_grad = sign_vec(&grad);
-    latent.iter().zip(sign_grad.iter()).map(|(h, s)| h + epsilon * s).collect()
+    latent
+        .iter()
+        .zip(sign_grad.iter())
+        .map(|(h, s)| h + epsilon * s)
+        .collect()
 }
 
 /// Element-wise sign for Vec<f32>.
 fn sign_vec(v: &[f32]) -> Vec<f32> {
-    v.iter().map(|&x| if x > 0.0 { 1.0 } else if x < 0.0 { -1.0 } else { 0.0 }).collect()
+    v.iter()
+        .map(|&x| {
+            if x > 0.0 {
+                1.0
+            } else if x < 0.0 {
+                -1.0
+            } else {
+                0.0
+            }
+        })
+        .collect()
 }
 
 /// IBP certified bounds: For each dimension, compute [h_i - ε, h_i + ε].
@@ -120,13 +138,7 @@ fn certified_cbf_hybrid(
     // Identity weight matrix for pass-through
     let identity = Tensor::eye(dim, latent.dtype(), latent.device())?;
     let config = TaylorZonotopeConfig::default();
-    let result = propagate_layer_taylor_zonotope(
-        latent,
-        &generators,
-        &identity,
-        None,
-        &config,
-    )?;
+    let result = propagate_layer_taylor_zonotope(latent, &generators, &identity, None, &config)?;
 
     // Compute worst-case CBF from zonotope bounds
     let worst_dist_sq: f32 = result.generators.abs()?.sum(0)?.to_vec1()?.iter().sum();
@@ -173,7 +185,11 @@ fn test_grad_cbf_fd_safe_state() {
     let grad = grad_cbf_loss_fd(&latent, &center, 1.0, 1e-4);
     // At safe center, gradient should be near zero
     for &g in &grad {
-        assert!(g.abs() < 1.0, "Gradient at safe center should be small, got {}", g);
+        assert!(
+            g.abs() < 1.0,
+            "Gradient at safe center should be small, got {}",
+            g
+        );
     }
 }
 
@@ -184,7 +200,11 @@ fn test_grad_cbf_fd_unsafe_state() {
     let grad = grad_cbf_loss_fd(&latent, &center, 1.0, 1e-4);
     // Gradient of loss = max(0, -h)² w.r.t. latent
     // When unsafe (h < 0), increasing distance increases loss → gradient is non-zero
-    assert!(grad[0].abs() > 0.01, "Gradient should be non-zero for unsafe state, got {}", grad[0]);
+    assert!(
+        grad[0].abs() > 0.01,
+        "Gradient should be non-zero for unsafe state, got {}",
+        grad[0]
+    );
 }
 
 #[test]
@@ -195,8 +215,16 @@ fn test_fgsm_attack_moves_away_from_center() {
     let adv = fgsm_latent_attack(&latent, epsilon, &center, 1.0);
 
     // Compute distances
-    let dist_orig: f32 = latent.iter().zip(center.iter()).map(|(l, c)| (l - c).powi(2)).sum();
-    let dist_adv: f32 = adv.iter().zip(center.iter()).map(|(a, c)| (a - c).powi(2)).sum();
+    let dist_orig: f32 = latent
+        .iter()
+        .zip(center.iter())
+        .map(|(l, c)| (l - c).powi(2))
+        .sum();
+    let dist_adv: f32 = adv
+        .iter()
+        .zip(center.iter())
+        .map(|(a, c)| (a - c).powi(2))
+        .sum();
 
     // FGSM should increase distance (or keep same if already at boundary)
     assert!(
@@ -243,7 +271,11 @@ fn test_certified_cbf_ibp_safe() {
     let cert = certified_cbf_ibp(&latent, epsilon, &center, margin);
     // Worst case: all dims at ε from center → dist² = 3ε² = 0.27
     // cert = 1.0 - 0.27 = 0.73
-    assert!(cert > 0.0, "Certified CBF should be positive for safe state, got {}", cert);
+    assert!(
+        cert > 0.0,
+        "Certified CBF should be positive for safe state, got {}",
+        cert
+    );
 }
 
 #[test]
@@ -254,7 +286,11 @@ fn test_certified_cbf_ibp_unsafe_large_epsilon() {
     let epsilon = 1.0;
     let cert = certified_cbf_ibp(&latent, epsilon, &center, margin);
     // Worst case: dist² = 3 × 1² = 3, cert = 1 - 3 = -2
-    assert!(cert < 0.0, "Large epsilon should make certified CBF negative, got {}", cert);
+    assert!(
+        cert < 0.0,
+        "Large epsilon should make certified CBF negative, got {}",
+        cert
+    );
 }
 
 #[test]
@@ -314,7 +350,12 @@ fn test_data_dependent_kl_tighter() {
         &posterior, &prior, post_var, prior_var,
     );
     let kl_data_dep = compute_gaussian_kl_data_dependent(
-        &posterior, &prior, post_var, prior_var, data_var, concentration,
+        &posterior,
+        &prior,
+        post_var,
+        prior_var,
+        data_var,
+        concentration,
     );
 
     // Data-dependent KL should be finite and non-negative
@@ -345,7 +386,10 @@ fn test_girard_advanced_l1_norm() -> Result<()> {
     };
     let result = reduce_generators_girard_advanced(&gens, 2, &config)?;
     // IntervalHull adds diagonal generators for merged → total ≥ kept(2)
-    assert!(result.generators.dim(0)? >= 2, "Should have ≥ kept generators");
+    assert!(
+        result.generators.dim(0)? >= 2,
+        "Should have ≥ kept generators"
+    );
     assert!(result.tightness_score <= 1.0, "Tightness ≤ 1.0");
     assert!(result.volume_ratio >= 1.0, "Volume ratio ≥ 1.0");
     Ok(())
@@ -357,10 +401,7 @@ fn test_girard_advanced_l2_norm() -> Result<()> {
     // Use larger matrix to avoid LGG matmul shape issues with small generators
     let gens = Tensor::from_vec(
         vec![
-            3.0f32, 4.0, 0.0, 1.0,
-            1.0, 0.0, 0.0, 5.0,
-            0.5, 0.3, 0.2, 0.1,
-            0.1, 0.1, 0.1, 0.1,
+            3.0f32, 4.0, 0.0, 1.0, 1.0, 0.0, 0.0, 5.0, 0.5, 0.3, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1,
         ],
         (4, 4),
         &device,
@@ -449,7 +490,11 @@ fn test_fgsm_vs_ibp_consistency() -> Result<()> {
     let cert = certified_cbf_ibp(&latent, epsilon, &center, margin);
 
     // Actual CBF at attacked point
-    let adv_dist_sq: f32 = adv.iter().zip(center.iter()).map(|(a, c)| (a - c).powi(2)).sum();
+    let adv_dist_sq: f32 = adv
+        .iter()
+        .zip(center.iter())
+        .map(|(a, c)| (a - c).powi(2))
+        .sum();
     let actual_cbf = margin * margin - adv_dist_sq;
 
     // IBP bound should be ≤ actual CBF (soundness: IBP is conservative)
@@ -471,7 +516,10 @@ fn test_cbf_h_tensor() -> Result<()> {
     let center = Tensor::from_vec(vec![0.0f32, 0.0, 0.0], 3, &device)?;
     let h = cbf_h(&x, &center, 1.0)?;
     let val = h.to_scalar::<f32>()?;
-    assert!((val - 1.0).abs() < 1e-5, "CBF at center should equal margin²");
+    assert!(
+        (val - 1.0).abs() < 1e-5,
+        "CBF at center should equal margin²"
+    );
     Ok(())
 }
 
@@ -493,7 +541,10 @@ fn test_adv_redteam_soundness() -> Result<()> {
 
     // Verify soundness: zonotope contains the true SiLU values
     let sound = verify_soundness(&latent, &generators, &taylor_result, 20)?;
-    assert!(sound, "Taylor-Zonotope should contain true SiLU values for small epsilon");
+    assert!(
+        sound,
+        "Taylor-Zonotope should contain true SiLU values for small epsilon"
+    );
 
     Ok(())
 }

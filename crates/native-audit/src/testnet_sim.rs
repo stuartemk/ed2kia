@@ -12,8 +12,8 @@
 //! - Aggregation: Byzantine median (trim 1/3 + median)
 //! - PAC-Bound: McAllester collective `sqrt((KL + ln(2*sqrt(n)/delta)) / (2*(n-1)))`
 
-use rand::{Rng, SeedableRng};
 use rand::rngs::StdRng;
+use rand::{Rng, SeedableRng};
 
 /// Configuration for testnet simulation.
 #[derive(Debug, Clone)]
@@ -322,7 +322,11 @@ pub fn run_testnet_simulation(config: &SimConfig) -> SimResult {
     };
 
     SimResult {
-        convergence_epochs: if convergence_epoch == 0 { config.epochs } else { convergence_epoch },
+        convergence_epochs: if convergence_epoch == 0 {
+            config.epochs
+        } else {
+            convergence_epoch
+        },
         poa,
         certified_ratio,
         gini,
@@ -427,7 +431,11 @@ mod tests {
     fn test_byzantine_median_trims_outliers() {
         let values = vec![0.0, 0.0, 5.0, 5.1, 5.2, 100.0, 100.0, 100.0, 100.0];
         let median = byzantine_median(&values);
-        assert!(median > 0.0 && median < 50.0, "Median {} should trim outliers", median);
+        assert!(
+            median > 0.0 && median < 50.0,
+            "Median {} should trim outliers",
+            median
+        );
     }
 
     #[test]
@@ -441,14 +449,22 @@ mod tests {
     fn test_gini_equal_distribution() {
         let values = vec![1.0, 1.0, 1.0, 1.0, 1.0];
         let gini = compute_gini(&values);
-        assert!(gini.abs() < 1e-6, "Gini of equal distribution should be ~0, got {}", gini);
+        assert!(
+            gini.abs() < 1e-6,
+            "Gini of equal distribution should be ~0, got {}",
+            gini
+        );
     }
 
     #[test]
     fn test_gini_unequal_distribution() {
         let values = vec![0.0, 0.0, 0.0, 0.0, 100.0];
         let gini = compute_gini(&values);
-        assert!(gini > 0.5, "Gini of unequal distribution should be high, got {}", gini);
+        assert!(
+            gini > 0.5,
+            "Gini of unequal distribution should be high, got {}",
+            gini
+        );
     }
 
     #[test]
@@ -534,7 +550,12 @@ mod tests {
         let r_honest = run_testnet_simulation(&honest_config);
         let r_byz = run_testnet_simulation(&byz_config);
         // Byzantine should have higher PoA
-        assert!(r_byz.poa >= r_honest.poa, "Byzantine PoA {:.3} >= honest PoA {:.3}", r_byz.poa, r_honest.poa);
+        assert!(
+            r_byz.poa >= r_honest.poa,
+            "Byzantine PoA {:.3} >= honest PoA {:.3}",
+            r_byz.poa,
+            r_honest.poa
+        );
     }
 
     #[test]
@@ -551,8 +572,14 @@ mod tests {
         };
         let result = run_testnet_simulation(&config);
         // System should still function under 33% Byzantine
-        assert!(result.certified_ratio > 0.0, "Should certify some nodes under 33% Byzantine");
-        assert!(result.gini < 1.0, "Credits should not be completely unequal");
+        assert!(
+            result.certified_ratio > 0.0,
+            "Should certify some nodes under 33% Byzantine"
+        );
+        assert!(
+            result.gini < 1.0,
+            "Credits should not be completely unequal"
+        );
     }
 
     #[test]

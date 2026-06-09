@@ -11,8 +11,8 @@
 use candle_core::{DType, Device, Result, Tensor};
 use native_audit::formal_verification::{
     compute_volume_ratio, propagate_layer_taylor_zonotope, propagate_linear_layer,
-    propagate_silu_taylor_zonotope, reduce_generators, verify_soundness,
-    TaylorZonotopeConfig, SILU_F2_MAX,
+    propagate_silu_taylor_zonotope, reduce_generators, verify_soundness, TaylorZonotopeConfig,
+    SILU_F2_MAX,
 };
 
 // -----------------------------------------------------------------------
@@ -52,7 +52,10 @@ fn test_silu_taylor_small_epsilon() -> Result<()> {
     let result = propagate_silu_taylor_zonotope(&center, &generators, &config)?;
 
     // Volume should be finite and reasonable
-    assert!(result.volume_proxy.is_finite(), "Volume proxy must be finite");
+    assert!(
+        result.volume_proxy.is_finite(),
+        "Volume proxy must be finite"
+    );
     assert!(
         result.wrapping_reduction < 3.0,
         "Wrapping reduction {:.3} should be < 3x for small epsilon",
@@ -82,10 +85,10 @@ fn test_silu_taylor_volume_guarantee() -> Result<()> {
     // Test multiple center values to ensure volume < 3x consistently
     let device = Device::Cpu;
     let centers = vec![
-        vec![0.0f32, 0.0, 0.0, 0.0],       // Origin
-        vec![1.0f32, 1.0, 1.0, 1.0],       // Positive
-        vec![-1.0f32, -1.0, -1.0, -1.0],   // Negative
-        vec![2.0f32, -2.0, 0.5, -0.5],     // Mixed
+        vec![0.0f32, 0.0, 0.0, 0.0],     // Origin
+        vec![1.0f32, 1.0, 1.0, 1.0],     // Positive
+        vec![-1.0f32, -1.0, -1.0, -1.0], // Negative
+        vec![2.0f32, -2.0, 0.5, -0.5],   // Mixed
     ];
 
     let config = TaylorZonotopeConfig::default();
@@ -175,11 +178,7 @@ fn test_silu_taylor_jacobian_correctness() -> Result<()> {
 fn test_linear_layer_exact() -> Result<()> {
     let device = Device::Cpu;
     let center = Tensor::from_vec(vec![1.0f32, 2.0, 3.0], (1, 3), &device)?;
-    let generators = Tensor::from_vec(
-        vec![0.1f32, 0.0, 0.0, 0.0, 0.1, 0.0],
-        (2, 3),
-        &device,
-    )?;
+    let generators = Tensor::from_vec(vec![0.1f32, 0.0, 0.0, 0.0, 0.1, 0.0], (2, 3), &device)?;
     let weight = Tensor::from_vec(
         vec![1.0f32, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 3.0],
         (3, 3),
@@ -249,8 +248,7 @@ fn test_multi_layer_network() -> Result<()> {
 
     for i in 0..dims.len() - 1 {
         let w = make_weight(dims[i + 1], dims[i], &device)?;
-        let result =
-            propagate_layer_taylor_zonotope(&center, &generators, &w, None, &config)?;
+        let result = propagate_layer_taylor_zonotope(&center, &generators, &w, None, &config)?;
         center = result.center;
         generators = result.generators;
 
@@ -321,11 +319,8 @@ fn test_volume_scales_with_epsilon() -> Result<()> {
 fn test_reduce_generators_basic() -> Result<()> {
     let device = Device::Cpu;
     // Create 10 generators, reduce to 5
-    let generators = Tensor::from_vec(
-        (0..40).map(|i| i as f32 * 0.01).collect(),
-        (10, 4),
-        &device,
-    )?;
+    let generators =
+        Tensor::from_vec((0..40).map(|i| i as f32 * 0.01).collect(), (10, 4), &device)?;
     let reduced = reduce_generators(&generators, 5)?;
 
     // Should have at most 6 generators (5 kept + 1 merged)
@@ -365,7 +360,10 @@ fn test_soundness_verification() -> Result<()> {
 
     // Verify with 100 random samples
     let sound = verify_soundness(&center, &generators, &result, 100)?;
-    assert!(sound, "Taylor-Zonotope should contain all sampled SiLU values");
+    assert!(
+        sound,
+        "Taylor-Zonotope should contain all sampled SiLU values"
+    );
 
     Ok(())
 }
@@ -381,7 +379,10 @@ fn test_soundness_larger_perturbation() -> Result<()> {
     let result = propagate_silu_taylor_zonotope(&center, &generators, &config)?;
 
     let sound = verify_soundness(&center, &generators, &result, 50)?;
-    assert!(sound, "Soundness should hold for moderate perturbation (ε=0.1)");
+    assert!(
+        sound,
+        "Soundness should hold for moderate perturbation (ε=0.1)"
+    );
 
     Ok(())
 }
@@ -425,8 +426,7 @@ fn test_sprint114_full_pipeline() -> Result<()> {
 
     for (i, (in_dim, out_dim)) in layers.iter().enumerate() {
         let w = make_weight(*out_dim, *in_dim, &device)?;
-        let result =
-            propagate_layer_taylor_zonotope(&center, &generators, &w, None, &config)?;
+        let result = propagate_layer_taylor_zonotope(&center, &generators, &w, None, &config)?;
 
         assert!(
             result.volume_proxy.is_finite(),
@@ -458,7 +458,10 @@ fn test_sprint114_full_pipeline() -> Result<()> {
 
 #[test]
 fn test_silu_f2_max_constant() {
-    assert!((SILU_F2_MAX - 0.28).abs() < 1e-6, "SILU_F2_MAX should be 0.28 (safe upper bound)");
+    assert!(
+        (SILU_F2_MAX - 0.28).abs() < 1e-6,
+        "SILU_F2_MAX should be 0.28 (safe upper bound)"
+    );
 }
 
 #[test]

@@ -7,24 +7,26 @@
 //! - Full certified pipeline (Taylor-Zonotope → Reduction → MPC-CBF → PAC)
 
 use candle_core::Result;
+use native_audit::cbf_mpc::cbf_h;
 use native_audit::formal_verification::{
-    reduce_generators_girard, propagate_silu_taylor_zonotope, TaylorZonotopeConfig,
+    propagate_silu_taylor_zonotope, reduce_generators_girard, TaylorZonotopeConfig,
 };
 use native_audit::meta_improvement::{
-    compute_gaussian_kl, compute_pac_gen_bound, cbf_evaluate, estimate_violation_prob,
+    cbf_evaluate, compute_gaussian_kl, compute_pac_gen_bound, estimate_violation_prob,
     pac_bayes_meta_update, PACMetaConfig, PACMetaEngine,
 };
-use native_audit::cbf_mpc::cbf_h;
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-fn make_diagonal_generators(dim: usize, epsilon: f32, device: &candle_core::Device) -> Result<candle_core::Tensor> {
+fn make_diagonal_generators(
+    dim: usize,
+    epsilon: f32,
+    device: &candle_core::Device,
+) -> Result<candle_core::Tensor> {
     let data: Vec<f32> = (0..dim)
-        .flat_map(|i| {
-            (0..dim).map(move |j| if i == j { epsilon } else { 0.0 })
-        })
+        .flat_map(|i| (0..dim).map(move |j| if i == j { epsilon } else { 0.0 }))
         .collect();
     candle_core::Tensor::from_vec(data, (dim, dim), device)
 }
@@ -48,7 +50,10 @@ fn test_girard_reduction_no_op_when_under_limit() -> Result<()> {
     assert!(!result.reduced, "Should not reduce when under limit");
     assert_eq!(result.original_count, dim);
     assert_eq!(result.reduced_count, dim);
-    assert!((result.volume_ratio - 1.0).abs() < 0.01, "Volume ratio should be ~1.0");
+    assert!(
+        (result.volume_ratio - 1.0).abs() < 0.01,
+        "Volume ratio should be ~1.0"
+    );
     Ok(())
 }
 
@@ -61,8 +66,14 @@ fn test_girard_reduction_reduces_when_over_limit() -> Result<()> {
     let result = reduce_generators_girard(&gens, 4)?;
     assert!(result.reduced, "Should reduce when over limit");
     assert_eq!(result.original_count, dim);
-    assert!(result.reduced_count <= 4, "Reduced count should be <= max_gens");
-    assert!(result.volume_ratio >= 1.0, "Volume ratio should be >= 1.0 (over-approximation)");
+    assert!(
+        result.reduced_count <= 4,
+        "Reduced count should be <= max_gens"
+    );
+    assert!(
+        result.volume_ratio >= 1.0,
+        "Volume ratio should be >= 1.0 (over-approximation)"
+    );
     Ok(())
 }
 
@@ -73,7 +84,11 @@ fn test_girard_reduction_soundness() -> Result<()> {
     let gens = make_diagonal_generators(dim, 0.5, &device)?;
     let result = reduce_generators_girard(&gens, 3)?;
     // Soundness: volume_ratio should be reasonable (not excessive)
-    assert!(result.volume_ratio < 3.0, "Volume ratio {:.2} is too high", result.volume_ratio);
+    assert!(
+        result.volume_ratio < 3.0,
+        "Volume ratio {:.2} is too high",
+        result.volume_ratio
+    );
     assert!(result.volume_ratio >= 1.0, "Volume ratio must be >= 1.0");
     Ok(())
 }
@@ -124,7 +139,10 @@ fn test_girard_reduction_large_zonotope() -> Result<()> {
     let result = reduce_generators_girard(&gens, 16)?;
     assert!(result.reduced);
     assert!(result.volume_ratio >= 1.0);
-    assert!(result.volume_ratio < 5.0, "Volume ratio should be reasonable for large zonotope");
+    assert!(
+        result.volume_ratio < 5.0,
+        "Volume ratio should be reasonable for large zonotope"
+    );
     Ok(())
 }
 
@@ -152,8 +170,14 @@ fn test_pac_bound_decreases_with_more_samples() {
     let bound_10 = compute_pac_gen_bound(kl, 10, delta);
     let bound_100 = compute_pac_gen_bound(kl, 100, delta);
     let bound_1000 = compute_pac_gen_bound(kl, 1000, delta);
-    assert!(bound_1000 < bound_100, "Bound should decrease with more samples");
-    assert!(bound_100 < bound_10, "Bound should decrease with more samples");
+    assert!(
+        bound_1000 < bound_100,
+        "Bound should decrease with more samples"
+    );
+    assert!(
+        bound_100 < bound_10,
+        "Bound should decrease with more samples"
+    );
 }
 
 #[test]
@@ -162,13 +186,19 @@ fn test_pac_bound_increases_with_higher_kl() {
     let delta = 0.05;
     let bound_low = compute_pac_gen_bound(0.001, n, delta);
     let bound_high = compute_pac_gen_bound(0.1, n, delta);
-    assert!(bound_high > bound_low, "Bound should increase with higher KL");
+    assert!(
+        bound_high > bound_low,
+        "Bound should increase with higher KL"
+    );
 }
 
 #[test]
 fn test_pac_bound_single_sample_is_max() {
     let bound = compute_pac_gen_bound(0.01, 1, 0.05);
-    assert!(bound.is_infinite() || bound > 100.0, "Single sample should give very large bound");
+    assert!(
+        bound.is_infinite() || bound > 100.0,
+        "Single sample should give very large bound"
+    );
 }
 
 #[test]
@@ -198,7 +228,10 @@ fn test_pac_bound_delta_effect() {
 fn test_gaussian_kl_same_params() {
     let mu = vec![1.0, 2.0, 3.0];
     let kl = compute_gaussian_kl(&mu, &mu, 0.01, 0.01);
-    assert!((kl - 0.0).abs() < 0.01, "KL should be ~0 for identical distributions");
+    assert!(
+        (kl - 0.0).abs() < 0.01,
+        "KL should be ~0 for identical distributions"
+    );
 }
 
 #[test]
@@ -269,7 +302,11 @@ fn test_mc_violation_safe_state() {
     let state = vec![0.0, 0.0];
     let center = vec![0.0, 0.0];
     let prob = estimate_violation_prob(&state, &center, 1.0, 0.1, 1000, 42);
-    assert!(prob < 0.1, "Safe state should have low violation prob (got {})", prob);
+    assert!(
+        prob < 0.1,
+        "Safe state should have low violation prob (got {})",
+        prob
+    );
 }
 
 #[test]
@@ -277,7 +314,11 @@ fn test_mc_violation_unsafe_state() {
     let state = vec![2.0, 0.0];
     let center = vec![0.0, 0.0];
     let prob = estimate_violation_prob(&state, &center, 1.0, 0.1, 1000, 42);
-    assert!(prob > 0.5, "Unsafe state should have high violation prob (got {})", prob);
+    assert!(
+        prob > 0.5,
+        "Unsafe state should have high violation prob (got {})",
+        prob
+    );
 }
 
 #[test]
@@ -294,7 +335,10 @@ fn test_mc_violation_deterministic_seed() {
     let center = vec![0.0, 0.0];
     let prob1 = estimate_violation_prob(&state, &center, 1.0, 0.1, 500, 99);
     let prob2 = estimate_violation_prob(&state, &center, 1.0, 0.1, 500, 99);
-    assert!((prob1 - prob2).abs() < 0.001, "Same seed should give same result");
+    assert!(
+        (prob1 - prob2).abs() < 0.001,
+        "Same seed should give same result"
+    );
 }
 
 #[test]
@@ -339,7 +383,11 @@ fn test_pac_update_accepts_safe_params() {
         prior_concentration: 0.01,
     };
     let result = pac_bayes_meta_update(&params, &params, &samples, &params, &config);
-    assert!(result.accepted, "Safe params should be accepted: {:?}", result.rejection_reason);
+    assert!(
+        result.accepted,
+        "Safe params should be accepted: {:?}",
+        result.rejection_reason
+    );
 }
 
 #[test]
@@ -364,7 +412,10 @@ fn test_pac_update_rejection_reason() {
     let config = PACMetaConfig::default();
     let result = pac_bayes_meta_update(&proposed, &current, &samples, &current, &config);
     if !result.accepted {
-        assert!(result.rejection_reason.is_some(), "Rejected result should have reason");
+        assert!(
+            result.rejection_reason.is_some(),
+            "Rejected result should have reason"
+        );
     }
 }
 
@@ -375,7 +426,10 @@ fn test_pac_update_empty_samples() {
     let samples: Vec<f32> = vec![];
     let config = PACMetaConfig::default();
     let result = pac_bayes_meta_update(&proposed, &current, &samples, &current, &config);
-    assert!(!result.accepted, "Empty samples should be rejected (infinite risk)");
+    assert!(
+        !result.accepted,
+        "Empty samples should be rejected (infinite risk)"
+    );
 }
 
 #[test]
@@ -430,7 +484,11 @@ fn test_engine_step_accepts() {
     }
     // Zero gradient → proposed == current → KL = 0 → accepted
     let result = engine.step(&[0.0, 0.0]);
-    assert!(result.accepted, "Zero-gradient step should be accepted: {:?}", result.rejection_reason);
+    assert!(
+        result.accepted,
+        "Zero-gradient step should be accepted: {:?}",
+        result.rejection_reason
+    );
 }
 
 #[test]
@@ -461,7 +519,10 @@ fn test_engine_history_grows() {
     engine.add_sample(0.0);
     let initial_len = engine.history().len();
     engine.step(&[0.01, 0.01]);
-    assert!(engine.history().len() >= initial_len, "History should grow after step");
+    assert!(
+        engine.history().len() >= initial_len,
+        "History should grow after step"
+    );
 }
 
 #[test]
@@ -513,7 +574,11 @@ fn test_full_pipeline_girard_then_pac() -> Result<()> {
         cbf_margin: 1.0,
         ..Default::default()
     };
-    let samples = if margin < 0.0 { vec![margin.abs()] } else { vec![0.0] };
+    let samples = if margin < 0.0 {
+        vec![margin.abs()]
+    } else {
+        vec![0.0]
+    };
     let pac = pac_bayes_meta_update(&center_vec, &safe_vec, &samples, &safe_vec, &pac_config);
     assert!(pac.gen_bound.is_finite());
 
@@ -532,7 +597,10 @@ fn test_pipeline_chain_preserves_safety() -> Result<()> {
     let reduction = reduce_generators_girard(&taylor.generators, 4)?;
 
     // Verify the reduced zonotope is still sound
-    assert!(reduction.volume_ratio < 5.0, "Volume ratio should be reasonable");
+    assert!(
+        reduction.volume_ratio < 5.0,
+        "Volume ratio should be reasonable"
+    );
     let vals: Vec<f32> = reduction.generators.flatten_all()?.to_vec1()?;
     for v in &vals {
         assert!(v.is_finite());
@@ -578,8 +646,20 @@ fn test_pipeline_pac_bound_tightens() -> Result<()> {
         prior_concentration: 0.001,
         ..Default::default()
     };
-    let result_5 = pac_bayes_meta_update(&center_vec, &center_vec, &samples_5, &center_vec, &pac_config);
-    let result_50 = pac_bayes_meta_update(&center_vec, &center_vec, &samples_50, &center_vec, &pac_config);
+    let result_5 = pac_bayes_meta_update(
+        &center_vec,
+        &center_vec,
+        &samples_5,
+        &center_vec,
+        &pac_config,
+    );
+    let result_50 = pac_bayes_meta_update(
+        &center_vec,
+        &center_vec,
+        &samples_50,
+        &center_vec,
+        &pac_config,
+    );
     assert!(
         result_50.gen_bound <= result_5.gen_bound,
         "More samples should tighten PAC bound"
@@ -597,13 +677,19 @@ fn test_pipeline_cbf_consistency() -> Result<()> {
     let safe_center = candle_core::Tensor::zeros(dim, candle_core::DType::F32, &device)?;
     let cbf_val = cbf_h(&center, &safe_center, 2.0)?;
     let margin: f32 = cbf_val.to_scalar()?;
-    assert!(margin > 0.0, "State inside safe region should have positive CBF");
+    assert!(
+        margin > 0.0,
+        "State inside safe region should have positive CBF"
+    );
 
     // State outside safe region
     let unsafe_center = make_center(vec![3.0; dim], &device)?;
     let cbf_val2 = cbf_h(&unsafe_center, &safe_center, 1.0)?;
     let margin2: f32 = cbf_val2.to_scalar()?;
-    assert!(margin2 < 0.0, "State outside safe region should have negative CBF");
+    assert!(
+        margin2 < 0.0,
+        "State outside safe region should have negative CBF"
+    );
 
     Ok(())
 }
@@ -617,7 +703,10 @@ fn test_pipeline_mc_estimates_violation() -> Result<()> {
     let prob_safe = estimate_violation_prob(&state_safe, &center, 1.0, 0.1, 1000, 42);
     let prob_unsafe = estimate_violation_prob(&state_unsafe, &center, 1.0, 0.1, 1000, 42);
 
-    assert!(prob_safe < prob_unsafe, "Safe state should have lower violation prob");
+    assert!(
+        prob_safe < prob_unsafe,
+        "Safe state should have lower violation prob"
+    );
     Ok(())
 }
 
@@ -754,7 +843,10 @@ fn test_girard_reduction_zero_generators() -> Result<()> {
     // Single row generator — use explicit f32 literals
     let gens = candle_core::Tensor::from_vec(vec![0.1f32, 0.1, 0.1], (1, 3), &device)?;
     let result = reduce_generators_girard(&gens, 2)?;
-    assert!(!result.reduced, "Single generator should not need reduction");
+    assert!(
+        !result.reduced,
+        "Single generator should not need reduction"
+    );
     Ok(())
 }
 
@@ -770,7 +862,10 @@ fn test_pac_update_identical_params() {
     };
     let result = pac_bayes_meta_update(&params, &params, &samples, &params, &config);
     // Identical params → KL = 0 → small gen_bound
-    assert!(result.kl_divergence < 0.01, "KL should be ~0 for identical params");
+    assert!(
+        result.kl_divergence < 0.01,
+        "KL should be ~0 for identical params"
+    );
 }
 
 #[test]
@@ -779,7 +874,10 @@ fn test_cbf_margin_scaling() {
     let center = vec![0.0, 0.0];
     let h_small = cbf_evaluate(&state, &center, 0.5);
     let h_large = cbf_evaluate(&state, &center, 2.0);
-    assert!(h_large > h_small, "Larger margin should give larger CBF value");
+    assert!(
+        h_large > h_small,
+        "Larger margin should give larger CBF value"
+    );
 }
 
 #[test]
@@ -789,7 +887,10 @@ fn test_mc_perturbation_size_effect() {
     let prob_small = estimate_violation_prob(&state, &center, 1.0, 0.01, 1000, 42);
     let prob_large = estimate_violation_prob(&state, &center, 1.0, 0.5, 1000, 42);
     // Larger perturbation → more violations for boundary state
-    assert!(prob_large >= prob_small, "Larger perturbation should increase violations");
+    assert!(
+        prob_large >= prob_small,
+        "Larger perturbation should increase violations"
+    );
 }
 
 #[test]
@@ -810,8 +911,16 @@ fn test_full_sprint115_pipeline() -> Result<()> {
 
     // 3. Girard order reduction — reduce to half for meaningful volume ratio
     let reduction = reduce_generators_girard(&taylor.generators, dim / 2)?;
-    assert!(reduction.volume_ratio > 0.0, "Volume ratio should be positive: {:.4}", reduction.volume_ratio);
-    assert!(reduction.volume_ratio < 10.0, "Volume ratio {:.2} too high", reduction.volume_ratio);
+    assert!(
+        reduction.volume_ratio > 0.0,
+        "Volume ratio should be positive: {:.4}",
+        reduction.volume_ratio
+    );
+    assert!(
+        reduction.volume_ratio < 10.0,
+        "Volume ratio {:.2} too high",
+        reduction.volume_ratio
+    );
 
     // 4. CBF safety check
     let safe_center = candle_core::Tensor::zeros(dim, candle_core::DType::F32, &device)?;
@@ -828,7 +937,11 @@ fn test_full_sprint115_pipeline() -> Result<()> {
         cbf_margin: 1.0,
         ..Default::default()
     };
-    let samples = if margin < 0.0 { vec![margin.abs()] } else { vec![0.0] };
+    let samples = if margin < 0.0 {
+        vec![margin.abs()]
+    } else {
+        vec![0.0]
+    };
     let pac = pac_bayes_meta_update(&center_vec, &safe_vec, &samples, &safe_vec, &pac_config);
     assert!(pac.gen_bound.is_finite());
 

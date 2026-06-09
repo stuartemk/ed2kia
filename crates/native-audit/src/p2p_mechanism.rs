@@ -14,7 +14,6 @@
 //! **Byzantine Resilience:** Median aggregation with PAC-Bayes collective bounds
 //! ensures robustness against f < n/3 Byzantine nodes.
 
-
 /// Contribution from a P2P node to collective verification.
 #[derive(Debug, Clone)]
 pub struct NodeContribution {
@@ -138,7 +137,8 @@ pub fn compute_shapley_values(
                     let v_without = coalition_value(&with_i);
                     let marginal = v_without - v_with;
                     let s = coalition.len();
-                    let weight = factorial(s) as f64 * factorial(n - s - 1) as f64 / factorial(n) as f64;
+                    let weight =
+                        factorial(s) as f64 * factorial(n - s - 1) as f64 / factorial(n) as f64;
                     *val += marginal * weight as f32;
                 }
             }
@@ -190,7 +190,9 @@ fn factorial(n: usize) -> u64 {
 }
 
 fn next_random_u64(state: &mut u64) -> u64 {
-    *state = state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+    *state = state
+        .wrapping_mul(6364136223846793005)
+        .wrapping_add(1442695040888963407);
     *state >> 33
 }
 
@@ -202,10 +204,7 @@ fn next_random_u64(state: &mut u64) -> u64 {
 ///
 /// Selects top-k contributors by verified tightness improvement,
 /// computes truthful payments based on externality.
-pub fn run_vcg_auction(
-    contributions: &[NodeContribution],
-    config: &MechanismConfig,
-) -> VCGResult {
+pub fn run_vcg_auction(contributions: &[NodeContribution], config: &MechanismConfig) -> VCGResult {
     let n = contributions.len();
     if n == 0 {
         return VCGResult {
@@ -302,11 +301,7 @@ pub fn simulate_poa_stability(
     // Cooperate   (3, 3)    (1, 4)   (0, 0)
     // Defect      (4, 1)    (2, 2)   (1, 1)
     // Byzantine   (0, 0)    (1, 1)   (0, 0)
-    let payoff = [
-        [3.0, 1.0, 0.0],
-        [4.0, 2.0, 1.0],
-        [0.0, 1.0, 0.0],
-    ];
+    let payoff = [[3.0, 1.0, 0.0], [4.0, 2.0, 1.0], [0.0, 1.0, 0.0]];
 
     let mut equilibrium_welfare = 0.0f32;
     let mut convergence_epoch = config.replicator_epochs;
@@ -402,11 +397,7 @@ pub fn byzantine_median(values: &[f32]) -> f32 {
 ///
 /// Aggregates individual PAC bounds using McAllester variant with
 /// data-dependent priors for tighter collective guarantees.
-pub fn collective_pac_bound(
-    individual_bounds: &[f32],
-    n_samples: usize,
-    delta: f32,
-) -> f32 {
+pub fn collective_pac_bound(individual_bounds: &[f32], n_samples: usize, delta: f32) -> f32 {
     if individual_bounds.is_empty() || n_samples < 2 {
         return f32::MAX;
     }
@@ -415,14 +406,13 @@ pub fn collective_pac_bound(
     let median_bound = byzantine_median(individual_bounds);
 
     // Collective KL: average of individual KL divergences
-    let avg_kl: f32 = individual_bounds
-        .iter()
-        .map(|&b| b.max(0.0))
-        .sum::<f32>()
-        / individual_bounds.len() as f32;
+    let avg_kl: f32 =
+        individual_bounds.iter().map(|&b| b.max(0.0)).sum::<f32>() / individual_bounds.len() as f32;
 
     // McAllester collective bound
-    let log_term = (2.0 * (n_samples as f32).sqrt() / delta.max(1e-10)).ln().max(0.0);
+    let log_term = (2.0 * (n_samples as f32).sqrt() / delta.max(1e-10))
+        .ln()
+        .max(0.0);
     let numerator = avg_kl.max(0.0) + log_term;
     let denominator = 2.0 * (n_samples - 1) as f32;
 

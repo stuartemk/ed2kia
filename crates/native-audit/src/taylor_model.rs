@@ -230,7 +230,9 @@ impl TaylorModel {
         let rem_t = Tensor::new(&[self.remainder], self.center.device())?.unsqueeze(0)?;
 
         // Total deviation
-        let total_dev = lin_dev.broadcast_add(&quad_dev)?.broadcast_add(&rem_t.broadcast_as((1, self.dim))?)?;
+        let total_dev = lin_dev
+            .broadcast_add(&quad_dev)?
+            .broadcast_add(&rem_t.broadcast_as((1, self.dim))?)?;
 
         let lower = self.center.broadcast_sub(&total_dev)?;
         let upper = self.center.broadcast_add(&total_dev)?;
@@ -336,16 +338,10 @@ impl TaylorModel {
 
         // Slope bounds: l (lower slope), u (upper slope)
         let l = positive.broadcast_mul(&one)?; // l = 1 for positive, 0 otherwise
-        let _u = positive
-            .broadcast_mul(&one)?
-            .broadcast_add(&mixed)?; // u = 1 for positive or mixed
+        let _u = positive.broadcast_mul(&one)?.broadcast_add(&mixed)?; // u = 1 for positive or mixed
 
         // Apply slope bounds to linear term
-        let new_linear = self
-            .linear
-            .t()?
-            .broadcast_mul(&l)?
-            .t()?;
+        let new_linear = self.linear.t()?.broadcast_mul(&l)?.t()?;
 
         // Remainder increase for mixed dimensions
         let mixed_count = mixed.sum_all()?.to_scalar::<f32>()? as usize;
@@ -378,7 +374,10 @@ impl TaylorModel {
 
         // Slope bound: 1 / cosh²(max(|lower|, |upper|))
         let max_abs = lower.abs()?.maximum(&upper.abs()?)?;
-        let cosh_sq = max_abs.exp()?.sqr()?.add(&Tensor::new(&[1.0f32], self.center.device())?)?;
+        let cosh_sq = max_abs
+            .exp()?
+            .sqr()?
+            .add(&Tensor::new(&[1.0f32], self.center.device())?)?;
         let slope = Tensor::new(&[1.0f32], self.center.device())?.broadcast_div(&cosh_sq)?;
 
         // Apply slope to linear
@@ -498,7 +497,12 @@ impl TaylorModel {
     /// certifies safety if `h_min >= 0`.
     pub fn evaluate_cbf(&self, weight: &Tensor, bias: f32) -> Result<f32> {
         // h(center) = w^T @ c + b
-        let h_center = weight.matmul(&self.center.t()?)?.squeeze(0)?.squeeze(0)?.to_scalar::<f32>()? + bias;
+        let h_center = weight
+            .matmul(&self.center.t()?)?
+            .squeeze(0)?
+            .squeeze(0)?
+            .to_scalar::<f32>()?
+            + bias;
 
         // Worst-case deviation from linear term
         let lin_dev = weight
@@ -531,8 +535,16 @@ impl TaylorModel {
         let (lower, upper) = f_t.compute_bounds()?;
 
         // w · f_lower and w · f_upper
-        let w_lower = weight.matmul(&lower.t()?)?.squeeze(0)?.squeeze(0)?.to_scalar::<f32>()?;
-        let w_upper = weight.matmul(&upper.t()?)?.squeeze(0)?.squeeze(0)?.to_scalar::<f32>()?;
+        let w_lower = weight
+            .matmul(&lower.t()?)?
+            .squeeze(0)?
+            .squeeze(0)?
+            .to_scalar::<f32>()?;
+        let w_upper = weight
+            .matmul(&upper.t()?)?
+            .squeeze(0)?
+            .squeeze(0)?
+            .to_scalar::<f32>()?;
 
         Ok((w_lower, w_upper))
     }
@@ -590,11 +602,8 @@ impl TaylorModel {
         let (lo, hi) = z.compute_bounds()?;
         let reduced = crate::zonotope::Zonotope::from_intervals(&lo, &hi)?;
         // Re-constructor with max_gens limit
-        let reduced = crate::zonotope::Zonotope::new_from_epsilon(
-            &reduced.center,
-            self.remainder,
-            max_gens,
-        )?;
+        let reduced =
+            crate::zonotope::Zonotope::new_from_epsilon(&reduced.center, self.remainder, max_gens)?;
         Self::from_zonotope(&reduced)
     }
 
@@ -658,7 +667,13 @@ impl TaylorModel {
     /// via Frobenius norm) as an upper bound on the Jacobian.
     pub fn lipschitz_estimate(&self) -> Result<f32> {
         // Frobenius norm of linear term as Lipschitz upper bound
-        let frobenius = self.linear.abs()?.sqr()?.sum_all()?.to_scalar::<f32>()?.sqrt();
+        let frobenius = self
+            .linear
+            .abs()?
+            .sqr()?
+            .sum_all()?
+            .to_scalar::<f32>()?
+            .sqrt();
         Ok(frobenius)
     }
 
@@ -695,8 +710,14 @@ impl TaylorModel {
         let zero = Tensor::zeros(grad_h.shape(), DType::F32, device)?;
         let grad_pos = grad_h.maximum(&zero)?; // Positive components
         let grad_neg = grad_h.minimum(&zero)?; // Negative components
-        let wx_lo = f_lo.broadcast_mul(&grad_pos)?.sum_all()?.to_scalar::<f32>()?;
-        let wx_hi = f_hi.broadcast_mul(&grad_neg)?.sum_all()?.to_scalar::<f32>()?;
+        let wx_lo = f_lo
+            .broadcast_mul(&grad_pos)?
+            .sum_all()?
+            .to_scalar::<f32>()?;
+        let wx_hi = f_hi
+            .broadcast_mul(&grad_neg)?
+            .sum_all()?
+            .to_scalar::<f32>()?;
         Ok(wx_lo + wx_hi)
     }
 
@@ -704,7 +725,12 @@ impl TaylorModel {
     ///
     /// `h(x) = w^T @ center + bias`
     pub fn cbf_value(&self, weight: &Tensor, bias: f32) -> Result<f32> {
-        let h = weight.matmul(&self.center.t()?)?.squeeze(0)?.squeeze(0)?.to_scalar::<f32>()? + bias;
+        let h = weight
+            .matmul(&self.center.t()?)?
+            .squeeze(0)?
+            .squeeze(0)?
+            .to_scalar::<f32>()?
+            + bias;
         Ok(h)
     }
 

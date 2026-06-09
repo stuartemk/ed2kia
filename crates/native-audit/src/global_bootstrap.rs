@@ -6,8 +6,8 @@
 //!
 //! **Sprint 121 (v12.1.0):** Noosfera Symbiotic Launch & Verifiable Global Defense.
 
-use crate::edge_runtime::{DeviceType, AltruistOnboarding};
-use crate::live_testnet::{PlanetaryMeshNode, MeshStats};
+use crate::edge_runtime::{AltruistOnboarding, DeviceType};
+use crate::live_testnet::{MeshStats, PlanetaryMeshNode};
 
 /// Device distribution profile for planetary bootstrap simulation.
 ///
@@ -70,8 +70,12 @@ impl DeviceDistribution {
 
     /// Verify distribution sums to 1.0.
     pub fn is_valid(&self) -> bool {
-        let total = self.smartwatch_pct + self.iot_pct + self.mobile_pct
-            + self.old_desktop_pct + self.desktop_pct + self.datacenter_pct;
+        let total = self.smartwatch_pct
+            + self.iot_pct
+            + self.mobile_pct
+            + self.old_desktop_pct
+            + self.desktop_pct
+            + self.datacenter_pct;
         (total - 1.0).abs() < 1e-9
     }
 }
@@ -228,23 +232,38 @@ impl GlobalAltruistMesh {
         BootstrapResult {
             mesh_stats: stats,
             total_energy_saved_mwh: total_energy,
-            avg_vfe_reduction: if node_count > 0.0 { total_vfe / node_count } else { 0.0 },
+            avg_vfe_reduction: if node_count > 0.0 {
+                total_vfe / node_count
+            } else {
+                0.0
+            },
             active_nodes: active,
             ultra_light_nodes: ultra_light,
             mid_tier_nodes: mid_tier,
             standard_nodes: standard,
             heavy_nodes: heavy,
-            avg_contribution_factor: if node_count > 0.0 { total_cf / node_count } else { 0.0 },
-            posym_participation_rate: if node_count > 0.0 { active as f64 / node_count } else { 0.0 },
+            avg_contribution_factor: if node_count > 0.0 {
+                total_cf / node_count
+            } else {
+                0.0
+            },
+            posym_participation_rate: if node_count > 0.0 {
+                active as f64 / node_count
+            } else {
+                0.0
+            },
         }
     }
 
     /// Generate install commands for all nodes in the mesh.
     pub fn generate_install_commands(&self) -> Vec<String> {
-        self.nodes.iter().map(|node| {
-            let onboarding = AltruistOnboarding::new(node.node_id, node.device_type);
-            onboarding.install_command()
-        }).collect()
+        self.nodes
+            .iter()
+            .map(|node| {
+                let onboarding = AltruistOnboarding::new(node.node_id, node.device_type);
+                onboarding.install_command()
+            })
+            .collect()
     }
 
     /// Get the number of nodes in the mesh.
@@ -299,7 +318,11 @@ mod tests {
                 DeviceType::Datacenter => found[5] = true,
             }
         }
-        assert!(found.iter().all(|&b| b), "Not all device types selected: {:?}", found);
+        assert!(
+            found.iter().all(|&b| b),
+            "Not all device types selected: {:?}",
+            found
+        );
     }
 
     #[test]
@@ -321,8 +344,13 @@ mod tests {
         let mut mesh = GlobalAltruistMesh::new(config);
         let result = mesh.bootstrap_planetary();
 
-        assert_eq!(result.ultra_light_nodes + result.mid_tier_nodes
-            + result.standard_nodes + result.heavy_nodes, 100);
+        assert_eq!(
+            result.ultra_light_nodes
+                + result.mid_tier_nodes
+                + result.standard_nodes
+                + result.heavy_nodes,
+            100
+        );
         assert!(result.total_energy_saved_mwh >= 0.0);
         assert!(result.avg_vfe_reduction >= 0.0);
         assert!(result.avg_contribution_factor > 0.0);
@@ -428,8 +456,13 @@ mod tests {
         let result = mesh.bootstrap_planetary();
 
         // Mesh should still have nodes tracked
-        assert_eq!(result.ultra_light_nodes + result.mid_tier_nodes
-            + result.standard_nodes + result.heavy_nodes, 200);
+        assert_eq!(
+            result.ultra_light_nodes
+                + result.mid_tier_nodes
+                + result.standard_nodes
+                + result.heavy_nodes,
+            200
+        );
         // With moderate churn, energy should still accumulate
         assert!(result.total_energy_saved_mwh >= 0.0);
     }
