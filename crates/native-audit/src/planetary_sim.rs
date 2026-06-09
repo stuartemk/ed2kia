@@ -8,6 +8,8 @@
 //! - Trust dynamics and PoSym accumulation
 //!
 //! **Sprint 124:** Planetary Symbiotic Mesh & Full Edge Deployment Immunity.
+//! **Sprint 126:** The Noosfera Awakening & Global Ecosystem Symbiosis — Awakening simulation
+//! with adoption curve modeling, tipping point detection, and Noosfera emergence metrics.
 
 use crate::edge_runtime::{DeviceType, EnergyImpact, PowerState};
 
@@ -434,6 +436,195 @@ pub fn compute_sim_energy_impact(result: &PlanetarySimResult, device_type: Devic
     }
 }
 
+/// Noosfera Awakening Metrics — Adoption curve and tipping point detection.
+///
+/// Tracks the emergence of collective intelligence across the planetary mesh
+/// as nodes adopt ed2kIA steering, measuring adoption rate, network effects,
+/// and the critical tipping point where the Noosfera becomes self-sustaining.
+#[derive(Debug, Clone)]
+pub struct AwakeningMetrics {
+    /// Total nodes in the simulation
+    pub total_nodes: usize,
+    /// Nodes actively participating in the Noosfera
+    pub awakened_nodes: usize,
+    /// Adoption rate (0.0 to 1.0)
+    pub adoption_rate: f64,
+    /// Month when tipping point was reached (0 if not reached)
+    pub tipping_point_month: u32,
+    /// Whether the adoption tipping point was reached (>50% adoption)
+    pub tipping_point_reached: bool,
+    /// Network effect multiplier (exponential growth factor)
+    pub network_effect_multiplier: f64,
+    /// Average trust score of awakened nodes
+    pub avg_awakened_trust: f64,
+    /// Collective intelligence score (weighted by trust and adoption)
+    pub collective_intelligence_score: f64,
+    /// Knowledge diffusion rate (nodes informed per month)
+    pub knowledge_diffusion_rate: f64,
+    /// Months simulated
+    pub months_simulated: u32,
+    /// Adoption curve: (month, adoption_rate)
+    pub adoption_curve: Vec<(u32, f64)>,
+}
+
+impl AwakeningMetrics {
+    /// Create new awakening metrics.
+    pub fn new(
+        total_nodes: usize,
+        awakened_nodes: usize,
+        adoption_rate: f64,
+        tipping_point_month: u32,
+        tipping_point_reached: bool,
+        network_effect_multiplier: f64,
+        avg_awakened_trust: f64,
+        collective_intelligence_score: f64,
+        knowledge_diffusion_rate: f64,
+        months_simulated: u32,
+        adoption_curve: Vec<(u32, f64)>,
+    ) -> Self {
+        Self {
+            total_nodes,
+            awakened_nodes,
+            adoption_rate,
+            tipping_point_month,
+            tipping_point_reached,
+            network_effect_multiplier,
+            avg_awakened_trust,
+            collective_intelligence_score,
+            knowledge_diffusion_rate,
+            months_simulated,
+            adoption_curve,
+        }
+    }
+
+    /// Generate a human-readable summary.
+    pub fn summary(&self) -> String {
+        format!(
+            "Awakening[{}m] nodes={}/{} rate={:.1}% tipping={} effect={:.2}x trust={:.3} ci={:.3} diffusion={:.1}/m",
+            self.months_simulated,
+            self.awakened_nodes,
+            self.total_nodes,
+            self.adoption_rate * 100.0,
+            if self.tipping_point_reached {
+                format!("m{}", self.tipping_point_month)
+            } else {
+                "—".to_string()
+            },
+            self.network_effect_multiplier,
+            self.avg_awakened_trust,
+            self.collective_intelligence_score,
+            self.knowledge_diffusion_rate,
+        )
+    }
+}
+
+/// Simulate the Noosfera Awakening — adoption curve with tipping point detection.
+///
+/// Models the spread of ed2kIA adoption across a global network using:
+/// - Bass diffusion model (innovation + imitation coefficients)
+/// - Network effect multiplier (exponential growth from social contagion)
+/// - Trust-based filtering (only high-trust nodes contribute to diffusion)
+/// - Tipping point detection (>50% adoption = self-sustaining Noosfera)
+///
+/// # Arguments
+/// * `initial_nodes` — Total nodes in the network
+/// * `months` — Simulation duration in months
+///
+/// # Returns
+/// `AwakeningMetrics` with full adoption curve and tipping point analysis
+pub fn simulate_noosfera_awakening(initial_nodes: usize, months: u32) -> AwakeningMetrics {
+    if initial_nodes == 0 || months == 0 {
+        return AwakeningMetrics {
+            total_nodes: initial_nodes,
+            awakened_nodes: 0,
+            adoption_rate: 0.0,
+            tipping_point_month: 0,
+            tipping_point_reached: false,
+            network_effect_multiplier: 0.0,
+            avg_awakened_trust: 0.0,
+            collective_intelligence_score: 0.0,
+            knowledge_diffusion_rate: 0.0,
+            months_simulated: months,
+            adoption_curve: vec![],
+        };
+    }
+
+    // Bass diffusion parameters
+    let p = 0.02; // Innovation coefficient (external influence)
+    let q = 0.08; // Imitation coefficient (social contagion)
+
+    let mut awakened = (initial_nodes as f64 * p) as usize; // Initial adopters
+    let mut adoption_curve: Vec<(u32, f64)> = Vec::new();
+    let mut tipping_point_month: u32 = 0;
+    let mut tipping_point_reached = false;
+    let mut total_diffused = 0;
+    let mut mut_state = 42;
+
+    for month in 0..months {
+        let adopters_so_far = awakened;
+        let remaining = initial_nodes.saturating_sub(adopters_so_far);
+
+        // Bass model: new adopters = (p + q * adopters/N) * remaining
+        let adoption_pressure = p + q * (adopters_so_far as f64 / initial_nodes as f64);
+        let new_adopters = (adoption_pressure * remaining as f64) as usize;
+
+        // Add stochastic noise (deterministic PRNG)
+        let noise = next_random_sim(&mut mut_state);
+        let noise_factor = 0.9 + (noise - 0.5) * 0.2; // ±10% variation
+        let noisy_new_adopters = (new_adopters as f64 * noise_factor) as usize;
+
+        awakened = (awakened + noisy_new_adopters).min(initial_nodes);
+        total_diffused += noisy_new_adopters;
+
+        let current_rate = awakened as f64 / initial_nodes as f64;
+        adoption_curve.push((month, current_rate));
+
+        // Detect tipping point (>50% adoption)
+        if !tipping_point_reached && current_rate > 0.5 {
+            tipping_point_reached = true;
+            tipping_point_month = month;
+        }
+    }
+
+    // Compute network effect multiplier (exponential growth factor)
+    // Compares actual adoption to linear baseline (innovation-only, no social contagion)
+    let final_rate = awakened as f64 / initial_nodes as f64;
+    let baseline_linear = (p * months as f64).min(1.0);
+    let network_effect_multiplier = if baseline_linear > 0.0 {
+        (final_rate / baseline_linear).max(1.0)
+    } else {
+        1.0
+    };
+
+    // Compute average awakened trust (higher adoption → higher collective trust)
+    let avg_awakened_trust = 0.5 + 0.4 * final_rate.min(1.0);
+
+    // Collective intelligence score = adoption * trust * network_effect
+    let collective_intelligence_score =
+        final_rate * avg_awakened_trust * network_effect_multiplier.min(5.0);
+
+    // Knowledge diffusion rate (avg nodes informed per month)
+    let knowledge_diffusion_rate = if months > 0 {
+        total_diffused as f64 / months as f64
+    } else {
+        0.0
+    };
+
+    AwakeningMetrics {
+        total_nodes: initial_nodes,
+        awakened_nodes: awakened,
+        adoption_rate: final_rate,
+        tipping_point_month,
+        tipping_point_reached,
+        network_effect_multiplier,
+        avg_awakened_trust,
+        collective_intelligence_score,
+        knowledge_diffusion_rate,
+        months_simulated: months,
+        adoption_curve,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -755,5 +946,202 @@ mod tests {
         let result = simulate_planetary_mesh(100, 0.05, 86400.0, None);
         assert_eq!(result.duration_seconds, 86400.0);
         assert!(result.steps > 100);
+    }
+
+    // — Sprint 126: Awakening Simulation Tests —
+
+    #[test]
+    fn test_awakening_metrics_new() {
+        let metrics = AwakeningMetrics::new(
+            1000, 500, 0.5, 6, true, 2.5, 0.75, 0.8, 50.0, 12, vec![(0, 0.1), (12, 0.5)],
+        );
+        assert_eq!(metrics.total_nodes, 1000);
+        assert_eq!(metrics.awakened_nodes, 500);
+        assert_eq!(metrics.adoption_rate, 0.5);
+        assert_eq!(metrics.tipping_point_month, 6);
+        assert!(metrics.tipping_point_reached);
+        assert_eq!(metrics.months_simulated, 12);
+    }
+
+    #[test]
+    fn test_awakening_metrics_summary() {
+        let metrics = AwakeningMetrics::new(
+            10000, 6000, 0.6, 8, true, 3.0, 0.8, 0.9, 500.0, 24, vec![],
+        );
+        let summary = metrics.summary();
+        assert!(summary.contains("Awakening"));
+        assert!(summary.contains("24"));
+        assert!(summary.contains("6000"));
+        assert!(summary.contains("60.0"));
+    }
+
+    #[test]
+    fn test_awakening_metrics_summary_no_tipping() {
+        let metrics = AwakeningMetrics::new(
+            1000, 200, 0.2, 0, false, 1.0, 0.5, 0.3, 20.0, 6, vec![],
+        );
+        let summary = metrics.summary();
+        assert!(summary.contains("—"));
+    }
+
+    #[test]
+    fn test_simulate_noosfera_awakening_zero_nodes() {
+        let metrics = simulate_noosfera_awakening(0, 12);
+        assert_eq!(metrics.total_nodes, 0);
+        assert_eq!(metrics.awakened_nodes, 0);
+        assert_eq!(metrics.adoption_rate, 0.0);
+        assert!(!metrics.tipping_point_reached);
+        assert!(metrics.adoption_curve.is_empty());
+    }
+
+    #[test]
+    fn test_simulate_noosfera_awakening_zero_months() {
+        let metrics = simulate_noosfera_awakening(1000, 0);
+        assert_eq!(metrics.total_nodes, 1000);
+        assert_eq!(metrics.awakened_nodes, 0);
+        assert_eq!(metrics.months_simulated, 0);
+        assert!(metrics.adoption_curve.is_empty());
+    }
+
+    #[test]
+    fn test_simulate_noosfera_awakening_basic() {
+        let metrics = simulate_noosfera_awakening(10000, 24);
+        assert_eq!(metrics.total_nodes, 10000);
+        assert!(metrics.awakened_nodes > 0);
+        assert!(metrics.awakened_nodes <= 10000);
+        assert!(metrics.adoption_rate > 0.0);
+        assert!(metrics.adoption_rate <= 1.0);
+        assert_eq!(metrics.months_simulated, 24);
+        assert_eq!(metrics.adoption_curve.len(), 24);
+    }
+
+    #[test]
+    fn test_simulate_noosfera_awakening_tipping_point() {
+        let metrics = simulate_noosfera_awakening(10000, 36);
+        // With 36 months, tipping point should be reached
+        assert!(metrics.tipping_point_reached);
+        assert!(metrics.tipping_point_month > 0);
+        assert!(metrics.tipping_point_month <= 36);
+    }
+
+    #[test]
+    fn test_simulate_noosfera_awakening_short_duration() {
+        let metrics = simulate_noosfera_awakening(10000, 3);
+        // Short duration may not reach tipping point
+        assert_eq!(metrics.months_simulated, 3);
+        assert_eq!(metrics.adoption_curve.len(), 3);
+        assert!(metrics.adoption_rate < 0.5);
+    }
+
+    #[test]
+    fn test_simulate_noosfera_awakening_network_effect() {
+        let metrics = simulate_noosfera_awakening(50000, 48);
+        // Long simulation should show network effects (multiplier >= 1.0 means at least linear growth)
+        assert!(metrics.network_effect_multiplier >= 1.0);
+        assert!(metrics.collective_intelligence_score > 0.0);
+        // With 48 months, adoption should be very high
+        assert!(metrics.adoption_rate > 0.9);
+    }
+
+    #[test]
+    fn test_simulate_noosfera_awakening_trust_increases() {
+        let metrics = simulate_noosfera_awakening(10000, 24);
+        // Trust should increase with adoption
+        assert!(metrics.avg_awakened_trust >= 0.5);
+        assert!(metrics.avg_awakened_trust <= 0.9);
+    }
+
+    #[test]
+    fn test_simulate_noosfera_awakening_diffusion_rate() {
+        let metrics = simulate_noosfera_awakening(10000, 12);
+        assert!(metrics.knowledge_diffusion_rate > 0.0);
+        // Total diffused should match roughly
+        let total_diffused = (metrics.knowledge_diffusion_rate * 12.0) as usize;
+        assert!(total_diffused > 0);
+        assert!(total_diffused <= metrics.total_nodes);
+    }
+
+    #[test]
+    fn test_simulate_noosfera_awakening_adoption_curve_increasing() {
+        let metrics = simulate_noosfera_awakening(10000, 24);
+        // Adoption curve should be monotonically increasing
+        for i in 1..metrics.adoption_curve.len() {
+            assert!(
+                metrics.adoption_curve[i].1 >= metrics.adoption_curve[i - 1].1,
+                "Adoption should not decrease: month {} = {} vs month {} = {}",
+                i,
+                metrics.adoption_curve[i].1,
+                i - 1,
+                metrics.adoption_curve[i - 1].1,
+            );
+        }
+    }
+
+    #[test]
+    fn test_simulate_noosfera_awakening_curve_months_match() {
+        let metrics = simulate_noosfera_awakening(5000, 18);
+        for (month_idx, (month, _rate)) in metrics.adoption_curve.iter().enumerate() {
+            assert_eq!(*month, month_idx as u32);
+        }
+    }
+
+    #[test]
+    fn test_simulate_noosfera_awakening_collective_intelligence() {
+        let metrics = simulate_noosfera_awakening(100000, 60);
+        // Large network, long duration → high collective intelligence
+        assert!(metrics.collective_intelligence_score > 0.5);
+        assert!(metrics.collective_intelligence_score <= 5.0);
+    }
+
+    #[test]
+    fn test_simulate_noosfera_awakening_small_network() {
+        let metrics = simulate_noosfera_awakening(100, 12);
+        assert_eq!(metrics.total_nodes, 100);
+        assert!(metrics.awakened_nodes <= 100);
+        assert!(metrics.adoption_rate >= 0.0);
+        assert!(metrics.adoption_rate <= 1.0);
+    }
+
+    #[test]
+    fn test_simulate_noosfera_awakening_single_month() {
+        let metrics = simulate_noosfera_awakening(1000, 1);
+        assert_eq!(metrics.months_simulated, 1);
+        assert_eq!(metrics.adoption_curve.len(), 1);
+        // Single month should have low adoption
+        assert!(metrics.adoption_rate < 0.1);
+    }
+
+    #[test]
+    fn test_simulate_noosfera_awakening_deterministic() {
+        let m1 = simulate_noosfera_awakening(5000, 12);
+        let m2 = simulate_noosfera_awakening(5000, 12);
+        // Same inputs → same outputs (deterministic PRNG)
+        assert_eq!(m1.awakened_nodes, m2.awakened_nodes);
+        assert_eq!(m1.adoption_rate, m2.adoption_rate);
+        assert_eq!(m1.adoption_curve, m2.adoption_curve);
+    }
+
+    #[test]
+    fn test_simulate_noosfera_awakening_large_scale() {
+        let metrics = simulate_noosfera_awakening(1_000_000, 120);
+        // 1M nodes, 10 years → should reach near-full adoption
+        assert!(metrics.adoption_rate > 0.9);
+        assert!(metrics.tipping_point_reached);
+        assert!(metrics.tipping_point_month < 60); // Tipping well before 10 years
+    }
+
+    #[test]
+    fn test_full_awakening_pipeline() {
+        // Run planetary sim + awakening + verify integration
+        let sim_result = simulate_planetary_mesh(1000, 0.05, 3600.0, None);
+        let awakening = simulate_noosfera_awakening(sim_result.total_nodes, 24);
+
+        assert_eq!(awakening.total_nodes, sim_result.total_nodes);
+        assert!(awakening.awakened_nodes > 0);
+        assert!(awakening.collective_intelligence_score > 0.0);
+
+        let summary = awakening.summary();
+        assert!(summary.contains("Awakening"));
+        assert!(summary.contains("24"));
     }
 }

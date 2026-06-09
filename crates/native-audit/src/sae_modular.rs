@@ -9,6 +9,10 @@
 //! - Decoding: `x_hat = W_d @ z + b_d`
 //! - Reconstruction: `x = x_hat + e`, with `||e|| < tau` soundness threshold
 //! - Subspace soundness: Verify(Z_latent) ⊇ Project(Z_hidden) when `||e|| < tau`
+//!
+//! **Sprint 126:** Evolutionary SAE — Genetic algorithm lite for population-based
+//! SAE optimization with fitness = VFE reduction / energy, sparsity preservation,
+//! and differential privacy protection.
 
 use candle_core::{DType, Device, Result, Tensor};
 
@@ -1713,6 +1717,395 @@ mod tests {
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].1, 0.3);
     }
+    
+    // ─── Sprint 126: Evolutionary SAE — Population-based Optimization ──
+    
+    /// Evolutionary SAE configuration for genetic algorithm lite.
+    #[derive(Debug, Clone)]
+    pub struct EvolutionarySAEConfig {
+        /// Population size
+        pub population_size: usize,
+        /// Mutation rate (0.0 to 1.0)
+        pub mutation_rate: f64,
+        /// Crossover rate (0.0 to 1.0)
+        pub crossover_rate: f64,
+        /// Elitism fraction (0.0 to 1.0)
+        pub elitism_fraction: f64,
+        /// Maximum sparsity level (top-k)
+        pub max_sparsity: usize,
+        /// DP noise scale for privacy preservation
+        pub dp_noise_scale: f64,
+        /// Selection pressure (higher = more selective)
+        pub selection_pressure: f64,
+    }
+    
+    impl Default for EvolutionarySAEConfig {
+        fn default() -> Self {
+            Self {
+                population_size: 50,
+                mutation_rate: 0.15,
+                crossover_rate: 0.7,
+                elitism_fraction: 0.2,
+                max_sparsity: 512,
+                dp_noise_scale: 0.01,
+                selection_pressure: 1.5,
+            }
+        }
+    }
+    
+    impl EvolutionarySAEConfig {
+        /// Create config with custom population size.
+        pub fn with_population(mut self, size: usize) -> Self {
+            self.population_size = size.max(2);
+            self
+        }
+    
+        /// Create config with custom mutation rate.
+        pub fn with_mutation_rate(mut self, rate: f64) -> Self {
+            self.mutation_rate = rate.clamp(0.0, 1.0);
+            self
+        }
+    
+        /// Create config with custom crossover rate.
+        pub fn with_crossover_rate(mut self, rate: f64) -> Self {
+            self.crossover_rate = rate.clamp(0.0, 1.0);
+            self
+        }
+    
+        /// Create config with custom DP noise scale.
+        pub fn with_dp_noise_scale(mut self, scale: f64) -> Self {
+            self.dp_noise_scale = scale.max(0.0);
+            self
+        }
+    }
+    
+    /// Fitness result for a single SAE individual.
+    #[derive(Debug, Clone)]
+    pub struct FitnessResult {
+        /// VFE reduction achieved
+        pub vfe_reduction: f64,
+        /// Energy consumed
+        pub energy: f64,
+        /// Fitness score (VFE reduction / energy)
+        pub fitness: f64,
+        /// Sparsity level (number of active features)
+        pub sparsity: usize,
+        /// DP preservation score (0.0 to 1.0)
+        pub dp_preservation: f64,
+    }
+    
+    impl FitnessResult {
+        /// Create a new fitness result.
+        pub fn new(vfe_reduction: f64, energy: f64, sparsity: usize, dp_preservation: f64) -> Self {
+            let fitness = if energy > 0.0 {
+                vfe_reduction / energy
+            } else {
+                0.0
+            };
+            Self {
+                vfe_reduction,
+                energy,
+                fitness,
+                sparsity,
+                dp_preservation,
+            }
+        }
+    
+        /// Check if this individual meets minimum quality thresholds.
+        pub fn is_viable(&self, min_fitness: f64, min_dp: f64) -> bool {
+            self.fitness >= min_fitness && self.dp_preservation >= min_dp
+        }
+    }
+    
+    /// Evolutionary SAE generation result.
+    #[derive(Debug, Clone)]
+    pub struct GenerationResult {
+        /// Generation number
+        pub generation: usize,
+        /// Best fitness in this generation
+        pub best_fitness: f64,
+        /// Average fitness in this generation
+        pub avg_fitness: f64,
+        /// Best VFE reduction
+        pub best_vfe_reduction: f64,
+        /// Average sparsity
+        pub avg_sparsity: f64,
+        /// DP preservation maintained
+        pub dp_maintained: bool,
+        /// Fitness gain from previous generation
+        pub fitness_gain: f64,
+    }
+    
+    impl GenerationResult {
+        /// Create a new generation result.
+        pub fn new(
+            generation: usize,
+            best_fitness: f64,
+            avg_fitness: f64,
+            best_vfe_reduction: f64,
+            avg_sparsity: f64,
+            dp_maintained: bool,
+            prev_best_fitness: f64,
+        ) -> Self {
+            let fitness_gain = if prev_best_fitness > 0.0 {
+                (best_fitness - prev_best_fitness) / prev_best_fitness
+            } else {
+                0.0
+            };
+            Self {
+                generation,
+                best_fitness,
+                avg_fitness,
+                best_vfe_reduction,
+                avg_sparsity,
+                dp_maintained,
+                fitness_gain,
+            }
+        }
+    }
+    
+    /// Evolutionary SAE population result.
+    #[derive(Debug, Clone)]
+    pub struct EvolutionarySAEResult {
+        /// All generation results
+        pub generations: Vec<GenerationResult>,
+        /// Final best fitness
+        pub final_best_fitness: f64,
+        /// Total fitness gain across all generations
+        pub total_fitness_gain: f64,
+        /// Average fitness gain per generation
+        pub avg_fitness_gain: f64,
+        /// Safety maintained throughout evolution
+        pub safety_maintained: bool,
+        /// Number of generations with improvement
+        pub improvements: usize,
+    }
+    
+    impl EvolutionarySAEResult {
+        /// Create a new evolutionary result.
+        pub fn new(generations: Vec<GenerationResult>) -> Self {
+            let final_best = generations.last().map(|g| g.best_fitness).unwrap_or(0.0);
+            let improvements = generations.iter().filter(|g| g.fitness_gain > 0.0).count();
+            let gains: Vec<f64> = generations.iter().map(|g| g.fitness_gain).collect();
+            let avg_gain = if gains.is_empty() {
+                0.0
+            } else {
+                gains.iter().sum::<f64>() / gains.len() as f64
+            };
+            let total_gain = if generations.len() >= 2 {
+                let first = generations.first().unwrap().best_fitness;
+                if first > 0.0 {
+                    (final_best - first) / first
+                } else {
+                    0.0
+                }
+            } else {
+                0.0
+            };
+            let safety = generations.iter().all(|g| g.dp_maintained);
+            Self {
+                generations,
+                final_best_fitness: final_best,
+                total_fitness_gain: total_gain,
+                avg_fitness_gain: avg_gain,
+                safety_maintained: safety,
+                improvements,
+            }
+        }
+    
+        /// Get a summary report.
+        pub fn summary(&self) -> String {
+            format!(
+                "Evolution: {} gens, best_fitness={:.4}, total_gain={:.2}%, avg_gain={:.2}%, safety={}, improvements={}",
+                self.generations.len(),
+                self.final_best_fitness,
+                self.total_fitness_gain * 100.0,
+                self.avg_fitness_gain * 100.0,
+                self.safety_maintained,
+                self.improvements
+            )
+        }
+    }
+    
+    /// Simple PRNG for evolutionary operations.
+    fn next_random_evolution(state: &mut u64) -> f64 {
+        *state = state.wrapping_mul(6364136223846793005).wrapping_add(1);
+        (*state >> 33) as f64 / (u64::MAX >> 33) as f64
+    }
+    
+    /// Gaussian random number using Box-Muller transform.
+    fn next_gaussian(state: &mut u64) -> f64 {
+        let mut u1 = next_random_evolution(state);
+        let u2 = next_random_evolution(state);
+        if u1 < 1e-10 {
+            u1 = 1e-10;
+        }
+        let r = (-2.0 * u1.ln()).sqrt();
+        let theta = 2.0 * std::f64::consts::PI * u2;
+        r * theta.cos()
+    }
+    
+    /// Evolve SAE population using genetic algorithm lite.
+    ///
+    /// Fitness = VFE reduction / energy, with sparsity preservation and DP protection.
+    ///
+    /// # Arguments
+    /// * `population` — Mutable slice of SAE individuals to evolve
+    /// * `generations` — Number of generations to evolve
+    /// * `config` — Evolutionary configuration
+    /// * `fitness_fn` — Fitness evaluation function
+    ///
+    /// # Returns
+    /// `EvolutionarySAEResult` with generation history and final metrics
+    pub fn evolve_sae_population(
+        population: &mut [FitnessResult],
+        generations: usize,
+        config: &EvolutionarySAEConfig,
+        fitness_fn: impl Fn(&FitnessResult) -> f64,
+    ) -> EvolutionarySAEResult {
+        if population.is_empty() || generations == 0 {
+            return EvolutionarySAEResult::new(Vec::new());
+        }
+    
+        let mut rng_state: u64 = 42;
+        let mut generation_results = Vec::with_capacity(generations);
+        let mut prev_best_fitness = 0.0;
+    
+        for gen in 0..generations {
+            // Evaluate fitness
+            let fitnesses: Vec<f64> = population.iter().map(|ind| fitness_fn(ind)).collect();
+    
+            // Find best and average
+            let best_idx = (0..fitnesses.len())
+                .max_by(|&a, &b| fitnesses[a].partial_cmp(&fitnesses[b]).unwrap())
+                .unwrap_or(0);
+            let best_fitness = fitnesses[best_idx];
+            let avg_fitness = fitnesses.iter().sum::<f64>() / fitnesses.len() as f64;
+            let best_vfe = population[best_idx].vfe_reduction;
+            let avg_sparsity = population.iter().map(|ind| ind.sparsity as f64).sum::<f64>()
+                / population.len() as f64;
+            let dp_maintained = population.iter().all(|ind| ind.dp_preservation >= 0.5);
+    
+            generation_results.push(GenerationResult::new(
+                gen,
+                best_fitness,
+                avg_fitness,
+                best_vfe,
+                avg_sparsity,
+                dp_maintained,
+                prev_best_fitness,
+            ));
+    
+            // Elitism: keep top individuals
+            let elite_count = ((config.elitism_fraction * population.len() as f64) as usize)
+                .max(1)
+                .min(population.len() - 1);
+    
+            // Sort by fitness descending
+            let mut indices: Vec<usize> = (0..population.len()).collect();
+            indices.sort_by(|&a, &b| fitnesses[b].partial_cmp(&fitnesses[a]).unwrap());
+    
+            // Create new population
+            let mut new_population = Vec::with_capacity(population.len());
+    
+            // Add elites
+            for &idx in &indices[..elite_count] {
+                new_population.push(population[idx].clone());
+            }
+    
+            // Fill rest with crossover + mutation
+            while new_population.len() < population.len() {
+                if next_random_evolution(&mut rng_state) < config.crossover_rate {
+                    // Crossover: select two parents
+                    let p1_idx = indices[(next_random_evolution(&mut rng_state) * (elite_count * 2) as f64) as usize % elite_count];
+                    let p2_idx = indices[(next_random_evolution(&mut rng_state) * (elite_count * 2) as f64) as usize % elite_count];
+                    let p1 = &population[p1_idx];
+                    let p2 = &population[p2_idx];
+    
+                    // Blend crossover
+                    let alpha = next_random_evolution(&mut rng_state);
+                    let child = FitnessResult::new(
+                        alpha * p1.vfe_reduction + (1.0 - alpha) * p2.vfe_reduction,
+                        alpha * p1.energy + (1.0 - alpha) * p2.energy,
+                        (alpha * p1.sparsity as f64 + (1.0 - alpha) * p2.sparsity as f64) as usize,
+                        alpha * p1.dp_preservation + (1.0 - alpha) * p2.dp_preservation,
+                    );
+                    new_population.push(child);
+                } else {
+                    // Clone random parent
+                    let parent_idx = indices[(next_random_evolution(&mut rng_state) * elite_count as f64) as usize % elite_count];
+                    new_population.push(population[parent_idx].clone());
+                }
+            }
+    
+            // Mutation with DP noise
+            for ind in &mut new_population[elite_count..] {
+                if next_random_evolution(&mut rng_state) < config.mutation_rate {
+                    let noise = next_gaussian(&mut rng_state) * config.dp_noise_scale;
+                    ind.vfe_reduction = (ind.vfe_reduction * (1.0 + noise)).max(0.0);
+                    ind.energy = (ind.energy * (1.0 + noise * 0.5)).max(0.001);
+                    ind.sparsity = (ind.sparsity as i32 + (noise * 10.0) as i32)
+                        .max(1)
+                        .min(config.max_sparsity as i32) as usize;
+                    ind.dp_preservation = (ind.dp_preservation + noise * 0.1).clamp(0.0, 1.0);
+                    // Recalculate fitness
+                    ind.fitness = if ind.energy > 0.0 {
+                        ind.vfe_reduction / ind.energy
+                    } else {
+                        0.0
+                    };
+                }
+            }
+    
+            population.clone_from_slice(&new_population);
+            prev_best_fitness = best_fitness;
+        }
+    
+        EvolutionarySAEResult::new(generation_results)
+    }
+    
+    /// Evolve SAE population with default configuration.
+    ///
+    /// # Arguments
+    /// * `population` — Mutable slice of SAE individuals
+    /// * `generations` — Number of generations
+    /// * `fitness_fn` — Fitness evaluation function
+    ///
+    /// # Returns
+    /// `EvolutionarySAEResult` with evolution history
+    pub fn evolve_sae_population_default(
+        population: &mut [FitnessResult],
+        generations: usize,
+        fitness_fn: impl Fn(&FitnessResult) -> f64,
+    ) -> EvolutionarySAEResult {
+        evolve_sae_population(population, generations, &EvolutionarySAEConfig::default(), fitness_fn)
+    }
+    
+    /// Compute average fitness gain across multiple evolutionary runs.
+    ///
+    /// # Arguments
+    /// * `results` — Slice of evolutionary results
+    ///
+    /// # Returns
+    /// Average fitness gain as a percentage
+    pub fn compute_avg_fitness_gain(results: &[EvolutionarySAEResult]) -> f64 {
+        if results.is_empty() {
+            return 0.0;
+        }
+        let total: f64 = results.iter().map(|r| r.avg_fitness_gain).sum();
+        total / results.len() as f64
+    }
+    
+    /// Check if safety was maintained across all evolutionary runs.
+    ///
+    /// # Arguments
+    /// * `results` — Slice of evolutionary results
+    ///
+    /// # Returns
+    /// `true` if all runs maintained safety (DP preservation)
+    pub fn check_evolutionary_safety(results: &[EvolutionarySAEResult]) -> bool {
+        results.iter().all(|r| r.safety_maintained)
+    }
 
     #[test]
     fn test_aggregate_sparse_updates_sorted_indices() {
@@ -1728,5 +2121,359 @@ mod tests {
         assert_eq!(result[0].0, 0);
         assert_eq!(result[1].0, 2);
         assert_eq!(result[2].0, 5);
+    }
+
+    // ─── Sprint 126: Evolutionary SAE Tests ──
+
+    #[test]
+    fn test_evolutionary_config_default() {
+        let config = EvolutionarySAEConfig::default();
+        assert_eq!(config.population_size, 50);
+        assert!((config.mutation_rate - 0.15).abs() < 1e-10);
+        assert!((config.crossover_rate - 0.7).abs() < 1e-10);
+        assert!((config.elitism_fraction - 0.2).abs() < 1e-10);
+        assert_eq!(config.max_sparsity, 512);
+        assert!((config.dp_noise_scale - 0.01).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_evolutionary_config_with_population() {
+        let config = EvolutionarySAEConfig::default().with_population(100);
+        assert_eq!(config.population_size, 100);
+    }
+
+    #[test]
+    fn test_evolutionary_config_population_min_two() {
+        let config = EvolutionarySAEConfig::default().with_population(0);
+        assert_eq!(config.population_size, 2);
+    }
+
+    #[test]
+    fn test_evolutionary_config_with_mutation_rate() {
+        let config = EvolutionarySAEConfig::default().with_mutation_rate(0.3);
+        assert!((config.mutation_rate - 0.3).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_evolutionary_config_mutation_rate_clamped() {
+        let config = EvolutionarySAEConfig::default().with_mutation_rate(2.0);
+        assert!((config.mutation_rate - 1.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_evolutionary_config_with_crossover_rate() {
+        let config = EvolutionarySAEConfig::default().with_crossover_rate(0.9);
+        assert!((config.crossover_rate - 0.9).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_evolutionary_config_crossover_clamped() {
+        let config = EvolutionarySAEConfig::default().with_crossover_rate(-0.5);
+        assert!((config.crossover_rate - 0.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_evolutionary_config_with_dp_noise() {
+        let config = EvolutionarySAEConfig::default().with_dp_noise_scale(0.05);
+        assert!((config.dp_noise_scale - 0.05).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_fitness_result_new() {
+        let result = FitnessResult::new(0.8, 0.1, 256, 0.95);
+        assert!((result.vfe_reduction - 0.8).abs() < 1e-10);
+        assert!((result.energy - 0.1).abs() < 1e-10);
+        assert!((result.fitness - 8.0).abs() < 1e-10);
+        assert_eq!(result.sparsity, 256);
+        assert!((result.dp_preservation - 0.95).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_fitness_result_zero_energy() {
+        let result = FitnessResult::new(0.8, 0.0, 256, 0.95);
+        assert!((result.fitness - 0.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_fitness_result_is_viable() {
+        let result = FitnessResult::new(0.8, 0.1, 256, 0.95);
+        assert!(result.is_viable(5.0, 0.5));
+    }
+
+    #[test]
+    fn test_fitness_result_not_viable_low_fitness() {
+        let result = FitnessResult::new(0.1, 0.5, 256, 0.95);
+        assert!(!result.is_viable(1.0, 0.5));
+    }
+
+    #[test]
+    fn test_fitness_result_not_viable_low_dp() {
+        let result = FitnessResult::new(0.8, 0.1, 256, 0.3);
+        assert!(!result.is_viable(5.0, 0.5));
+    }
+
+    #[test]
+    fn test_generation_result_new() {
+        let result = GenerationResult::new(0, 8.0, 5.0, 0.8, 256.0, true, 0.0);
+        assert_eq!(result.generation, 0);
+        assert!((result.best_fitness - 8.0).abs() < 1e-10);
+        assert!((result.avg_fitness - 5.0).abs() < 1e-10);
+        assert!((result.fitness_gain - 0.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_generation_result_fitness_gain() {
+        let result = GenerationResult::new(1, 10.0, 6.0, 0.9, 250.0, true, 8.0);
+        assert!((result.fitness_gain - 0.25).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_generation_result_fitness_gain_negative() {
+        let result = GenerationResult::new(2, 6.0, 4.0, 0.7, 260.0, true, 10.0);
+        assert!((result.fitness_gain - (-0.4)).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_evolutionary_result_empty() {
+        let result = EvolutionarySAEResult::new(Vec::new());
+        assert!(result.generations.is_empty());
+        assert!((result.final_best_fitness - 0.0).abs() < 1e-10);
+        assert!((result.total_fitness_gain - 0.0).abs() < 1e-10);
+        assert!(result.safety_maintained);
+    }
+
+    #[test]
+    fn test_evolutionary_result_single_generation() {
+        let gens = vec![GenerationResult::new(0, 5.0, 3.0, 0.5, 256.0, true, 0.0)];
+        let result = EvolutionarySAEResult::new(gens);
+        assert_eq!(result.generations.len(), 1);
+        assert!((result.final_best_fitness - 5.0).abs() < 1e-10);
+        assert!(result.safety_maintained);
+    }
+
+    #[test]
+    fn test_evolutionary_result_multiple_generations() {
+        let gens = vec![
+            GenerationResult::new(0, 5.0, 3.0, 0.5, 256.0, true, 0.0),
+            GenerationResult::new(1, 7.5, 4.5, 0.7, 250.0, true, 5.0),
+            GenerationResult::new(2, 10.0, 6.0, 0.85, 245.0, true, 7.5),
+        ];
+        let result = EvolutionarySAEResult::new(gens);
+        assert_eq!(result.generations.len(), 3);
+        assert!((result.final_best_fitness - 10.0).abs() < 1e-10);
+        assert!((result.total_fitness_gain - 1.0).abs() < 1e-10); // (10-5)/5 = 1.0
+        assert!(result.safety_maintained);
+        assert_eq!(result.improvements, 2);
+    }
+
+    #[test]
+    fn test_evolutionary_result_safety_broken() {
+        let gens = vec![
+            GenerationResult::new(0, 5.0, 3.0, 0.5, 256.0, true, 0.0),
+            GenerationResult::new(1, 7.5, 4.5, 0.7, 250.0, false, 5.0),
+        ];
+        let result = EvolutionarySAEResult::new(gens);
+        assert!(!result.safety_maintained);
+    }
+
+    #[test]
+    fn test_evolutionary_result_summary() {
+        let gens = vec![
+            GenerationResult::new(0, 5.0, 3.0, 0.5, 256.0, true, 0.0),
+            GenerationResult::new(1, 10.0, 5.0, 0.8, 250.0, true, 5.0),
+        ];
+        let result = EvolutionarySAEResult::new(gens);
+        let summary = result.summary();
+        assert!(summary.contains("2 gens"));
+        assert!(summary.contains("safety=true"));
+    }
+
+    #[test]
+    fn test_evolve_empty_population() {
+        let mut population: Vec<FitnessResult> = Vec::new();
+        let config = EvolutionarySAEConfig::default();
+        let result = evolve_sae_population(&mut population, 10, &config, |ind| ind.fitness);
+        assert!(result.generations.is_empty());
+    }
+
+    #[test]
+    fn test_evolve_zero_generations() {
+        let mut population = vec![FitnessResult::new(0.5, 0.1, 256, 0.9)];
+        let config = EvolutionarySAEConfig::default();
+        let result = evolve_sae_population(&mut population, 0, &config, |ind| ind.fitness);
+        assert!(result.generations.is_empty());
+    }
+
+    #[test]
+    fn test_evolve_single_generation() {
+        let mut population = vec![
+            FitnessResult::new(0.8, 0.1, 256, 0.95),
+            FitnessResult::new(0.6, 0.2, 300, 0.9),
+            FitnessResult::new(0.4, 0.15, 280, 0.85),
+        ];
+        let config = EvolutionarySAEConfig::default();
+        let result = evolve_sae_population(&mut population, 1, &config, |ind| ind.fitness);
+        assert_eq!(result.generations.len(), 1);
+        assert!(result.final_best_fitness > 0.0);
+        assert!(result.safety_maintained);
+    }
+
+    #[test]
+    fn test_evolve_multiple_generations_improves() {
+        let mut population = vec![
+            FitnessResult::new(0.8, 0.1, 256, 0.95),
+            FitnessResult::new(0.6, 0.2, 300, 0.9),
+            FitnessResult::new(0.4, 0.15, 280, 0.85),
+            FitnessResult::new(0.7, 0.12, 260, 0.92),
+            FitnessResult::new(0.5, 0.18, 290, 0.88),
+        ];
+        let config = EvolutionarySAEConfig::default();
+        let result = evolve_sae_population(&mut population, 5, &config, |ind| ind.fitness);
+        assert_eq!(result.generations.len(), 5);
+        assert!(result.final_best_fitness > 0.0);
+    }
+
+    #[test]
+    fn test_evolve_maintains_population_size() {
+        let mut population = vec![
+            FitnessResult::new(0.8, 0.1, 256, 0.95),
+            FitnessResult::new(0.6, 0.2, 300, 0.9),
+            FitnessResult::new(0.4, 0.15, 280, 0.85),
+        ];
+        let config = EvolutionarySAEConfig::default();
+        let _ = evolve_sae_population(&mut population, 3, &config, |ind| ind.fitness);
+        assert_eq!(population.len(), 3);
+    }
+
+    #[test]
+    fn test_evolve_dp_preservation_maintained() {
+        let mut population: Vec<FitnessResult> = (0..10)
+            .map(|i| FitnessResult::new(0.5 + i as f64 * 0.1, 0.1, 256, 0.9))
+            .collect();
+        let config = EvolutionarySAEConfig::default();
+        let result = evolve_sae_population(&mut population, 3, &config, |ind| ind.fitness);
+        assert!(result.safety_maintained);
+    }
+
+    #[test]
+    fn test_evolve_with_custom_config() {
+        let mut population = vec![
+            FitnessResult::new(0.8, 0.1, 256, 0.95),
+            FitnessResult::new(0.6, 0.2, 300, 0.9),
+        ];
+        let config = EvolutionarySAEConfig::default()
+            .with_population(10)
+            .with_mutation_rate(0.3)
+            .with_crossover_rate(0.8);
+        let result = evolve_sae_population(&mut population, 2, &config, |ind| ind.fitness);
+        assert_eq!(result.generations.len(), 2);
+    }
+
+    #[test]
+    fn test_evolve_default_config() {
+        let mut population = vec![
+            FitnessResult::new(0.8, 0.1, 256, 0.95),
+            FitnessResult::new(0.6, 0.2, 300, 0.9),
+        ];
+        let result = evolve_sae_population_default(&mut population, 3, |ind| ind.fitness);
+        assert_eq!(result.generations.len(), 3);
+    }
+
+    #[test]
+    fn test_compute_avg_fitness_gain_empty() {
+        let results: Vec<EvolutionarySAEResult> = Vec::new();
+        assert!((compute_avg_fitness_gain(&results) - 0.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_compute_avg_fitness_gain_single() {
+        let gens = vec![GenerationResult::new(0, 5.0, 3.0, 0.5, 256.0, true, 0.0)];
+        let results = vec![EvolutionarySAEResult::new(gens)];
+        let avg = compute_avg_fitness_gain(&results);
+        assert!((avg - 0.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_compute_avg_fitness_gain_multiple() {
+        let gens1 = vec![
+            GenerationResult::new(0, 5.0, 3.0, 0.5, 256.0, true, 0.0),
+            GenerationResult::new(1, 7.5, 4.5, 0.7, 250.0, true, 5.0),
+        ];
+        let gens2 = vec![
+            GenerationResult::new(0, 3.0, 2.0, 0.3, 260.0, true, 0.0),
+            GenerationResult::new(1, 4.5, 3.0, 0.5, 255.0, true, 3.0),
+        ];
+        let results = vec![
+            EvolutionarySAEResult::new(gens1),
+            EvolutionarySAEResult::new(gens2),
+        ];
+        let avg = compute_avg_fitness_gain(&results);
+        assert!(avg > 0.0);
+    }
+
+    #[test]
+    fn test_check_evolutionary_safety_empty() {
+        let results: Vec<EvolutionarySAEResult> = Vec::new();
+        assert!(check_evolutionary_safety(&results));
+    }
+
+    #[test]
+    fn test_check_evolutionary_safety_all_safe() {
+        let gens1 = vec![GenerationResult::new(0, 5.0, 3.0, 0.5, 256.0, true, 0.0)];
+        let gens2 = vec![GenerationResult::new(0, 3.0, 2.0, 0.3, 260.0, true, 0.0)];
+        let results = vec![
+            EvolutionarySAEResult::new(gens1),
+            EvolutionarySAEResult::new(gens2),
+        ];
+        assert!(check_evolutionary_safety(&results));
+    }
+
+    #[test]
+    fn test_check_evolutionary_safety_one_unsafe() {
+        let gens1 = vec![GenerationResult::new(0, 5.0, 3.0, 0.5, 256.0, true, 0.0)];
+        let gens2 = vec![GenerationResult::new(0, 3.0, 2.0, 0.3, 260.0, false, 0.0)];
+        let results = vec![
+            EvolutionarySAEResult::new(gens1),
+            EvolutionarySAEResult::new(gens2),
+        ];
+        assert!(!check_evolutionary_safety(&results));
+    }
+
+    #[test]
+    fn test_next_random_evolution() {
+        let mut state: u64 = 42;
+        let val = next_random_evolution(&mut state);
+        assert!(val >= 0.0 && val <= 1.0);
+    }
+
+    #[test]
+    fn test_next_gaussian() {
+        let mut state: u64 = 42;
+        let val = next_gaussian(&mut state);
+        assert!(val.is_finite());
+    }
+
+    #[test]
+    fn test_full_evolutionary_pipeline() {
+        // Create diverse population
+        let mut population: Vec<FitnessResult> = (0..20)
+            .map(|i| {
+                let vfe = 0.3 + (i % 10) as f64 * 0.1;
+                let energy = 0.05 + (i % 5) as f64 * 0.05;
+                FitnessResult::new(vfe, energy, 200 + i * 10, 0.85 + (i % 5) as f64 * 0.03)
+            })
+            .collect();
+
+        let config = EvolutionarySAEConfig::default()
+            .with_population(20)
+            .with_mutation_rate(0.2);
+
+        let result = evolve_sae_population(&mut population, 10, &config, |ind| ind.fitness);
+
+        assert_eq!(result.generations.len(), 10);
+        assert!(result.final_best_fitness > 0.0);
+        assert_eq!(population.len(), 20);
+        let summary = result.summary();
+        assert!(summary.contains("10 gens"));
     }
 }

@@ -26,6 +26,7 @@ pub mod cbf_mpc;
 pub mod cirl_value_learning;
 pub mod collective_zonotope;
 pub mod cross_attention;
+pub mod dashboard;
 pub mod distributed_sae;
 pub mod edge_runtime;
 pub mod formal_barrier;

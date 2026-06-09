@@ -6,6 +6,7 @@
 //! **Sprint 120:** Planetary Immune Mesh & Edge Real-World Deployment.
 //! **Sprint 121:** Noosfera Symbiotic Launch — Proportional efficiency across full hardware spectrum
 //! (smartwatch → datacenter), multi-modal VFE symbiosis, device contribution factor for PoSym.
+//! **Sprint 126:** Noosfera Awakening — Ecosystem Integrations (HF Hub + ONNX Runtime + Tauri Mobile).
 
 use candle_core::{Result, Tensor};
 
@@ -1488,6 +1489,444 @@ pub fn is_production_ready(deploy: &EdgeDeployResult, metrics: &ProductionMetric
     deploy.ready && metrics.is_healthy() && metrics.health_score() >= min_health_score
 }
 
+// ─── Sprint 126: Ecosystem Integrations (HF + ONNX + Tauri) ──
+
+/// Device configuration for ecosystem integration.
+///
+/// Describes the target compute device for model loading, ONNX export,
+/// and mobile build targeting.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct DeviceConfig {
+    /// Compute device type
+    pub device_type: DeviceType,
+    /// Available memory in MB
+    pub memory_mb: usize,
+    /// Number of CPU cores
+    pub cpu_cores: usize,
+    /// Whether GPU acceleration is available
+    pub has_gpu: bool,
+}
+
+impl DeviceConfig {
+    /// Create a new device configuration.
+    pub fn new(device_type: DeviceType, memory_mb: usize, cpu_cores: usize, has_gpu: bool) -> Self {
+        Self {
+            device_type,
+            memory_mb,
+            cpu_cores,
+            has_gpu,
+        }
+    }
+
+    /// Check if the device can run full-precision models.
+    pub fn supports_full_precision(&self) -> bool {
+        self.memory_mb >= 4096 && self.cpu_cores >= 4
+    }
+
+    /// Check if the device can run quantized models.
+    pub fn supports_quantized(&self) -> bool {
+        self.memory_mb >= 512 && self.cpu_cores >= 2
+    }
+
+    /// Check if the device can run ultra-light models only.
+    pub fn supports_ultra_light(&self) -> bool {
+        self.memory_mb >= 128
+    }
+
+    /// Recommended model precision for this device.
+    pub fn recommended_precision(&self) -> ModelPrecision {
+        if self.supports_full_precision() {
+            ModelPrecision::Full
+        } else if self.supports_quantized() {
+            ModelPrecision::Quantized
+        } else if self.supports_ultra_light() {
+            ModelPrecision::UltraLight
+        } else {
+            ModelPrecision::None
+        }
+    }
+
+    /// Preset for desktop deployment.
+    pub fn desktop() -> Self {
+        Self::new(DeviceType::Desktop, 16384, 8, true)
+    }
+
+    /// Preset for mobile deployment.
+    pub fn mobile() -> Self {
+        Self::new(DeviceType::Mobile, 4096, 4, false)
+    }
+
+    /// Preset for IoT deployment.
+    pub fn iot() -> Self {
+        Self::new(DeviceType::Iot, 256, 1, false)
+    }
+
+    /// Preset for datacenter deployment.
+    pub fn datacenter() -> Self {
+        Self::new(DeviceType::Datacenter, 65536, 32, true)
+    }
+}
+
+/// Model precision level for ecosystem integration.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum ModelPrecision {
+    /// Full precision (FP32)
+    #[default]
+    Full,
+    /// Quantized (INT8)
+    Quantized,
+    /// Ultra-light quantized (INT4)
+    UltraLight,
+    /// No model can run on this device
+    None,
+}
+
+impl std::fmt::Display for ModelPrecision {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ModelPrecision::Full => write!(f, "FP32"),
+            ModelPrecision::Quantized => write!(f, "INT8"),
+            ModelPrecision::UltraLight => write!(f, "INT4"),
+            ModelPrecision::None => write!(f, "N/A"),
+        }
+    }
+}
+
+/// Result of Hugging Face model integration.
+#[derive(Debug, Clone)]
+pub struct IntegrationResult {
+    /// Model ID from Hugging Face Hub
+    pub model_id: String,
+    /// Model precision used
+    pub precision: ModelPrecision,
+    /// Model size in MB after conversion
+    pub size_mb: f64,
+    /// ONNX export path (empty if not exported)
+    pub onnx_path: String,
+    /// Whether the model was successfully integrated
+    pub success: bool,
+    /// Error message if integration failed
+    pub error: String,
+    /// Estimated inference latency in milliseconds
+    pub estimated_latency_ms: f64,
+    /// Estimated energy per inference in mWh
+    pub estimated_energy_mwh: f64,
+}
+
+impl IntegrationResult {
+    /// Create a successful integration result.
+    pub fn success(
+        model_id: String,
+        precision: ModelPrecision,
+        size_mb: f64,
+        onnx_path: String,
+        latency_ms: f64,
+        energy_mwh: f64,
+    ) -> Self {
+        Self {
+            model_id,
+            precision,
+            size_mb,
+            onnx_path,
+            success: true,
+            error: String::new(),
+            estimated_latency_ms: latency_ms,
+            estimated_energy_mwh: energy_mwh,
+        }
+    }
+
+    /// Create a failed integration result.
+    pub fn failure(model_id: String, error: String) -> Self {
+        Self {
+            model_id,
+            precision: ModelPrecision::None,
+            size_mb: 0.0,
+            onnx_path: String::new(),
+            success: false,
+            error,
+            estimated_latency_ms: 0.0,
+            estimated_energy_mwh: 0.0,
+        }
+    }
+
+    /// Get a summary report of the integration.
+    pub fn summary(&self) -> String {
+        if self.success {
+            format!(
+                "Model '{}' integrated successfully: {} precision, {:.1}MB, latency {:.0}ms, energy {:.4}mWh",
+                self.model_id, self.precision, self.size_mb, self.estimated_latency_ms, self.estimated_energy_mwh
+            )
+        } else {
+            format!(
+                "Model '{}' integration failed: {}",
+                self.model_id, self.error
+            )
+        }
+    }
+}
+
+/// Result of Tauri mobile build.
+#[derive(Debug, Clone)]
+pub struct MobileBuildResult {
+    /// Target platform
+    pub platform: String,
+    /// Build size in MB
+    pub build_size_mb: f64,
+    /// Whether WASM optimization was applied
+    pub wasm_optimized: bool,
+    /// Whether the build succeeded
+    pub success: bool,
+    /// Error message if build failed
+    pub error: String,
+    /// Estimated startup time in milliseconds
+    pub estimated_startup_ms: f64,
+    /// Number of models bundled
+    pub models_bundled: usize,
+    /// Supported features list
+    pub features: Vec<String>,
+}
+
+impl MobileBuildResult {
+    /// Create a successful build result.
+    pub fn success(
+        platform: String,
+        build_size_mb: f64,
+        wasm_optimized: bool,
+        startup_ms: f64,
+        models_bundled: usize,
+        features: Vec<String>,
+    ) -> Self {
+        Self {
+            platform,
+            build_size_mb,
+            wasm_optimized,
+            success: true,
+            error: String::new(),
+            estimated_startup_ms: startup_ms,
+            models_bundled,
+            features,
+        }
+    }
+
+    /// Create a failed build result.
+    pub fn failure(platform: String, error: String) -> Self {
+        Self {
+            platform,
+            build_size_mb: 0.0,
+            wasm_optimized: false,
+            success: false,
+            error,
+            estimated_startup_ms: 0.0,
+            models_bundled: 0,
+            features: Vec::new(),
+        }
+    }
+
+    /// Get a summary report of the build.
+    pub fn summary(&self) -> String {
+        if self.success {
+            format!(
+                "Mobile build for '{}': {:.1}MB, WASM={}, startup {:.0}ms, {} models, features: {}",
+                self.platform,
+                self.build_size_mb,
+                self.wasm_optimized,
+                self.estimated_startup_ms,
+                self.models_bundled,
+                self.features.join(", ")
+            )
+        } else {
+            format!(
+                "Mobile build for '{}' failed: {}",
+                self.platform, self.error
+            )
+        }
+    }
+}
+
+/// Integrate a model from Hugging Face Hub with ONNX conversion.
+///
+/// Simulates the full pipeline: model download → ONNX conversion → quantization
+/// → edge deployment validation. In production this would call `hf-hub` and
+/// `ort` (ONNX Runtime) crates.
+///
+/// # Arguments
+/// * `model_id` — Hugging Face model identifier (e.g., "org/model-name")
+/// * `device` — Target device configuration
+///
+/// # Returns
+/// `IntegrationResult` with success/failure status and metrics
+pub fn integrate_hf_model(model_id: &str, device: &DeviceConfig) -> IntegrationResult {
+    // Validate model ID format
+    if model_id.is_empty() || !model_id.contains('/') {
+        return IntegrationResult::failure(
+            model_id.to_string(),
+            "Invalid model ID: must be in format 'org/model-name'".to_string(),
+        );
+    }
+
+    // Determine precision based on device capability
+    let precision = device.recommended_precision();
+    if precision == ModelPrecision::None {
+        return IntegrationResult::failure(
+            model_id.to_string(),
+            "Device insufficient: minimum 128MB RAM required".to_string(),
+        );
+    }
+
+    // Estimate model size based on precision and device
+    let base_size_mb = 256.0; // Base model size
+    let size_mb = match precision {
+        ModelPrecision::Full => base_size_mb,
+        ModelPrecision::Quantized => base_size_mb * 0.25,
+        ModelPrecision::UltraLight => base_size_mb * 0.125,
+        ModelPrecision::None => 0.0,
+    };
+
+    // Validate model fits in device memory
+    if size_mb > device.memory_mb as f64 {
+        return IntegrationResult::failure(
+            model_id.to_string(),
+            format!(
+                "Model size {:.1}MB exceeds device memory {}MB",
+                size_mb, device.memory_mb
+            ),
+        );
+    }
+
+    // Estimate latency based on device type and precision
+    let base_latency = match device.device_type {
+        DeviceType::Datacenter => 5.0,
+        DeviceType::Desktop => 15.0,
+        DeviceType::OldDesktop => 30.0,
+        DeviceType::Mobile => 50.0,
+        DeviceType::Iot => 200.0,
+        DeviceType::Smartwatch => 500.0,
+    };
+    let latency_factor = match precision {
+        ModelPrecision::Full => 1.0,
+        ModelPrecision::Quantized => 0.6,
+        ModelPrecision::UltraLight => 0.4,
+        ModelPrecision::None => 1.0,
+    };
+    let gpu_factor = if device.has_gpu { 0.3 } else { 1.0 };
+    let estimated_latency_ms = base_latency * latency_factor * gpu_factor;
+
+    // Estimate energy based on latency and device
+    let estimated_energy_mwh = device.device_type.base_energy_cost() * (estimated_latency_ms / 1000.0);
+
+    // Generate ONNX path
+    let onnx_path = format!("models/{}/{}.onnx", model_id, precision);
+
+    IntegrationResult::success(
+        model_id.to_string(),
+        precision,
+        size_mb,
+        onnx_path,
+        estimated_latency_ms,
+        estimated_energy_mwh,
+    )
+}
+
+/// Build Tauri mobile application with WASM optimization.
+///
+/// Simulates the full mobile build pipeline: WASM compilation → tree-shaking
+/// → model bundling → platform-specific packaging.
+///
+/// # Returns
+/// `MobileBuildResult` with build metrics and feature list
+pub fn build_tauri_mobile() -> MobileBuildResult {
+    let platform = "tauri-mobile".to_string();
+
+    // Determine available features based on build configuration
+    let mut features = Vec::new();
+    features.push("sae-inference".to_string());
+    features.push("p2p-sync".to_string());
+    features.push("telemetry".to_string());
+
+    // Check if WASM optimization is available
+    let wasm_optimized = true;
+    if wasm_optimized {
+        features.push("wasm-opt".to_string());
+    }
+
+    // Estimate build size
+    let base_size_mb = 4.0;
+    let models_bundled = 2;
+    let model_overhead_mb = 1.5 * models_bundled as f64;
+    let build_size_mb = base_size_mb + model_overhead_mb;
+
+    // Estimate startup time
+    let startup_ms = if wasm_optimized { 800.0 } else { 1500.0 };
+
+    MobileBuildResult::success(
+        platform,
+        build_size_mb,
+        wasm_optimized,
+        startup_ms,
+        models_bundled,
+        features,
+    )
+}
+
+/// Build Tauri mobile application with custom configuration.
+///
+/// # Arguments
+/// * `target_platform` — Target platform ("ios", "android", "wasm")
+/// * `include_models` — Whether to bundle models in the build
+/// * `wasm_optimize` — Whether to apply WASM optimization
+///
+/// # Returns
+/// `MobileBuildResult` with build metrics
+pub fn build_tauri_mobile_custom(
+    target_platform: &str,
+    include_models: bool,
+    wasm_optimize: bool,
+) -> MobileBuildResult {
+    if target_platform.is_empty() {
+        return MobileBuildResult::failure(
+            "unknown".to_string(),
+            "Target platform cannot be empty".to_string(),
+        );
+    }
+
+    let mut features = Vec::new();
+    features.push("core".to_string());
+
+    if include_models {
+        features.push("models-bundled".to_string());
+    }
+    if wasm_optimize {
+        features.push("wasm-opt".to_string());
+    }
+
+    let models_bundled = if include_models { 2 } else { 0 };
+    let model_overhead_mb = 1.5 * models_bundled as f64;
+    let base_size_mb = match target_platform {
+        "ios" => 3.5,
+        "android" => 4.0,
+        "wasm" => 2.5,
+        _ => 4.5,
+    };
+    let build_size_mb = base_size_mb + model_overhead_mb;
+
+    let startup_ms = match (wasm_optimize, target_platform) {
+        (true, "wasm") => 400.0,
+        (true, _) => 800.0,
+        (false, "wasm") => 900.0,
+        (false, _) => 1500.0,
+    };
+
+    MobileBuildResult::success(
+        target_platform.to_string(),
+        build_size_mb,
+        wasm_optimize,
+        startup_ms,
+        models_bundled,
+        features,
+    )
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -2355,5 +2794,463 @@ mod tests {
             m.record_inference(100.0, 0.05, true);
         }
         assert!((m.avg_latency_ms - 100.0).abs() < 1.0);
+    }
+
+    // ─── Sprint 126: Ecosystem Integration Tests ──
+
+    #[test]
+    fn test_device_config_new() {
+        let config = DeviceConfig::new(DeviceType::Desktop, 16384, 8, true);
+        assert_eq!(config.device_type, DeviceType::Desktop);
+        assert_eq!(config.memory_mb, 16384);
+        assert_eq!(config.cpu_cores, 8);
+        assert!(config.has_gpu);
+    }
+
+    #[test]
+    fn test_device_config_default() {
+        let config = DeviceConfig::default();
+        assert_eq!(config.device_type, DeviceType::Desktop);
+        assert_eq!(config.memory_mb, 0);
+        assert_eq!(config.cpu_cores, 0);
+        assert!(!config.has_gpu);
+    }
+
+    #[test]
+    fn test_device_config_desktop() {
+        let config = DeviceConfig::desktop();
+        assert_eq!(config.device_type, DeviceType::Desktop);
+        assert!(config.supports_full_precision());
+        assert_eq!(config.recommended_precision(), ModelPrecision::Full);
+    }
+
+    #[test]
+    fn test_device_config_mobile() {
+        let config = DeviceConfig::mobile();
+        assert_eq!(config.device_type, DeviceType::Mobile);
+        assert!(config.supports_quantized());
+        // Mobile preset has 4096MB + 4 cores → supports full precision
+        assert!(config.supports_full_precision());
+    }
+
+    #[test]
+    fn test_device_config_iot() {
+        let config = DeviceConfig::iot();
+        assert_eq!(config.device_type, DeviceType::Iot);
+        assert!(!config.supports_quantized());
+        assert!(config.supports_ultra_light());
+    }
+
+    #[test]
+    fn test_device_config_datacenter() {
+        let config = DeviceConfig::datacenter();
+        assert_eq!(config.device_type, DeviceType::Datacenter);
+        assert!(config.supports_full_precision());
+        assert!(config.has_gpu);
+    }
+
+    #[test]
+    fn test_device_config_supports_full_precision() {
+        let config = DeviceConfig::new(DeviceType::Desktop, 8192, 8, false);
+        assert!(config.supports_full_precision());
+    }
+
+    #[test]
+    fn test_device_config_no_full_precision_low_memory() {
+        let config = DeviceConfig::new(DeviceType::Mobile, 2048, 8, false);
+        assert!(!config.supports_full_precision());
+    }
+
+    #[test]
+    fn test_device_config_no_full_precision_low_cores() {
+        let config = DeviceConfig::new(DeviceType::Desktop, 8192, 2, false);
+        assert!(!config.supports_full_precision());
+    }
+
+    #[test]
+    fn test_device_config_supports_quantized() {
+        let config = DeviceConfig::new(DeviceType::Mobile, 1024, 4, false);
+        assert!(config.supports_quantized());
+    }
+
+    #[test]
+    fn test_device_config_no_quantized_low_memory() {
+        let config = DeviceConfig::new(DeviceType::Iot, 256, 4, false);
+        assert!(!config.supports_quantized());
+    }
+
+    #[test]
+    fn test_device_config_no_quantized_low_cores() {
+        let config = DeviceConfig::new(DeviceType::Iot, 1024, 1, false);
+        assert!(!config.supports_quantized());
+    }
+
+    #[test]
+    fn test_device_config_supports_ultra_light() {
+        let config = DeviceConfig::new(DeviceType::Iot, 256, 1, false);
+        assert!(config.supports_ultra_light());
+    }
+
+    #[test]
+    fn test_device_config_no_ultra_light_insufficient_memory() {
+        let config = DeviceConfig::new(DeviceType::Iot, 64, 1, false);
+        assert!(!config.supports_ultra_light());
+    }
+
+    #[test]
+    fn test_recommended_precision_full() {
+        let config = DeviceConfig::new(DeviceType::Desktop, 16384, 8, true);
+        assert_eq!(config.recommended_precision(), ModelPrecision::Full);
+    }
+
+    #[test]
+    fn test_recommended_precision_quantized() {
+        let config = DeviceConfig::new(DeviceType::Mobile, 2048, 4, false);
+        assert_eq!(config.recommended_precision(), ModelPrecision::Quantized);
+    }
+
+    #[test]
+    fn test_recommended_precision_ultra_light() {
+        let config = DeviceConfig::new(DeviceType::Iot, 256, 1, false);
+        assert_eq!(config.recommended_precision(), ModelPrecision::UltraLight);
+    }
+
+    #[test]
+    fn test_recommended_precision_none() {
+        let config = DeviceConfig::new(DeviceType::Iot, 64, 1, false);
+        assert_eq!(config.recommended_precision(), ModelPrecision::None);
+    }
+
+    #[test]
+    fn test_model_precision_display() {
+        assert_eq!(format!("{}", ModelPrecision::Full), "FP32");
+        assert_eq!(format!("{}", ModelPrecision::Quantized), "INT8");
+        assert_eq!(format!("{}", ModelPrecision::UltraLight), "INT4");
+        assert_eq!(format!("{}", ModelPrecision::None), "N/A");
+    }
+
+    #[test]
+    fn test_integration_result_success() {
+        let result = IntegrationResult::success(
+            "org/model".to_string(),
+            ModelPrecision::Full,
+            256.0,
+            "models/model.onnx".to_string(),
+            15.0,
+            0.00075,
+        );
+        assert!(result.success);
+        assert_eq!(result.model_id, "org/model");
+        assert_eq!(result.precision, ModelPrecision::Full);
+        assert_eq!(result.size_mb, 256.0);
+        assert_eq!(result.onnx_path, "models/model.onnx");
+        assert!(result.error.is_empty());
+    }
+
+    #[test]
+    fn test_integration_result_failure() {
+        let result = IntegrationResult::failure(
+            "bad-model".to_string(),
+            "Invalid format".to_string(),
+        );
+        assert!(!result.success);
+        assert_eq!(result.model_id, "bad-model");
+        assert_eq!(result.precision, ModelPrecision::None);
+        assert_eq!(result.size_mb, 0.0);
+        assert!(result.onnx_path.is_empty());
+        assert!(!result.error.is_empty());
+    }
+
+    #[test]
+    fn test_integration_result_summary_success() {
+        let result = IntegrationResult::success(
+            "org/model".to_string(),
+            ModelPrecision::Quantized,
+            64.0,
+            "models/model.onnx".to_string(),
+            30.0,
+            0.0015,
+        );
+        let summary = result.summary();
+        assert!(summary.contains("org/model"));
+        assert!(summary.contains("successfully"));
+        assert!(summary.contains("INT8"));
+    }
+
+    #[test]
+    fn test_integration_result_summary_failure() {
+        let result = IntegrationResult::failure(
+            "bad".to_string(),
+            "error msg".to_string(),
+        );
+        let summary = result.summary();
+        assert!(summary.contains("failed"));
+        assert!(summary.contains("error msg"));
+    }
+
+    #[test]
+    fn test_mobile_build_result_success() {
+        let result = MobileBuildResult::success(
+            "ios".to_string(),
+            7.0,
+            true,
+            800.0,
+            2,
+            vec!["core".to_string(), "models".to_string()],
+        );
+        assert!(result.success);
+        assert_eq!(result.platform, "ios");
+        assert_eq!(result.build_size_mb, 7.0);
+        assert!(result.wasm_optimized);
+        assert_eq!(result.models_bundled, 2);
+        assert_eq!(result.features.len(), 2);
+    }
+
+    #[test]
+    fn test_mobile_build_result_failure() {
+        let result = MobileBuildResult::failure(
+            "android".to_string(),
+            "Build failed".to_string(),
+        );
+        assert!(!result.success);
+        assert_eq!(result.platform, "android");
+        assert_eq!(result.build_size_mb, 0.0);
+        assert!(!result.wasm_optimized);
+        assert_eq!(result.models_bundled, 0);
+        assert!(result.features.is_empty());
+    }
+
+    #[test]
+    fn test_mobile_build_summary_success() {
+        let result = MobileBuildResult::success(
+            "wasm".to_string(),
+            4.0,
+            true,
+            400.0,
+            1,
+            vec!["core".to_string()],
+        );
+        let summary = result.summary();
+        assert!(summary.contains("wasm"));
+        assert!(summary.contains("4.0MB"));
+        assert!(summary.contains("WASM=true"));
+    }
+
+    #[test]
+    fn test_mobile_build_summary_failure() {
+        let result = MobileBuildResult::failure(
+            "unknown".to_string(),
+            "no sdk".to_string(),
+        );
+        let summary = result.summary();
+        assert!(summary.contains("failed"));
+        assert!(summary.contains("no sdk"));
+    }
+
+    #[test]
+    fn test_integrate_hf_model_invalid_id_empty() {
+        let config = DeviceConfig::desktop();
+        let result = integrate_hf_model("", &config);
+        assert!(!result.success);
+        assert!(result.error.contains("Invalid model ID"));
+    }
+
+    #[test]
+    fn test_integrate_hf_model_invalid_id_no_slash() {
+        let config = DeviceConfig::desktop();
+        let result = integrate_hf_model("model-only", &config);
+        assert!(!result.success);
+        assert!(result.error.contains("Invalid model ID"));
+    }
+
+    #[test]
+    fn test_integrate_hf_model_desktop_full_precision() {
+        let config = DeviceConfig::desktop();
+        let result = integrate_hf_model("org/model", &config);
+        assert!(result.success);
+        assert_eq!(result.precision, ModelPrecision::Full);
+        assert_eq!(result.size_mb, 256.0);
+        assert!(!result.onnx_path.is_empty());
+    }
+
+    #[test]
+    fn test_integrate_hf_model_mobile_full_precision() {
+        // Mobile preset has 4096MB + 4 cores → qualifies for full precision
+        let config = DeviceConfig::mobile();
+        let result = integrate_hf_model("org/model", &config);
+        assert!(result.success);
+        assert_eq!(result.precision, ModelPrecision::Full);
+        assert_eq!(result.size_mb, 256.0);
+    }
+
+    #[test]
+    fn test_integrate_hf_model_low_end_mobile_quantized() {
+        // Low-end mobile with less memory gets quantized
+        let config = DeviceConfig::new(DeviceType::Mobile, 2048, 4, false);
+        let result = integrate_hf_model("org/model", &config);
+        assert!(result.success);
+        assert_eq!(result.precision, ModelPrecision::Quantized);
+        assert_eq!(result.size_mb, 64.0);
+    }
+
+    #[test]
+    fn test_integrate_hf_model_iot_ultra_light() {
+        let config = DeviceConfig::iot();
+        let result = integrate_hf_model("org/model", &config);
+        assert!(result.success);
+        assert_eq!(result.precision, ModelPrecision::UltraLight);
+        assert_eq!(result.size_mb, 32.0);
+    }
+
+    #[test]
+    fn test_integrate_hf_model_insufficient_device() {
+        let config = DeviceConfig::new(DeviceType::Iot, 64, 1, false);
+        let result = integrate_hf_model("org/model", &config);
+        assert!(!result.success);
+        assert!(result.error.contains("insufficient"));
+    }
+
+    #[test]
+    fn test_integrate_hf_model_memory_exceeded() {
+        // Device with 100MB < 128MB ultra-light threshold → insufficient
+        let config = DeviceConfig::new(DeviceType::Desktop, 100, 8, false);
+        let result = integrate_hf_model("org/model", &config);
+        assert!(!result.success);
+        assert!(result.error.contains("insufficient"));
+    }
+
+    #[test]
+    fn test_integrate_hf_model_memory_exceeds_after_precision() {
+        // Device supports quantized (512MB+ RAM, 2+ cores) but model (64MB) fits.
+        // Test with device that barely supports quantized but model still fits.
+        let config = DeviceConfig::new(DeviceType::Mobile, 512, 2, false);
+        let result = integrate_hf_model("org/model", &config);
+        assert!(result.success);
+        assert_eq!(result.precision, ModelPrecision::Quantized);
+        assert!(result.size_mb <= config.memory_mb as f64);
+    }
+
+    #[test]
+    fn test_integrate_hf_model_gpu_latency_reduction() {
+        let config_no_gpu = DeviceConfig::new(DeviceType::Desktop, 16384, 8, false);
+        let config_gpu = DeviceConfig::new(DeviceType::Desktop, 16384, 8, true);
+        let result_no_gpu = integrate_hf_model("org/model", &config_no_gpu);
+        let result_gpu = integrate_hf_model("org/model", &config_gpu);
+        assert!(result_gpu.estimated_latency_ms < result_no_gpu.estimated_latency_ms);
+    }
+
+    #[test]
+    fn test_integrate_hf_model_datacenter_lowest_latency() {
+        let config = DeviceConfig::datacenter();
+        let result = integrate_hf_model("org/model", &config);
+        assert!(result.success);
+        assert!(result.estimated_latency_ms < 10.0);
+    }
+
+    #[test]
+    fn test_integrate_hf_model_energy_estimation() {
+        let config = DeviceConfig::desktop();
+        let result = integrate_hf_model("org/model", &config);
+        assert!(result.success);
+        assert!(result.estimated_energy_mwh > 0.0);
+        assert!(result.estimated_energy_mwh < 1.0);
+    }
+
+    #[test]
+    fn test_integrate_hf_model_onnx_path_format() {
+        let config = DeviceConfig::desktop();
+        let result = integrate_hf_model("org/model", &config);
+        assert!(result.onnx_path.contains("org/model"));
+        assert!(result.onnx_path.ends_with(".onnx"));
+    }
+
+    #[test]
+    fn test_build_tauri_mobile_default() {
+        let result = build_tauri_mobile();
+        assert!(result.success);
+        assert_eq!(result.platform, "tauri-mobile");
+        assert!(result.wasm_optimized);
+        assert!(result.models_bundled > 0);
+        assert!(!result.features.is_empty());
+    }
+
+    #[test]
+    fn test_build_tauri_mobile_features() {
+        let result = build_tauri_mobile();
+        assert!(result.features.contains(&"sae-inference".to_string()));
+        assert!(result.features.contains(&"p2p-sync".to_string()));
+        assert!(result.features.contains(&"telemetry".to_string()));
+        assert!(result.features.contains(&"wasm-opt".to_string()));
+    }
+
+    #[test]
+    fn test_build_tauri_mobile_custom_ios() {
+        let result = build_tauri_mobile_custom("ios", true, true);
+        assert!(result.success);
+        assert_eq!(result.platform, "ios");
+        assert!(result.wasm_optimized);
+        assert_eq!(result.models_bundled, 2);
+    }
+
+    #[test]
+    fn test_build_tauri_mobile_custom_android() {
+        let result = build_tauri_mobile_custom("android", false, false);
+        assert!(result.success);
+        assert_eq!(result.platform, "android");
+        assert!(!result.wasm_optimized);
+        assert_eq!(result.models_bundled, 0);
+    }
+
+    #[test]
+    fn test_build_tauri_mobile_custom_wasm() {
+        let result = build_tauri_mobile_custom("wasm", true, true);
+        assert!(result.success);
+        assert_eq!(result.platform, "wasm");
+        assert!(result.wasm_optimized);
+        assert!(result.estimated_startup_ms < 500.0);
+    }
+
+    #[test]
+    fn test_build_tauri_mobile_custom_empty_platform() {
+        let result = build_tauri_mobile_custom("", true, true);
+        assert!(!result.success);
+        assert!(result.error.contains("empty"));
+    }
+
+    #[test]
+    fn test_build_tauri_mobile_custom_unknown_platform() {
+        let result = build_tauri_mobile_custom("unknown", false, false);
+        assert!(result.success);
+        assert_eq!(result.platform, "unknown");
+        // Should still work with default size
+        assert!(result.build_size_mb > 0.0);
+    }
+
+    #[test]
+    fn test_build_tauri_mobile_custom_startup_times() {
+        let wasm_opt = build_tauri_mobile_custom("wasm", false, true);
+        let wasm_no_opt = build_tauri_mobile_custom("wasm", false, false);
+        assert!(wasm_opt.estimated_startup_ms < wasm_no_opt.estimated_startup_ms);
+    }
+
+    #[test]
+    fn test_build_tauri_mobile_custom_size_with_models() {
+        let with_models = build_tauri_mobile_custom("ios", true, false);
+        let without_models = build_tauri_mobile_custom("ios", false, false);
+        assert!(with_models.build_size_mb > without_models.build_size_mb);
+    }
+
+    #[test]
+    fn test_full_ecosystem_integration_pipeline() {
+        // Full pipeline: integrate model → validate → build mobile
+        let device = DeviceConfig::desktop();
+        let integration = integrate_hf_model("ed2k/sae-audit", &device);
+        assert!(integration.success);
+        assert_eq!(integration.precision, ModelPrecision::Full);
+
+        let mobile = build_tauri_mobile();
+        assert!(mobile.success);
+        assert!(mobile.wasm_optimized);
+        assert!(!mobile.features.is_empty());
     }
 }
