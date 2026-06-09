@@ -210,8 +210,11 @@ impl std::fmt::Display for EnergyImpact {
         write!(
             f,
             "EnergyImpact: {:.4} mWh used | {:.4} mWh saved ({:.1}%) | {:?} | {:?}",
-            self.energy_used_mwh, self.energy_saved_mwh, self.savings_pct,
-            self.power_state, self.compute_path
+            self.energy_used_mwh,
+            self.energy_saved_mwh,
+            self.savings_pct,
+            self.power_state,
+            self.compute_path
         )
     }
 }
@@ -359,9 +362,8 @@ pub fn evaluate_planetary_hybrid(
     // For now, use Fast Path as proxy (full integration with TensorAudit in lib.rs)
     let swd_ratio = compute_fast_swd_ratio(hidden_state, safe_centroid, toxic_centroid)?;
     let safe = swd_ratio > 0.5;
-    let slow_path = !matches!(power_state, PowerState::Conservative)
-        && swd_ratio > 0.4
-        && swd_ratio < 0.6;
+    let slow_path =
+        !matches!(power_state, PowerState::Conservative) && swd_ratio > 0.4 && swd_ratio < 0.6;
 
     let energy_used = if slow_path {
         base_cost * 1.0 // Full Hybrid
@@ -370,7 +372,13 @@ pub fn evaluate_planetary_hybrid(
     };
 
     let energy_saved = dc_baseline - energy_used;
-    Ok((safe, slow_path, hidden_state.clone(), energy_used, energy_saved))
+    Ok((
+        safe,
+        slow_path,
+        hidden_state.clone(),
+        energy_used,
+        energy_saved,
+    ))
 }
 
 /// Compute fast SWD ratio for edge devices.
@@ -380,8 +388,16 @@ fn compute_fast_swd_ratio(
     toxic_centroid: &Tensor,
 ) -> Result<f32> {
     // Simplified SWD: distance to toxic / (distance to toxic + distance to safe)
-    let dist_safe = hidden_state.sub(safe_centroid)?.sqr()?.sum_all()?.to_scalar::<f32>()?;
-    let dist_toxic = hidden_state.sub(toxic_centroid)?.sqr()?.sum_all()?.to_scalar::<f32>()?;
+    let dist_safe = hidden_state
+        .sub(safe_centroid)?
+        .sqr()?
+        .sum_all()?
+        .to_scalar::<f32>()?;
+    let dist_toxic = hidden_state
+        .sub(toxic_centroid)?
+        .sqr()?
+        .sum_all()?
+        .to_scalar::<f32>()?;
 
     let total = dist_safe + dist_toxic;
     if total < 1e-9 {
@@ -586,13 +602,182 @@ impl AltruistOnboarding {
         let peers = if self.bootstrap_peers.is_empty() {
             String::new()
         } else {
-            format!(
-                " --peers \"{}\"",
-                self.bootstrap_peers.join(",")
-            )
+            format!(" --peers \"{}\"", self.bootstrap_peers.join(","))
         };
 
         format!("ed2k start --altruist {}{}", device_flag, peers)
+    }
+}
+
+// ============================================================================
+// Sprint 123 — Energy-Aware MDP + CBF Safety Filters
+// ============================================================================
+
+/// Energy MDP Reward function.
+///
+/// Computes the reward for an action in the energy-aware Markov Decision Process:
+/// ```text
+/// R = -energy_mwh - λ * latency_ms + 100.0 * safety_margin
+/// ```
+///
+/// The scheduler maximizes this reward, trading off energy consumption, latency,
+/// and safety margin (CBF violation distance).
+///
+/// # Arguments
+/// * `energy_mwh` — Energy consumed in megawatt-hours (always ≥ 0)
+/// * `latency_ms` — End-to-end latency in milliseconds (always ≥ 0)
+/// * `safety_margin` — CBF safety margin (≥ 0 means safe, < 0 means violated)
+/// * `lambda` — Latency penalty weight (λ ≥ 0)
+///
+/// # Returns
+/// MDP reward (higher is better)
+pub fn mdp_energy_reward(energy_mwh: f64, latency_ms: f64, safety_margin: f64, lambda: f64) -> f64 {
+    -energy_mwh - lambda * latency_ms + 100.0 * safety_margin
+}
+
+/// Control Barrier Function (CBF) safety filter.
+///
+/// Verifies that the current state φ is within the safe set defined by:
+/// ```text
+/// h(φ) = β - ||φ - C_safe||² ≥ 0
+/// ```
+///
+/// Where:
+/// - `φ` is the current state vector
+/// - `C_safe` is the safe center (reference state)
+/// - `β` is the safety radius squared
+///
+/// # Arguments
+/// * `state` — Current state vector
+/// * `safe_center` — Safe reference center (same dimension as state)
+/// * `beta` — Safety radius squared (β > 0)
+///
+/// # Returns
+/// `true` if the state is within the safe set (CBF satisfied)
+pub fn control_barrier_filter(state: &[f32], safe_center: &[f32], beta: f32) -> bool {
+    if state.len() != safe_center.len() {
+        return false;
+    }
+    let dist_sq: f32 = state
+        .iter()
+        .zip(safe_center.iter())
+        .map(|(a, b)| (a - b) * (a - b))
+        .sum();
+    beta - dist_sq >= 0.0
+}
+
+/// Compute the CBF safety margin value h(φ).
+///
+/// Returns the actual barrier function value, which indicates how close
+/// the state is to the safety boundary. Positive = safe, negative = violated.
+///
+/// # Returns
+/// h(φ) = β - ||φ - C_safe||²
+pub fn control_barrier_value(state: &[f32], safe_center: &[f32], beta: f32) -> f32 {
+    if state.len() != safe_center.len() {
+        return f32::NEG_INFINITY;
+    }
+    let dist_sq: f32 = state
+        .iter()
+        .zip(safe_center.iter())
+        .map(|(a, b)| (a - b) * (a - b))
+        .sum();
+    beta - dist_sq
+}
+
+/// Energy-aware MDP action selection with CBF safety filter.
+///
+/// Selects the best action from candidates, filtering out unsafe actions first.
+/// If all actions are unsafe, selects the least-violating one.
+///
+/// # Arguments
+/// * `actions` — List of (energy_mwh, latency_ms, state_vector) candidates
+/// * `safe_center` — Safe reference center for CBF
+/// * `beta` — CBF safety radius squared
+/// * `lambda` — Latency penalty weight
+///
+/// # Returns
+/// Index of the selected action, or `None` if no actions provided
+pub fn mdp_select_action_cbf(
+    actions: &[(f64, f64, Vec<f32>)],
+    safe_center: &[f32],
+    beta: f32,
+    lambda: f64,
+) -> Option<usize> {
+    if actions.is_empty() {
+        return None;
+    }
+
+    // Separate safe and unsafe actions
+    let mut safe_actions: Vec<(usize, f64)> = Vec::new();
+    let mut unsafe_actions: Vec<(usize, f32)> = Vec::new();
+
+    for (i, (energy, latency, state)) in actions.iter().enumerate() {
+        let h = control_barrier_value(state, safe_center, beta);
+        if h >= 0.0 {
+            let reward = mdp_energy_reward(*energy, *latency, h as f64, lambda);
+            safe_actions.push((i, reward));
+        } else {
+            unsafe_actions.push((i, h));
+        }
+    }
+
+    if !safe_actions.is_empty() {
+        // Select safe action with highest reward
+        safe_actions
+            .iter()
+            .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
+            .map(|(i, _)| *i)
+    } else if !unsafe_actions.is_empty() {
+        // Fallback: select least-violating action (highest h)
+        unsafe_actions
+            .iter()
+            .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
+            .map(|(i, _)| *i)
+    } else {
+        None
+    }
+}
+
+/// MPC (Model Predictive Control) horizon configuration.
+#[derive(Debug, Clone, Copy)]
+pub struct MpcConfig {
+    /// Prediction horizon (number of steps to look ahead)
+    pub horizon: usize,
+    /// CBF safety radius squared
+    pub beta: f32,
+    /// Latency penalty weight
+    pub lambda: f64,
+    /// Discount factor γ ∈ (0, 1]
+    pub discount: f64,
+}
+
+impl Default for MpcConfig {
+    fn default() -> Self {
+        Self {
+            horizon: 10,
+            beta: 1.0,
+            lambda: 0.01,
+            discount: 0.95,
+        }
+    }
+}
+
+impl MpcConfig {
+    /// Create config with custom horizon.
+    pub fn with_horizon(horizon: usize) -> Self {
+        Self {
+            horizon,
+            ..Self::default()
+        }
+    }
+
+    /// Create config with custom safety radius.
+    pub fn with_safety_radius(beta: f32) -> Self {
+        Self {
+            beta,
+            ..Self::default()
+        }
     }
 }
 
@@ -714,8 +899,12 @@ mod tests {
     #[test]
     fn test_certified_steer_record() {
         let record = CertifiedSteerRecord::new(
-            0.8, 0.3, 0.05, 0.75,
-            ComputePath::FullHybrid, PowerState::Normal,
+            0.8,
+            0.3,
+            0.05,
+            0.75,
+            ComputePath::FullHybrid,
+            PowerState::Normal,
         );
         assert_eq!(record.vfe_reduction(), 0.5);
         assert!(record.timestamp > 0);
@@ -724,8 +913,12 @@ mod tests {
     #[test]
     fn test_certified_steer_record_no_reduction() {
         let record = CertifiedSteerRecord::new(
-            0.3, 0.5, 0.05, 0.75,
-            ComputePath::FastPathOnly, PowerState::Conservative,
+            0.3,
+            0.5,
+            0.05,
+            0.75,
+            ComputePath::FastPathOnly,
+            PowerState::Conservative,
         );
         assert_eq!(record.vfe_reduction(), 0.0); // Clamped to 0
     }
@@ -756,8 +949,12 @@ mod tests {
         let toxic = Tensor::new(vec![10.0f32, 20.0, 30.0], &device)?;
 
         let (safe, slow_path, _steered, energy, saved) = evaluate_planetary_hybrid(
-            &hidden, &safe, &toxic,
-            0.2, 0.3, false, // Low battery + poor network
+            &hidden,
+            &safe,
+            &toxic,
+            0.2,
+            0.3,
+            false, // Low battery + poor network
             DeviceType::Mobile,
         )?;
 
@@ -776,8 +973,12 @@ mod tests {
         let toxic = Tensor::new(vec![10.0f32, 20.0, 30.0], &device)?;
 
         let (safe, slow_path, _steered, energy, saved) = evaluate_planetary_hybrid(
-            &hidden, &safe, &toxic,
-            0.9, 0.9, false, // Good battery + good network
+            &hidden,
+            &safe,
+            &toxic,
+            0.9,
+            0.9,
+            false, // Good battery + good network
             DeviceType::Desktop,
         )?;
 
@@ -797,8 +998,12 @@ mod tests {
         let toxic = Tensor::new(vec![10.0f32, 20.0, 30.0], &device)?;
 
         let (safe, _slow_path, _steered, _energy, _saved) = evaluate_planetary_hybrid(
-            &hidden, &safe, &toxic,
-            0.9, 0.9, false,
+            &hidden,
+            &safe,
+            &toxic,
+            0.9,
+            0.9,
+            false,
             DeviceType::Desktop,
         )?;
 
@@ -831,10 +1036,18 @@ mod tests {
     #[test]
     fn test_contribution_factor_rewards_low_capability() {
         // Lower capability devices get higher contribution factor (PoSym bonus)
-        assert!(DeviceType::Smartwatch.contribution_factor() > DeviceType::Desktop.contribution_factor());
+        assert!(
+            DeviceType::Smartwatch.contribution_factor()
+                > DeviceType::Desktop.contribution_factor()
+        );
         assert!(DeviceType::Iot.contribution_factor() > DeviceType::Desktop.contribution_factor());
-        assert!(DeviceType::Mobile.contribution_factor() > DeviceType::Desktop.contribution_factor());
-        assert!(DeviceType::Datacenter.contribution_factor() < DeviceType::Desktop.contribution_factor());
+        assert!(
+            DeviceType::Mobile.contribution_factor() > DeviceType::Desktop.contribution_factor()
+        );
+        assert!(
+            DeviceType::Datacenter.contribution_factor()
+                < DeviceType::Desktop.contribution_factor()
+        );
         assert_eq!(DeviceType::Desktop.contribution_factor(), 1.0);
     }
 
@@ -855,11 +1068,8 @@ mod tests {
         let safe = Tensor::new(vec![1.0f32, 2.0, 3.0], &device)?;
         let toxic = Tensor::new(vec![10.0f32, 20.0, 30.0], &device)?;
 
-        let (safe, certified, _steered, trust_delta, energy_used) = evaluate_proportional_hybrid(
-            &hidden, &safe, &toxic,
-            DeviceType::Smartwatch,
-            0.5, 0.5,
-        )?;
+        let (safe, certified, _steered, trust_delta, energy_used) =
+            evaluate_proportional_hybrid(&hidden, &safe, &toxic, DeviceType::Smartwatch, 0.5, 0.5)?;
 
         // Smartwatch has budget 0.1 < 0.3 → ultra-light path
         assert!(safe); // Hidden == safe centroid → ratio > 0.5
@@ -876,11 +1086,8 @@ mod tests {
         let safe = Tensor::new(vec![1.0f32, 2.0, 3.0], &device)?;
         let toxic = Tensor::new(vec![10.0f32, 20.0, 30.0], &device)?;
 
-        let (safe, certified, _steered, trust_delta, energy_used) = evaluate_proportional_hybrid(
-            &hidden, &safe, &toxic,
-            DeviceType::Datacenter,
-            0.9, 0.9,
-        )?;
+        let (safe, certified, _steered, trust_delta, energy_used) =
+            evaluate_proportional_hybrid(&hidden, &safe, &toxic, DeviceType::Datacenter, 0.9, 0.9)?;
 
         // Datacenter has budget 1.0 → full hybrid path
         assert!(safe);
@@ -897,11 +1104,8 @@ mod tests {
         let safe = Tensor::new(vec![1.0f32, 2.0, 3.0], &device)?;
         let toxic = Tensor::new(vec![10.0f32, 20.0, 30.0], &device)?;
 
-        let (safe, certified, _steered, trust_delta, _energy_used) = evaluate_proportional_hybrid(
-            &hidden, &safe, &toxic,
-            DeviceType::Iot,
-            0.3, 0.3,
-        )?;
+        let (safe, certified, _steered, trust_delta, _energy_used) =
+            evaluate_proportional_hybrid(&hidden, &safe, &toxic, DeviceType::Iot, 0.3, 0.3)?;
 
         // IoT has budget 0.15 < 0.3 → ultra-light path
         assert!(safe);
@@ -917,11 +1121,8 @@ mod tests {
         let safe = Tensor::new(vec![1.0f32, 2.0, 3.0], &device)?;
         let toxic = Tensor::new(vec![10.0f32, 20.0, 30.0], &device)?;
 
-        let (safe, certified, _steered, _trust_delta, _energy_used) = evaluate_proportional_hybrid(
-            &hidden, &safe, &toxic,
-            DeviceType::Mobile,
-            0.8, 0.8,
-        )?;
+        let (safe, certified, _steered, _trust_delta, _energy_used) =
+            evaluate_proportional_hybrid(&hidden, &safe, &toxic, DeviceType::Mobile, 0.8, 0.8)?;
 
         // Mobile has budget 0.4 >= 0.3 → full hybrid path
         assert!(safe);
@@ -1016,14 +1217,178 @@ mod tests {
         let toxic = Tensor::new(vec![10.0f32, 20.0, 30.0], &device)?;
 
         // Smartwatch should use less energy than Datacenter
-        let (_, _, _, _, sw_energy) = evaluate_proportional_hybrid(
-            &hidden, &safe, &toxic, DeviceType::Smartwatch, 0.5, 0.5,
-        )?;
-        let (_, _, _, _, dc_energy) = evaluate_proportional_hybrid(
-            &hidden, &safe, &toxic, DeviceType::Datacenter, 0.9, 0.9,
-        )?;
+        let (_, _, _, _, sw_energy) =
+            evaluate_proportional_hybrid(&hidden, &safe, &toxic, DeviceType::Smartwatch, 0.5, 0.5)?;
+        let (_, _, _, _, dc_energy) =
+            evaluate_proportional_hybrid(&hidden, &safe, &toxic, DeviceType::Datacenter, 0.9, 0.9)?;
 
         assert!(sw_energy < dc_energy);
         Ok(())
+    }
+
+    // ====================================================================
+    // Sprint 123 — Energy-Aware MDP + CBF Tests
+    // ====================================================================
+
+    #[test]
+    fn test_mdp_energy_reward_basic() {
+        let reward = mdp_energy_reward(0.5, 100.0, 0.8, 0.01);
+        // R = -0.5 - 0.01*100 + 100*0.8 = -0.5 - 1.0 + 80.0 = 78.5
+        assert!((reward - 78.5).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_mdp_energy_reward_zero_safety() {
+        let reward = mdp_energy_reward(1.0, 50.0, 0.0, 0.02);
+        // R = -1.0 - 0.02*50 + 0 = -1.0 - 1.0 = -2.0
+        assert!((reward - (-2.0)).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_mdp_energy_reward_negative_safety() {
+        let reward = mdp_energy_reward(0.1, 10.0, -0.5, 0.01);
+        // R = -0.1 - 0.01*10 + 100*(-0.5) = -0.1 - 0.1 - 50.0 = -50.2
+        assert!((reward - (-50.2)).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_mdp_energy_reward_high_lambda() {
+        let reward = mdp_energy_reward(0.0, 1000.0, 1.0, 1.0);
+        // R = 0 - 1.0*1000 + 100*1.0 = -900.0
+        assert!((reward - (-900.0)).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_mdp_energy_reward_zero_all() {
+        let reward = mdp_energy_reward(0.0, 0.0, 0.0, 0.0);
+        assert!((reward - 0.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_cbf_safe_state() {
+        let state = vec![0.0, 0.0, 0.0];
+        let safe_center = vec![0.0, 0.0, 0.0];
+        assert!(control_barrier_filter(&state, &safe_center, 1.0));
+    }
+
+    #[test]
+    fn test_cbf_boundary_state() {
+        let state = vec![1.0, 0.0, 0.0];
+        let safe_center = vec![0.0, 0.0, 0.0];
+        // dist_sq = 1.0, beta = 1.0 → h = 0.0 (on boundary)
+        assert!(control_barrier_filter(&state, &safe_center, 1.0));
+    }
+
+    #[test]
+    fn test_cbf_unsafe_state() {
+        let state = vec![2.0, 0.0, 0.0];
+        let safe_center = vec![0.0, 0.0, 0.0];
+        // dist_sq = 4.0, beta = 1.0 → h = -3.0 (unsafe)
+        assert!(!control_barrier_filter(&state, &safe_center, 1.0));
+    }
+
+    #[test]
+    fn test_cbf_dimension_mismatch() {
+        let state = vec![1.0, 2.0];
+        let safe_center = vec![1.0, 2.0, 3.0];
+        assert!(!control_barrier_filter(&state, &safe_center, 1.0));
+    }
+
+    #[test]
+    fn test_cbf_large_radius() {
+        let state = vec![5.0, 5.0, 5.0];
+        let safe_center = vec![0.0, 0.0, 0.0];
+        // dist_sq = 75.0, beta = 100.0 → h = 25.0 (safe)
+        assert!(control_barrier_filter(&state, &safe_center, 100.0));
+    }
+
+    #[test]
+    fn test_cbf_value_positive() {
+        let state = vec![0.5, 0.5];
+        let safe_center = vec![0.0, 0.0];
+        let h = control_barrier_value(&state, &safe_center, 1.0);
+        // dist_sq = 0.5, h = 1.0 - 0.5 = 0.5
+        assert!((h - 0.5).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_cbf_value_negative() {
+        let state = vec![3.0, 0.0];
+        let safe_center = vec![0.0, 0.0];
+        let h = control_barrier_value(&state, &safe_center, 1.0);
+        // dist_sq = 9.0, h = 1.0 - 9.0 = -8.0
+        assert!((h - (-8.0)).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_cbf_value_dimension_mismatch() {
+        let state = vec![1.0];
+        let safe_center = vec![1.0, 2.0];
+        let h = control_barrier_value(&state, &safe_center, 1.0);
+        assert!(h.is_infinite() && h < 0.0);
+    }
+
+    #[test]
+    fn test_mdp_select_action_cbf_all_safe() {
+        let actions = vec![
+            (0.5, 100.0, vec![0.0, 0.0]), // Safe, reward = -0.5 - 1.0 + 100*1.0 = 98.5
+            (0.1, 50.0, vec![0.0, 0.0]),  // Safe, reward = -0.1 - 0.5 + 100*1.0 = 99.4
+            (1.0, 200.0, vec![0.0, 0.0]), // Safe, reward = -1.0 - 2.0 + 100*1.0 = 97.0
+        ];
+        let safe_center = vec![0.0, 0.0];
+        let selected = mdp_select_action_cbf(&actions, &safe_center, 1.0, 0.01);
+        assert_eq!(selected, Some(1)); // Action 1 has highest reward
+    }
+
+    #[test]
+    fn test_mdp_select_action_cbf_mixed() {
+        let actions = vec![
+            (0.1, 50.0, vec![0.0, 0.0]),  // Safe: dist=0, h=1.0
+            (0.01, 10.0, vec![5.0, 0.0]), // Unsafe: dist=25, h=-24.0
+        ];
+        let safe_center = vec![0.0, 0.0];
+        let selected = mdp_select_action_cbf(&actions, &safe_center, 1.0, 0.01);
+        assert_eq!(selected, Some(0)); // Only action 0 is safe
+    }
+
+    #[test]
+    fn test_mdp_select_action_cbf_all_unsafe() {
+        let actions = vec![
+            (0.1, 50.0, vec![5.0, 0.0]),  // Unsafe: dist=25, h=-24.0
+            (0.2, 100.0, vec![3.0, 0.0]), // Unsafe: dist=9, h=-8.0
+        ];
+        let safe_center = vec![0.0, 0.0];
+        let selected = mdp_select_action_cbf(&actions, &safe_center, 1.0, 0.01);
+        // All unsafe → select least-violating (highest h = -8.0)
+        assert_eq!(selected, Some(1));
+    }
+
+    #[test]
+    fn test_mdp_select_action_cbf_empty() {
+        let actions: Vec<(f64, f64, Vec<f32>)> = vec![];
+        let safe_center = vec![0.0, 0.0];
+        let selected = mdp_select_action_cbf(&actions, &safe_center, 1.0, 0.01);
+        assert_eq!(selected, None);
+    }
+
+    #[test]
+    fn test_mpc_config_default() {
+        let cfg = MpcConfig::default();
+        assert_eq!(cfg.horizon, 10);
+        assert!((cfg.beta - 1.0).abs() < 1e-6);
+        assert!((cfg.lambda - 0.01).abs() < 1e-10);
+        assert!((cfg.discount - 0.95).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_mpc_config_with_horizon() {
+        let cfg = MpcConfig::with_horizon(20);
+        assert_eq!(cfg.horizon, 20);
+    }
+
+    #[test]
+    fn test_mpc_config_with_safety_radius() {
+        let cfg = MpcConfig::with_safety_radius(5.0);
+        assert!((cfg.beta - 5.0).abs() < 1e-6);
     }
 }

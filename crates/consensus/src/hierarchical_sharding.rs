@@ -570,6 +570,321 @@ impl HierarchicalShardManager {
         }
         Some(assignment)
     }
+
+    // ─── Sprint 123: Hierarchical Sharding v2 ────────────────────────────
+
+    /// Dynamic rebalancing based on load + energy + trust.
+    ///
+    /// Considers not only node count but also energy budget and trust scores
+    /// when deciding which nodes to migrate.
+    ///
+    /// # Arguments
+    /// * `energy_budgets` — Energy budget per node (Wh)
+    /// * `trust_scores` — Trust score per node ∈ [0, 1]
+    /// * `max_migrations` — Maximum number of node migrations per round
+    ///
+    /// # Returns
+    /// List of new shard assignments from rebalancing
+    pub fn rebalance_dynamic(
+        &mut self,
+        energy_budgets: &std::collections::HashMap<u64, f64>,
+        trust_scores: &std::collections::HashMap<u64, f64>,
+        max_migrations: usize,
+    ) -> Result<Vec<ShardAssignment>, ShardingError> {
+        if self.total_shards == 0 {
+            return Ok(Vec::new());
+        }
+
+        let mut migrations = Vec::new();
+        let mut moved = std::collections::HashSet::new();
+
+        // Find the most loaded and least loaded shards
+        let (overloaded_shard, overloaded_count) = self
+            .shard_nodes
+            .iter()
+            .max_by_key(|(_, nodes)| nodes.len())
+            .map(|(&shard, nodes)| (shard, nodes.len()))
+            .unwrap_or((0, 0));
+
+        let (underloaded_shard, underloaded_count) = self
+            .shard_nodes
+            .iter()
+            .min_by_key(|(_, nodes)| nodes.len())
+            .map(|(&shard, nodes)| (shard, nodes.len()))
+            .unwrap_or((0, 0));
+
+        let threshold = (overloaded_count as f64 - underloaded_count as f64) / 2.0;
+
+        if threshold < 1.0 {
+            return Ok(Vec::new());
+        }
+
+        // Migrate nodes from overloaded to underloaded shard
+        // Collect node IDs first to avoid borrow conflicts
+        let candidate_nodes: Vec<u64> = self.shard_nodes
+            .get(&overloaded_shard)
+            .map(|nodes| nodes.iter().take(max_migrations).copied().collect())
+            .unwrap_or_default();
+        for &node_id in &candidate_nodes {
+                if migrations.len() >= max_migrations || moved.contains(&node_id) {
+                    break;
+                }
+                // Prefer migrating low-trust, high-energy nodes
+                let trust = trust_scores.get(&node_id).copied().unwrap_or(0.5);
+                let energy = energy_budgets.get(&node_id).copied().unwrap_or(100.0);
+
+                // Only migrate if trust is reasonable and energy allows
+                if trust < 0.1 || energy < 10.0 {
+                    continue;
+                }
+
+                // Remove from overloaded shard
+                if let Some(nodes) = self.shard_nodes.get_mut(&overloaded_shard) {
+                    nodes.remove(&node_id);
+                }
+
+                // Add to underloaded shard
+                if let Some(nodes) = self.shard_nodes.get_mut(&underloaded_shard) {
+                    nodes.insert(node_id);
+                }
+
+                // Update assignment
+                let new_assignment = ShardAssignment {
+                    node_id,
+                    shard_id: underloaded_shard,
+                    cluster_id: self
+                        .get_shard_config(underloaded_shard)
+                        .map(|c| c.cluster_id)
+                        .unwrap_or(0),
+                    hash_position: 0,
+                    load_ratio: 0.0,
+                    rebalanced: true,
+                };
+
+                if let Some(assignment) = self.node_assignments.get_mut(&node_id) {
+                    assignment.shard_id = underloaded_shard;
+                    assignment.cluster_id = new_assignment.cluster_id;
+                }
+
+                migrations.push(new_assignment);
+                moved.insert(node_id);
+            }
+
+        Ok(migrations)
+    }
+
+    /// Get the load score for a shard considering energy and trust.
+    ///
+    /// Load score = node_count * avg_energy_cost / avg_trust
+    /// Higher score = more loaded (considering quality-weighted load)
+    ///
+    /// # Arguments
+    /// * `shard_id` — Shard to evaluate
+    /// * `energy_budgets` — Energy budget per node
+    /// * `trust_scores` — Trust score per node
+    ///
+    /// # Returns
+    /// Quality-weighted load score
+    pub fn shard_load_score(
+        &self,
+        shard_id: u64,
+        energy_budgets: &std::collections::HashMap<u64, f64>,
+        trust_scores: &std::collections::HashMap<u64, f64>,
+    ) -> f64 {
+        let nodes = match self.shard_nodes.get(&shard_id) {
+            Some(n) => n,
+            None => return 0.0,
+        };
+
+        if nodes.is_empty() {
+            return 0.0;
+        }
+
+        let total_energy: f64 = nodes
+            .iter()
+            .map(|n| energy_budgets.get(n).copied().unwrap_or(100.0))
+            .sum();
+        let total_trust: f64 = nodes
+            .iter()
+            .map(|n| trust_scores.get(n).copied().unwrap_or(0.5))
+            .sum();
+
+        let avg_energy = total_energy / nodes.len() as f64;
+        let avg_trust = total_trust / nodes.len() as f64;
+
+        if avg_trust < 1e-12 {
+            return nodes.len() as f64 * avg_energy;
+        }
+
+        nodes.len() as f64 * avg_energy / avg_trust
+    }
+}
+
+// ─── Sprint 123: Fault-Tolerant Gossip ──────────────────────────────────────
+
+/// Gossip message for shard state synchronization.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GossipMessage {
+    /// Source node ID
+    pub source: u64,
+    /// Message type
+    pub msg_type: GossipMessageType,
+    /// Shard ID this message concerns
+    pub shard_id: u64,
+    /// Payload data
+    pub payload: Vec<u8>,
+    /// Timestamp
+    pub timestamp: u64,
+    /// PoSym signature (proof bytes)
+    pub signature: Vec<u8>,
+    /// Sequence number for deduplication
+    pub sequence: u64,
+}
+
+/// Type of gossip message.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum GossipMessageType {
+    /// Node joined a shard
+    NodeJoin,
+    /// Node left a shard
+    NodeLeave,
+    /// Shard rebalancing event
+    Rebalance,
+    /// Heartbeat / liveness
+    Heartbeat,
+    /// State sync request
+    StateSync,
+    /// State sync response
+    StateResponse,
+}
+
+impl GossipMessage {
+    /// Create a new gossip message.
+    pub fn new(
+        source: u64,
+        msg_type: GossipMessageType,
+        shard_id: u64,
+        payload: Vec<u8>,
+        signature: Vec<u8>,
+        sequence: u64,
+    ) -> Self {
+        Self {
+            source,
+            msg_type,
+            shard_id,
+            payload,
+            timestamp: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_secs())
+                .unwrap_or(0),
+            signature,
+            sequence,
+        }
+    }
+
+    /// Verify the PoSym signature on this message.
+    ///
+    /// Returns `true` if the signature is structurally valid.
+    pub fn verify_signature(&self) -> bool {
+        !self.signature.is_empty() && self.signature.len() >= 32
+    }
+
+    /// Check if this message is stale (older than timeout).
+    pub fn is_stale(&self, timeout_seconds: u64, current_time: u64) -> bool {
+        if self.timestamp > current_time {
+            return false; // Future timestamp (clock skew) — not stale
+        }
+        current_time - self.timestamp > timeout_seconds
+    }
+}
+
+/// GossipSub protocol state for a single node.
+#[derive(Debug)]
+pub struct GossipSubState {
+    /// Known peers and their last seen time
+    peers: std::collections::HashMap<u64, u64>,
+    /// Deduplication: seen message sequences
+    seen_sequences: std::collections::HashMap<u64, u64>,
+    /// Maximum messages to keep in dedup cache
+    max_cache: usize,
+    /// Message timeout in seconds
+    timeout_seconds: u64,
+}
+
+impl GossipSubState {
+    /// Create a new GossipSub state.
+    pub fn new(max_cache: usize, timeout_seconds: u64) -> Self {
+        Self {
+            peers: std::collections::HashMap::new(),
+            seen_sequences: std::collections::HashMap::new(),
+            max_cache,
+            timeout_seconds,
+        }
+    }
+
+    /// Process an incoming gossip message.
+    ///
+    /// Returns `true` if the message should be forwarded (not duplicate, not stale).
+    pub fn process_message(&mut self, msg: &GossipMessage, current_time: u64) -> bool {
+        // Check if duplicate
+        if self.seen_sequences.contains_key(&msg.sequence) {
+            return false;
+        }
+
+        // Check if stale
+        if msg.is_stale(self.timeout_seconds, current_time) {
+            return false;
+        }
+
+        // Verify signature
+        if !msg.verify_signature() {
+            return false;
+        }
+
+        // Update peer info
+        self.peers.insert(msg.source, current_time);
+
+        // Add to dedup cache
+        if self.seen_sequences.len() >= self.max_cache {
+            // Evict oldest entry
+            if let Some(oldest_key) = self
+                .seen_sequences
+                .iter()
+                .min_by_key(|(_, &v)| v)
+                .map(|(&k, _)| k)
+            {
+                self.seen_sequences.remove(&oldest_key);
+            }
+        }
+        self.seen_sequences.insert(msg.sequence, msg.timestamp);
+
+        true
+    }
+
+    /// Get active peers (seen within timeout).
+    pub fn active_peers(&self, current_time: u64) -> Vec<u64> {
+        self.peers
+            .iter()
+            .filter(|(_, &last_seen)| {
+                if last_seen > current_time {
+                    return true; // Clock skew — consider active
+                }
+                current_time - last_seen <= self.timeout_seconds
+            })
+            .map(|(&id, _)| id)
+            .collect()
+    }
+
+    /// Total number of known peers.
+    pub fn peer_count(&self) -> usize {
+        self.peers.len()
+    }
+}
+
+impl Default for GossipSubState {
+    fn default() -> Self {
+        Self::new(1000, 30)
+    }
 }
 
 // ─── Cluster Discovery ─────────────────────────────────────────────────────
@@ -1614,5 +1929,285 @@ mod tests {
         let result = trust_weighted_shard_vote(&votes, 5.0);
         assert_eq!(result.winning_shard, 0);
         assert!(result.quorum_met);
+    }
+
+    // ====================================================================
+    // Sprint 123 — Hierarchical Sharding v2 + Gossip Tests
+    // ====================================================================
+
+    #[test]
+    fn test_rebalance_dynamic_basic() -> Result<(), ShardingError> {
+        let clusters = vec![ClusterConfig::new(0, 4, 0)];
+        let mut manager = HierarchicalShardManager::new(4, &clusters)?;
+
+        // Add 10 nodes to shard 0, 0 to others
+        for i in 0..10u64 {
+            manager.assign_node_to_shard(i, 0)?;
+        }
+
+        let energy_budgets: std::collections::HashMap<u64, f64> =
+            (0..10).map(|i| (i as u64, 100.0)).collect();
+        let trust_scores: std::collections::HashMap<u64, f64> =
+            (0..10).map(|i| (i as u64, 0.8)).collect();
+
+        let migrations = manager.rebalance_dynamic(&energy_budgets, &trust_scores, 3)?;
+        assert!(!migrations.is_empty());
+        // Shard 0 should have fewer nodes after rebalancing
+        assert!(manager.shard_nodes.get(&0).unwrap().len() < 10);
+        Ok(())
+    }
+
+    #[test]
+    fn test_rebalance_dynamic_balanced() -> Result<(), ShardingError> {
+        let clusters = vec![ClusterConfig::new(0, 2, 0)];
+        let mut manager = HierarchicalShardManager::new(2, &clusters)?;
+
+        manager.assign_node_to_shard(0, 0)?;
+        manager.assign_node_to_shard(1, 1)?;
+
+        let energy_budgets: std::collections::HashMap<u64, f64> =
+            [(0u64, 100.0), (1, 100.0)].iter().copied().collect();
+        let trust_scores: std::collections::HashMap<u64, f64> =
+            [(0u64, 0.8), (1, 0.8)].iter().copied().collect();
+
+        let migrations = manager.rebalance_dynamic(&energy_budgets, &trust_scores, 5)?;
+        assert!(migrations.is_empty()); // Already balanced
+        Ok(())
+    }
+
+    #[test]
+    fn test_rebalance_dynamic_skips_low_trust() -> Result<(), ShardingError> {
+        let clusters = vec![ClusterConfig::new(0, 4, 0)];
+        let mut manager = HierarchicalShardManager::new(4, &clusters)?;
+
+        for i in 0..5u64 {
+            manager.assign_node_to_shard(i, 0)?;
+        }
+
+        // Node 0 has very low trust — should not be migrated
+        let mut energy_budgets = std::collections::HashMap::new();
+        let mut trust_scores = std::collections::HashMap::new();
+        for i in 0..5u64 {
+            energy_budgets.insert(i, 100.0);
+            trust_scores.insert(i, if i == 0 { 0.05 } else { 0.8 });
+        }
+
+        let migrations = manager.rebalance_dynamic(&energy_budgets, &trust_scores, 3)?;
+        // Node 0 should not be in migrations
+        for m in &migrations {
+            assert_ne!(m.node_id, 0);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn test_shard_load_score_empty() -> Result<(), ShardingError> {
+        let clusters = vec![ClusterConfig::new(0, 2, 0)];
+        let manager = HierarchicalShardManager::new(2, &clusters)?;
+        let score = manager.shard_load_score(0, &std::collections::HashMap::new(), &std::collections::HashMap::new());
+        assert_eq!(score, 0.0);
+        Ok(())
+    }
+
+    #[test]
+    fn test_shard_load_score_basic() -> Result<(), ShardingError> {
+        let clusters = vec![ClusterConfig::new(0, 2, 0)];
+        let mut manager = HierarchicalShardManager::new(2, &clusters)?;
+
+        manager.assign_node_to_shard(0, 0)?;
+        manager.assign_node_to_shard(1, 0)?;
+
+        let mut energy_budgets = std::collections::HashMap::new();
+        let mut trust_scores = std::collections::HashMap::new();
+        energy_budgets.insert(0u64, 100.0);
+        energy_budgets.insert(1u64, 200.0);
+        trust_scores.insert(0u64, 1.0);
+        trust_scores.insert(1u64, 1.0);
+
+        let score = manager.shard_load_score(0, &energy_budgets, &trust_scores);
+        // 2 nodes * avg_energy(150) / avg_trust(1.0) = 300
+        assert!((score - 300.0).abs() < 1e-10);
+        Ok(())
+    }
+
+    #[test]
+    fn test_gossip_message_creation() {
+        let sig = vec![0x42; 32];
+        let msg = GossipMessage::new(
+            1,
+            GossipMessageType::Heartbeat,
+            0,
+            vec![1, 2, 3],
+            sig,
+            100,
+        );
+        assert_eq!(msg.source, 1);
+        assert_eq!(msg.shard_id, 0);
+        assert_eq!(msg.sequence, 100);
+        assert!(msg.verify_signature());
+    }
+
+    #[test]
+    fn test_gossip_message_verify_empty_signature() {
+        let msg = GossipMessage::new(
+            1,
+            GossipMessageType::Heartbeat,
+            0,
+            vec![],
+            vec![], // Empty signature
+            1,
+        );
+        assert!(!msg.verify_signature());
+    }
+
+    #[test]
+    fn test_gossip_message_stale() {
+        let sig = vec![0x42; 32];
+        let mut msg = GossipMessage::new(
+            1,
+            GossipMessageType::Heartbeat,
+            0,
+            vec![],
+            sig,
+            1,
+        );
+        msg.timestamp = 100;
+        assert!(msg.is_stale(30, 200)); // 200 - 100 = 100 > 30
+    }
+
+    #[test]
+    fn test_gossip_message_not_stale() {
+        let sig = vec![0x42; 32];
+        let mut msg = GossipMessage::new(
+            1,
+            GossipMessageType::Heartbeat,
+            0,
+            vec![],
+            sig,
+            1,
+        );
+        msg.timestamp = 100;
+        assert!(!msg.is_stale(30, 120)); // 120 - 100 = 20 <= 30
+    }
+
+    #[test]
+    fn test_gossip_message_future_timestamp() {
+        let sig = vec![0x42; 32];
+        let mut msg = GossipMessage::new(
+            1,
+            GossipMessageType::Heartbeat,
+            0,
+            vec![],
+            sig,
+            1,
+        );
+        msg.timestamp = 500;
+        assert!(!msg.is_stale(30, 100)); // Future — not stale
+    }
+
+    #[test]
+    fn test_gossip_message_type_variants() {
+        assert!(matches!(GossipMessageType::NodeJoin, GossipMessageType::NodeJoin));
+        assert!(matches!(GossipMessageType::NodeLeave, GossipMessageType::NodeLeave));
+        assert!(matches!(GossipMessageType::Rebalance, GossipMessageType::Rebalance));
+        assert!(matches!(GossipMessageType::Heartbeat, GossipMessageType::Heartbeat));
+        assert!(matches!(GossipMessageType::StateSync, GossipMessageType::StateSync));
+        assert!(matches!(GossipMessageType::StateResponse, GossipMessageType::StateResponse));
+    }
+
+    #[test]
+    fn test_gossipsub_default() {
+        let state = GossipSubState::default();
+        assert_eq!(state.peer_count(), 0);
+    }
+
+    #[test]
+    fn test_gossipsub_process_valid_message() {
+        let mut state = GossipSubState::new(100, 30);
+        let sig = vec![0x42; 32];
+        let msg = GossipMessage::new(1, GossipMessageType::Heartbeat, 0, vec![], sig, 1);
+        let current_time = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        assert!(state.process_message(&msg, current_time));
+        assert_eq!(state.peer_count(), 1);
+    }
+
+    #[test]
+    fn test_gossipsub_deduplication() {
+        let mut state = GossipSubState::new(100, 30);
+        let sig = vec![0x42; 32];
+        let msg = GossipMessage::new(1, GossipMessageType::Heartbeat, 0, vec![], sig, 42);
+        let current_time = 1000u64;
+
+        assert!(state.process_message(&msg, current_time));
+        // Same sequence → duplicate
+        assert!(!state.process_message(&msg, current_time));
+    }
+
+    #[test]
+    fn test_gossipsub_rejects_stale() {
+        let mut state = GossipSubState::new(100, 30);
+        let sig = vec![0x42; 32];
+        let mut msg = GossipMessage::new(1, GossipMessageType::Heartbeat, 0, vec![], sig, 1);
+        msg.timestamp = 100;
+        assert!(!state.process_message(&msg, 500)); // 500 - 100 = 400 > 30
+    }
+
+    #[test]
+    fn test_gossipsub_rejects_bad_signature() {
+        let mut state = GossipSubState::new(100, 30);
+        let msg = GossipMessage::new(
+            1,
+            GossipMessageType::Heartbeat,
+            0,
+            vec![],
+            vec![], // Empty signature
+            1,
+        );
+        let current_time = 1000u64;
+        assert!(!state.process_message(&msg, current_time));
+    }
+
+    #[test]
+    fn test_gossipsub_active_peers() {
+        let mut state = GossipSubState::new(100, 30);
+        let sig = vec![0x42; 32];
+
+        let mut msg1 = GossipMessage::new(1, GossipMessageType::Heartbeat, 0, vec![], sig.clone(), 1);
+        msg1.timestamp = 970;
+        state.process_message(&msg1, 1000);
+
+        let mut msg2 = GossipMessage::new(2, GossipMessageType::Heartbeat, 0, vec![], sig, 2);
+        msg2.timestamp = 900; // Stale
+        state.process_message(&msg2, 1000);
+
+        // Only peer 1 should be active (seen at 970, timeout 30)
+        let active = state.active_peers(1000);
+        assert!(active.contains(&1));
+    }
+
+    #[test]
+    fn test_gossipsub_cache_eviction() {
+        let mut state = GossipSubState::new(3, 30);
+        let sig = vec![0x42; 32];
+        let current_time = 1000u64;
+
+        for i in 0..5u64 {
+            let mut msg = GossipMessage::new(
+                i,
+                GossipMessageType::Heartbeat,
+                0,
+                vec![],
+                sig.clone(),
+                i,
+            );
+            msg.timestamp = current_time - i * 10;
+            state.process_message(&msg, current_time);
+        }
+
+        // Cache should be at most 3
+        assert!(state.seen_sequences.len() <= 3);
     }
 }

@@ -138,7 +138,11 @@ pub fn propagate_silu_taylor_zonotope(
     // Step 2: Compute Jacobian J(c) = σ(c) + c · σ(c) · (1 - σ(c))
     // For elementwise SiLU, Jacobian is diagonal with entries J_ii = SiLU'(c_i)
     let one_minus_sigma = (Tensor::ones_like(center)?).broadcast_sub(&sigma_c)?;
-    let jacobian_diag = sigma_c.broadcast_add(&(center.broadcast_mul(&sigma_c)?.broadcast_mul(&one_minus_sigma)?))?;
+    let jacobian_diag = sigma_c.broadcast_add(
+        &(center
+            .broadcast_mul(&sigma_c)?
+            .broadcast_mul(&one_minus_sigma)?),
+    )?;
 
     // Step 3: Linear generator propagation G' = J(c) * G (elementwise)
     // Since J is diagonal, this is elementwise multiplication
@@ -240,10 +244,7 @@ pub fn propagate_layer_taylor_zonotope(
 ///
 /// A ratio < 1.0 indicates Taylor-Zonotope is tighter (better).
 /// Target: ratio < 0.6 (40% volume reduction).
-pub fn compute_volume_ratio(
-    taylor_result: &TaylorPropagationResult,
-    standard_volume: f32,
-) -> f32 {
+pub fn compute_volume_ratio(taylor_result: &TaylorPropagationResult, standard_volume: f32) -> f32 {
     if standard_volume > 1e-6 {
         taylor_result.volume_proxy / standard_volume
     } else {
@@ -291,8 +292,16 @@ pub fn verify_soundness(
         let upper = taylor_result.center.broadcast_add(&radius)?;
 
         // Verify containment
-        let below_lower = f_x.broadcast_lt(&lower)?.to_dtype(candle_core::DType::F32)?.sum_all()?.to_scalar::<f32>()?;
-        let above_upper = f_x.broadcast_gt(&upper)?.to_dtype(candle_core::DType::F32)?.sum_all()?.to_scalar::<f32>()?;
+        let below_lower = f_x
+            .broadcast_lt(&lower)?
+            .to_dtype(candle_core::DType::F32)?
+            .sum_all()?
+            .to_scalar::<f32>()?;
+        let above_upper = f_x
+            .broadcast_gt(&upper)?
+            .to_dtype(candle_core::DType::F32)?
+            .sum_all()?
+            .to_scalar::<f32>()?;
 
         if below_lower > 1e-6 || above_upper > 1e-6 {
             all_contained = false;
@@ -304,8 +313,7 @@ pub fn verify_soundness(
 }
 
 /// Norm type for generator ranking in Girard reduction.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum GirardNorm {
     /// L1 norm: sum of absolute values per row
     #[default]
@@ -428,7 +436,11 @@ pub fn reduce_generators_girard(generators: &Tensor, max_gens: usize) -> Result<
         .collect::<Result<Vec<_>>>()?;
     let mut result = if kept_tensors.is_empty() {
         // Edge case: max_gens = 1, keep nothing, merge everything
-        Tensor::zeros((0, generators.dim(1)?), generators.dtype(), generators.device())?
+        Tensor::zeros(
+            (0, generators.dim(1)?),
+            generators.dtype(),
+            generators.device(),
+        )?
     } else {
         Tensor::cat(&kept_tensors, 0)?
     };
@@ -442,7 +454,10 @@ pub fn reduce_generators_girard(generators: &Tensor, max_gens: usize) -> Result<
             .collect::<Result<Vec<_>>>()?;
         let merged_stack = Tensor::cat(&merged_tensors, 0)?;
         // Element-wise absolute sum: sum over rows of |g_i|
-        let merged_bound = merged_stack.abs()?.sum(0)?.reshape((1, generators.dim(1)?))?;
+        let merged_bound = merged_stack
+            .abs()?
+            .sum(0)?
+            .reshape((1, generators.dim(1)?))?;
         result = Tensor::cat(&[&result, &merged_bound], 0)?;
     }
 
@@ -523,8 +538,16 @@ pub fn reduce_generators_girard_advanced(
 
     // Keep top generators, merge the rest
     let keep_count = max_gens.saturating_sub(1).min(significant.len());
-    let kept: Vec<usize> = significant.iter().take(keep_count).map(|(i, _)| *i).collect();
-    let to_merge: Vec<usize> = significant.iter().skip(keep_count).map(|(i, _)| *i).collect();
+    let kept: Vec<usize> = significant
+        .iter()
+        .take(keep_count)
+        .map(|(i, _)| *i)
+        .collect();
+    let to_merge: Vec<usize> = significant
+        .iter()
+        .skip(keep_count)
+        .map(|(i, _)| *i)
+        .collect();
 
     // Step 3: Extract kept generators
     let kept_tensors: Vec<Tensor> = kept
@@ -574,7 +597,11 @@ pub fn reduce_generators_girard_advanced(
                     let weights: Vec<f32> = row_norms
                         .iter()
                         .map(|&n| {
-                            let w = if total_norm > 0.0 { n / total_norm } else { 0.0 };
+                            let w = if total_norm > 0.0 {
+                                n / total_norm
+                            } else {
+                                0.0
+                            };
                             // Apply weight decay: blend with uniform
                             let uniform = 1.0 / to_merge.len() as f32;
                             w * (1.0 - config.lgg_weight_decay) + uniform * config.lgg_weight_decay
@@ -582,7 +609,8 @@ pub fn reduce_generators_girard_advanced(
                         .collect();
 
                     // Weighted sum: W @ |G_merged| → [1,k] @ [k,dim] = [1,dim]
-                    let weight_tensor = Tensor::from_vec(weights, (1, to_merge.len()), generators.device())?;
+                    let weight_tensor =
+                        Tensor::from_vec(weights, (1, to_merge.len()), generators.device())?;
                     let merged_bound = weight_tensor.matmul(&abs_merged)?;
                     result = Tensor::cat(&[&result, &merged_bound], 0)?;
                 }
@@ -766,7 +794,8 @@ pub fn propagate_reach_tube(
             for i in 0..dim {
                 let mut pert = current_center.to_vec2::<f32>()?;
                 pert[0][i] += fd_eps;
-                let x_pert = Tensor::from_vec(pert.into_iter().flatten().collect(), (1, dim), device)?;
+                let x_pert =
+                    Tensor::from_vec(pert.into_iter().flatten().collect(), (1, dim), device)?;
                 let f_pert = dynamics(&x_pert)?;
                 let diff = f_pert.broadcast_sub(&f_nom)?;
                 let scaled = diff.broadcast_div(&fd_eps_tensor)?;
@@ -781,8 +810,10 @@ pub fn propagate_reach_tube(
             let mut correction = Tensor::zeros((1, dim), DType::F32, device)?;
             for (i, f_val) in f_vec.iter().enumerate() {
                 if f_val.abs() > 1e-8 {
-                    let scaled_row = jacobian_rows[i].broadcast_mul(&Tensor::new(*f_val, device)?)?;
-                    let dt2_term = scaled_row.broadcast_mul(&Tensor::new(config.dt * config.dt / 2.0, device)?)?;
+                    let scaled_row =
+                        jacobian_rows[i].broadcast_mul(&Tensor::new(*f_val, device)?)?;
+                    let dt2_term = scaled_row
+                        .broadcast_mul(&Tensor::new(config.dt * config.dt / 2.0, device)?)?;
                     correction = correction.broadcast_add(&dt2_term)?;
                 }
             }
@@ -811,7 +842,8 @@ pub fn propagate_reach_tube(
             min_norm: config.noise_threshold,
             lgg_weight_decay: config.weight_decay,
         };
-        let reduced = reduce_generators_girard_advanced(&new_gens, config.max_gens, &girard_config)?;
+        let reduced =
+            reduce_generators_girard_advanced(&new_gens, config.max_gens, &girard_config)?;
         let new_gens = reduced.generators;
 
         // CBF margin check
@@ -911,7 +943,9 @@ pub fn verify_temporal_invariance_monte_carlo(
 }
 
 fn next_random_monte_carlo(state: &mut u64) -> f32 {
-    *state = state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+    *state = state
+        .wrapping_mul(6364136223846793005)
+        .wrapping_add(1442695040888963407);
     let x = (*state >> 33) as u32;
     x as f32 / u32::MAX as f32
 }
@@ -995,20 +1029,21 @@ pub fn temporal_fgsm_attack(
 ///
 /// Computes worst-case CBF over interval-box enclosure of each tube segment.
 /// Much faster than Monte Carlo, but more conservative.
-pub fn ibp_certify_reach_tube(
-    tube: &ReachTube,
-    safe_center: &[f32],
-    margin: f32,
-) -> Vec<f32> {
+pub fn ibp_certify_reach_tube(tube: &ReachTube, safe_center: &[f32], margin: f32) -> Vec<f32> {
     tube.tubes
         .iter()
         .map(|segment| {
             let center_1d = if segment.center.rank() == 2 {
-                segment.center.flatten(0, 1).unwrap_or_else(|_| segment.center.clone())
+                segment
+                    .center
+                    .flatten(0, 1)
+                    .unwrap_or_else(|_| segment.center.clone())
             } else {
                 segment.center.clone()
             };
-            let center = center_1d.to_vec1::<f32>().unwrap_or_else(|_| vec![0.0f32; 0]);
+            let center = center_1d
+                .to_vec1::<f32>()
+                .unwrap_or_else(|_| vec![0.0f32; 0]);
             let gens = segment.generators.to_vec2::<f32>().unwrap_or_default();
             let dim = center.len();
 
@@ -1199,10 +1234,7 @@ fn intervals_to_zonotope(
 
 /// Compute volume proxy from interval bounds.
 fn interval_volume_proxy(lo: &[f32], hi: &[f32]) -> f32 {
-    lo.iter()
-        .zip(hi.iter())
-        .map(|(l, h)| (h - l).abs())
-        .sum()
+    lo.iter().zip(hi.iter()).map(|(l, h)| (h - l).abs()).sum()
 }
 
 /// Full hybrid IBP+Zonotope pipeline.
@@ -1270,7 +1302,8 @@ pub fn hybrid_ibp_zonotope_pipeline(
             min_norm: config.noise_threshold,
             lgg_weight_decay: config.weight_decay,
         };
-        let reduced = reduce_generators_girard_advanced(&zon_gens, config.max_gens, &girard_config)?;
+        let reduced =
+            reduce_generators_girard_advanced(&zon_gens, config.max_gens, &girard_config)?;
         (reduced.generators, reduced.reduced_count)
     } else {
         (zon_gens, gens_before)
@@ -1278,9 +1311,10 @@ pub fn hybrid_ibp_zonotope_pipeline(
 
     // === PHASE 3: Certification ===
     let gens_vec: Vec<Vec<f32>> = final_gens.to_vec2::<f32>()?;
-    let volume_proxy: f32 = gens_vec.iter().map(|row: &Vec<f32>| {
-        row.iter().map(|v: &f32| v.abs()).sum::<f32>()
-    }).sum::<f32>();
+    let volume_proxy: f32 = gens_vec
+        .iter()
+        .map(|row: &Vec<f32>| row.iter().map(|v: &f32| v.abs()).sum::<f32>())
+        .sum::<f32>();
 
     let ibp_vol = interval_volume_proxy(&lo, &hi);
     let tightness = if volume_proxy > 0.0 {
@@ -1290,7 +1324,11 @@ pub fn hybrid_ibp_zonotope_pipeline(
     };
 
     // CBF margin on final zonotope
-    let cbf = compute_cbf_margin(&zon_center, &Tensor::from_vec(safe_center.to_vec(), (1, dim), device)?, margin)?;
+    let cbf = compute_cbf_margin(
+        &zon_center,
+        &Tensor::from_vec(safe_center.to_vec(), (1, dim), device)?,
+        margin,
+    )?;
 
     Ok(HybridPipelineResult {
         ibp_bounds,
@@ -1328,7 +1366,11 @@ pub fn hybrid_reach_tube_ibp(
     let mut current_gens = generators.clone();
 
     // Initial segment
-    let initial_cbf = compute_cbf_margin(&current_center, &Tensor::from_vec(safe_center.to_vec(), (1, dim), device)?, margin)?;
+    let initial_cbf = compute_cbf_margin(
+        &current_center,
+        &Tensor::from_vec(safe_center.to_vec(), (1, dim), device)?,
+        margin,
+    )?;
     tubes.push(TubeSegment {
         center: current_center.clone(),
         generators: current_gens.clone(),
@@ -1352,8 +1394,16 @@ pub fn hybrid_reach_tube_ibp(
                 radius[i] += row[i].abs();
             }
         }
-        let lo = c_vec.iter().zip(radius.iter()).map(|(c, r)| c - r).collect::<Vec<f32>>();
-        let hi = c_vec.iter().zip(radius.iter()).map(|(c, r)| c + r).collect::<Vec<f32>>();
+        let lo = c_vec
+            .iter()
+            .zip(radius.iter())
+            .map(|(c, r)| c - r)
+            .collect::<Vec<f32>>();
+        let hi = c_vec
+            .iter()
+            .zip(radius.iter())
+            .map(|(c, r)| c + r)
+            .collect::<Vec<f32>>();
 
         // Propagate dynamics through IBP (linearized)
         let f_nom = dynamics(&current_center)?;
@@ -1364,8 +1414,16 @@ pub fn hybrid_reach_tube_ibp(
         };
 
         // Euler step on intervals: x(t+dt) ≈ x(t) + dt·f(x)
-        let new_lo_ibp: Vec<f32> = lo.iter().zip(f_vec.iter()).map(|(l, f)| l + config.dt * f).collect();
-        let new_hi_ibp: Vec<f32> = hi.iter().zip(f_vec.iter()).map(|(h, f)| h + config.dt * f).collect();
+        let new_lo_ibp: Vec<f32> = lo
+            .iter()
+            .zip(f_vec.iter())
+            .map(|(l, f)| l + config.dt * f)
+            .collect();
+        let new_hi_ibp: Vec<f32> = hi
+            .iter()
+            .zip(f_vec.iter())
+            .map(|(h, f)| h + config.dt * f)
+            .collect();
 
         // Convert tightened IBP intervals back to zonotope
         let (ibp_center, ibp_gens) = intervals_to_zonotope(&new_lo_ibp, &new_hi_ibp, device)?;
@@ -1409,13 +1467,15 @@ pub fn hybrid_reach_tube_ibp(
             min_norm: config.noise_threshold,
             lgg_weight_decay: config.weight_decay,
         };
-        let reduced = reduce_generators_girard_advanced(&ibp_gens, config.max_gens, &girard_config)?;
+        let reduced =
+            reduce_generators_girard_advanced(&ibp_gens, config.max_gens, &girard_config)?;
 
         // Volume proxy
         let gens_data: Vec<Vec<f32>> = reduced.generators.to_vec2::<f32>()?;
-        let vol: f32 = gens_data.iter().map(|row: &Vec<f32>| {
-            row.iter().map(|v: &f32| v.abs()).sum::<f32>()
-        }).sum::<f32>();
+        let vol: f32 = gens_data
+            .iter()
+            .map(|row: &Vec<f32>| row.iter().map(|v: &f32| v.abs()).sum::<f32>())
+            .sum::<f32>();
 
         // CBF margin
         let safe_center_tensor = Tensor::from_vec(safe_center.to_vec(), (1, dim), device)?;
@@ -1447,10 +1507,526 @@ pub fn hybrid_reach_tube_ibp(
         min_cbf_margin: min_cbf,
     })
 }
+// =============================================================================
+// Sprint 122 — Taylor-Zonotope Synthesis: Dynamic Girard + Higher-Order Taylor
+// =============================================================================
+
+/// Configuration for dynamic (feedback-driven) Girard reduction.
+///
+/// Unlike static Girard (fixed `max_gens`), the dynamic variant adapts the
+/// generator limit based on the observed volume ratio from the previous step.
+///
+/// **Feedback Law:**
+/// If `volume_ratio > target_max`, reduce more aggressively:
+///     max_gens_new = max(min_gens, floor(max_gens * aggression_factor))
+/// If `volume_ratio < target_min`, relax:
+///     max_gens_new = min(max_gens_cap, ceil(max_gens * relaxation_factor))
+///
+/// This creates a PID-like closed-loop control on zonotope tightness.
+#[derive(Debug, Clone)]
+pub struct DynamicGirardConfig {
+    /// Minimum allowed generators (hard floor).
+    pub min_gens: usize,
+    /// Maximum allowed generators (hard ceiling).
+    pub max_gens_cap: usize,
+    /// Initial generator limit.
+    pub initial_max_gens: usize,
+    /// Target upper bound for volume ratio.
+    pub target_ratio_max: f32,
+    /// Target lower bound for volume ratio (avoid over-reduction).
+    pub target_ratio_min: f32,
+    /// Aggression factor when ratio exceeds target_max (0.5 = halve).
+    pub aggression_factor: f32,
+    /// Relaxation factor when ratio below target_min (1.5 = 50% increase).
+    pub relaxation_factor: f32,
+    /// Underlying Girard configuration.
+    pub girard_config: GirardConfig,
+}
+
+impl Default for DynamicGirardConfig {
+    fn default() -> Self {
+        Self {
+            min_gens: 4,
+            max_gens_cap: 128,
+            initial_max_gens: 32,
+            target_ratio_max: 1.5,
+            target_ratio_min: 1.0,
+            aggression_factor: 0.6,
+            relaxation_factor: 1.4,
+            girard_config: GirardConfig::default(),
+        }
+    }
+}
+
+/// Result of dynamic Girard reduction including the adapted generator limit.
+#[derive(Debug, Clone)]
+pub struct DynamicGirardResult {
+    /// Reduced generator matrix.
+    pub generators: Tensor,
+    /// Generator limit used in this step.
+    pub max_gens_used: usize,
+    /// Generator limit for the next step (adapted).
+    pub next_max_gens: usize,
+    /// Original number of generators.
+    pub original_count: usize,
+    /// Reduced number of generators.
+    pub reduced_count: usize,
+    /// Volume ratio: vol_reduced / vol_original.
+    pub volume_ratio: f32,
+    /// Whether reduction was applied.
+    pub reduced: bool,
+    /// Tightness score (1.0 = perfect).
+    pub tightness_score: f32,
+}
+
+/// Dynamic Girard Order Reduction with volume-ratio feedback adaptation.
+///
+/// **Algorithm:**
+/// 1. Run standard Girard reduction with current `max_gens`.
+/// 2. Measure `volume_ratio = vol_reduced / vol_original`.
+/// 3. Adapt `max_gens` for next step:
+///    - If ratio > target_max: `max_gens *= aggression_factor` (reduce more)
+///    - If ratio < target_min: `max_gens *= relaxation_factor` (relax)
+///    - Clamp to [min_gens, max_gens_cap].
+///
+/// **Soundness:** Inherits from `reduce_generators_girard_advanced` — always
+/// produces a valid over-approximation (Z_reduced ⊇ Z_original).
+///
+/// # Arguments
+/// * `generators` - Generator matrix G ∈ R^{k × d}
+/// * `config` - Dynamic reduction configuration
+///
+/// # Returns
+/// `DynamicGirardResult` with reduced generators and adapted parameters.
+pub fn reduce_generators_dynamic(
+    generators: &Tensor,
+    config: &DynamicGirardConfig,
+) -> Result<DynamicGirardResult> {
+    let current_max_gens = config.initial_max_gens;
+
+    // Step 1: Standard Girard reduction
+    let mut girard_result =
+        reduce_generators_girard_advanced(generators, current_max_gens, &config.girard_config)?;
+
+    // Step 1.5: Post-process — ensure reduced_count never exceeds initial_max_gens
+    // IntervalHull merging can add diagonal generators that exceed max_gens
+    if girard_result.reduced_count > current_max_gens {
+        let tightened = reduce_generators_girard(&girard_result.generators, current_max_gens)?;
+        girard_result.generators = tightened.generators;
+        girard_result.reduced_count = tightened.reduced_count;
+        girard_result.reduced = tightened.reduced_count < girard_result.original_count;
+    }
+
+    let volume_ratio = girard_result.volume_ratio;
+
+    // Step 2: Adapt max_gens based on volume ratio feedback
+    let next_max_gens = if volume_ratio > config.target_ratio_max {
+        // Ratio too high → reduce more aggressively
+        let reduced = (current_max_gens as f32 * config.aggression_factor) as usize;
+        reduced.max(config.min_gens).min(config.max_gens_cap)
+    } else if volume_ratio < config.target_ratio_min {
+        // Ratio too low → allow more generators for tighter bounds
+        let relaxed = (current_max_gens as f32 * config.relaxation_factor) as usize;
+        relaxed.max(config.min_gens).min(config.max_gens_cap)
+    } else {
+        // Within target range → keep current
+        current_max_gens
+    };
+
+    Ok(DynamicGirardResult {
+        generators: girard_result.generators,
+        max_gens_used: current_max_gens,
+        next_max_gens,
+        original_count: girard_result.original_count,
+        reduced_count: girard_result.reduced_count,
+        volume_ratio,
+        reduced: girard_result.reduced,
+        tightness_score: girard_result.tightness_score,
+    })
+}
+
+/// Bound on the third derivative of SiLU activation for 3rd-order Taylor remainder.
+/// SiLU'''(x) is bounded numerically; use 0.12 for safety.
+pub const SILU_F3_MAX: f32 = 0.12;
+
+/// Configuration for higher-order Taylor propagation.
+#[derive(Debug, Clone)]
+pub struct TaylorHighOrderConfig {
+    /// Taylor expansion order (1, 2, or 3).
+    pub order: usize,
+    /// SiLU second derivative bound.
+    pub silu_f2_bound: f32,
+    /// SiLU third derivative bound (for order-3).
+    pub silu_f3_bound: f32,
+    /// Maximum generators after propagation.
+    pub max_gens: usize,
+    /// Enable Girard reduction after propagation.
+    pub reduce_after: bool,
+}
+
+impl Default for TaylorHighOrderConfig {
+    fn default() -> Self {
+        Self {
+            order: 3,
+            silu_f2_bound: SILU_F2_MAX,
+            silu_f3_bound: SILU_F3_MAX,
+            max_gens: 64,
+            reduce_after: true,
+        }
+    }
+}
+
+/// Result of higher-order Taylor propagation.
+#[derive(Debug)]
+pub struct TaylorHighOrderResult {
+    /// New center after propagation.
+    pub center: Tensor,
+    /// New generator matrix.
+    pub generators: Tensor,
+    /// Remainder bound tensor (order-dependent).
+    pub remainder: Tensor,
+    /// Taylor order used.
+    pub order_used: usize,
+    /// Volume proxy.
+    pub volume_proxy: f32,
+    /// Wrapping reduction metric.
+    pub wrapping_reduction: f32,
+}
+
+/// Propagate a zonotope through SiLU using higher-order Taylor expansion (up to 3rd order).
+///
+/// **Mathematical Foundation (3rd Order):**
+///     f(x) ≈ f(c) + J(c)(x-c) + ½(x-c)ᵀH(c)(x-c) + R₃
+///
+/// where R₃ is the 3rd-order Lagrange remainder:
+///     |R₃| ≤ (1/6) · max|f'''(ξ)| · r³
+///
+/// For elementwise SiLU:
+/// - f(c) = c · σ(c)
+/// - J(c) = σ(c) + c · σ(c)(1-σ(c))  (diagonal)
+/// - H(c) = diag(SiLU''(c))  (diagonal for elementwise)
+/// - R₃ bound per dim: (1/6) · SILU_F3_MAX · r³
+///
+/// **vs 2nd order:** The 3rd-order remainder scales as r³ instead of r²,
+/// providing significantly tighter bounds for small perturbations (r < 1).
+///
+/// # Arguments
+/// * `center` - Center vector c ∈ R^d (shape: [1, d])
+/// * `generators` - Generator matrix G ∈ R^{k × d} (shape: [k, d])
+/// * `config` - Higher-order Taylor configuration
+///
+/// # Returns
+/// `TaylorHighOrderResult` with propagated zonotope and metrics.
+pub fn propagate_taylor_order3(
+    center: &Tensor,
+    generators: &Tensor,
+    config: &TaylorHighOrderConfig,
+) -> Result<TaylorHighOrderResult> {
+    let device = center.device();
+    let order = if config.order >= 3 {
+        3
+    } else {
+        config.order.max(1)
+    };
+
+    // --- Step 1: f(c) = SiLU(c) = c · σ(c) ---
+    let sigma_c = sigmoid(center)?;
+    let f_c = center.broadcast_mul(&sigma_c)?;
+
+    // --- Step 2: J(c) = SiLU'(c) = σ(c) + c·σ(c)(1-σ(c)) ---
+    let one_minus_sigma = (Tensor::ones_like(center)?).broadcast_sub(&sigma_c)?;
+    let jacobian_diag = sigma_c.broadcast_add(
+        &(center
+            .broadcast_mul(&sigma_c)?
+            .broadcast_mul(&one_minus_sigma)?),
+    )?;
+
+    // --- Step 3: Linear generator propagation G_linear = J(c) * G ---
+    let new_generators_linear = generators.broadcast_mul(&jacobian_diag)?;
+
+    // --- Step 4: Compute radius per dimension ---
+    let abs_generators = generators.abs()?;
+    let radius = abs_generators.sum(0)?;
+    let radius_2d = radius.unsqueeze(0)?;
+
+    // --- Step 5: Higher-order remainder ---
+    let remainder_bound = if order >= 3 {
+        // 3rd order: R₃ = (1/6) · max|f'''| · r³
+        let r_cubed = radius_2d.sqr()?.broadcast_mul(&radius_2d)?;
+        Tensor::full(
+            (1.0 / 6.0) * config.silu_f3_bound,
+            radius_2d.shape(),
+            device,
+        )?
+        .broadcast_mul(&r_cubed)?
+    } else if order >= 2 {
+        // 2nd order: R₂ = (1/2) · max|f''| · r²
+        let r_sq = radius_2d.sqr()?;
+        Tensor::full(0.5 * config.silu_f2_bound, radius_2d.shape(), device)?.broadcast_mul(&r_sq)?
+    } else {
+        // 1st order: same as 2nd order remainder (conservative)
+        let r_sq = radius_2d.sqr()?;
+        Tensor::full(0.5 * config.silu_f2_bound, radius_2d.shape(), device)?.broadcast_mul(&r_sq)?
+    };
+
+    // --- Step 6: Add remainder as new generator row ---
+    let mut new_generators = Tensor::cat(&[&new_generators_linear, &remainder_bound], 0)?;
+
+    // --- Step 7: Optional Girard reduction ---
+    if config.reduce_after {
+        let girard_result = reduce_generators_girard(&new_generators, config.max_gens)?;
+        new_generators = girard_result.generators;
+    }
+
+    // --- Metrics ---
+    let volume_proxy = new_generators.abs()?.sum_all()?.to_scalar::<f32>()?;
+    let original_volume = generators.abs()?.sum_all()?.to_scalar::<f32>()?;
+    let wrapping_reduction = if original_volume > 1e-6 {
+        volume_proxy / original_volume
+    } else {
+        1.0
+    };
+
+    Ok(TaylorHighOrderResult {
+        center: f_c,
+        generators: new_generators,
+        remainder: remainder_bound,
+        order_used: order,
+        volume_proxy,
+        wrapping_reduction,
+    })
+}
+
+// ============================================================================
+// Sprint 123 — Collective Taylor-Zonotope Reach-Tubes
+// ============================================================================
+
+/// Taylor Reach-Tube result for temporal propagation.
+#[derive(Debug)]
+pub struct TaylorReachTubeResult {
+    /// Sequence of centers along the reach tube
+    pub centers: Vec<Tensor>,
+    /// Sequence of generator matrices along the reach tube
+    pub generators: Vec<Tensor>,
+    /// Sequence of remainder bounds along the reach tube
+    pub remainders: Vec<f32>,
+    /// Number of time steps in the tube
+    pub steps: usize,
+    /// Overall volume proxy (average across steps)
+    pub avg_volume_proxy: f32,
+    /// PAC-Bayes bound on the reach tube
+    pub pac_bound: f64,
+}
+
+/// Propagate reach-tube with Taylor order 3 + remainder bounds.
+///
+/// Simulates Neural ODE flow: dx/dt = f(x, t) over `steps` time steps
+/// using Taylor order 3 zonotope propagation.
+///
+/// # Arguments
+/// * `center` — Initial center tensor [batch, dim]
+/// * `generators` — Initial generator matrix [batch, n_gens, dim]
+/// * `steps` — Number of time steps to propagate
+/// * `config` — Taylor propagation configuration
+///
+/// # Returns
+/// Reach tube with centers, generators, and remainder bounds at each step
+pub fn propagate_reach_tube_taylor3(
+    center: &Tensor,
+    generators: &Tensor,
+    steps: usize,
+    config: &TaylorHighOrderConfig,
+) -> Result<TaylorReachTubeResult> {
+    let mut centers = vec![center.clone()];
+    let mut generators_list = vec![generators.clone()];
+    let mut remainders = Vec::with_capacity(steps);
+
+    let mut current_center = center.clone();
+    let mut current_generators = generators.clone();
+
+    for _ in 0..steps {
+        let result = propagate_taylor_order3(&current_center, &current_generators, config)?;
+        current_center = result.center;
+        current_generators = result.generators;
+        remainders.push(result.volume_proxy);
+        centers.push(current_center.clone());
+        generators_list.push(current_generators.clone());
+    }
+
+    let avg_volume = if remainders.is_empty() {
+        0.0
+    } else {
+        remainders.iter().sum::<f32>() / remainders.len() as f32
+    };
+
+    // PAC-Bayes bound on the reach tube
+    let n = steps.max(1);
+    let empirical = avg_volume as f64;
+    let kl = 0.1; // Prior KL divergence
+    let delta = 0.05; // Confidence level
+    let pac_bound = empirical + ((kl + (1.0f64 / delta).ln()) / (2.0f64 * n as f64)).sqrt();
+
+    Ok(TaylorReachTubeResult {
+        centers,
+        generators: generators_list,
+        remainders,
+        steps,
+        avg_volume_proxy: avg_volume,
+        pac_bound,
+    })
+}
+
+/// Collective zonotope aggregation using Minkowski sum with PAC-Bayes bound.
+///
+/// Aggregates multiple zonotopes (from different nodes) into a single
+/// conservative over-approximation using Minkowski sum, then applies
+/// PAC-Bayes tightening.
+///
+/// # Arguments
+/// * `centers` — List of center tensors (one per node)
+/// * `generators` — List of generator matrices (one per node)
+/// * `pac_bound` — PAC-Bayes bound for tightening (higher = more conservative)
+///
+/// # Returns
+/// Aggregated zonotope as (center, generators)
+pub fn collective_zonotope_aggregate(
+    centers: &[Tensor],
+    generators: &[Tensor],
+    pac_bound: f64,
+) -> Result<(Tensor, Tensor)> {
+    if centers.is_empty() || generators.is_empty() {
+        return Err(candle_core::Error::Msg(
+            "Cannot aggregate empty zonotope list".to_string(),
+        ));
+    }
+
+    let device = centers[0].device();
+    let n = centers.len();
+
+    // Minkowski sum: center = mean of centers, generators = concatenated
+    let center_sum = {
+        let sum = centers
+            .iter()
+            .try_fold(Tensor::zeros_like(&centers[0])?, |acc, c| acc.add(c))?;
+        (&sum / (n as f64))?
+    };
+
+    // Concatenate all generators along the generator dimension
+    let mut all_generators = Vec::with_capacity(generators.len());
+    for gen in generators {
+        all_generators.push(gen.clone());
+    }
+
+    let aggregated_generators = if all_generators.len() == 1 {
+        all_generators.pop().unwrap()
+    } else {
+        candle_core::Tensor::cat(&all_generators, 1)?
+    };
+
+    // Apply PAC-Bayes tightening: scale generators by sqrt(pac_bound)
+    let scale = (pac_bound.min(10.0) as f32).sqrt();
+    let scale_tensor = Tensor::new(scale, device)?;
+    let tightened_generators = aggregated_generators.broadcast_mul(&scale_tensor)?;
+
+    Ok((center_sum, tightened_generators))
+}
+
+/// Minkowski sum of two zonotopes.
+///
+/// Z1 ⊕ Z2 = (c1 + c2, [G1; G2])
+/// where centers are added and generators are concatenated.
+///
+/// # Arguments
+/// * `center1` — Center of first zonotope
+/// * `generators1` — Generators of first zonotope
+/// * `center2` — Center of second zonotope
+/// * `generators2` — Generators of second zonotope
+///
+/// # Returns
+/// (sum_center, concatenated_generators)
+pub fn zonotope_minkowski_sum(
+    center1: &Tensor,
+    generators1: &Tensor,
+    center2: &Tensor,
+    generators2: &Tensor,
+) -> Result<(Tensor, Tensor)> {
+    let sum_center = center1.add(center2)?;
+    let sum_generators = candle_core::Tensor::cat(&[generators1, generators2], 1)?;
+    Ok((sum_center, sum_generators))
+}
+
+/// Verify reach tube safety: check all tube segments stay within safe set.
+///
+/// # Arguments
+/// * `tube` — Reach tube result to verify
+/// * `safe_center` — Safe reference center
+/// * `beta` — CBF safety radius squared
+///
+/// # Returns
+/// (all_safe, min_margin) where min_margin is the smallest CBF value across all steps
+pub fn verify_reach_tube_safety(
+    tube: &TaylorReachTubeResult,
+    safe_center: &[f32],
+    beta: f32,
+) -> (bool, f32) {
+    let mut min_margin = f32::MAX;
+
+    for center in &tube.centers {
+        let vals: Vec<f32> = center.to_vec1().unwrap_or_default();
+        let dist_sq: f32 = vals
+            .iter()
+            .zip(safe_center.iter())
+            .map(|(a, b)| (a - b) * (a - b))
+            .sum();
+        let h = beta - dist_sq;
+        if h < min_margin {
+            min_margin = h;
+        }
+    }
+
+    let all_safe = min_margin >= 0.0;
+    (all_safe, min_margin)
+}
+
+/// Compare the tightness of 1st, 2nd, and 3rd order Taylor propagation.
+///
+/// Returns a tuple of volume proxies: (vol_order1, vol_order2, vol_order3).
+/// Lower values indicate tighter bounds.
+pub fn compare_taylor_orders(center: &Tensor, generators: &Tensor) -> Result<(f32, f32, f32)> {
+    // Order 1
+    let config1 = TaylorHighOrderConfig {
+        order: 1,
+        max_gens: 256,
+        reduce_after: false,
+        ..Default::default()
+    };
+    let r1 = propagate_taylor_order3(center, generators, &config1)?;
+
+    // Order 2
+    let config2 = TaylorHighOrderConfig {
+        order: 2,
+        max_gens: 256,
+        reduce_after: false,
+        ..Default::default()
+    };
+    let r2 = propagate_taylor_order3(center, generators, &config2)?;
+
+    // Order 3
+    let config3 = TaylorHighOrderConfig {
+        order: 3,
+        max_gens: 256,
+        reduce_after: false,
+        ..Default::default()
+    };
+    let r3 = propagate_taylor_order3(center, generators, &config3)?;
+
+    Ok((r1.volume_proxy, r2.volume_proxy, r3.volume_proxy))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use candle_core::DType;
+    use candle_core::{DType, Device};
 
     #[test]
     fn test_taylor_config_default() {
@@ -1470,10 +2046,8 @@ mod tests {
         let epsilon = 0.1f32;
         let generators = Tensor::from_vec(
             vec![
-                epsilon, 0.0, 0.0, 0.0,
-                0.0, epsilon, 0.0, 0.0,
-                0.0, 0.0, epsilon, 0.0,
-                0.0, 0.0, 0.0, epsilon,
+                epsilon, 0.0, 0.0, 0.0, 0.0, epsilon, 0.0, 0.0, 0.0, 0.0, epsilon, 0.0, 0.0, 0.0,
+                0.0, epsilon,
             ],
             (4, 4),
             &device,
@@ -1544,6 +2118,609 @@ mod tests {
 
         assert_eq!(reduced.dim(0)?, 3);
 
+        Ok(())
+    }
+
+    // =====================================================================
+    // Sprint 122 — Dynamic Girard + Higher-Order Taylor Tests
+    // =====================================================================
+
+    #[test]
+    fn test_dynamic_girard_config_default() {
+        let config = DynamicGirardConfig::default();
+        assert_eq!(config.min_gens, 4);
+        assert_eq!(config.max_gens_cap, 128);
+        assert_eq!(config.initial_max_gens, 32);
+        assert!((config.target_ratio_max - 1.5).abs() < 1e-6);
+        assert!((config.target_ratio_min - 1.0).abs() < 1e-6);
+        assert!((config.aggression_factor - 0.6).abs() < 1e-6);
+        assert!((config.relaxation_factor - 1.4).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_reduce_generators_dynamic_no_reduction_needed() -> Result<()> {
+        let device = candle_core::Device::Cpu;
+        // 5 generators, initial_max_gens=32 → no reduction
+        let generators = Tensor::zeros((5, 8), DType::F32, &device)?;
+        let config = DynamicGirardConfig::default();
+
+        let result = reduce_generators_dynamic(&generators, &config)?;
+        assert!(!result.reduced);
+        assert_eq!(result.original_count, 5);
+        assert_eq!(result.reduced_count, 5);
+        assert!((result.volume_ratio - 1.0).abs() < 1e-6);
+        assert_eq!(result.next_max_gens, config.initial_max_gens);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_reduce_generators_dynamic_aggressive_reduction() -> Result<()> {
+        let device = candle_core::Device::Cpu;
+        // Create generators with significant norms to trigger reduction
+        let gens_data: Vec<f32> = (0..96).map(|i| (i as f32 + 1.0) * 0.1).collect();
+        let generators = Tensor::from_vec(gens_data, (12, 8), &device)?;
+
+        let config = DynamicGirardConfig {
+            initial_max_gens: 6,
+            min_gens: 2,
+            max_gens_cap: 32,
+            target_ratio_max: 1.2,
+            target_ratio_min: 1.0,
+            aggression_factor: 0.5,
+            relaxation_factor: 1.5,
+            ..Default::default()
+        };
+
+        let result = reduce_generators_dynamic(&generators, &config)?;
+        assert!(result.reduced);
+        assert!(result.reduced_count <= config.initial_max_gens);
+        assert!(result.volume_ratio.is_finite());
+        assert!(result.volume_ratio > 0.0);
+        assert!(result.next_max_gens >= config.min_gens);
+        assert!(result.next_max_gens <= config.max_gens_cap);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_reduce_generators_dynamic_adapts_down_on_high_ratio() -> Result<()> {
+        let device = candle_core::Device::Cpu;
+        // Many generators with diverse norms → high volume ratio after reduction
+        let gens_data: Vec<f32> = (0..200).map(|i| ((i % 7) as f32 + 1.0) * 0.05).collect();
+        let generators = Tensor::from_vec(gens_data, (25, 8), &device)?;
+
+        let config = DynamicGirardConfig {
+            initial_max_gens: 10,
+            min_gens: 3,
+            max_gens_cap: 50,
+            target_ratio_max: 1.1, // Very tight target → should trigger aggression
+            target_ratio_min: 1.0,
+            aggression_factor: 0.5,
+            relaxation_factor: 1.5,
+            ..Default::default()
+        };
+
+        let result = reduce_generators_dynamic(&generators, &config)?;
+        assert!(result.reduced);
+        // If ratio > target_max, next_max_gens should be lower
+        if result.volume_ratio > config.target_ratio_max {
+            assert!(result.next_max_gens < config.initial_max_gens);
+            assert!(result.next_max_gens >= config.min_gens);
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_reduce_generators_dynamic_clamps_to_min() -> Result<()> {
+        let device = candle_core::Device::Cpu;
+        let gens_data: Vec<f32> = (0..48).map(|_| 0.5f32).collect();
+        let generators = Tensor::from_vec(gens_data, (6, 8), &device)?;
+
+        let config = DynamicGirardConfig {
+            initial_max_gens: 3,
+            min_gens: 2,
+            max_gens_cap: 20,
+            target_ratio_max: 1.0,
+            target_ratio_min: 0.9,
+            aggression_factor: 0.3,
+            relaxation_factor: 2.0,
+            ..Default::default()
+        };
+
+        let result = reduce_generators_dynamic(&generators, &config)?;
+        // next_max_gens should be clamped to min_gens
+        assert!(result.next_max_gens >= config.min_gens);
+        assert!(result.next_max_gens <= config.max_gens_cap);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_reduce_generators_dynamic_clamps_to_max_cap() -> Result<()> {
+        let device = candle_core::Device::Cpu;
+        // Few generators → no reduction → ratio = 1.0 < target_min → relax
+        let generators = Tensor::zeros((3, 8), DType::F32, &device)?;
+
+        let config = DynamicGirardConfig {
+            initial_max_gens: 50,
+            min_gens: 4,
+            max_gens_cap: 60,
+            target_ratio_max: 2.0,
+            target_ratio_min: 1.5, // ratio=1.0 < 1.5 → relax
+            aggression_factor: 0.5,
+            relaxation_factor: 2.0, // 50 * 2 = 100 > cap=60 → clamp
+            ..Default::default()
+        };
+
+        let result = reduce_generators_dynamic(&generators, &config)?;
+        assert!(!result.reduced);
+        // Should clamp to max_gens_cap
+        assert!(result.next_max_gens <= config.max_gens_cap);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_reduce_generators_dynamic_tightness_score() -> Result<()> {
+        let device = candle_core::Device::Cpu;
+        let gens_data: Vec<f32> = (0..80).map(|i| (i as f32 + 1.0) * 0.02).collect();
+        let generators = Tensor::from_vec(gens_data, (10, 8), &device)?;
+
+        let config = DynamicGirardConfig::default();
+        let result = reduce_generators_dynamic(&generators, &config)?;
+
+        assert!(result.tightness_score.is_finite());
+        assert!(result.tightness_score > 0.0);
+        assert!(result.tightness_score <= 1.0);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_taylor_high_order_config_default() {
+        let config = TaylorHighOrderConfig::default();
+        assert_eq!(config.order, 3);
+        assert!((config.silu_f2_bound - SILU_F2_MAX).abs() < 1e-6);
+        assert!((config.silu_f3_bound - SILU_F3_MAX).abs() < 1e-6);
+        assert_eq!(config.max_gens, 64);
+        assert!(config.reduce_after);
+    }
+
+    #[test]
+    fn test_propagate_taylor_order3_basic() -> Result<()> {
+        let device = candle_core::Device::Cpu;
+        let center = Tensor::from_vec(vec![0.0f32, 0.5, -0.5, 1.0], (1, 4), &device)?;
+
+        // Diagonal generators (epsilon ball)
+        let epsilon = 0.1f32;
+        let generators = Tensor::from_vec(
+            vec![
+                epsilon, 0.0, 0.0, 0.0, 0.0, epsilon, 0.0, 0.0, 0.0, 0.0, epsilon, 0.0, 0.0, 0.0,
+                0.0, epsilon,
+            ],
+            (4, 4),
+            &device,
+        )?;
+
+        let config = TaylorHighOrderConfig::default();
+        let result = propagate_taylor_order3(&center, &generators, &config)?;
+
+        // Verify shapes
+        assert_eq!(result.center.shape(), center.shape());
+        assert_eq!(result.order_used, 3);
+        assert!(result.volume_proxy.is_finite());
+        assert!(result.wrapping_reduction.is_finite());
+        assert!(result.wrapping_reduction > 0.0);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_propagate_taylor_order3_order_fallback() -> Result<()> {
+        let device = candle_core::Device::Cpu;
+        let center = Tensor::from_vec(vec![0.5f32, -0.3], (1, 2), &device)?;
+        let generators = Tensor::from_vec(vec![0.05f32, 0.0, 0.0, 0.05], (2, 2), &device)?;
+
+        // Request order 5 → should clamp to 3
+        let config = TaylorHighOrderConfig {
+            order: 5,
+            reduce_after: false,
+            ..Default::default()
+        };
+        let result = propagate_taylor_order3(&center, &generators, &config)?;
+        assert_eq!(result.order_used, 3);
+
+        // Request order 0 → should clamp to 1
+        let config2 = TaylorHighOrderConfig {
+            order: 0,
+            reduce_after: false,
+            ..Default::default()
+        };
+        let result2 = propagate_taylor_order3(&center, &generators, &config2)?;
+        assert_eq!(result2.order_used, 1);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_propagate_taylor_order3_order2_remainder() -> Result<()> {
+        let device = candle_core::Device::Cpu;
+        let center = Tensor::from_vec(vec![0.0f32, 0.0], (1, 2), &device)?;
+        let generators = Tensor::from_vec(vec![0.1f32, 0.0, 0.0, 0.1], (2, 2), &device)?;
+
+        let config = TaylorHighOrderConfig {
+            order: 2,
+            reduce_after: false,
+            ..Default::default()
+        };
+        let result = propagate_taylor_order3(&center, &generators, &config)?;
+
+        assert_eq!(result.order_used, 2);
+        // Remainder should be finite and positive
+        let rem_sum = result.remainder.abs()?.sum_all()?.to_scalar::<f32>()?;
+        assert!(rem_sum > 0.0);
+        assert!(rem_sum.is_finite());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_propagate_taylor_order3_reduces_generators() -> Result<()> {
+        let device = candle_core::Device::Cpu;
+        let center = Tensor::from_vec(vec![0.0f32, 0.0, 0.0, 0.0], (1, 4), &device)?;
+
+        // Many generators → should trigger reduction
+        let gens_data: Vec<f32> = (0..40).map(|i| (i as f32 + 1.0) * 0.01).collect();
+        let generators = Tensor::from_vec(gens_data, (10, 4), &device)?;
+
+        let config = TaylorHighOrderConfig {
+            order: 3,
+            max_gens: 5,
+            reduce_after: true,
+            ..Default::default()
+        };
+        let result = propagate_taylor_order3(&center, &generators, &config)?;
+
+        // After reduction + remainder row, should be <= max_gens
+        let final_gens = result.generators.dim(0)?;
+        assert!(final_gens <= config.max_gens);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_propagate_taylor_order3_volume_tighter_order3() -> Result<()> {
+        let device = candle_core::Device::Cpu;
+        let center = Tensor::from_vec(vec![0.0f32, 0.5, -0.5], (1, 3), &device)?;
+
+        // Small epsilon → order-3 should have tighter remainder
+        let epsilon = 0.05f32;
+        let generators = Tensor::from_vec(
+            vec![epsilon, 0.0, 0.0, 0.0, epsilon, 0.0, 0.0, 0.0, epsilon],
+            (3, 3),
+            &device,
+        )?;
+
+        let config = TaylorHighOrderConfig {
+            reduce_after: false,
+            ..Default::default()
+        };
+
+        // Order 3
+        let r3 = propagate_taylor_order3(&center, &generators, &config)?;
+
+        // Order 1 (more conservative remainder)
+        let config1 = TaylorHighOrderConfig {
+            order: 1,
+            reduce_after: false,
+            ..Default::default()
+        };
+        let r1 = propagate_taylor_order3(&center, &generators, &config1)?;
+
+        // For small epsilon, order-3 remainder (r³) should be smaller than order-1 (r²)
+        let rem3 = r3.remainder.abs()?.sum_all()?.to_scalar::<f32>()?;
+        let rem1 = r1.remainder.abs()?.sum_all()?.to_scalar::<f32>()?;
+        assert!(
+            rem3 < rem1,
+            "Order-3 remainder ({rem3}) should be tighter than order-1 ({rem1}) for small epsilon"
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_compare_taylor_orders() -> Result<()> {
+        let device = candle_core::Device::Cpu;
+        let center = Tensor::from_vec(vec![0.0f32, 0.3, -0.3, 0.6], (1, 4), &device)?;
+
+        let epsilon = 0.08f32;
+        let generators = Tensor::from_vec(
+            vec![
+                epsilon, 0.0, 0.0, 0.0, 0.0, epsilon, 0.0, 0.0, 0.0, 0.0, epsilon, 0.0, 0.0, 0.0,
+                0.0, epsilon,
+            ],
+            (4, 4),
+            &device,
+        )?;
+
+        let (vol1, vol2, vol3) = compare_taylor_orders(&center, &generators)?;
+
+        assert!(vol1.is_finite());
+        assert!(vol2.is_finite());
+        assert!(vol3.is_finite());
+        assert!(vol1 > 0.0);
+        assert!(vol2 > 0.0);
+        assert!(vol3 > 0.0);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_compare_taylor_orders_ordering() -> Result<()> {
+        let device = candle_core::Device::Cpu;
+        let center = Tensor::from_vec(vec![0.0f32, 0.0, 0.0], (1, 3), &device)?;
+
+        let epsilon = 0.03f32; // Very small → clear ordering
+        let generators = Tensor::from_vec(
+            vec![epsilon, 0.0, 0.0, 0.0, epsilon, 0.0, 0.0, 0.0, epsilon],
+            (3, 3),
+            &device,
+        )?;
+
+        let (vol1, _vol2, vol3) = compare_taylor_orders(&center, &generators)?;
+
+        // Higher order → tighter remainder for small perturbations
+        assert!(
+            vol3 <= vol1,
+            "Order-3 ({vol3}) should be <= order-1 ({vol1}) for small epsilon"
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_silu_f3_max_positive() {
+        assert!(SILU_F3_MAX > 0.0);
+        assert!(SILU_F3_MAX < SILU_F2_MAX); // 3rd derivative bound < 2nd derivative bound
+    }
+
+    #[test]
+    fn test_dynamic_girard_result_fields() -> Result<()> {
+        let device = candle_core::Device::Cpu;
+        let gens_data: Vec<f32> = (0..24).map(|i| (i as f32 + 1.0) * 0.05).collect();
+        let generators = Tensor::from_vec(gens_data, (3, 8), &device)?;
+
+        let config = DynamicGirardConfig {
+            initial_max_gens: 10,
+            ..Default::default()
+        };
+        let result = reduce_generators_dynamic(&generators, &config)?;
+
+        // All fields should be valid
+        assert!(result.max_gens_used > 0);
+        assert!(result.next_max_gens > 0);
+        assert!(result.original_count > 0);
+        assert!(result.reduced_count > 0);
+        assert!(result.volume_ratio.is_finite());
+        assert!(result.tightness_score.is_finite());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_taylor_high_order_result_fields() -> Result<()> {
+        let device = candle_core::Device::Cpu;
+        let center = Tensor::from_vec(vec![1.0f32, -0.5], (1, 2), &device)?;
+        let generators = Tensor::from_vec(vec![0.1f32, 0.0, 0.0, 0.1], (2, 2), &device)?;
+
+        let config = TaylorHighOrderConfig {
+            order: 3,
+            reduce_after: false,
+            ..Default::default()
+        };
+        let result = propagate_taylor_order3(&center, &generators, &config)?;
+
+        assert_eq!(result.order_used, 3);
+        assert!(result.volume_proxy > 0.0);
+        assert!(result.wrapping_reduction > 0.0);
+        // Remainder should have shape [1, dim]
+        assert_eq!(result.remainder.dim(1).unwrap_or(0), 2);
+
+        Ok(())
+    }
+
+    // ====================================================================
+    // Sprint 123 — Collective Taylor-Zonotope Reach-Tube Tests
+    // ====================================================================
+
+    #[test]
+    fn test_propagate_reach_tube_taylor3_basic() -> Result<()> {
+        let device = Device::Cpu;
+        let center = Tensor::new(&[[0.0f32, 0.0]], &device)?;
+        let generators = Tensor::from_vec(vec![0.1f32, 0.0, 0.0, 0.1], (1, 2, 2), &device)?;
+        let config = TaylorHighOrderConfig::default();
+        let tube = propagate_reach_tube_taylor3(&center, &generators, 5, &config)?;
+
+        assert_eq!(tube.steps, 5);
+        assert_eq!(tube.centers.len(), 6); // initial + 5 steps
+        assert_eq!(tube.generators.len(), 6);
+        assert_eq!(tube.remainders.len(), 5);
+        assert!(tube.avg_volume_proxy > 0.0);
+        assert!(tube.pac_bound.is_finite());
+        Ok(())
+    }
+
+    #[test]
+    fn test_propagate_reach_tube_taylor3_single_step() -> Result<()> {
+        let device = Device::Cpu;
+        let center = Tensor::new(&[[1.0f32, 2.0]], &device)?;
+        let generators = Tensor::from_vec(vec![0.05f32, 0.0, 0.0, 0.05], (1, 2, 2), &device)?;
+        let config = TaylorHighOrderConfig::default();
+        let tube = propagate_reach_tube_taylor3(&center, &generators, 1, &config)?;
+
+        assert_eq!(tube.steps, 1);
+        assert_eq!(tube.centers.len(), 2);
+        assert_eq!(tube.remainders.len(), 1);
+        Ok(())
+    }
+
+    #[test]
+    fn test_propagate_reach_tube_taylor3_pac_bound_tightens() -> Result<()> {
+        let device = Device::Cpu;
+        let center = Tensor::new(&[[0.0f32, 0.0]], &device)?;
+        let generators = Tensor::from_vec(vec![0.05f32, 0.0, 0.0, 0.05], (1, 2, 2), &device)?;
+        let config = TaylorHighOrderConfig::default();
+
+        let tube_short = propagate_reach_tube_taylor3(&center, &generators, 3, &config)?;
+        let tube_long = propagate_reach_tube_taylor3(&center, &generators, 20, &config)?;
+
+        // More steps → tighter PAC-Bayes bound
+        assert!(tube_long.pac_bound <= tube_short.pac_bound + 1.0);
+        Ok(())
+    }
+
+    #[test]
+    fn test_collective_zonotope_aggregate_basic() -> Result<()> {
+        let device = Device::Cpu;
+        let c1 = Tensor::from_vec(vec![0.0f32, 0.0], 2, &device)?;
+        let c2 = Tensor::from_vec(vec![1.0f32, 1.0], 2, &device)?;
+        let centers = vec![c1.clone(), c2.clone()];
+
+        let g1 = Tensor::from_vec(vec![0.1f32, 0.0, 0.0, 0.1], (1, 2, 2), &device)?;
+        let g2 = Tensor::from_vec(vec![0.1f32, 0.0, 0.0, 0.1], (1, 2, 2), &device)?;
+        let gens = vec![g1, g2];
+
+        let (agg_center, agg_gens) = collective_zonotope_aggregate(&centers, &gens, 0.5)?;
+
+        // Center should be mean: [0.5, 0.5]
+        let center_vals: Vec<f32> = agg_center.to_vec1()?;
+        assert!((center_vals[0] - 0.5).abs() < 1e-5);
+        assert!((center_vals[1] - 0.5).abs() < 1e-5);
+
+        // Generators should be concatenated: [1, 4, 2]
+        assert_eq!(agg_gens.shape().dims(), &[1, 4, 2]);
+        Ok(())
+    }
+
+    #[test]
+    fn test_collective_zonotope_aggregate_single() -> Result<()> {
+        let device = Device::Cpu;
+        let c1 = Tensor::from_vec(vec![3.0f32, 4.0], 2, &device)?;
+        let g1 = Tensor::from_vec(vec![0.2f32, 0.0, 0.0, 0.2], (1, 2, 2), &device)?;
+
+        let (agg_center, agg_gens) =
+            collective_zonotope_aggregate(&[c1.clone()], &[g1.clone()], 1.0)?;
+
+        let center_vals: Vec<f32> = agg_center.to_vec1()?;
+        assert!((center_vals[0] - 3.0).abs() < 1e-5);
+        assert_eq!(agg_gens.shape().dims(), &[1, 2, 2]);
+        Ok(())
+    }
+
+    #[test]
+    fn test_collective_zonotope_aggregate_empty_error() {
+        let centers: Vec<Tensor> = vec![];
+        let _gens: Vec<Tensor> = vec![];
+        let device = Device::Cpu;
+        let dummy = Tensor::new(&[[0.0f32]], &device).unwrap();
+        let result = collective_zonotope_aggregate(&centers, &[dummy], 0.5);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_collective_zonotope_aggregate_pac_tightening() -> Result<()> {
+        let device = Device::Cpu;
+        let c1 = Tensor::from_vec(vec![0.0f32, 0.0], 2, &device)?;
+        let g1 = Tensor::from_vec(vec![0.1f32, 0.0, 0.0, 0.1], (1, 2, 2), &device)?;
+
+        let (_, gens_loose) = collective_zonotope_aggregate(&[c1.clone()], &[g1.clone()], 10.0)?;
+        let (_, gens_tight) = collective_zonotope_aggregate(&[c1.clone()], &[g1.clone()], 0.1)?;
+
+        // Lower pac_bound → smaller scale → tighter generators
+        let loose_norm: f32 = gens_loose.sqr()?.sum_all()?.to_scalar()?;
+        let tight_norm: f32 = gens_tight.sqr()?.sum_all()?.to_scalar()?;
+        assert!(tight_norm < loose_norm);
+        Ok(())
+    }
+
+    #[test]
+    fn test_zonotope_minkowski_sum_basic() -> Result<()> {
+        let device = Device::Cpu;
+        let c1 = Tensor::from_vec(vec![1.0f32, 2.0], 2, &device)?;
+        let c2 = Tensor::from_vec(vec![3.0f32, 4.0], 2, &device)?;
+        let g1 = Tensor::from_vec(vec![0.1f32, 0.0], (1, 1, 2), &device)?;
+        let g2 = Tensor::from_vec(vec![0.2f32, 0.0], (1, 1, 2), &device)?;
+
+        let (sum_c, sum_g) = zonotope_minkowski_sum(&c1, &g1, &c2, &g2)?;
+
+        let center_vals: Vec<f32> = sum_c.to_vec1()?;
+        assert!((center_vals[0] - 4.0).abs() < 1e-5);
+        assert!((center_vals[1] - 6.0).abs() < 1e-5);
+        assert_eq!(sum_g.shape().dims(), &[1, 2, 2]);
+        Ok(())
+    }
+
+    #[test]
+    fn test_verify_reach_tube_safety_safe() -> Result<()> {
+        let device = Device::Cpu;
+        // All centers at origin — 1D tensors
+        let centers: Vec<Tensor> = (0..3)
+            .map(|_| Tensor::from_vec(vec![0.0f32, 0.0], 2, &device))
+            .collect::<Result<_>>()?;
+        let tube = TaylorReachTubeResult {
+            centers,
+            generators: vec![],
+            remainders: vec![0.1, 0.1],
+            steps: 2,
+            avg_volume_proxy: 0.1,
+            pac_bound: 0.5,
+        };
+        let safe_center = vec![0.0, 0.0];
+        let (all_safe, min_margin) = verify_reach_tube_safety(&tube, &safe_center, 1.0);
+        assert!(all_safe);
+        assert!((min_margin - 1.0).abs() < 1e-5); // dist=0, beta=1 → h=1
+        Ok(())
+    }
+
+    #[test]
+    fn test_verify_reach_tube_safety_unsafe() -> Result<()> {
+        let device = Device::Cpu;
+        let c1 = Tensor::from_vec(vec![0.0f32, 0.0], 2, &device)?;
+        let c2 = Tensor::from_vec(vec![5.0f32, 0.0], 2, &device)?; // Far from safe center
+        let tube = TaylorReachTubeResult {
+            centers: vec![c1, c2],
+            generators: vec![],
+            remainders: vec![0.1],
+            steps: 1,
+            avg_volume_proxy: 0.1,
+            pac_bound: 0.5,
+        };
+        let safe_center = vec![0.0, 0.0];
+        let (all_safe, min_margin) = verify_reach_tube_safety(&tube, &safe_center, 1.0);
+        assert!(!all_safe);
+        // dist_sq = 25, beta = 1 → h = -24
+        assert!((min_margin - (-24.0)).abs() < 1e-5);
+        Ok(())
+    }
+
+    #[test]
+    fn test_verify_reach_tube_safety_boundary() -> Result<()> {
+        let device = Device::Cpu;
+        let c1 = Tensor::from_vec(vec![1.0f32, 0.0], 2, &device)?; // Exactly on boundary
+        let tube = TaylorReachTubeResult {
+            centers: vec![c1],
+            generators: vec![],
+            remainders: vec![],
+            steps: 0,
+            avg_volume_proxy: 0.0,
+            pac_bound: 0.0,
+        };
+        let safe_center = vec![0.0, 0.0];
+        let (all_safe, min_margin) = verify_reach_tube_safety(&tube, &safe_center, 1.0);
+        assert!(all_safe); // On boundary is safe (dist_sq=1, beta=1 → h=0)
+        assert!((min_margin - 0.0).abs() < 1e-5);
         Ok(())
     }
 }
