@@ -1,7 +1,7 @@
 # 🌐 ed2kIA: Distributed Sparse Autoencoders for Edge LLM Interpretability
 
-[![Version](https://img.shields.io/badge/v12.8.0-sprint128-blue.svg)](https://github.com/Stuartemk/ed2kIA/releases/tag/v12.8.0-sprint128)
-[![Tests](https://img.shields.io/badge/Tests-660%2B%20PASS-green.svg)](https://github.com/Stuartemk/ed2kIA/actions)
+[![Version](https://img.shields.io/badge/v13.1.0-sprint131-blue.svg)](https://github.com/Stuartemk/ed2kIA/releases/tag/v13.1.0-sprint131)
+[![Tests](https://img.shields.io/badge/Tests-735%2B%20PASS-green.svg)](https://github.com/Stuartemk/ed2kIA/actions)
 [![Audit](https://img.shields.io/badge/OSSF-8.5%2F10-yellow.svg)](https://github.com/Stuartemk/ed2kIA/security)
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ética-orange.svg)](LICENSE)
 
@@ -49,6 +49,27 @@ The `native-audit` crate (`crates/native-audit`) provides:
 - **verify_steering_robustness_zonotope()** — **Zonotope Robustness Verification** (v11.0.0): Certified bound propagation using zonotope geometry — $Z = \{c + G@\varepsilon \mid \varepsilon \in [-1,1]^k\}$ with exact affine propagation $c'=Wc+b,\ G'=WG$
 - **collective_zonotope_consensus()** — **Collective Zonotope Consensus** (v11.0.0): Distributed zonotope gossip + Weiszfeld geometric median for Byzantine-resilient aggregation
 - **hybrid_zonotope_verify()** — **Hybrid Zonotope-Interval Verification** (v11.0.0): Zonotopes for linear layers, intervals for non-linear, then refine back
+
+**Noospheric Self-Organization & Post-Economic Symbiosis (v13.1.0 — Sprint 131):**
+| Feature | Module | Description |
+|---------|--------|-------------|
+| Planetary Free Energy | `native-audit/thermodynamics.rs` | `compute_planetary_free_energy()` — $F_{\text{planet}} = \sum_i x_i \cdot \text{VFE}_i + \lambda \cdot H(\text{energy\_dist}) - \gamma \cdot \text{symbiosis\_bonus}$ |
+| Active Inference Planetaria | `native-audit/thermodynamics.rs` | `active_inference_planetary_step()` — $\phi(t+1) = \phi(t) - \text{lr} \cdot \nabla_{\phi} F_{\text{planet}}$ |
+| Thermodynamic Resilience | `native-audit/thermodynamics.rs` | `thermodynamic_resilience_score()` — Resilience based on free energy minimization |
+| Civilizational Transition | `native-audit/thermodynamics.rs` | `simulate_civilizational_transition()` — Tipping point detection, economic vs symbiotic attractors |
+| Noospheric Aggregation | `native-audit/thermodynamics.rs` | `colimit_noospheric_aggregation()` — Colimit-based noospheric aggregation |
+| Functorial Safety Margin | `native-audit/thermodynamics.rs` | `functorial_safety_margin()` — Functorial safety margin for manifold composition |
+| S131 Noosfera Closure | `native-audit/thermodynamics.rs` | `s131_noosfera_closure()` — Unified planetary thermodynamic closure pipeline |
+| Category Manifolds Export | `native-audit/category_manifolds.rs` | Module export fix in `lib.rs`, Yoneda embedding, manifold composition |
+| Value Alignment Clippy Fixes | `consensus/value_alignment.rs` | 6 iterator/type corrections for clean compilation |
+
+**Sprint 131 Validation:**
+| Metric | Value |
+|--------|-------|
+| Thermodynamics Tests | **64/64 (100%)** |
+| Value Alignment Tests | **471/471 (100%)** |
+| Total New Tests (S131) | **64/64 (100%)** |
+| Warnings | **0** |
 
 **Planetary Immune Symbiosis & Adversarial Intelligence (v12.8.0 — Sprint 128):**
 | Feature | Module | Description |

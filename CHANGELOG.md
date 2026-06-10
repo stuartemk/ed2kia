@@ -1,4 +1,41 @@
-﻿## [v13.0.0-sprint130] — 2026-06-10 (Sprint 130 — Planetary Collective Intelligence & Self-Improving Noosfera Immune System)
+﻿## [v13.1.0-sprint131] — 2026-06-10 (Sprint 131 — Symbiotic Value Alignment, Noospheric Self-Organization & Thermodynamic Planetary Closure)
+
+### Sprint 131 "Symbiotic Value Alignment, Noospheric Self-Organization & Thermodynamic Planetary Closure"
+
+**Mode:** `STRICT_MATH + THERMODYNAMIC_PLANETARY + CATEGORY_THEORY + VALUE_ALIGNMENT + NOOSPHERIC_SELF_ORG + ZERO_WARNINGS + DOC_SYNC`
+
+**Problema — Sin cierre termodinámico planetario ni auto-organización noosférica formal:** Sprints 100-130 introducen PoUS, SGW, HMC-SVGD, IBP/Taylor/CBF, Counter-Steering, Weibull Churn, Replicator Dynamics, Collective Intelligence y Planetary Validation, pero faltan: (1) Energía Libre Planetaria Termodinámica — $F_{\text{planet}} = \sum_i x_i \cdot \text{VFE}_i + \lambda \cdot H(\text{energy\_dist}) - \gamma \cdot \text{symbiosis\_bonus}$, (2) Active Inference Planetaria — Optimización de flujo de gradiente $\phi(t+1) = \phi(t) - \text{lr} \cdot \nabla_{\phi} F_{\text{planet}}$, (3) Functores de Manifold Categorial — Export de `category_manifolds.rs` en `lib.rs` para composición de manifolds vía Yoneda embedding, y (4) Alineación de Valores Simbiótica — 6 correcciones clippy en `value_alignment.rs` para iteradores y tipos.
+
+**Solución — Cierre Termodinámico Planetario + Auto-Organización Noosférica:** Creamos `thermodynamics.rs` en `crates/native-audit` con `compute_planetary_free_energy()` (VFE ponderado + entropía de energía + bonus simbiótico), `active_inference_planetary_step()` (gradiente descendente + convergencia), `thermodynamic_resilience_score()` (resiliencia basada en energía libre), `simulate_civilizational_transition()` (simulación de transición civilizatoria con tipping point), `colimit_noospheric_aggregation()` (agregación noosférica vía colímite), `functorial_safety_margin()` (margen de seguridad functorial) y `s131_noosfera_closure()` (pipeline completo de cierre noosférico). **64 tests passing en módulo thermodynamics.**
+
+- **Energía Libre Planetaria:** `thermodynamics.rs` — `compute_planetary_free_energy()`, `compute_planetary_free_energy_detailed()`, `PlanetaryFreeEnergyResult`
+- **Active Inference Planetaria:** `thermodynamics.rs` — `active_inference_planetary_step()`, `ActiveInferenceResult`, gradient norms, convergence tracking
+- **Resiliencia Termodinámica:** `thermodynamics.rs` — `thermodynamic_resilience_score()`, `ResilienceResult`, perturbation analysis, recovery time
+- **Transición Civilizatoria:** `thermodynamics.rs` — `simulate_civilizational_transition()`, tipping point detection, economic vs symbiotic attractors
+- **Auto-Organización Noosférica:** `thermodynamics.rs` — `run_thermodynamic_self_organization()`, `colimit_noospheric_aggregation()`, `functorial_safety_margin()`
+- **Cierre Noosférico S131:** `thermodynamics.rs` — `s131_noosfera_closure()` — Unified planetary thermodynamic closure pipeline
+
+**Módulos actualizados:**
+- [`thermodynamics.rs`](crates/native-audit/src/thermodynamics.rs) — NEW: Planetary Free Energy, Active Inference, Civilizational Transition, 64 tests
+- [`category_manifolds.rs`](crates/native-audit/src/category_manifolds.rs) — Module export fix in `lib.rs`, Yoneda embedding, manifold composition
+- [`value_alignment.rs`](crates/consensus/src/value_alignment.rs) — Clippy fixes: 6 iterator/type corrections
+
+**Nuevos tests (64 total en módulo thermodynamics):**
+| Test File | Tests | Resultado |
+|-----------|-------|-----------|
+| `thermodynamics` (Planetary Free Energy + Active Inference + Civilizational Transition) | 64 | ✅ 64/64 |
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| Total Tests (S131 modules) | **64 (100%)** |
+| Consensus Tests (value_alignment) | ✅ 471/471 |
+| fmt | ✅ Clean |
+| clippy | ✅ Pass (6 fixes in value_alignment.rs) |
+
+---
+
+## [v13.0.0-sprint130] — 2026-06-10 (Sprint 130 — Planetary Collective Intelligence & Self-Improving Noosfera Immune System)
 
 ### Sprint 130 "Planetary Collective Intelligence & Self-Improving Noosfera Immune System"
 

@@ -22,8 +22,11 @@
 //! **Sprint 121:** Noosfera Symbiotic Launch — Proportional efficiency (smartwatch→datacenter),
 //! multi-modal VFE symbiosis, device contribution factor, global altruist mesh bootstrap.
 
+pub mod adversarial;
+pub mod category_manifolds;
 pub mod cbf_mpc;
 pub mod cirl_value_learning;
+pub mod collective_steering;
 pub mod collective_zonotope;
 pub mod cross_attention;
 pub mod dashboard;
@@ -44,9 +47,13 @@ pub mod planetary_sim;
 pub mod sae_integration;
 pub mod sae_modular;
 pub mod sparse_federated_sae;
+pub mod steering;
 pub mod symbolic_fusion;
 pub mod taylor_model;
 pub mod testnet_sim;
+pub mod thermodynamics;
+pub mod topology;
+pub mod verification;
 pub mod zonotope;
 
 use candle_core::{DType, Device, Result, Tensor, D};
