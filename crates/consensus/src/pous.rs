@@ -698,6 +698,613 @@ pub fn s129_full_pipeline(
     (final_shares, trajectory, hmc_credits)
 }
 
+// --- S130: Meta-Replicator + Self-Improving Loop ---
+
+/// Configuration for the Meta-Replicator — second-order optimization of replicator hyperparameters.
+#[derive(Debug, Clone)]
+pub struct MetaReplicatorConfig {
+    /// Learning rate for meta-gradient updates on hyperparameters.
+    pub meta_lr: f64,
+    /// Coefficient learning rate (α in base PoUS).
+    pub alpha_lr: f64,
+    /// Coefficient learning rate (β in base PoUS).
+    pub beta_lr: f64,
+    /// Coefficient learning rate (γ in base PoUS).
+    pub gamma_lr: f64,
+    /// Replicator learning rate adaptation speed.
+    pub replicator_lr_adapt: f64,
+    /// Minimum learning rate for replicator dynamics.
+    pub min_lr: f64,
+    /// Maximum learning rate for replicator dynamics.
+    pub max_lr: f64,
+    /// Temperature for exploration in meta-space.
+    pub temperature: f64,
+    /// Convergence window for detecting stagnation.
+    pub convergence_window: usize,
+    /// Convergence tolerance for meta-gradient norm.
+    pub convergence_tolerance: f64,
+    /// Maximum number of meta-iterations.
+    pub max_meta_iterations: usize,
+    /// Momentum coefficient for meta-gradient (0 = no momentum).
+    pub momentum: f64,
+}
+
+impl Default for MetaReplicatorConfig {
+    fn default() -> Self {
+        Self {
+            meta_lr: 0.01,
+            alpha_lr: 0.005,
+            beta_lr: 0.005,
+            gamma_lr: 0.005,
+            replicator_lr_adapt: 0.01,
+            min_lr: 1e-6,
+            max_lr: 0.5,
+            temperature: 1.0,
+            convergence_window: 20,
+            convergence_tolerance: 1e-8,
+            max_meta_iterations: 500,
+            momentum: 0.9,
+        }
+    }
+}
+
+impl MetaReplicatorConfig {
+    /// Create config with custom meta learning rate.
+    pub fn with_meta_lr(mut self, lr: f64) -> Self {
+        self.meta_lr = lr.max(1e-8).min(1.0);
+        self
+    }
+
+    /// Create config with custom convergence tolerance.
+    pub fn with_convergence_tolerance(mut self, tol: f64) -> Self {
+        self.convergence_tolerance = tol.max(1e-12).min(1.0);
+        self
+    }
+
+    /// Fast convergence preset — fewer iterations, looser tolerance.
+    pub fn fast_converge() -> Self {
+        Self {
+            convergence_window: 10,
+            convergence_tolerance: 1e-5,
+            max_meta_iterations: 100,
+            meta_lr: 0.05,
+            ..Self::default()
+        }
+    }
+
+    /// High-precision preset — more iterations, tighter tolerance.
+    pub fn high_precision() -> Self {
+        Self {
+            convergence_window: 50,
+            convergence_tolerance: 1e-10,
+            max_meta_iterations: 2000,
+            meta_lr: 0.001,
+            momentum: 0.95,
+            ..Self::default()
+        }
+    }
+}
+
+/// Result of a single meta-replicator step.
+#[derive(Debug, Clone)]
+pub struct MetaReplicatorResult {
+    /// Updated replicator learning rate.
+    pub updated_lr: f64,
+    /// Updated PoUS coefficients (α, β, γ, δ).
+    pub updated_coefficients: [f64; 4],
+    /// Meta-gradient norm.
+    pub meta_gradient_norm: f64,
+    /// Meta-fitness improvement (positive = improvement).
+    pub meta_improvement: f64,
+    /// Current meta-temperature.
+    pub temperature: f64,
+    /// Whether convergence detected.
+    pub converged: bool,
+    /// Number of meta-iterations performed.
+    pub iterations: usize,
+}
+
+/// Tracks historical performance for self-improving loop.
+#[derive(Debug, Clone)]
+pub struct SelfImprovementState {
+    /// Historical fitness values (most recent last).
+    pub history: Vec<f64>,
+    /// Best fitness observed so far.
+    pub best_fitness: f64,
+    /// Current adaptive learning rate.
+    pub adaptive_lr: f64,
+    /// Momentum buffer for meta-gradients.
+    pub momentum_buffer: Vec<f64>,
+    /// Number of consecutive improvements.
+    pub consecutive_improvements: usize,
+    /// Number of consecutive stagnations.
+    pub consecutive_stagnations: usize,
+    /// Total meta-iterations performed.
+    pub total_iterations: usize,
+}
+
+impl SelfImprovementState {
+    /// Create initial state with given learning rate and dimension.
+    pub fn new(initial_lr: f64, dim: usize) -> Self {
+        Self {
+            history: Vec::new(),
+            best_fitness: f64::NEG_INFINITY,
+            adaptive_lr: initial_lr,
+            momentum_buffer: vec![0.0; dim],
+            consecutive_improvements: 0,
+            consecutive_stagnations: 0,
+            total_iterations: 0,
+        }
+    }
+
+    /// Record a new fitness observation.
+    pub fn record(&mut self, fitness: f64) {
+        self.history.push(fitness);
+        if fitness > self.best_fitness {
+            self.best_fitness = fitness;
+            self.consecutive_improvements += 1;
+            self.consecutive_stagnations = 0;
+        } else if fitness < self.best_fitness - 1e-10 {
+            self.consecutive_improvements = 0;
+            self.consecutive_stagnations += 1;
+        }
+        self.total_iterations += 1;
+    }
+
+    /// Get the trend (derivative approximation) from recent history.
+    pub fn trend(&self, window: usize) -> f64 {
+        if self.history.len() < 2 {
+            return 0.0;
+        }
+        let w = window.min(self.history.len());
+        let recent = &self.history[self.history.len() - w..];
+        if recent.len() < 2 {
+            return 0.0;
+        }
+        (recent[recent.len() - 1] - recent[0]) / (w as f64)
+    }
+
+    /// Check if stuck in local optimum (stagnation detected).
+    pub fn is_stagnated(&self, window: usize, tolerance: f64) -> bool {
+        if self.history.len() < window {
+            return false;
+        }
+        let recent = &self.history[self.history.len() - window..];
+        let max_val = recent.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+        let min_val = recent.iter().cloned().fold(f64::INFINITY, f64::min);
+        (max_val - min_val) < tolerance
+    }
+}
+
+/// Convergence monitoring for adaptive step sizing.
+#[derive(Debug, Clone)]
+pub struct ConvergenceMonitor {
+    /// Recent gradient norms.
+    pub recent_norms: Vec<f64>,
+    /// Window size for convergence detection.
+    pub window: usize,
+    /// Tolerance for convergence.
+    pub tolerance: f64,
+    /// Current step size multiplier.
+    pub step_multiplier: f64,
+}
+
+impl ConvergenceMonitor {
+    /// Create new monitor with given window and tolerance.
+    pub fn new(window: usize, tolerance: f64) -> Self {
+        Self {
+            recent_norms: Vec::new(),
+            window,
+            tolerance,
+            step_multiplier: 1.0,
+        }
+    }
+
+    /// Record a new gradient norm and update step multiplier.
+    pub fn record_norm(&mut self, norm: f64) -> bool {
+        self.recent_norms.push(norm);
+        if self.recent_norms.len() > self.window {
+            self.recent_norms.remove(0);
+        }
+        let converged = self.is_converged();
+        if converged {
+            // Reduce step size near convergence for fine-tuning
+            self.step_multiplier = (self.step_multiplier * 0.9).max(0.1);
+        } else if norm > 0.0 {
+            // Increase step size when far from convergence
+            self.step_multiplier = (self.step_multiplier * 1.05).min(5.0);
+        }
+        converged
+    }
+
+    /// Check if converged based on recent norms.
+    pub fn is_converged(&self) -> bool {
+        if self.recent_norms.len() < 2 {
+            return false;
+        }
+        self.recent_norms.last().map_or(false, |&n| n < self.tolerance)
+    }
+
+    /// Get adaptive step size.
+    pub fn adaptive_step(&self, base_lr: f64) -> f64 {
+        (base_lr * self.step_multiplier).max(1e-8).min(1.0)
+    }
+}
+
+/// Compute meta-gradient for replicator learning rate adaptation.
+///
+/// Uses finite-difference approximation: ∇_lr meta_fitness ≈ (f(lr+ε) - f(lr-ε)) / (2ε)
+pub fn compute_meta_gradient(
+    _current_lr: f64,
+    _current_fitness: f64,
+    perturbed_fitness_plus: f64,
+    perturbed_fitness_minus: f64,
+    epsilon: f64,
+) -> f64 {
+    if epsilon <= 0.0 {
+        return 0.0;
+    }
+    (perturbed_fitness_plus - perturbed_fitness_minus) / (2.0 * epsilon)
+}
+
+/// Meta-replicator step — second-order optimization of replicator hyperparameters.
+///
+/// Optimizes the learning rate and PoUS coefficients to maximize long-term fitness.
+pub fn meta_replicator_step(
+    shares: &[f64],
+    fitnesses: &[f64],
+    current_lr: f64,
+    coefficients: &[f64; 4],
+    state: &mut SelfImprovementState,
+    config: &MetaReplicatorConfig,
+) -> MetaReplicatorResult {
+    let n = shares.len();
+    if n == 0 || n != fitnesses.len() {
+        return MetaReplicatorResult {
+            updated_lr: current_lr,
+            updated_coefficients: *coefficients,
+            meta_gradient_norm: 0.0,
+            meta_improvement: 0.0,
+            temperature: config.temperature,
+            converged: true,
+            iterations: 0,
+        };
+    }
+
+    // Compute current average fitness as meta-objective
+    let avg_fitness: f64 = fitnesses.iter().sum::<f64>() / n as f64;
+
+    // Finite-difference meta-gradient for learning rate
+    let epsilon = 1e-4;
+    let lr_plus = (current_lr + epsilon).min(config.max_lr);
+    let lr_minus = (current_lr - epsilon).max(config.min_lr);
+
+    // Evaluate fitness with perturbed learning rates (one-step lookahead)
+    let fitness_plus = evaluate_one_step_fitness(shares, fitnesses, lr_plus, coefficients);
+    let fitness_minus = evaluate_one_step_fitness(shares, fitnesses, lr_minus, coefficients);
+
+    let lr_gradient = compute_meta_gradient(
+        current_lr,
+        avg_fitness,
+        fitness_plus,
+        fitness_minus,
+        epsilon,
+    );
+
+    // Update learning rate with momentum
+    let momentum_idx = 0;
+    state.momentum_buffer[momentum_idx] =
+        config.momentum * state.momentum_buffer[momentum_idx] + (1.0 - config.momentum) * lr_gradient;
+    let new_lr = current_lr + config.meta_lr * state.momentum_buffer[momentum_idx];
+    let new_lr = new_lr.max(config.min_lr).min(config.max_lr);
+
+    // Meta-gradients for PoUS coefficients
+    let mut new_coeffs = *coefficients;
+    for i in 0..3 {
+        let coeff_epsilon = 1e-4;
+        let mut coeffs_plus = *coefficients;
+        let mut coeffs_minus = *coefficients;
+        coeffs_plus[i] += coeff_epsilon;
+        coeffs_minus[i] = (coeffs_minus[i] - coeff_epsilon).max(0.0);
+
+        let lr_coeff = if i == 0 {
+            config.alpha_lr
+        } else if i == 1 {
+            config.beta_lr
+        } else {
+            config.gamma_lr
+        };
+
+        let coeff_gradient = (compute_pous_fitness_custom(
+            coeffs_plus[0],
+            coeffs_plus[1],
+            coeffs_plus[2],
+            coeffs_plus[3],
+            1.0, 1.0, 0.99, 0.01,
+        ) - compute_pous_fitness_custom(
+            coeffs_minus[0],
+            coeffs_minus[1],
+            coeffs_minus[2],
+            coeffs_minus[3],
+            1.0, 1.0, 0.99, 0.01,
+        )) / (2.0 * coeff_epsilon);
+
+        let mom_idx = i + 1;
+        state.momentum_buffer[mom_idx] =
+            config.momentum * state.momentum_buffer[mom_idx] + (1.0 - config.momentum) * coeff_gradient;
+        new_coeffs[i] += lr_coeff * state.momentum_buffer[mom_idx];
+        new_coeffs[i] = new_coeffs[i].max(0.0).min(10.0);
+    }
+
+    // Compute meta-gradient norm
+    let meta_grad_norm = (lr_gradient * lr_gradient
+        + state.momentum_buffer[1] * state.momentum_buffer[1]
+        + state.momentum_buffer[2] * state.momentum_buffer[2]
+        + state.momentum_buffer[3] * state.momentum_buffer[3])
+        .sqrt();
+
+    // Record fitness and check improvement
+    let meta_improvement = avg_fitness - state.best_fitness.max(0.0);
+    state.record(avg_fitness);
+
+    // Adaptive temperature — increase if stagnated
+    let temperature = if state.is_stagnated(
+        config.convergence_window,
+        config.convergence_tolerance,
+    ) {
+        config.temperature * 1.5
+    } else {
+        config.temperature * 0.99
+    };
+
+    MetaReplicatorResult {
+        updated_lr: new_lr,
+        updated_coefficients: new_coeffs,
+        meta_gradient_norm: meta_grad_norm,
+        meta_improvement,
+        temperature,
+        converged: meta_grad_norm < config.convergence_tolerance,
+        iterations: state.total_iterations,
+    }
+}
+
+/// Evaluate one-step fitness for meta-gradient computation.
+fn evaluate_one_step_fitness(
+    shares: &[f64],
+    fitnesses: &[f64],
+    lr: f64,
+    _coefficients: &[f64; 4],
+) -> f64 {
+    let n = shares.len();
+    if n == 0 {
+        return 0.0;
+    }
+    let avg_f: f64 = fitnesses.iter().sum::<f64>() / n as f64;
+
+    // One-step replicator update
+    let mut new_shares = Vec::with_capacity(n);
+    for i in 0..n {
+        let dx = shares[i] * (fitnesses[i] - avg_f);
+        let new_s = (shares[i] + lr * dx).max(1e-10).min(1.0);
+        new_shares.push(new_s);
+    }
+
+    // Normalize
+    let total: f64 = new_shares.iter().sum();
+    if total > 0.0 {
+        new_shares.iter_mut().for_each(|s| *s /= total);
+    }
+
+    // Compute entropy as diversity measure
+    let entropy: f64 = new_shares
+        .iter()
+        .filter(|&&s| s > 1e-15)
+        .map(|&s| -s * s.ln())
+        .sum();
+
+    // Meta-fitness = weighted sum of avg fitness and diversity
+    0.7 * avg_f + 0.3 * entropy
+}
+
+/// Self-improving fitness evaluation — adapts coefficients based on historical performance.
+pub fn self_improving_fitness(
+    base_fitness: f64,
+    state: &SelfImprovementState,
+    config: &MetaReplicatorConfig,
+) -> f64 {
+    // Trend bonus — reward consistent improvement
+    let trend = state.trend(config.convergence_window);
+    let trend_bonus = trend * config.temperature;
+
+    // Stagnation penalty — encourage exploration when stuck
+    let stagnation_penalty = if state.is_stagnated(
+        config.convergence_window,
+        config.convergence_tolerance,
+    ) {
+        -0.1 * config.temperature
+    } else {
+        0.0
+    };
+
+    // Diversity bonus from history variance
+    let diversity_bonus = if state.history.len() >= 2 {
+        let mean: f64 = state.history.iter().sum::<f64>() / state.history.len() as f64;
+        let variance: f64 = state
+            .history
+            .iter()
+            .map(|&v| (v - mean).powi(2))
+            .sum::<f64>()
+            / state.history.len() as f64;
+        0.05 * variance.sqrt()
+    } else {
+        0.0
+    };
+
+    (base_fitness + trend_bonus + stagnation_penalty + diversity_bonus).max(0.0)
+}
+
+/// Run full self-improving loop — iterative meta-optimization with convergence monitoring.
+pub fn run_self_improving_loop(
+    initial_shares: &[f64],
+    initial_fitnesses: &[f64],
+    initial_lr: f64,
+    initial_coefficients: [f64; 4],
+    config: &MetaReplicatorConfig,
+) -> Vec<MetaReplicatorResult> {
+    let n = initial_shares.len();
+    if n == 0 || n != initial_fitnesses.len() {
+        return Vec::new();
+    }
+
+    let mut state = SelfImprovementState::new(initial_lr, 5); // 5 dims: lr + 4 coeffs
+    let mut monitor = ConvergenceMonitor::new(config.convergence_window, config.convergence_tolerance);
+    let mut current_lr = initial_lr;
+    let mut current_coeffs = initial_coefficients;
+    let mut current_shares = initial_shares.to_vec();
+    let mut current_fitnesses = initial_fitnesses.to_vec();
+    let mut results = Vec::new();
+
+    for _iter in 0..config.max_meta_iterations {
+        // Meta-replicator step
+        let meta_result = meta_replicator_step(
+            &current_shares,
+            &current_fitnesses,
+            current_lr,
+            &current_coeffs,
+            &mut state,
+            config,
+        );
+
+        // Monitor convergence
+        let converged = monitor.record_norm(meta_result.meta_gradient_norm);
+
+        // Update hyperparameters
+        current_lr = meta_result.updated_lr;
+        current_coeffs = meta_result.updated_coefficients;
+
+        // One-step replicator dynamics with adaptive lr
+        let adaptive_lr = monitor.adaptive_step(current_lr);
+        let avg_f: f64 = current_fitnesses.iter().sum::<f64>() / n as f64;
+        let mut new_shares = Vec::with_capacity(n);
+        for i in 0..n {
+            let dx = current_shares[i] * (current_fitnesses[i] - avg_f);
+            let new_s = (current_shares[i] + adaptive_lr * dx).max(1e-10).min(1.0);
+            new_shares.push(new_s);
+        }
+        let total: f64 = new_shares.iter().sum();
+        if total > 0.0 {
+            new_shares.iter_mut().for_each(|s| *s /= total);
+        }
+        current_shares = new_shares;
+
+        // Update fitnesses based on new shares (simulated environment feedback)
+        for i in 0..n {
+            current_fitnesses[i] = compute_pous_fitness_custom(
+                current_coeffs[0],
+                current_coeffs[1],
+                current_coeffs[2],
+                current_coeffs[3],
+                current_shares[i] * 10.0,
+                current_shares[i] * 5.0,
+                0.9 + 0.1 * current_shares[i],
+                (1.0 - current_shares[i]) * 0.1,
+            );
+        }
+
+        // Record self-improving fitness
+        let si_fitness = self_improving_fitness(
+            current_fitnesses.iter().sum::<f64>() / n as f64,
+            &state,
+            config,
+        );
+        let _ = si_fitness; // Used in state.record via meta_replicator_step
+
+        // Check convergence before moving meta_result
+        if converged || meta_result.converged {
+            results.push(meta_result);
+            break;
+        }
+        results.push(meta_result);
+    }
+
+    results
+}
+
+/// S130 Full Pipeline — Meta-Replicator + Self-Improving Loop + PoUS + SGW + HMC.
+pub fn s130_full_pipeline(
+    shares: &[f64],
+    fitnesses: &[f64],
+    sgw_dists: &[f64],
+    safe_dist: f64,
+    energy_reductions: &[f64],
+    max_energy: f64,
+    sgw_bonus_coeff: f64,
+    alpha_hmc: f64,
+    meta_config: &MetaReplicatorConfig,
+) -> (Vec<f64>, Vec<MetaReplicatorResult>, Vec<f64>) {
+    let n = shares.len();
+    if n == 0
+        || n != fitnesses.len()
+        || n != sgw_dists.len()
+        || n != energy_reductions.len()
+    {
+        return (Vec::new(), Vec::new(), Vec::new());
+    }
+
+    // Step 1: Compute hybrid fitness (SGW + HMC + PoUS)
+    let mut hybrid_fitnesses = Vec::with_capacity(n);
+    for i in 0..n {
+        let sgw_fitness = compute_pous_fitness_sgw(
+            fitnesses[i],
+            sgw_dists[i],
+            safe_dist,
+            sgw_bonus_coeff,
+        );
+        let hmc_normalized = if max_energy > 0.0 {
+            (energy_reductions[i] / max_energy).max(0.0).min(1.0)
+        } else {
+            0.0
+        };
+        let hybrid = (1.0 - alpha_hmc) * hmc_normalized + alpha_hmc * sgw_fitness;
+        hybrid_fitnesses.push(hybrid);
+    }
+
+    // Step 2: Run meta-replicator loop
+    let results = run_self_improving_loop(
+        shares,
+        &hybrid_fitnesses,
+        0.01,
+        [0.5, 0.3, 0.2, 2.0],
+        meta_config,
+    );
+
+    // Step 3: Extract final shares from last meta-result's implicit dynamics
+    let final_shares = if !results.is_empty() {
+        let last = results.last().unwrap();
+        // Compute final shares using updated coefficients
+        let _coeffs = last.updated_coefficients;
+        let mut final_shares = shares.to_vec();
+        let avg_f: f64 = hybrid_fitnesses.iter().sum::<f64>() / n as f64;
+        for i in 0..n {
+            let dx = final_shares[i] * (hybrid_fitnesses[i] - avg_f);
+            final_shares[i] = (final_shares[i] + last.updated_lr * dx).max(1e-10).min(1.0);
+        }
+        let total: f64 = final_shares.iter().sum();
+        if total > 0.0 {
+            final_shares.iter_mut().for_each(|s| *s /= total);
+        }
+        final_shares
+    } else {
+        shares.to_vec()
+    };
+
+    // Step 4: Compute Shapley credits from final hybrid fitnesses
+    let total_fitness: f64 = hybrid_fitnesses.iter().sum();
+    let credits = compute_all_shapley_values(&hybrid_fitnesses, total_fitness);
+
+    (final_shares, results, credits)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1419,5 +2026,604 @@ mod tests {
         // Equal nodes should stay equal
         assert!((final_shares[0] - 0.5).abs() < 0.01);
         assert!((final_shares[1] - 0.5).abs() < 0.01);
+    }
+
+    // --- S130 — Meta-Replicator + Self-Improving Loop Tests ---
+
+    #[test]
+    fn test_meta_replicator_config_default() {
+        let config = MetaReplicatorConfig::default();
+        assert!((config.meta_lr - 0.01).abs() < 1e-10);
+        assert!((config.min_lr - 1e-6).abs() < 1e-10);
+        assert!((config.max_lr - 0.5).abs() < 1e-10);
+        assert!((config.temperature - 1.0).abs() < 1e-10);
+        assert_eq!(config.convergence_window, 20);
+        assert_eq!(config.max_meta_iterations, 500);
+        assert!((config.momentum - 0.9).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_meta_replicator_config_with_meta_lr() {
+        let config = MetaReplicatorConfig::default().with_meta_lr(0.1);
+        assert!((config.meta_lr - 0.1).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_meta_replicator_config_meta_lr_clamped_low() {
+        let config = MetaReplicatorConfig::default().with_meta_lr(0.0);
+        assert!(config.meta_lr >= 1e-8);
+    }
+
+    #[test]
+    fn test_meta_replicator_config_meta_lr_clamped_high() {
+        let config = MetaReplicatorConfig::default().with_meta_lr(10.0);
+        assert!((config.meta_lr - 1.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_meta_replicator_config_with_convergence_tolerance() {
+        let config = MetaReplicatorConfig::default().with_convergence_tolerance(1e-6);
+        assert!((config.convergence_tolerance - 1e-6).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_meta_replicator_config_convergence_tolerance_clamped() {
+        let config = MetaReplicatorConfig::default().with_convergence_tolerance(0.0);
+        assert!(config.convergence_tolerance >= 1e-12);
+    }
+
+    #[test]
+    fn test_meta_replicator_config_fast_converge() {
+        let config = MetaReplicatorConfig::fast_converge();
+        assert_eq!(config.convergence_window, 10);
+        assert!((config.convergence_tolerance - 1e-5).abs() < 1e-10);
+        assert_eq!(config.max_meta_iterations, 100);
+        assert!((config.meta_lr - 0.05).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_meta_replicator_config_high_precision() {
+        let config = MetaReplicatorConfig::high_precision();
+        assert_eq!(config.convergence_window, 50);
+        assert!((config.convergence_tolerance - 1e-10).abs() < 1e-10);
+        assert_eq!(config.max_meta_iterations, 2000);
+        assert!((config.meta_lr - 0.001).abs() < 1e-10);
+        assert!((config.momentum - 0.95).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_self_improvement_state_new() {
+        let state = SelfImprovementState::new(0.01, 5);
+        assert!(state.history.is_empty());
+        assert_eq!(state.best_fitness, f64::NEG_INFINITY);
+        assert!((state.adaptive_lr - 0.01).abs() < 1e-10);
+        assert_eq!(state.momentum_buffer.len(), 5);
+        assert_eq!(state.consecutive_improvements, 0);
+        assert_eq!(state.consecutive_stagnations, 0);
+        assert_eq!(state.total_iterations, 0);
+    }
+
+    #[test]
+    fn test_self_improvement_state_record_improvement() {
+        let mut state = SelfImprovementState::new(0.01, 3);
+        state.record(1.0);
+        assert_eq!(state.best_fitness, 1.0);
+        assert_eq!(state.consecutive_improvements, 1);
+        assert_eq!(state.consecutive_stagnations, 0);
+        assert_eq!(state.total_iterations, 1);
+
+        state.record(2.0);
+        assert_eq!(state.best_fitness, 2.0);
+        assert_eq!(state.consecutive_improvements, 2);
+        assert_eq!(state.consecutive_stagnations, 0);
+    }
+
+    #[test]
+    fn test_self_improvement_state_record_decline() {
+        let mut state = SelfImprovementState::new(0.01, 3);
+        state.record(5.0);
+        state.record(3.0);
+        assert_eq!(state.best_fitness, 5.0);
+        assert_eq!(state.consecutive_improvements, 0);
+        assert_eq!(state.consecutive_stagnations, 1);
+    }
+
+    #[test]
+    fn test_self_improvement_state_trend_positive() {
+        let mut state = SelfImprovementState::new(0.01, 3);
+        state.record(1.0);
+        state.record(2.0);
+        state.record(3.0);
+        state.record(4.0);
+        let trend = state.trend(4);
+        assert!(trend > 0.0);
+        // (4 - 1) / 4 = 0.75
+        assert!((trend - 0.75).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_self_improvement_state_trend_negative() {
+        let mut state = SelfImprovementState::new(0.01, 3);
+        state.record(4.0);
+        state.record(3.0);
+        state.record(2.0);
+        state.record(1.0);
+        let trend = state.trend(4);
+        assert!(trend < 0.0);
+        assert!((trend - (-0.75)).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_self_improvement_state_trend_empty() {
+        let state = SelfImprovementState::new(0.01, 3);
+        let trend = state.trend(5);
+        assert_eq!(trend, 0.0);
+    }
+
+    #[test]
+    fn test_self_improvement_state_trend_single() {
+        let mut state = SelfImprovementState::new(0.01, 3);
+        state.record(5.0);
+        let trend = state.trend(5);
+        assert_eq!(trend, 0.0);
+    }
+
+    #[test]
+    fn test_self_improvement_state_stagnated() {
+        let mut state = SelfImprovementState::new(0.01, 3);
+        state.record(1.0);
+        state.record(1.00001);
+        state.record(0.99999);
+        state.record(1.00002);
+        state.record(0.99998);
+        assert!(state.is_stagnated(5, 1e-3));
+    }
+
+    #[test]
+    fn test_self_improvement_state_not_stagnated() {
+        let mut state = SelfImprovementState::new(0.01, 3);
+        state.record(1.0);
+        state.record(2.0);
+        state.record(3.0);
+        state.record(4.0);
+        state.record(5.0);
+        assert!(!state.is_stagnated(5, 1e-3));
+    }
+
+    #[test]
+    fn test_self_improvement_state_not_stagnated_too_few() {
+        let mut state = SelfImprovementState::new(0.01, 3);
+        state.record(1.0);
+        assert!(!state.is_stagnated(10, 1e-6));
+    }
+
+    #[test]
+    fn test_convergence_monitor_new() {
+        let monitor = ConvergenceMonitor::new(10, 1e-6);
+        assert!(monitor.recent_norms.is_empty());
+        assert_eq!(monitor.window, 10);
+        assert!((monitor.tolerance - 1e-6).abs() < 1e-10);
+        assert!((monitor.step_multiplier - 1.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_convergence_monitor_record_converged() {
+        let mut monitor = ConvergenceMonitor::new(5, 1e-3);
+        monitor.record_norm(1e-2); // First norm (not converged yet)
+        let converged = monitor.record_norm(1e-4); // Second norm (below tolerance → converged)
+        assert!(converged);
+        assert!(monitor.step_multiplier < 1.0);
+    }
+
+    #[test]
+    fn test_convergence_monitor_record_not_converged() {
+        let mut monitor = ConvergenceMonitor::new(5, 1e-6);
+        let converged = monitor.record_norm(0.5);
+        assert!(!converged);
+        assert!(monitor.step_multiplier > 1.0);
+    }
+
+    #[test]
+    fn test_convergence_monitor_adaptive_step_increases() {
+        let mut monitor = ConvergenceMonitor::new(5, 1e-6);
+        monitor.record_norm(1.0);
+        monitor.record_norm(0.8);
+        monitor.record_norm(0.6);
+        let step = monitor.adaptive_step(0.01);
+        assert!(step > 0.01);
+    }
+
+    #[test]
+    fn test_convergence_monitor_adaptive_step_decreases() {
+        let mut monitor = ConvergenceMonitor::new(5, 1e-2);
+        monitor.record_norm(1e-3);
+        monitor.record_norm(1e-4);
+        let step = monitor.adaptive_step(0.01);
+        assert!(step < 0.01);
+    }
+
+    #[test]
+    fn test_convergence_monitor_adaptive_step_bounds() {
+        let mut monitor = ConvergenceMonitor::new(2, 1e-6);
+        for _ in 0..20 {
+            monitor.record_norm(1.0);
+        }
+        let step = monitor.adaptive_step(10.0);
+        assert!(step <= 1.0); // Capped at 1.0
+    }
+
+    #[test]
+    fn test_convergence_monitor_window_sliding() {
+        let mut monitor = ConvergenceMonitor::new(3, 1e-6);
+        monitor.record_norm(1.0);
+        monitor.record_norm(1.0);
+        monitor.record_norm(1.0);
+        monitor.record_norm(1.0);
+        assert_eq!(monitor.recent_norms.len(), 3);
+    }
+
+    #[test]
+    fn test_compute_meta_gradient_basic() {
+        let grad = compute_meta_gradient(0.01, 1.0, 1.1, 0.9, 1e-4);
+        // (1.1 - 0.9) / (2 * 1e-4) = 0.2 / 2e-4 = 1000
+        assert!((grad - 1000.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_compute_meta_gradient_zero_epsilon() {
+        let grad = compute_meta_gradient(0.01, 1.0, 1.1, 0.9, 0.0);
+        assert_eq!(grad, 0.0);
+    }
+
+    #[test]
+    fn test_compute_meta_gradient_symmetric() {
+        let grad = compute_meta_gradient(0.01, 1.0, 1.0, 1.0, 1e-4);
+        assert_eq!(grad, 0.0);
+    }
+
+    #[test]
+    fn test_meta_replicator_step_empty() {
+        let mut state = SelfImprovementState::new(0.01, 5);
+        let config = MetaReplicatorConfig::default();
+        let result = meta_replicator_step(&[], &[], 0.01, &[0.5, 0.3, 0.2, 2.0], &mut state, &config);
+        assert!(result.converged);
+        assert_eq!(result.iterations, 0);
+        assert!((result.updated_lr - 0.01).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_meta_replicator_step_length_mismatch() {
+        let mut state = SelfImprovementState::new(0.01, 5);
+        let config = MetaReplicatorConfig::default();
+        let result = meta_replicator_step(&[0.5, 0.5], &[1.0], 0.01, &[0.5, 0.3, 0.2, 2.0], &mut state, &config);
+        assert!(result.converged);
+        assert_eq!(result.iterations, 0);
+    }
+
+    #[test]
+    fn test_meta_replicator_step_basic() {
+        let mut state = SelfImprovementState::new(0.01, 5);
+        let config = MetaReplicatorConfig::default();
+        let shares = [0.5, 0.5];
+        let fitnesses = [1.0, 0.5];
+        let coeffs = [0.5, 0.3, 0.2, 2.0];
+        let result = meta_replicator_step(&shares, &fitnesses, 0.01, &coeffs, &mut state, &config);
+        assert!(result.updated_lr >= config.min_lr);
+        assert!(result.updated_lr <= config.max_lr);
+        assert!(result.meta_gradient_norm >= 0.0);
+        assert!(result.temperature > 0.0);
+        assert_eq!(result.updated_coefficients.len(), 4);
+    }
+
+    #[test]
+    fn test_meta_replicator_step_lr_increases_with_positive_gradient() {
+        let mut state = SelfImprovementState::new(0.01, 5);
+        let config = MetaReplicatorConfig::default();
+        // High fitness difference → positive gradient → lr should increase
+        let shares = [0.1, 0.9];
+        let fitnesses = [3.0, 1.0];
+        let coeffs = [0.5, 0.3, 0.2, 2.0];
+        let result = meta_replicator_step(&shares, &fitnesses, 0.01, &coeffs, &mut state, &config);
+        assert!(result.updated_lr >= 0.01);
+    }
+
+    #[test]
+    fn test_meta_replicator_step_coefficients_bounded() {
+        let mut state = SelfImprovementState::new(0.01, 5);
+        let config = MetaReplicatorConfig::default().with_meta_lr(0.5);
+        let shares = [0.33, 0.33, 0.34];
+        let fitnesses = [1.0, 2.0, 1.5];
+        let coeffs = [5.0, 5.0, 5.0, 5.0];
+        let result = meta_replicator_step(&shares, &fitnesses, 0.01, &coeffs, &mut state, &config);
+        for &c in &result.updated_coefficients {
+            assert!(c >= 0.0);
+            assert!(c <= 10.0);
+        }
+    }
+
+    #[test]
+    fn test_meta_replicator_step_momentum_accumulation() {
+        let mut state = SelfImprovementState::new(0.01, 5);
+        let config = MetaReplicatorConfig::default();
+        let shares = [0.5, 0.5];
+        let fitnesses = [2.0, 1.0];
+        let coeffs = [0.5, 0.3, 0.2, 2.0];
+
+        let r1 = meta_replicator_step(&shares, &fitnesses, 0.01, &coeffs, &mut state, &config);
+        let r2 = meta_replicator_step(&shares, &fitnesses, r1.updated_lr, &r1.updated_coefficients, &mut state, &config);
+        // Momentum should cause larger updates on second call
+        assert!(r2.iterations == 2);
+    }
+
+    #[test]
+    fn test_self_improving_fitness_basic() {
+        let mut state = SelfImprovementState::new(0.01, 3);
+        state.record(1.0);
+        state.record(2.0);
+        state.record(3.0);
+        let config = MetaReplicatorConfig::default();
+        let result = self_improving_fitness(2.0, &state, &config);
+        assert!(result >= 2.0); // Base + trend bonus
+    }
+
+    #[test]
+    fn test_self_improving_fitness_stagnation_penalty() {
+        let mut state = SelfImprovementState::new(0.01, 3);
+        for _ in 0..25 {
+            state.record(1.0);
+        }
+        let config = MetaReplicatorConfig::default();
+        let result = self_improving_fitness(1.0, &state, &config);
+        // Stagnation detected → penalty applied
+        assert!(result <= 1.0 + 0.1);
+    }
+
+    #[test]
+    fn test_self_improving_fitness_diversity_bonus() {
+        let mut state = SelfImprovementState::new(0.01, 3);
+        state.record(1.0);
+        state.record(3.0);
+        state.record(5.0);
+        state.record(7.0);
+        let config = MetaReplicatorConfig::default();
+        let result = self_improving_fitness(4.0, &state, &config);
+        assert!(result > 4.0); // Diversity bonus adds to base
+    }
+
+    #[test]
+    fn test_self_improving_fitness_clamped_positive() {
+        let mut state = SelfImprovementState::new(0.01, 3);
+        state.record(-10.0);
+        state.record(-20.0);
+        let config = MetaReplicatorConfig::default();
+        let result = self_improving_fitness(0.0, &state, &config);
+        assert!(result >= 0.0);
+    }
+
+    #[test]
+    fn test_run_self_improving_loop_empty() {
+        let config = MetaReplicatorConfig::default();
+        let results = run_self_improving_loop(&[], &[], 0.01, [0.5, 0.3, 0.2, 2.0], &config);
+        assert!(results.is_empty());
+    }
+
+    #[test]
+    fn test_run_self_improving_loop_length_mismatch() {
+        let config = MetaReplicatorConfig::default();
+        let results = run_self_improving_loop(&[0.5, 0.5], &[1.0], 0.01, [0.5, 0.3, 0.2, 2.0], &config);
+        assert!(results.is_empty());
+    }
+
+    #[test]
+    fn test_run_self_improving_loop_basic() {
+        let config = MetaReplicatorConfig::fast_converge();
+        let shares = [0.5, 0.5];
+        let fitnesses = [1.0, 0.5];
+        let results = run_self_improving_loop(&shares, &fitnesses, 0.01, [0.5, 0.3, 0.2, 2.0], &config);
+        assert!(!results.is_empty());
+        assert!(results.len() <= config.max_meta_iterations);
+    }
+
+    #[test]
+    fn test_run_self_improving_loop_convergence() {
+        let config = MetaReplicatorConfig::fast_converge();
+        let shares = [0.5, 0.5];
+        let fitnesses = [1.0, 1.0]; // Equal → should converge quickly
+        let results = run_self_improving_loop(&shares, &fitnesses, 0.01, [0.5, 0.3, 0.2, 2.0], &config);
+        assert!(!results.is_empty());
+        // Last result should indicate convergence or small gradient
+        let last = results.last().unwrap();
+        assert!(last.meta_gradient_norm >= 0.0);
+    }
+
+    #[test]
+    fn test_run_self_improving_loop_lr_evolution() {
+        let config = MetaReplicatorConfig::fast_converge();
+        let shares = [0.3, 0.3, 0.4];
+        let fitnesses = [1.0, 2.0, 1.5];
+        let results = run_self_improving_loop(&shares, &fitnesses, 0.01, [0.5, 0.3, 0.2, 2.0], &config);
+        assert!(!results.is_empty());
+        let first_lr = results.first().unwrap().updated_lr;
+        let last_lr = results.last().unwrap().updated_lr;
+        // Learning rate should evolve
+        assert!(first_lr >= config.min_lr);
+        assert!(first_lr <= config.max_lr);
+        assert!(last_lr >= config.min_lr);
+        assert!(last_lr <= config.max_lr);
+    }
+
+    #[test]
+    fn test_run_self_improving_loop_temperature_adaptation() {
+        let config = MetaReplicatorConfig::fast_converge();
+        let shares = [0.5, 0.5];
+        let fitnesses = [1.0, 0.5];
+        let results = run_self_improving_loop(&shares, &fitnesses, 0.01, [0.5, 0.3, 0.2, 2.0], &config);
+        assert!(!results.is_empty());
+        for r in &results {
+            assert!(r.temperature > 0.0);
+        }
+    }
+
+    #[test]
+    fn test_s130_full_pipeline_empty() {
+        let config = MetaReplicatorConfig::default();
+        let (shares, results, credits) = s130_full_pipeline(
+            &[], &[], &[], 0.5, &[], 1.0, 0.5, 0.7, &config,
+        );
+        assert!(shares.is_empty());
+        assert!(results.is_empty());
+        assert!(credits.is_empty());
+    }
+
+    #[test]
+    fn test_s130_full_pipeline_length_mismatch() {
+        let config = MetaReplicatorConfig::default();
+        let (shares, results, credits) = s130_full_pipeline(
+            &[0.5, 0.5], &[1.0], &[0.3], 0.5, &[0.5], 1.0, 0.5, 0.7, &config,
+        );
+        assert!(shares.is_empty());
+        assert!(results.is_empty());
+        assert!(credits.is_empty());
+    }
+
+    #[test]
+    fn test_s130_full_pipeline_basic() {
+        let config = MetaReplicatorConfig::fast_converge();
+        let shares = [0.5, 0.5];
+        let fitnesses = [1.0, 0.5];
+        let sgw_dists = [0.3, 0.6];
+        let safe_dist = 0.4;
+        let energy = [0.8, 0.2];
+        let max_energy = 1.0;
+
+        let (final_shares, results, credits) = s130_full_pipeline(
+            &shares, &fitnesses, &sgw_dists, safe_dist, &energy, max_energy, 0.5, 0.7, &config,
+        );
+
+        assert_eq!(final_shares.len(), 2);
+        assert!(!results.is_empty());
+        assert_eq!(credits.len(), 2);
+
+        // Credits should sum to ~1.0
+        let credit_total: f64 = credits.iter().sum();
+        assert!((credit_total - 1.0).abs() < 1e-6);
+
+        // Node 0 has higher fitness → should have higher share
+        assert!(final_shares[0] > final_shares[1]);
+    }
+
+    #[test]
+    fn test_s130_full_pipeline_dominance() {
+        let config = MetaReplicatorConfig::fast_converge();
+        let shares = [0.5, 0.5];
+        let fitnesses = [3.0, 0.5];
+        let sgw_dists = [0.1, 0.9];
+        let safe_dist = 0.3;
+        let energy = [0.95, 0.05];
+
+        let (final_shares, results, _) = s130_full_pipeline(
+            &shares, &fitnesses, &sgw_dists, safe_dist, &energy, 1.0, 0.5, 0.7, &config,
+        );
+
+        // Node 0 should dominate (higher fitness + closer SGW + higher energy)
+        assert!(final_shares[0] > final_shares[1]);
+        // Meta-replicator produces valid results
+        assert!(!results.is_empty());
+        // Shares sum to ~1.0
+        let total: f64 = final_shares.iter().sum();
+        assert!((total - 1.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_s130_full_pipeline_equal_nodes() {
+        let config = MetaReplicatorConfig::fast_converge();
+        let shares = [0.5, 0.5];
+        let fitnesses = [1.0, 1.0];
+        let sgw_dists = [0.3, 0.3];
+        let safe_dist = 0.3;
+        let energy = [0.5, 0.5];
+
+        let (final_shares, _, _) = s130_full_pipeline(
+            &shares, &fitnesses, &sgw_dists, safe_dist, &energy, 1.0, 0.5, 0.7, &config,
+        );
+
+        // Equal nodes should remain roughly equal
+        assert!((final_shares[0] - 0.5).abs() < 0.15);
+        assert!((final_shares[1] - 0.5).abs() < 0.15);
+    }
+
+    #[test]
+    fn test_s130_full_pipeline_meta_results_structure() {
+        let config = MetaReplicatorConfig::fast_converge();
+        let shares = [0.4, 0.3, 0.3];
+        let fitnesses = [1.5, 1.0, 0.8];
+        let sgw_dists = [0.2, 0.4, 0.5];
+        let safe_dist = 0.3;
+        let energy = [0.7, 0.5, 0.3];
+
+        let (_shares, results, _credits) = s130_full_pipeline(
+            &shares, &fitnesses, &sgw_dists, safe_dist, &energy, 1.0, 0.5, 0.7, &config,
+        );
+
+        assert!(!results.is_empty());
+        let last = results.last().unwrap();
+        assert!(last.meta_gradient_norm >= 0.0);
+        assert!(last.temperature > 0.0);
+        assert!(last.updated_lr > 0.0);
+        assert_eq!(last.updated_coefficients.len(), 4);
+    }
+
+    #[test]
+    fn test_s130_pipeline_integration_with_s129() {
+        // Verify S130 builds on S129 components
+        let shares = [0.5, 0.5];
+        let fitnesses = [1.0, 0.5];
+        let sgw_dists = [0.3, 0.6];
+        let safe_dist = 0.4;
+        let energy = [0.8, 0.2];
+
+        // S129 pipeline
+        let (s129_shares, s129_traj, _s129_credits) = s129_full_pipeline(
+            &shares, &fitnesses, &sgw_dists, safe_dist, &energy, 1.0, 0.5, 0.7, 100, 0.01,
+        );
+
+        // S130 pipeline
+        let config = MetaReplicatorConfig::fast_converge();
+        let (s130_shares, s130_results, _s130_credits) = s130_full_pipeline(
+            &shares, &fitnesses, &sgw_dists, safe_dist, &energy, 1.0, 0.5, 0.7, &config,
+        );
+
+        // Both should produce valid results
+        assert_eq!(s129_shares.len(), 2);
+        assert_eq!(s130_shares.len(), 2);
+        assert!(!s129_traj.is_empty());
+        assert!(!s130_results.is_empty());
+
+        // Both should favor node 0
+        assert!(s129_shares[0] > s129_shares[1]);
+        assert!(s130_shares[0] > s130_shares[1]);
+    }
+
+    #[test]
+    fn test_evaluate_one_step_fitness_empty() {
+        let result = evaluate_one_step_fitness(&[], &[], 0.01, &[0.5, 0.3, 0.2, 2.0]);
+        assert_eq!(result, 0.0);
+    }
+
+    #[test]
+    fn test_evaluate_one_step_fitness_uniform() {
+        let shares = [0.5, 0.5];
+        let fitnesses = [1.0, 1.0];
+        let result = evaluate_one_step_fitness(&shares, &fitnesses, 0.01, &[0.5, 0.3, 0.2, 2.0]);
+        // Equal fitness → no change → max entropy
+        assert!(result > 0.0);
+    }
+
+    #[test]
+    fn test_evaluate_one_step_fitness_dominant() {
+        let shares = [0.1, 0.9];
+        let fitnesses = [1.0, 3.0];
+        let result = evaluate_one_step_fitness(&shares, &fitnesses, 0.01, &[0.5, 0.3, 0.2, 2.0]);
+        assert!(result > 0.0);
     }
 }

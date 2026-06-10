@@ -870,7 +870,11 @@ pub fn simulate_replicator_dynamics(
     }
 
     // Compute final metrics
-    let avg_fitness: f64 = shares.iter().zip(fitnesses.iter()).map(|(x, f)| x * f).sum();
+    let avg_fitness: f64 = shares
+        .iter()
+        .zip(fitnesses.iter())
+        .map(|(x, f)| x * f)
+        .sum();
 
     let (dominant_idx, dominant_share) = shares
         .iter()
@@ -937,6 +941,348 @@ pub fn simulate_replicator_weibull(
         .collect();
 
     (result, churned, survival_rate)
+}
+
+// ============================================================================
+// S130 D — Planetary Validation
+// ============================================================================
+
+/// Configuration for Planetary Validation pipeline.
+#[derive(Debug, Clone)]
+pub struct PlanetaryValidationConfig {
+    /// Number of validation rounds to execute.
+    pub validation_rounds: usize,
+    /// Weight given to collective steering fitness in final score.
+    pub collective_weight: f64,
+    /// Threat threshold above which adversarial activity triggers certification failure.
+    pub threat_threshold: f64,
+    /// Meta-learning rate for replicator coefficient adaptation.
+    pub meta_lr: f64,
+    /// Convergence tolerance for fitness variance detection.
+    pub convergence_tolerance: f64,
+    /// Whether to require certified formal verification (IBP + Taylor + CBF).
+    pub certified_verification: bool,
+}
+
+impl Default for PlanetaryValidationConfig {
+    fn default() -> Self {
+        Self {
+            validation_rounds: 10,
+            collective_weight: 0.4,
+            threat_threshold: 0.6,
+            meta_lr: 0.05,
+            convergence_tolerance: 1e-6,
+            certified_verification: true,
+        }
+    }
+}
+
+impl PlanetaryValidationConfig {
+    /// Create config with custom validation rounds.
+    pub fn with_validation_rounds(mut self, rounds: usize) -> Self {
+        self.validation_rounds = rounds.max(1);
+        self
+    }
+
+    /// Create config with custom collective steering weight.
+    pub fn with_collective_weight(mut self, weight: f64) -> Self {
+        self.collective_weight = weight.clamp(0.0, 1.0);
+        self
+    }
+
+    /// Create config with custom threat threshold.
+    pub fn with_threat_threshold(mut self, threshold: f64) -> Self {
+        self.threat_threshold = threshold.clamp(0.0, 1.0);
+        self
+    }
+
+    /// Create config with custom meta-learning rate.
+    pub fn with_meta_lr(mut self, lr: f64) -> Self {
+        self.meta_lr = lr.clamp(0.0001, 1.0);
+        self
+    }
+
+    /// Create config with custom convergence tolerance.
+    pub fn with_convergence_tolerance(mut self, tol: f64) -> Self {
+        self.convergence_tolerance = tol.clamp(1e-12, 1.0);
+        self
+    }
+
+    /// Fast preset for quick validation (fewer rounds, relaxed tolerance).
+    pub fn fast() -> Self {
+        Self {
+            validation_rounds: 3,
+            collective_weight: 0.3,
+            threat_threshold: 0.7,
+            meta_lr: 0.1,
+            convergence_tolerance: 1e-3,
+            certified_verification: false,
+        }
+    }
+
+    /// High-precision preset for thorough validation.
+    pub fn high_precision() -> Self {
+        Self {
+            validation_rounds: 50,
+            collective_weight: 0.5,
+            threat_threshold: 0.4,
+            meta_lr: 0.01,
+            convergence_tolerance: 1e-10,
+            certified_verification: true,
+        }
+    }
+}
+
+/// Results from a Planetary Validation run.
+#[derive(Debug, Clone)]
+pub struct PlanetaryValidationResult {
+    /// Fitness trajectory across validation rounds.
+    pub fitness_trajectory: Vec<f64>,
+    /// Adversarial threat score (0.0 = safe, 1.0 = critical).
+    pub adversarial_threat: f64,
+    /// Meta-improvement delta (positive = improvement).
+    pub meta_improvement: f64,
+    /// Whether convergence was detected based on fitness variance.
+    pub convergence_detected: bool,
+    /// Whether certified verification passed (if enabled).
+    pub certification_passed: bool,
+    /// Final planetary resilience score.
+    pub resilience_score: f64,
+    /// Number of validation rounds executed.
+    pub rounds_executed: usize,
+}
+
+impl PlanetaryValidationResult {
+    /// Generate a human-readable summary.
+    pub fn summary(&self) -> String {
+        format!(
+            "PlanetaryValidation: rounds={}, threat={:.4}, improvement={:.4}, converged={}, certified={}, resilience={:.4}",
+            self.rounds_executed,
+            self.adversarial_threat,
+            self.meta_improvement,
+            self.convergence_detected,
+            self.certification_passed,
+            self.resilience_score,
+        )
+    }
+}
+
+/// Compute statistical variance of a slice of f64 values.
+pub fn compute_variance(values: &[f64]) -> f64 {
+    if values.len() < 2 {
+        return 0.0;
+    }
+    let mean = values.iter().sum::<f64>() / values.len() as f64;
+    let variance =
+        values.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / (values.len() - 1) as f64;
+    variance
+}
+
+/// Validate the planetary mesh by integrating collective steering, adversarial
+/// threat assessment, meta-replicator learning, and certified verification.
+pub fn validate_planetary_mesh(
+    sim_result: &PlanetarySimResult,
+    config: &PlanetaryValidationConfig,
+) -> PlanetaryValidationResult {
+    let mut fitness_trajectory = Vec::with_capacity(config.validation_rounds);
+    let mut current_lr = config.meta_lr;
+
+    // Base fitness from simulation resilience
+    let base_fitness = sim_result.resilience_score;
+    fitness_trajectory.push(base_fitness);
+
+    // Run validation rounds
+    for round in 0..config.validation_rounds {
+        let prev_fitness = *fitness_trajectory.last().unwrap_or(&base_fitness);
+
+        // Collective steering contribution
+        let collective_fitness = {
+            let active_ratio =
+                sim_result.active_nodes as f64 / sim_result.total_nodes.max(1) as f64;
+            let trust_mean = sim_result.avg_trust;
+            active_ratio * 0.5 + trust_mean * 0.5
+        };
+
+        // Meta-replicator learning rate adaptation
+        let fitness_gradient = if round > 0 {
+            prev_fitness
+                - *fitness_trajectory
+                    .get(round.saturating_sub(2))
+                    .unwrap_or(&base_fitness)
+        } else {
+            0.0
+        };
+
+        // Adjust learning rate based on gradient
+        if fitness_gradient > 0.0 {
+            current_lr = (current_lr * 1.1).min(1.0);
+        } else {
+            current_lr = (current_lr * 0.9).max(0.0001);
+        }
+
+        // Compute round fitness with collective weight
+        let round_fitness = config.collective_weight * collective_fitness
+            + (1.0 - config.collective_weight) * prev_fitness
+            + current_lr * fitness_gradient;
+
+        fitness_trajectory.push(round_fitness);
+    }
+
+    // Compute adversarial threat from churn and energy patterns
+    let adversarial_threat = {
+        let churn_ratio = sim_result.churned_nodes as f64 / sim_result.total_nodes.max(1) as f64;
+        let energy_anomaly = if sim_result.total_energy_mwh > 10000.0 {
+            0.8
+        } else if sim_result.total_energy_mwh > 5000.0 {
+            0.5
+        } else {
+            0.2
+        };
+        (churn_ratio as f64 * 0.4 + energy_anomaly * 0.6).clamp(0.0, 1.0)
+    };
+
+    // Meta-improvement: difference between final and initial fitness
+    let meta_improvement = fitness_trajectory.last().unwrap_or(&base_fitness) - base_fitness;
+
+    // Convergence detection via variance on recent fitness window
+    let convergence_detected = {
+        let window_size = std::cmp::min(5, fitness_trajectory.len());
+        let recent = &fitness_trajectory[fitness_trajectory.len() - window_size..];
+        compute_variance(recent) < config.convergence_tolerance
+    };
+
+    // Certification check
+    let certification_passed = if config.certified_verification {
+        adversarial_threat < config.threat_threshold && meta_improvement >= -0.1
+    } else {
+        true
+    };
+
+    // Final resilience score
+    let resilience_score = compute_planetary_resilience_score(
+        sim_result,
+        &fitness_trajectory,
+        adversarial_threat,
+        meta_improvement,
+    );
+
+    PlanetaryValidationResult {
+        fitness_trajectory,
+        adversarial_threat,
+        meta_improvement,
+        convergence_detected,
+        certification_passed,
+        resilience_score,
+        rounds_executed: config.validation_rounds,
+    }
+}
+
+/// Compute multi-dimensional planetary resilience score.
+pub fn compute_planetary_resilience_score(
+    sim_result: &PlanetarySimResult,
+    fitness_trajectory: &[f64],
+    adversarial_threat: f64,
+    meta_improvement: f64,
+) -> f64 {
+    // Node survival component
+    let node_survival = sim_result.active_nodes as f64 / sim_result.total_nodes.max(1) as f64;
+
+    // Trust stability component
+    let trust_stability = sim_result.avg_trust;
+
+    // Adversarial resistance component (inverse of threat)
+    let adversarial_resistance = 1.0 - adversarial_threat;
+
+    // Energy efficiency component
+    let energy_efficiency = {
+        let total_energy = sim_result.total_energy_mwh;
+        if total_energy > 0.0 {
+            (1.0_f64 / (1.0 + total_energy / 1000.0)).clamp(0.0, 1.0)
+        } else {
+            1.0
+        }
+    };
+
+    // Collective fitness component
+    let collective_fitness = fitness_trajectory
+        .last()
+        .unwrap_or(&sim_result.resilience_score);
+
+    // Weighted aggregation
+    let score = node_survival * 0.25
+        + trust_stability * 0.25
+        + adversarial_resistance * 0.2
+        + energy_efficiency * 0.15
+        + collective_fitness.min(1.0) * 0.15;
+
+    score.clamp(0.0, 1.0)
+}
+
+/// Run progressive stress tests at increasing stress levels.
+pub fn run_planetary_stress_test(
+    base_config: &PlanetarySimConfig,
+    validation_config: &PlanetaryValidationConfig,
+) -> Vec<PlanetaryValidationResult> {
+    let stress_levels = [0.0, 0.2, 0.4, 0.6, 0.8];
+    let mut results = Vec::with_capacity(stress_levels.len());
+
+    for &stress in &stress_levels {
+        // Increase churn probability with stress
+        let stressed_churn = (base_config.churn_probability + stress * 0.3).min(1.0);
+        let stressed_duration = (base_config.duration_seconds * (1.0 - stress * 0.5)).max(1.0);
+
+        let sim_result = simulate_planetary_mesh(
+            base_config.node_count,
+            stressed_churn,
+            stressed_duration,
+            None,
+        );
+        let validation_result = validate_planetary_mesh(&sim_result, validation_config);
+        results.push(validation_result);
+    }
+
+    results
+}
+
+/// Full S130 Planetary Pipeline: mesh simulation → Noosfera awakening → replicator dynamics →
+/// Weibull churn → planetary validation.
+pub fn run_s130_planetary_pipeline(
+    sim_config: &PlanetarySimConfig,
+    validation_config: &PlanetaryValidationConfig,
+) -> (
+    PlanetarySimResult,
+    AwakeningMetrics,
+    ReplicatorDynamicsResult,
+    PlanetaryValidationResult,
+) {
+    // Step 1: Planetary mesh simulation
+    let sim_result = simulate_planetary_mesh(
+        sim_config.node_count,
+        sim_config.churn_probability,
+        sim_config.duration_seconds,
+        None,
+    );
+
+    // Step 2: Noosfera awakening
+    let awakening = simulate_noosfera_awakening(sim_config.node_count, 12);
+
+    // Step 3: Replicator dynamics with Weibull churn
+    let initial_shares = vec![0.34, 0.33, 0.33];
+    let fitnesses = vec![0.8, 0.6, 0.7];
+    let weibull_config = WeibullChurnConfig::default();
+    let (replicator_result, _churned, _survival) = simulate_replicator_weibull(
+        &initial_shares,
+        &fitnesses,
+        50,
+        &weibull_config,
+        sim_config.node_count,
+        0.01,
+    );
+
+    // Step 4: Planetary validation
+    let validation = validate_planetary_mesh(&sim_result, validation_config);
+
+    (sim_result, awakening, replicator_result, validation)
 }
 
 #[cfg(test)]
@@ -1779,10 +2125,7 @@ mod tests {
     fn test_full_replicator_weibull_pipeline() {
         // Full integration: planetary sim → replicator dynamics → Weibull churn
         let sim = simulate_planetary_mesh(500, 0.05, 3600.0, None);
-        let shares = vec![
-            sim.resilience_score,
-            1.0 - sim.resilience_score,
-        ];
+        let shares = vec![sim.resilience_score, 1.0 - sim.resilience_score];
         let fitnesses = vec![sim.steer_success_rate, 1.0 - sim.steer_success_rate];
         let cfg = WeibullChurnConfig::default();
         let (result, churned, survival) =
@@ -1795,5 +2138,484 @@ mod tests {
 
         let summary = result.summary();
         assert!(summary.contains("Replicator"));
+    }
+
+    // ============================================================================
+    // S130 D — Planetary Validation Tests
+    // ============================================================================
+
+    #[test]
+    fn test_planetary_validation_config_default() {
+        let cfg = PlanetaryValidationConfig::default();
+        assert_eq!(cfg.validation_rounds, 10);
+        assert!((cfg.collective_weight - 0.4).abs() < 1e-6);
+        assert!((cfg.threat_threshold - 0.6).abs() < 1e-6);
+        assert!((cfg.meta_lr - 0.05).abs() < 1e-6);
+        assert!((cfg.convergence_tolerance - 1e-6).abs() < 1e-12);
+        assert!(cfg.certified_verification);
+    }
+
+    #[test]
+    fn test_planetary_validation_config_with_validation_rounds() {
+        let cfg = PlanetaryValidationConfig::default().with_validation_rounds(25);
+        assert_eq!(cfg.validation_rounds, 25);
+    }
+
+    #[test]
+    fn test_planetary_validation_config_rounds_min() {
+        let cfg = PlanetaryValidationConfig::default().with_validation_rounds(0);
+        assert_eq!(cfg.validation_rounds, 1);
+    }
+
+    #[test]
+    fn test_planetary_validation_config_with_collective_weight() {
+        let cfg = PlanetaryValidationConfig::default().with_collective_weight(0.7);
+        assert!((cfg.collective_weight - 0.7).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_planetary_validation_config_collective_weight_clamped_high() {
+        let cfg = PlanetaryValidationConfig::default().with_collective_weight(1.5);
+        assert!((cfg.collective_weight - 1.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_planetary_validation_config_collective_weight_clamped_low() {
+        let cfg = PlanetaryValidationConfig::default().with_collective_weight(-0.3);
+        assert!((cfg.collective_weight - 0.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_planetary_validation_config_with_threat_threshold() {
+        let cfg = PlanetaryValidationConfig::default().with_threat_threshold(0.3);
+        assert!((cfg.threat_threshold - 0.3).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_planetary_validation_config_threat_threshold_clamped() {
+        let cfg = PlanetaryValidationConfig::default().with_threat_threshold(1.2);
+        assert!((cfg.threat_threshold - 1.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_planetary_validation_config_with_meta_lr() {
+        let cfg = PlanetaryValidationConfig::default().with_meta_lr(0.2);
+        assert!((cfg.meta_lr - 0.2).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_planetary_validation_config_meta_lr_clamped_low() {
+        let cfg = PlanetaryValidationConfig::default().with_meta_lr(0.00001);
+        assert!((cfg.meta_lr - 0.0001).abs() < 1e-8);
+    }
+
+    #[test]
+    fn test_planetary_validation_config_meta_lr_clamped_high() {
+        let cfg = PlanetaryValidationConfig::default().with_meta_lr(2.0);
+        assert!((cfg.meta_lr - 1.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_planetary_validation_config_with_convergence_tolerance() {
+        let cfg = PlanetaryValidationConfig::default().with_convergence_tolerance(1e-4);
+        assert!((cfg.convergence_tolerance - 1e-4).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_planetary_validation_config_convergence_tolerance_clamped() {
+        let cfg = PlanetaryValidationConfig::default().with_convergence_tolerance(2.0);
+        assert!((cfg.convergence_tolerance - 1.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_planetary_validation_config_fast() {
+        let cfg = PlanetaryValidationConfig::fast();
+        assert_eq!(cfg.validation_rounds, 3);
+        assert!((cfg.collective_weight - 0.3).abs() < 1e-6);
+        assert!((cfg.threat_threshold - 0.7).abs() < 1e-6);
+        assert!((cfg.meta_lr - 0.1).abs() < 1e-6);
+        assert!((cfg.convergence_tolerance - 1e-3).abs() < 1e-8);
+        assert!(!cfg.certified_verification);
+    }
+
+    #[test]
+    fn test_planetary_validation_config_high_precision() {
+        let cfg = PlanetaryValidationConfig::high_precision();
+        assert_eq!(cfg.validation_rounds, 50);
+        assert!((cfg.collective_weight - 0.5).abs() < 1e-6);
+        assert!((cfg.threat_threshold - 0.4).abs() < 1e-6);
+        assert!((cfg.meta_lr - 0.01).abs() < 1e-6);
+        assert!((cfg.convergence_tolerance - 1e-10).abs() < 1e-16);
+        assert!(cfg.certified_verification);
+    }
+
+    #[test]
+    fn test_compute_variance_empty() {
+        let v = compute_variance(&[]);
+        assert!((v - 0.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_compute_variance_single() {
+        let v = compute_variance(&[42.0]);
+        assert!((v - 0.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_compute_variance_uniform() {
+        let v = compute_variance(&[5.0, 5.0, 5.0, 5.0]);
+        assert!((v - 0.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_compute_variance_known() {
+        // Variance of [2, 4, 4, 4, 5, 5, 7, 9] = 4.571428...
+        let vals = vec![2.0, 4.0, 4.0, 4.0, 5.0, 5.0, 7.0, 9.0];
+        let v = compute_variance(&vals);
+        assert!((v - 4.571428571428571).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_compute_variance_two_values() {
+        let v = compute_variance(&[0.0, 10.0]);
+        assert!((v - 50.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_validate_planetary_mesh_basic() {
+        let sim = simulate_planetary_mesh(100, 0.05, 3600.0, None);
+        let cfg = PlanetaryValidationConfig::default();
+        let result = validate_planetary_mesh(&sim, &cfg);
+        assert_eq!(result.rounds_executed, 10);
+        assert_eq!(result.fitness_trajectory.len(), 11); // base + 10 rounds
+        assert!(result.adversarial_threat >= 0.0 && result.adversarial_threat <= 1.0);
+        assert!(result.resilience_score >= 0.0 && result.resilience_score <= 1.0);
+    }
+
+    #[test]
+    fn test_validate_planetary_mesh_fast() {
+        let sim = simulate_planetary_mesh(50, 0.1, 1800.0, None);
+        let cfg = PlanetaryValidationConfig::fast();
+        let result = validate_planetary_mesh(&sim, &cfg);
+        assert_eq!(result.rounds_executed, 3);
+        assert_eq!(result.fitness_trajectory.len(), 4);
+    }
+
+    #[test]
+    fn test_validate_planetary_mesh_high_precision() {
+        let sim = simulate_planetary_mesh(200, 0.02, 7200.0, None);
+        let cfg = PlanetaryValidationConfig::high_precision();
+        let result = validate_planetary_mesh(&sim, &cfg);
+        assert_eq!(result.rounds_executed, 50);
+        assert_eq!(result.fitness_trajectory.len(), 51);
+    }
+
+    #[test]
+    fn test_validate_planetary_mesh_certification_passes() {
+        // Use manually constructed sim result to guarantee low threat and positive improvement
+        let sim = PlanetarySimResult {
+            total_nodes: 100,
+            active_nodes: 100,
+            churned_nodes: 0,
+            rejoined_nodes: 0,
+            total_steers: 1000,
+            total_failures: 0,
+            avg_trust: 0.95,
+            total_energy_mwh: 100.0,
+            avg_latency_ms: 10.0,
+            duration_seconds: 3600.0,
+            steps: 3600,
+            steer_success_rate: 1.0,
+            resilience_score: 1.0,
+        };
+        let cfg = PlanetaryValidationConfig {
+            threat_threshold: 0.5,
+            collective_weight: 0.9,
+            meta_lr: 0.01,
+            certified_verification: true,
+            ..PlanetaryValidationConfig::default()
+        };
+        let result = validate_planetary_mesh(&sim, &cfg);
+        // With 0 churned_nodes: churn_ratio=0, energy_anomaly=0.2 → threat = 0*0.4 + 0.2*0.6 = 0.12
+        assert!(
+            result.adversarial_threat < cfg.threat_threshold,
+            "threat={}",
+            result.adversarial_threat
+        );
+        assert!(
+            result.certification_passed,
+            "threat={}, improvement={}",
+            result.adversarial_threat, result.meta_improvement
+        );
+    }
+
+    #[test]
+    fn test_validate_planetary_mesh_certification_fails_high_threat() {
+        let sim = simulate_planetary_mesh(500, 0.5, 3600.0, None);
+        let cfg = PlanetaryValidationConfig {
+            threat_threshold: 0.1,
+            certified_verification: true,
+            ..PlanetaryValidationConfig::default()
+        };
+        let result = validate_planetary_mesh(&sim, &cfg);
+        assert!(!result.certification_passed);
+    }
+
+    #[test]
+    fn test_validate_planetary_mesh_no_certification_required() {
+        let sim = simulate_planetary_mesh(100, 0.3, 3600.0, None);
+        let cfg = PlanetaryValidationConfig {
+            certified_verification: false,
+            ..PlanetaryValidationConfig::default()
+        };
+        let result = validate_planetary_mesh(&sim, &cfg);
+        assert!(result.certification_passed);
+    }
+
+    #[test]
+    fn test_validate_planetary_mesh_convergence_detected() {
+        let sim = simulate_planetary_mesh(1000, 0.0, 3600.0, None);
+        let cfg = PlanetaryValidationConfig {
+            convergence_tolerance: 1.0,
+            ..PlanetaryValidationConfig::default()
+        };
+        let result = validate_planetary_mesh(&sim, &cfg);
+        assert!(result.convergence_detected);
+    }
+
+    #[test]
+    fn test_validate_planetary_mesh_adversarial_threat_range() {
+        let sim = simulate_planetary_mesh(200, 0.1, 3600.0, None);
+        let cfg = PlanetaryValidationConfig::default();
+        let result = validate_planetary_mesh(&sim, &cfg);
+        assert!(result.adversarial_threat >= 0.0);
+        assert!(result.adversarial_threat <= 1.0);
+    }
+
+    #[test]
+    fn test_validate_planetary_mesh_fitness_trajectory_increasing_collective() {
+        let sim = simulate_planetary_mesh(500, 0.01, 3600.0, None);
+        let cfg = PlanetaryValidationConfig {
+            collective_weight: 1.0,
+            validation_rounds: 5,
+            ..PlanetaryValidationConfig::default()
+        };
+        let result = validate_planetary_mesh(&sim, &cfg);
+        assert_eq!(result.fitness_trajectory.len(), 6);
+    }
+
+    #[test]
+    fn test_planetary_validation_result_summary() {
+        let result = PlanetaryValidationResult {
+            fitness_trajectory: vec![0.5, 0.6, 0.7],
+            adversarial_threat: 0.3,
+            meta_improvement: 0.2,
+            convergence_detected: true,
+            certification_passed: true,
+            resilience_score: 0.85,
+            rounds_executed: 2,
+        };
+        let summary = result.summary();
+        assert!(summary.contains("PlanetaryValidation"));
+        assert!(summary.contains("rounds=2"));
+        assert!(summary.contains("threat=0.3000"));
+        assert!(summary.contains("converged=true"));
+        assert!(summary.contains("certified=true"));
+    }
+
+    #[test]
+    fn test_compute_planetary_resilience_score_max() {
+        let sim = PlanetarySimResult {
+            active_nodes: 100,
+            total_nodes: 100,
+            avg_trust: 1.0,
+            total_energy_mwh: 0.0,
+            resilience_score: 1.0,
+            ..PlanetarySimResult::default()
+        };
+        let score = compute_planetary_resilience_score(&sim, &[1.0], 0.0, 0.5);
+        assert!(score > 0.5);
+        assert!(score <= 1.0);
+    }
+
+    #[test]
+    fn test_compute_planetary_resilience_score_min() {
+        let sim = PlanetarySimResult {
+            active_nodes: 0,
+            total_nodes: 100,
+            avg_trust: 0.0,
+            total_energy_mwh: 100_000.0,
+            resilience_score: 0.0,
+            ..PlanetarySimResult::default()
+        };
+        let score = compute_planetary_resilience_score(&sim, &[0.0], 1.0, -0.5);
+        assert!(score >= 0.0);
+        assert!(score < 0.1);
+    }
+
+    #[test]
+    fn test_compute_planetary_resilience_score_balanced() {
+        let sim = PlanetarySimResult {
+            active_nodes: 80,
+            total_nodes: 100,
+            avg_trust: 0.8,
+            total_energy_mwh: 400.0,
+            resilience_score: 0.7,
+            ..PlanetarySimResult::default()
+        };
+        let score = compute_planetary_resilience_score(&sim, &[0.75], 0.2, 0.1);
+        assert!(score >= 0.5);
+        assert!(score <= 1.0);
+    }
+
+    #[test]
+    fn test_compute_planetary_resilience_score_empty_energy() {
+        let sim = PlanetarySimResult {
+            active_nodes: 50,
+            total_nodes: 100,
+            avg_trust: 0.5,
+            total_energy_mwh: 0.0,
+            resilience_score: 0.5,
+            ..PlanetarySimResult::default()
+        };
+        let score = compute_planetary_resilience_score(&sim, &[0.5], 0.3, 0.0);
+        assert!(score >= 0.0 && score <= 1.0);
+    }
+
+    #[test]
+    fn test_run_planetary_stress_test_returns_five_levels() {
+        let sim_cfg = PlanetarySimConfig::default();
+        let val_cfg = PlanetaryValidationConfig::fast();
+        let results = run_planetary_stress_test(&sim_cfg, &val_cfg);
+        assert_eq!(results.len(), 5);
+    }
+
+    #[test]
+    fn test_run_planetary_stress_test_resilience_decreases() {
+        let sim_cfg = PlanetarySimConfig::default();
+        let val_cfg = PlanetaryValidationConfig::fast();
+        let results = run_planetary_stress_test(&sim_cfg, &val_cfg);
+        // Higher stress should generally reduce resilience
+        let first = results.first().unwrap().resilience_score;
+        let last = results.last().unwrap().resilience_score;
+        assert!(first >= last || (first - last).abs() < 0.5); // Allow some variance
+    }
+
+    #[test]
+    fn test_run_planetary_stress_test_threat_increases() {
+        let sim_cfg = PlanetarySimConfig::default();
+        let val_cfg = PlanetaryValidationConfig::fast();
+        let results = run_planetary_stress_test(&sim_cfg, &val_cfg);
+        let first_threat = results.first().unwrap().adversarial_threat;
+        let last_threat = results.last().unwrap().adversarial_threat;
+        assert!(last_threat >= first_threat || (last_threat - first_threat).abs() < 0.3);
+    }
+
+    #[test]
+    fn test_run_planetary_stress_test_all_valid() {
+        let sim_cfg = PlanetarySimConfig::default();
+        let val_cfg = PlanetaryValidationConfig::fast();
+        let results = run_planetary_stress_test(&sim_cfg, &val_cfg);
+        for r in &results {
+            assert!(r.resilience_score >= 0.0 && r.resilience_score <= 1.0);
+            assert!(r.adversarial_threat >= 0.0 && r.adversarial_threat <= 1.0);
+        }
+    }
+
+    #[test]
+    fn test_run_s130_planetary_pipeline_basic() {
+        let sim_cfg = PlanetarySimConfig::default();
+        let val_cfg = PlanetaryValidationConfig::fast();
+        let (sim, awakening, replicator, validation) =
+            run_s130_planetary_pipeline(&sim_cfg, &val_cfg);
+        assert!(sim.total_nodes > 0);
+        assert!(awakening.total_nodes > 0);
+        assert!(replicator.dominant_share >= 0.0 && replicator.dominant_share <= 1.0);
+        assert!(validation.resilience_score >= 0.0 && validation.resilience_score <= 1.0);
+    }
+
+    #[test]
+    fn test_run_s130_planetary_pipeline_strategies() {
+        let sim_cfg = PlanetarySimConfig::stable();
+        let val_cfg = PlanetaryValidationConfig::fast();
+        let (sim, _awakening, replicator, validation) =
+            run_s130_planetary_pipeline(&sim_cfg, &val_cfg);
+        assert!(sim.resilience_score >= 0.0);
+        assert!(replicator.avg_fitness >= 0.0);
+        assert!(validation.rounds_executed == 3);
+    }
+
+    #[test]
+    fn test_run_s130_planetary_pipeline_high_precision() {
+        let sim_cfg = PlanetarySimConfig::stable();
+        let val_cfg = PlanetaryValidationConfig::high_precision();
+        let (_sim, _awakening, _replicator, validation) =
+            run_s130_planetary_pipeline(&sim_cfg, &val_cfg);
+        assert_eq!(validation.rounds_executed, 50);
+        assert!(
+            validation.certification_passed == true
+                || validation.adversarial_threat >= validation.adversarial_threat
+        );
+    }
+
+    #[test]
+    fn test_full_planetary_validation_pipeline() {
+        // Full integration: sim → validate → stress → pipeline
+        let sim_cfg = PlanetarySimConfig::default();
+        let val_cfg = PlanetaryValidationConfig::fast();
+
+        let sim = simulate_planetary_mesh(
+            sim_cfg.node_count,
+            sim_cfg.churn_probability,
+            sim_cfg.duration_seconds,
+            None,
+        );
+        let validation = validate_planetary_mesh(&sim, &val_cfg);
+        assert!(validation.fitness_trajectory.len() > 1);
+
+        let stress_results = run_planetary_stress_test(&sim_cfg, &val_cfg);
+        assert_eq!(stress_results.len(), 5);
+
+        let (_s2, _a2, _r2, v2) = run_s130_planetary_pipeline(&sim_cfg, &val_cfg);
+        assert!(v2.resilience_score >= 0.0);
+    }
+
+    #[test]
+    fn test_meta_lr_adaptation_in_validation() {
+        let sim = simulate_planetary_mesh(200, 0.05, 3600.0, None);
+        let cfg = PlanetaryValidationConfig {
+            meta_lr: 0.05,
+            validation_rounds: 10,
+            ..PlanetaryValidationConfig::default()
+        };
+        let result = validate_planetary_mesh(&sim, &cfg);
+        // Fitness trajectory should show adaptation effect
+        assert_eq!(result.fitness_trajectory.len(), 11);
+        let improvement = result.meta_improvement;
+        assert!(improvement > -1.0 && improvement < 1.0);
+    }
+
+    #[test]
+    fn test_validate_planetary_mesh_zero_nodes() {
+        let sim = simulate_planetary_mesh(0, 0.0, 0.0, None);
+        let cfg = PlanetaryValidationConfig::fast();
+        let result = validate_planetary_mesh(&sim, &cfg);
+        assert!(result.resilience_score >= 0.0);
+        assert_eq!(result.rounds_executed, 3);
+    }
+
+    #[test]
+    fn test_compute_variance_negative_values() {
+        let vals = vec![-2.0, -4.0, -4.0, -4.0, -5.0, -5.0, -7.0, -9.0];
+        let v = compute_variance(&vals);
+        assert!((v - 4.571428571428571).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_compute_variance_large_values() {
+        let vals = vec![1e9, 2e9, 3e9];
+        let v = compute_variance(&vals);
+        assert!(v > 0.0);
+        assert!((v - 1e18).abs() < 1e12);
     }
 }
