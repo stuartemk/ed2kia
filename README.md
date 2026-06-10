@@ -1,7 +1,7 @@
 # 🌐 ed2kIA: Distributed Sparse Autoencoders for Edge LLM Interpretability
 
-[![Version](https://img.shields.io/badge/v12.7.0-sprint127-blue.svg)](https://github.com/Stuartemk/ed2kIA/releases/tag/v12.7.0-sprint127)
-[![Tests](https://img.shields.io/badge/Tests-450%2B%20PASS-green.svg)](https://github.com/Stuartemk/ed2kIA/actions)
+[![Version](https://img.shields.io/badge/v12.8.0-sprint128-blue.svg)](https://github.com/Stuartemk/ed2kIA/releases/tag/v12.8.0-sprint128)
+[![Tests](https://img.shields.io/badge/Tests-660%2B%20PASS-green.svg)](https://github.com/Stuartemk/ed2kIA/actions)
 [![Audit](https://img.shields.io/badge/OSSF-8.5%2F10-yellow.svg)](https://github.com/Stuartemk/ed2kIA/security)
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ética-orange.svg)](LICENSE)
 
@@ -49,6 +49,20 @@ The `native-audit` crate (`crates/native-audit`) provides:
 - **verify_steering_robustness_zonotope()** — **Zonotope Robustness Verification** (v11.0.0): Certified bound propagation using zonotope geometry — $Z = \{c + G@\varepsilon \mid \varepsilon \in [-1,1]^k\}$ with exact affine propagation $c'=Wc+b,\ G'=WG$
 - **collective_zonotope_consensus()** — **Collective Zonotope Consensus** (v11.0.0): Distributed zonotope gossip + Weiszfeld geometric median for Byzantine-resilient aggregation
 - **hybrid_zonotope_verify()** — **Hybrid Zonotope-Interval Verification** (v11.0.0): Zonotopes for linear layers, intervals for non-linear, then refine back
+
+**Planetary Immune Symbiosis & Adversarial Intelligence (v12.8.0 — Sprint 128):**
+| Feature | Module | Description |
+|---------|--------|-------------|
+| Counter-Steering Antibody | `native-audit/adversarial.rs` | `generate_collective_counter_steering()` — Shapley-weighted negative gradient + DP noise |
+| Shapley Confidence | `native-audit/adversarial.rs` | `compute_shapley_confidence()` — `1 - normalized_entropy` concentration measure |
+| Antibody Application | `native-audit/adversarial.rs` | `apply_antibody()`, `verify_antibody_effectiveness()` — Neutralize adversarial perturbations |
+| Federated SAE Update | `federated/sae_evolution.rs` | `federated_sae_update()` — Weiszfeld geometric median + DP noise |
+| Federated Shapley | `federated/sae_evolution.rs` | `compute_federated_shapley()` — Monte Carlo sampling for fair credit allocation |
+| Weibull Churn Model | `native-audit/planetary_sim.rs` | `weibull_cdf()`, `weibull_hazard()`, `simulate_weibull_churn()` — Flexible hazard rate |
+| Replicator Dynamics | `native-audit/planetary_sim.rs` | `simulate_replicator_dynamics()` — `dx_i/dt = x_i·(f_i - φ)` evolutionary game |
+| Replicator-Weibull Hybrid | `native-audit/planetary_sim.rs` | `simulate_replicator_weibull()` — Combined evolutionary + churn simulation |
+| Gossip Priority | `consensus/pous.rs` | `compute_gossip_priority()` — Fitness-based gossip scheduling |
+| Edge Scheduler | `consensus/pous.rs` | `update_edge_scheduler_priority()` — Energy-aware task scheduling for edge devices |
 
 **Evolutionary Game Dynamics (v12.7.0 — The Thermodynamic Sun & PoUS):**
 | Feature | Module | Description |

@@ -338,6 +338,98 @@ pub fn converge_to_nash(
     (final_shares, max_steps, false)
 }
 
+// ============================================================================
+// S128 — Gossip Priority + Edge Scheduler Integration
+// ============================================================================
+
+/// Edge device type for scheduling priority calculations.
+/// Mirrors `native-audit::edge_runtime::DeviceType` to avoid cross-crate dependency.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EdgeDeviceType {
+    Desktop,
+    OldDesktop,
+    Mobile,
+    Iot,
+    Smartwatch,
+    Datacenter,
+}
+
+impl EdgeDeviceType {
+    /// Compute efficiency weight for scheduling.
+    /// Higher values = more capable device = higher base priority.
+    pub fn device_efficiency_weight(&self) -> f64 {
+        match self {
+            EdgeDeviceType::Datacenter => 1.0,
+            EdgeDeviceType::Desktop => 0.9,
+            EdgeDeviceType::OldDesktop => 0.6,
+            EdgeDeviceType::Mobile => 0.4,
+            EdgeDeviceType::Iot => 0.15,
+            EdgeDeviceType::Smartwatch => 0.1,
+        }
+    }
+
+    /// Base energy cost per certification (mWh).
+    pub fn base_energy_cost(&self) -> f64 {
+        match self {
+            EdgeDeviceType::Desktop => 0.05,
+            EdgeDeviceType::OldDesktop => 0.08,
+            EdgeDeviceType::Mobile => 0.03,
+            EdgeDeviceType::Iot => 0.01,
+            EdgeDeviceType::Smartwatch => 0.005,
+            EdgeDeviceType::Datacenter => 5.0,
+        }
+    }
+}
+
+/// Gossip Priority — Scales message propagation rate by PoUS fitness × influence share.
+///
+/// Nodes with higher thermodynamic fitness and larger influence shares
+/// propagate gossip messages more frequently, creating a fitness-aware
+/// information diffusion network.
+///
+/// ```text
+/// priority = (fitness × share).clamp(0.01, 1.0)
+/// ```
+///
+/// # Parameters
+/// - `fitness`: PoUS fitness score (non-negative).
+/// - `current_share`: Current influence share in [0, 1].
+///
+/// # Returns
+/// Priority value in [0.01, 1.0].
+pub fn compute_gossip_priority(fitness: f64, current_share: f64) -> f64 {
+    (fitness * current_share).clamp(0.01, 1.0)
+}
+
+/// Edge Scheduler Priority — Fitness-aware, battery-conscious scheduling.
+///
+/// Combines PoUS fitness, device efficiency, and battery level to determine
+/// the scheduling priority for edge compute tasks. Low-battery devices
+/// are deprioritized to preserve planetary network longevity.
+///
+/// ```text
+/// priority = fitness × device_weight × battery_factor
+/// battery_factor = min(battery_level, 1.0) × 0.5 + 0.5
+/// ```
+///
+/// # Parameters
+/// - `fitness`: PoUS fitness score (non-negative).
+/// - `battery_level`: Battery level as ratio [0.0, 1.0].
+/// - `device_type`: Edge device classification.
+///
+/// # Returns
+/// Scheduling priority in [0.0, 1.0].
+pub fn update_edge_scheduler_priority(
+    fitness: f64,
+    battery_level: f64,
+    device_type: EdgeDeviceType,
+) -> f64 {
+    let device_weight = device_type.device_efficiency_weight();
+    let battery_factor = battery_level.clamp(0.0, 1.0) * 0.5 + 0.5;
+    let priority = fitness * device_weight * battery_factor;
+    priority.clamp(0.0, 1.0)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -695,5 +787,100 @@ mod tests {
         let diverse_fitness = compute_pous_fitness_with_entropy(base_fitness, &diverse_dist, 0.5);
         // Diverse should have higher fitness due to entropy bonus
         assert!(diverse_fitness > monopoly_fitness);
+    }
+
+    // --- S128: Gossip Priority + Edge Scheduler Tests ---
+
+    #[test]
+    fn test_gossip_priority_basic() {
+        let p = compute_gossip_priority(2.0, 0.3);
+        assert!((p - 0.6).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_gossip_priority_clamp_low() {
+        let p = compute_gossip_priority(0.001, 0.001);
+        assert_eq!(p, 0.01); // Clamped to minimum
+    }
+
+    #[test]
+    fn test_gossip_priority_clamp_high() {
+        let p = compute_gossip_priority(100.0, 1.0);
+        assert_eq!(p, 1.0); // Clamped to maximum
+    }
+
+    #[test]
+    fn test_gossip_priority_zero_fitness() {
+        let p = compute_gossip_priority(0.0, 0.5);
+        assert_eq!(p, 0.01); // Clamped to minimum
+    }
+
+    #[test]
+    fn test_edge_device_efficiency_weight() {
+        assert!((EdgeDeviceType::Datacenter.device_efficiency_weight() - 1.0).abs() < 1e-10);
+        assert!((EdgeDeviceType::Desktop.device_efficiency_weight() - 0.9).abs() < 1e-10);
+        assert!((EdgeDeviceType::Mobile.device_efficiency_weight() - 0.4).abs() < 1e-10);
+        assert!((EdgeDeviceType::Smartwatch.device_efficiency_weight() - 0.1).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_edge_device_base_energy_cost() {
+        assert!((EdgeDeviceType::Datacenter.base_energy_cost() - 5.0).abs() < 1e-10);
+        assert!((EdgeDeviceType::Desktop.base_energy_cost() - 0.05).abs() < 1e-10);
+        assert!((EdgeDeviceType::Smartwatch.base_energy_cost() - 0.005).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_edge_scheduler_priority_full_battery() {
+        let p = update_edge_scheduler_priority(1.0, 1.0, EdgeDeviceType::Datacenter);
+        // fitness=1.0 × weight=1.0 × battery_factor=1.0 = 1.0
+        assert!((p - 1.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_edge_scheduler_priority_low_battery() {
+        let p = update_edge_scheduler_priority(1.0, 0.0, EdgeDeviceType::Datacenter);
+        // fitness=1.0 × weight=1.0 × battery_factor=0.5 = 0.5
+        assert!((p - 0.5).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_edge_scheduler_priority_mobile_half_battery() {
+        let p = update_edge_scheduler_priority(1.0, 0.5, EdgeDeviceType::Mobile);
+        // fitness=1.0 × weight=0.4 × battery_factor=0.75 = 0.3
+        assert!((p - 0.3).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_edge_scheduler_priority_clamped() {
+        let p = update_edge_scheduler_priority(10.0, 1.0, EdgeDeviceType::Datacenter);
+        assert_eq!(p, 1.0); // Clamped to 1.0
+    }
+
+    #[test]
+    fn test_edge_scheduler_priority_smartwatch() {
+        let p = update_edge_scheduler_priority(0.5, 0.8, EdgeDeviceType::Smartwatch);
+        // fitness=0.5 × weight=0.1 × battery_factor=0.9 = 0.045
+        assert!((p - 0.045).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_gossip_priority_integration_with_pous() {
+        let fitness = compute_pous_fitness(10.0, 5.0, 0.95, 0.1);
+        let share = 0.3;
+        let priority = compute_gossip_priority(fitness, share);
+        assert!(priority >= 0.01);
+        assert!(priority <= 1.0);
+        // fitness = 6.49, share = 0.3 → 1.947 → clamped to 1.0
+        assert_eq!(priority, 1.0);
+    }
+
+    #[test]
+    fn test_edge_scheduler_integration_with_pous() {
+        let fitness = compute_pous_fitness(5.0, 2.0, 0.8, 0.0);
+        // fitness = 2.5 + 0.6 + 0.16 = 3.26
+        let priority = update_edge_scheduler_priority(fitness, 0.7, EdgeDeviceType::Desktop);
+        // 3.26 × 0.9 × 0.85 = 2.4951 → clamped to 1.0
+        assert_eq!(priority, 1.0);
     }
 }

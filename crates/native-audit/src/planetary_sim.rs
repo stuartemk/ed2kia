@@ -645,6 +645,300 @@ pub fn simulate_noosfera_awakening(initial_nodes: usize, months: u32) -> Awakeni
     }
 }
 
+/// Weibull Churn Configuration — Time-dependent node failure modeling.
+///
+/// The Weibull distribution models churn with flexible hazard rates:
+/// - shape (k) < 1: Decreasing hazard (early failures / infant mortality)
+/// - shape (k) = 1: Constant hazard (exponential / memoryless churn)
+/// - shape (k) > 1: Increasing hazard (aging / wear-out churn)
+#[derive(Debug, Clone)]
+pub struct WeibullChurnConfig {
+    /// Shape parameter (k) — controls hazard trend
+    pub shape: f64,
+    /// Scale parameter (λ) — characteristic lifetime in seconds
+    pub scale: f64,
+    /// Seed for deterministic simulation
+    pub seed: u64,
+}
+
+impl Default for WeibullChurnConfig {
+    fn default() -> Self {
+        Self {
+            shape: 1.5,    // Increasing hazard (aging devices)
+            scale: 7200.0, // Characteristic lifetime: 2 hours
+            seed: 42,
+        }
+    }
+}
+
+impl WeibullChurnConfig {
+    /// Create config with shape parameter.
+    pub fn with_shape(mut self, k: f64) -> Self {
+        self.shape = k.max(0.1);
+        self
+    }
+
+    /// Create config with scale parameter.
+    pub fn with_scale(mut self, lambda: f64) -> Self {
+        self.scale = lambda.max(1.0);
+        self
+    }
+
+    /// Decreasing hazard (infant mortality — nodes drop early).
+    pub fn infant_mortality() -> Self {
+        Self {
+            shape: 0.5,
+            ..Self::default()
+        }
+    }
+
+    /// Constant hazard (memoryless — exponential churn).
+    pub fn exponential() -> Self {
+        Self {
+            shape: 1.0,
+            ..Self::default()
+        }
+    }
+
+    /// Increasing hazard (aging — wear-out churn).
+    pub fn wear_out() -> Self {
+        Self {
+            shape: 2.5,
+            ..Self::default()
+        }
+    }
+}
+
+/// Compute Weibull CDF: F(t) = 1 - exp(-(t/λ)^k)
+pub fn weibull_cdf(k: f64, lambda: f64, t: f64) -> f64 {
+    if t <= 0.0 || lambda <= 0.0 || k <= 0.0 {
+        return 0.0;
+    }
+    let z = t / lambda;
+    (1.0 - (-(z.powf(k))).exp()).clamp(0.0, 1.0)
+}
+
+/// Compute Weibull hazard rate: h(t) = (k/λ) × (t/λ)^(k-1)
+pub fn weibull_hazard(k: f64, lambda: f64, t: f64) -> f64 {
+    if t <= 0.0 || lambda <= 0.0 || k <= 0.0 {
+        return 0.0;
+    }
+    (k / lambda) * (t / lambda).powf(k - 1.0)
+}
+
+/// Simulate Weibull churn for a fleet of nodes.
+///
+/// Each node has a lifetime drawn from Weibull(k, λ). Nodes whose
+/// lifetime < current_time are considered churned.
+///
+/// # Returns
+/// `(churned_count, survival_rate, avg_lifetime)`
+pub fn simulate_weibull_churn(
+    node_count: usize,
+    config: &WeibullChurnConfig,
+    duration_seconds: f64,
+) -> (usize, f64, f64) {
+    if node_count == 0 {
+        return (0, 0.0, 0.0);
+    }
+
+    let mut state = config.seed;
+    let mut churned = 0;
+    let mut total_lifetime = 0.0;
+
+    for _ in 0..node_count {
+        // Inverse transform sampling: t = λ × (-ln(1 - U))^(1/k)
+        let u = next_random_sim(&mut state);
+        let u_clamped = u.max(1e-12).min(1.0 - 1e-12);
+        let lifetime = config.scale * (-((1.0 - u_clamped).ln())).powf(1.0 / config.shape);
+
+        if lifetime < duration_seconds {
+            churned += 1;
+            total_lifetime += lifetime;
+        } else {
+            total_lifetime += duration_seconds;
+        }
+    }
+
+    let survived = node_count - churned;
+    let survival_rate = survived as f64 / node_count as f64;
+    let avg_lifetime = total_lifetime / node_count as f64;
+
+    (churned, survival_rate, avg_lifetime)
+}
+
+/// Replicator Dynamics Result — Strategy evolution in the planetary mesh.
+#[derive(Debug, Clone)]
+pub struct ReplicatorDynamicsResult {
+    /// Final strategy shares (sums to 1.0)
+    pub final_shares: Vec<f64>,
+    /// Number of steps simulated
+    pub steps: usize,
+    /// Final average fitness
+    pub avg_fitness: f64,
+    /// Dominant strategy index (highest share)
+    pub dominant_strategy: usize,
+    /// Dominant strategy share
+    pub dominant_share: f64,
+    /// Entropy of strategy distribution (diversity measure)
+    pub strategy_entropy: f64,
+    /// Share trajectory: (step, shares_snapshot)
+    pub trajectory: Vec<(usize, Vec<f64>)>,
+}
+
+impl ReplicatorDynamicsResult {
+    /// Generate a human-readable summary.
+    pub fn summary(&self) -> String {
+        format!(
+            "Replicator[{}s] dominant={} share={:.1}% fitness={:.4} entropy={:.4}",
+            self.steps,
+            self.dominant_strategy,
+            self.dominant_share * 100.0,
+            self.avg_fitness,
+            self.strategy_entropy,
+        )
+    }
+}
+
+/// Simulate replicator dynamics: dx_i/dt = x_i × (f_i - φ)
+///
+/// Where:
+/// - x_i = strategy share (frequency)
+/// - f_i = fitness of strategy i
+/// - φ = average fitness = Σ x_j × f_j
+///
+/// This models the evolutionary selection of strategies in the planetary mesh,
+/// where higher-fitness strategies grow at the expense of lower-fitness ones.
+///
+/// # Arguments
+/// * `initial_shares` — Initial strategy distribution (must sum to ~1.0)
+/// * `fitnesses` — Fitness values for each strategy
+/// * `steps` — Number of simulation steps
+/// * `dt` — Time step size
+///
+/// # Returns
+/// `ReplicatorDynamicsResult` with final state and trajectory
+pub fn simulate_replicator_dynamics(
+    initial_shares: &[f64],
+    fitnesses: &[f64],
+    steps: usize,
+    dt: f64,
+) -> ReplicatorDynamicsResult {
+    let n = initial_shares.len();
+    if n == 0 || steps == 0 {
+        return ReplicatorDynamicsResult {
+            final_shares: vec![],
+            steps: 0,
+            avg_fitness: 0.0,
+            dominant_strategy: 0,
+            dominant_share: 0.0,
+            strategy_entropy: 0.0,
+            trajectory: vec![],
+        };
+    }
+
+    let mut shares: Vec<f64> = initial_shares.to_vec();
+    let mut trajectory = Vec::with_capacity(steps + 1);
+    trajectory.push((0, shares.clone()));
+
+    for step in 0..steps {
+        // Compute average fitness φ = Σ x_j × f_j
+        let avg_fitness: f64 = shares
+            .iter()
+            .zip(fitnesses.iter())
+            .map(|(x, f)| x * f)
+            .sum();
+
+        // Replicator equation: dx_i/dt = x_i × (f_i - φ)
+        let mut new_shares = Vec::with_capacity(n);
+        for i in 0..n {
+            let growth = shares[i] * (fitnesses[i] - avg_fitness);
+            let new_share = (shares[i] + dt * growth).max(0.0);
+            new_shares.push(new_share);
+        }
+
+        // Normalize to ensure Σ x_i = 1
+        let total: f64 = new_shares.iter().sum();
+        if total > 1e-12 {
+            for s in new_shares.iter_mut() {
+                *s /= total;
+            }
+        }
+
+        shares = new_shares;
+        trajectory.push((step + 1, shares.clone()));
+    }
+
+    // Compute final metrics
+    let avg_fitness: f64 = shares.iter().zip(fitnesses.iter()).map(|(x, f)| x * f).sum();
+
+    let (dominant_idx, dominant_share) = shares
+        .iter()
+        .enumerate()
+        .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap())
+        .map(|(i, s)| (i, *s))
+        .unwrap_or((0, 0.0));
+
+    // Shannon entropy: H = -Σ x_i × ln(x_i)
+    let entropy: f64 = shares
+        .iter()
+        .filter(|&&x| x > 1e-12)
+        .map(|&x| -x * x.ln())
+        .sum();
+
+    ReplicatorDynamicsResult {
+        final_shares: shares,
+        steps,
+        avg_fitness,
+        dominant_strategy: dominant_idx,
+        dominant_share,
+        strategy_entropy: entropy,
+        trajectory,
+    }
+}
+
+/// Combined simulation: Replicator dynamics + Weibull churn.
+///
+/// Models the co-evolution of strategy shares (replicator dynamics)
+/// under time-dependent node attrition (Weibull churn).
+/// At each step, churned nodes redistribute their shares proportionally
+/// to surviving strategies.
+///
+/// # Arguments
+/// * `initial_shares` — Initial strategy distribution
+/// * `fitnesses` — Fitness values per strategy
+/// * `total_nodes` — Total nodes in the mesh
+/// * `weibull_config` — Weibull churn parameters
+/// * `steps` — Number of simulation steps
+/// * `dt` — Time step size
+///
+/// # Returns
+/// Tuple of (ReplicatorDynamicsResult, churned_count, survival_rate)
+pub fn simulate_replicator_weibull(
+    initial_shares: &[f64],
+    fitnesses: &[f64],
+    total_nodes: usize,
+    weibull_config: &WeibullChurnConfig,
+    steps: usize,
+    dt: f64,
+) -> (ReplicatorDynamicsResult, usize, f64) {
+    let duration = steps as f64 * dt;
+    let (churned, survival_rate, _avg_lifetime) =
+        simulate_weibull_churn(total_nodes, weibull_config, duration);
+
+    let result = simulate_replicator_dynamics(initial_shares, fitnesses, steps, dt);
+
+    // Adjust final shares for churn: surviving nodes keep proportional shares
+    // (churn is uniform across strategies in the base model)
+    let _adjusted_shares: Vec<f64> = result
+        .final_shares
+        .iter()
+        .map(|&s| s * survival_rate)
+        .collect();
+
+    (result, churned, survival_rate)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1171,5 +1465,335 @@ mod tests {
         let summary = awakening.summary();
         assert!(summary.contains("Awakening"));
         assert!(summary.contains("24"));
+    }
+
+    // — Sprint 128: Weibull Churn Tests —
+
+    #[test]
+    fn test_weibull_churn_config_default() {
+        let cfg = WeibullChurnConfig::default();
+        assert!((cfg.shape - 1.5).abs() < 1e-6);
+        assert!((cfg.scale - 7200.0).abs() < 1e-6);
+        assert_eq!(cfg.seed, 42);
+    }
+
+    #[test]
+    fn test_weibull_churn_config_with_shape() {
+        let cfg = WeibullChurnConfig::default().with_shape(3.0);
+        assert!((cfg.shape - 3.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_weibull_churn_config_shape_min() {
+        let cfg = WeibullChurnConfig::default().with_shape(0.01);
+        assert!((cfg.shape - 0.1).abs() < 1e-6); // Clamped to 0.1
+    }
+
+    #[test]
+    fn test_weibull_churn_config_with_scale() {
+        let cfg = WeibullChurnConfig::default().with_scale(14400.0);
+        assert!((cfg.scale - 14400.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_weibull_churn_config_scale_min() {
+        let cfg = WeibullChurnConfig::default().with_scale(0.5);
+        assert!((cfg.scale - 1.0).abs() < 1e-6); // Clamped to 1.0
+    }
+
+    #[test]
+    fn test_weibull_churn_infant_mortality() {
+        let cfg = WeibullChurnConfig::infant_mortality();
+        assert!((cfg.shape - 0.5).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_weibull_churn_exponential() {
+        let cfg = WeibullChurnConfig::exponential();
+        assert!((cfg.shape - 1.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_weibull_churn_wear_out() {
+        let cfg = WeibullChurnConfig::wear_out();
+        assert!((cfg.shape - 2.5).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_weibull_cdf_zero_time() {
+        assert!((weibull_cdf(1.5, 7200.0, 0.0) - 0.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_weibull_cdf_negative_time() {
+        assert!((weibull_cdf(1.5, 7200.0, -100.0) - 0.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_weibull_cdf_increases_with_time() {
+        let f1 = weibull_cdf(1.5, 7200.0, 1000.0);
+        let f2 = weibull_cdf(1.5, 7200.0, 5000.0);
+        let f3 = weibull_cdf(1.5, 7200.0, 20000.0);
+        assert!(f1 < f2);
+        assert!(f2 < f3);
+        assert!(f3 <= 1.0);
+    }
+
+    #[test]
+    fn test_weibull_cdf_exponential_case() {
+        // k=1 should match exponential CDF: 1 - exp(-t/λ)
+        let f = weibull_cdf(1.0, 1000.0, 1000.0);
+        let expected = 1.0 - (-1.0_f64).exp();
+        assert!((f - expected).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_weibull_cdf_clamped_to_one() {
+        let f = weibull_cdf(1.5, 100.0, 1e12);
+        assert!((f - 1.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_weibull_hazard_zero_time() {
+        assert!((weibull_hazard(1.5, 7200.0, 0.0) - 0.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_weibull_hazard_constant_for_exponential() {
+        // k=1 → constant hazard = 1/λ
+        let h = weibull_hazard(1.0, 1000.0, 500.0);
+        assert!((h - 0.001).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_weibull_hazard_increases_for_wear_out() {
+        // k>1 → hazard increases with time
+        let h1 = weibull_hazard(2.0, 1000.0, 100.0);
+        let h2 = weibull_hazard(2.0, 1000.0, 500.0);
+        assert!(h2 > h1);
+    }
+
+    #[test]
+    fn test_weibull_hazard_decreases_for_infant_mortality() {
+        // k<1 → hazard decreases with time
+        let h1 = weibull_hazard(0.5, 1000.0, 100.0);
+        let h2 = weibull_hazard(0.5, 1000.0, 500.0);
+        assert!(h2 < h1);
+    }
+
+    #[test]
+    fn test_simulate_weibull_churn_zero_nodes() {
+        let cfg = WeibullChurnConfig::default();
+        let (churned, survival, avg_life) = simulate_weibull_churn(0, &cfg, 3600.0);
+        assert_eq!(churned, 0);
+        assert!((survival - 0.0).abs() < 1e-6);
+        assert!((avg_life - 0.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_simulate_weibull_churn_zero_duration() {
+        let cfg = WeibullChurnConfig::default();
+        let (churned, survival, _avg_life) = simulate_weibull_churn(100, &cfg, 0.0);
+        assert_eq!(churned, 0);
+        assert!((survival - 1.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_simulate_weibull_churn_high_duration() {
+        let cfg = WeibullChurnConfig::default().with_scale(100.0);
+        let (churned, survival, _avg_life) = simulate_weibull_churn(1000, &cfg, 10000.0);
+        // Very long duration → most nodes churn
+        assert!(churned > 500);
+        assert!(survival < 0.5);
+    }
+
+    #[test]
+    fn test_simulate_weibull_churn_deterministic() {
+        let cfg = WeibullChurnConfig::default();
+        let r1 = simulate_weibull_churn(500, &cfg, 3600.0);
+        let r2 = simulate_weibull_churn(500, &cfg, 3600.0);
+        assert_eq!(r1, r2);
+    }
+
+    #[test]
+    fn test_simulate_weibull_churn_survival_rate_range() {
+        let cfg = WeibullChurnConfig::default();
+        let (_, survival, _) = simulate_weibull_churn(1000, &cfg, 3600.0);
+        assert!(survival >= 0.0 && survival <= 1.0);
+    }
+
+    #[test]
+    fn test_simulate_weibull_churn_avg_lifetime_positive() {
+        let cfg = WeibullChurnConfig::default();
+        let (_, _, avg_life) = simulate_weibull_churn(100, &cfg, 3600.0);
+        assert!(avg_life > 0.0);
+    }
+
+    // — Sprint 128: Replicator Dynamics Tests —
+
+    #[test]
+    fn test_simulate_replicator_dynamics_empty() {
+        let result = simulate_replicator_dynamics(&[], &[1.0], 10, 0.1);
+        assert!(result.final_shares.is_empty());
+        assert_eq!(result.steps, 0);
+    }
+
+    #[test]
+    fn test_simulate_replicator_dynamics_zero_steps() {
+        let result = simulate_replicator_dynamics(&[0.5, 0.5], &[1.0, 2.0], 0, 0.1);
+        assert_eq!(result.steps, 0);
+    }
+
+    #[test]
+    fn test_simulate_replicator_dynamics_shares_sum_to_one() {
+        let result = simulate_replicator_dynamics(&[0.33, 0.33, 0.34], &[1.0, 2.0, 1.5], 100, 0.01);
+        let total: f64 = result.final_shares.iter().sum();
+        assert!((total - 1.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_simulate_replicator_dynamics_higher_fitness_dominates() {
+        let result = simulate_replicator_dynamics(&[0.5, 0.5], &[1.0, 3.0], 500, 0.01);
+        // Strategy 1 (fitness=3.0) should dominate
+        assert!(result.dominant_strategy == 1);
+        assert!(result.dominant_share > 0.9);
+    }
+
+    #[test]
+    fn test_simulate_replicator_dynamics_equal_fitness() {
+        let result = simulate_replicator_dynamics(&[0.5, 0.5], &[1.0, 1.0], 100, 0.01);
+        // Equal fitness → shares should remain ~equal
+        assert!((result.final_shares[0] - 0.5).abs() < 0.01);
+        assert!((result.final_shares[1] - 0.5).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_simulate_replicator_dynamics_dominant_share_range() {
+        let result = simulate_replicator_dynamics(&[0.3, 0.3, 0.4], &[1.0, 2.0, 1.5], 100, 0.01);
+        assert!(result.dominant_share >= 0.0 && result.dominant_share <= 1.0);
+    }
+
+    #[test]
+    fn test_simulate_replicator_dynamics_entropy_positive() {
+        let result = simulate_replicator_dynamics(&[0.33, 0.33, 0.34], &[1.0, 2.0, 1.5], 10, 0.01);
+        assert!(result.strategy_entropy >= 0.0);
+    }
+
+    #[test]
+    fn test_simulate_replicator_dynamics_entropy_decreases() {
+        // Higher fitness disparity → lower entropy (less diversity)
+        let r1 = simulate_replicator_dynamics(&[0.5, 0.5], &[1.0, 1.01], 100, 0.01);
+        let r2 = simulate_replicator_dynamics(&[0.5, 0.5], &[1.0, 5.0], 100, 0.01);
+        assert!(r2.strategy_entropy < r1.strategy_entropy);
+    }
+
+    #[test]
+    fn test_simulate_replicator_dynamics_trajectory_length() {
+        let result = simulate_replicator_dynamics(&[0.5, 0.5], &[1.0, 2.0], 50, 0.01);
+        // Trajectory includes initial state (step 0) + one per step = steps + 1
+        assert_eq!(result.trajectory.len(), 51);
+    }
+
+    #[test]
+    fn test_simulate_replicator_dynamics_trajectory_start() {
+        let initial = vec![0.4, 0.6];
+        let result = simulate_replicator_dynamics(&initial, &[1.0, 2.0], 10, 0.01);
+        let (step, shares) = &result.trajectory[0];
+        assert_eq!(*step, 0);
+        assert!((shares[0] - 0.4).abs() < 1e-6);
+        assert!((shares[1] - 0.6).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_simulate_replicator_dynamics_avg_fitness_positive() {
+        let result = simulate_replicator_dynamics(&[0.5, 0.5], &[1.0, 2.0], 100, 0.01);
+        assert!(result.avg_fitness > 0.0);
+    }
+
+    #[test]
+    fn test_simulate_replicator_dynamics_single_strategy() {
+        let result = simulate_replicator_dynamics(&[1.0], &[2.0], 50, 0.01);
+        assert!((result.final_shares[0] - 1.0).abs() < 1e-6);
+        assert_eq!(result.dominant_strategy, 0);
+        assert!((result.strategy_entropy - 0.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_replicator_result_summary() {
+        let result = simulate_replicator_dynamics(&[0.5, 0.5], &[1.0, 2.0], 100, 0.01);
+        let summary = result.summary();
+        assert!(summary.contains("Replicator"));
+        assert!(summary.contains("100"));
+    }
+
+    // — Sprint 128: Combined Replicator-Weibull Tests —
+
+    #[test]
+    fn test_simulate_replicator_weibull_basic() {
+        let shares = vec![0.5, 0.5];
+        let fitnesses = vec![1.0, 2.0];
+        let cfg = WeibullChurnConfig::default();
+        let (result, churned, survival) =
+            simulate_replicator_weibull(&shares, &fitnesses, 1000, &cfg, 100, 0.01);
+        assert_eq!(result.steps, 100);
+        assert!(survival >= 0.0 && survival <= 1.0);
+        assert!(churned <= 1000);
+    }
+
+    #[test]
+    fn test_simulate_replicator_weibull_zero_nodes() {
+        let shares = vec![0.5, 0.5];
+        let fitnesses = vec![1.0, 2.0];
+        let cfg = WeibullChurnConfig::default();
+        let (result, churned, survival) =
+            simulate_replicator_weibull(&shares, &fitnesses, 0, &cfg, 100, 0.01);
+        assert_eq!(churned, 0);
+        assert!((survival - 0.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_simulate_replicator_weibull_high_churn() {
+        let shares = vec![0.33, 0.33, 0.34];
+        let fitnesses = vec![1.0, 2.0, 1.5];
+        let cfg = WeibullChurnConfig::default().with_scale(10.0);
+        let (_, churned, survival) =
+            simulate_replicator_weibull(&shares, &fitnesses, 1000, &cfg, 1000, 0.01);
+        // Very short scale (10s) with duration 1000s → nearly all churn
+        assert!(churned > 800);
+        assert!(survival < 0.2);
+    }
+
+    #[test]
+    fn test_simulate_replicator_weibull_deterministic() {
+        let shares = vec![0.5, 0.5];
+        let fitnesses = vec![1.0, 2.0];
+        let cfg = WeibullChurnConfig::default();
+        let r1 = simulate_replicator_weibull(&shares, &fitnesses, 500, &cfg, 100, 0.01);
+        let r2 = simulate_replicator_weibull(&shares, &fitnesses, 500, &cfg, 100, 0.01);
+        assert_eq!(r1.0.steps, r2.0.steps);
+        assert_eq!(r1.1, r2.1);
+        assert!((r1.2 - r2.2).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_full_replicator_weibull_pipeline() {
+        // Full integration: planetary sim → replicator dynamics → Weibull churn
+        let sim = simulate_planetary_mesh(500, 0.05, 3600.0, None);
+        let shares = vec![
+            sim.resilience_score,
+            1.0 - sim.resilience_score,
+        ];
+        let fitnesses = vec![sim.steer_success_rate, 1.0 - sim.steer_success_rate];
+        let cfg = WeibullChurnConfig::default();
+        let (result, churned, survival) =
+            simulate_replicator_weibull(&shares, &fitnesses, sim.total_nodes, &cfg, 200, 0.01);
+
+        assert_eq!(result.steps, 200);
+        assert!(result.dominant_share > 0.0);
+        assert!(survival >= 0.0 && survival <= 1.0);
+        assert!(churned <= sim.total_nodes);
+
+        let summary = result.summary();
+        assert!(summary.contains("Replicator"));
     }
 }

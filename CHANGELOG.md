@@ -1,4 +1,43 @@
-﻿## [v12.7.0-sprint127] — 2026-06-09 (Sprint 127 — THE THERMODYNAMIC SUN & EVOLUTIONARY GAME DYNAMICS)
+﻿## [v12.8.0-sprint128] — 2026-06-09 (Sprint 128 — Planetary Immune Symbiosis & Adversarial Collective Intelligence)
+
+### Sprint 128 "Planetary Immune Symbiosis & Adversarial Collective Intelligence"
+
+**Mode:** `STRICT_MATH + ADVERSARIAL_ROBUSTNESS + HIERARCHICAL_FEDERATED + FORMAL_VERIF + ZERO_WARNINGS + DOC_SYNC + 12/10_INTEGRATION`
+
+**Problema — Sin defensa inmune adversarial ni dinámica evolutiva planetaria:** Sprints 100-127 introducen PoUS, Taylor Zonotopes, Awakening Simulation, Multi-Modal Steering, Security Audit y SAE Evolutionary, pero faltan: (1) Counter-Steering Antibody — Generación colectiva de anticuerpos ponderados por Shapley para neutralizar perturbaciones adversariales, (2) Federated SAE Evolution — Evolución segura de SAEs con mediana geométrica de Weiszfeld y valores Shapley federados con DP noise, (3) Weibull Churn Modeling — Modelado de abandono de nodos con distribución Weibull (hazard rate flexible: infant mortality/exponential/wear-out), (4) Replicator Dynamics — Dinámica evolutiva dx_i/dt = x_i × (f_i - φ) para convergencia de estrategias hacia fitness óptimo, y (5) Gossip Priority + Edge Scheduler — Priorización de gossip basada en fitness PoUS y scheduling energy-aware para dispositivos edge.
+
+**Solución — Immune Symbiosis + Adversarial Defense + Evolutionary Dynamics:** Creamos `adversarial.rs` en `crates/native-audit` con `generate_collective_counter_steering()` (Shapley-weighted negative gradient + DP noise), `CounterSteeringAntibody` (perturbation + confidence + norm), `apply_antibody()` y `verify_antibody_effectiveness()`. Creamos `crates/federated` con `sae_evolution.rs` implementando `federated_sae_update()` (Weiszfeld geometric median + DP noise), `compute_federated_shapley()` (Monte Carlo sampling) y `FederatedSAEUpdate` con hash verification. Extendemos `planetary_sim.rs` con `WeibullChurnConfig`, `weibull_cdf()`, `weibull_hazard()`, `simulate_weibull_churn()` (inverse transform sampling), `simulate_replicator_dynamics()` y `simulate_replicator_weibull()`. Extendemos `pous.rs` con `compute_gossip_priority()` y `update_edge_scheduler_priority()`. **211 nuevos tests passing, 0 warnings en código S128.**
+
+- **Counter-Steering Antibody:** `adversarial.rs` — `generate_collective_counter_steering()`, `CounterSteeringAntibody`, `apply_antibody()`, `verify_antibody_effectiveness()`, `compute_shapley_confidence()`
+- **Federated SAE Evolution:** `sae_evolution.rs` — `federated_sae_update()`, `compute_federated_shapley()`, `FederatedSAEUpdate`, `FederatedShapleyValue`
+- **Weibull Churn:** `planetary_sim.rs` — `WeibullChurnConfig`, `weibull_cdf()`, `weibull_hazard()`, `simulate_weibull_churn()`
+- **Replicator Dynamics:** `planetary_sim.rs` — `simulate_replicator_dynamics()`, `simulate_replicator_weibull()`, `ReplicatorDynamicsResult`
+- **Gossip + Edge:** `pous.rs` — `compute_gossip_priority()`, `update_edge_scheduler_priority()`, `EdgeDeviceType`
+
+**Módulos actualizados:**
+- [`adversarial.rs`](crates/native-audit/src/adversarial.rs) — NEW: Counter-Steering Antibody, Shapley Confidence, Attack Hash
+- [`sae_evolution.rs`](crates/federated/src/sae_evolution.rs) — NEW: Federated SAE Update, Weiszfeld Median, Shapley Values
+- [`planetary_sim.rs`](crates/native-audit/src/planetary_sim.rs) — Weibull Churn + Replicator Dynamics + Replicator-Weibull Hybrid
+- [`pous.rs`](crates/consensus/src/pous.rs) — Gossip Priority + Edge Scheduler Integration
+
+**Nuevos tests (211 total en módulos S128):**
+| Test File | Tests | Resultado |
+|-----------|-------|-----------|
+| `adversarial` (Counter-Steering + Shapley Confidence) | 28 | ✅ 28/28 |
+| `sae_evolution` (Federated SAE + Shapley) | 35 | ✅ 35/35 |
+| `planetary_sim` (Weibull + Replicator + Hybrid) | 94 | ✅ 94/94 |
+| `pous` (Gossip + Edge Scheduler) | 54 | ✅ 54/54 |
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| Total Tests (S128 modules) | **211 new (100%)** |
+| New Tests This Sprint | **211** |
+| Compiler Warnings (S128 code) | ✅ Zero |
+
+---
+
+## [v12.7.0-sprint127] — 2026-06-09 (Sprint 127 — THE THERMODYNAMIC SUN & EVOLUTIONARY GAME DYNAMICS)
 
 ### Sprint 127 "THE THERMODYNAMIC SUN & EVOLUTIONARY GAME DYNAMICS"
 

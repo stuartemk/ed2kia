@@ -1,0 +1,12 @@
+[package]
+name = "ed2k-federated"
+version = "12.8.0"
+edition = "2021"
+description = "Hierarchical Federated SAE Evolution with Secure Aggregation"
+license = "Apache-2.0"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+sha2 = "0.10"
+
+[dev-dependencies]
