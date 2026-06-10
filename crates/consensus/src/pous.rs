@@ -40,6 +40,7 @@ pub fn compute_pous_fitness(
 /// PoUS Fitness with configurable coefficients.
 ///
 /// Allows custom weights for different deployment scenarios.
+#[allow(clippy::too_many_arguments)]
 pub fn compute_pous_fitness_custom(
     delta_vfe: f64,
     energy_efficiency: f64,
@@ -428,6 +429,273 @@ pub fn update_edge_scheduler_priority(
     let battery_factor = battery_level.clamp(0.0, 1.0) * 0.5 + 0.5;
     let priority = fitness * device_weight * battery_factor;
     priority.clamp(0.0, 1.0)
+}
+
+// ============================================================================
+// S129 — PoUS Replicator Dynamics with SGW + HMC Integration
+// ============================================================================
+
+/// PoUS Fitness with Sliced Gromov-Wasserstein (SGW) Manifold Bonus
+///
+/// Extends standard PoUS fitness with a topology-aware bonus that rewards
+/// nodes whose activation manifolds are closer (in SGW distance) to the
+/// safe centroid manifold.
+///
+/// ```text
+/// fitness_sgw = fitness_pous × (1 + η × max(0, safe_dist - node_dist) / safe_dist)
+/// ```
+///
+/// Where:
+/// - `fitness_pous`: Standard PoUS fitness score.
+/// - `node_dist`: SGW distance from node's manifold to coalition mean.
+/// - `safe_dist`: SGW distance from safe centroid to coalition mean.
+/// - `η`: Topology sensitivity coefficient (default 0.5).
+///
+/// # Parameters
+/// - `base_fitness`: Standard PoUS fitness score.
+/// - `node_sgw_dist`: SGW distance of this node to coalition mean manifold.
+/// - `safe_sgw_dist`: SGW distance of safe centroid to coalition mean manifold.
+/// - `topology_eta`: Topology sensitivity coefficient.
+///
+/// # Returns
+/// Adjusted fitness score (non-negative).
+pub fn compute_pous_fitness_sgw(
+    base_fitness: f64,
+    node_sgw_dist: f64,
+    safe_sgw_dist: f64,
+    topology_eta: f64,
+) -> f64 {
+    if safe_sgw_dist <= 0.0 || base_fitness <= 0.0 {
+        return base_fitness;
+    }
+    let proximity_bonus = (safe_sgw_dist - node_sgw_dist) / safe_sgw_dist;
+    let bonus = topology_eta * proximity_bonus.max(0.0);
+    base_fitness * (1.0 + bonus)
+}
+
+/// SGW-Aware Replicator Dynamics
+///
+/// Extends standard replicator dynamics with SGW manifold distances as
+/// fitness modifiers. Nodes with activation manifolds closer to the safe
+/// centroid receive a fitness boost, accelerating their influence growth.
+///
+/// ```text
+/// f_i' = f_i × (1 + η × max(0, D_safe - D_i) / D_safe)
+/// dx_i/dt = x_i × (f_i' - φ̄')
+/// ```
+///
+/// # Parameters
+/// - `shares`: Current influence share distribution.
+/// - `fitnesses`: Base PoUS fitness scores.
+/// - `sgw_distances`: SGW distances from each node to coalition mean.
+/// - `safe_sgw_dist`: SGW distance from safe centroid to coalition mean.
+/// - `topology_eta`: Topology sensitivity coefficient.
+/// - `steps`: Number of simulation steps.
+/// - `learning_rate`: Time step (dt).
+///
+/// # Returns
+/// Vector of share distributions at each step.
+pub fn replicator_dynamics_sgw_aware(
+    shares: &[f64],
+    fitnesses: &[f64],
+    sgw_distances: &[f64],
+    safe_sgw_dist: f64,
+    topology_eta: f64,
+    steps: usize,
+    learning_rate: f64,
+) -> Vec<Vec<f64>> {
+    if shares.is_empty() || shares.len() != fitnesses.len() || shares.len() != sgw_distances.len() {
+        return vec![];
+    }
+
+    // Compute SGW-adjusted fitnesses
+    let adjusted_fitnesses: Vec<f64> = fitnesses
+        .iter()
+        .zip(sgw_distances.iter())
+        .map(|(&f, &d)| compute_pous_fitness_sgw(f, d, safe_sgw_dist, topology_eta))
+        .collect();
+
+    simulate_replicator_dynamics(shares, &adjusted_fitnesses, steps, learning_rate)
+}
+
+/// HMC Steering Credit Allocation
+///
+/// Computes the credit allocation for nodes based on HMC steering energy
+/// reduction. Nodes that achieve greater energy reduction during HMC
+/// steering receive higher credit, as they demonstrate more effective
+/// safe-manifold navigation.
+///
+/// ```text
+/// credit_i = energy_reduction_i / Σ energy_reduction_j
+/// ```
+///
+/// # Parameters
+/// - `energy_reductions`: Energy reduction achieved by each node during HMC steering.
+///
+/// # Returns
+/// Credit allocation vector summing to 1.0 (or uniform if all zero).
+pub fn compute_hmc_steer_credit(energy_reductions: &[f64]) -> Vec<f64> {
+    let n = energy_reductions.len();
+    if n == 0 {
+        return vec![];
+    }
+    let total: f64 = energy_reductions.iter().filter(|&&e| e > 0.0).sum();
+    if total <= 0.0 {
+        // Uniform fallback
+        return vec![1.0 / n as f64; n];
+    }
+    energy_reductions
+        .iter()
+        .map(|&e| (e.max(0.0)) / total)
+        .collect()
+}
+
+/// PoUS-HMC Hybrid Fitness
+///
+/// Combines PoUS thermodynamic fitness with HMC steering energy reduction
+/// for a hybrid node evaluation that rewards both useful computation and
+/// safe-manifold navigation capability.
+///
+/// ```text
+/// fitness_hybrid = α × fitness_pous + (1-α) × normalized_energy_reduction
+/// ```
+///
+/// # Parameters
+/// - `pous_fitness`: Standard PoUS fitness score.
+/// - `energy_reduction`: HMC steering energy reduction.
+/// - `max_energy_reduction`: Maximum energy reduction in the cohort (for normalization).
+/// - `alpha`: PoUS weight (default 0.7).
+///
+/// # Returns
+/// Hybrid fitness score (non-negative).
+pub fn compute_pous_hmc_hybrid_fitness(
+    pous_fitness: f64,
+    energy_reduction: f64,
+    max_energy_reduction: f64,
+    alpha: f64,
+) -> f64 {
+    let normalized_energy = if max_energy_reduction > 0.0 {
+        energy_reduction.max(0.0) / max_energy_reduction
+    } else {
+        0.0
+    };
+    alpha * pous_fitness + (1.0 - alpha) * normalized_energy
+}
+
+/// Replicator Dynamics with HMC Steering Feedback
+///
+/// Runs replicator dynamics where fitness is dynamically updated based on
+/// HMC steering energy reduction at each step. This creates a feedback loop
+/// where nodes that effectively navigate the safe manifold gain influence,
+/// which in turn affects the coalition's collective steering direction.
+///
+/// # Parameters
+/// - `shares`: Initial influence share distribution.
+/// - `pous_fitnesses`: Base PoUS fitness scores.
+/// - `energy_reductions`: HMC energy reduction per node.
+/// - `max_energy_reduction`: Maximum energy reduction for normalization.
+/// - `alpha`: PoUS weight in hybrid fitness.
+/// - `steps`: Number of simulation steps.
+/// - `learning_rate`: Time step (dt).
+///
+/// # Returns
+/// Vector of share distributions at each step.
+pub fn replicator_dynamics_hmc_feedback(
+    shares: &[f64],
+    pous_fitnesses: &[f64],
+    energy_reductions: &[f64],
+    max_energy_reduction: f64,
+    alpha: f64,
+    steps: usize,
+    learning_rate: f64,
+) -> Vec<Vec<f64>> {
+    if shares.is_empty()
+        || shares.len() != pous_fitnesses.len()
+        || shares.len() != energy_reductions.len()
+    {
+        return vec![];
+    }
+
+    let hybrid_fitnesses: Vec<f64> = pous_fitnesses
+        .iter()
+        .zip(energy_reductions.iter())
+        .map(|(&f, &e)| compute_pous_hmc_hybrid_fitness(f, e, max_energy_reduction, alpha))
+        .collect();
+
+    simulate_replicator_dynamics(shares, &hybrid_fitnesses, steps, learning_rate)
+}
+
+/// Full S129 Pipeline — SGW + HMC + Replicator Dynamics
+///
+/// Executes the complete S129 certification pipeline:
+/// 1. Compute SGW-adjusted fitness for each node.
+/// 2. Compute HMC steering credit allocation.
+/// 3. Run hybrid replicator dynamics with both SGW and HMC feedback.
+/// 4. Return final equilibrium shares and pipeline metrics.
+///
+/// # Parameters
+/// - `shares`: Initial influence share distribution.
+/// - `pous_fitnesses`: Base PoUS fitness scores.
+/// - `sgw_distances`: SGW distances from each node to coalition mean.
+/// - `safe_sgw_dist`: SGW distance from safe centroid to coalition mean.
+/// - `energy_reductions`: HMC energy reduction per node.
+/// - `max_energy_reduction`: Maximum energy reduction for normalization.
+/// - `topology_eta`: Topology sensitivity coefficient.
+/// - `alpha`: PoUS weight in hybrid fitness.
+/// - `steps`: Number of replicator dynamics steps.
+/// - `learning_rate`: Time step (dt).
+///
+/// # Returns
+/// Tuple of (final_shares, trajectory, shapley_credits).
+#[allow(clippy::too_many_arguments)]
+pub fn s129_full_pipeline(
+    shares: &[f64],
+    pous_fitnesses: &[f64],
+    sgw_distances: &[f64],
+    safe_sgw_dist: f64,
+    energy_reductions: &[f64],
+    max_energy_reduction: f64,
+    topology_eta: f64,
+    alpha: f64,
+    steps: usize,
+    learning_rate: f64,
+) -> (Vec<f64>, Vec<Vec<f64>>, Vec<f64>) {
+    let n = shares.len();
+    if n == 0
+        || n != pous_fitnesses.len()
+        || n != sgw_distances.len()
+        || n != energy_reductions.len()
+    {
+        return (vec![], vec![], vec![]);
+    }
+
+    // Step 1: SGW-adjusted fitness
+    let sgw_fitnesses: Vec<f64> = pous_fitnesses
+        .iter()
+        .zip(sgw_distances.iter())
+        .map(|(&f, &d)| compute_pous_fitness_sgw(f, d, safe_sgw_dist, topology_eta))
+        .collect();
+
+    // Step 2: HMC steering credit
+    let hmc_credits = compute_hmc_steer_credit(energy_reductions);
+
+    // Step 3: Hybrid fitness (SGW + HMC)
+    let hybrid_fitnesses: Vec<f64> = sgw_fitnesses
+        .iter()
+        .zip(energy_reductions.iter())
+        .map(|(&f, &e)| compute_pous_hmc_hybrid_fitness(f, e, max_energy_reduction, alpha))
+        .collect();
+
+    // Step 4: Replicator dynamics
+    let trajectory = simulate_replicator_dynamics(shares, &hybrid_fitnesses, steps, learning_rate);
+
+    // Final shares
+    let final_shares = trajectory
+        .last()
+        .cloned()
+        .unwrap_or_else(|| shares.to_vec());
+
+    (final_shares, trajectory, hmc_credits)
 }
 
 #[cfg(test)]
@@ -882,5 +1150,274 @@ mod tests {
         let priority = update_edge_scheduler_priority(fitness, 0.7, EdgeDeviceType::Desktop);
         // 3.26 × 0.9 × 0.85 = 2.4951 → clamped to 1.0
         assert_eq!(priority, 1.0);
+    }
+
+    // --- S129 — PoUS Replicator Dynamics Tests ---
+
+    #[test]
+    fn test_pous_fitness_sgw_identical_manifold() {
+        // Node at same distance as safe → no bonus
+        let result = compute_pous_fitness_sgw(1.0, 0.5, 0.5, 0.5);
+        assert!((result - 1.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_pous_fitness_sgw_closer_than_safe() {
+        // Node closer than safe → bonus applied
+        let result = compute_pous_fitness_sgw(1.0, 0.3, 0.5, 0.5);
+        // bonus = 0.5 * (0.5-0.3)/0.5 = 0.5 * 0.4 = 0.2
+        // result = 1.0 * 1.2 = 1.2
+        assert!((result - 1.2).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_pous_fitness_sgw_farther_than_safe() {
+        // Node farther than safe → no bonus (clamped to 0)
+        let result = compute_pous_fitness_sgw(1.0, 0.8, 0.5, 0.5);
+        assert!((result - 1.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_pous_fitness_sgw_zero_safe_dist() {
+        let result = compute_pous_fitness_sgw(1.0, 0.3, 0.0, 0.5);
+        assert!((result - 1.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_pous_fitness_sgw_zero_base_fitness() {
+        let result = compute_pous_fitness_sgw(0.0, 0.3, 0.5, 0.5);
+        assert!((result - 0.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_pous_fitness_sgw_max_bonus() {
+        // Node at distance 0, safe at 0.5 → max bonus
+        let result = compute_pous_fitness_sgw(1.0, 0.0, 0.5, 1.0);
+        // bonus = 1.0 * (0.5-0)/0.5 = 1.0
+        // result = 1.0 * 2.0 = 2.0
+        assert!((result - 2.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_replicator_dynamics_sgw_empty() {
+        let result = replicator_dynamics_sgw_aware(&[], &[], &[], 0.5, 0.5, 10, 0.01);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_replicator_dynamics_sgw_length_mismatch() {
+        let result = replicator_dynamics_sgw_aware(&[0.5, 0.5], &[1.0], &[0.3], 0.5, 0.5, 10, 0.01);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_replicator_dynamics_sgw_convergence() {
+        let shares = [0.5, 0.5];
+        let fitnesses = [1.0, 0.5];
+        let sgw_dists = [0.3, 0.6];
+        let safe_dist = 0.4;
+        let trajectory = replicator_dynamics_sgw_aware(
+            &shares, &fitnesses, &sgw_dists, safe_dist, 0.5, 100, 0.01,
+        );
+        assert!(!trajectory.is_empty());
+        assert_eq!(trajectory.len(), 101); // initial + 100 steps
+                                           // First step should match initial shares
+        assert!((trajectory[0][0] - 0.5).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_hmc_steer_credit_empty() {
+        let result = compute_hmc_steer_credit(&[]);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_hmc_steer_credit_uniform_fallback() {
+        let result = compute_hmc_steer_credit(&[0.0, 0.0, 0.0]);
+        assert_eq!(result.len(), 3);
+        for &v in &result {
+            assert!((v - 1.0 / 3.0).abs() < 1e-10);
+        }
+    }
+
+    #[test]
+    fn test_hmc_steer_credit_normalization() {
+        let result = compute_hmc_steer_credit(&[0.0, 3.0, 7.0]);
+        assert_eq!(result.len(), 3);
+        let total: f64 = result.iter().sum();
+        assert!((total - 1.0).abs() < 1e-10);
+        // 0/10 = 0, 3/10 = 0.3, 7/10 = 0.7
+        assert!((result[0] - 0.0).abs() < 1e-10);
+        assert!((result[1] - 0.3).abs() < 1e-10);
+        assert!((result[2] - 0.7).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_hmc_steer_credit_clamps_negative() {
+        let result = compute_hmc_steer_credit(&[-1.0, 3.0, 7.0]);
+        // -1 clamped to 0, total = 10
+        assert!((result[0] - 0.0).abs() < 1e-10);
+        assert!((result[1] - 0.3).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_pous_hmc_hybrid_zero_max_energy() {
+        let result = compute_pous_hmc_hybrid_fitness(1.0, 0.5, 0.0, 0.7);
+        // normalized_energy = 0, result = 0.7 * 1.0 = 0.7
+        assert!((result - 0.7).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_pous_hmc_hybrid_full_pous() {
+        let result = compute_pous_hmc_hybrid_fitness(1.0, 0.5, 1.0, 1.0);
+        // alpha=1.0 → only PoUS
+        assert!((result - 1.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_pous_hmc_hybrid_full_hmc() {
+        let result = compute_pous_hmc_hybrid_fitness(0.0, 0.5, 1.0, 0.0);
+        // alpha=0.0 → only HMC, normalized = 0.5/1.0 = 0.5
+        assert!((result - 0.5).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_pous_hmc_hybrid_balanced() {
+        let result = compute_pous_hmc_hybrid_fitness(1.0, 0.5, 1.0, 0.7);
+        // 0.7 * 1.0 + 0.3 * 0.5 = 0.7 + 0.15 = 0.85
+        assert!((result - 0.85).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_replicator_dynamics_hmc_empty() {
+        let result = replicator_dynamics_hmc_feedback(&[], &[], &[], 1.0, 0.7, 10, 0.01);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_replicator_dynamics_hmc_length_mismatch() {
+        let result =
+            replicator_dynamics_hmc_feedback(&[0.5], &[1.0], &[0.5, 0.3], 1.0, 0.7, 10, 0.01);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_replicator_dynamics_hmc_convergence() {
+        let shares = [0.5, 0.5];
+        let fitnesses = [1.0, 0.5];
+        let energy = [0.8, 0.2];
+        let trajectory =
+            replicator_dynamics_hmc_feedback(&shares, &fitnesses, &energy, 1.0, 0.7, 50, 0.01);
+        assert!(!trajectory.is_empty());
+        assert_eq!(trajectory.len(), 51);
+    }
+
+    #[test]
+    fn test_s129_full_pipeline_empty() {
+        let (shares, traj, credits) =
+            s129_full_pipeline(&[], &[], &[], 0.5, &[], 1.0, 0.5, 0.7, 10, 0.01);
+        assert!(shares.is_empty());
+        assert!(traj.is_empty());
+        assert!(credits.is_empty());
+    }
+
+    #[test]
+    fn test_s129_full_pipeline_length_mismatch() {
+        let (shares, traj, credits) = s129_full_pipeline(
+            &[0.5, 0.5],
+            &[1.0, 0.5],
+            &[0.3],
+            0.5,
+            &[0.8, 0.2],
+            1.0,
+            0.5,
+            0.7,
+            10,
+            0.01,
+        );
+        assert!(shares.is_empty());
+        assert!(traj.is_empty());
+        assert!(credits.is_empty());
+    }
+
+    #[test]
+    fn test_s129_full_pipeline_basic() {
+        let shares = [0.5, 0.5];
+        let fitnesses = [1.0, 0.5];
+        let sgw_dists = [0.3, 0.6];
+        let safe_dist = 0.4;
+        let energy = [0.8, 0.2];
+        let max_energy = 1.0;
+
+        let (final_shares, trajectory, credits) = s129_full_pipeline(
+            &shares, &fitnesses, &sgw_dists, safe_dist, &energy, max_energy, 0.5, 0.7, 100, 0.01,
+        );
+
+        assert_eq!(final_shares.len(), 2);
+        assert_eq!(trajectory.len(), 101);
+        assert_eq!(credits.len(), 2);
+
+        // Credits should sum to 1.0
+        let credit_total: f64 = credits.iter().sum();
+        assert!((credit_total - 1.0).abs() < 1e-10);
+
+        // Node 0 has higher fitness + closer SGW + higher energy → should dominate
+        assert!(final_shares[0] > final_shares[1]);
+    }
+
+    #[test]
+    fn test_s129_full_pipeline_deterministic() {
+        let shares = [0.5, 0.5];
+        let fitnesses = [1.0, 0.5];
+        let sgw_dists = [0.3, 0.6];
+        let safe_dist = 0.4;
+        let energy = [0.8, 0.2];
+
+        let (s1, t1, c1) = s129_full_pipeline(
+            &shares, &fitnesses, &sgw_dists, safe_dist, &energy, 1.0, 0.5, 0.7, 50, 0.01,
+        );
+        let (s2, t2, c2) = s129_full_pipeline(
+            &shares, &fitnesses, &sgw_dists, safe_dist, &energy, 1.0, 0.5, 0.7, 50, 0.01,
+        );
+
+        assert_eq!(s1, s2);
+        assert_eq!(t1.len(), t2.len());
+        assert_eq!(c1, c2);
+    }
+
+    #[test]
+    fn test_s129_pipeline_node_dominance() {
+        // Node 0: high fitness, close to safe, high energy reduction
+        // Node 1: low fitness, far from safe, low energy reduction
+        let shares = [0.5, 0.5];
+        let fitnesses = [2.0, 0.5];
+        let sgw_dists = [0.1, 0.8];
+        let safe_dist = 0.3;
+        let energy = [0.9, 0.1];
+
+        let (final_shares, _, _) = s129_full_pipeline(
+            &shares, &fitnesses, &sgw_dists, safe_dist, &energy, 1.0, 0.5, 0.7, 200, 0.01,
+        );
+
+        // Node 0 should dominate
+        assert!(final_shares[0] > 0.7);
+        assert!(final_shares[1] < 0.3);
+    }
+
+    #[test]
+    fn test_s129_pipeline_equal_nodes() {
+        let shares = [0.5, 0.5];
+        let fitnesses = [1.0, 1.0];
+        let sgw_dists = [0.3, 0.3];
+        let safe_dist = 0.3;
+        let energy = [0.5, 0.5];
+
+        let (final_shares, _, _) = s129_full_pipeline(
+            &shares, &fitnesses, &sgw_dists, safe_dist, &energy, 1.0, 0.5, 0.7, 100, 0.01,
+        );
+
+        // Equal nodes should stay equal
+        assert!((final_shares[0] - 0.5).abs() < 0.01);
+        assert!((final_shares[1] - 0.5).abs() < 0.01);
     }
 }

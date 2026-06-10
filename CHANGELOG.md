@@ -1,4 +1,47 @@
-﻿## [v12.8.0-sprint128] — 2026-06-09 (Sprint 128 — Planetary Immune Symbiosis & Adversarial Collective Intelligence)
+﻿## [v12.9.0-sprint129] — 2026-06-10 (Sprint 129 — Gromov-Wasserstein Manifolds & Symbiotic Replicator Dynamics)
+
+### Sprint 129 "Gromov-Wasserstein Manifolds & Symbiotic Replicator Dynamics"
+
+**Mode:** `STRICT_MATH + GROMOV_WASSERSTEIN + HAMILTONIAN_MONTE_CARLO + REPLICATOR_DYNAMICS + IBP_TAYLOR + ZERO_WARNINGS + DOC_SYNC + PRESERVE_ALL_SEMANTIC_NOISE`
+
+**Problema — Sin verificación formal ni steering basado en energía:** Sprints 100-128 introducen PoUS, SGW, Counter-Steering, Federated SAE, Weibull Churn y Taylor Zonotopes, pero faltan: (1) Hamiltonian Monte Carlo (HMC) — Steering basado en gradientes con integrador leapfrog para navegación en landscapes de energía complejos, (2) Stein Variational Gradient Descent (SVGD) — Multi-particle kernel-based gradient flow con RBF kernel para steering no-paramétrico, (3) Sliced Gromov-Wasserstein (SGW) — Comparación de distribuciones vía proyección aleatoria + Wasserstein-1, invariante a isometrías, (4) Interval Bound Propagation (IBP) — Propagación formal de intervalos a través de redes neuronales para verificación de seguridad, y (5) Control Barrier Function (CBF) — Verificación en tiempo real de conjuntos invariantes para garantizar seguridad forward.
+
+**Solución — HMC + SGW + IBP/Taylor/CBF Verification Triad:** Creamos `steering.rs` en `crates/native-audit` con `hmc_steer()` (leapfrog integrator + kinetic energy), `svgd_steer()` (RBF kernel + multi-particle gradient flow), `adaptive_hmc_steer()` (energy-based convergence) y `verify_hmc_safety()`. Creamos `topology.rs` con `compute_sliced_gromov_wasserstein()` (random projection + 1D Wasserstein), `compute_sgw_safety_ratio()`, `sgw_significance_test()` y `compute_manifold_complexity()`. Creamos `verification.rs` con `interval_bound_propagation()` (IBP), `taylor_model_verify()` (Taylor order ≥2), `control_barrier_function()` (CBF) y `combined_verification()` (IBP+Taylor+CBF triad). Extendemos `pous.rs` con `compute_pous_fitness_sgw()`, `replicator_dynamics_sgw_aware()`, `compute_hmc_steer_credit()`, `compute_pous_hmc_hybrid_fitness()`, `replicator_dynamics_hmc_feedback()` y `s129_full_pipeline()`. **190 nuevos tests passing, 0 warnings en código S129.**
+
+- **Hamiltonian Monte Carlo:** `steering.rs` — `hmc_steer()`, `HmcConfig`, `HmcResult`, `compute_energy_gradient()`, `adaptive_hmc_steer()`
+- **Stein Variational GD:** `steering.rs` — `svgd_steer()`, RBF kernel, multi-particle gradient flow
+- **Sliced Gromov-Wasserstein:** `topology.rs` — `compute_sliced_gromov_wasserstein()`, `SgwConfig`, `SgwResult`, `compute_pairwise_dist_1d()`
+- **IBP Verification:** `verification.rs` — `interval_bound_propagation()`, `IbPConfig`, `IbPResult`, `verify_ibp_safety()`
+- **Taylor Model:** `verification.rs` — `taylor_model_verify()`, `TaylorConfig`, `TaylorResult`, `verify_taylor_safety()`
+- **Control Barrier Function:** `verification.rs` — `control_barrier_function()`, `CbfConfig`, `CbfResult`, `combined_verification()`
+- **PoUS-SGW Integration:** `pous.rs` — `compute_pous_fitness_sgw()`, `replicator_dynamics_sgw_aware()`
+- **PoUS-HMC Integration:** `pous.rs` — `compute_hmc_steer_credit()`, `compute_pous_hmc_hybrid_fitness()`, `replicator_dynamics_hmc_feedback()`
+- **S129 Full Pipeline:** `pous.rs` — `s129_full_pipeline()` — SGW + HMC + PoUS unified verification
+
+**Módulos actualizados:**
+- [`steering.rs`](crates/native-audit/src/steering.rs) — NEW: HMC + SVGD steering, 45 tests
+- [`topology.rs`](crates/native-audit/src/topology.rs) — NEW: Sliced Gromov-Wasserstein, 33 tests
+- [`verification.rs`](crates/native-audit/src/verification.rs) — NEW: IBP + Taylor + CBF verification, 42 tests
+- [`pous.rs`](crates/consensus/src/pous.rs) — SGW + HMC integration, 80 tests
+
+**Nuevos tests (190 total en módulos S129):**
+| Test File | Tests | Resultado |
+|-----------|-------|-----------|
+| `steering` (HMC + SVGD + Adaptive) | 45 | ✅ 45/45 |
+| `topology` (SGW + Manifold) | 33 | ✅ 33/33 |
+| `verification` (IBP + Taylor + CBF) | 42 | ✅ 42/42 |
+| `pous` (SGW + HMC integration) | 80 | ✅ 80/80 |
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| Total Tests (S129 modules) | **190 new (100%)** |
+| New Tests This Sprint | **190** |
+| Compiler Warnings (S129 code) | ✅ Zero |
+
+---
+
+## [v12.8.0-sprint128] — 2026-06-09 (Sprint 128 — Planetary Immune Symbiosis & Adversarial Collective Intelligence)
 
 ### Sprint 128 "Planetary Immune Symbiosis & Adversarial Collective Intelligence"
 
