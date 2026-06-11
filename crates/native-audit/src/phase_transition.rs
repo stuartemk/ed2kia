@@ -191,7 +191,9 @@ impl std::fmt::Display for CivilizationalPhaseShift {
 
 /// LCG random number generator.
 fn lcg_next(state: &mut u64) -> u64 {
-    *state = state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+    *state = state
+        .wrapping_mul(6364136223846793005)
+        .wrapping_add(1442695040888963407);
     *state
 }
 
@@ -254,11 +256,7 @@ pub fn compute_lyapunov_exponent(trajectory: &[f64]) -> f64 {
 ///
 /// h(φ) = β - ||φ - φ_safe||²
 /// CBF satisfied when h(φ) ≥ 0.
-pub fn compute_cbf_violation(
-    current_state: f64,
-    safe_state: f64,
-    beta: f64,
-) -> f64 {
+pub fn compute_cbf_violation(current_state: f64, safe_state: f64, beta: f64) -> f64 {
     let distance_sq = (current_state - safe_state).powi(2);
     beta - distance_sq
 }
@@ -739,7 +737,8 @@ mod tests {
         let traj = vec![1.0, 0.8, 0.64, 0.512, 0.4096, 0.32768, 0.03];
         let result = detect_phase_transition(0.96, 0.03, &traj, &cfg);
         assert!(result.transition_detected);
-        let (c, _e, stabilized) = stabilize_irreversible_symbiosis(result.coherence, result.free_energy, &cfg);
+        let (c, _e, stabilized) =
+            stabilize_irreversible_symbiosis(result.coherence, result.free_energy, &cfg);
         assert!(stabilized);
         let shift = simulate_civilizational_phase_shift(100, 500, &cfg);
         assert!(shift.transition_confirmed);

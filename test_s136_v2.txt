@@ -1,0 +1,1652 @@
+   Compiling native-audit v0.1.0 (C:\Users\cualo\Desktop\PROYECTOS\ed2kIA\crates\native-audit)
+warning: unused import: `crate::topology::SgwConfig`
+  --> src\category_manifolds.rs:40:5
+   |
+40 | use crate::topology::SgwConfig;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `i`
+   --> src\adversarial.rs:562:13
+    |
+562 |         for i in 0..dim {
+    |             ^ help: if this is intentional, prefix it with an underscore: `_i`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `vuln`
+    --> src\adversarial.rs:1748:23
+     |
+1748 |         let (red, ab, vuln) = full_red_team_pipeline(&clean, &adv_cfg, &counter_cfg);
+     |                       ^^^^ help: if this is intentional, prefix it with an underscore: `_vuln`
+
+warning: unused variable: `vuln`
+    --> src\adversarial.rs:1837:26
+     |
+1837 |             let (red, _, vuln) = full_red_team_pipeline(&clean, &cfg, &counter_cfg);
+     |                          ^^^^ help: if this is intentional, prefix it with an underscore: `_vuln`
+
+warning: unused variable: `i`
+   --> src\category_manifolds.rs:458:9
+    |
+458 |     for i in 0..dim {
+    |         ^ help: if this is intentional, prefix it with an underscore: `_i`
+
+warning: value assigned to `momentum` is never read
+   --> src\collective_steering.rs:351:24
+    |
+351 |       let mut momentum = Tensor::from_vec(
+    |  ________________________^
+352 | |         (0..num_elements)
+353 | |             .map(|_| gaussian_noise(&mut state))
+354 | |             .collect(),
+355 | |         shape.clone(),
+356 | |         device,
+357 | |     )?;
+    | |______^
+    |
+    = help: maybe it is overwritten before being read?
+    = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `stabilized`
+   --> src\phase_transition.rs:573:20
+    |
+573 |         let (c, e, stabilized) = stabilize_irreversible_symbiosis(0.5, 0.5, &cfg);
+    |                    ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_stabilized`
+
+warning: unused variable: `c`
+   --> src\phase_transition.rs:740:14
+    |
+740 |         let (c, _e, stabilized) =
+    |              ^ help: if this is intentional, prefix it with an underscore: `_c`
+
+warning: unused variable: `meta_improvement`
+    --> src\planetary_sim.rs:1185:5
+     |
+1185 |     meta_improvement: f64,
+     |     ^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_meta_improvement`
+
+warning: unused variable: `result`
+    --> src\planetary_sim.rs:2094:14
+     |
+2094 |         let (result, churned, survival) =
+     |              ^^^^^^ help: if this is intentional, prefix it with an underscore: `_result`
+
+warning: variable `total_gradient_norm` is assigned to, but never used
+   --> src\thermodynamics.rs:475:13
+    |
+475 |         let mut total_gradient_norm: f64 = 0.0;
+    |             ^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: consider using `_total_gradient_norm` instead
+
+warning: value assigned to `total_gradient_norm` is never read
+   --> src\thermodynamics.rs:538:13
+    |
+538 |             total_gradient_norm += norm;
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+
+warning: field `selection_pressure` is never read
+    --> src\sae_modular.rs:1755:13
+     |
+1741 |     pub struct EvolutionarySAEConfig {
+     |                --------------------- field in this struct
+...
+1755 |         pub selection_pressure: f64,
+     |             ^^^^^^^^^^^^^^^^^^
+     |
+     = note: `EvolutionarySAEConfig` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+     = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `best_vfe_reduction` and `avg_sparsity` are never read
+    --> src\sae_modular.rs:1846:13
+     |
+1838 |     pub struct GenerationResult {
+     |                ---------------- fields in this struct
+...
+1846 |         pub best_vfe_reduction: f64,
+     |             ^^^^^^^^^^^^^^^^^^
+1847 |         /// Average sparsity
+1848 |         pub avg_sparsity: f64,
+     |             ^^^^^^^^^^^^
+     |
+     = note: `GenerationResult` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: comparison is useless due to type limits
+    --> src\provable_safety.rs:1125:17
+     |
+1125 |         assert!(singularity.estimated_steps_remaining >= 0);
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: `#[warn(unused_comparisons)]` on by default
+
+warning: `native-audit` (lib test) generated 15 warnings (run `cargo fix --lib -p native-audit --tests` to apply 9 suggestions)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 14.99s
+     Running unittests src\lib.rs (crates\native-audit\target\debug\deps\native_audit-6f91b6f388ab823d.exe)
+
+running 1326 tests
+test adversarial::tests::test_apply_antibody_basic ... ok
+test adversarial::tests::test_assess_red_team_all_evade ... ok
+test adversarial::tests::test_assess_red_team_all_detected ... ok
+test adversarial::tests::test_assess_red_team_empty ... ok
+test adversarial::tests::test_adaptive_threshold_tuning ... ok
+test adversarial::tests::test_assess_red_team_partial_evasion ... ok
+test adversarial::tests::test_apply_antibody_dimension_mismatch ... ok
+test adversarial::tests::test_assess_red_team_vulnerability_range ... ok
+test adversarial::tests::test_collective_defense_multi_node ... ok
+test adversarial::tests::test_collective_threat_empty ... ok
+test adversarial::tests::test_collective_threat_uniform_weights ... ok
+test adversarial::tests::test_collective_threat_range ... ok
+test adversarial::tests::test_collective_threat_single_node ... ok
+test adversarial::tests::test_collective_threat_zero_weights_fallback ... ok
+test adversarial::tests::test_compute_shapley_confidence_concentrated ... ok
+test adversarial::tests::test_collective_threat_weighted ... ok
+test adversarial::tests::test_compute_shapley_confidence_empty ... ok
+test adversarial::tests::test_compute_shapley_confidence_single ... ok
+test adversarial::tests::test_compute_shapley_confidence_uniform ... ok
+test adversarial::tests::test_counter_steering_config_confidence_clamped ... ok
+test adversarial::tests::test_counter_steering_config_default ... ok
+test adversarial::tests::test_counter_steering_config_max_norm_zero ... ok
+test adversarial::tests::test_counter_steering_config_with_confidence ... ok
+test adversarial::tests::test_counter_steering_config_with_max_norm ... ok
+test adversarial::tests::test_distributed_defense_pipeline ... ok
+test adversarial::tests::test_distributed_red_team_basic ... ok
+test adversarial::tests::test_distributed_red_team_collective_threat_range ... ok
+test adversarial::tests::test_distributed_red_team_detection_rate_range ... ok
+test adversarial::tests::test_distributed_red_team_deterministic ... ok
+test adversarial::tests::test_distributed_red_team_display ... ok
+test adversarial::tests::test_distributed_red_team_empty ... ok
+test adversarial::tests::test_distributed_red_team_evasion_count ... ok
+test adversarial::tests::test_distributed_red_team_high_drift_threshold ... ok
+test adversarial::tests::test_distributed_red_team_low_drift_threshold ... ok
+test adversarial::tests::test_distributed_red_team_node_ids ... ok
+test adversarial::tests::test_distributed_red_team_single_node ... ok
+test adversarial::tests::test_euclidean_distance_basic ... ok
+test adversarial::tests::test_euclidean_distance_same ... ok
+test adversarial::tests::test_euclidean_norm_basic ... ok
+test adversarial::tests::test_euclidean_norm_zero ... ok
+test adversarial::tests::test_full_counter_steering_pipeline ... ok
+test adversarial::tests::test_full_red_team_pipeline_basic ... ok
+test adversarial::tests::test_full_red_team_pipeline_deterministic ... ok
+test adversarial::tests::test_full_red_team_pipeline_edge_fast ... ok
+test adversarial::tests::test_full_red_team_pipeline_empty ... ok
+test adversarial::tests::test_full_red_team_pipeline_vulnerability_correlation ... ok
+test adversarial::tests::test_gaussian_noise_range ... ok
+test adversarial::tests::test_full_red_team_pipeline_high_accuracy ... ok
+test adversarial::tests::test_generate_collective_counter_steering_basic ... ok
+test adversarial::tests::test_generate_collective_counter_steering_deterministic ... ok
+test adversarial::tests::test_generate_collective_counter_steering_display ... ok
+test adversarial::tests::test_generate_collective_counter_steering_empty ... ok
+test adversarial::tests::test_generate_collective_counter_steering_norm_clamped ... ok
+test adversarial::tests::test_generate_collective_counter_steering_opposite_direction ... ok
+test adversarial::tests::test_hex_prefix ... ok
+test adversarial::tests::test_manifold_antibody_alignment_improves ... ok
+test adversarial::tests::test_manifold_antibody_basic ... ok
+test adversarial::tests::test_manifold_antibody_contributor_count ... ok
+test adversarial::tests::test_manifold_antibody_display ... ok
+test adversarial::tests::test_manifold_antibody_empty ... ok
+test adversarial::tests::test_red_team_node_new ... ok
+test adversarial::tests::test_sgw_adversarial_config_default ... ok
+test adversarial::tests::test_sgw_adversarial_config_edge_fast ... ok
+test adversarial::tests::test_sgw_adversarial_config_high_accuracy ... ok
+test adversarial::tests::test_sgw_adversarial_config_projections_min ... ok
+test adversarial::tests::test_sgw_adversarial_config_red_nodes_min ... ok
+test adversarial::tests::test_sgw_adversarial_config_subsample_min ... ok
+test adversarial::tests::test_sgw_adversarial_config_threshold_zero ... ok
+test adversarial::tests::test_sgw_adversarial_config_with_drift_threshold ... ok
+test adversarial::tests::test_sgw_adversarial_config_with_projections ... ok
+test adversarial::tests::test_sgw_adversarial_config_with_red_nodes ... ok
+test adversarial::tests::test_sgw_adversarial_config_with_subsample ... ok
+test adversarial::tests::test_sgw_adversarial_detection_deterministic ... ok
+test adversarial::tests::test_sgw_adversarial_detection_different ... ok
+test adversarial::tests::test_sgw_adversarial_detection_dimension_mismatch ... ok
+test adversarial::tests::test_sgw_adversarial_detection_empty ... ok
+test adversarial::tests::test_sgw_adversarial_detection_identical ... ok
+test adversarial::tests::test_sgw_adversarial_detection_large_drift ... ok
+test adversarial::tests::test_sgw_adversarial_detection_projection_count ... ok
+test adversarial::tests::test_sgw_adversarial_detection_small_drift ... ok
+test adversarial::tests::test_sgw_adversarial_detection_threat_score_range ... ok
+test adversarial::tests::test_sgw_adversarial_result_display ... ok
+test adversarial::tests::test_sgw_counter_steering_integration ... ok
+test adversarial::tests::test_verify_antibody_effectiveness_effective ... ok
+test adversarial::tests::test_verify_antibody_effectiveness_ineffective ... ok
+test adversarial::tests::test_verify_antibody_effectiveness_zero_threshold ... ok
+test category_manifolds::tests::test_adjunction_basic ... ok
+test category_manifolds::tests::test_adjunction_convergence_trajectory_decreases ... ok
+test category_manifolds::tests::test_adjunction_different_dimensions ... ok
+test category_manifolds::tests::test_adjunction_isomorphism_error_positive ... ok
+test category_manifolds::tests::test_adjunction_result_display ... ok
+test category_manifolds::tests::test_adjunction_same_manifold ... ok
+test category_manifolds::tests::test_adjunction_trajectory_not_empty ... ok
+test category_manifolds::tests::test_apply_functor_composition_error_positive ... FAILED
+test category_manifolds::tests::test_apply_functor_basic ... FAILED
+test category_manifolds::tests::test_apply_functor_deterministic ... FAILED
+test category_manifolds::tests::test_apply_functor_identity_error_positive ... FAILED
+test category_manifolds::tests::test_apply_functor_trace_positive ... FAILED
+test category_manifolds::tests::test_category_coherence_improves_with_similarity ... FAILED
+test category_manifolds::tests::test_category_config_default ... ok
+test category_manifolds::tests::test_category_config_fast ... ok
+test category_manifolds::tests::test_category_config_functor_iterations_min ... ok
+test category_manifolds::tests::test_category_config_high_precision ... ok
+test category_manifolds::tests::test_category_config_nat_lr_clamped_high ... ok
+test category_manifolds::tests::test_category_config_nat_lr_clamped_low ... ok
+test category_manifolds::tests::test_category_config_with_adjunction_tolerance ... ok
+test category_manifolds::tests::test_category_config_with_functor_iterations ... ok
+test category_manifolds::tests::test_category_config_with_nat_lr ... ok
+test category_manifolds::tests::test_category_config_with_seed ... ok
+test category_manifolds::tests::test_category_config_with_yoneda_dim ... ok
+test category_manifolds::tests::test_category_config_yoneda_dim_min ... ok
+test category_manifolds::tests::test_compose_manifold_result_display ... FAILED
+test category_manifolds::tests::test_compose_manifolds_basic ... FAILED
+test category_manifolds::tests::test_compose_manifolds_coherence_bounded ... FAILED
+test category_manifolds::tests::test_compose_manifolds_different_dimensions ... FAILED
+test category_manifolds::tests::test_compose_manifolds_same_manifold ... FAILED
+test category_manifolds::tests::test_full_category_pipeline ... FAILED
+test category_manifolds::tests::test_functor_result_display ... FAILED
+test category_manifolds::tests::test_lcg_next_advances ... ok
+test category_manifolds::tests::test_lcg_next_deterministic ... ok
+test category_manifolds::tests::test_natural_transform_result_display ... FAILED
+test category_manifolds::tests::test_natural_transformation_basic ... FAILED
+test category_manifolds::tests::test_natural_transformation_norm_positive ... FAILED
+test category_manifolds::tests::test_natural_transformation_same_functor ... FAILED
+test category_manifolds::tests::test_natural_transformation_trajectory ... FAILED
+test category_manifolds::tests::test_noospheric_self_org_bounded ... ok
+test category_manifolds::tests::test_noospheric_self_org_empty ... ok
+test category_manifolds::tests::test_noospheric_self_org_multiple ... ok
+test category_manifolds::tests::test_noospheric_self_org_single ... ok
+test category_manifolds::tests::test_noospheric_self_org_identical ... FAILED
+test category_manifolds::tests::test_random_gaussian_finite ... ok
+test category_manifolds::tests::test_random_uniform_range ... ok
+test category_manifolds::tests::test_yoneda_embedding_basic ... ok
+test category_manifolds::tests::test_yoneda_embedding_bounded ... ok
+test category_manifolds::tests::test_yoneda_nat_count_positive ... ok
+test category_manifolds::tests::test_yoneda_representability_bounded ... ok
+test category_manifolds::tests::test_yoneda_preserves_structure ... ok
+test category_manifolds::tests::test_yoneda_result_display ... ok
+test cbf_mpc::tests::test_cbf_h_safe ... ok
+test cbf_mpc::tests::test_cbf_h_unsafe ... ok
+test cbf_mpc::tests::test_cbf_qp_safe_nominal ... ok
+test cbf_mpc::tests::test_cbf_qp_projects_unsafe ... ok
+test cbf_mpc::tests::test_class_k ... ok
+test cbf_mpc::tests::test_mpc_config_default ... ok
+test cbf_mpc::tests::test_safety_margin ... ok
+test cbf_mpc::tests::test_mpc_trajectory_safe ... ok
+test cbf_mpc::tests::test_mpc_trajectory_display ... ok
+test cirl_value_learning::tests::test_irl_loss_computation ... ok
+test cirl_value_learning::tests::test_reward_model_creation ... ok
+test cirl_value_learning::tests::test_value_alignment_score ... ok
+test collective_steering::tests::test_collective_config_agents_min ... ok
+test collective_steering::tests::test_collective_config_default ... ok
+test collective_steering::tests::test_collective_config_edge_light ... ok
+test collective_steering::tests::test_collective_config_iterations_min ... ok
+test collective_steering::tests::test_collective_config_leapfrog_min ... ok
+test collective_steering::tests::test_collective_config_planetary_full ... ok
+test collective_steering::tests::test_collective_config_step_size_min ... ok
+test collective_steering::tests::test_collective_config_with_agents ... ok
+test cirl_value_learning::tests::test_cirl_value_update ... ok
+test collective_steering::tests::test_collective_config_with_iterations ... ok
+test collective_steering::tests::test_collective_config_with_lambda ... ok
+test collective_steering::tests::test_collective_config_with_leapfrog_steps ... ok
+test collective_steering::tests::test_collective_config_with_ode_dt ... ok
+test collective_steering::tests::test_collective_config_with_ode_steps ... ok
+test collective_steering::tests::test_collective_config_with_replicator_lr ... ok
+test collective_steering::tests::test_collective_config_with_seed ... ok
+test collective_steering::tests::test_collective_config_with_step_size ... ok
+test collective_steering::tests::test_collective_config_with_svgd_bandwidth_scale ... ok
+test collective_steering::tests::test_collective_config_with_temperature ... ok
+test collective_steering::tests::test_collective_hmc_steer_empty ... ok
+test collective_steering::tests::test_collective_hmc_steer_display ... ok
+test collective_steering::tests::test_collective_hmc_steer_single_agent ... ok
+test collective_steering::tests::test_compute_agent_energy_positive ... ok
+test collective_steering::tests::test_compute_agent_energy_gradient_direction ... ok
+test collective_steering::tests::test_collective_hmc_steer_energy_reduction_finite ... ok
+test collective_steering::tests::test_collective_hmc_steer_fitness_positive ... ok
+test collective_steering::tests::test_compute_agent_energy_zero_same ... ok
+test collective_steering::tests::test_collective_hmc_steer_weight_normalization ... ok
+test collective_steering::tests::test_collective_hmc_steer_multiple_agents ... ok
+test collective_steering::tests::test_collective_vs_individual_consistency ... ok
+test collective_steering::tests::test_collective_hmc_steer_zero_weights_uniform ... ok
+test collective_steering::tests::test_gaussian_noise_range ... ok
+test collective_steering::tests::test_collective_hmc_steer_effective_agents_count ... ok
+test collective_steering::tests::test_gaussian_noise_mean_near_zero ... ok
+test collective_steering::tests::test_collective_hmc_steer_deterministic ... ok
+test collective_steering::tests::test_full_collective_pipeline_edge_light ... ok
+test collective_steering::tests::test_lcg_next_advances ... ok
+test collective_steering::tests::test_lcg_next_deterministic ... ok
+test collective_steering::tests::test_meta_gradient_update_improving ... ok
+test collective_steering::tests::test_full_collective_pipeline_single_agent ... ok
+test collective_steering::tests::test_meta_gradient_update_lambda_bounds ... ok
+test collective_steering::tests::test_full_collective_pipeline_basic ... ok
+test collective_steering::tests::test_meta_gradient_update_lambda_increase ... ok
+test collective_steering::tests::test_meta_gradient_update_step_size_bounds ... ok
+test collective_steering::tests::test_full_collective_pipeline_weight_evolution ... ok
+test collective_steering::tests::test_iterative_improvement ... ok
+test collective_steering::tests::test_meta_gradient_update_stuck_increases_temp ... ok
+test collective_steering::tests::test_meta_gradient_update_temperature_bounds ... ok
+test collective_steering::tests::test_meta_gradient_update_worsening ... ok
+test cirl_value_learning::tests::test_cooperative_update_improves_alignment ... ok
+test collective_steering::tests::test_neural_ode_collective_step_large_dt ... ok
+test collective_steering::tests::test_high_dimensional ... ok
+test collective_steering::tests::test_full_collective_pipeline_multiple_agents ... ok
+test collective_steering::tests::test_neural_ode_collective_step_small_dt ... ok
+test collective_steering::tests::test_large_collective ... ok
+test collective_steering::tests::test_neural_ode_collective_step_energy_finite ... ok
+test collective_steering::tests::test_neural_ode_collective_step_basic ... ok
+test collective_steering::tests::test_neural_ode_collective_step_trajectory_length ... ok
+test collective_steering::tests::test_neural_ode_collective_step_multiple_weights ... ok
+test collective_steering::tests::test_replicator_aggregate_avg_fitness ... ok
+test collective_steering::tests::test_replicator_aggregate_basic ... ok
+test collective_steering::tests::test_replicator_aggregate_display ... ok
+test collective_steering::tests::test_replicator_aggregate_empty ... ok
+test collective_steering::tests::test_replicator_aggregate_dominant_fitness ... ok
+test collective_steering::tests::test_replicator_aggregate_entropy_max_uniform ... ok
+test collective_steering::tests::test_neural_ode_collective_step_display ... ok
+test collective_steering::tests::test_replicator_aggregate_entropy_positive ... ok
+test collective_steering::tests::test_neural_ode_collective_step_trajectory_shapes ... ok
+test collective_steering::tests::test_replicator_aggregate_equal_fitness ... ok
+test collective_steering::tests::test_replicator_aggregate_high_lr_change ... ok
+test collective_steering::tests::test_neural_ode_collective_step_stability_range ... ok
+test collective_steering::tests::test_replicator_aggregate_length_mismatch ... ok
+test collective_steering::tests::test_replicator_aggregate_low_lr_stability ... ok
+test collective_steering::tests::test_replicator_aggregate_normalization ... ok
+test collective_steering::tests::test_replicator_aggregate_single_strategy ... ok
+test collective_steering::tests::test_replicator_aggregate_weights_positive ... ok
+test collective_steering::tests::test_full_collective_pipeline_deterministic ... ok
+test collective_steering::tests::test_neural_ode_collective_step_deterministic ... ok
+test collective_steering::tests::test_single_agent_hmc_basic ... ok
+test collective_zonotope::tests::test_empty_aggregation_fails ... ok
+test collective_zonotope::tests::test_robust_aggregation ... ok
+test collective_zonotope::tests::test_consensus_verification ... ok
+test collective_zonotope::tests::test_summary_reconstruction ... ok
+test collective_zonotope::tests::test_trust_weighted_fusion ... ok
+test collective_steering::tests::test_single_agent_hmc_moves_toward_safe ... ok
+test collective_steering::tests::test_replicator_improves_weights ... ok
+test collective_zonotope::tests::test_weiszfeld_median ... ok
+test collective_steering::tests::test_ode_refines_collective ... ok
+test collective_zonotope::tests::test_zonotope_summary_compression ... ok
+test collective_steering::tests::test_single_agent_hmc_deterministic ... ok
+test collective_steering::tests::test_full_collective_pipeline_planetary ... ok
+test cross_attention::tests::test_ensure_3d ... ok
+test cross_attention::tests::test_generate_stub_modalities ... ok
+test dashboard::tests::test_awakening_section_new ... ok
+test dashboard::tests::test_dashboard_data_new ... ok
+test cross_attention::tests::test_attention_weights_extraction ... ok
+test cross_attention::tests::test_cross_attention_layer ... ok
+test cross_attention::tests::test_fusion_result_shapes ... ok
+test cross_attention::tests::test_fusion_basic ... ok
+test dashboard::tests::test_dashboard_health_score_bounded ... ok
+test dashboard::tests::test_dashboard_production_readiness_unhealthy ... ok
+test dashboard::tests::test_energy_section_new ... ok
+test dashboard::tests::test_dashboard_summary ... ok
+test collective_steering::tests::test_meta_gradient_pipeline ... ok
+test cross_attention::tests::test_fusion_three_modalities ... ok
+test dashboard::tests::test_generate_dashboard_from_sim ... ok
+test dashboard::tests::test_generate_global_dashboard_alerts_high_cpu ... ok
+test dashboard::tests::test_full_dashboard_pipeline ... ok
+test dashboard::tests::test_generate_global_dashboard_alerts_high_error_rate ... ok
+test cross_attention::tests::test_alignment_score ... ok
+test dashboard::tests::test_generate_global_dashboard_alerts_high_memory ... ok
+test dashboard::tests::test_generate_global_dashboard_alerts_low_resilience ... ok
+test dashboard::tests::test_generate_global_dashboard_alerts_low_trust ... ok
+test dashboard::tests::test_generate_global_dashboard_alerts_tipping_point ... ok
+test dashboard::tests::test_generate_global_dashboard_basic ... ok
+test dashboard::tests::test_generate_global_dashboard_no_alerts_healthy ... ok
+test dashboard::tests::test_generate_global_dashboard_with_awakening ... ok
+test dashboard::tests::test_network_section_new ... ok
+test dashboard::tests::test_performance_section_new ... ok
+test dashboard::tests::test_trust_section_new ... ok
+test distributed_sae::tests::test_dp_accountant ... ok
+test distributed_sae::tests::test_federated_round ... ok
+test distributed_sae::tests::test_local_train_step ... ok
+test distributed_sae::tests::test_reconstruction_fidelity ... ok
+test distributed_sae::tests::test_secure_aggregation ... ok
+test edge_runtime::tests::test_altruist_onboarding ... ok
+test edge_runtime::tests::test_build_tauri_mobile_custom_android ... ok
+test edge_runtime::tests::test_build_tauri_mobile_custom_empty_platform ... ok
+test edge_runtime::tests::test_build_tauri_mobile_custom_ios ... ok
+test edge_runtime::tests::test_build_tauri_mobile_custom_size_with_models ... ok
+test edge_runtime::tests::test_build_tauri_mobile_custom_startup_times ... ok
+test edge_runtime::tests::test_build_tauri_mobile_custom_unknown_platform ... ok
+test edge_runtime::tests::test_build_tauri_mobile_custom_wasm ... ok
+test edge_runtime::tests::test_build_tauri_mobile_default ... ok
+test edge_runtime::tests::test_build_tauri_mobile_features ... ok
+test edge_runtime::tests::test_cbf_boundary_state ... ok
+test edge_runtime::tests::test_cbf_dimension_mismatch ... ok
+test edge_runtime::tests::test_cbf_large_radius ... ok
+test edge_runtime::tests::test_cbf_safe_state ... ok
+test edge_runtime::tests::test_cbf_unsafe_state ... ok
+test edge_runtime::tests::test_cbf_value_dimension_mismatch ... ok
+test edge_runtime::tests::test_cbf_value_negative ... ok
+test edge_runtime::tests::test_cbf_value_positive ... ok
+test edge_runtime::tests::test_certified_steer_record ... ok
+test edge_runtime::tests::test_certified_steer_record_no_reduction ... ok
+test edge_runtime::tests::test_compute_budget ... ok
+test edge_runtime::tests::test_compute_budget_range ... ok
+test edge_runtime::tests::test_contribution_factor_rewards_low_capability ... ok
+test edge_runtime::tests::test_device_config_datacenter ... ok
+test edge_runtime::tests::test_device_config_default ... ok
+test edge_runtime::tests::test_device_config_desktop ... ok
+test edge_runtime::tests::test_device_config_iot ... ok
+test edge_runtime::tests::test_device_config_mobile ... ok
+test edge_runtime::tests::test_device_config_new ... ok
+test edge_runtime::tests::test_device_config_no_full_precision_low_cores ... ok
+test edge_runtime::tests::test_device_config_no_full_precision_low_memory ... ok
+test edge_runtime::tests::test_device_config_no_quantized_low_cores ... ok
+test edge_runtime::tests::test_device_config_no_quantized_low_memory ... ok
+test edge_runtime::tests::test_device_config_no_ultra_light_insufficient_memory ... ok
+test edge_runtime::tests::test_device_config_supports_full_precision ... ok
+test edge_runtime::tests::test_device_config_supports_quantized ... ok
+test edge_runtime::tests::test_device_config_supports_ultra_light ... ok
+test edge_runtime::tests::test_device_type_datacenter ... ok
+test edge_runtime::tests::test_device_type_energy ... ok
+test edge_runtime::tests::test_device_type_smartwatch ... ok
+test edge_runtime::tests::test_edge_runtime_config_default ... ok
+test edge_runtime::tests::test_edge_runtime_config_new ... ok
+test edge_runtime::tests::test_energy_impact_display ... ok
+test edge_runtime::tests::test_estimate_energy_impact ... ok
+test edge_runtime::tests::test_evaluate_planetary_hybrid_boundary ... ok
+test edge_runtime::tests::test_evaluate_planetary_hybrid_normal ... ok
+test edge_runtime::tests::test_evaluate_planetary_hybrid_ultra_conservative ... ok
+test edge_runtime::tests::test_evaluate_proportional_hybrid_datacenter ... ok
+test edge_runtime::tests::test_evaluate_proportional_hybrid_iot_ultra_light ... ok
+test edge_runtime::tests::test_evaluate_proportional_hybrid_mobile_full_hybrid ... ok
+test edge_runtime::tests::test_evaluate_proportional_hybrid_smartwatch ... ok
+test distributed_sae::tests::test_distributed_sae_creation ... ok
+test edge_runtime::tests::test_full_ecosystem_integration_pipeline ... ok
+test edge_runtime::tests::test_health_score_bounded ... ok
+test edge_runtime::tests::test_health_score_critical ... ok
+test edge_runtime::tests::test_health_score_perfect ... ok
+test edge_runtime::tests::test_install_command_datacenter ... ok
+test edge_runtime::tests::test_install_command_iot ... ok
+test edge_runtime::tests::test_install_command_smartwatch ... ok
+test edge_runtime::tests::test_integrate_hf_model_datacenter_lowest_latency ... ok
+test edge_runtime::tests::test_integrate_hf_model_desktop_full_precision ... ok
+test edge_runtime::tests::test_integrate_hf_model_energy_estimation ... ok
+test edge_runtime::tests::test_integrate_hf_model_gpu_latency_reduction ... ok
+test edge_runtime::tests::test_integrate_hf_model_insufficient_device ... ok
+test edge_runtime::tests::test_integrate_hf_model_invalid_id_empty ... ok
+test edge_runtime::tests::test_integrate_hf_model_invalid_id_no_slash ... ok
+test edge_runtime::tests::test_integrate_hf_model_iot_ultra_light ... ok
+test edge_runtime::tests::test_integrate_hf_model_low_end_mobile_quantized ... ok
+test edge_runtime::tests::test_integrate_hf_model_memory_exceeded ... ok
+test edge_runtime::tests::test_integrate_hf_model_memory_exceeds_after_precision ... ok
+test edge_runtime::tests::test_integrate_hf_model_mobile_full_precision ... ok
+test edge_runtime::tests::test_integrate_hf_model_onnx_path_format ... ok
+test edge_runtime::tests::test_integration_result_failure ... ok
+test edge_runtime::tests::test_integration_result_success ... ok
+test edge_runtime::tests::test_integration_result_summary_failure ... ok
+test edge_runtime::tests::test_integration_result_summary_success ... ok
+test edge_runtime::tests::test_is_production_ready_all_pass ... ok
+test edge_runtime::tests::test_is_production_ready_deploy_not_ready ... ok
+test edge_runtime::tests::test_is_production_ready_health_too_low ... ok
+test edge_runtime::tests::test_mdp_energy_reward_basic ... ok
+test edge_runtime::tests::test_mdp_energy_reward_high_lambda ... ok
+test edge_runtime::tests::test_mdp_energy_reward_negative_safety ... ok
+test edge_runtime::tests::test_mdp_energy_reward_zero_all ... ok
+test edge_runtime::tests::test_mdp_energy_reward_zero_safety ... ok
+test edge_runtime::tests::test_mdp_select_action_cbf_all_safe ... ok
+test edge_runtime::tests::test_mdp_select_action_cbf_all_unsafe ... ok
+test edge_runtime::tests::test_mdp_select_action_cbf_empty ... ok
+test edge_runtime::tests::test_mdp_select_action_cbf_mixed ... ok
+test edge_runtime::tests::test_mobile_build_result_failure ... ok
+test edge_runtime::tests::test_mobile_build_result_success ... ok
+test edge_runtime::tests::test_mobile_build_summary_failure ... ok
+test edge_runtime::tests::test_mobile_build_summary_success ... ok
+test edge_runtime::tests::test_model_precision_display ... ok
+test edge_runtime::tests::test_mpc_config_default ... ok
+test edge_runtime::tests::test_mpc_config_with_horizon ... ok
+test edge_runtime::tests::test_mpc_config_with_safety_radius ... ok
+test edge_runtime::tests::test_multimodal_vfe_symbiosis_empty ... ok
+test edge_runtime::tests::test_multimodal_vfe_symbiosis_equal_weights ... ok
+test edge_runtime::tests::test_multimodal_vfe_symbiosis_single_modality ... ok
+test edge_runtime::tests::test_multimodal_vfe_symbiosis_weighted_geometric_mean ... ok
+test edge_runtime::tests::test_multimodal_vfe_with_cbf_boundary ... ok
+test edge_runtime::tests::test_multimodal_vfe_with_cbf_safe ... ok
+test edge_runtime::tests::test_multimodal_vfe_with_cbf_unsafe ... ok
+test edge_runtime::tests::test_planetary_metrics_add_impact ... ok
+test edge_runtime::tests::test_planetary_metrics_default ... ok
+test edge_runtime::tests::test_planetary_metrics_summary ... ok
+test edge_runtime::tests::test_power_state_capabilities ... ok
+test edge_runtime::tests::test_power_state_from_metrics ... ok
+test edge_runtime::tests::test_production_metrics_default ... ok
+test edge_runtime::tests::test_production_metrics_ema_convergence ... ok
+test edge_runtime::tests::test_production_metrics_energy_rate ... ok
+test edge_runtime::tests::test_production_metrics_healthy ... ok
+test edge_runtime::tests::test_production_metrics_new ... ok
+test edge_runtime::tests::test_production_metrics_p99_tracking ... ok
+test edge_runtime::tests::test_production_metrics_record_error ... ok
+test edge_runtime::tests::test_production_metrics_record_inference ... ok
+test edge_runtime::tests::test_production_metrics_unhealthy_high_error ... ok
+test edge_runtime::tests::test_production_metrics_unhealthy_high_memory ... ok
+test edge_runtime::tests::test_production_metrics_unhealthy_low_trust ... ok
+test edge_runtime::tests::test_proportional_scaling_energy_savings ... ok
+test edge_runtime::tests::test_recommended_precision_full ... ok
+test edge_runtime::tests::test_recommended_precision_none ... ok
+test edge_runtime::tests::test_recommended_precision_quantized ... ok
+test edge_runtime::tests::test_recommended_precision_ultra_light ... ok
+test edge_runtime::tests::test_status_report_contains_fields ... ok
+test edge_runtime::tests::test_update_utilization_clamps ... ok
+test edge_runtime::tests::test_validate_real_energy_exact_match ... ok
+test edge_runtime::tests::test_validate_real_energy_exceeds_tolerance ... ok
+test edge_runtime::tests::test_validate_real_energy_strict_tolerance ... ok
+test edge_runtime::tests::test_validate_real_energy_symmetric ... ok
+test edge_runtime::tests::test_validate_real_energy_within_tolerance ... ok
+test edge_runtime::tests::test_validate_real_energy_zero_measured ... ok
+test formal_barrier::tests::test_barrier_certificate_large_tensor ... ok
+test formal_barrier::tests::test_barrier_certificate_safe_tensor ... ok
+test formal_barrier::tests::test_interval_arithmetic ... ok
+test formal_barrier::tests::test_interval_non_negative ... ok
+test formal_barrier::tests::test_interval_sqrt ... ok
+test formal_barrier::tests::test_safety_score ... ok
+test formal_barrier::tests::test_smtlib_export ... ok
+test formal_barrier::tests::test_verify_safety ... ok
+test formal_verification::tests::test_aggregate_soundness_score_all_sound ... ok
+test formal_verification::tests::test_aggregate_soundness_score_all_unsound ... ok
+test formal_verification::tests::test_aggregate_soundness_score_bounded ... ok
+test formal_verification::tests::test_aggregate_soundness_score_empty ... ok
+test formal_verification::tests::test_aggregate_soundness_score_mixed ... ok
+test formal_verification::tests::test_audit_report_fails_low_score ... ok
+test formal_verification::tests::test_audit_report_fails_missing_check ... ok
+test formal_verification::tests::test_audit_report_passes_audit ... ok
+test formal_verification::tests::test_audit_report_summary ... ok
+test formal_verification::tests::test_audit_trail_hash_creation ... ok
+test formal_verification::tests::test_audit_trail_hash_to_hex ... ok
+test formal_verification::tests::test_audit_trail_hash_verify ... ok
+test formal_verification::tests::test_audit_trail_hash_verify_fails_on_tamper ... ok
+test formal_verification::tests::test_collective_zonotope_aggregate_basic ... ok
+test formal_verification::tests::test_collective_zonotope_aggregate_empty_error ... ok
+test formal_verification::tests::test_collective_zonotope_aggregate_pac_tightening ... ok
+test formal_verification::tests::test_collective_zonotope_aggregate_single ... ok
+test formal_verification::tests::test_compare_taylor_orders ... ok
+test formal_verification::tests::test_compare_taylor_orders_ordering ... ok
+test formal_verification::tests::test_dynamic_girard_config_default ... ok
+test formal_verification::tests::test_dynamic_girard_result_fields ... ok
+test formal_verification::tests::test_full_security_audit_pipeline ... ok
+test formal_verification::tests::test_input_validation_inf ... ok
+test formal_verification::tests::test_input_validation_nan ... ok
+test formal_verification::tests::test_input_validation_result_invalid ... ok
+test formal_verification::tests::test_input_validation_result_valid ... ok
+test formal_verification::tests::test_input_validation_size_exceeded ... ok
+test formal_verification::tests::test_input_validation_valid ... ok
+test formal_verification::tests::test_input_validation_value_exceeded ... ok
+test formal_verification::tests::test_multi_modal_steer_all_verified ... ok
+test formal_verification::tests::test_multi_modal_steer_empty ... ok
+test formal_verification::tests::test_multi_modal_steer_production_ready ... ok
+test formal_verification::tests::test_multi_modal_steer_result_new ... ok
+test formal_verification::tests::test_multi_modal_steer_result_summary ... ok
+test formal_verification::tests::test_multi_modal_steer_single_modality ... ok
+test formal_verification::tests::test_multi_modal_steer_steering_confidence ... ok
+test formal_verification::tests::test_multi_modal_steer_unsafe_modality ... ok
+test formal_verification::tests::test_multi_modal_steer_weighted_vfe ... ok
+test formal_verification::tests::test_multi_modal_vfe_with_cbf_equal_weights ... ok
+test formal_verification::tests::test_multi_modal_vfe_with_cbf_safe ... ok
+test formal_verification::tests::test_multi_modal_vfe_with_cbf_unsafe ... ok
+test formal_verification::tests::test_propagate_linear_layer ... ok
+test formal_verification::tests::test_propagate_reach_tube_taylor3_basic ... ok
+test formal_verification::tests::test_propagate_reach_tube_taylor3_single_step ... ok
+test formal_verification::tests::test_propagate_silu_taylor_zonotope_basic ... ok
+test formal_verification::tests::test_propagate_taylor_order3_basic ... ok
+test formal_verification::tests::test_propagate_reach_tube_taylor3_pac_bound_tightens ... ok
+test formal_verification::tests::test_propagate_taylor_order3_order2_remainder ... ok
+test formal_verification::tests::test_propagate_taylor_order3_order_fallback ... ok
+test formal_verification::tests::test_propagate_taylor_order3_reduces_generators ... ok
+test formal_verification::tests::test_propagate_taylor_order3_volume_tighter_order3 ... ok
+test formal_verification::tests::test_reduce_generators_dynamic_adapts_down_on_high_ratio ... ok
+test formal_verification::tests::test_reduce_generators_dynamic_aggressive_reduction ... ok
+test formal_verification::tests::test_reduce_generators_dynamic_clamps_to_max_cap ... ok
+test formal_verification::tests::test_reduce_generators_dynamic_clamps_to_min ... ok
+test formal_verification::tests::test_reduce_generators_dynamic_no_reduction_needed ... ok
+test formal_verification::tests::test_reduce_generators_dynamic_tightness_score ... ok
+test formal_verification::tests::test_reduce_generators_no_op ... ok
+test formal_verification::tests::test_run_security_audit_buffer_overflow ... ok
+test formal_verification::tests::test_run_security_audit_clean ... ok
+test formal_verification::tests::test_run_security_audit_with_issues ... ok
+test formal_verification::tests::test_sanitize_parameters_clamps ... ok
+test formal_verification::tests::test_sanitize_parameters_replaces_inf ... ok
+test formal_verification::tests::test_sanitize_parameters_replaces_nan ... ok
+test formal_verification::tests::test_sanitize_parameters_truncates ... ok
+test formal_verification::tests::test_sha256_audit_deterministic ... ok
+test formal_verification::tests::test_sha256_audit_different_data ... ok
+test formal_verification::tests::test_silu_f3_max_positive ... ok
+test formal_verification::tests::test_soundness_config_default ... ok
+test formal_verification::tests::test_soundness_config_relaxed ... ok
+test formal_verification::tests::test_soundness_config_strict ... ok
+test formal_verification::tests::test_soundness_failure_display ... ok
+test formal_verification::tests::test_soundness_production_sound_fails_cbf ... ok
+test formal_verification::tests::test_soundness_production_sound_fails_ibp ... ok
+test formal_verification::tests::test_soundness_production_sound_fails_pac ... ok
+test formal_verification::tests::test_soundness_production_sound_passes ... ok
+test formal_verification::tests::test_soundness_production_sound_unsound_result ... ok
+test formal_verification::tests::test_soundness_report_sound ... ok
+test formal_verification::tests::test_soundness_report_unsound ... ok
+test formal_verification::tests::test_soundness_result_display ... ok
+test formal_verification::tests::test_soundness_result_sound ... ok
+test formal_verification::tests::test_soundness_result_unsound_cbf ... ok
+test formal_verification::tests::test_soundness_result_unsound_ibp ... ok
+test formal_verification::tests::test_soundness_result_unsound_pac ... ok
+test formal_verification::tests::test_soundness_result_unsound_volume ... ok
+test formal_verification::tests::test_taylor_config_default ... ok
+test formal_verification::tests::test_taylor_high_order_config_default ... ok
+test formal_verification::tests::test_taylor_high_order_result_fields ... ok
+test formal_verification::tests::test_verify_audit_chain_empty ... ok
+test formal_verification::tests::test_verify_audit_chain_timestamp_violation ... ok
+test formal_verification::tests::test_verify_audit_chain_valid ... ok
+test formal_verification::tests::test_verify_end_to_end_soundness_basic ... ok
+test formal_verification::tests::test_verify_pipeline_soundness_empty ... ok
+test formal_verification::tests::test_verify_pipeline_soundness_mismatched_lengths ... ok
+test formal_verification::tests::test_verify_pipeline_soundness_single_layer ... ok
+test formal_verification::tests::test_verify_reach_tube_safety_boundary ... ok
+test formal_verification::tests::test_verify_reach_tube_safety_safe ... ok
+test formal_verification::tests::test_verify_reach_tube_safety_unsafe ... ok
+test formal_verification::tests::test_volume_ratio ... ok
+test formal_verification::tests::test_zonotope_minkowski_sum_basic ... ok
+test global_bootstrap::tests::test_bootstrap_config_default ... ok
+test global_bootstrap::tests::test_bootstrap_result_display ... ok
+test global_bootstrap::tests::test_config_reference ... ok
+test global_bootstrap::tests::test_contribution_factor_weighting ... ok
+test global_bootstrap::tests::test_custom_distribution ... ok
+test global_bootstrap::tests::test_device_distribution_default ... ok
+test global_bootstrap::tests::test_device_distribution_select_covers_all ... ok
+test global_bootstrap::tests::test_default_planetary ... ok
+test global_bootstrap::tests::test_energy_accumulation ... ok
+test global_bootstrap::tests::test_generate_install_commands ... ok
+test global_bootstrap::tests::test_mesh_node_count ... ok
+test global_bootstrap::tests::test_nodes_mut_access ... ok
+test global_bootstrap::tests::test_high_churn_resilience ... ok
+test global_bootstrap::tests::test_small_mesh_bootstrap ... ok
+test hybrid_zonotope::tests::test_affine_exact ... ok
+test hybrid_zonotope::tests::test_collective_certificate ... ok
+test hybrid_zonotope::tests::test_hybrid_creation ... ok
+test hybrid_zonotope::tests::test_layer_type_bounds ... ok
+test hybrid_zonotope::tests::test_neural_certificate ... ok
+test hybrid_zonotope::tests::test_neural_tightener_predict ... ok
+test hybrid_zonotope::tests::test_point_hybrid ... ok
+test hybrid_zonotope::tests::test_propagate_layer ... ok
+test hybrid_zonotope::tests::test_relu_tight ... ok
+test hybrid_zonotope::tests::test_volume_proxy ... ok
+test live_testnet::tests::test_bootstrap_max_peers ... ok
+test live_testnet::tests::test_bootstrap_peer ... ok
+test live_testnet::tests::test_bootstrap_trusted_peers ... ok
+test live_testnet::tests::test_churn_effect ... ok
+test live_testnet::tests::test_device_mix ... ok
+test live_testnet::tests::test_energy_accumulation ... ok
+test live_testnet::tests::test_inactive_node_fails_trust ... ok
+test live_testnet::tests::test_live_mesh_run ... ok
+test live_testnet::tests::test_live_mesh_simulation ... ok
+test live_testnet::tests::test_mesh_node_creation ... ok
+test live_testnet::tests::test_mesh_stats_empty ... ok
+test live_testnet::tests::test_mesh_stats_from_nodes ... ok
+test live_testnet::tests::test_mesh_stats_summary ... ok
+test live_testnet::tests::test_node_simulate_round ... ok
+test live_testnet::tests::test_planetary_impact ... ok
+test live_testnet::tests::test_posym_creation ... ok
+test live_testnet::tests::test_posym_score_increases ... ok
+test live_testnet::tests::test_power_state_from_compute_path ... ok
+test live_testnet::tests::test_record_certified_steer ... ok
+test live_testnet::tests::test_simulation_config ... ok
+test live_testnet::tests::test_steer_contribution_hash ... ok
+test live_testnet::tests::test_steering_coverage ... ok
+test live_testnet::tests::test_trust_threshold ... ok
+test live_testnet::tests::test_trust_update ... ok
+test mechanism_design::tests::test_byzantine_detection ... ok
+test mechanism_design::tests::test_byzantine_filter ... ok
+test mechanism_design::tests::test_collective_mechanism_round ... ok
+test mechanism_design::tests::test_credit_decay ... ok
+test mechanism_design::tests::test_credit_ledger ... ok
+test mechanism_design::tests::test_factorial ... ok
+test mechanism_design::tests::test_mechanism_display ... ok
+test mechanism_design::tests::test_shapley_computation ... ok
+test mechanism_design::tests::test_shapley_exact_small ... ok
+test mechanism_design::tests::test_tensor_verifier ... ok
+test mechanism_design::tests::test_vcg_empty ... ok
+test mechanism_design::tests::test_vcg_individual_rationality ... ok
+test mechanism_design::tests::test_vcgauction_creation ... ok
+test meta_active_inference::tests::test_empty_peer_vfes ... ok
+test meta_active_inference::tests::test_fd_gradient ... ok
+test meta_active_inference::tests::test_convergence_stability ... ok
+test meta_active_inference::tests::test_meta_hyper_params_clamp ... ok
+test meta_active_inference::tests::test_meta_hyper_params_default ... ok
+test meta_active_inference::tests::test_improvement_ratio ... ok
+test meta_active_inference::tests::test_meta_vfe_estimation ... ok
+test meta_improvement::tests::test_cbf_dimension_mismatch ... ok
+test meta_improvement::tests::test_cbf_evaluate_boundary ... ok
+test meta_improvement::tests::test_cbf_evaluate_safe ... ok
+test meta_active_inference::tests::test_meta_optimization_improves ... ok
+test meta_improvement::tests::test_cbf_evaluate_unsafe ... ok
+test meta_improvement::tests::test_engine_add_sample ... ok
+test meta_improvement::tests::test_engine_acceptance_rate ... ok
+test meta_improvement::tests::test_engine_avg_gen_bound ... ok
+test meta_improvement::tests::test_engine_creation ... ok
+test meta_improvement::tests::test_engine_step ... ok
+test meta_improvement::tests::test_full_pac_pipeline ... ok
+test meta_improvement::tests::test_gaussian_kl_dimension_mismatch ... ok
+test meta_improvement::tests::test_gaussian_kl_identical ... ok
+test meta_improvement::tests::test_gaussian_kl_positive ... ok
+test meta_improvement::tests::test_next_random ... ok
+test meta_improvement::tests::test_pac_bound_decreases_with_samples ... ok
+test meta_improvement::tests::test_pac_bound_increases_with_kl ... ok
+test meta_improvement::tests::test_pac_config_default ... ok
+test meta_improvement::tests::test_pac_gen_bound_basic ... ok
+test meta_improvement::tests::test_pac_gen_bound_single_sample ... ok
+test meta_improvement::tests::test_pac_meta_result_display ... ok
+test meta_improvement::tests::test_pac_meta_update_accepts_safe ... ok
+test meta_improvement::tests::test_pac_meta_update_rejects_cbf_violation ... ok
+test meta_improvement::tests::test_violation_prob_safe ... ok
+test meta_improvement::tests::test_violation_prob_unsafe ... ok
+test multimodal::tests::test_cross_modal_correlation ... ok
+test multimodal::tests::test_multimodal_state_creation ... ok
+test multimodal::tests::test_multimodal_vfe_computation ... ok
+test multimodal::tests::test_production_benchmark ... ok
+test neural_ode::tests::test_cbf_creation ... ok
+test multimodal::tests::test_steering_reduces_vfe ... ok
+test neural_ode::tests::test_cbf_evaluate ... ok
+test neural_ode::tests::test_field_evaluate ... ok
+test neural_ode::tests::test_euler_step ... ok
+test neural_ode::tests::test_neural_ode_field_creation ... ok
+test neural_ode::tests::test_certificate_display ... ok
+test p2p_mechanism::tests::test_byzantine_median ... ok
+test p2p_mechanism::tests::test_collective_pac_bound ... ok
+test p2p_mechanism::tests::test_config_default ... ok
+test neural_ode::tests::test_rk2_step ... ok
+test p2p_mechanism::tests::test_factorial ... ok
+test neural_ode::tests::test_integration_method_selection ... ok
+test p2p_mechanism::tests::test_poa_byzantine_resistance ... ok
+test p2p_mechanism::tests::test_poa_simulation ... ok
+test p2p_mechanism::tests::test_shapley_efficiency ... ok
+test p2p_mechanism::tests::test_shapley_empty ... ok
+test p2p_mechanism::tests::test_shapley_single ... ok
+test p2p_mechanism::tests::test_vcg_empty ... ok
+test p2p_mechanism::tests::test_vcg_reserve_price ... ok
+test neural_ode::tests::test_self_improvement_engine ... ok
+test p2p_mechanism::tests::test_vcg_selects_winners ... ok
+test phase_transition::tests::test_civilizational_phase_shift_display ... ok
+test neural_ode::tests::test_trajectory_certificate ... ok
+test phase_transition::tests::test_civilizational_phase_shift_summary ... ok
+test phase_transition::tests::test_compute_cbf_violation_boundary ... ok
+test phase_transition::tests::test_compute_cbf_violation_safe ... ok
+test phase_transition::tests::test_compute_cbf_violation_unsafe ... ok
+test phase_transition::tests::test_compute_lyapunov_exponent_constant ... ok
+test phase_transition::tests::test_compute_lyapunov_exponent_short ... ok
+test phase_transition::tests::test_compute_lyapunov_exponent_stable ... ok
+test phase_transition::tests::test_compute_transition_potential_economic_dominates ... FAILED
+test phase_transition::tests::test_compute_transition_potential_symbiotic_dominates ... FAILED
+test phase_transition::tests::test_compute_transition_potential_with_barrier ... ok
+test phase_transition::tests::test_compute_transition_potential_zero_barrier ... ok
+test phase_transition::tests::test_detect_phase_transition_detected ... ok
+test phase_transition::tests::test_detect_phase_transition_irreversible ... FAILED
+test phase_transition::tests::test_detect_phase_transition_not_detected_high_energy ... ok
+test phase_transition::tests::test_detect_phase_transition_not_detected_low_coherence ... ok
+test phase_transition::tests::test_detect_phase_transition_potential_range ... ok
+test phase_transition::tests::test_full_phase_transition_workflow ... ok
+test phase_transition::tests::test_lcg_next_deterministic ... ok
+test phase_transition::tests::test_phase_transition_config_clone ... ok
+test phase_transition::tests::test_phase_transition_config_coherence_clamped ... ok
+test phase_transition::tests::test_phase_transition_config_default ... ok
+test phase_transition::tests::test_phase_transition_config_fast ... ok
+test phase_transition::tests::test_phase_transition_config_high_precision ... ok
+test phase_transition::tests::test_phase_transition_config_with_cbf_beta ... ok
+test phase_transition::tests::test_phase_transition_config_with_coherence_threshold ... ok
+test phase_transition::tests::test_phase_transition_config_with_energy_threshold ... ok
+test phase_transition::tests::test_phase_transition_config_with_seed ... ok
+test phase_transition::tests::test_phase_transition_result_display ... ok
+test phase_transition::tests::test_phase_transition_result_summary ... ok
+test phase_transition::tests::test_random_uniform_range ... ok
+test phase_transition::tests::test_simulate_civilizational_phase_shift_basic ... ok
+test phase_transition::tests::test_simulate_civilizational_phase_shift_deterministic ... ok
+test phase_transition::tests::test_simulate_civilizational_phase_shift_irreversible ... ok
+test phase_transition::tests::test_simulate_civilizational_phase_shift_short ... ok
+test phase_transition::tests::test_simulate_civilizational_phase_shift_tipping ... ok
+test phase_transition::tests::test_simulate_civilizational_phase_shift_trajectories_sum ... ok
+test phase_transition::tests::test_stabilize_irreversible_symbiosis_already_safe ... ok
+test phase_transition::tests::test_stabilize_irreversible_symbiosis_coherence_bounded ... ok
+test phase_transition::tests::test_stabilize_irreversible_symbiosis_needs_correction ... ok
+test planetary_sim::tests::test_awakening_metrics_new ... ok
+test planetary_sim::tests::test_awakening_metrics_summary ... ok
+test planetary_sim::tests::test_awakening_metrics_summary_no_tipping ... ok
+test planetary_sim::tests::test_compute_planetary_resilience_score_balanced ... ok
+test planetary_sim::tests::test_compute_planetary_resilience_score_empty_energy ... ok
+test planetary_sim::tests::test_compute_planetary_resilience_score_max ... ok
+test planetary_sim::tests::test_compute_planetary_resilience_score_min ... ok
+test planetary_sim::tests::test_compute_sim_energy_impact ... ok
+test planetary_sim::tests::test_compute_sim_energy_impact_zero_active ... ok
+test planetary_sim::tests::test_compute_variance_empty ... ok
+test planetary_sim::tests::test_compute_variance_known ... ok
+test planetary_sim::tests::test_compute_variance_large_values ... ok
+test planetary_sim::tests::test_compute_variance_negative_values ... ok
+test planetary_sim::tests::test_compute_variance_single ... ok
+test planetary_sim::tests::test_compute_variance_two_values ... ok
+test planetary_sim::tests::test_compute_variance_uniform ... ok
+test planetary_sim::tests::test_device_distribution_effect ... ok
+test planetary_sim::tests::test_empty_simulation ... ok
+test planetary_sim::tests::test_energy_accumulation_over_time ... ok
+test planetary_sim::tests::test_full_awakening_pipeline ... ok
+test planetary_sim::tests::test_full_replicator_weibull_pipeline ... ok
+test planetary_sim::tests::test_next_random_sim_deterministic ... ok
+test planetary_sim::tests::test_meta_lr_adaptation_in_validation ... ok
+test planetary_sim::tests::test_next_random_sim_range ... ok
+test planetary_sim::tests::test_long_duration_simulation ... ok
+test planetary_sim::tests::test_planetary_sim_config_churn_clamped ... ok
+test planetary_sim::tests::test_planetary_sim_config_default ... ok
+test planetary_sim::tests::test_planetary_sim_config_high_churn ... ok
+test planetary_sim::tests::test_planetary_sim_config_stable ... ok
+test planetary_sim::tests::test_planetary_sim_config_with_churn ... ok
+test planetary_sim::tests::test_planetary_sim_config_with_duration ... ok
+test planetary_sim::tests::test_planetary_sim_config_with_nodes ... ok
+test planetary_sim::tests::test_planetary_sim_result_default ... ok
+test planetary_sim::tests::test_planetary_sim_result_summary ... ok
+test planetary_sim::tests::test_planetary_validation_config_collective_weight_clamped_high ... ok
+test planetary_sim::tests::test_planetary_validation_config_collective_weight_clamped_low ... ok
+test planetary_sim::tests::test_planetary_validation_config_convergence_tolerance_clamped ... ok
+test planetary_sim::tests::test_planetary_validation_config_default ... ok
+test planetary_sim::tests::test_planetary_validation_config_fast ... ok
+test planetary_sim::tests::test_planetary_validation_config_high_precision ... ok
+test planetary_sim::tests::test_planetary_validation_config_meta_lr_clamped_high ... ok
+test planetary_sim::tests::test_planetary_validation_config_meta_lr_clamped_low ... ok
+test planetary_sim::tests::test_planetary_validation_config_rounds_min ... ok
+test planetary_sim::tests::test_planetary_validation_config_threat_threshold_clamped ... ok
+test planetary_sim::tests::test_planetary_validation_config_with_collective_weight ... ok
+test planetary_sim::tests::test_planetary_validation_config_with_convergence_tolerance ... ok
+test planetary_sim::tests::test_planetary_validation_config_with_meta_lr ... ok
+test planetary_sim::tests::test_planetary_validation_config_with_threat_threshold ... ok
+test planetary_sim::tests::test_planetary_validation_config_with_validation_rounds ... ok
+test planetary_sim::tests::test_planetary_validation_result_summary ... ok
+test planetary_sim::tests::test_replicator_result_summary ... ok
+test planetary_sim::tests::test_rejoin_mechanism ... ok
+test neural_ode::tests::test_flowpipe_computation ... ok
+test planetary_sim::tests::test_select_device_type ... ok
+test planetary_sim::tests::test_short_duration_simulation ... ok
+test planetary_sim::tests::test_sim_node_churn ... ok
+test planetary_sim::tests::test_sim_node_creation ... ok
+test planetary_sim::tests::test_sim_node_step_active ... ok
+test planetary_sim::tests::test_sim_node_step_inactive ... ok
+test planetary_sim::tests::test_sim_node_trust_increases_on_success ... ok
+test planetary_sim::tests::test_simulate_noosfera_awakening_adoption_curve_increasing ... ok
+test planetary_sim::tests::test_simulate_noosfera_awakening_basic ... ok
+test planetary_sim::tests::test_simulate_noosfera_awakening_collective_intelligence ... ok
+test planetary_sim::tests::test_simulate_noosfera_awakening_curve_months_match ... ok
+test planetary_sim::tests::test_simulate_noosfera_awakening_diffusion_rate ... ok
+test planetary_sim::tests::test_simulate_noosfera_awakening_large_scale ... ok
+test planetary_sim::tests::test_simulate_noosfera_awakening_network_effect ... ok
+test planetary_sim::tests::test_simulate_noosfera_awakening_short_duration ... ok
+test planetary_sim::tests::test_simulate_noosfera_awakening_deterministic ... ok
+test planetary_sim::tests::test_simulate_noosfera_awakening_single_month ... ok
+test planetary_sim::tests::test_run_s130_planetary_pipeline_basic ... ok
+test planetary_sim::tests::test_simulate_noosfera_awakening_tipping_point ... ok
+test planetary_sim::tests::test_simulate_noosfera_awakening_trust_increases ... ok
+test planetary_sim::tests::test_simulate_noosfera_awakening_small_network ... ok
+test planetary_sim::tests::test_simulate_noosfera_awakening_zero_months ... ok
+test planetary_sim::tests::test_simulate_noosfera_awakening_zero_nodes ... ok
+test planetary_sim::tests::test_simulate_planetary_mesh_high_churn ... ok
+test planetary_sim::tests::test_run_s130_planetary_pipeline_high_precision ... ok
+test planetary_sim::tests::test_simulate_planetary_mesh_no_churn ... ok
+test planetary_sim::tests::test_run_s130_planetary_pipeline_strategies ... ok
+test planetary_sim::tests::test_simulate_planetary_mesh_high_churn_config ... ok
+test planetary_sim::tests::test_simulate_planetary_mesh_small ... ok
+test planetary_sim::tests::test_simulate_planetary_mesh_stable_config ... ok
+test planetary_sim::tests::test_simulate_replicator_dynamics_dominant_share_range ... ok
+test planetary_sim::tests::test_simulate_replicator_dynamics_empty ... ok
+test planetary_sim::tests::test_simulate_replicator_dynamics_entropy_decreases ... ok
+test planetary_sim::tests::test_simulate_planetary_mesh_with_config ... ok
+test planetary_sim::tests::test_simulate_replicator_dynamics_avg_fitness_positive ... ok
+test planetary_sim::tests::test_simulate_replicator_dynamics_entropy_positive ... ok
+test planetary_sim::tests::test_simulate_replicator_dynamics_equal_fitness ... ok
+test planetary_sim::tests::test_simulate_replicator_dynamics_trajectory_length ... ok
+test planetary_sim::tests::test_simulate_planetary_mesh_10000_nodes ... ok
+test planetary_sim::tests::test_simulate_replicator_dynamics_single_strategy ... ok
+test planetary_sim::tests::test_simulate_replicator_dynamics_higher_fitness_dominates ... ok
+test planetary_sim::tests::test_simulate_replicator_dynamics_shares_sum_to_one ... ok
+test planetary_sim::tests::test_simulate_replicator_dynamics_trajectory_start ... ok
+test planetary_sim::tests::test_simulate_replicator_dynamics_zero_steps ... ok
+test planetary_sim::tests::test_simulate_replicator_weibull_basic ... ok
+test planetary_sim::tests::test_simulate_replicator_weibull_deterministic ... ok
+test planetary_sim::tests::test_simulate_weibull_churn_avg_lifetime_positive ... ok
+test planetary_sim::tests::test_simulate_replicator_weibull_zero_nodes ... ok
+test planetary_sim::tests::test_simulate_weibull_churn_deterministic ... ok
+test planetary_sim::tests::test_simulate_replicator_weibull_high_churn ... ok
+test planetary_sim::tests::test_simulate_weibull_churn_survival_rate_range ... ok
+test planetary_sim::tests::test_simulate_weibull_churn_zero_duration ... ok
+test planetary_sim::tests::test_simulate_weibull_churn_high_duration ... ok
+test planetary_sim::tests::test_simulate_weibull_churn_zero_nodes ... ok
+test planetary_sim::tests::test_single_node_simulation ... ok
+test planetary_sim::tests::test_trust_dynamics_over_time ... ok
+test planetary_sim::tests::test_validate_planetary_mesh_adversarial_threat_range ... ok
+test planetary_sim::tests::test_run_planetary_stress_test_returns_five_levels ... ok
+test planetary_sim::tests::test_validate_planetary_mesh_basic ... ok
+test planetary_sim::tests::test_run_planetary_stress_test_resilience_decreases ... ok
+test planetary_sim::tests::test_run_planetary_stress_test_all_valid ... ok
+test planetary_sim::tests::test_validate_planetary_mesh_certification_passes ... ok
+test planetary_sim::tests::test_run_planetary_stress_test_threat_increases ... ok
+test planetary_sim::tests::test_validate_planetary_mesh_certification_fails_high_threat ... ok
+test planetary_sim::tests::test_validate_planetary_mesh_fast ... ok
+test planetary_sim::tests::test_validate_planetary_mesh_no_certification_required ... ok
+test planetary_sim::tests::test_validate_planetary_mesh_zero_nodes ... ok
+test planetary_sim::tests::test_validate_planetary_mesh_high_precision ... ok
+test planetary_sim::tests::test_validate_planetary_mesh_fitness_trajectory_increasing_collective ... ok
+test planetary_sim::tests::test_validate_planetary_mesh_convergence_detected ... ok
+test planetary_sim::tests::test_weibull_cdf_exponential_case ... ok
+test planetary_sim::tests::test_weibull_cdf_increases_with_time ... ok
+test planetary_sim::tests::test_weibull_cdf_negative_time ... ok
+test planetary_sim::tests::test_weibull_cdf_clamped_to_one ... ok
+test planetary_sim::tests::test_weibull_cdf_zero_time ... ok
+test planetary_sim::tests::test_weibull_churn_config_default ... ok
+test planetary_sim::tests::test_weibull_churn_config_scale_min ... ok
+test planetary_sim::tests::test_weibull_churn_config_shape_min ... ok
+test planetary_sim::tests::test_weibull_churn_config_with_scale ... ok
+test planetary_sim::tests::test_weibull_churn_config_with_shape ... ok
+test planetary_sim::tests::test_weibull_churn_exponential ... ok
+test planetary_sim::tests::test_weibull_churn_infant_mortality ... ok
+test planetary_sim::tests::test_weibull_churn_wear_out ... ok
+test planetary_sim::tests::test_weibull_hazard_constant_for_exponential ... ok
+test planetary_sim::tests::test_weibull_hazard_decreases_for_infant_mortality ... ok
+test planetary_sim::tests::test_weibull_hazard_increases_for_wear_out ... ok
+test planetary_sim::tests::test_weibull_hazard_zero_time ... ok
+test provable_safety::tests::test_cosine_similarity_identical ... ok
+test provable_safety::tests::test_cosine_similarity_orthogonal ... ok
+test provable_safety::tests::test_deployment_node_new ... ok
+test provable_safety::tests::test_deployment_result_display ... ok
+test provable_safety::tests::test_deployment_with_high_byzantine_fails ... ok
+test provable_safety::tests::test_detect_singularity_achieved ... ok
+test provable_safety::tests::test_detect_singularity_critical_transition ... ok
+test provable_safety::tests::test_detect_singularity_early_adoption ... ok
+test provable_safety::tests::test_detect_singularity_emergent_symbiosis ... ok
+test provable_safety::tests::test_detect_singularity_not_detected ... ok
+test provable_safety::tests::test_detect_singularity_tipping_proximity_range ... ok
+test provable_safety::tests::test_energy_instability_detected ... ok
+test provable_safety::tests::test_lcg_next_advances ... ok
+test provable_safety::tests::test_full_safety_workflow ... ok
+test provable_safety::tests::test_lcg_next_deterministic ... ok
+test provable_safety::tests::test_prove_noosfera_safety_barrier_violated ... ok
+test provable_safety::tests::test_prove_noosfera_safety_byzantine_exceeded ... ok
+test provable_safety::tests::test_random_gaussian_finite ... ok
+test provable_safety::tests::test_prove_noosfera_safety_low_coherence ... ok
+test provable_safety::tests::test_prove_noosfera_safety_perfect ... ok
+test provable_safety::tests::test_run_provable_safety_pipeline ... ok
+test provable_safety::tests::test_random_uniform_range ... ok
+test provable_safety::tests::test_prove_noosfera_safety_empty_energy ... ok
+test provable_safety::tests::test_run_provable_safety_pipeline_singularity ... ok
+test provable_safety::tests::test_safety_config_default ... ok
+test provable_safety::tests::test_safety_config_fast ... ok
+test provable_safety::tests::test_safety_config_high_precision ... ok
+test provable_safety::tests::test_safety_config_threshold_clamped_high ... ok
+test provable_safety::tests::test_safety_config_threshold_clamped_low ... ok
+test provable_safety::tests::test_safety_config_with_barrier_tolerance ... ok
+test provable_safety::tests::test_safety_config_with_energy_tolerance ... ok
+test provable_safety::tests::test_safety_config_with_max_byzantine ... ok
+test provable_safety::tests::test_safety_config_with_min_coherence ... ok
+test provable_safety::tests::test_safety_config_with_min_nodes ... ok
+test provable_safety::tests::test_safety_config_with_safety_threshold ... ok
+test provable_safety::tests::test_safety_config_with_seed ... ok
+test provable_safety::tests::test_safety_proof_result_display ... ok
+test provable_safety::tests::test_safety_score_is_minimum ... ok
+test provable_safety::tests::test_shannon_entropy_deterministic ... ok
+test provable_safety::tests::test_shannon_entropy_uniform ... ok
+test provable_safety::tests::test_sigmoid_negative ... ok
+test provable_safety::tests::test_sigmoid_positive ... ok
+test provable_safety::tests::test_sigmoid_zero ... ok
+test provable_safety::tests::test_simulate_deployment_deterministic ... ok
+test provable_safety::tests::test_simulate_deployment_no_byzantine ... ok
+test provable_safety::tests::test_simulate_deployment_small ... ok
+test provable_safety::tests::test_simulate_deployment_with_byzantine ... ok
+test provable_safety::tests::test_simulate_deployment_zero_steps ... ok
+test provable_safety::tests::test_singularity_result_display ... ok
+test provable_safety::tests::test_uniform_energy_stability ... ok
+test sae_integration::tests::test_sae_statistics ... ok
+test sae_modular::tests::test_aggregate_sparse_updates_empty ... ok
+test planetary_sim::tests::test_full_planetary_validation_pipeline ... ok
+test sae_modular::tests::test_aggregate_sparse_updates_median ... ok
+test sae_modular::tests::test_aggregate_sparse_updates_single ... ok
+test provable_safety::tests::test_simulate_deployment_10k ... ok
+test sae_modular::tests::test_aggregate_sparse_updates_sorted_indices ... ok
+test sae_modular::tests::test_aggregate_sparse_updates_skips_invalid ... ok
+test sae_modular::tests::test_batch_projection ... ok
+test sae_modular::tests::test_check_evolutionary_safety_all_safe ... ok
+test sae_modular::tests::test_check_evolutionary_safety_empty ... ok
+test sae_modular::tests::test_check_evolutionary_safety_one_unsafe ... ok
+test sae_modular::tests::test_compute_avg_fitness_gain_empty ... ok
+test sae_modular::tests::test_compute_avg_fitness_gain_multiple ... ok
+test sae_modular::tests::test_compute_avg_fitness_gain_single ... ok
+test sae_modular::tests::test_compute_sparse_update_entropy_deterministic ... ok
+test sae_modular::tests::test_compute_sparse_update_entropy_empty ... ok
+test sae_modular::tests::test_compute_sparse_update_entropy_uniform ... ok
+test sae_modular::tests::test_effective_dim ... ok
+test sae_modular::tests::test_decode_dimension ... FAILED
+test sae_modular::tests::test_encode_dimension ... FAILED
+test sae_modular::tests::test_evolutionary_config_crossover_clamped ... ok
+test sae_modular::tests::test_evolutionary_config_default ... ok
+test sae_modular::tests::test_evolutionary_config_mutation_rate_clamped ... ok
+test sae_modular::tests::test_evolutionary_config_population_min_two ... ok
+test sae_modular::tests::test_evolutionary_config_with_crossover_rate ... ok
+test sae_modular::tests::test_evolutionary_config_with_dp_noise ... ok
+test sae_modular::tests::test_evolutionary_config_with_mutation_rate ... ok
+test sae_modular::tests::test_evolutionary_config_with_population ... ok
+test sae_modular::tests::test_evolutionary_result_empty ... ok
+test sae_modular::tests::test_evolutionary_result_multiple_generations ... ok
+test sae_modular::tests::test_evolutionary_result_safety_broken ... ok
+test sae_modular::tests::test_evolutionary_result_single_generation ... ok
+test sae_modular::tests::test_evolutionary_result_summary ... ok
+test sae_modular::tests::test_evolve_default_config ... ok
+test sae_modular::tests::test_evolve_dp_preservation_maintained ... ok
+test sae_modular::tests::test_evolve_empty_population ... ok
+test sae_modular::tests::test_evolve_maintains_population_size ... ok
+test sae_modular::tests::test_evolve_multiple_generations_improves ... ok
+test sae_modular::tests::test_evolve_single_generation ... ok
+test sae_modular::tests::test_evolve_with_custom_config ... ok
+test sae_modular::tests::test_evolve_zero_generations ... ok
+test sae_modular::tests::test_federated_loss_numerical_stability ... ok
+test sae_modular::tests::test_federated_sae_loss_basic ... ok
+test sae_modular::tests::test_federated_sae_loss_empty_recon ... ok
+test sae_modular::tests::test_federated_sae_loss_high_lambda ... FAILED
+test sae_modular::tests::test_federated_sae_loss_with_entropy_reg_basic ... ok
+test sae_modular::tests::test_federated_sae_loss_with_entropy_reg_high_entropy_lambda ... ok
+test sae_modular::tests::test_federated_sae_loss_with_entropy_reg_zero_lambda ... ok
+test sae_modular::tests::test_federated_sae_loss_zero_lambda ... ok
+test sae_modular::tests::test_fitness_result_zero_energy ... ok
+test sae_modular::tests::test_full_evolutionary_pipeline ... ok
+test sae_modular::tests::test_fitness_result_not_viable_low_fitness ... ok
+test sae_modular::tests::test_fitness_result_new ... ok
+test sae_modular::tests::test_fitness_result_not_viable_low_dp ... ok
+test sae_modular::tests::test_fitness_result_is_viable ... ok
+test sae_modular::tests::test_generate_sae_update_proof_top_k_exceeds_latents ... ok
+test sae_modular::tests::test_generate_sae_update_proof ... ok
+test sae_modular::tests::test_generation_result_fitness_gain ... ok
+test sae_modular::tests::test_generation_result_fitness_gain_negative ... ok
+test sae_modular::tests::test_generation_result_new ... ok
+test sae_modular::tests::test_identity_projection ... FAILED
+test sae_modular::tests::test_jensen_shannon_bounded ... ok
+test sae_modular::tests::test_identity_projection_sound ... ok
+test sae_integration::tests::test_sae_feature_extraction ... ok
+test sae_modular::tests::test_jensen_shannon_identical ... ok
+test sae_modular::tests::test_jensen_shannon_length_mismatch ... ok
+test sae_modular::tests::test_jensen_shannon_symmetric ... ok
+test sae_modular::tests::test_kl_divergence_asymmetric ... ok
+test sae_modular::tests::test_kl_divergence_empty ... ok
+test sae_modular::tests::test_kl_divergence_identical_distributions ... ok
+test sae_modular::tests::test_kl_divergence_length_mismatch ... ok
+test sae_modular::tests::test_kl_divergence_near_zero_q ... ok
+test sae_modular::tests::test_kl_divergence_positive ... ok
+test sae_modular::tests::test_kl_divergence_tensor_basic ... FAILED
+test sae_modular::tests::test_kl_divergence_tensor_row_mismatch ... ok
+test sae_modular::tests::test_kl_divergence_zero_handling ... ok
+test sae_modular::tests::test_next_gaussian ... ok
+test sae_modular::tests::test_next_random_evolution ... ok
+test sae_modular::tests::test_project_soundness ... ok
+test sae_modular::tests::test_projection_result_display ... ok
+test sae_modular::tests::test_random_generator_deterministic ... ok
+test sae_modular::tests::test_sae_config_default ... ok
+test sae_modular::tests::test_sae_creation ... FAILED
+test sae_modular::tests::test_sae_update_proof_creation ... ok
+test sae_modular::tests::test_sae_update_proof_deterministic_hash ... ok
+test sae_modular::tests::test_sae_update_proof_is_within_bounds ... ok
+test sae_modular::tests::test_sae_update_proof_sparsity_ratio ... ok
+test sae_modular::tests::test_sae_update_proof_verify_tampered ... ok
+test sae_modular::tests::test_sae_update_proof_verify_valid ... ok
+test sae_modular::tests::test_stable_log_sum_exp_basic ... ok
+test sae_modular::tests::test_stable_log_sum_exp_empty ... ok
+test sae_modular::tests::test_stable_log_sum_exp_large_values ... ok
+test sae_modular::tests::test_stable_log_sum_exp_single ... ok
+test sae_modular::tests::test_stable_softmax_basic ... ok
+test sae_modular::tests::test_stable_softmax_empty ... ok
+test sae_modular::tests::test_stable_softmax_large_values ... ok
+test sae_modular::tests::test_stable_softmax_uniform ... ok
+test sae_modular::tests::test_symmetric_kl_basic ... ok
+test sae_modular::tests::test_symmetric_kl_identical ... ok
+test sae_modular::tests::test_topk_exceeds_latent_dim_error ... ok
+test sae_modular::tests::test_topk_sparsifies ... FAILED
+test sae_modular::tests::test_verify_sae_update_batch_all_valid ... ok
+test sae_modular::tests::test_verify_sae_update_batch_empty ... ok
+test sae_modular::tests::test_verify_sae_update_batch_rejects_nan ... ok
+test sae_modular::tests::test_verify_sae_update_batch_rejects_tampered ... ok
+test singularity_stabilization::tests::test_compute_basin_radius_constant ... ok
+test singularity_stabilization::tests::test_compute_basin_radius_short ... ok
+test singularity_stabilization::tests::test_compute_eternal_barrier_boundary ... ok
+test singularity_stabilization::tests::test_compute_eternal_barrier_safe ... ok
+test singularity_stabilization::tests::test_compute_eternal_barrier_violation ... ok
+test singularity_stabilization::tests::test_compute_lyapunov_from_trajectory_constant ... ok
+test singularity_stabilization::tests::test_compute_lyapunov_from_trajectory_converging ... ok
+test singularity_stabilization::tests::test_compute_lyapunov_spectrum_basic ... ok
+test singularity_stabilization::tests::test_compute_lyapunov_spectrum_short ... ok
+test singularity_stabilization::tests::test_compute_singularity_potential_high ... ok
+test singularity_stabilization::tests::test_compute_singularity_potential_low ... ok
+test singularity_stabilization::tests::test_compute_singularity_potential_zero ... ok
+test singularity_stabilization::tests::test_lcg_next_deterministic ... ok
+test singularity_stabilization::tests::test_random_gaussian_finite ... ok
+test singularity_stabilization::tests::test_random_uniform_range ... ok
+test singularity_stabilization::tests::test_singularity_config_default ... ok
+test singularity_stabilization::tests::test_singularity_config_fast ... ok
+test singularity_stabilization::tests::test_singularity_config_lyapunov_clamped ... ok
+test singularity_stabilization::tests::test_singularity_config_planetary_eternal ... ok
+test singularity_stabilization::tests::test_singularity_config_with_lyapunov_weight ... ok
+test singularity_stabilization::tests::test_singularity_config_with_barrier_weight ... ok
+test singularity_stabilization::tests::test_singularity_config_with_seed ... ok
+test singularity_stabilization::tests::test_singularity_config_with_threshold ... ok
+test singularity_stabilization::tests::test_singularity_result_display ... ok
+test singularity_stabilization::tests::test_singularity_result_summary ... ok
+test singularity_stabilization::tests::test_verify_no_regression_fail ... ok
+test singularity_stabilization::tests::test_verify_no_regression_pass ... ok
+test singularity_stabilization::tests::test_verify_no_regression_short ... ok
+test sparse_federated_sae::tests::test_aggregator_add_update ... FAILED
+test sparse_federated_sae::tests::test_aggregator_clear ... FAILED
+test sparse_federated_sae::tests::test_aggregator_default ... ok
+test sparse_federated_sae::tests::test_aggregator_median ... FAILED
+test sparse_federated_sae::tests::test_aggregator_verify_proofs ... ok
+test sparse_federated_sae::tests::test_sparse_entry_creation ... ok
+test sparse_federated_sae::tests::test_bandwidth_savings ... ok
+test sparse_federated_sae::tests::test_compression_ratio ... ok
+test sparse_federated_sae::tests::test_sparse_reconstruction ... FAILED
+test sparse_federated_sae::tests::test_sparse_weight_update_from_tensor ... FAILED
+test sparse_federated_sae::tests::test_update_proof_creation ... ok
+test sparse_federated_sae::tests::test_update_proof_vfe_clamped ... ok
+test sparse_federated_sae::tests::test_with_proof ... FAILED
+test steering::tests::test_compute_energy_positive ... ok
+test steering::tests::test_compute_energy_gradient_direction ... ok
+test steering::tests::test_adaptive_hmc_reduces_energy ... ok
+test steering::tests::test_compute_energy_zero_same ... ok
+test steering::tests::test_adaptive_hmc_steer_basic ... ok
+test steering::tests::test_compute_hamiltonian ... FAILED
+test steering::tests::test_compute_hamiltonian_zero_momentum ... ok
+test steering::tests::test_compute_lyapunov_exponent_neutral ... ok
+test steering::tests::test_compute_lyapunov_exponent_small_initial ... ok
+test steering::tests::test_compute_lyapunov_exponent_unstable ... ok
+test steering::tests::test_compute_lyapunov_exponent_stable ... ok
+test steering::tests::test_compute_lyapunov_exponent_zero_initial ... ok
+test steering::tests::test_hmc_config_aggressive ... ok
+test steering::tests::test_hmc_config_conservative ... ok
+test steering::tests::test_hmc_config_default ... ok
+test steering::tests::test_hmc_config_iterations_min ... ok
+test steering::tests::test_hmc_config_step_size_min ... ok
+test steering::tests::test_hmc_config_with_iterations ... ok
+test steering::tests::test_hmc_config_leapfrog_min ... ok
+test steering::tests::test_hmc_config_with_lambda ... ok
+test steering::tests::test_full_hmc_pipeline ... ok
+test steering::tests::test_hmc_config_with_leapfrog_steps ... ok
+test steering::tests::test_hmc_config_with_step_size ... ok
+test steering::tests::test_hmc_config_with_temperature ... ok
+test singularity_stabilization::tests::test_prove_eternal_attractor ... ok
+test steering::tests::test_hmc_steer_basic ... ok
+test steering::tests::test_hmc_steer_single_iteration ... ok
+test steering::tests::test_hmc_steer_conservative_vs_aggressive ... ok
+test steering::tests::test_hmc_steer_moves_toward_safe ... ok
+test steering::tests::test_hmc_steer_energy_reduction ... ok
+test steering::tests::test_hmc_steer_single_leapfrog ... ok
+test steering::tests::test_leapfrog_step_momentum_update ... FAILED
+test steering::tests::test_leapfrog_step_position_update ... FAILED
+test steering::tests::test_hmc_steer_deterministic ... ok
+test steering::tests::test_leapfrog_step_shape ... ok
+test steering::tests::test_hmc_steer_result_display ... ok
+test singularity_stabilization::tests::test_stabilize_global_singularity_basic ... ok
+test steering::tests::test_lyapunov_eternal_immunity_proof ... ok
+test steering::tests::test_leapfrog_with_friction_dissipates ... ok
+test steering::tests::test_leapfrog_with_noise_injects_energy ... ok
+test singularity_stabilization::tests::test_stabilize_global_singularity_potential_non_negative ... ok
+test steering::tests::test_run_leapfrog_basic ... ok
+test steering::tests::test_run_leapfrog_zero_steps ... ok
+test steering::tests::test_run_trajectory_basic ... ok
+test steering::tests::test_run_trajectory_zero_steps ... ok
+test steering::tests::test_svgd_steer_basic ... ok
+test steering::tests::test_svgd_steer_zero_steps ... ok
+test steering::tests::test_symplectic_gd_config_default ... ok
+test steering::tests::test_symplectic_gd_config_new ... ok
+test steering::tests::test_symplectic_gd_config_new_clamps_negative ... ok
+test steering::tests::test_svgd_steer_moves_toward_safe ... ok
+test steering::tests::test_symplectic_gd_config_pure_symplectic ... ok
+test steering::tests::test_symplectic_langevin_step_changes_state ... ok
+test steering::tests::test_symplectic_energy_conservation ... FAILED
+test steering::tests::test_symplectic_langevin_step_shape ... ok
+test steering::tests::test_symplectic_langevin_zero_gradient ... ok
+test steering::tests::test_symplectic_steering_default ... ok
+test steering::tests::test_symplectic_steering_new ... ok
+test symbolic_fusion::tests::test_collective_vfe_reduction ... ok
+test steering::tests::test_verify_hmc_safety_safe ... ok
+test symbolic_fusion::tests::test_byzantine_detection ... ok
+test symbolic_fusion::tests::test_noosphere_consensus ... ok
+test steering::tests::test_symplectic_vs_euler_energy_preservation ... ok
+test symbolic_fusion::tests::test_symbolic_graph_creation ... ok
+test steering::tests::test_verify_hmc_safety_unsafe ... ok
+test symbolic_fusion::tests::test_safety_certificate ... ok
+test taylor_model::tests::test_addition ... ok
+test taylor_model::tests::test_bounds_computation ... ok
+test taylor_model::tests::test_affine_exact ... ok
+test taylor_model::tests::test_cbf_evaluation ... ok
+test taylor_model::tests::test_euler_step ... ok
+test taylor_model::tests::test_log_volume ... ok
+test taylor_model::tests::test_relu_approx ... ok
+test taylor_model::tests::test_scale ... ok
+test taylor_model::tests::test_taylor_creation ... ok
+test taylor_model::tests::test_taylor_point ... ok
+test testnet_sim::tests::test_byzantine_median_empty ... ok
+test testnet_sim::tests::test_byzantine_median_honest ... ok
+test testnet_sim::tests::test_byzantine_median_trims_outliers ... ok
+test testnet_sim::tests::test_exponential_sample_positive ... ok
+test testnet_sim::tests::test_gini_empty ... ok
+test testnet_sim::tests::test_gini_equal_distribution ... ok
+test testnet_sim::tests::test_gini_single_value ... ok
+test testnet_sim::tests::test_gini_unequal_distribution ... ok
+test testnet_sim::tests::test_node_creation ... ok
+test testnet_sim::tests::test_sim_config_default ... ok
+test testnet_sim::tests::test_sim_result_display ... ok
+test testnet_sim::tests::test_simulation_deterministic ... ok
+test thermodynamics::tests::test_active_inference_empty_coop ... ok
+test thermodynamics::tests::test_active_inference_gradient_norms ... ok
+test thermodynamics::tests::test_active_inference_planetary_step_basic ... ok
+test testnet_sim::tests::test_churn_effect ... ok
+test testnet_sim::tests::test_small_simulation ... ok
+test thermodynamics::tests::test_active_inference_result_summary ... ok
+test thermodynamics::tests::test_active_inference_planetary_step_convergence ... ok
+test thermodynamics::tests::test_active_inference_planetary_step_reduction ... ok
+test thermodynamics::tests::test_civilizational_transition_full_simulation ... ok
+test singularity_stabilization::tests::test_stabilize_global_singularity_deterministic ... ok
+test thermodynamics::tests::test_colimit_noospheric_aggregation_basic ... ok
+test thermodynamics::tests::test_colimit_noospheric_aggregation_empty ... ok
+test thermodynamics::tests::test_colimit_noospheric_aggregation_single ... ok
+test thermodynamics::tests::test_compute_node_vfe_basic ... ok
+test thermodynamics::tests::test_compute_node_vfe_diverges_from_prior ... ok
+test thermodynamics::tests::test_compute_node_vfe_matches_prior ... ok
+test thermodynamics::tests::test_compute_planetary_free_energy_basic ... ok
+test thermodynamics::tests::test_compute_planetary_free_energy_detailed ... ok
+test thermodynamics::tests::test_compute_planetary_free_energy_empty ... ok
+test testnet_sim::tests::test_simulation_high_byzantine ... ok
+test thermodynamics::tests::test_compute_planetary_free_energy_high_symbiosis ... ok
+test thermodynamics::tests::test_compute_planetary_free_energy_zero_vfe ... ok
+test thermodynamics::tests::test_cosine_similarity_empty ... ok
+test thermodynamics::tests::test_cosine_similarity_identical ... ok
+test testnet_sim::tests::test_simulation_byzantine_resistance ... ok
+test thermodynamics::tests::test_cosine_similarity_opposite ... ok
+test thermodynamics::tests::test_cosine_similarity_orthogonal ... ok
+test thermodynamics::tests::test_energy_entropy_affects_planetary_f ... ok
+test thermodynamics::tests::test_full_thermodynamic_pipeline ... ok
+test thermodynamics::tests::test_functorial_safety_margin_bounded ... ok
+test thermodynamics::tests::test_functorial_safety_margin_min_bound ... ok
+test thermodynamics::tests::test_functorial_safety_margin_perfect ... ok
+test thermodynamics::tests::test_functorial_safety_margin_zero_fidelity ... ok
+test thermodynamics::tests::test_kl_divergence_asymmetric ... ok
+test thermodynamics::tests::test_kl_divergence_identical ... ok
+test thermodynamics::tests::test_kl_divergence_positive ... ok
+test thermodynamics::tests::test_lcg_next_advances ... ok
+test thermodynamics::tests::test_lcg_next_deterministic ... ok
+test thermodynamics::tests::test_planetary_free_energy_result_summary ... ok
+test thermodynamics::tests::test_random_uniform_range ... ok
+test thermodynamics::tests::test_resilience_result_summary ... ok
+test thermodynamics::tests::test_run_thermodynamic_self_organization ... ok
+test thermodynamics::tests::test_s131_noosfera_closure_basic ... ok
+test thermodynamics::tests::test_s131_noosfera_closure_high_precision ... ok
+test thermodynamics::tests::test_shannon_entropy_binary ... ok
+test thermodynamics::tests::test_shannon_entropy_deterministic ... ok
+test thermodynamics::tests::test_shannon_entropy_empty ... ok
+test thermodynamics::tests::test_shannon_entropy_positive ... ok
+test thermodynamics::tests::test_s131_noosfera_closure_large ... ok
+test thermodynamics::tests::test_shannon_entropy_uniform ... ok
+test thermodynamics::tests::test_simulate_civilizational_transition_basic ... ok
+test thermodynamics::tests::test_simulate_civilizational_transition_declining_economic ... ok
+test thermodynamics::tests::test_simulate_civilizational_transition_deterministic ... ok
+test thermodynamics::tests::test_simulate_civilizational_transition_strong_attractor ... ok
+test thermodynamics::tests::test_simulate_civilizational_transition_tipping_point ... ok
+test thermodynamics::tests::test_simulate_civilizational_transition_weak_attractor ... ok
+test thermodynamics::tests::test_symbiosis_bonus_reduces_f ... ok
+test thermodynamics::tests::test_thermo_config_default ... ok
+test thermodynamics::tests::test_thermo_config_fast ... ok
+test thermodynamics::tests::test_thermo_config_high_precision ... ok
+test thermodynamics::tests::test_thermo_config_lr_clamped ... ok
+test thermodynamics::tests::test_thermo_config_with_lr ... ok
+test thermodynamics::tests::test_thermodynamic_resilience_critical ... ok
+test thermodynamics::tests::test_thermodynamic_resilience_perfect ... ok
+test thermodynamics::tests::test_thermodynamic_resilience_perturbation ... ok
+test thermodynamics::tests::test_thermodynamic_resilience_recovery_time ... ok
+test thermodynamics::tests::test_thermodynamic_resilience_symbiotic ... ok
+test thermodynamics::tests::test_thermodynamic_resilience_transitioning ... ok
+test thermodynamics::tests::test_thermodynamic_with_value_alignment ... ok
+test topology::tests::test_manifold_complexity_positive ... ok
+test topology::tests::test_manifold_complexity_deterministic ... ok
+test topology::tests::test_pairwise_dist_non_negative ... ok
+test topology::tests::test_manifold_complexity_zeros ... ok
+test topology::tests::test_pairwise_dist_symmetry ... ok
+test topology::tests::test_sgw_config_default ... ok
+test topology::tests::test_sgw_config_edge_fast ... ok
+test topology::tests::test_sgw_config_high_accuracy ... ok
+test topology::tests::test_sgw_config_projections_min ... ok
+test topology::tests::test_sgw_config_subsample_min ... ok
+test topology::tests::test_sgw_config_with_projections ... ok
+test topology::tests::test_sgw_config_with_seed ... ok
+test topology::tests::test_sgw_config_with_subsample ... ok
+test topology::tests::test_sgw_dimension_mismatch ... ok
+test topology::tests::test_sgw_empty_tensor ... ok
+test topology::tests::test_sgw_different_distributions ... ok
+test topology::tests::test_sgw_deterministic ... ok
+test topology::tests::test_sgw_mean_variance_positive ... ok
+test topology::tests::test_sgw_identical_tensors ... ok
+test topology::tests::test_sgw_result_display ... ok
+test topology::tests::test_full_sgw_pipeline ... ok
+test topology::tests::test_sgw_safety_ratio_identity ... ok
+test topology::tests::test_sgw_safety_ratio_improvement ... ok
+test topology::tests::test_sgw_projections_used ... ok
+test topology::tests::test_sgw_distance_positive ... ok
+test topology::tests::test_sgw_scaling_effect ... ok
+test topology::tests::test_sgw_symmetry ... ok
+test topology::tests::test_sgw_significance_test_different ... ok
+test universal_immunity::tests::test_adapt_immunity_trims_memory ... ok
+test universal_immunity::tests::test_adapt_immunity_updates_memory ... ok
+test topology::tests::test_sgw_significance_test_identical ... ok
+test universal_immunity::tests::test_compute_immune_response_full ... ok
+test topology::tests::test_sgw_subsample_effect ... ok
+test topology::tests::test_sgw_zero_tensors ... ok
+test universal_immunity::tests::test_compute_immune_response_partial ... ok
+test universal_immunity::tests::test_compute_immune_response_none ... ok
+test universal_immunity::tests::test_contain_threat_failure ... ok
+test universal_immunity::tests::test_contain_threat_success ... ok
+test universal_immunity::tests::test_deploy_universal_immune_system_basic ... ok
+test topology::tests::test_sgw_translation_invariance ... ok
+test universal_immunity::tests::test_deploy_universal_immune_system_deterministic ... ok
+test universal_immunity::tests::test_deploy_universal_immune_system_trajectories ... ok
+test universal_immunity::tests::test_detect_threat_detected ... ok
+test universal_immunity::tests::test_detect_threat_not_detected ... ok
+test universal_immunity::tests::test_eternal_pipeline_result_display ... ok
+test universal_immunity::tests::test_eternal_pipeline_result_summary ... ok
+test universal_immunity::tests::test_immunity_config_default ... ok
+test universal_immunity::tests::test_immunity_config_detection_weight_clamped ... ok
+test universal_immunity::tests::test_immunity_config_fast ... ok
+test universal_immunity::tests::test_immunity_config_planetary_eternal ... ok
+test universal_immunity::tests::test_immunity_config_with_detection_threshold ... ok
+test topology::tests::test_sgw_more_projections_converges ... ok
+test universal_immunity::tests::test_immunity_config_with_detection_weight ... ok
+test universal_immunity::tests::test_immunity_config_with_seed ... ok
+test universal_immunity::tests::test_immunity_result_display ... ok
+test universal_immunity::tests::test_immunity_result_summary ... ok
+test universal_immunity::tests::test_lcg_next_deterministic ... ok
+test universal_immunity::tests::test_neutralize_threat_success ... ok
+test universal_immunity::tests::test_neutralize_threat_with_memory ... ok
+test universal_immunity::tests::test_prove_eternal_immunity ... ok
+test universal_immunity::tests::test_random_gaussian_finite ... ok
+test universal_immunity::tests::test_random_uniform_range ... ok
+test universal_immunity::tests::test_run_full_eternal_noosfera_pipeline_basic ... ok
+test universal_immunity::tests::test_run_full_eternal_noosfera_pipeline_deterministic ... ok
+test universal_immunity::tests::test_run_full_eternal_noosfera_pipeline_nodes ... ok
+test universal_immunity::tests::test_run_full_eternal_noosfera_pipeline_vision ... ok
+test universal_immunity::tests::test_threat_disruption_clamped ... ok
+test universal_immunity::tests::test_threat_magnitude_clamped ... ok
+test universal_immunity::tests::test_threat_new ... ok
+test universal_immunity::tests::test_threat_type_display ... ok
+test verification::tests::test_cbf_boundary_state ... ok
+test verification::tests::test_cbf_config_beta_clamped ... ok
+test verification::tests::test_cbf_config_default ... ok
+test verification::tests::test_cbf_config_with_beta ... ok
+test verification::tests::test_cbf_config_with_gamma ... ok
+test verification::tests::test_cbf_config_with_violation_tolerance ... ok
+test verification::tests::test_cbf_dimension_mismatch ... ok
+test verification::tests::test_cbf_empty_state ... ok
+test verification::tests::test_cbf_result_display ... ok
+test verification::tests::test_cbf_safe_state ... ok
+test verification::tests::test_cbf_unsafe_state ... ok
+test verification::tests::test_cbf_violation_tolerance ... ok
+test verification::tests::test_cbf_with_control_input ... ok
+test verification::tests::test_combined_verification_all_safe ... ok
+test verification::tests::test_combined_verification_cbf_fail ... ok
+test verification::tests::test_combined_verification_display ... ok
+test verification::tests::test_combined_verification_ibp_fail ... ok
+test verification::tests::test_compute_hybrid_bounds_basic ... ok
+test verification::tests::test_compute_hybrid_bounds_ibp_only ... ok
+test verification::tests::test_compute_hybrid_bounds_improvement ... ok
+test verification::tests::test_compute_hybrid_bounds_negative_weight ... ok
+test verification::tests::test_factorial ... ok
+test verification::tests::test_full_verification_pipeline ... ok
+test verification::tests::test_hybrid_config_default ... ok
+test verification::tests::test_hybrid_config_ibp_only ... ok
+test verification::tests::test_hybrid_config_safety_margin_clamped ... ok
+test verification::tests::test_hybrid_config_with_safety_margin ... ok
+test verification::tests::test_hybrid_config_zonotope_only ... ok
+test verification::tests::test_hybrid_full_pipeline ... ok
+test verification::tests::test_hybrid_result_display ... ok
+test verification::tests::test_ibp_config_default ... ok
+test verification::tests::test_ibp_config_epsilon_clamped ... ok
+test verification::tests::test_ibp_config_splits_min ... ok
+test verification::tests::test_ibp_config_with_epsilon ... ok
+test verification::tests::test_ibp_config_with_splits ... ok
+test verification::tests::test_ibp_result_display ... ok
+test verification::tests::test_interval_bound_propagation_empty ... ok
+test verification::tests::test_interval_bound_propagation_identity ... ok
+test verification::tests::test_interval_bound_propagation_negative_weight ... ok
+test verification::tests::test_interval_bound_propagation_relu ... ok
+test verification::tests::test_interval_bound_propagation_with_bias ... ok
+test verification::tests::test_taylor_config_default ... ok
+test verification::tests::test_taylor_config_order_clamped ... ok
+test verification::tests::test_taylor_config_with_order ... ok
+test verification::tests::test_taylor_config_with_remainder_scale ... ok
+test verification::tests::test_taylor_model_empty ... ok
+test verification::tests::test_taylor_model_identity_function ... ok
+test verification::tests::test_taylor_model_order3 ... ok
+test verification::tests::test_taylor_model_quadratic ... ok
+test verification::tests::test_taylor_model_remainder_decreases_with_smaller_bounds ... ok
+test verification::tests::test_taylor_result_display ... ok
+test verification::tests::test_verify_hybrid_safety_margin_exceeded ... ok
+test verification::tests::test_verify_hybrid_safety_safe ... ok
+test verification::tests::test_verify_hybrid_safety_unsafe_overlap ... ok
+test verification::tests::test_verify_ibp_safety_dimension_mismatch ... ok
+test verification::tests::test_verify_ibp_safety_safe ... ok
+test verification::tests::test_verify_ibp_safety_unsafe ... ok
+test verification::tests::test_verify_taylor_safety_safe ... ok
+test verification::tests::test_verify_taylor_safety_unsafe ... ok
+test verification::tests::test_zonotope_affine_propagate ... ok
+test verification::tests::test_zonotope_avg_width ... ok
+test verification::tests::test_zonotope_bounds ... ok
+test verification::tests::test_zonotope_from_intervals ... ok
+test zonotope::tests::test_affine_transform ... ok
+test zonotope::tests::test_full_taylor_pipeline ... ok
+test zonotope::tests::test_hybrid_zonotope ... ok
+test zonotope::tests::test_minkowski_sum ... ok
+test zonotope::tests::test_point_zonotope ... ok
+test zonotope::tests::test_relu_approx ... ok
+test zonotope::tests::test_taylor_cbf_safety_safe ... ok
+test zonotope::tests::test_taylor_cbf_safety_unsafe ... ok
+test zonotope::tests::test_taylor_order2_finite_difference ... ok
+test zonotope::tests::test_taylor_propagation_full ... ok
+test zonotope::tests::test_taylor_propagation_full_order_clamping ... ok
+test zonotope::tests::test_taylor_propagation_order1 ... ok
+test zonotope::tests::test_taylor_propagation_order2 ... ok
+test zonotope::tests::test_taylor_propagation_preserves_shape ... ok
+test zonotope::tests::test_taylor_propagation_remainder_decreases_with_order ... ok
+test zonotope::tests::test_taylor_propagation_zero_dt ... ok
+test zonotope::tests::test_taylor_result_is_verified ... ok
+test zonotope::tests::test_taylor_result_summary ... ok
+test zonotope::tests::test_volume_proxy ... ok
+test zonotope::tests::test_zonotope_bounds ... ok
+test zonotope::tests::test_zonotope_creation ... ok
+test sae_modular::tests::test_tightness_ratio ... ok
+test singularity_stabilization::tests::test_simulate_long_term_stability ... ok
+test neural_ode::tests::test_flowpipe_volume_growth ... ok
+
+failures:
+
+---- category_manifolds::tests::test_apply_functor_composition_error_positive stdout ----
+Error: DTypeMismatchBinaryOp { lhs: F32, rhs: F64, op: "mul" }
+
+---- category_manifolds::tests::test_apply_functor_basic stdout ----
+Error: DTypeMismatchBinaryOp { lhs: F32, rhs: F64, op: "mul" }
+
+---- category_manifolds::tests::test_apply_functor_deterministic stdout ----
+Error: DTypeMismatchBinaryOp { lhs: F32, rhs: F64, op: "mul" }
+
+---- category_manifolds::tests::test_apply_functor_identity_error_positive stdout ----
+Error: DTypeMismatchBinaryOp { lhs: F32, rhs: F64, op: "mul" }
+
+---- category_manifolds::tests::test_apply_functor_trace_positive stdout ----
+Error: DTypeMismatchBinaryOp { lhs: F32, rhs: F64, op: "mul" }
+
+---- category_manifolds::tests::test_category_coherence_improves_with_similarity stdout ----
+Error: DTypeMismatchBinaryOp { lhs: F32, rhs: F64, op: "mul" }
+
+---- category_manifolds::tests::test_compose_manifold_result_display stdout ----
+Error: DTypeMismatchBinaryOp { lhs: F32, rhs: F64, op: "mul" }
+
+---- category_manifolds::tests::test_compose_manifolds_basic stdout ----
+Error: DTypeMismatchBinaryOp { lhs: F32, rhs: F64, op: "mul" }
+
+---- category_manifolds::tests::test_compose_manifolds_coherence_bounded stdout ----
+Error: DTypeMismatchBinaryOp { lhs: F32, rhs: F64, op: "mul" }
+
+---- category_manifolds::tests::test_compose_manifolds_different_dimensions stdout ----
+Error: DTypeMismatchBinaryOp { lhs: F32, rhs: F64, op: "mul" }
+
+---- category_manifolds::tests::test_compose_manifolds_same_manifold stdout ----
+Error: DTypeMismatchBinaryOp { lhs: F32, rhs: F64, op: "mul" }
+
+---- category_manifolds::tests::test_full_category_pipeline stdout ----
+Error: DTypeMismatchBinaryOp { lhs: F32, rhs: F64, op: "mul" }
+
+---- category_manifolds::tests::test_functor_result_display stdout ----
+Error: DTypeMismatchBinaryOp { lhs: F32, rhs: F64, op: "mul" }
+
+---- category_manifolds::tests::test_natural_transform_result_display stdout ----
+Error: DTypeMismatchBinaryOp { lhs: F32, rhs: F64, op: "mul" }
+
+---- category_manifolds::tests::test_natural_transformation_basic stdout ----
+Error: DTypeMismatchBinaryOp { lhs: F32, rhs: F64, op: "mul" }
+
+---- category_manifolds::tests::test_natural_transformation_norm_positive stdout ----
+Error: DTypeMismatchBinaryOp { lhs: F32, rhs: F64, op: "mul" }
+
+---- category_manifolds::tests::test_natural_transformation_same_functor stdout ----
+Error: DTypeMismatchBinaryOp { lhs: F32, rhs: F64, op: "mul" }
+
+---- category_manifolds::tests::test_natural_transformation_trajectory stdout ----
+Error: DTypeMismatchBinaryOp { lhs: F32, rhs: F64, op: "mul" }
+
+---- category_manifolds::tests::test_noospheric_self_org_identical stdout ----
+
+thread 'category_manifolds::tests::test_noospheric_self_org_identical' (17976) panicked at src\category_manifolds.rs:1209:9:
+assertion failed: score > 0.5
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- phase_transition::tests::test_compute_transition_potential_economic_dominates stdout ----
+
+thread 'phase_transition::tests::test_compute_transition_potential_economic_dominates' (17108) panicked at src\phase_transition.rs:463:9:
+assertion failed: dg < 0.0
+
+---- phase_transition::tests::test_compute_transition_potential_symbiotic_dominates stdout ----
+
+thread 'phase_transition::tests::test_compute_transition_potential_symbiotic_dominates' (3664) panicked at src\phase_transition.rs:457:9:
+assertion failed: dg < 0.0
+
+---- phase_transition::tests::test_detect_phase_transition_irreversible stdout ----
+
+thread 'phase_transition::tests::test_detect_phase_transition_irreversible' (17624) panicked at src\phase_transition.rs:548:9:
+assertion failed: result.lyapunov_exponent < 0.0
+
+---- sae_modular::tests::test_decode_dimension stdout ----
+
+thread 'sae_modular::tests::test_decode_dimension' (11752) panicked at src\sae_modular.rs:1104:9:
+assertion `left == right` failed
+  left: [1, 32]
+ right: [32]
+
+---- sae_modular::tests::test_encode_dimension stdout ----
+
+thread 'sae_modular::tests::test_encode_dimension' (15904) panicked at src\sae_modular.rs:1087:9:
+assertion `left == right` failed
+  left: [1, 8]
+ right: [8]
+
+---- sae_modular::tests::test_federated_sae_loss_high_lambda stdout ----
+
+thread 'sae_modular::tests::test_federated_sae_loss_high_lambda' (19580) panicked at src\sae_modular.rs:1383:9:
+Higher lambda should increase loss
+
+---- sae_modular::tests::test_identity_projection stdout ----
+
+thread 'sae_modular::tests::test_identity_projection' (17092) panicked at src\sae_modular.rs:1070:9:
+assertion `left == right` failed
+  left: [64, 16]
+ right: [16, 64]
+
+---- sae_modular::tests::test_kl_divergence_tensor_basic stdout ----
+Error: UnexpectedDType { msg: "unexpected dtype", expected: F32, got: F64 }
+
+---- sae_modular::tests::test_sae_creation stdout ----
+
+thread 'sae_modular::tests::test_sae_creation' (6400) panicked at src\sae_modular.rs:1060:9:
+assertion `left == right` failed
+  left: [64, 16]
+ right: [16, 64]
+
+---- sae_modular::tests::test_topk_sparsifies stdout ----
+Error: UnexpectedNumberOfDims { expected: 1, got: 2, shape: [1, 8] }
+
+---- sparse_federated_sae::tests::test_aggregator_add_update stdout ----
+Error: UnexpectedDType { msg: "unexpected dtype", expected: F32, got: F64 }
+
+---- sparse_federated_sae::tests::test_aggregator_clear stdout ----
+Error: UnexpectedDType { msg: "unexpected dtype", expected: F32, got: F64 }
+
+---- sparse_federated_sae::tests::test_aggregator_median stdout ----
+Error: UnexpectedDType { msg: "unexpected dtype", expected: F32, got: F64 }
+
+---- sparse_federated_sae::tests::test_sparse_reconstruction stdout ----
+Error: UnexpectedDType { msg: "unexpected dtype", expected: F32, got: F64 }
+
+---- sparse_federated_sae::tests::test_sparse_weight_update_from_tensor stdout ----
+Error: UnexpectedDType { msg: "unexpected dtype", expected: F32, got: F64 }
+
+---- sparse_federated_sae::tests::test_with_proof stdout ----
+Error: UnexpectedDType { msg: "unexpected dtype", expected: F32, got: F64 }
+
+---- steering::tests::test_compute_hamiltonian stdout ----
+
+thread 'steering::tests::test_compute_hamiltonian' (17832) panicked at src\steering.rs:1293:9:
+assertion failed: (h - 1.25).abs() < 1e-5
+
+---- steering::tests::test_leapfrog_step_momentum_update stdout ----
+Error: UnexpectedNumberOfDims { expected: 1, got: 2, shape: [2, 2] }
+
+---- steering::tests::test_leapfrog_step_position_update stdout ----
+Error: UnexpectedNumberOfDims { expected: 1, got: 2, shape: [2, 2] }
+
+---- steering::tests::test_symplectic_energy_conservation stdout ----
+
+thread 'steering::tests::test_symplectic_energy_conservation' (15724) panicked at src\steering.rs:1322:9:
+Symplectic integrator should conserve energy within 1%, got 0.25893658
+
+
+failures:
+    category_manifolds::tests::test_apply_functor_basic
+    category_manifolds::tests::test_apply_functor_composition_error_positive
+    category_manifolds::tests::test_apply_functor_deterministic
+    category_manifolds::tests::test_apply_functor_identity_error_positive
+    category_manifolds::tests::test_apply_functor_trace_positive
+    category_manifolds::tests::test_category_coherence_improves_with_similarity
+    category_manifolds::tests::test_compose_manifold_result_display
+    category_manifolds::tests::test_compose_manifolds_basic
+    category_manifolds::tests::test_compose_manifolds_coherence_bounded
+    category_manifolds::tests::test_compose_manifolds_different_dimensions
+    category_manifolds::tests::test_compose_manifolds_same_manifold
+    category_manifolds::tests::test_full_category_pipeline
+    category_manifolds::tests::test_functor_result_display
+    category_manifolds::tests::test_natural_transform_result_display
+    category_manifolds::tests::test_natural_transformation_basic
+    category_manifolds::tests::test_natural_transformation_norm_positive
+    category_manifolds::tests::test_natural_transformation_same_functor
+    category_manifolds::tests::test_natural_transformation_trajectory
+    category_manifolds::tests::test_noospheric_self_org_identical
+    phase_transition::tests::test_compute_transition_potential_economic_dominates
+    phase_transition::tests::test_compute_transition_potential_symbiotic_dominates
+    phase_transition::tests::test_detect_phase_transition_irreversible
+    sae_modular::tests::test_decode_dimension
+    sae_modular::tests::test_encode_dimension
+    sae_modular::tests::test_federated_sae_loss_high_lambda
+    sae_modular::tests::test_identity_projection
+    sae_modular::tests::test_kl_divergence_tensor_basic
+    sae_modular::tests::test_sae_creation
+    sae_modular::tests::test_topk_sparsifies
+    sparse_federated_sae::tests::test_aggregator_add_update
+    sparse_federated_sae::tests::test_aggregator_clear
+    sparse_federated_sae::tests::test_aggregator_median
+    sparse_federated_sae::tests::test_sparse_reconstruction
+    sparse_federated_sae::tests::test_sparse_weight_update_from_tensor
+    sparse_federated_sae::tests::test_with_proof
+    steering::tests::test_compute_hamiltonian
+    steering::tests::test_leapfrog_step_momentum_update
+    steering::tests::test_leapfrog_step_position_update
+    steering::tests::test_symplectic_energy_conservation
+
+test result: FAILED. 1287 passed; 39 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.48s
+
+error: test failed, to rerun pass `--lib`

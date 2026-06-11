@@ -339,16 +339,12 @@ pub fn stabilize_global_singularity(config: &SingularityConfig) -> SingularityRe
         let lyapunov_max = compute_lyapunov_from_trajectory(recent);
 
         // Compute singularity potential
-        let potential = compute_singularity_potential(
-            free_energy,
-            lyapunov_max,
-            barrier_violation,
-            config,
-        );
+        let potential =
+            compute_singularity_potential(free_energy, lyapunov_max, barrier_violation, config);
 
         // Gradient descent on potential
-        let grad_coherence = -2.0 * coherence * config.eternal_barrier_weight
-            + 0.01 * (1.0 - coherence);
+        let grad_coherence =
+            -2.0 * coherence * config.eternal_barrier_weight + 0.01 * (1.0 - coherence);
         let grad_energy = 0.01 * free_energy;
 
         coherence += dt * grad_coherence;
@@ -396,14 +392,14 @@ pub fn stabilize_global_singularity(config: &SingularityConfig) -> SingularityRe
             if variance < config.convergence_tolerance && potential < config.singularity_threshold {
                 // Converged — compute final metrics
                 let spectrum = compute_lyapunov_spectrum(&coherence_trajectory, 5);
-                let final_lyapunov = spectrum.iter().fold(f64::NEG_INFINITY, |a, &b| f64::max(a, b));
+                let final_lyapunov = spectrum
+                    .iter()
+                    .fold(f64::NEG_INFINITY, |a, &b| f64::max(a, b));
                 let basin = compute_basin_radius(&coherence_trajectory);
-                let no_regression = verify_no_regression(
-                    &coherence_trajectory,
-                    100,
-                    config.min_coherence,
-                );
-                let resistance = 1.0 - (adversarial_failures as f64 / total_adversarial_tests.max(1) as f64);
+                let no_regression =
+                    verify_no_regression(&coherence_trajectory, 100, config.min_coherence);
+                let resistance =
+                    1.0 - (adversarial_failures as f64 / total_adversarial_tests.max(1) as f64);
 
                 return SingularityResult {
                     final_potential: potential,
@@ -425,17 +421,14 @@ pub fn stabilize_global_singularity(config: &SingularityConfig) -> SingularityRe
 
     // Max cycles reached — compute final metrics
     let spectrum = compute_lyapunov_spectrum(&coherence_trajectory, 5);
-    let final_lyapunov = spectrum.iter().fold(f64::NEG_INFINITY, |a, &b| f64::max(a, b));
+    let final_lyapunov = spectrum
+        .iter()
+        .fold(f64::NEG_INFINITY, |a, &b| f64::max(a, b));
     let basin = compute_basin_radius(&coherence_trajectory);
     let final_mean: f64 =
         coherence_trajectory.iter().sum::<f64>() / coherence_trajectory.len() as f64;
-    let no_regression = verify_no_regression(
-        &coherence_trajectory,
-        100,
-        config.min_coherence,
-    );
-    let resistance = 1.0
-        - (adversarial_failures as f64 / total_adversarial_tests.max(1) as f64);
+    let no_regression = verify_no_regression(&coherence_trajectory, 100, config.min_coherence);
+    let resistance = 1.0 - (adversarial_failures as f64 / total_adversarial_tests.max(1) as f64);
 
     SingularityResult {
         final_potential: potential_trajectory.last().copied().unwrap_or(1.0),
@@ -457,9 +450,7 @@ pub fn stabilize_global_singularity(config: &SingularityConfig) -> SingularityRe
 /// Mathematical proof that the singularity state is an eternal attractor.
 pub fn prove_eternal_attractor(config: &SingularityConfig) -> bool {
     let result = stabilize_global_singularity(config);
-    result.singularity_stabilized
-        && result.max_lyapunov < 0.0
-        && result.no_regression_guaranteed
+    result.singularity_stabilized && result.max_lyapunov < 0.0 && result.no_regression_guaranteed
 }
 
 /// Simulate long-term stability (10^6 cycles).

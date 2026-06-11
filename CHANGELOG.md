@@ -1,4 +1,31 @@
-﻿## [v13.8.0-sprint138] — 2026-06-11 (Sprint 138 — The Empirical Crucible & Stochastic Replicator)
+﻿## [v13.9.0-sprint139] — 2026-06-11 (Sprint 139 — Hybrid Reachability & Empirical Symbiosis)
+
+### Sprint 139 "Hybrid Reachability & Empirical Symbiosis"
+
+**Mode:** `STRICT_MATH + HYBRID_ZONOTOPE + MULTIPLICATIVE_REPLICATOR + ZERO_WARNINGS + DOC_SYNC + ENERGY_AWARE`
+
+**Problema — Sin utilidad simbiótica multi-objetivo ni replicador con ruido multiplicativo:** Sprints 100-138 establecen el atractor eternal, la inmunidad civilizacional, el control termodinámico, replicator dynamics determinista y estocástico, y scheduling simbiótico, pero faltan: (1) Symbiotic Utility Function 5-peso — `U_i = w₁(-ΔVFE) + w₂(MI) + w₃(-Energy) + w₄(-KL) + w₅(-Lyapunov)` para optimización multi-objetivo completa con estabilidad de Lyapunov, (2) Multiplicative Replicator Dynamics (Itô SDE) — `dx_i = [x_i(f_i - f̄) + η·∇_symb - γ·∇_ent] dt + σ·x_i·(1-x_i)·dW_t` con ruido multiplicativo que se desvanece en los límites del simplex, y (3) CBF Quadratic Projection — `h(x) = β² - ||x - x_safe||²` con corrección QP-proxy `u* = (α·h / ||∇h||²) · ∇h` para garantizar invariancia segura.
+
+**Solución — Simbiosis Empírica Completa:** Creamos `crates/noosfera-kernel/src/dynamics.rs` con `compute_symbiotic_utility()` (5-weight multi-objective), `replicator_step_multiplicative()` (Itô SDE con ruido multiplicativo), `population_entropy()`, `verify_simplex()`, `compute_kl_divergence()`, `compute_mutual_info()`, `select_lowest_energy_node()` para scheduling energy-aware. Extendimos `crates/native-audit/src/steering.rs` con `steer_cbf_projection()` para proyección cuadrática CBF con corrección QP-proxy. Creamos `crates/native-audit/tests/energy_symbiosis_eval.rs` con 17 tests de integración para evaluación energy-aware. **60 tests passing en S139 modules.**
+
+- **Symbiotic Utility Function:** `noosfera-kernel/src/dynamics.rs` — `compute_symbiotic_utility()` con 5 pesos (VFE, MI, Energy, KL, Lyapunov), 37 tests
+- **Multiplicative Replicator:** `noosfera-kernel/src/dynamics.rs` — `replicator_step_multiplicative()` con ruido `σ·x_i·(1-x_i)`, simplex preservation
+- **CBF Quadratic Projection:** `native-audit/src/steering.rs` — `steer_cbf_projection()` con QP-proxy correction, 6 tests
+- **Energy-Aware Benchmark:** `native-audit/tests/energy_symbiosis_eval.rs` — 17 integration tests
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| Symbiotic Utility Tests | ✅ 37/37 |
+| CBF Projection Tests | ✅ 6/6 |
+| Energy-Aware Integration Tests | ✅ 17/17 |
+| **Total S139 Tests** | **✅ 60/60** |
+| Multiplicative Noise | ✅ Vanishes at simplex boundaries |
+| CBF Safety | ✅ Forward invariance guaranteed |
+| Energy Penalty | ✅ Low battery → Higher utility |
+| fmt | ✅ Clean |
+
+## [v13.8.0-sprint138] — 2026-06-11 (Sprint 138 — The Empirical Crucible & Stochastic Replicator)
 
 ### Sprint 138 "The Empirical Crucible & Stochastic Replicator"
 

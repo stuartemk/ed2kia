@@ -1,0 +1,77 @@
+    Checking native-audit v0.1.0 (C:\Users\cualo\Desktop\PROYECTOS\ed2kIA\crates\native-audit)
+warning: unused import: `crate::topology::SgwConfig`
+  --> src\category_manifolds.rs:40:5
+   |
+40 | use crate::topology::SgwConfig;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `i`
+   --> src\adversarial.rs:562:13
+    |
+562 |         for i in 0..dim {
+    |             ^ help: if this is intentional, prefix it with an underscore: `_i`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `i`
+   --> src\category_manifolds.rs:458:9
+    |
+458 |     for i in 0..dim {
+    |         ^ help: if this is intentional, prefix it with an underscore: `_i`
+
+warning: value assigned to `momentum` is never read
+   --> src\collective_steering.rs:351:24
+    |
+351 |       let mut momentum = Tensor::from_vec(
+    |  ________________________^
+352 | |         (0..num_elements)
+353 | |             .map(|_| gaussian_noise(&mut state))
+354 | |             .collect(),
+355 | |         shape.clone(),
+356 | |         device,
+357 | |     )?;
+    | |______^
+    |
+    = help: maybe it is overwritten before being read?
+    = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `meta_improvement`
+    --> src\planetary_sim.rs:1185:5
+     |
+1185 |     meta_improvement: f64,
+     |     ^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_meta_improvement`
+
+warning: variable `total_gradient_norm` is assigned to, but never used
+   --> src\thermodynamics.rs:475:13
+    |
+475 |         let mut total_gradient_norm: f64 = 0.0;
+    |             ^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: consider using `_total_gradient_norm` instead
+
+warning: value assigned to `total_gradient_norm` is never read
+   --> src\thermodynamics.rs:538:13
+    |
+538 |             total_gradient_norm += norm;
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+
+warning: function `random_gaussian` is never used
+   --> src\provable_safety.rs:282:4
+    |
+282 | fn random_gaussian(state: &mut u64) -> f64 {
+    |    ^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `random_gaussian` is never used
+   --> src\universal_immunity.rs:331:4
+    |
+331 | fn random_gaussian(state: &mut u64) -> f64 {
+    |    ^^^^^^^^^^^^^^^
+
+warning: `native-audit` (lib) generated 9 warnings (run `cargo fix --lib -p native-audit` to apply 4 suggestions)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.74s

@@ -10,6 +10,7 @@
 //! ```
 
 pub mod awakening;
+pub mod dynamics;
 pub mod eternal_symbiosis;
 pub mod provable_irreversibility;
 

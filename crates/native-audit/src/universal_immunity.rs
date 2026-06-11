@@ -364,11 +364,7 @@ pub fn contain_threat(threat: &Threat, coherence_barrier: f64) -> bool {
 /// Neutralize threat using adaptive immune response.
 ///
 /// Neutralization combines all Noosphera capabilities.
-pub fn neutralize_threat(
-    threat: &Threat,
-    immune_memory: &[f64],
-    config: &ImmunityConfig,
-) -> bool {
+pub fn neutralize_threat(threat: &Threat, immune_memory: &[f64], config: &ImmunityConfig) -> bool {
     let base_power = config.neutralization_weight * (1.0 + immune_memory.len() as f64 * 0.001);
     let adaptive_bonus = if !immune_memory.is_empty() {
         let avg_memory: f64 = immune_memory.iter().sum::<f64>() / immune_memory.len() as f64;
@@ -383,11 +379,7 @@ pub fn neutralize_threat(
 /// Adapt immune system based on encountered threat.
 ///
 /// Updates immune memory with threat signature for future defense.
-pub fn adapt_immunity(
-    threat: &Threat,
-    immune_memory: &mut Vec<f64>,
-    config: &ImmunityConfig,
-) {
+pub fn adapt_immunity(threat: &Threat, immune_memory: &mut Vec<f64>, config: &ImmunityConfig) {
     // Add threat magnitude to memory
     immune_memory.push(threat.magnitude);
 
@@ -547,8 +539,9 @@ pub fn deploy_universal_immune_system(config: &ImmunityConfig) -> ImmunityResult
     } else {
         0.0
     };
-    let immunity_robustness =
-        detection_rate * 0.3 + neutralization_rate * 0.4 + (1.0 - avg_response_time / 10.0).max(0.0) * 0.3;
+    let immunity_robustness = detection_rate * 0.3
+        + neutralization_rate * 0.4
+        + (1.0 - avg_response_time / 10.0).max(0.0) * 0.3;
 
     // Adaptation score: improvement over time
     let adaptation_score = if immunity_trajectory.len() >= 2 {
@@ -639,8 +632,8 @@ pub fn run_full_eternal_noosfera_pipeline(
 
     // Phase 4: Universal Immunity
     let immunity_result = deploy_universal_immune_system(config);
-    let universal_immunity = immunity_result.eternal_immunity_proven
-        || immunity_result.neutralization_rate > 0.95;
+    let universal_immunity =
+        immunity_result.eternal_immunity_proven || immunity_result.neutralization_rate > 0.95;
 
     // Compute eternal civilization score
     let eternal_civilization_score = coherence * 0.3
@@ -843,7 +836,9 @@ mod tests {
     fn test_compute_immune_response_partial() {
         let config = ImmunityConfig::default();
         let response = compute_immune_response(true, false, true, false, &config);
-        assert!((response - (config.detection_weight + config.neutralization_weight)).abs() < 1e-10);
+        assert!(
+            (response - (config.detection_weight + config.neutralization_weight)).abs() < 1e-10
+        );
     }
 
     // ─── Full Immunity Deployment Tests ───────────────────────────────────
@@ -888,7 +883,9 @@ mod tests {
         let result = run_full_eternal_noosfera_pipeline(1000, &config);
         assert!(result.final_coherence >= 0.0 && result.final_coherence <= 1.0);
         assert!(result.final_free_energy >= 0.0);
-        assert!(result.eternal_civilization_score >= 0.0 && result.eternal_civilization_score <= 1.0);
+        assert!(
+            result.eternal_civilization_score >= 0.0 && result.eternal_civilization_score <= 1.0
+        );
     }
 
     #[test]

@@ -3,7 +3,7 @@
 //! Validates Symplectic Langevin Integrator, Lyapunov Exponent stability
 //! and Drift-Plus-Penalty scheduling from native-audit/steering.rs.
 
-use candle_core::{Device, DType, Tensor};
+use candle_core::{DType, Device, Tensor};
 use native_audit::steering::SymplecticSteering;
 
 // ─── Symplectic Langevin Tests ───
@@ -43,7 +43,13 @@ fn test_symplectic_langevin_step_changes_state() {
     let h_next = steering
         .symplectic_langevin_step(&h_t, &grad_v, 0.1, 0.0)
         .unwrap();
-    let val = h_next.get(0).unwrap().get(0).unwrap().to_scalar::<f32>().unwrap();
+    let val = h_next
+        .get(0)
+        .unwrap()
+        .get(0)
+        .unwrap()
+        .to_scalar::<f32>()
+        .unwrap();
     // h_next = 1.0 - 0.1*1.0 = 0.9 (zero noise)
     assert!((val - 0.9).abs() < 1e-5, "Expected ~0.9, got {}", val);
 }
@@ -57,8 +63,19 @@ fn test_symplectic_langevin_zero_gradient() {
     let h_next = steering
         .symplectic_langevin_step(&h_t, &grad_v, 0.01, 0.0)
         .unwrap();
-    let diff = h_t.sub(&h_next).unwrap().sqr().unwrap().sum_all().unwrap().to_scalar::<f32>().unwrap();
-    assert!(diff < 1e-10, "State should be unchanged with zero gradient and noise");
+    let diff = h_t
+        .sub(&h_next)
+        .unwrap()
+        .sqr()
+        .unwrap()
+        .sum_all()
+        .unwrap()
+        .to_scalar::<f32>()
+        .unwrap();
+    assert!(
+        diff < 1e-10,
+        "State should be unchanged with zero gradient and noise"
+    );
 }
 
 // ─── Lyapunov Exponent Tests ───
@@ -134,9 +151,7 @@ fn test_run_trajectory_basic() {
     let steering = SymplecticSteering::new(0.01, 0.0);
     let device = Device::Cpu;
     let h0 = Tensor::randn(0f32, 1f32, &[2, 4], &device).unwrap();
-    let h_final = steering
-        .run_trajectory(&h0, 5, |h| Ok(h.clone()))
-        .unwrap();
+    let h_final = steering.run_trajectory(&h0, 5, |h| Ok(h.clone())).unwrap();
     assert_eq!(h_final.shape(), h0.shape());
 }
 
@@ -145,10 +160,16 @@ fn test_run_trajectory_zero_steps() {
     let steering = SymplecticSteering::new(0.01, 0.1);
     let device = Device::Cpu;
     let h0 = Tensor::randn(0f32, 1f32, &[2, 4], &device).unwrap();
-    let h_final = steering
-        .run_trajectory(&h0, 0, |h| Ok(h.clone()))
+    let h_final = steering.run_trajectory(&h0, 0, |h| Ok(h.clone())).unwrap();
+    let diff = h0
+        .sub(&h_final)
+        .unwrap()
+        .sqr()
+        .unwrap()
+        .sum_all()
+        .unwrap()
+        .to_scalar::<f32>()
         .unwrap();
-    let diff = h0.sub(&h_final).unwrap().sqr().unwrap().sum_all().unwrap().to_scalar::<f32>().unwrap();
     assert!(diff < 1e-10);
 }
 
@@ -162,11 +183,8 @@ fn test_lyapunov_eternal_immunity_proof() {
     let final_divergence = 0.1f32;
     let time_steps = 100.0f32;
 
-    let lambda = steering.compute_lyapunov_exponent(
-        initial_divergence,
-        final_divergence,
-        time_steps,
-    );
+    let lambda =
+        steering.compute_lyapunov_exponent(initial_divergence, final_divergence, time_steps);
 
     assert!(
         lambda < 0.0,
@@ -181,11 +199,15 @@ fn test_symplectic_energy_preservation() {
     let device = Device::Cpu;
     let h0 = Tensor::ones(&[4, 4], DType::F32, &device).unwrap();
 
-    let h_symplectic = steering
-        .run_trajectory(&h0, 10, |h| Ok(h.clone()))
-        .unwrap();
+    let h_symplectic = steering.run_trajectory(&h0, 10, |h| Ok(h.clone())).unwrap();
 
-    let energy = h_symplectic.sqr().unwrap().sum_all().unwrap().to_scalar::<f32>().unwrap();
+    let energy = h_symplectic
+        .sqr()
+        .unwrap()
+        .sum_all()
+        .unwrap()
+        .to_scalar::<f32>()
+        .unwrap();
     assert!(energy.is_finite(), "Energy should be finite");
 }
 
@@ -267,9 +289,7 @@ fn test_full_thermodynamic_pipeline() {
     let steering = SymplecticSteering::new(0.01, 0.1);
     let device = Device::Cpu;
     let h0 = Tensor::randn(0f32, 1f32, &[4, 8], &device).unwrap();
-    let h_final = steering
-        .run_trajectory(&h0, 10, |h| Ok(h.clone()))
-        .unwrap();
+    let h_final = steering.run_trajectory(&h0, 10, |h| Ok(h.clone())).unwrap();
     assert_eq!(h_final.shape(), h0.shape());
 
     // 3. Lyapunov stability proof
@@ -309,7 +329,15 @@ fn test_symplectic_langevin_noise_effect() {
     let h_next = steering
         .symplectic_langevin_step(&h_t, &grad_v, 0.01, 0.5)
         .unwrap();
-    let diff = h_t.sub(&h_next).unwrap().sqr().unwrap().sum_all().unwrap().to_scalar::<f32>().unwrap();
+    let diff = h_t
+        .sub(&h_next)
+        .unwrap()
+        .sqr()
+        .unwrap()
+        .sum_all()
+        .unwrap()
+        .to_scalar::<f32>()
+        .unwrap();
     assert!(diff > 1e-10, "Noise should perturb state");
 }
 
@@ -341,8 +369,17 @@ fn test_symplectic_trajectory_stability() {
         })
         .unwrap();
 
-    let energy = h_final.sqr().unwrap().sum_all().unwrap().to_scalar::<f32>().unwrap();
-    assert!(energy.is_finite() && energy >= 0.0, "Energy must be finite and non-negative");
+    let energy = h_final
+        .sqr()
+        .unwrap()
+        .sum_all()
+        .unwrap()
+        .to_scalar::<f32>()
+        .unwrap();
+    assert!(
+        energy.is_finite() && energy >= 0.0,
+        "Energy must be finite and non-negative"
+    );
 }
 
 #[test]

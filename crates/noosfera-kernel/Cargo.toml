@@ -10,4 +10,5 @@ native-audit = { path = "../native-audit" }
 ed2k-consensus = { path = "../consensus" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+rand = "0.8"
 sha2 = "0.10"

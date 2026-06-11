@@ -1,0 +1,86 @@
+    Checking native-audit v0.1.0 (C:\Users\cualo\Desktop\PROYECTOS\ed2kIA\crates\native-audit)
+warning: unused import: `crate::topology::SgwConfig`
+  --> src\category_manifolds.rs:40:5
+   |
+40 | use crate::topology::SgwConfig;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `i`
+   --> src\adversarial.rs:562:13
+    |
+562 |         for i in 0..dim {
+    |             ^ help: if this is intentional, prefix it with an underscore: `_i`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `i`
+   --> src\category_manifolds.rs:458:9
+    |
+458 |     for i in 0..dim {
+    |         ^ help: if this is intentional, prefix it with an underscore: `_i`
+
+warning: value assigned to `momentum` is never read
+   --> src\collective_steering.rs:351:24
+    |
+351 |       let mut momentum = Tensor::from_vec(
+    |  ________________________^
+352 | |         (0..num_elements)
+353 | |             .map(|_| gaussian_noise(&mut state))
+354 | |             .collect(),
+355 | |         shape.clone(),
+356 | |         device,
+357 | |     )?;
+    | |______^
+    |
+    = help: maybe it is overwritten before being read?
+    = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `meta_improvement`
+    --> src\planetary_sim.rs:1185:5
+     |
+1185 |     meta_improvement: f64,
+     |     ^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_meta_improvement`
+
+warning: variable `total_gradient_norm` is assigned to, but never used
+   --> src\thermodynamics.rs:475:13
+    |
+475 |         let mut total_gradient_norm: f64 = 0.0;
+    |             ^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: consider using `_total_gradient_norm` instead
+
+warning: value assigned to `total_gradient_norm` is never read
+   --> src\thermodynamics.rs:538:13
+    |
+538 |             total_gradient_norm += norm;
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+
+error[E0596]: cannot borrow `final_lo` as mutable, as it is not declared as mutable
+   --> src\verification.rs:960:13
+    |
+960 |             final_lo[i] = mid;
+    |             ^^^^^^^^ cannot borrow as mutable
+    |
+help: consider changing this to be mutable
+    |
+911 |     let (mut final_lo, final_hi) = if config.refine_zonotope {
+    |          +++
+
+error[E0596]: cannot borrow `final_hi` as mutable, as it is not declared as mutable
+   --> src\verification.rs:961:13
+    |
+961 |             final_hi[i] = mid;
+    |             ^^^^^^^^ cannot borrow as mutable
+    |
+help: consider changing this to be mutable
+    |
+911 |     let (final_lo, mut final_hi) = if config.refine_zonotope {
+    |                    +++
+
+For more information about this error, try `rustc --explain E0596`.
+warning: `native-audit` (lib) generated 7 warnings
+error: could not compile `native-audit` (lib) due to 2 previous errors; 7 warnings emitted

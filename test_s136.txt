@@ -1,0 +1,143 @@
+   Compiling native-audit v0.1.0 (C:\Users\cualo\Desktop\PROYECTOS\ed2kIA\crates\native-audit)
+warning: unused import: `crate::topology::SgwConfig`
+  --> src\category_manifolds.rs:40:5
+   |
+40 | use crate::topology::SgwConfig;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error[E0308]: mismatched types
+    --> src\verification.rs:1777:43
+     |
+1777 |         let unsafe_region: [(f32, f32)] = [];
+     |                            ------------   ^^ expected `[(f32, f32)]`, found `[_; 0]`
+     |                            |
+     |                            expected due to this
+     |
+     = note: expected slice `[(f32, f32)]`
+                found array `[_; 0]`
+
+error[E0277]: the size for values of type `[(f32, f32)]` cannot be known at compilation time
+    --> src\verification.rs:1777:13
+     |
+1777 |         let unsafe_region: [(f32, f32)] = [];
+     |             ^^^^^^^^^^^^^ doesn't have a size known at compile-time
+     |
+     = help: the trait `Sized` is not implemented for `[(f32, f32)]`
+     = note: all local variables must have a statically known size
+help: consider borrowing here
+     |
+1777 |         let unsafe_region: &[(f32, f32)] = [];
+     |                            +
+
+error[E0308]: mismatched types
+    --> src\verification.rs:1815:43
+     |
+1815 |         let unsafe_region: [(f32, f32)] = [];
+     |                            ------------   ^^ expected `[(f32, f32)]`, found `[_; 0]`
+     |                            |
+     |                            expected due to this
+     |
+     = note: expected slice `[(f32, f32)]`
+                found array `[_; 0]`
+
+error[E0277]: the size for values of type `[(f32, f32)]` cannot be known at compilation time
+    --> src\verification.rs:1815:13
+     |
+1815 |         let unsafe_region: [(f32, f32)] = [];
+     |             ^^^^^^^^^^^^^ doesn't have a size known at compile-time
+     |
+     = help: the trait `Sized` is not implemented for `[(f32, f32)]`
+     = note: all local variables must have a statically known size
+help: consider borrowing here
+     |
+1815 |         let unsafe_region: &[(f32, f32)] = [];
+     |                            +
+
+warning: unused variable: `i`
+   --> src\adversarial.rs:562:13
+    |
+562 |         for i in 0..dim {
+    |             ^ help: if this is intentional, prefix it with an underscore: `_i`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `vuln`
+    --> src\adversarial.rs:1748:23
+     |
+1748 |         let (red, ab, vuln) = full_red_team_pipeline(&clean, &adv_cfg, &counter_cfg);
+     |                       ^^^^ help: if this is intentional, prefix it with an underscore: `_vuln`
+
+warning: unused variable: `vuln`
+    --> src\adversarial.rs:1837:26
+     |
+1837 |             let (red, _, vuln) = full_red_team_pipeline(&clean, &cfg, &counter_cfg);
+     |                          ^^^^ help: if this is intentional, prefix it with an underscore: `_vuln`
+
+warning: unused variable: `i`
+   --> src\category_manifolds.rs:458:9
+    |
+458 |     for i in 0..dim {
+    |         ^ help: if this is intentional, prefix it with an underscore: `_i`
+
+warning: value assigned to `momentum` is never read
+   --> src\collective_steering.rs:351:24
+    |
+351 |       let mut momentum = Tensor::from_vec(
+    |  ________________________^
+352 | |         (0..num_elements)
+353 | |             .map(|_| gaussian_noise(&mut state))
+354 | |             .collect(),
+355 | |         shape.clone(),
+356 | |         device,
+357 | |     )?;
+    | |______^
+    |
+    = help: maybe it is overwritten before being read?
+    = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `stabilized`
+   --> src\phase_transition.rs:573:20
+    |
+573 |         let (c, e, stabilized) = stabilize_irreversible_symbiosis(0.5, 0.5, &cfg);
+    |                    ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_stabilized`
+
+warning: unused variable: `c`
+   --> src\phase_transition.rs:740:14
+    |
+740 |         let (c, _e, stabilized) =
+    |              ^ help: if this is intentional, prefix it with an underscore: `_c`
+
+warning: unused variable: `meta_improvement`
+    --> src\planetary_sim.rs:1185:5
+     |
+1185 |     meta_improvement: f64,
+     |     ^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_meta_improvement`
+
+warning: unused variable: `result`
+    --> src\planetary_sim.rs:2094:14
+     |
+2094 |         let (result, churned, survival) =
+     |              ^^^^^^ help: if this is intentional, prefix it with an underscore: `_result`
+
+warning: variable `total_gradient_norm` is assigned to, but never used
+   --> src\thermodynamics.rs:475:13
+    |
+475 |         let mut total_gradient_norm: f64 = 0.0;
+    |             ^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: consider using `_total_gradient_norm` instead
+
+warning: value assigned to `total_gradient_norm` is never read
+   --> src\thermodynamics.rs:538:13
+    |
+538 |             total_gradient_norm += norm;
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+
+Some errors have detailed explanations: E0277, E0308.
+For more information about an error, try `rustc --explain E0277`.
+warning: `native-audit` (lib test) generated 12 warnings
+error: could not compile `native-audit` (lib test) due to 4 previous errors; 12 warnings emitted
