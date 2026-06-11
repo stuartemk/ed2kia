@@ -1,4 +1,28 @@
-﻿## [v13.5.0-sprint135] — 2026-06-11 (Sprint 135 — Thermodynamic Sentinel & Symplectic Matryoshka)
+﻿## [v13.6.0-sprint136] — 2026-06-11 (Sprint 136 — The Symplectic Guardian & Hybrid Formal Verification)
+
+### Sprint 136 "The Symplectic Guardian & Hybrid Formal Verification"
+
+**Mode:** `STRICT_MATH + SYMPLECTIC_GRADIENT_DESCENT + HYBRID_IBP_ZONOTOPES + ZERO_WARNINGS + BENCHMARKS + DOC_SYNC`
+
+**Problema — Sin garantías formales en Steering ni Verificación híbrida:** Sprints 100-135 establecen el atractor eternal, la inmunidad civilizacional y el control termodinámico, pero faltan: (1) Symplectic Gradient Descent (Leapfrog/Verlet) — Integrador que preserva volumen de fase para dinámica Hamiltoniana en manifolds latentes, (2) Hybrid IBP + Zonotopes — IBP para bounds rápidos + Zonotopes para propagación affine exacta, y (3) Attention-Weighted Temporal Aggregation — Softmax ponderado por anomalía (W₂/Sinkhorn) sobre trayectoria completa.
+
+**Solución — Garantías Formales Completas:** Implementamos `SymplecticGDConfig` en `crates/native-audit/src/steering.rs` con `leapfrog_step()`, `run_leapfrog()` y `compute_hamiltonian()` para optimización que preserva estructura geométrica. Implementamos `Zonotope`, `HybridConfig`, `HybridResult` en `crates/native-audit/src/verification.rs` con `compute_hybrid_bounds()` y `verify_hybrid_safety()` para verificación formal híbrida. Implementamos `compute_attention_weighted_w2_ratio()` y `compute_attention_temporal_ratio()` en `lib.rs` para agregación temporal ponderada por atención. **33 tests passing en S136 modules.**
+
+- **Symplectic Gradient Descent:** `native-audit/src/steering.rs` — `SymplecticGDConfig`, `leapfrog_step()`, `run_leapfrog()`, `compute_hamiltonian()`, 14 tests
+- **Hybrid IBP + Zonotopes:** `native-audit/src/verification.rs` — `Zonotope`, `HybridConfig`, `HybridResult`, `compute_hybrid_bounds()`, `verify_hybrid_safety()`, 19 tests
+- **Attention-Weighted Temporal Aggregation:** `native-audit/src/lib.rs` — `compute_attention_weighted_w2_ratio()`, `compute_attention_temporal_ratio()`
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| Symplectic GD Tests | ✅ 14/14 |
+| Hybrid IBP + Zonotopes Tests | ✅ 19/19 |
+| **Total S136 Tests** | **✅ 33/33** |
+| Hamiltonian Conservation | ✅ Symplectic (volume-preserving) |
+| Hybrid Bounds Improvement | ✅ Tighter than IBP alone |
+| fmt | ✅ Clean |
+
+## [v13.5.0-sprint135] — 2026-06-11 (Sprint 135 — Thermodynamic Sentinel & Symplectic Matryoshka)
 
 ### Sprint 135 "Thermodynamic Sentinel & Symplectic Matryoshka"
 

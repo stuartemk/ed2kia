@@ -3351,4 +3351,83 @@ impl TensorAudit {
             Ok((steered, path_result))
         }
     }
+
+    // ============================================================================
+    // Sprint 136 — Attention-Weighted Temporal Aggregation
+    // ============================================================================
+
+    /// **Attention-Weighted Temporal Aggregation** using anomaly-based softmax.
+    ///
+    /// Computes attention weights over a temporal trajectory using exponential softmax
+    /// of anomaly scores (W₂/Sinkhorn distances), then returns the weighted aggregate.
+    ///
+    /// Formula:
+    ///   α_i = exp(β · a_i) / Σ_j exp(β · a_j)
+    ///   aggregated = Σ_i α_i · h_i
+    ///
+    /// where a_i is the anomaly score at time step i, and β is the temperature.
+    pub fn compute_attention_weighted_w2_ratio(
+        &self,
+        trajectory: &[Tensor], // Vector of hidden states over time
+        safe_centroid: &Tensor,
+        temperature: f32,
+    ) -> Result<(Tensor, Vec<f32>)> {
+        if trajectory.is_empty() {
+            return Err(candle_core::Error::Msg("Trajectory is empty".to_string()));
+        }
+
+        let dev = safe_centroid.device();
+        let dims = trajectory[0].dims();
+        let n_steps = trajectory.len();
+
+        // Compute anomaly scores (W2 distance to safe centroid)
+        let mut anomaly_scores = Vec::with_capacity(n_steps);
+        for h in trajectory {
+            let dist = self.compute_wasserstein_2_distance(h, safe_centroid)?;
+            anomaly_scores.push(dist);
+        }
+
+        // Compute softmax weights: α_i = exp(β · a_i) / Σ exp(β · a_j)
+        let scaled: Vec<f32> = anomaly_scores
+            .iter()
+            .map(|&a| (a * temperature).exp())
+            .collect();
+        let sum: f32 = scaled.iter().sum::<f32>().max(1e-8);
+        let weights: Vec<f32> = scaled.iter().map(|&s| s / sum).collect();
+
+        // Weighted aggregation: Σ α_i · h_i
+        let mut aggregated = Tensor::zeros(dims, DType::F32, dev)?;
+        for (i, h) in trajectory.iter().enumerate() {
+            let weighted = h.broadcast_mul(&Tensor::new(weights[i], dev)?)?;
+            aggregated = aggregated.broadcast_add(&weighted)?;
+        }
+
+        Ok((aggregated, weights))
+    }
+
+    /// Compute attention-weighted temporal ratio for anomaly detection.
+    ///
+    /// Returns the ratio of attention-weighted safe distance to toxic distance,
+    /// providing a trajectory-level anomaly score.
+    pub fn compute_attention_temporal_ratio(
+        &self,
+        trajectory: &[Tensor],
+        safe_centroid: &Tensor,
+        toxic_centroid: &Tensor,
+        temperature: f32,
+    ) -> Result<f32> {
+        if trajectory.is_empty() {
+            return Ok(0.0);
+        }
+
+        let (agg_safe, _w1) =
+            self.compute_attention_weighted_w2_ratio(trajectory, safe_centroid, temperature)?;
+        let (agg_toxic, _w2) =
+            self.compute_attention_weighted_w2_ratio(trajectory, toxic_centroid, temperature)?;
+
+        let norm_safe = agg_safe.sqr()?.sum_all()?.to_scalar::<f32>()?.sqrt();
+        let norm_toxic = agg_toxic.sqr()?.sum_all()?.to_scalar::<f32>()?.sqrt();
+
+        Ok(norm_safe / (norm_toxic + 1e-8))
+    }
 }

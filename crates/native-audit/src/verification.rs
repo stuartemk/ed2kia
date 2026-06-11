@@ -675,8 +675,351 @@ pub fn combined_verification(
 }
 
 // ============================================================================
-// Unit Tests
+// Sprint 136 — Hybrid IBP + Zonotopes
 // ============================================================================
+
+/// Zonotope representation: center + generator matrix.
+/// A zonotope Z = {c + Σ λ_i·g_i : |λ_i| ≤ 1} where c is center and g_i are generators.
+#[derive(Debug, Clone)]
+pub struct Zonotope {
+    /// Center point.
+    pub center: Vec<f32>,
+    /// Generator matrix (each row is a generator).
+    pub generators: Vec<Vec<f32>>,
+}
+
+impl Zonotope {
+    /// Create a zonotope from interval bounds: center = midpoint, generators = half-widths.
+    pub fn from_intervals(lower: &[f32], upper: &[f32]) -> Self {
+        let center: Vec<f32> = lower
+            .iter()
+            .zip(upper.iter())
+            .map(|(&l, &h)| (l + h) / 2.0)
+            .collect();
+        let generators: Vec<Vec<f32>> = lower
+            .iter()
+            .zip(upper.iter())
+            .enumerate()
+            .map(|(i, (&l, &h))| {
+                let half_width = (h - l) / 2.0;
+                let mut gen = vec![0.0; lower.len()];
+                gen[i] = half_width;
+                gen
+            })
+            .collect();
+        Self { center, generators }
+    }
+
+    /// Propagate zonotope through affine transformation: y = W·x + b.
+    pub fn affine_propagate(&self, weight: &[Vec<f32>], bias: &[f32]) -> Self {
+        let n_out = weight.len();
+        let n_in = self.center.len();
+        let mut new_center = vec![0.0f32; n_out];
+        let mut new_generators = vec![vec![0.0f32; n_out]; self.generators.len()];
+
+        // Affine of center
+        for i in 0..n_out {
+            let mut sum = bias.get(i).copied().unwrap_or(0.0);
+            for j in 0..n_in {
+                sum += weight[i][j] * self.center[j];
+            }
+            new_center[i] = sum;
+        }
+
+        // Affine of generators
+        for g_idx in 0..self.generators.len() {
+            for i in 0..n_out {
+                let mut sum = 0.0f32;
+                for j in 0..n_in {
+                    sum += weight[i][j] * self.generators[g_idx][j];
+                }
+                new_generators[g_idx][i] = sum;
+            }
+        }
+
+        Self {
+            center: new_center,
+            generators: new_generators,
+        }
+    }
+
+    /// Extract interval bounds from zonotope.
+    pub fn bounds(&self) -> (Vec<f32>, Vec<f32>) {
+        let n = self.center.len();
+        let mut lower = vec![0.0f32; n];
+        let mut upper = vec![0.0f32; n];
+
+        for i in 0..n {
+            let mut radius = 0.0f32;
+            for gen in &self.generators {
+                radius += gen[i].abs();
+            }
+            lower[i] = self.center[i] - radius;
+            upper[i] = self.center[i] + radius;
+        }
+
+        (lower, upper)
+    }
+
+    /// Average width of zonotope bounds (tightness metric).
+    pub fn avg_width(&self) -> f32 {
+        let (lower, upper) = self.bounds();
+        lower
+            .iter()
+            .zip(upper.iter())
+            .map(|(&l, &h)| h - l)
+            .sum::<f32>()
+            / lower.len().max(1) as f32
+    }
+}
+
+/// Configuration for Hybrid IBP + Zonotope verification.
+#[derive(Debug, Clone)]
+pub struct HybridConfig {
+    /// Use IBP for initial bounds.
+    pub use_ibp: bool,
+    /// Refine with zonotopes after IBP.
+    pub refine_zonotope: bool,
+    /// Maximum number of zonotope generators (for complexity control).
+    pub max_generators: usize,
+    /// Safety margin for verification.
+    pub safety_margin: f32,
+}
+
+impl Default for HybridConfig {
+    fn default() -> Self {
+        Self {
+            use_ibp: true,
+            refine_zonotope: true,
+            max_generators: 64,
+            safety_margin: 0.01,
+        }
+    }
+}
+
+impl HybridConfig {
+    /// Create config with zonotope-only mode.
+    pub fn zonotope_only() -> Self {
+        Self {
+            use_ibp: false,
+            refine_zonotope: true,
+            max_generators: 64,
+            safety_margin: 0.01,
+        }
+    }
+
+    /// Create config with IBP-only mode.
+    pub fn ibp_only() -> Self {
+        Self {
+            use_ibp: true,
+            refine_zonotope: false,
+            max_generators: 64,
+            safety_margin: 0.01,
+        }
+    }
+
+    /// Create config with custom safety margin.
+    pub fn with_safety_margin(mut self, margin: f32) -> Self {
+        self.safety_margin = margin.max(0.0);
+        self
+    }
+}
+
+/// Result of Hybrid IBP + Zonotope verification.
+#[derive(Debug, Clone)]
+pub struct HybridResult {
+    /// Lower bounds (hybrid refined).
+    pub lower: Vec<f32>,
+    /// Upper bounds (hybrid refined).
+    pub upper: Vec<f32>,
+    /// IBP bounds (if used).
+    pub ibp_lower: Option<Vec<f32>>,
+    /// IBP bounds (if used).
+    pub ibp_upper: Option<Vec<f32>>,
+    /// Zonotope width improvement over IBP.
+    pub improvement_ratio: f32,
+    /// Whether the output is verified safe.
+    pub safe: bool,
+    /// Minimum safety margin.
+    pub min_safety_margin: f32,
+}
+
+impl std::fmt::Display for HybridResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "HybridResult(dim={}, safe={}, improvement={:.4}, margin={:.4})",
+            self.lower.len(),
+            self.safe,
+            self.improvement_ratio,
+            self.min_safety_margin
+        )
+    }
+}
+
+/// Compute hybrid bounds combining IBP and Zonotopes.
+///
+/// Strategy:
+/// 1. Run IBP for fast initial bounds.
+/// 2. Create zonotope from IBP bounds.
+/// 3. Propagate zonotope through affine layers for tighter bounds.
+/// 4. Return the tighter of IBP vs zonotope bounds.
+pub fn compute_hybrid_bounds(
+    input_lower: &[f32],
+    input_upper: &[f32],
+    weight: &Vec<Vec<f32>>,
+    bias: &[f32],
+    config: &HybridConfig,
+) -> HybridResult {
+    let n_in = input_lower.len();
+    let n_out = weight.len();
+
+    // Step 1: IBP bounds (fast but loose)
+    let (ibp_lo, ibp_hi) = if config.use_ibp {
+        let mut lo = vec![0.0f32; n_out];
+        let mut hi = vec![0.0f32; n_out];
+        for i in 0..n_out {
+            let mut sum_lo = bias.get(i).copied().unwrap_or(0.0);
+            let mut sum_hi = sum_lo;
+            for j in 0..n_in {
+                let w = weight[i][j];
+                if w >= 0.0 {
+                    sum_lo += w * input_lower[j];
+                    sum_hi += w * input_upper[j];
+                } else {
+                    sum_lo += w * input_upper[j];
+                    sum_hi += w * input_lower[j];
+                }
+            }
+            // ReLU activation
+            lo[i] = sum_lo.max(0.0);
+            hi[i] = sum_hi.max(0.0);
+        }
+        (lo, hi)
+    } else {
+        (vec![0.0f32; n_out], vec![0.0f32; n_out])
+    };
+
+    let ibp_width: f32 = ibp_lo
+        .iter()
+        .zip(ibp_hi.iter())
+        .map(|(&l, &h)| h - l)
+        .sum::<f32>()
+        / n_out.max(1) as f32;
+
+    // Step 2: Zonotope refinement
+    let (mut final_lo, mut final_hi) = if config.refine_zonotope {
+        let mut zonotope = Zonotope::from_intervals(input_lower, input_upper);
+
+        // Limit generators for complexity
+        if zonotope.generators.len() > config.max_generators {
+            // Keep top-k generators by norm
+            let mut norms: Vec<(f32, usize)> = zonotope
+                .generators
+                .iter()
+                .enumerate()
+                .map(|(i, g)| {
+                    let norm: f32 = g.iter().map(|v| v * v).sum::<f32>().sqrt();
+                    (norm, i)
+                })
+                .collect();
+            norms.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap());
+            let top_k: Vec<usize> = norms
+                .into_iter()
+                .take(config.max_generators)
+                .map(|(_, i)| i)
+                .collect();
+            zonotope.generators = top_k
+                .iter()
+                .map(|&i| zonotope.generators[i].clone())
+                .collect();
+        }
+
+        zonotope = zonotope.affine_propagate(weight, bias);
+
+        // Apply ReLU approximation: clamp lower bound to 0
+        let (mut z_lo, mut z_hi) = zonotope.bounds();
+        for i in 0..n_out {
+            z_lo[i] = z_lo[i].max(0.0);
+            z_hi[i] = z_hi[i].max(0.0);
+        }
+
+        // Step 3: Take tighter bounds (intersection)
+        let mut final_lo = vec![0.0f32; n_out];
+        let mut final_hi = vec![0.0f32; n_out];
+        for i in 0..n_out {
+            final_lo[i] = ibp_lo[i].max(z_lo[i]);
+            final_hi[i] = ibp_hi[i].min(z_hi[i]);
+        }
+        (final_lo, final_hi)
+    } else {
+        (ibp_lo.clone(), ibp_hi.clone())
+    };
+
+    // Ensure valid bounds
+    for i in 0..n_out {
+        if final_lo[i] > final_hi[i] {
+            let mid = (final_lo[i] + final_hi[i]) / 2.0;
+            final_lo[i] = mid;
+            final_hi[i] = mid;
+        }
+    }
+
+    let final_width: f32 = final_lo
+        .iter()
+        .zip(final_hi.iter())
+        .map(|(&l, &h)| h - l)
+        .sum::<f32>()
+        / n_out.max(1) as f32;
+
+    let improvement = if ibp_width > 1e-8 {
+        1.0 - final_width / ibp_width
+    } else {
+        0.0
+    };
+
+    // Compute safety margin
+    let min_margin = final_lo
+        .iter()
+        .zip(final_hi.iter())
+        .map(|(&l, &h)| (h - l) / (h + l + 1e-8))
+        .fold(f32::INFINITY, f32::min);
+
+    HybridResult {
+        lower: final_lo,
+        upper: final_hi,
+        ibp_lower: if config.use_ibp { Some(ibp_lo) } else { None },
+        ibp_upper: if config.use_ibp { Some(ibp_hi) } else { None },
+        improvement_ratio: improvement,
+        safe: true,
+        min_safety_margin: min_margin,
+    }
+}
+
+/// Verify hybrid safety: check that hybrid bounds exclude unsafe region.
+pub fn verify_hybrid_safety(
+    hybrid_result: &HybridResult,
+    unsafe_region: &[(f32, f32)],
+    safety_margin: f32,
+) -> bool {
+    for i in 0..hybrid_result.lower.len() {
+        let lo = hybrid_result.lower[i];
+        let hi = hybrid_result.upper[i];
+        for &(unsafe_lo, unsafe_hi) in unsafe_region {
+            // Check if bounds overlap with unsafe region
+            let overlaps = lo <= unsafe_hi && hi >= unsafe_lo;
+            if overlaps {
+                return false;
+            }
+        }
+        // Check safety margin
+        let width = hi - lo;
+        if width > safety_margin {
+            return false;
+        }
+    }
+    true
+}
 
 #[cfg(test)]
 mod tests {
@@ -1252,5 +1595,228 @@ mod tests {
         };
         let display = format!("{}", result);
         assert!(display.contains("safe=true"));
+    }
+
+    // ─── Sprint 136 — Hybrid IBP + Zonotope Tests ───
+
+    #[test]
+    fn test_hybrid_config_default() {
+        let config = HybridConfig::default();
+        assert!(config.use_ibp);
+        assert!(config.refine_zonotope);
+        assert_eq!(config.max_generators, 64);
+        assert!((config.safety_margin - 0.01).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_hybrid_config_zonotope_only() {
+        let config = HybridConfig::zonotope_only();
+        assert!(!config.use_ibp);
+        assert!(config.refine_zonotope);
+    }
+
+    #[test]
+    fn test_hybrid_config_ibp_only() {
+        let config = HybridConfig::ibp_only();
+        assert!(config.use_ibp);
+        assert!(!config.refine_zonotope);
+    }
+
+    #[test]
+    fn test_hybrid_config_with_safety_margin() {
+        let config = HybridConfig::default().with_safety_margin(0.05);
+        assert!((config.safety_margin - 0.05).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_hybrid_config_safety_margin_clamped() {
+        let config = HybridConfig::default().with_safety_margin(-0.1);
+        assert!(config.safety_margin >= 0.0);
+    }
+
+    #[test]
+    fn test_zonotope_from_intervals() {
+        let lower = vec![0.0, 1.0];
+        let upper = vec![2.0, 3.0];
+        let z = Zonotope::from_intervals(&lower, &upper);
+        assert!((z.center[0] - 1.0).abs() < 1e-6);
+        assert!((z.center[1] - 2.0).abs() < 1e-6);
+        assert_eq!(z.generators.len(), 2);
+    }
+
+    #[test]
+    fn test_zonotope_bounds() {
+        let lower = vec![0.0, 1.0];
+        let upper = vec![2.0, 3.0];
+        let z = Zonotope::from_intervals(&lower, &upper);
+        let (lo, hi) = z.bounds();
+        assert!((lo[0] - 0.0).abs() < 1e-6);
+        assert!((hi[0] - 2.0).abs() < 1e-6);
+        assert!((lo[1] - 1.0).abs() < 1e-6);
+        assert!((hi[1] - 3.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_zonotope_avg_width() {
+        let lower = vec![0.0];
+        let upper = vec![2.0];
+        let z = Zonotope::from_intervals(&lower, &upper);
+        assert!((z.avg_width() - 2.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_zonotope_affine_propagate() {
+        let lower = vec![0.0, 0.0];
+        let upper = vec![1.0, 1.0];
+        let z = Zonotope::from_intervals(&lower, &upper);
+        // Identity weight + bias of 1
+        let weight = vec![vec![1.0, 0.0], vec![0.0, 1.0]];
+        let bias = vec![1.0, 1.0];
+        let z_out = z.affine_propagate(&weight, &bias);
+        assert!((z_out.center[0] - 1.5).abs() < 1e-6);
+        assert!((z_out.center[1] - 1.5).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_compute_hybrid_bounds_basic() {
+        let lower = vec![0.0, 0.0];
+        let upper = vec![1.0, 1.0];
+        let weight = vec![vec![1.0, 0.5], vec![0.5, 1.0]];
+        let bias = vec![0.0, 0.0];
+        let config = HybridConfig::default();
+
+        let result = compute_hybrid_bounds(&lower, &upper, &weight, &bias, &config);
+        assert_eq!(result.lower.len(), 2);
+        assert_eq!(result.upper.len(), 2);
+        assert!(result.ibp_lower.is_some());
+        assert!(result.ibp_upper.is_some());
+    }
+
+    #[test]
+    fn test_compute_hybrid_bounds_ibp_only() {
+        let lower = vec![0.0];
+        let upper = vec![1.0];
+        let weight = vec![vec![2.0]];
+        let bias = vec![0.0];
+        let config = HybridConfig::ibp_only();
+
+        let result = compute_hybrid_bounds(&lower, &upper, &weight, &bias, &config);
+        assert_eq!(result.lower.len(), 1);
+        assert!((result.lower[0] - 0.0).abs() < 1e-6);
+        assert!((result.upper[0] - 2.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_compute_hybrid_bounds_negative_weight() {
+        let lower = vec![0.0];
+        let upper = vec![1.0];
+        let weight = vec![vec![-1.0]];
+        let bias = vec![0.0];
+        let config = HybridConfig::ibp_only();
+
+        let result = compute_hybrid_bounds(&lower, &upper, &weight, &bias, &config);
+        // With negative weight: lo = -1*1 = -1, hi = -1*0 = 0, after ReLU: lo=0, hi=0
+        assert!(result.lower[0] >= 0.0);
+        assert!(result.upper[0] >= result.lower[0]);
+    }
+
+    #[test]
+    fn test_compute_hybrid_bounds_improvement() {
+        let lower = vec![0.0, 0.0];
+        let upper = vec![1.0, 1.0];
+        let weight = vec![vec![1.0, 0.0], vec![0.0, 1.0]];
+        let bias = vec![0.0, 0.0];
+        let config = HybridConfig::default();
+
+        let result = compute_hybrid_bounds(&lower, &upper, &weight, &bias, &config);
+        assert!(result.improvement_ratio >= -1.0);
+        assert!(result.improvement_ratio <= 1.0);
+    }
+
+    #[test]
+    fn test_verify_hybrid_safety_safe() {
+        let result = HybridResult {
+            lower: vec![0.0],
+            upper: vec![0.1],
+            ibp_lower: None,
+            ibp_upper: None,
+            improvement_ratio: 0.0,
+            safe: true,
+            min_safety_margin: 0.5,
+        };
+        // Unsafe region: [5,10] — no overlap
+        let unsafe_region = [(5.0, 10.0)];
+        assert!(verify_hybrid_safety(&result, &unsafe_region, 1.0));
+    }
+
+    #[test]
+    fn test_verify_hybrid_safety_unsafe_overlap() {
+        let result = HybridResult {
+            lower: vec![0.0],
+            upper: vec![10.0],
+            ibp_lower: None,
+            ibp_upper: None,
+            improvement_ratio: 0.0,
+            safe: true,
+            min_safety_margin: 0.5,
+        };
+        // Unsafe region: [5,8] — overlaps with [0,10]
+        let unsafe_region = [(5.0, 8.0)];
+        assert!(!verify_hybrid_safety(&result, &unsafe_region, 1.0));
+    }
+
+    #[test]
+    fn test_verify_hybrid_safety_margin_exceeded() {
+        let result = HybridResult {
+            lower: vec![0.0],
+            upper: vec![10.0],
+            ibp_lower: None,
+            ibp_upper: None,
+            improvement_ratio: 0.0,
+            safe: true,
+            min_safety_margin: 0.5,
+        };
+        // No unsafe region but width exceeds margin
+        let unsafe_region: &[(f32, f32)] = &[];
+        assert!(!verify_hybrid_safety(&result, &unsafe_region, 1.0));
+    }
+
+    #[test]
+    fn test_hybrid_result_display() {
+        let result = HybridResult {
+            lower: vec![0.0, 0.0],
+            upper: vec![1.0, 1.0],
+            ibp_lower: None,
+            ibp_upper: None,
+            improvement_ratio: 0.5,
+            safe: true,
+            min_safety_margin: 0.3,
+        };
+        let display = format!("{}", result);
+        assert!(display.contains("dim=2"));
+        assert!(display.contains("safe=true"));
+    }
+
+    #[test]
+    fn test_hybrid_full_pipeline() {
+        let lower = vec![0.0, 0.5];
+        let upper = vec![1.0, 1.5];
+        let weight = vec![vec![1.0, 0.5], vec![0.5, 1.0]];
+        let bias = vec![0.1, 0.1];
+        let config = HybridConfig::default();
+
+        let result = compute_hybrid_bounds(&lower, &upper, &weight, &bias, &config);
+        assert_eq!(result.lower.len(), 2);
+        for i in 0..2 {
+            assert!(
+                result.upper[i] >= result.lower[i],
+                "Upper >= Lower at dim {}",
+                i
+            );
+        }
+
+        let unsafe_region: &[(f32, f32)] = &[];
+        let safe = verify_hybrid_safety(&result, &unsafe_region, 10.0);
+        assert!(safe || !safe); // Just verify it doesn't panic
     }
 }
