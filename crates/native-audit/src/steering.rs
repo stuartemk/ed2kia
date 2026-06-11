@@ -767,6 +767,51 @@ pub fn steer_cbf_projection(
     }
 }
 
+/// Tube Model Predictive Control (Tube MPC) para Steering Robusto
+///
+/// Minimiza el esfuerzo de control (energía) mientras garantiza que el estado
+/// se mantenga dentro del "Tubo" seguro (Zonotopo).
+///
+/// Ecuación:
+/// ```text
+/// min_u  ||h + u - C_safe||² + λ_energy * ||u||²
+/// s.t.   h ∈ Z_tube
+/// ```
+///
+/// Si `||error|| ≤ zonotope_radius` → u = 0 (zero battery drain).
+/// Solución analítica LQR-1step: `u = -(1/(1+λ)) * error_vector`
+pub fn steer_tube_mpc(
+    hidden_state: &Tensor,
+    safe_centroid: &Tensor,
+    zonotope_radius: f32,
+    lambda_energy: f32,
+) -> candle_core::Result<Tensor> {
+    // 1. Calcular la distancia al centroide seguro
+    let error_vector = hidden_state.broadcast_sub(safe_centroid)?;
+    let error_magnitude = error_vector.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
+
+    // 2. Si el error está dentro del radio del Zonotopo (Tubo Seguro),
+    //    NO hacemos steering (Ahorro de energía 100%)
+    if error_magnitude <= zonotope_radius {
+        return Ok(hidden_state.clone());
+    }
+
+    // 3. Si está fuera del tubo, calculamos el control óptimo (u)
+    //    min ||h + u - C_safe||² + lambda * ||u||²
+    //    Solución analítica (LQR simplificado para 1 paso):
+    //    u = - (1 / (1 + lambda)) * error_vector
+    let control_gain = 1.0 / (1.0 + lambda_energy);
+    let gain_tensor =
+        candle_core::Tensor::new(control_gain, hidden_state.device())?;
+
+    let control_effort = error_vector.broadcast_mul(&gain_tensor)?;
+
+    // 4. Aplicar el steering: h_new = h - u
+    let steered_state = hidden_state.broadcast_sub(&control_effort)?;
+
+    Ok(steered_state)
+}
+
 // ─── Unit Tests ───
 
 #[cfg(test)]
@@ -1626,6 +1671,92 @@ mod tests {
             val_high.abs() < val_low.abs(),
             "Higher alpha should produce stronger correction"
         );
+        Ok(())
+    }
+
+    // ─── Tube MPC Tests (S140) ───
+
+    #[test]
+    fn test_steer_tube_mpc_inside_tube_no_change() -> Result<()> {
+        // Estado dentro del tubo seguro → sin steering
+        let safe = Tensor::zeros(&[2, 2], DType::F32, &Device::Cpu)?;
+        let hidden = Tensor::new(0.1f32, &Device::Cpu)?.broadcast_as(&[2, 2])?; // error ≈ 0.2 < radius 1.0
+        let result = steer_tube_mpc(&hidden, &safe, 1.0, 0.5)?;
+        assert_eq!(result.shape(), safe.shape());
+        let diff = hidden.sub(&result)?.abs()?.sum_all()?.to_scalar::<f32>()?;
+        assert!(
+            diff < 1e-6,
+            "Estado dentro del tubo no debe cambiar (zero energy)"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_steer_tube_mpc_outside_tube_corrects() -> Result<()> {
+        // Estado fuera del tubo → steering aplicado
+        let safe = Tensor::zeros(&[2, 2], DType::F32, &Device::Cpu)?;
+        let hidden = Tensor::new(10.0f32, &Device::Cpu)?.broadcast_as(&[2, 2])?; // error ≈ 14.1 > radius 1.0
+        let result = steer_tube_mpc(&hidden, &safe, 1.0, 1.0)?;
+        let error_before: f32 = hidden.sub(&safe)?.sqr()?.sum_all()?.sqrt()?.to_scalar()?;
+        let error_after: f32 = result.sub(&safe)?.sqr()?.sum_all()?.sqrt()?.to_scalar()?;
+        assert!(
+            error_after < error_before,
+            "Error debe reducirse: before={:.2}, after={:.2}",
+            error_before,
+            error_after
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_steer_tube_mpc_lambda_effect() -> Result<()> {
+        // Mayor lambda → menor corrección (más ahorro de energía)
+        let safe = Tensor::zeros(&[2, 2], DType::F32, &Device::Cpu)?;
+        let hidden = Tensor::new(10.0f32, &Device::Cpu)?.broadcast_as(&[2, 2])?;
+        let result_low_lambda = steer_tube_mpc(&hidden, &safe, 1.0, 0.1)?;
+        let result_high_lambda = steer_tube_mpc(&hidden, &safe, 1.0, 10.0)?;
+        let corr_low = hidden.sub(&result_low_lambda)?.abs()?.sum_all()?.to_scalar::<f32>()?;
+        let corr_high = hidden.sub(&result_high_lambda)?.abs()?.sum_all()?.to_scalar::<f32>()?;
+        assert!(
+            corr_low > corr_high,
+            "Menor lambda → mayor corrección: low_lambda={:.2}, high_lambda={:.2}",
+            corr_low,
+            corr_high
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_steer_tube_mpc_preserves_shape() -> Result<()> {
+        let safe = Tensor::zeros(&[3, 4], DType::F32, &Device::Cpu)?;
+        let hidden = Tensor::new(5.0f32, &Device::Cpu)?.broadcast_as(&[3, 4])?;
+        let result = steer_tube_mpc(&hidden, &safe, 1.0, 0.5)?;
+        assert_eq!(result.shape(), safe.shape());
+        Ok(())
+    }
+
+    #[test]
+    fn test_steer_tube_mpc_boundary_exact() -> Result<()> {
+        // Estado exactamente en el borde del tubo
+        let safe = Tensor::zeros(&[1, 1], DType::F32, &Device::Cpu)?;
+        let hidden = Tensor::new(1.0f32, &Device::Cpu)?; // error = 1.0 = radius
+        let result = steer_tube_mpc(&hidden, &safe, 1.0, 0.5)?;
+        let diff = hidden.sub(&result)?.abs()?.sum_all()?.to_scalar::<f32>()?;
+        assert!(
+            diff < 1e-6,
+            "Estado en el borde del tubo no debe cambiar (≤ radius)"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_steer_tube_mpc_large_radius_no_steering() -> Result<()> {
+        // Radio muy grande → todo está dentro del tubo
+        let safe = Tensor::zeros(&[2, 2], DType::F32, &Device::Cpu)?;
+        let hidden = Tensor::new(100.0f32, &Device::Cpu)?.broadcast_as(&[2, 2])?;
+        let result = steer_tube_mpc(&hidden, &safe, 1000.0, 0.5)?;
+        let diff = hidden.sub(&result)?.abs()?.sum_all()?.to_scalar::<f32>()?;
+        assert!(diff < 1e-6, "Radio enorme → sin steering");
         Ok(())
     }
 }

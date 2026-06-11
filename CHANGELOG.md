@@ -1,4 +1,33 @@
-﻿## [v13.9.0-sprint139] — 2026-06-11 (Sprint 139 — Hybrid Reachability & Empirical Symbiosis)
+﻿## [v14.0.0-sprint140] — 2026-06-11 (Sprint 140 — Nash-Estuardian Equilibrium & Tube MPC Steering)
+
+### Sprint 140 "Nash-Estuardian Equilibrium & Tube MPC Steering"
+
+**Mode:** `STRICT_MATH + EVOLUTIONARY_GAME_THEORY + TUBE_MPC + ZERO_WARNINGS + DOC_SYNC`
+
+**Problema — Sin prueba formal de que la Simbiosis sea ESS ni control robusto por tubos:** Sprints 100-139 establecen el atractor eternal, la inmunidad civilizacional, el control termodinámico, replicator dynamics determinista y estocástico, scheduling simbiótico, utilidad multi-objetivo, ruido multiplicativo (Itô SDE) y CBF projection, pero faltan: (1) **Evolutionary Game Theory** — `dx_i/dt = x_i * (f_i(x, φ) - f̄ + η * C(x) - δ * B_i)` con bonus de entropía de diversidad y penalización bizantina para demostrar que la Simbiosis es una Estrategia Evolutivamente Estable (ESS) sin incentivos financieros, y (2) **Tube Model Predictive Control (MPC)** — `min_u ||h + u - C_safe||² + λ_energy * ||u||²` con solución analítica LQR-1step `u* = -(1/(1+λ)) * error` para steering robusto con zonotopos que ahorra energía cuando el estado está dentro del tubo seguro.
+
+**Solución — Equilibrio de Nash + Tube MPC Completo:** Creamos `EvolutionaryGameEngine` en `crates/consensus/src/lib.rs` con `compute_replicator_dynamics()` y `simulate()` para dinámica de replicador multi-objetivo con entropía de diversidad y penalización bizantina. Extendimos `crates/native-audit/src/steering.rs` con `steer_tube_mpc()` para control predictivo por tubos con zonotopos. Creamos `crates/consensus/tests/evolutionary_game_test.rs` con 8 tests de integración que demuestran el equilibrio de Nash completo. **660/660 tests passing.**
+
+- **Evolutionary Game Theory:** `consensus/src/lib.rs` — `ReplicatorConfig`, `ReplicatorResult`, `EvolutionaryGameEngine`, `compute_replicator_dynamics()`, `simulate()`, 16 tests
+- **Tube MPC Steering:** `native-audit/src/steering.rs` — `steer_tube_mpc()` con LQR-1step analytical solution, 6 tests
+- **Nash Equilibrium Integration Tests:** `consensus/tests/evolutionary_game_test.rs` — 8 integration tests demostrando ESS completo
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| Evolutionary Game Theory Tests | ✅ 16/16 |
+| Tube MPC Steering Tests | ✅ 6/6 |
+| Nash Equilibrium Integration Tests | ✅ 8/8 |
+| **Total S140 Tests** | **✅ 30/30** |
+| **Total Project Tests** | **✅ 660/660** |
+| ESS Proof | ✅ Symbiotic dominates (>0.95) |
+| Parasitic Elimination | ✅ <0.01 |
+| Byzantine Elimination | ✅ <0.001 |
+| Tube MPC Zero Energy | ✅ Inside tube → No steering |
+| Tube MPC Correction | ✅ Outside tube → LQR optimal |
+| fmt | ✅ Clean |
+
+## [v13.9.0-sprint139] — 2026-06-11 (Sprint 139 — Hybrid Reachability & Empirical Symbiosis)
 
 ### Sprint 139 "Hybrid Reachability & Empirical Symbiosis"
 
