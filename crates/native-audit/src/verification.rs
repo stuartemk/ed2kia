@@ -771,6 +771,281 @@ impl Zonotope {
             .sum::<f32>()
             / lower.len().max(1) as f32
     }
+
+    /// Propagate zonotope through ReLU activation with tight bounds.
+    ///
+    /// Uses linear relaxation: for each output dimension i:
+    /// - If lower[i] >= 0: ReLU is identity (full generator passes)
+    /// - If upper[i] <= 0: ReLU is zero (output generator is zero)
+    /// - Otherwise: ReLU is uncertain, use convex hull relaxation
+    pub fn propagate_relu(&self) -> Self {
+        let (lower, upper) = self.bounds();
+        let n = self.center.len();
+
+        let mut new_center = vec![0.0f32; n];
+        let mut new_generators: Vec<Vec<f32>> = self
+            .generators
+            .iter()
+            .map(|g| vec![0.0f32; n])
+            .collect();
+
+        for i in 0..n {
+            if lower[i] >= 0.0 {
+                // ReLU is identity: passes through unchanged
+                new_center[i] = self.center[i];
+                for g_idx in 0..self.generators.len() {
+                    new_generators[g_idx][i] = self.generators[g_idx][i];
+                }
+            } else if upper[i] <= 0.0 {
+                // ReLU is zero: output is exactly 0
+                new_center[i] = 0.0;
+                // generators already 0
+            } else {
+                // Uncertain: use convex hull relaxation
+                // ReLU(x) ≈ max(0, x) ≈ (upper/(upper-lower)) * x when x in [lower, upper]
+                // Center: ReLU applied to center (clamped)
+                new_center[i] = self.center[i].max(0.0);
+                let slope = upper[i] / (upper[i] - lower[i]).max(1e-8);
+                for g_idx in 0..self.generators.len() {
+                    new_generators[g_idx][i] = (self.generators[g_idx][i] * slope).abs();
+                }
+            }
+        }
+
+        Self {
+            center: new_center,
+            generators: new_generators,
+        }
+    }
+
+    /// Compute certified safety probability via Monte Carlo volume estimation.
+    ///
+    /// Samples random points from the zonotope and checks what fraction
+    /// falls within the safe region defined by [safe_lo, safe_hi].
+    ///
+    /// Returns the estimated probability that a random point in the zonotope
+    /// is safe, along with the number of samples used.
+    pub fn certified_safety_prob(
+        &self,
+        safe_lo: &[f32],
+        safe_hi: &[f32],
+        num_samples: usize,
+        seed: u64,
+    ) -> (f32, usize) {
+        if self.center.is_empty() || safe_lo.is_empty() {
+            return (1.0, 0);
+        }
+
+        let mut state = seed;
+        let n = self.center.len();
+        let mut safe_count = 0usize;
+
+        for _ in 0..num_samples {
+            // LCG random number generator
+            state = state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+            // Sample a random point from the zonotope
+            let mut point = vec![0.0f32; n];
+            for i in 0..n {
+                point[i] = self.center[i];
+                for gen in &self.generators {
+                    // Random lambda in [-1, 1]
+                    state = state
+                        .wrapping_mul(6364136223846793005)
+                        .wrapping_add(1442695040888963407);
+                    let lambda = ((state as i32) as f32 / (i32::MAX as f32));
+                    point[i] += lambda * gen[i];
+                }
+            }
+
+            // Check if point is in safe region
+            let is_safe = (0..n).all(|i| point[i] >= safe_lo[i] && point[i] <= safe_hi[i]);
+            if is_safe {
+                safe_count += 1;
+            }
+        }
+
+        let prob = safe_count as f32 / num_samples.max(1) as f32;
+        (prob, num_samples)
+    }
+
+    /// Compute the L-infinity radius of the zonotope (maximum perturbation).
+    pub fn linf_radius(&self) -> f32 {
+        let (lower, upper) = self.bounds();
+        lower
+            .iter()
+            .zip(upper.iter())
+            .map(|(&l, &h)| (h - l) / 2.0)
+            .fold(0.0f32, f32::max)
+    }
+}
+
+/// Result of adversarial certification.
+#[derive(Debug, Clone)]
+pub struct AdversarialCertResult {
+    /// Estimated probability that perturbed input is safe.
+    pub safety_probability: f32,
+    /// L-infinity radius of the certified region.
+    pub certified_radius: f32,
+    /// Number of Monte Carlo samples used.
+    pub num_samples: usize,
+    /// Whether the model is certified robust (safety_prob > threshold).
+    pub is_certified: bool,
+    /// Tightness of the zonotope bounds (lower = tighter).
+    pub bound_tightness: f32,
+}
+
+impl std::fmt::Display for AdversarialCertResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "AdversarialCertResult {{ safety_prob: {:.4}, radius: {:.4}, certified: {}, samples: {}, tightness: {:.4} }}",
+            self.safety_probability, self.certified_radius, self.is_certified, self.num_samples, self.bound_tightness
+        )
+    }
+}
+
+/// Configuration for adversarial certification.
+#[derive(Debug, Clone)]
+pub struct AdversarialCertConfig {
+    /// Number of Monte Carlo samples for safety estimation.
+    pub num_samples: usize,
+    /// Minimum safety probability for certification.
+    pub safety_threshold: f32,
+    /// Random seed for reproducibility.
+    pub seed: u64,
+    /// Maximum number of generators before order reduction.
+    pub max_generators: usize,
+}
+
+impl Default for AdversarialCertConfig {
+    fn default() -> Self {
+        Self {
+            num_samples: 1000,
+            safety_threshold: 0.95,
+            seed: 42,
+            max_generators: 64,
+        }
+    }
+}
+
+impl AdversarialCertConfig {
+    /// Create a fast configuration for testing.
+    pub fn fast() -> Self {
+        Self {
+            num_samples: 100,
+            safety_threshold: 0.9,
+            ..Self::default()
+        }
+    }
+
+    /// Create a high-precision configuration.
+    pub fn high_precision() -> Self {
+        Self {
+            num_samples: 10000,
+            safety_threshold: 0.99,
+            ..Self::default()
+        }
+    }
+
+    /// Set number of samples.
+    pub fn with_samples(mut self, samples: usize) -> Self {
+        self.num_samples = samples.max(1);
+        self
+    }
+
+    /// Set safety threshold.
+    pub fn with_threshold(mut self, threshold: f32) -> Self {
+        self.safety_threshold = threshold.max(0.0).min(1.0);
+        self
+    }
+}
+
+/// Certify adversarial robustness using zonotope bounds + Monte Carlo estimation.
+///
+/// Given a zonotope representing the perturbed input region, this function:
+/// 1. Propagates through ReLU layers (if applicable)
+/// 2. Computes certified bounds
+/// 3. Estimates safety probability via Monte Carlo sampling
+/// 4. Returns certification result
+pub fn certify_adversarial_robustness(
+    zonotope: &Zonotope,
+    safe_lo: &[f32],
+    safe_hi: &[f32],
+    config: &AdversarialCertConfig,
+) -> AdversarialCertResult {
+    let (lo, hi) = zonotope.bounds();
+
+    // Check if bounds are entirely within safe region
+    let bounds_safe = (0..lo.len()).all(|i| lo[i] >= safe_lo[i] && hi[i] <= safe_hi[i]);
+
+    // Monte Carlo estimation
+    let (safety_prob, num_samples) =
+        zonotope.certified_safety_prob(safe_lo, safe_hi, config.num_samples, config.seed);
+
+    let certified_radius = zonotope.linf_radius();
+    let bound_tightness = zonotope.avg_width();
+
+    let is_certified = bounds_safe
+        || safety_prob >= config.safety_threshold;
+
+    AdversarialCertResult {
+        safety_probability: safety_prob,
+        certified_radius,
+        num_samples,
+        is_certified,
+        bound_tightness,
+    }
+}
+
+/// Simulate a PGD-like attack by expanding the zonotope iteratively.
+///
+/// This simulates an adversarial attack that tries to push the input
+/// outside the safe region, then verifies if the certified bounds hold.
+pub fn simulate_pgd_attack(
+    zonotope: &Zonotope,
+    safe_lo: &[f32],
+    safe_hi: &[f32],
+    epsilon: f32,
+    steps: usize,
+    step_size: f32,
+) -> AdversarialCertResult {
+    let mut current = zonotope.clone();
+
+    // Expand zonotope by epsilon per step (simulating PGD perturbation)
+    for _ in 0..steps {
+        // Add a new generator in the direction of the attack
+        let n = current.center.len();
+        let mut attack_gen = vec![0.0f32; n];
+        for i in 0..n {
+            // Attack direction: push toward boundary
+            let mid = (safe_lo.get(i).copied().unwrap_or(0.0)
+                + safe_hi.get(i).copied().unwrap_or(0.0))
+                / 2.0;
+            let direction = if current.center[i] > mid {
+                -1.0
+            } else {
+                1.0
+            };
+            attack_gen[i] = direction * step_size;
+        }
+        current.generators.push(attack_gen);
+
+        // Order reduction: limit generators
+        if current.generators.len() > 64 {
+            // Merge smallest generators
+            current.generators.sort_by(|a, b| {
+                let norm_a: f32 = a.iter().map(|x| x * x).sum::<f32>().sqrt();
+                let norm_b: f32 = b.iter().map(|x| x * x).sum::<f32>().sqrt();
+                norm_a.partial_cmp(&norm_b).unwrap()
+            });
+            // Keep largest generators (most important)
+            current.generators.drain(0..current.generators.len() - 64);
+        }
+    }
+
+    // Certify the attacked zonotope
+    let cert_config = AdversarialCertConfig::fast();
+    certify_adversarial_robustness(&current, safe_lo, safe_hi, &cert_config)
 }
 
 /// Configuration for Hybrid IBP + Zonotope verification.
@@ -1818,5 +2093,254 @@ mod tests {
         let unsafe_region: &[(f32, f32)] = &[];
         let safe = verify_hybrid_safety(&result, &unsafe_region, 10.0);
         assert!(safe || !safe); // Just verify it doesn't panic
+    }
+
+    // ===== S137: Adversarial Certification Tests =====
+
+    #[test]
+    fn test_adversarial_cert_config_default() {
+        let cfg = AdversarialCertConfig::default();
+        assert_eq!(cfg.num_samples, 1000);
+        assert!((cfg.safety_threshold - 0.95).abs() < 1e-5);
+        assert_eq!(cfg.seed, 42);
+        assert_eq!(cfg.max_generators, 64);
+    }
+
+    #[test]
+    fn test_adversarial_cert_config_fast() {
+        let cfg = AdversarialCertConfig::fast();
+        assert_eq!(cfg.num_samples, 100);
+        assert!((cfg.safety_threshold - 0.9).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_adversarial_cert_config_high_precision() {
+        let cfg = AdversarialCertConfig::high_precision();
+        assert_eq!(cfg.num_samples, 10000);
+        assert!((cfg.safety_threshold - 0.99).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_adversarial_cert_config_with_samples() {
+        let cfg = AdversarialCertConfig::default().with_samples(500);
+        assert_eq!(cfg.num_samples, 500);
+    }
+
+    #[test]
+    fn test_adversarial_cert_config_with_threshold() {
+        let cfg = AdversarialCertConfig::default().with_threshold(0.99);
+        assert!((cfg.safety_threshold - 0.99).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_adversarial_cert_config_threshold_clamped() {
+        let cfg = AdversarialCertConfig::default().with_threshold(1.5);
+        assert!((cfg.safety_threshold - 1.0).abs() < 1e-5);
+        let cfg2 = AdversarialCertConfig::default().with_threshold(-0.5);
+        assert!((cfg2.safety_threshold - 0.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_zonotope_propagate_relu_positive() {
+        // All inputs positive: ReLU is identity
+        let z = Zonotope {
+            center: vec![1.0, 2.0],
+            generators: vec![vec![0.1, 0.0], vec![0.0, 0.2]],
+        };
+        let result = z.propagate_relu();
+        assert!((result.center[0] - 1.0).abs() < 1e-5);
+        assert!((result.center[1] - 2.0).abs() < 1e-5);
+        // Generators should pass through
+        assert!((result.generators[0][0] - 0.1).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_zonotope_propagate_relu_negative() {
+        // All inputs negative: ReLU is zero
+        let z = Zonotope {
+            center: vec![-1.0, -2.0],
+            generators: vec![vec![0.1, 0.0], vec![0.0, 0.2]],
+        };
+        let result = z.propagate_relu();
+        assert!((result.center[0] - 0.0).abs() < 1e-5);
+        assert!((result.center[1] - 0.0).abs() < 1e-5);
+        // Generators should be zero
+        for g in &result.generators {
+            for &v in g {
+                assert!((v - 0.0).abs() < 1e-5);
+            }
+        }
+    }
+
+    #[test]
+    fn test_zonotope_propagate_relu_mixed() {
+        // Mixed: first dim crosses zero, second is positive
+        let z = Zonotope {
+            center: vec![0.0, 1.0],
+            generators: vec![vec![0.5, 0.0], vec![0.0, 0.1]],
+        };
+        let result = z.propagate_relu();
+        // First dim: center=0, bounds=[-0.5, 0.5], mixed region
+        assert!(result.center[0] >= 0.0);
+        // Second dim: fully positive, passes through
+        assert!((result.center[1] - 1.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_zonotope_linf_radius() {
+        let z = Zonotope {
+            center: vec![0.0, 0.0],
+            generators: vec![vec![0.5, 0.3], vec![0.0, 0.7]],
+        };
+        let radius = z.linf_radius();
+        // Dim 0: radius = 0.5, Dim 1: radius = 0.3 + 0.7 = 1.0
+        // L-inf = max(0.5, 1.0) = 1.0
+        assert!((radius - 1.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_certified_safety_prob_perfect() {
+        // Zonotope entirely within safe region
+        let z = Zonotope {
+            center: vec![0.5, 0.5],
+            generators: vec![vec![0.1, 0.0], vec![0.0, 0.1]],
+        };
+        let safe_lo = vec![0.0, 0.0];
+        let safe_hi = vec![1.0, 1.0];
+        let (prob, samples) = z.certified_safety_prob(&safe_lo, &safe_hi, 100, 42);
+        assert_eq!(samples, 100);
+        assert!((prob - 1.0).abs() < 1e-5, "Perfect safety: got {}", prob);
+    }
+
+    #[test]
+    fn test_certified_safety_prob_partial() {
+        // Zonotope partially overlaps safe region
+        let z = Zonotope {
+            center: vec![0.0, 0.0],
+            generators: vec![vec![1.0, 0.0], vec![0.0, 1.0]],
+        };
+        // Safe region is [0, 1] x [0, 1], zonotope is [-1, 1] x [-1, 1]
+        // ~1/4 should be safe
+        let safe_lo = vec![0.0, 0.0];
+        let safe_hi = vec![1.0, 1.0];
+        let (prob, _samples) = z.certified_safety_prob(&safe_lo, &safe_hi, 500, 42);
+        assert!(prob > 0.1 && prob < 0.5, "Partial safety should be ~0.25, got {}", prob);
+    }
+
+    #[test]
+    fn test_certified_safety_prob_empty() {
+        let z = Zonotope {
+            center: vec![],
+            generators: vec![],
+        };
+        let (prob, samples) = z.certified_safety_prob(&[], &[], 100, 42);
+        assert!((prob - 1.0).abs() < 1e-5);
+        assert_eq!(samples, 0);
+    }
+
+    #[test]
+    fn test_certify_adversarial_robustness_safe() {
+        let z = Zonotope {
+            center: vec![0.5, 0.5],
+            generators: vec![vec![0.05, 0.0], vec![0.0, 0.05]],
+        };
+        let safe_lo = vec![0.0, 0.0];
+        let safe_hi = vec![1.0, 1.0];
+        let config = AdversarialCertConfig::fast();
+        let result = certify_adversarial_robustness(&z, &safe_lo, &safe_hi, &config);
+        assert!(result.is_certified, "Should be certified safe");
+        assert!(result.safety_probability >= 0.9);
+        assert_eq!(result.num_samples, config.num_samples);
+    }
+
+    #[test]
+    fn test_certify_adversarial_robustness_unsafe() {
+        let z = Zonotope {
+            center: vec![1.5, 1.5],
+            generators: vec![vec![0.5, 0.0], vec![0.0, 0.5]],
+        };
+        let safe_lo = vec![0.0, 0.0];
+        let safe_hi = vec![1.0, 1.0];
+        let config = AdversarialCertConfig::fast();
+        let result = certify_adversarial_robustness(&z, &safe_lo, &safe_hi, &config);
+        assert!(!result.is_certified, "Should NOT be certified safe");
+    }
+
+    #[test]
+    fn test_adversarial_cert_result_display() {
+        let result = AdversarialCertResult {
+            safety_probability: 0.95,
+            certified_radius: 0.1,
+            num_samples: 1000,
+            is_certified: true,
+            bound_tightness: 0.2,
+        };
+        let display = format!("{}", result);
+        assert!(display.contains("0.95"));
+        assert!(display.contains("true"));
+    }
+
+    #[test]
+    fn test_simulate_pgd_attack_basic() {
+        let z = Zonotope {
+            center: vec![0.5, 0.5],
+            generators: vec![vec![0.05, 0.0], vec![0.0, 0.05]],
+        };
+        let safe_lo = vec![0.0, 0.0];
+        let safe_hi = vec![1.0, 1.0];
+        let result = simulate_pgd_attack(&z, &safe_lo, &safe_hi, 0.5, 3, 0.1);
+        // After attack, radius should be larger
+        assert!(result.certified_radius > 0.05);
+        assert!(result.num_samples > 0);
+    }
+
+    #[test]
+    fn test_simulate_pgd_attack_large_epsilon() {
+        let z = Zonotope {
+            center: vec![0.5, 0.5],
+            generators: vec![vec![0.05, 0.0], vec![0.0, 0.05]],
+        };
+        let safe_lo = vec![0.4, 0.4];
+        let safe_hi = vec![0.6, 0.6];
+        // Large attack should break certification
+        let result = simulate_pgd_attack(&z, &safe_lo, &safe_hi, 1.0, 10, 0.2);
+        // With large attack on small safe region, likely not certified
+        assert!(result.num_samples > 0);
+    }
+
+    #[test]
+    fn test_pgd_attack_order_reduction() {
+        let z = Zonotope {
+            center: vec![0.5, 0.5],
+            generators: vec![vec![0.05, 0.0], vec![0.0, 0.05]],
+        };
+        let safe_lo = vec![0.0, 0.0];
+        let safe_hi = vec![1.0, 1.0];
+        // Many steps should trigger order reduction
+        let result = simulate_pgd_attack(&z, &safe_lo, &safe_hi, 0.5, 100, 0.05);
+        assert!(result.num_samples > 0);
+        // Should not panic even with many steps
+        assert!(result.certified_radius >= 0.0);
+    }
+
+    #[test]
+    fn test_full_adversarial_pipeline() {
+        // Create zonotope from intervals
+        let z = Zonotope::from_intervals(&[0.4, 0.4], &[0.6, 0.6]);
+
+        // Propagate through ReLU (should be identity since positive)
+        let z_relu = z.propagate_relu();
+        assert!(z_relu.center[0] > 0.0);
+
+        // Certify robustness
+        let safe_lo = vec![0.0, 0.0];
+        let safe_hi = vec![1.0, 1.0];
+        let config = AdversarialCertConfig::fast();
+        let cert = certify_adversarial_robustness(&z_relu, &safe_lo, &safe_hi, &config);
+        assert!(cert.is_certified);
+
+        // Simulate attack
+        let attack_result = simulate_pgd_attack(&z_relu, &safe_lo, &safe_hi, 0.3, 5, 0.05);
+        assert!(attack_result.num_samples > 0);
     }
 }

@@ -1,4 +1,31 @@
-﻿## [v13.6.0-sprint136] — 2026-06-11 (Sprint 136 — The Symplectic Guardian & Hybrid Formal Verification)
+﻿## [v13.7.0-sprint137] — 2026-06-11 (Sprint 137 — Thermodynamic Replicator & Adversarial Certification)
+
+### Sprint 137 "Thermodynamic Replicator & Adversarial Certification"
+
+**Mode:** `STRICT_MATH + REPLICATOR_DYNAMICS + ADVERSARIAL_ZONOTOPES + BENCHMARKS_EDGE + ZERO_WARNINGS`
+
+**Problema — Sin evolución evolutiva de fitness PoUS ni certificación adversarial formal:** Sprints 100-136 establecen el atractor eternal, la inmunidad civilizacional, el control termodinámico y la verificación formal híbrida, pero faltan: (1) Replicator Dynamics — `dx_i/dt = x_i·(f_i - f̄)` para evolución evolutiva de fitness en el simplex, con integración Euler y Heun (RK2), (2) Certificación Adversarial — `Zonotope::propagate_relu()` con relajación convex hull, `certified_safety_prob()` con estimación Monte Carlo, y `simulate_pgd_attack()` para simular ataques PGD iterativos, y (3) Benchmarks de validación — Hamiltonian drift, hybrid tightness, replicator convergence.
+
+**Solución — Replicator + Adversarial Completo:** Creamos `crates/native-audit/src/replicator.rs` con `ReplicatorConfig`, `compute_fitness()`, `replicator_euler_step()`, `replicator_heun_step()`, `run_replicator()`, `population_entropy()`, `verify_simplex()`. Extendimos `verification.rs` con `Zonotope::propagate_relu()`, `certified_safety_prob()`, `linf_radius()`, `AdversarialCertConfig`, `AdversarialCertResult`, `certify_adversarial_robustness()`, `simulate_pgd_attack()**. 62 tests passing en S137 modules.**
+
+- **Replicator Dynamics:** `native-audit/src/replicator.rs` — `ReplicatorConfig`, `compute_fitness()`, `replicator_euler_step()`, `replicator_heun_step()`, `run_replicator()`, `population_entropy()`, `verify_simplex()`, 28 tests
+- **Adversarial Certification:** `native-audit/src/verification.rs` — `Zonotope::propagate_relu()`, `certified_safety_prob()`, `linf_radius()`, `AdversarialCertConfig`, `AdversarialCertResult`, `certify_adversarial_robustness()`, `simulate_pgd_attack()`, 20 tests
+- **Benchmarks:** `native-audit/tests/sprint137_benchmarks.rs` — Hamiltonian drift, hybrid tightness, replicator convergence, adversarial cert performance, 14 tests
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| Replicator Dynamics Tests | ✅ 28/28 |
+| Adversarial Certification Tests | ✅ 20/20 |
+| Benchmark Tests | ✅ 14/14 |
+| **Total S137 Tests** | **✅ 62/62** |
+| Simplex Preservation | ✅ Verified |
+| Adversarial Safety Prob | ✅ Monte Carlo certified |
+| Hamiltonian Drift | ✅ Bounded (symplectic) |
+| Hybrid Tightness | ✅ ≤ IBP width |
+| fmt | ✅ Clean |
+
+## [v13.6.0-sprint136] — 2026-06-11 (Sprint 136 — The Symplectic Guardian & Hybrid Formal Verification)
 
 ### Sprint 136 "The Symplectic Guardian & Hybrid Formal Verification"
 

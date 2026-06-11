@@ -47,6 +47,7 @@ pub mod neural_ode;
 pub mod p2p_mechanism;
 pub mod phase_transition;
 pub mod planetary_sim;
+pub mod replicator;
 pub mod provable_safety;
 pub mod sae_integration;
 pub mod sae_modular;
