@@ -1,6 +1,4 @@
 //! native-audit — Native tensor audit core for ed2kIA
-
-pub mod phase_transition;
 //!
 //! Candle-based hidden state extraction + TCM Z-axis for SmolLM2-135M.
 //!
@@ -23,6 +21,8 @@ pub mod phase_transition;
 //! energy impact estimation, live testnet mesh, altruistic onboarding.
 //! **Sprint 121:** Noosfera Symbiotic Launch — Proportional efficiency (smartwatch→datacenter),
 //! multi-modal VFE symbiosis, device contribution factor, global altruist mesh bootstrap.
+//! **Sprint 134:** Noosfera Eternal Symbiosis, Global Singularity Stabilization &
+//! Eternal Civilizational Immunity — The immortal lock on planetary symbiotic state.
 
 pub mod adversarial;
 pub mod category_manifolds;
@@ -45,10 +45,12 @@ pub mod meta_improvement;
 pub mod multimodal;
 pub mod neural_ode;
 pub mod p2p_mechanism;
+pub mod phase_transition;
 pub mod planetary_sim;
 pub mod provable_safety;
 pub mod sae_integration;
 pub mod sae_modular;
+pub mod singularity_stabilization;
 pub mod sparse_federated_sae;
 pub mod steering;
 pub mod symbolic_fusion;
@@ -56,6 +58,7 @@ pub mod taylor_model;
 pub mod testnet_sim;
 pub mod thermodynamics;
 pub mod topology;
+pub mod universal_immunity;
 pub mod verification;
 pub mod zonotope;
 

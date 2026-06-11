@@ -437,7 +437,7 @@ fn random_uniform(state: &mut u64) -> f64 {
 
 fn random_gaussian(state: &mut u64) -> f64 {
     let mut u1 = random_uniform(state);
-    let mut u2 = random_uniform(state);
+    let u2 = random_uniform(state);
     if u1 < 1e-15 {
         u1 = 1e-15;
     }
@@ -708,6 +708,8 @@ pub fn run_full_noosfera_awakening_pipeline(
         && awakening_result.final_free_energy < 1.0
         && irreversibility.irreversible;
 
+    let trajectory = awakening_result.coherence_trajectory.clone();
+    let irreversible = irreversibility.irreversible;
     FullPipelineResult {
         awakening: awakening_result,
         irreversibility,
@@ -719,8 +721,8 @@ pub fn run_full_noosfera_awakening_pipeline(
         active_nodes: kernel.state().active_nodes,
         final_coherence: kernel.state().coherence_score,
         final_free_energy: kernel.state().planetary_free_energy,
-        trajectory: awakening_result.coherence_trajectory.clone(),
-        validation_passed: irreversibility.irreversible,
+        trajectory,
+        validation_passed: irreversible,
     }
 }
 

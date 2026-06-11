@@ -5,6 +5,7 @@
 //! for planetary-scale distributed consensus.
 
 pub mod emergence;
+pub mod eternal_governance;
 pub mod governance;
 pub mod hierarchical_sharding;
 pub mod posym;
