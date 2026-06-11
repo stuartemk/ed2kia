@@ -1,25 +1,25 @@
 [package]
 name = "ed2k-p2p"
-version.workspace = true
-edition.workspace = true
+version = "13.2.0-sprint132"
+edition = "2021"
 description = "P2P networking layer for ed2kIA distributed nodes"
-license.workspace = true
+license = "Apache-2.0"
 
 [dependencies]
 ed2kia = { path = "../.." }
-libp2p = { workspace = true }
-libp2p-identity = { workspace = true }
-tokio = { workspace = true }
-async-trait = { workspace = true }
-futures = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
-thiserror = { workspace = true }
-tracing = { workspace = true }
-parking_lot = { workspace = true }
-hex = { workspace = true }
-sha2 = { workspace = true }
-prost = { workspace = true }
+libp2p = "0.53"
+libp2p-identity = "0.2"
+tokio = { version = "1.38", features = ["full"] }
+async-trait = "0.1"
+futures = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "1"
+tracing = "0.1"
+parking_lot = "0.12"
+hex = "0.4"
+sha2 = "0.10"
+prost = "0.12"
 
 [dev-dependencies]
-tokio = { workspace = true }
+tokio = { version = "1.38", features = ["full"] }

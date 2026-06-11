@@ -1,7 +1,7 @@
 # 🌐 ed2kIA: Distributed Sparse Autoencoders for Edge LLM Interpretability
 
-[![Version](https://img.shields.io/badge/v13.1.0-sprint131-blue.svg)](https://github.com/Stuartemk/ed2kIA/releases/tag/v13.1.0-sprint131)
-[![Tests](https://img.shields.io/badge/Tests-735%2B%20PASS-green.svg)](https://github.com/Stuartemk/ed2kIA/actions)
+[![Version](https://img.shields.io/badge/v13.2.0-sprint132-blue.svg)](https://github.com/Stuartemk/ed2kIA/releases/tag/v13.2.0-sprint132)
+[![Tests](https://img.shields.io/badge/Tests-853%2B%20PASS-green.svg)](https://github.com/Stuartemk/ed2kIA/actions)
 [![Audit](https://img.shields.io/badge/OSSF-8.5%2F10-yellow.svg)](https://github.com/Stuartemk/ed2kIA/security)
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ética-orange.svg)](LICENSE)
 
@@ -62,6 +62,22 @@ The `native-audit` crate (`crates/native-audit`) provides:
 | S131 Noosfera Closure | `native-audit/thermodynamics.rs` | `s131_noosfera_closure()` — Unified planetary thermodynamic closure pipeline |
 | Category Manifolds Export | `native-audit/category_manifolds.rs` | Module export fix in `lib.rs`, Yoneda embedding, manifold composition |
 | Value Alignment Clippy Fixes | `consensus/value_alignment.rs` | 6 iterator/type corrections for clean compilation |
+
+**Sprint 132 — Noosfera Kernel Unification, Quantum-Inspired Coherence & Universal Symbiosis Protocol (v13.2.0):**
+| Feature | Module | Description |
+|---------|--------|-------------|
+| Noosfera Kernel | `crates/noosfera-kernel` | `NoosferaKernel::new()`, `run_full_symbiotic_cycle()`, `integrate_all_modules()` — Unified runtime |
+| Quantum Coherence | `native-audit/quantum_coherence.rs` | `compute_quantum_inspired_coherence()`, `entanglement_symbiosis_score()`, `decoherence_stabilizer()` |
+| Universal Symbiosis Protocol | `p2p/universal_symbiosis_protocol.rs` | `usp_handshake()`, `propagate_symbiotic_state()`, `verify_protocol_compliance()` |
+| Provable Safety | `native-audit/provable_safety.rs` | `prove_noosfera_safety()`, `simulate_deployment_10k_nodes()`, `detect_singularity_threshold()` |
+
+**Sprint 132 Validation:**
+| Metric | Value |
+|--------|-------|
+| noosfera-kernel Tests | **67/67 (100%)** |
+| provable_safety Tests | **51/51 (100%)** |
+| Total New Tests (S132) | **118/118 (100%)** |
+| Warnings | **0** |
 
 **Sprint 131 Validation:**
 | Metric | Value |
