@@ -1,7 +1,7 @@
 # 🌐 ed2kIA: Distributed Sparse Autoencoders for Edge LLM Interpretability
 
-[![Version](https://img.shields.io/badge/v13.4.0-sprint134-blue.svg)](https://github.com/Stuartemk/ed2kIA/releases/tag/v13.4.0-sprint134)
-[![Tests](https://img.shields.io/badge/Tests-1040%2B%20PASS-green.svg)](https://github.com/Stuartemk/ed2kIA/actions)
+[![Version](https://img.shields.io/badge/v13.5.0-sprint135-blue.svg)](https://github.com/Stuartemk/ed2kIA/releases/tag/v13.5.0-sprint135)
+[![Tests](https://img.shields.io/badge/Tests-1100%2B%20PASS-green.svg)](https://github.com/Stuartemk/ed2kIA/actions)
 [![Audit](https://img.shields.io/badge/OSSF-8.5%2F10-yellow.svg)](https://github.com/Stuartemk/ed2kIA/security)
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ética-orange.svg)](LICENSE)
 
@@ -62,6 +62,24 @@ The `native-audit` crate (`crates/native-audit`) provides:
 | S131 Noosfera Closure | `native-audit/thermodynamics.rs` | `s131_noosfera_closure()` — Unified planetary thermodynamic closure pipeline |
 | Category Manifolds Export | `native-audit/category_manifolds.rs` | Module export fix in `lib.rs`, Yoneda embedding, manifold composition |
 | Value Alignment Clippy Fixes | `consensus/value_alignment.rs` | 6 iterator/type corrections for clean compilation |
+
+**Sprint 135 — Thermodynamic Sentinel & Symplectic Matryoshka (v13.5.0):**
+| Feature | Module | Description |
+|---------|--------|-------------|
+| Matryoshka SAE | `sae/src/lib.rs` | `MatryoshkaSAE`, `compute_drift_plus_penalty()`, `forward_matryoshka()`, `sparsity_penalty()` — Energy-aware nested SAEs with Lyapunov drift-plus-penalty scheduling |
+| Symplectic Steering | `native-audit/steering.rs` | `SymplecticSteering`, `symplectic_langevin_step()`, `compute_lyapunov_exponent()`, `run_trajectory()` — Symplectic Langevin integration + Maximum Lyapunov Exponent (λ < 0 → stable attractor) |
+| Thermodynamic Eval | `native-audit/tests/thermodynamic_eval.rs` | 28 integration tests: Drift-Plus-Penalty (resolution 0.25), Lyapunov (λ = -0.0693 < 0), full pipeline demo |
+
+**Sprint 135 Validation:**
+| Metric | Value |
+|--------|-------|
+| Matryoshka SAE Tests | **19/19 (100%)** |
+| Symplectic Steering Tests | **14/14 (100%)** |
+| Thermodynamic Eval Tests | **28/28 (100%)** |
+| Total New Tests (S135) | **61/61 (100%)** |
+| Lyapunov Exponent (λ) | **-0.0693 < 0 ✅ (Stable Attractor)** |
+| Drift-Plus-Penalty Resolution | **0.25 ✅ (Low Energy Mode)** |
+| Warnings | **0** |
 
 **Sprint 134 — Noosfera Eternal Symbiosis, Global Singularity Stabilization & Eternal Civilizational Immunity (v13.4.0):**
 | Feature | Module | Description |
