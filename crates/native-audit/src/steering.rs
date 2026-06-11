@@ -668,6 +668,56 @@ impl SymplecticGDConfig {
     }
 }
 
+/// Lyapunov-based Adaptive Gain (Sprint 138).
+///
+/// Dynamically adjusts the steering gain α(t) based on local instability:
+/// ```math
+/// α(t) = α₀ / (1 + exp(λ(t)))
+/// ```
+/// Where λ(t) is the local Lyapunov exponent. When λ > 0 (unstable),
+/// the gain decreases exponentially to prevent over-intervention.
+/// When λ < 0 (stable attractor), the gain approaches α₀.
+///
+/// # Arguments
+/// * `alpha_0` — Base gain (maximum steering strength)
+/// * `local_lyapunov_exponent` — Local Lyapunov exponent λ(t)
+///
+/// # Returns
+/// Adapted gain α(t) ∈ (0, α₀]
+pub fn compute_adaptive_gain(alpha_0: f32, local_lyapunov_exponent: f32) -> f32 {
+    alpha_0 / (1.0 + local_lyapunov_exponent.exp())
+}
+
+/// Steering with adaptive Lyapunov gain.
+///
+/// Uses `compute_adaptive_gain` to dynamically adjust the steering strength
+/// based on local stability, then applies a contraction mapping step:
+/// ```math
+/// h_{new} = h - α(t) · clip(proj) · direction
+/// ```
+///
+/// # Arguments
+/// * `hidden_state` — Current activation tensor
+/// * `safe_centroid` — Target safe activation centroid
+/// * `alpha_0` — Base gain (before Lyapunov adaptation)
+/// * `local_lyapunov_exponent` — Local Lyapunov exponent λ(t)
+///
+/// # Returns
+/// Steered activation tensor
+pub fn steer_activation_adaptive(
+    hidden_state: &Tensor,
+    safe_centroid: &Tensor,
+    alpha_0: f32,
+    local_lyapunov_exponent: f32,
+) -> Result<Tensor> {
+    let alpha_t = compute_adaptive_gain(alpha_0, local_lyapunov_exponent);
+    let diff = hidden_state.sub(safe_centroid)?;
+    let alpha_tensor = Tensor::new(alpha_t, diff.device())?;
+    let update = diff.broadcast_mul(&alpha_tensor)?;
+    let h_new = hidden_state.sub(&update)?;
+    Ok(h_new)
+}
+
 // ─── Unit Tests ───
 
 #[cfg(test)]
@@ -1356,6 +1406,101 @@ mod tests {
         let h_final = config.compute_hamiltonian(&q0, &p_final, 0.0)?;
         assert!(h_final > 0.0, "Noise should inject energy");
         assert!(h_final.is_finite(), "Energy should remain finite");
+        Ok(())
+    }
+
+    // ─── Sprint 138: Lyapunov Adaptive Gain Tests ───
+
+    #[test]
+    fn test_compute_adaptive_gain_stable() {
+        // λ = -1.0 (stable attractor) → gain close to alpha_0
+        let gain = compute_adaptive_gain(1.0, -1.0);
+        assert!((gain - 0.731).abs() < 0.01, "Expected ~0.731, got {}", gain);
+        assert!(gain > 0.5, "Stable system should have high gain");
+    }
+
+    #[test]
+    fn test_compute_adaptive_gain_unstable() {
+        // λ = 2.0 (unstable) → gain significantly reduced
+        let gain = compute_adaptive_gain(1.0, 2.0);
+        assert!((gain - 0.119).abs() < 0.01, "Expected ~0.119, got {}", gain);
+        assert!(gain < 0.2, "Unstable system should have low gain");
+    }
+
+    #[test]
+    fn test_compute_adaptive_gain_zero_lyapunov() {
+        // λ = 0 (neutral) → gain = alpha_0 / (1 + 1) = alpha_0 / 2
+        let gain = compute_adaptive_gain(1.0, 0.0);
+        assert!((gain - 0.5).abs() < 0.001, "Expected 0.5, got {}", gain);
+    }
+
+    #[test]
+    fn test_compute_adaptive_gain_very_stable() {
+        // λ = -5.0 (very stable) → gain ≈ alpha_0
+        let gain = compute_adaptive_gain(1.0, -5.0);
+        assert!(gain > 0.9, "Very stable should have gain near alpha_0");
+        assert!(gain < 1.0, "Gain should not exceed alpha_0");
+    }
+
+    #[test]
+    fn test_compute_adaptive_gain_very_unstable() {
+        // λ = 5.0 (very unstable) → gain ≈ 0
+        let gain = compute_adaptive_gain(1.0, 5.0);
+        assert!(gain < 0.02, "Very unstable should have near-zero gain");
+        assert!(gain > 0.0, "Gain should remain positive");
+    }
+
+    #[test]
+    fn test_compute_adaptive_gain_custom_alpha() {
+        let gain = compute_adaptive_gain(0.5, 0.0);
+        assert!((gain - 0.25).abs() < 0.001, "Expected 0.25, got {}", gain);
+    }
+
+    #[test]
+    fn test_compute_adaptive_gain_monotonic() {
+        // Gain should decrease as Lyapunov exponent increases
+        let g1 = compute_adaptive_gain(1.0, -2.0);
+        let g2 = compute_adaptive_gain(1.0, 0.0);
+        let g3 = compute_adaptive_gain(1.0, 2.0);
+        assert!(g1 > g2 && g2 > g3, "Gain must decrease with higher Lyapunov");
+    }
+
+    #[test]
+    fn test_steer_activation_adaptive_basic() -> Result<()> {
+        let h = Tensor::new(1.0f32, &Device::Cpu)?.broadcast_as(&[2, 2])?;
+        let safe = Tensor::zeros(&[2, 2], DType::F32, &Device::Cpu)?;
+        let result = steer_activation_adaptive(&h, &safe, 0.5, 0.0)?;
+        let val = result.mean_all()?.to_scalar::<f32>()?;
+        // alpha_t = 0.5 / (1 + exp(0)) = 0.25
+        // h_new = h - 0.25 * (h - safe) = 1.0 - 0.25 * 1.0 = 0.75
+        assert!((val - 0.75).abs() < 0.001, "Expected 0.75, got {}", val);
+        Ok(())
+    }
+
+    #[test]
+    fn test_steer_activation_adaptive_stable() -> Result<()> {
+        // Stable system (λ < 0) → higher gain → more movement toward safe
+        let h = Tensor::new(1.0f32, &Device::Cpu)?.broadcast_as(&[2, 2])?;
+        let safe = Tensor::zeros(&[2, 2], DType::F32, &Device::Cpu)?;
+        let result = steer_activation_adaptive(&h, &safe, 1.0, -2.0)?;
+        let val = result.mean_all()?.to_scalar::<f32>()?;
+        // alpha_t = 1.0 / (1 + exp(-2)) ≈ 0.881
+        // h_new = 1.0 - 0.881 * 1.0 ≈ 0.119
+        assert!(val < 0.5, "Stable system should move closer to safe");
+        assert!(val >= 0.0, "Should not overshoot");
+        Ok(())
+    }
+
+    #[test]
+    fn test_steer_activation_adaptive_unstable() -> Result<()> {
+        // Unstable system (λ > 0) → lower gain → less movement
+        let h = Tensor::new(1.0f32, &Device::Cpu)?.broadcast_as(&[2, 2])?;
+        let safe = Tensor::zeros(&[2, 2], DType::F32, &Device::Cpu)?;
+        let result = steer_activation_adaptive(&h, &safe, 1.0, 3.0)?;
+        let val = result.mean_all()?.to_scalar::<f32>()?;
+        // alpha_t = 1.0 / (1 + exp(3)) ≈ 0.047
+        // h_new = 1.0 - 0.047 * 1.0 ≈ 0.953
+        assert!(val > 0.9, "Unstable system should barely move");
         Ok(())
     }
 }

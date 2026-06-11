@@ -21,6 +21,7 @@ ark-ff = "0.4"
 ark-std = "0.4"
 ark-bn254 = "0.4"
 ark-serialize = "0.4"
+rand = "0.8"
 
 [dev-dependencies]
 tokio = { version = "1.38", features = ["full"] }

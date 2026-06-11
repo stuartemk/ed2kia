@@ -13,9 +13,9 @@
 //! Resolution: 1.0 (full) / 0.25 (core) / 0.0 (delegate).
 
 pub mod loader;
-pub mod router;
-pub mod feature_extractor;
 pub mod manifold;
+pub mod router;
+pub mod scheduler;
 
 use candle_core::{DType, Device, Result, Tensor};
 

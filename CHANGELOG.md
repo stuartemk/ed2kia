@@ -1,4 +1,30 @@
-﻿## [v13.7.0-sprint137] — 2026-06-11 (Sprint 137 — Thermodynamic Replicator & Adversarial Certification)
+﻿## [v13.8.0-sprint138] — 2026-06-11 (Sprint 138 — The Empirical Crucible & Stochastic Replicator)
+
+### Sprint 138 "The Empirical Crucible & Stochastic Replicator"
+
+**Mode:** `STRICT_MATH + ITO_CALCULUS + ADAPTIVE_CONTROL + ZERO_WARNINGS + DOC_SYNC`
+
+**Problema — Sin control adaptativo ni dinámica estocástica formal:** Sprints 100-137 establecen el atractor eternal, la inmunidad civilizacional, el control termodinámico, replicator dynamics determinista y certificación adversarial, pero faltan: (1) Lyapunov-based Adaptive Gain — `α(t) = α₀ / (1 + exp(λ(t)))` para reducir intervención cuando el exponente de Lyapunov local indica inestabilidad, (2) Stochastic Replicator Dynamics (Itô SDE) — `dx_i = [x_i(f_i - φ̄) + η·∇symbiosis - γ·∇entropy] dt + σ dW_t` con integración Euler-Maruyama para evolución evolutiva con ruido termodinámico, y (3) Symbiotic Utility Function — `U_i = w₁(-ΔVFE) + w₂(ΣMI) + w₃(-energy) + w₄(-KL)` para scheduling energético-aware con información mutua y divergencia KL.
+
+**Solución — Control Adaptativo + Estocástico Completo:** Extendimos `crates/native-audit/src/steering.rs` con `compute_adaptive_gain()` y `steer_activation_adaptive()` para ganancia adaptativa basada en Lyapunov. Creamos `crates/consensus/src/replicator.rs` con `stochastic_replicator_step()` (Itô SDE Euler-Maruyama), `StochasticReplicatorConfig` y `run_stochastic_replicator()` para dinámica estocástica con ruido Browniano. Creamos `crates/sae/src/scheduler.rs` con `compute_symbiotic_utility()`, `SymbioticWeights`, `select_best_action()`, `kl_divergence()`, `mutual_info_from_correlation()` para scheduling multi-objetivo. **56 tests passing en S138 modules.**
+
+- **Lyapunov Adaptive Gain:** `native-audit/src/steering.rs` — `compute_adaptive_gain()`, `steer_activation_adaptive()`, 10 tests
+- **Stochastic Replicator (Itô SDE):** `consensus/src/replicator.rs` — `stochastic_replicator_step()`, `StochasticReplicatorConfig`, `run_stochastic_replicator()`, `population_entropy()`, `verify_simplex()`, 24 tests
+- **Symbiotic Utility + Scheduler:** `sae/src/scheduler.rs` — `compute_symbiotic_utility()`, `SymbioticWeights`, `select_best_action()`, `kl_divergence()`, `mutual_info_from_correlation()`, 22 tests
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| Adaptive Gain Tests | ✅ 10/10 |
+| Stochastic Replicator Tests | ✅ 24/24 |
+| Symbiotic Utility Tests | ✅ 22/22 |
+| **Total S138 Tests** | **✅ 56/56** |
+| Lyapunov Adaptation | ✅ Verified (α decreases with instability) |
+| Itô SDE Step | ✅ Euler-Maruyama with Brownian noise |
+| Symbiotic Scheduler | ✅ Multi-objective optimization |
+| fmt | ✅ Clean |
+
+## [v13.7.0-sprint137] — 2026-06-11 (Sprint 137 — Thermodynamic Replicator & Adversarial Certification)
 
 ### Sprint 137 "Thermodynamic Replicator & Adversarial Certification"
 

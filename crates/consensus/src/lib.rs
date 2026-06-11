@@ -10,4 +10,5 @@ pub mod governance;
 pub mod hierarchical_sharding;
 pub mod posym;
 pub mod pous;
+pub mod replicator;
 pub mod value_alignment;
