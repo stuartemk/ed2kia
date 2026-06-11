@@ -751,13 +751,13 @@ impl Default for MetaReplicatorConfig {
 impl MetaReplicatorConfig {
     /// Create config with custom meta learning rate.
     pub fn with_meta_lr(mut self, lr: f64) -> Self {
-        self.meta_lr = lr.max(1e-8).min(1.0);
+        self.meta_lr = lr.clamp(1e-8, 1.0);
         self
     }
 
     /// Create config with custom convergence tolerance.
     pub fn with_convergence_tolerance(mut self, tol: f64) -> Self {
-        self.convergence_tolerance = tol.max(1e-12).min(1.0);
+        self.convergence_tolerance = tol.clamp(1e-12, 1.0);
         self
     }
 
@@ -922,12 +922,12 @@ impl ConvergenceMonitor {
         if self.recent_norms.len() < 2 {
             return false;
         }
-        self.recent_norms.last().map_or(false, |&n| n < self.tolerance)
+        self.recent_norms.last().is_some_and(|&n| n < self.tolerance)
     }
 
     /// Get adaptive step size.
     pub fn adaptive_step(&self, base_lr: f64) -> f64 {
-        (base_lr * self.step_multiplier).max(1e-8).min(1.0)
+        (base_lr * self.step_multiplier).clamp(1e-8, 1.0)
     }
 }
 
@@ -1033,7 +1033,7 @@ pub fn meta_replicator_step(
         state.momentum_buffer[mom_idx] =
             config.momentum * state.momentum_buffer[mom_idx] + (1.0 - config.momentum) * coeff_gradient;
         new_coeffs[i] += lr_coeff * state.momentum_buffer[mom_idx];
-        new_coeffs[i] = new_coeffs[i].max(0.0).min(10.0);
+        new_coeffs[i] = new_coeffs[i].clamp(0.0, 10.0);
     }
 
     // Compute meta-gradient norm
@@ -1085,7 +1085,7 @@ fn evaluate_one_step_fitness(
     let mut new_shares = Vec::with_capacity(n);
     for i in 0..n {
         let dx = shares[i] * (fitnesses[i] - avg_f);
-        let new_s = (shares[i] + lr * dx).max(1e-10).min(1.0);
+        let new_s = (shares[i] + lr * dx).clamp(1e-10, 1.0);
         new_shares.push(new_s);
     }
 
@@ -1188,7 +1188,7 @@ pub fn run_self_improving_loop(
         let mut new_shares = Vec::with_capacity(n);
         for i in 0..n {
             let dx = current_shares[i] * (current_fitnesses[i] - avg_f);
-            let new_s = (current_shares[i] + adaptive_lr * dx).max(1e-10).min(1.0);
+            let new_s = (current_shares[i] + adaptive_lr * dx).clamp(1e-10, 1.0);
             new_shares.push(new_s);
         }
         let total: f64 = new_shares.iter().sum();
@@ -1231,6 +1231,7 @@ pub fn run_self_improving_loop(
 }
 
 /// S130 Full Pipeline — Meta-Replicator + Self-Improving Loop + PoUS + SGW + HMC.
+#[allow(clippy::too_many_arguments)]
 pub fn s130_full_pipeline(
     shares: &[f64],
     fitnesses: &[f64],
@@ -1261,7 +1262,7 @@ pub fn s130_full_pipeline(
             sgw_bonus_coeff,
         );
         let hmc_normalized = if max_energy > 0.0 {
-            (energy_reductions[i] / max_energy).max(0.0).min(1.0)
+            (energy_reductions[i] / max_energy).clamp(0.0, 1.0)
         } else {
             0.0
         };
@@ -1287,7 +1288,7 @@ pub fn s130_full_pipeline(
         let avg_f: f64 = hybrid_fitnesses.iter().sum::<f64>() / n as f64;
         for i in 0..n {
             let dx = final_shares[i] * (hybrid_fitnesses[i] - avg_f);
-            final_shares[i] = (final_shares[i] + last.updated_lr * dx).max(1e-10).min(1.0);
+            final_shares[i] = (final_shares[i] + last.updated_lr * dx).clamp(1e-10, 1.0);
         }
         let total: f64 = final_shares.iter().sum();
         if total > 0.0 {
@@ -1536,7 +1537,7 @@ mod tests {
 
     #[test]
     fn test_shapley_monte_carlo_basic() {
-        let contributions = vec![3.0, 5.0, 2.0];
+        let contributions = [3.0, 5.0, 2.0];
         let total_nodes = 3;
         let value_fn =
             |members: &[usize]| -> f64 { members.iter().map(|&i| contributions[i]).sum() };

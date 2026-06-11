@@ -615,7 +615,7 @@ impl MerkleBatchProof {
 }
 
 /// zk-proof type enumeration for future circuit integration.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ZkProofType {
     /// zk-STARK placeholder — transparent setup, post-quantum secure
     ZkStark,
@@ -624,13 +624,8 @@ pub enum ZkProofType {
     /// Halo2 placeholder — production-ready Rust zk-SNARK
     Halo2,
     /// No proof (fallback for testing)
+    #[default]
     None,
-}
-
-impl Default for ZkProofType {
-    fn default() -> Self {
-        ZkProofType::None
-    }
 }
 
 /// Configuration for zk-proof generation parameters.
@@ -705,7 +700,7 @@ impl SuccinctProof {
     /// Estimate verification cost (lightweight hash check).
     pub fn verification_cost_estimate(&self) -> u64 {
         // Stub: proportional to proof size (ceiling division, min 1 chunk)
-        (self.proof_size as u64 + 63) / 64
+        (self.proof_size as u64).div_ceil(64)
     }
 }
 
@@ -731,7 +726,7 @@ pub fn generate_succinct_proof(proof: &SteeringProof, config: &ZkProofConfig) ->
         hasher.update(proof.timestamp.to_le_bytes());
         hasher.update(proof.vfe_reduction.to_bits().to_be_bytes());
         hasher.update(proof.energy_cost.to_bits().to_be_bytes());
-        hasher.update(&(proof.taylor_containment as u8).to_le_bytes());
+        hasher.update((proof.taylor_containment as u8).to_le_bytes());
         hasher.update(&proof.data);
         hasher.finalize().into()
     };
@@ -793,7 +788,7 @@ pub fn generate_succinct_proof(proof: &SteeringProof, config: &ZkProofConfig) ->
     SuccinctProof {
         proof_bytes,
         public_input_hash,
-        proof_type: config.proof_type.clone(),
+        proof_type: config.proof_type,
         proof_size,
         generation_time_ms,
     }
@@ -819,7 +814,7 @@ pub fn verify_succinct_proof(succinct: &SuccinctProof, steering: &SteeringProof)
         hasher.update(steering.timestamp.to_le_bytes());
         hasher.update(steering.vfe_reduction.to_bits().to_be_bytes());
         hasher.update(steering.energy_cost.to_bits().to_be_bytes());
-        hasher.update(&(steering.taylor_containment as u8).to_le_bytes());
+        hasher.update((steering.taylor_containment as u8).to_le_bytes());
         hasher.update(&steering.data);
         hasher.finalize().into()
     };
@@ -1468,7 +1463,7 @@ mod tests {
         let succinct = generate_succinct_proof(&proof, &cfg);
         let cost = succinct.verification_cost_estimate();
         // Cost should be proportional to proof size (may be 0 for small proofs)
-        assert_eq!(cost, (succinct.proof_size as u64 + 63) / 64);
+        assert_eq!(cost, (succinct.proof_size as u64).div_ceil(64));
     }
 
     #[test]

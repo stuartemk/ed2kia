@@ -1190,7 +1190,7 @@ impl ChurnMetrics {
         let mut total_trust = 0.0;
         let mut total_energy = 0.0;
         let mut surviving_count = 0usize;
-        for (shard_id, _config) in &shard_manager.shards {
+        for shard_id in shard_manager.shards.keys() {
             if let Some(nodes) = shard_manager.shard_nodes.get(shard_id) {
                 for node_id in nodes {
                     if !failed_nodes.contains(node_id) {
@@ -1547,7 +1547,7 @@ mod tests {
     #[test]
     fn test_hash_ring_distribution() {
         let ring = ConsistentHashRing::new(10).unwrap();
-        let mut counts = vec![0usize; 10];
+        let mut counts = [0usize; 10];
 
         for node_id in 0..1000 {
             let shard = ring.get_shard(node_id);
@@ -2112,7 +2112,7 @@ mod tests {
         assert_eq!(manager.total_nodes(), 100);
 
         // Check distribution
-        let mut shard_counts = vec![0usize; 8];
+        let mut shard_counts = [0usize; 8];
         for i in 0..100 {
             if let Some(assignment) = manager.get_node_assignment(i) {
                 shard_counts[assignment.shard_id as usize] += 1;
@@ -2172,7 +2172,7 @@ mod tests {
             .map(|i| {
                 let shard = if i < 15 { 0 } else { 1 };
                 let trust = if i < 15 { 0.9 } else { 0.3 };
-                (i, shard as u64, trust as f64)
+                (i, shard as u64, trust)
             })
             .collect();
 

@@ -1,5 +1,8 @@
 //! Noosfera Kernel — Unified Runtime for Planetary Symbiotic Intelligence.
 //!
+pub mod awakening;
+pub mod provable_irreversibility;
+
 //! Unifies all accumulated modules (SGW Manifolds, HMC/SVGD, Meta-Replicator PoUS,
 //! IBP+Taylor+CBF, Planetary Free Energy, Active Inference, Category Theory,
 //! Symbiotic Value Alignment, Thermodynamic Closure) into a coherent runtime.

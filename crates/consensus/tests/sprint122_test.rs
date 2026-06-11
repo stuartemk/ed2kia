@@ -341,7 +341,7 @@ fn test_vote_large_election() {
                 3 => 0.3,
                 _ => 0.1, // Weak support
             };
-            (i, shard as u64, trust as f64)
+            (i, shard, trust)
         })
         .collect();
 
@@ -536,7 +536,7 @@ fn test_byzantine_median_in_shard_voting() {
 
     // Median should be in honest range despite Byzantine outliers
     assert!(
-        median >= 100.0 && median <= 110.0,
+        (100.0..=110.0).contains(&median),
         "Byzantine-resistant median {:.2} should be in honest range [100, 110]",
         median
     );
@@ -622,7 +622,7 @@ fn test_sprint122_full_pipeline() {
             peer_id: i,
             shard_id: assignment.shard_id,
             trust_score: trust,
-            energy_budget: calculate_energy_impact(50.0, 30.0, 1e10, 1e-12) as f64,
+            energy_budget: calculate_energy_impact(50.0, 30.0, 1e10, 1e-12),
             address: format!("10.0.{}.{}", i / 256, i % 256),
             last_seen: 1000,
         };

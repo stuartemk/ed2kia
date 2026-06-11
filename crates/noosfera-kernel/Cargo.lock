@@ -1481,6 +1481,7 @@ dependencies = [
  "rand",
  "reqwest",
  "safetensors 0.3.3",
+ "serde",
  "serde_json",
  "sha2",
  "tokenizers",

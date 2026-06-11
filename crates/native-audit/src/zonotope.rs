@@ -724,7 +724,8 @@ pub fn propagate_taylor_order2(state: &Tensor, dt: f64, h: f32) -> Result<Tensor
     // x + f(x)·dt + f''(x)/2 · dt²
     let dt_tensor = Tensor::new(&[dt as f32], device)?;
     let first_order = f_x.broadcast_mul(&dt_tensor)?;
-    let second_order = f_double_prime.broadcast_mul(&Tensor::new(&[(0.5 * dt * dt) as f32], device)?)?;
+    let second_order =
+        f_double_prime.broadcast_mul(&Tensor::new(&[(0.5 * dt * dt) as f32], device)?)?;
 
     state
         .broadcast_add(&first_order)?

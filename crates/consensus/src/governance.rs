@@ -596,9 +596,9 @@ pub fn execute_bootstrap_discovery(
     let active_peers: Vec<BootstrapPeer> = config
         .initial_peers
         .iter()
+        .take(config.max_peers)
         .filter(|p| p.is_active(config.min_trust))
         .cloned()
-        .take(config.max_peers)
         .collect();
 
     let elapsed = start.elapsed();

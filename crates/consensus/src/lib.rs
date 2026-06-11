@@ -4,7 +4,9 @@
 //! Evolutionary Game Dynamics, and Hierarchical Sharding
 //! for planetary-scale distributed consensus.
 
+pub mod emergence;
 pub mod governance;
 pub mod hierarchical_sharding;
 pub mod posym;
 pub mod pous;
+pub mod value_alignment;

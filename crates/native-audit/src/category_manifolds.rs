@@ -289,7 +289,8 @@ pub fn apply_functor(manifold: &Tensor, config: &CategoryConfig) -> Result<Funct
         // Smooth transformation: normalize + scale
         let norm_sq = (current.sqr()?.sum_all()?)
             .to_scalar::<f32>()
-            .map_err(|e| candle_core::Error::Msg(format!("norm error: {}", e)))? as f64;
+            .map_err(|e| candle_core::Error::Msg(format!("norm error: {}", e)))?
+            as f64;
         let norm = norm_sq.sqrt().max(1e-12);
         composition_trace.push(norm);
 
@@ -307,15 +308,15 @@ pub fn apply_functor(manifold: &Tensor, config: &CategoryConfig) -> Result<Funct
         for _ in 0..n_elements {
             noise_data.push((random_gaussian(&mut state) * perturbation_scale) as f32);
         }
-        let noise = Tensor::from_vec(noise_data, n_elements, device)?
-            .reshape(current.shape())?;
+        let noise = Tensor::from_vec(noise_data, n_elements, device)?.reshape(current.shape())?;
         current = current.broadcast_add(&noise)?;
     }
 
     // Compute identity preservation error
     let final_norm_sq = (current.sqr()?.sum_all()?)
         .to_scalar::<f32>()
-        .map_err(|e| candle_core::Error::Msg(format!("final norm error: {}", e)))? as f64;
+        .map_err(|e| candle_core::Error::Msg(format!("final norm error: {}", e)))?
+        as f64;
     let identity_error = (final_norm_sq.sqrt() - 1.0).abs();
 
     // Compute composition preservation error (trace variance)
@@ -408,7 +409,11 @@ pub fn compute_natural_transformation(
     final_naturality /= dim as f64;
 
     // Compute transformation norm
-    let norm: f64 = current_components.iter().map(|&c| c * c).sum::<f64>().sqrt();
+    let norm: f64 = current_components
+        .iter()
+        .map(|&c| c * c)
+        .sum::<f64>()
+        .sqrt();
 
     Ok(NaturalTransformResult {
         components: current_components,
@@ -456,8 +461,18 @@ pub fn compute_adjunction(
     }
 
     // Normalize adjoints
-    let l_norm: f64 = left_adjoint.iter().map(|v| v * v).sum::<f64>().sqrt().max(1e-12);
-    let r_norm: f64 = right_adjoint.iter().map(|v| v * v).sum::<f64>().sqrt().max(1e-12);
+    let l_norm: f64 = left_adjoint
+        .iter()
+        .map(|v| v * v)
+        .sum::<f64>()
+        .sqrt()
+        .max(1e-12);
+    let r_norm: f64 = right_adjoint
+        .iter()
+        .map(|v| v * v)
+        .sum::<f64>()
+        .sqrt()
+        .max(1e-12);
     for v in left_adjoint.iter_mut() {
         *v /= l_norm;
     }
@@ -666,8 +681,18 @@ pub fn compose_manifolds(
     let mut composed_embedding = vec![vec![0.0; composed_yoneda_dim]; composed_dim];
     for i in 0..composed_dim {
         for j in 0..composed_yoneda_dim {
-            let a_val = yoneda_a.embedding.get(i).and_then(|r| r.get(j)).copied().unwrap_or(0.0);
-            let b_val = yoneda_b.embedding.get(i).and_then(|r| r.get(j)).copied().unwrap_or(0.0);
+            let a_val = yoneda_a
+                .embedding
+                .get(i)
+                .and_then(|r| r.get(j))
+                .copied()
+                .unwrap_or(0.0);
+            let b_val = yoneda_b
+                .embedding
+                .get(i)
+                .and_then(|r| r.get(j))
+                .copied()
+                .unwrap_or(0.0);
             composed_embedding[i][j] = 0.5 * a_val + 0.5 * b_val;
         }
     }
@@ -711,10 +736,7 @@ pub fn compose_manifolds(
 /// # Arguments
 /// * `manifolds` - Collection of manifold tensors.
 /// * `config` - Category configuration.
-pub fn noospheric_self_organization(
-    manifolds: &[Tensor],
-    config: &CategoryConfig,
-) -> Result<f64> {
+pub fn noospheric_self_organization(manifolds: &[Tensor], config: &CategoryConfig) -> Result<f64> {
     if manifolds.is_empty() {
         return Ok(0.0);
     }
@@ -750,7 +772,9 @@ mod tests {
 
     fn make_tensor(rows: usize, seed: u64) -> Result<Tensor> {
         let mut state = seed;
-        let data: Vec<f32> = (0..rows).map(|_| random_gaussian(&mut state) as f32).collect();
+        let data: Vec<f32> = (0..rows)
+            .map(|_| random_gaussian(&mut state) as f32)
+            .collect();
         Tensor::from_vec(data, rows, &Device::Cpu)
     }
 
@@ -1070,7 +1094,11 @@ mod tests {
         let result = yoneda_embedding(&t, &cfg)?;
         for row in &result.embedding {
             for &v in row {
-                assert!(v >= -1.0 && v <= 1.0, "embedding value out of [-1,1]: {}", v);
+                assert!(
+                    v >= -1.0 && v <= 1.0,
+                    "embedding value out of [-1,1]: {}",
+                    v
+                );
             }
         }
         Ok(())

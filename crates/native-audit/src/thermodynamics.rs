@@ -280,18 +280,15 @@ pub fn cosine_similarity(a: &[f64], b: &[f64]) -> f64 {
 /// Compute the Variational Free Energy (VFE) for a single node.
 ///
 /// VFE_i = KL(q(φ_i) || p(φ_i | safe_prior)) - E_q[log p(obs | φ_i)]
-pub fn compute_node_vfe(
-    beliefs: &[f64],
-    safe_prior: &[f64],
-    observations: &[f64],
-) -> f64 {
+pub fn compute_node_vfe(beliefs: &[f64], safe_prior: &[f64], observations: &[f64]) -> f64 {
     let kl = kl_divergence(beliefs, safe_prior);
     let expected_log_likelihood: f64 = {
-        let log_obs: Vec<f64> = observations
+        let log_obs: Vec<f64> = observations.iter().map(|&o| o.max(1e-12).ln()).collect();
+        beliefs
             .iter()
-            .map(|&o| o.max(1e-12).ln())
-            .collect();
-        beliefs.iter().zip(log_obs.iter()).map(|(&b, &lo)| b * lo).sum()
+            .zip(log_obs.iter())
+            .map(|(&b, &lo)| b * lo)
+            .sum()
     };
     kl - expected_log_likelihood
 }
@@ -349,8 +346,7 @@ pub fn compute_planetary_free_energy(
     }
 
     // F_planet = weighted_vfe + λ · energy_entropy - γ · symbiosis_bonus
-    weighted_vfe
-        + config.energy_entropy_weight * energy_entropy
+    weighted_vfe + config.energy_entropy_weight * energy_entropy
         - config.symbiosis_weight * symbiosis_bonus
 }
 
@@ -542,13 +538,20 @@ pub fn active_inference_planetary_step(
             total_gradient_norm += norm;
 
             // Gradient descent update with influence weighting
-            let lr = config.lr * influence_shares.get(node_idx).copied().unwrap_or(1.0 / num_nodes as f64);
+            let lr = config.lr
+                * influence_shares
+                    .get(node_idx)
+                    .copied()
+                    .unwrap_or(1.0 / num_nodes as f64);
             for d in 0..dim {
                 beliefs[node_idx][d] -= lr * node_grad[d];
             }
 
             // Project back to simplex (softmax projection)
-            let max_val = beliefs[node_idx].iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+            let max_val = beliefs[node_idx]
+                .iter()
+                .cloned()
+                .fold(f64::NEG_INFINITY, f64::max);
             let exps: Vec<f64> = beliefs[node_idx]
                 .iter()
                 .map(|&v| (v - max_val).exp())
@@ -580,7 +583,8 @@ pub fn active_inference_planetary_step(
 
         // Check convergence
         if f_trajectory.len() >= 2 {
-            let delta = (f_trajectory[f_trajectory.len() - 1] - f_trajectory[f_trajectory.len() - 2]).abs();
+            let delta =
+                (f_trajectory[f_trajectory.len() - 1] - f_trajectory[f_trajectory.len() - 2]).abs();
             if delta < config.convergence_tolerance {
                 converged = true;
                 break;
@@ -906,11 +910,8 @@ pub fn s131_noosfera_closure(
     );
 
     // Compute resilience
-    let resilience = thermodynamic_resilience_score(
-        ai_result.final_f_planet,
-        config.baseline_vfe,
-        0.1,
-    );
+    let resilience =
+        thermodynamic_resilience_score(ai_result.final_f_planet, config.baseline_vfe, 0.1);
 
     (fe_result, ai_result, resilience)
 }
@@ -1378,9 +1379,8 @@ mod tests {
         let energy = vec![0.5, 0.5];
         let coop = vec![vec![0.0, 0.5], vec![0.5, 0.0]];
         let config = ThermoConfig::fast();
-        let (fe, ai, resilience) = s131_noosfera_closure(
-            &beliefs, &prior, &obs, &shares, &energy, &coop, &config,
-        );
+        let (fe, ai, resilience) =
+            s131_noosfera_closure(&beliefs, &prior, &obs, &shares, &energy, &coop, &config);
         assert!(fe.total_f_planet.is_finite());
         assert!(ai.final_f_planet.is_finite());
         assert!(resilience.resilience_score >= 0.0);
@@ -1399,9 +1399,8 @@ mod tests {
         let energy = vec![1.0 / num_nodes as f64; num_nodes];
         let coop = vec![vec![0.0; num_nodes]; num_nodes];
         let config = ThermoConfig::fast();
-        let (fe, ai, resilience) = s131_noosfera_closure(
-            &beliefs, &prior, &obs, &shares, &energy, &coop, &config,
-        );
+        let (fe, ai, resilience) =
+            s131_noosfera_closure(&beliefs, &prior, &obs, &shares, &energy, &coop, &config);
         assert_eq!(fe.node_vfe_contributions.len(), num_nodes);
         assert_eq!(ai.updated_beliefs.len(), num_nodes);
         assert!(resilience.resilience_score >= 0.0);
@@ -1416,9 +1415,8 @@ mod tests {
         let energy = vec![1.0];
         let coop = vec![vec![0.0]];
         let config = ThermoConfig::high_precision();
-        let (_fe, ai, _resilience) = s131_noosfera_closure(
-            &beliefs, &prior, &obs, &shares, &energy, &coop, &config,
-        );
+        let (_fe, ai, _resilience) =
+            s131_noosfera_closure(&beliefs, &prior, &obs, &shares, &energy, &coop, &config);
         assert!(ai.iterations <= 200);
     }
 
@@ -1556,9 +1554,8 @@ mod tests {
         ];
         let config = ThermoConfig::fast();
 
-        let (fe, ai, resilience) = s131_noosfera_closure(
-            &beliefs, &prior, &obs, &shares, &energy, &coop, &config,
-        );
+        let (fe, ai, resilience) =
+            s131_noosfera_closure(&beliefs, &prior, &obs, &shares, &energy, &coop, &config);
 
         assert!(fe.total_f_planet.is_finite());
         assert!(ai.f_reduction >= 0.0);
@@ -1578,9 +1575,8 @@ mod tests {
         let coop = vec![vec![0.0, 1.0], vec![1.0, 0.0]];
         let config = ThermoConfig::fast();
 
-        let (_fe, ai, resilience) = s131_noosfera_closure(
-            &beliefs, &prior, &obs, &shares, &energy, &coop, &config,
-        );
+        let (_fe, ai, resilience) =
+            s131_noosfera_closure(&beliefs, &prior, &obs, &shares, &energy, &coop, &config);
 
         // High cooperation should lead to better resilience
         assert!(resilience.resilience_score > 0.0);
@@ -1598,8 +1594,7 @@ mod tests {
         assert!(last_econ < first_econ);
 
         // Check that tipping point is eventually reached
-        let tipping_steps: Vec<_> =
-            trajectory.iter().filter(|t| t.3).collect();
+        let tipping_steps: Vec<_> = trajectory.iter().filter(|t| t.3).collect();
         assert!(!tipping_steps.is_empty());
 
         // First tipping point should be before last
@@ -1618,14 +1613,18 @@ mod tests {
         let energy_uniform = vec![0.5, 0.5];
         let config = ThermoConfig::default();
         let f_uniform = compute_planetary_free_energy(
-            &shares, &vfes, &energy_uniform, &beliefs, &coop, &config,
+            &shares,
+            &vfes,
+            &energy_uniform,
+            &beliefs,
+            &coop,
+            &config,
         );
 
         // Skewed energy distribution (low entropy)
         let energy_skewed = vec![0.9, 0.1];
-        let f_skewed = compute_planetary_free_energy(
-            &shares, &vfes, &energy_skewed, &beliefs, &coop, &config,
-        );
+        let f_skewed =
+            compute_planetary_free_energy(&shares, &vfes, &energy_skewed, &beliefs, &coop, &config);
 
         // Higher entropy should increase F (due to positive λ)
         assert!(f_uniform > f_skewed);
@@ -1641,15 +1640,13 @@ mod tests {
         // High cooperation
         let coop_high = vec![vec![0.0, 1.0], vec![1.0, 0.0]];
         let config = ThermoConfig::default();
-        let f_high = compute_planetary_free_energy(
-            &shares, &vfes, &energy, &beliefs, &coop_high, &config,
-        );
+        let f_high =
+            compute_planetary_free_energy(&shares, &vfes, &energy, &beliefs, &coop_high, &config);
 
         // No cooperation
         let coop_none = vec![vec![0.0, 0.0], vec![0.0, 0.0]];
-        let f_none = compute_planetary_free_energy(
-            &shares, &vfes, &energy, &beliefs, &coop_none, &config,
-        );
+        let f_none =
+            compute_planetary_free_energy(&shares, &vfes, &energy, &beliefs, &coop_none, &config);
 
         // Higher cooperation should reduce F
         assert!(f_high < f_none);

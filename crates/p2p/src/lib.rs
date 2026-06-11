@@ -8,3 +8,4 @@ pub mod gossip;
 pub mod peer;
 pub mod request_response;
 pub mod swarm;
+pub mod universal_symbiosis_protocol;

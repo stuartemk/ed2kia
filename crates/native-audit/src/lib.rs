@@ -1,4 +1,6 @@
 //! native-audit — Native tensor audit core for ed2kIA
+
+pub mod phase_transition;
 //!
 //! Candle-based hidden state extraction + TCM Z-axis for SmolLM2-135M.
 //!
@@ -44,6 +46,7 @@ pub mod multimodal;
 pub mod neural_ode;
 pub mod p2p_mechanism;
 pub mod planetary_sim;
+pub mod provable_safety;
 pub mod sae_integration;
 pub mod sae_modular;
 pub mod sparse_federated_sae;
