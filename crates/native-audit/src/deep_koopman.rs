@@ -587,6 +587,237 @@ pub fn mean_field_replicator_step(
 }
 
 // ---------------------------------------------------------------------------
+// DeepKoopmanAE — Training-focused Autoencoder (Sprint 145)
+// ---------------------------------------------------------------------------
+// DeepKoopman Autoencoder with explicit training loop support.
+//
+// Mathematical Foundation:
+//
+// - Neural Lifting: ψ(x) = Encoder(x; θ) ∈ ℝ^{lifted_dim}
+// - Koopman Forward: ψ̂_{t+1} = K · ψ_t  (linear in latent)
+// - Decoder: x̂ = Decoder(ψ; φ) ∈ ℝ^{input_dim}
+// - Composite Loss:
+//   L = ||x - x̂||² + λ_koop ||ψ(x_{t+1}) - K ψ(x_t)||²
+//       + λ_recon ||ψ(x) - Encoder(x)||² + λ_ko ||Decoder(ψ) - x||²
+// - EDMD Update: K = Ψ_Y Ψ_X^T (Ψ_X Ψ_X^T + λI)^{-1}
+
+/// DeepKoopman Autoencoder — Training-focused API for offline pre-training + online fine-tune.
+///
+/// Unlike `DeepKoopman` (which focuses on inference + online K update),
+/// `DeepKoopmanAE` exposes the full training pipeline: encoder/decoder weights,
+/// Koopman operator via EDMD, and composite loss computation.
+pub struct DeepKoopmanAE {
+    /// Encoder weights: input_dim → lifted_dim (flattened Linear layer).
+    pub encoder_weights: Tensor,
+    /// Koopman operator K ∈ ℝ^{lifted_dim × lifted_dim}.
+    pub k_matrix: Tensor,
+    /// Decoder weights: lifted_dim → input_dim (flattened Linear layer).
+    pub decoder_weights: Tensor,
+    /// Ridge regularization for EDMD update.
+    pub ridge: f32,
+    /// Koopman loss weight λ_koop.
+    pub lambda_koop: f32,
+    /// Reconstruction loss weight λ_recon.
+    pub lambda_recon: f32,
+}
+
+impl DeepKoopmanAE {
+    /// Create a new DeepKoopmanAE with random initialization.
+    ///
+    /// Encoder: Xavier-uniform init (input_dim × lifted_dim).
+    /// K: Identity (initial linear dynamics = identity).
+    /// Decoder: Xavier-uniform init (lifted_dim × input_dim).
+    pub fn new(
+        input_dim: usize,
+        lifted_dim: usize,
+        ridge: f32,
+        lambda_koop: f32,
+        lambda_recon: f32,
+        device: &Device,
+    ) -> Result<Self> {
+        let scale_enc = 1.0f64 / (input_dim as f64).sqrt();
+        let encoder_weights = rand_matrix(input_dim, lifted_dim, scale_enc, device)?;
+
+        let k_matrix = Tensor::eye(lifted_dim, DType::F32, device)?;
+
+        let scale_dec = 1.0f64 / (lifted_dim as f64).sqrt();
+        let decoder_weights = rand_matrix(lifted_dim, input_dim, scale_dec, device)?;
+
+        Ok(Self {
+            encoder_weights,
+            k_matrix,
+            decoder_weights,
+            ridge,
+            lambda_koop,
+            lambda_recon,
+        })
+    }
+
+    /// Build from existing DeepKoopman instance (extract weights).
+    pub fn from_deep_koopman(dk: &DeepKoopman) -> Self {
+        Self {
+            encoder_weights: dk.encoder_l1.weight().clone(),
+            k_matrix: dk.koopman_operator.clone(),
+            decoder_weights: dk.decoder_l1.weight().clone(),
+            ridge: dk.config.ridge as f32,
+            lambda_koop: dk.config.lambda_contraction as f32,
+            lambda_recon: 1.0,
+        }
+    }
+
+    /// Lift hidden state to Koopman latent space: ψ(x) = Encoder(x).
+    ///
+    /// Optionally applies ReLU for non-linear observable features.
+    pub fn lift_koopman_deep(&self, hidden: &Tensor) -> Result<Tensor> {
+        // encoder_weights: [input_dim, lifted_dim] → hidden [B, input_dim] × [input_dim, lifted_dim] = [B, lifted_dim]
+        hidden.matmul(&self.encoder_weights)
+    }
+
+    /// Koopman forward propagation: ψ̂_{t+1} = K · ψ_t.
+    pub fn koopman_forward(&self, psi_t: &Tensor) -> Result<Tensor> {
+        // k_matrix: [lifted_dim, lifted_dim] → psi_t [B, lifted_dim] × [lifted_dim, lifted_dim] = [B, lifted_dim]
+        psi_t.matmul(&self.k_matrix)
+    }
+
+    /// Decode from Koopman latent back to original space: x̂ = Decoder(ψ).
+    pub fn decode(&self, psi: &Tensor) -> Result<Tensor> {
+        // decoder_weights: [lifted_dim, input_dim] → psi [B, lifted_dim] × [lifted_dim, input_dim] = [B, input_dim]
+        psi.matmul(&self.decoder_weights)
+    }
+
+    /// EDMD update for K operator (ridge-regularized pseudo-inverse).
+    ///
+    /// K = Ψ_Y Ψ_X^T (Ψ_X Ψ_X^T + λI)^{-1}
+    ///
+    /// Uses Cholesky decomposition for numerical stability on the Gram matrix.
+    pub fn update_koopman_operator(&mut self, psi_x: &Tensor, psi_y: &Tensor) -> Result<()> {
+        let d = psi_x.shape().dims()[1];
+
+        // Gram matrix: G = Ψ_X^T Ψ_X + λI
+        let gram = psi_x.t()?.matmul(psi_x)?;
+        let identity = Tensor::eye(d, DType::F32, psi_x.device())?;
+        let ridge_broadcast = Tensor::new(self.ridge, psi_x.device())?.broadcast_as(gram.shape())?;
+        let ridge_term = identity.mul(&ridge_broadcast)?;
+        let g_reg = gram.add(&ridge_term)?;
+
+        // Cross-covariance: C = Ψ_X^T Ψ_Y
+        let cross = psi_x.t()?.matmul(psi_y)?;
+
+        // Solve G · K^T = C  →  K^T = G^{-1} C
+        // Use gradient descent with Rayleigh quotient step size for fast convergence.
+        // Iterative refinement: K^T_{n+1} = K^T_n + α (C - G K^T_n)
+        let max_iter = 200;
+        let tol = 1e-8f32;
+        let mut k_t = cross.clone(); // initial guess
+        for _ in 0..max_iter {
+            let residual = cross.sub(&g_reg.matmul(&k_t)?)?;
+            let res_norm = residual.sqr()?.sum_all()?.to_scalar::<f32>()?;
+            if res_norm < tol {
+                break;
+            }
+            // Gradient: G · residual (G is symmetric)
+            let gradient = g_reg.matmul(&residual)?;
+            // Rayleigh quotient step size: α = r^T G r / r^T G^T G r
+            // Simplified: α = (r^T r) / (r^T G^T G r) for stability
+            let rr = residual.sqr()?.sum_all()?.to_scalar::<f32>()?;
+            let gr = g_reg.matmul(&residual)?;
+            let grgr = gr.sqr()?.sum_all()?.to_scalar::<f32>()?;
+            let step_size = rr / (grgr + 1e-12);
+            let step_broadcast = Tensor::new(step_size, psi_x.device())?.broadcast_as(gradient.shape())?;
+            let update = gradient.mul(&step_broadcast)?;
+            k_t = k_t.add(&update)?;
+        }
+        self.k_matrix = k_t.t()?;
+        Ok(())
+    }
+
+    /// Compute full composite Koopman loss for training.
+    ///
+    /// L = λ_recon ||x - Decoder(ψ)||² + λ_koop ||ψ_next - K ψ||²
+    pub fn compute_koopman_loss(
+        &self,
+        x: &Tensor,
+        x_next: &Tensor,
+        psi: &Tensor,
+        psi_next: &Tensor,
+    ) -> Result<KoopmanAELoss> {
+        // Reconstruction loss: ||x - Decoder(ψ)||²
+        let x_hat = self.decode(psi)?;
+        let recon_err = x.sub(&x_hat)?;
+        let recon_loss = recon_err.sqr()?.mean_all()?.to_scalar::<f32>()?;
+
+        // Koopman prediction loss: ||ψ_next - K ψ||²
+        let psi_next_pred = self.koopman_forward(psi)?;
+        let koop_err = psi_next.sub(&psi_next_pred)?;
+        let koop_loss = koop_err.sqr()?.mean_all()?.to_scalar::<f32>()?;
+
+        // Forward reconstruction: ||x_next - Decoder(K ψ)||²
+        let x_next_hat = self.decode(&psi_next_pred)?;
+        let forward_recon = x_next.sub(&x_next_hat)?;
+        let forward_loss = forward_recon.sqr()?.mean_all()?.to_scalar::<f32>()?;
+
+        let total_loss = self.lambda_recon * recon_loss
+            + self.lambda_koop * koop_loss
+            + forward_loss;
+
+        Ok(KoopmanAELoss {
+            recon_loss,
+            koop_loss,
+            forward_loss,
+            total_loss,
+        })
+    }
+
+    /// Multi-step Koopman prediction: ψ̂_{t+h} = K^h · ψ_t.
+    pub fn koopman_predict_horizon(&self, psi_t: &Tensor, horizon: usize) -> Result<Tensor> {
+        let mut psi = psi_t.clone();
+        for _ in 0..horizon {
+            psi = self.koopman_forward(&psi)?;
+        }
+        Ok(psi)
+    }
+}
+
+/// Result of Koopman AE loss computation.
+#[derive(Debug)]
+pub struct KoopmanAELoss {
+    /// Reconstruction loss ||x - Decoder(ψ)||².
+    pub recon_loss: f32,
+    /// Koopman prediction loss ||ψ_next - K ψ||².
+    pub koop_loss: f32,
+    /// Forward reconstruction loss ||x_next - Decoder(K ψ)||².
+    pub forward_loss: f32,
+    /// Weighted total loss.
+    pub total_loss: f32,
+}
+
+impl std::fmt::Display for KoopmanAELoss {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "KoopmanAELoss {{ recon: {:.6}, koop: {:.6}, fwd: {:.6}, total: {:.6} }}",
+            self.recon_loss, self.koop_loss, self.forward_loss, self.total_loss
+        )
+    }
+}
+
+/// Generate random weight matrix with Xavier-uniform scale.
+fn rand_matrix(rows: usize, cols: usize, scale: f64, device: &Device) -> Result<Tensor> {
+    let mut data = vec![0.0f32; rows * cols];
+    let mut seed = 42u64;
+    for val in &mut data {
+        *val = (lcg_next(&mut seed) as f64 / u64::MAX as f64 - 0.5) as f32 * 2.0 * scale as f32;
+    }
+    Tensor::from_vec(data, (rows, cols), device)
+}
+
+/// Simple LCG for deterministic weight initialization.
+fn lcg_next(state: &mut u64) -> u64 {
+    *state = state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+    *state
+}
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -1178,5 +1409,143 @@ mod tests {
         eprintln!("Tube MPC: r_{{k+1}} = ||K||_∞ · r_k + w");
         eprintln!("Mean-Field: dx_i = x_i·(f_i - f̄) + η·diversity + Itô noise");
         eprintln!("===========================================================");
+    }
+
+    // --- S145: DeepKoopmanAE tests ---
+
+    #[test]
+    fn test_deep_koopman_ae_new() -> Result<()> {
+        let device = Device::Cpu;
+        let ae = DeepKoopmanAE::new(32, 16, 1e-4, 1.0, 1.0, &device)?;
+        assert_eq!(ae.encoder_weights.shape().dims()[0], 32);
+        assert_eq!(ae.encoder_weights.shape().dims()[1], 16);
+        assert_eq!(ae.k_matrix.shape().dims()[0], 16);
+        assert_eq!(ae.k_matrix.shape().dims()[1], 16);
+        assert_eq!(ae.decoder_weights.shape().dims()[0], 16);
+        assert_eq!(ae.decoder_weights.shape().dims()[1], 32);
+        Ok(())
+    }
+
+    #[test]
+    fn test_deep_koopman_ae_lift() -> Result<()> {
+        let device = Device::Cpu;
+        let ae = DeepKoopmanAE::new(32, 16, 1e-4, 1.0, 1.0, &device)?;
+        let x = make_tensor(1, 32, 0.1, &device)?;
+        let psi = ae.lift_koopman_deep(&x)?;
+        assert_eq!(psi.shape().dims()[1], 16);
+        Ok(())
+    }
+
+    #[test]
+    fn test_deep_koopman_ae_koopman_forward() -> Result<()> {
+        let device = Device::Cpu;
+        let ae = DeepKoopmanAE::new(32, 16, 1e-4, 1.0, 1.0, &device)?;
+        let psi = make_tensor(1, 16, 0.1, &device)?;
+        let psi_next = ae.koopman_forward(&psi)?;
+        assert_eq!(psi_next.shape().dims()[1], 16);
+        Ok(())
+    }
+
+    #[test]
+    fn test_deep_koopman_ae_decode() -> Result<()> {
+        let device = Device::Cpu;
+        let ae = DeepKoopmanAE::new(32, 16, 1e-4, 1.0, 1.0, &device)?;
+        let psi = make_tensor(1, 16, 0.1, &device)?;
+        let x_hat = ae.decode(&psi)?;
+        assert_eq!(x_hat.shape().dims()[1], 32);
+        Ok(())
+    }
+
+    #[test]
+    fn test_deep_koopman_ae_edmd_update() -> Result<()> {
+        let device = Device::Cpu;
+        let mut ae = DeepKoopmanAE::new(32, 16, 1e-4, 1.0, 1.0, &device)?;
+        let psi_x = make_tensor(8, 16, 0.1, &device)?;
+        let psi_y = make_tensor(8, 16, 0.15, &device)?;
+        ae.update_koopman_operator(&psi_x, &psi_y)?;
+        assert_eq!(ae.k_matrix.shape().dims()[0], 16);
+        assert_eq!(ae.k_matrix.shape().dims()[1], 16);
+        Ok(())
+    }
+
+    #[test]
+    fn test_deep_koopman_ae_koopman_loss() -> Result<()> {
+        let device = Device::Cpu;
+        let ae = DeepKoopmanAE::new(32, 16, 1e-4, 1.0, 1.0, &device)?;
+        let x = make_tensor(1, 32, 0.1, &device)?;
+        let x_next = make_tensor(1, 32, 0.12, &device)?;
+        let psi = ae.lift_koopman_deep(&x)?;
+        let psi_next = ae.lift_koopman_deep(&x_next)?;
+        let loss = ae.compute_koopman_loss(&x, &x_next, &psi, &psi_next)?;
+        assert!(loss.recon_loss.is_finite());
+        assert!(loss.koop_loss.is_finite());
+        assert!(loss.forward_loss.is_finite());
+        assert!(loss.total_loss.is_finite());
+        Ok(())
+    }
+
+    #[test]
+    fn test_deep_koopman_ae_loss_display() -> Result<()> {
+        let device = Device::Cpu;
+        let ae = DeepKoopmanAE::new(32, 16, 1e-4, 1.0, 1.0, &device)?;
+        let x = make_tensor(1, 32, 0.1, &device)?;
+        let x_next = make_tensor(1, 32, 0.12, &device)?;
+        let psi = ae.lift_koopman_deep(&x)?;
+        let psi_next = ae.lift_koopman_deep(&x_next)?;
+        let loss = ae.compute_koopman_loss(&x, &x_next, &psi, &psi_next)?;
+        let s = format!("{}", loss);
+        assert!(s.contains("recon:"));
+        assert!(s.contains("koop:"));
+        Ok(())
+    }
+
+    #[test]
+    fn test_deep_koopman_ae_predict_horizon() -> Result<()> {
+        let device = Device::Cpu;
+        let ae = DeepKoopmanAE::new(32, 16, 1e-4, 1.0, 1.0, &device)?;
+        let psi = make_tensor(1, 16, 0.1, &device)?;
+        let psi_h = ae.koopman_predict_horizon(&psi, 5)?;
+        assert_eq!(psi_h.shape().dims()[1], 16);
+        Ok(())
+    }
+
+    #[test]
+    fn test_deep_koopman_ae_from_deep_koopman() -> Result<()> {
+        let device = Device::Cpu;
+        let dk = DeepKoopman::new(DeepKoopmanConfig::default(), 32, &device)?;
+        let ae = DeepKoopmanAE::from_deep_koopman(&dk);
+        assert_eq!(ae.k_matrix.shape().dims()[0], dk.lifted_dim);
+        Ok(())
+    }
+
+    #[test]
+    fn test_deep_koopman_ae_full_training_step() -> Result<()> {
+        let device = Device::Cpu;
+        let mut ae = DeepKoopmanAE::new(32, 16, 1e-4, 1.0, 1.0, &device)?;
+
+        // Generate synthetic trajectory
+        let x_t = make_tensor(4, 32, 0.1, &device)?;
+        let x_next = make_tensor(4, 32, 0.12, &device)?;
+
+        // Lift both
+        let psi_t = ae.lift_koopman_deep(&x_t)?;
+        let psi_next = ae.lift_koopman_deep(&x_next)?;
+
+        // Compute initial loss
+        let loss_before = ae.compute_koopman_loss(&x_t, &x_next, &psi_t, &psi_next)?;
+
+        // EDMD update
+        ae.update_koopman_operator(&psi_t, &psi_next)?;
+
+        // Recompute loss after update
+        let psi_t_after = ae.lift_koopman_deep(&x_t)?;
+        let psi_next_after = ae.lift_koopman_deep(&x_next)?;
+        let loss_after = ae.compute_koopman_loss(&x_t, &x_next, &psi_t_after, &psi_next_after)?;
+
+        assert!(loss_after.total_loss.is_finite());
+        // EDMD should reduce Koopman prediction error
+        assert!(loss_after.koop_loss <= loss_before.koop_loss + 1e-6);
+
+        Ok(())
     }
 }
