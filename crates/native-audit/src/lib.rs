@@ -27,6 +27,7 @@
 pub mod adversarial;
 pub mod category_manifolds;
 pub mod cbf_mpc;
+pub mod control;
 pub mod cirl_value_learning;
 pub mod collective_steering;
 pub mod collective_zonotope;

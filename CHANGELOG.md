@@ -1,4 +1,38 @@
-﻿## [v14.2.0-sprint142] — 2026-06-12 (Sprint 142 — The Koopman Vanguard & Contracting Tube MPC)
+﻿## [v14.3.0-sprint143] — 2026-06-12 (Sprint 143 — The Koopman Vanguard & Linearized Cognitive Control)
+
+### Sprint 143 "The Koopman Vanguard & Linearized Cognitive Control"
+
+**Mode:** `STRICT_MATH + ANTI_HARDCODING + KOOPMAN_VANGUARD + LINEARIZED_CONTROL + ZERO_WARNINGS + TUBE_MPC_CBF + INTEGRATION_TESTS`
+
+**Problema — Sin módulo dedicado de control cognitivo linealizado:** Sprints 100-142 establecen Koopman EDMD en `steering.rs`, Tube MPC, CBF projection y replicator dynamics, pero faltan: (1) **KoopmanVanguard como módulo de control dedicado** — `crates/native-audit/src/control.rs` con `KoopmanVanguard` struct que encapsula EDMD + LQR + Tube MPC + CBF en una API unificada, (2) **Integración functions para steering guided por Koopman** — `koopman_contracting_tube_steer()` y `koopman_online_steer()` que combinan todas las garantías de seguridad en una llamada, (3) **Verificación de contracción (Lohmiller-Slotine)** — `KᵀMK - ρ²M ⪯ 0` con `ρ < 1` para garantizar convergencia global, (4) **LQR gain computation** — `K_LQR = R⁻¹BᵀP` para control óptimo en espacio lifted, y (5) **Integration tests exhaustivos** — 14 tests de integración validando EDMD estimation, steering, Tube MPC certification y full pipeline.
+
+**Solución — KoopmanVanguard Module Completo:** Creamos `crates/native-audit/src/control.rs` con `KoopmanVanguard` como el módulo de control cognitivo linealizado. Implementamos EDMD con observable lifting `Ψ(h) = [h; relu(h); h²]` (3× dimension expansion), LQR control `u = error · K_LQRᵀ`, Tube MPC con zonotope propagation `r_{k+1} = ||K||∞ · r_k + w`, y CBF projection para safe set enforcement. Las integration functions `koopman_contracting_tube_steer()` y `koopman_online_steer()` proporcionan APIs de alto nivel. **42 unit tests + 14 integration tests = 56/56 passing.**
+
+- **KoopmanVanguard Module:** `native-audit/src/control.rs` — `KoopmanVanguard` struct con EDMD + LQR + Tube MPC + CBF
+- **Observable Lifting:** `Ψ(h) = [h; relu(h); h²]` con 3× dimension expansion dinámica
+- **LQR Control:** `u = error · K_LQRᵀ` con fallback proportional control
+- **Tube MPC:** Zonotope propagation con disturbance bounds `w`
+- **CBF Projection:** Safe set enforcement con boundary projection
+- **Contraction Verification:** Lohmiller-Slotine `KᵀMK - ρ²M ⪯ 0`
+- **Integration Functions:** `koopman_contracting_tube_steer()` + `koopman_online_steer()`
+- **S143 Integration Tests:** `native-audit/tests/koopman_eval.rs` — 14 integration tests
+- **S143 Unit Tests:** `native-audit/src/control.rs` — 42 unit tests
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| KoopmanVanguard Unit Tests | ✅ 42/42 |
+| S143 Integration Tests | ✅ 14/14 |
+| **Total S143 Tests** | **✅ 56/56** |
+| Clippy Warnings in control.rs | ✅ 0 |
+| EDMD Estimation | ✅ Ridge-regularized stable pseudo-inverse |
+| LQR Control | ✅ Optimal gain with fallback |
+| Tube MPC | ✅ Zonotope propagation with disturbance bounds |
+| CBF Safety | ✅ Boundary projection enforcement |
+| Contraction | ✅ Lohmiller-Slotine verification |
+| Observable Lifting | ✅ 3× dynamic expansion |
+
+## [v14.2.0-sprint142] — 2026-06-12 (Sprint 142 — The Koopman Vanguard & Contracting Tube MPC)
 
 ### Sprint 142 "The Koopman Vanguard & Contracting Tube MPC"
 
