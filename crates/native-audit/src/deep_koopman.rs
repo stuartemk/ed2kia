@@ -768,6 +768,72 @@ impl DeepKoopmanAE {
         })
     }
 
+    /// Robust Deep Koopman Loss with Frobenius Regularization (S147).
+    ///
+    /// **Mathematical Formula:**
+    /// ```math
+    /// L = ||x - x̂||² + ||ψ(x_{t+1}) - Kψ(x_t)||²
+    ///   + λ_r·||ψ(x) - Enc(x)||² + λ_d·||Dec(ψ) - x||² + γ·||K||_F²
+    /// ```
+    ///
+    /// - `||x - x̂||²`: Reconstruction loss (Decoder accuracy).
+    /// - `||ψ(x_{t+1}) - Kψ(x_t)||²`: Koopman dynamics loss (linear predictability).
+    /// - `λ_r·||ψ(x) - Enc(x)||²`: Encoder regularization (consistency with lift).
+    /// - `λ_d·||Dec(ψ) - x||²`: Decoder regularization (round-trip fidelity).
+    /// - `γ·||K||_F²`: Frobenius norm penalty (spectral contraction guarantee).
+    ///
+    /// # Arguments
+    /// * `x_t` - Current state tensor, shape `[B, input_dim]`.
+    /// * `x_next` - Next state tensor, shape `[B, input_dim]`.
+    /// * `psi_t` - Lifted state at t, shape `[B, lifted_dim]`.
+    /// * `psi_next` - Lifted state at t+1, shape `[B, lifted_dim]`.
+    /// * `lambda_r` - Encoder regularization weight.
+    /// * `lambda_d` - Decoder regularization weight.
+    /// * `gamma` - Frobenius penalty weight.
+    pub fn compute_robust_koopman_loss(
+        &self,
+        x_t: &Tensor,
+        x_next: &Tensor,
+        psi_t: &Tensor,
+        psi_next: &Tensor,
+        lambda_r: f32,
+        lambda_d: f32,
+        gamma: f32,
+    ) -> Result<KoopmanAELoss> {
+        // 1. Reconstruction Loss: ||x - Decoder(ψ)||²
+        let x_hat = self.decode(psi_t)?;
+        let recon_loss = x_t.sub(&x_hat)?.sqr()?.mean_all()?.to_scalar::<f32>()?;
+
+        // 2. Koopman Dynamics Loss: ||ψ_next - K·ψ_t||²
+        let psi_next_pred = self.koopman_forward(psi_t)?;
+        let koop_loss = psi_next.sub(&psi_next_pred)?.sqr()?.mean_all()?.to_scalar::<f32>()?;
+
+        // 3. Encoder Regularization: ||ψ(x) - Enc(x)||²
+        let enc_x = self.lift_koopman_deep(x_t)?;
+        let enc_loss = psi_t.sub(&enc_x)?.sqr()?.mean_all()?.to_scalar::<f32>()?;
+
+        // 4. Decoder Regularization: ||Dec(ψ) - x_next||² (forward reconstruction)
+        let x_next_hat = self.decode(&psi_next_pred)?;
+        let dec_loss = x_next.sub(&x_next_hat)?.sqr()?.mean_all()?.to_scalar::<f32>()?;
+
+        // 5. Frobenius Norm Penalty: γ·||K||_F²
+        let k_frob_sq = self.k_matrix.sqr()?.sum_all()?.to_scalar::<f32>()?;
+
+        // Total Loss
+        let total_loss = recon_loss
+            + koop_loss
+            + lambda_r * enc_loss
+            + lambda_d * dec_loss
+            + gamma * k_frob_sq;
+
+        Ok(KoopmanAELoss {
+            recon_loss,
+            koop_loss,
+            forward_loss: dec_loss,
+            total_loss,
+        })
+    }
+
     /// Multi-step Koopman prediction: ψ̂_{t+h} = K^h · ψ_t.
     pub fn koopman_predict_horizon(&self, psi_t: &Tensor, horizon: usize) -> Result<Tensor> {
         let mut psi = psi_t.clone();

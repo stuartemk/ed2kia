@@ -880,6 +880,80 @@ impl Zonotope {
         let new_gens = a.matmul(&self.generators)?;
         Ok(Zonotope::new(new_center, new_gens))
     }
+
+    /// Girard Zonotope Order Reduction via L1-norm sorting + box over-approximation (S147).
+    ///
+    /// **Mathematical Foundation:**
+    /// When a zonotope has too many generators (`p >> dim`), this method:
+    /// 1. Computes L1 norm of each generator column: `||g_i||_1`
+    /// 2. Sorts generators descending by L1 norm
+    /// 3. Keeps top `max_generators - dim` generators intact
+    /// 4. Over-approximates discarded generators as a diagonal box:
+    ///    `G_box = diag(sum |g_discarded|)` per dimension
+    /// 5. Concatenates kept generators with box generators
+    ///
+    /// This prevents exponential generator growth in Tube MPC while maintaining
+    /// conservative reachability bounds.
+    ///
+    /// # Arguments
+    /// * `max_generators` - Maximum allowed generators after reduction.
+    pub fn reduce(&self, max_generators: usize) -> Result<Zonotope> {
+        let dim = self.center.dim(0)?;
+        let num_gens = self.generators.dim(1)?;
+
+        // No reduction needed if already within limit
+        if num_gens <= max_generators {
+            return Ok(self.clone());
+        }
+
+        // 1. Compute L1 norm of each generator column: ||g_i||_1
+        let l1_norms = self.generators.abs()?.sum(0)?; // Shape: [1, num_gens]
+        let l1_vec = l1_norms.to_vec1::<f32>()?;
+
+        // 2. Sort indices by L1 norm descending
+        let mut indices: Vec<usize> = (0..num_gens).collect();
+        indices.sort_unstable_by(|a, b| {
+            l1_vec[*b].partial_cmp(&l1_vec[*a]).unwrap_or(std::cmp::Ordering::Equal)
+        });
+
+        // 3. Split into kept (top) and discarded (rest)
+        // Keep at most `max_generators - dim` generators (reserve dim slots for box)
+        let keep_count = max_generators.saturating_sub(dim);
+        let keep_indices: Vec<usize> = indices[..keep_count].to_vec();
+        let discard_indices = &indices[keep_count..];
+
+        // 4. Extract kept generators in sorted order
+        // Use narrow(1, idx, 1) to get column idx along dim-1 → shape [dim, 1]
+        let mut kept_cols = Vec::new();
+        for &idx in &keep_indices {
+            let col = self.generators.narrow(1, idx, 1)?; // Shape: [dim, 1]
+            kept_cols.push(col);
+        }
+
+        // 5. Box over-approximation for discarded generators
+        // Sum absolute values of discarded columns per dimension
+        let mut box_upper_bound = vec![0.0f32; dim];
+        for &idx in discard_indices {
+            let col = self.generators.narrow(1, idx, 1)?.abs()?; // Shape: [dim, 1]
+            let col_vec = col.to_vec1::<f32>()?;
+            for (b, &v) in box_upper_bound.iter_mut().zip(col_vec.iter()) {
+                *b += v;
+            }
+        }
+
+        // Build diagonal box generators: diag(box_upper_bound) → [dim, 1]
+        let box_gens = Tensor::from_vec(box_upper_bound, (dim, 1), self.generators.device())?;
+
+        // 6. Concatenate kept generators with box generators
+        let final_gens = if kept_cols.is_empty() {
+            box_gens
+        } else {
+            let kept_cat = Tensor::cat(&kept_cols.as_slice(), 1)?;
+            Tensor::cat(&[&kept_cat, &box_gens], 1)?
+        };
+
+        Ok(Zonotope::new(self.center.clone(), final_gens))
+    }
 }
 
 /// Result of Robust Contractive Tube MPC computation.

@@ -390,6 +390,169 @@ pub fn verify_safety_invariant(
     (violations == 0, violations)
 }
 
+// ---------------------------------------------------------------------------
+// S147 — Graphon Mean-Field Drift
+// ---------------------------------------------------------------------------
+
+/// Graphon Mean-Field Drift (S147).
+///
+/// **Mathematical Formula:**
+/// ```math
+/// b(X, μ) = -∇VFE(X) + η·∫W(X,Y)(Y-X)μ(dY) - δ·∇B(X)
+/// ```
+///
+/// Where:
+/// - `-∇VFE(X)`: Negative VFE gradient (local optimization, descent toward origin).
+/// - `η·∫W(X,Y)(Y-X)μ(dY)`: Graphon-weighted mean-field coupling.
+///   Integral approximated empirically via peer sampling:
+///   `∫W(X,Y)(Y-X)μ(dY) ≈ (1/N)·Σ_i W(X, Y_i)·(Y_i - X)`
+/// - `δ·∇B(X)`: Barrier function gradient (safety enforcement).
+/// - `W(X,Y) = max(0, cosine_similarity(X, Y))`: Cosine similarity graphon kernel.
+///
+/// # Arguments
+/// * `x_state` - Current particle state.
+/// * `grad_vfe` - VFE gradient at X (negative for descent).
+/// * `grad_barrier` - Barrier function gradient at X.
+/// * `peer_states` - States of neighboring particles (empirical measure μ).
+/// * `eta` - Graphon coupling strength.
+/// * `delta` - Barrier weight.
+pub fn compute_graphon_drift(
+    x_state: &[f64],
+    grad_vfe: &[f64],
+    grad_barrier: &[f64],
+    peer_states: &[Vec<f64>],
+    eta: f64,
+    delta: f64,
+) -> Vec<f64> {
+    let dim = x_state.len();
+
+    // 1. Graphon-weighted interaction: Σ W(X, Y_i) · (Y_i - X)
+    let mut interaction_sum = vec![0.0f64; dim];
+    for peer in peer_states {
+        let w_xy = compute_graphon_kernel(x_state, peer);
+        for (acc, (&y, &x)) in interaction_sum.iter_mut().zip(peer.iter().zip(x_state.iter())) {
+            *acc += w_xy * (y - x);
+        }
+    }
+
+    // 2. Empirical integral approximation: (1/N) · Σ
+    let n_peers = peer_states.len().max(1) as f64;
+    let integral_term = interaction_sum.iter().map(|&v| v / n_peers).collect::<Vec<f64>>();
+
+    // 3. Assemble drift: b(X, μ) = -∇VFE(X) + η·integral - δ·∇B(X)
+    let mut drift = vec![0.0f64; dim];
+    for (i, (&vfe, &integral)) in grad_vfe.iter().zip(integral_term.iter()).enumerate() {
+        drift[i] = -vfe + eta * integral - delta * grad_barrier[i];
+    }
+
+    drift
+}
+
+/// Graphon Kernel: Cosine similarity with ReLU clipping (S147).
+///
+/// ```math
+/// W(X, Y) = max(0, cos(X, Y)) = max(0, (X·Y) / (||X||·||Y||))
+/// ```
+///
+/// Returns 0 if either vector is zero-norm (undefined cosine).
+/// Negative cosine similarity → 0 (no repulsive coupling).
+pub fn compute_graphon_kernel(x: &[f64], y: &[f64]) -> f64 {
+    let dot: f64 = x.iter().zip(y.iter()).map(|(&a, &b)| a * b).sum();
+    let norm_x: f64 = x.iter().map(|&v| v * v).sum::<f64>().sqrt();
+    let norm_y: f64 = y.iter().map(|&v| v * v).sum::<f64>().sqrt();
+
+    if norm_x < 1e-12 || norm_y < 1e-12 {
+        return 0.0;
+    }
+
+    let cos_sim = dot / (norm_x * norm_y);
+    cos_sim.max(0.0)
+}
+
+/// Graphon mean-field step using `compute_graphon_drift` instead of uniform coupling.
+///
+/// Replaces the standard mean-field coupling `η·(μ - X)` with the graphon-weighted
+/// interaction `η·∫W(X,Y)(Y-X)μ(dY)` for heterogeneous peer coupling.
+pub fn graphon_mean_field_step(
+    particles: &[Vec<f64>],
+    config: &MeanFieldConfig,
+) -> MeanFieldStepResult {
+    let n = particles.len();
+    if n == 0 {
+        return MeanFieldStepResult {
+            particles: vec![],
+            mean_field: vec![],
+            dispersion: 0.0,
+            vfe_drift_magnitude: 0.0,
+            barrier_magnitude: 0.0,
+            barrier_activations: 0,
+        };
+    }
+
+    let dim = particles[0].len();
+    let mut rng: StdRng = SeedableRng::seed_from_u64(config.seed);
+    let sqrt_dt = config.dt.sqrt();
+    let mut new_particles = Vec::with_capacity(n);
+    let mut total_vfe = 0.0;
+    let mut total_barrier = 0.0;
+    let mut barrier_activations = 0;
+
+    for particle in particles {
+        // VFE gradient: -X (descent toward origin)
+        let grad_vfe = vfe_drift(particle);
+
+        // Barrier gradient
+        let (grad_barrier, activated) = barrier_gradient(particle, config.safety_radius);
+        if activated {
+            barrier_activations += 1;
+        }
+
+        // Graphon drift using all other particles as peers
+        let peers: Vec<Vec<f64>> = particles
+            .iter()
+            .filter(|&p| !p.iter().zip(particle.iter()).all(|(a, b)| (a - b).abs() < 1e-12))
+            .cloned()
+            .collect();
+
+        let drift = compute_graphon_drift(
+            particle,
+            &grad_vfe,
+            &grad_barrier,
+            &peers,
+            config.eta as f64,
+            config.delta as f64,
+        );
+
+        // Accumulate magnitudes
+        for &d in &drift {
+            total_vfe += d * d;
+        }
+        for &b in &grad_barrier {
+            total_barrier += b * b;
+        }
+
+        // Euler-Maruyama update: X_{t+1} = X_t + drift·dt + σ·√dt·ξ
+        let mut new_p = Vec::with_capacity(dim);
+        for &d in &drift {
+            let noise = config.sigma * sqrt_dt * box_muller_normal(&mut rng);
+            new_p.push(d + config.dt * d + noise);
+        }
+        new_particles.push(new_p);
+    }
+
+    let mean_field = compute_mean_field(&new_particles);
+    let dispersion = compute_dispersion(&new_particles, &mean_field);
+
+    MeanFieldStepResult {
+        particles: new_particles,
+        mean_field,
+        dispersion,
+        vfe_drift_magnitude: total_vfe.sqrt(),
+        barrier_magnitude: total_barrier.sqrt(),
+        barrier_activations,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

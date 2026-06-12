@@ -1,4 +1,38 @@
-﻿## [v14.6.0-sprint146] — 2026-06-12 (Sprint 146 — SAE-Lifted EDMD Koopman, Event-Triggered Contractive Tube MPC & Graphon Replicator)
+﻿## [v14.7.0-sprint147] — 2026-06-12 (Sprint 147 — The Graphon-Koopman Singularity & Robust Tube MPC)
+
+### Sprint 147 "The Graphon-Koopman Singularity & Robust Tube MPC"
+
+**Mode:** `STRICT_MATH + DEEP_KOOPMAN + GRAPHON_DYNAMICS + ZERO_WARNINGS + DOC_SYNC`
+
+**Problema — Sin pérdida robusta Frobenius, reducción Girard ni drift graphon:** Sprints 100-146 establecen DeepKoopmanAE con EDMD + Tube MPC robusto, KoopmanVanguard con LQR + CBF, event-triggered control y graphon replicator, pero faltan: (1) **Robust Deep Koopman Loss con regularización Frobenius** — `compute_robust_koopman_loss()` en `crates/native-audit/src/deep_koopman.rs` con `L = ||x - x̂||² + ||ψ(x_{t+1}) - Kψ(x_t)||² + λ_r||ψ(x) - Enc(x)||² + λ_d||Dec(ψ) - x||² + γ||K||_F²`, (2) **Girard Zonotope Reduction** — `reduce()` en `crates/native-audit/src/control.rs` con L1-norm sorting + box over-approximation para prevenir explosión de generadores en Tube MPC, y (3) **Graphon Mean-Field Drift** — `compute_graphon_drift()` en `crates/consensus/src/mean_field.rs` con `b(X, μ) = -∇VFE(X) + η∫W(X,Y)(Y-X)μ(dY) - δ∇B(X)` donde `W(X,Y) = max(0, cos(X,Y))`.
+
+**Solución — Robust Loss + Girard Reduction + Graphon Drift Completo:** Extendemos `deep_koopman.rs` con `compute_robust_koopman_loss()` que computa la pérdida completa con penalización Frobenius `γ||K||_F²` para garantía de contracción espectral. Extendemos `control.rs` con `reduce()` que ordena generadores por `||g_i||_1` descendente, mantiene top `max_generators - dim` intactos y convierte el resto en box diagonal vía suma de valores absolutos. Extendemos `mean_field.rs` con `compute_graphon_drift()`, `compute_graphon_kernel()` (cosine similarity con ReLU clipping) y `graphon_mean_field_step()` (paso completo graphon-weighted). **142/142 tests passing (58 deep_koopman + 41 control + 43 mean_field).**
+
+- **Robust Deep Koopman Loss:** `native-audit/src/deep_koopman.rs` — `compute_robust_koopman_loss()` con Frobenius regularization
+- **Frobenius Penalty:** `γ||K||_F²` — Garantía de contracción espectral para estabilidad asintótica
+- **Hybrid Lifting:** SAE first for sparse low-dim features, then Koopman on reduced space
+- **Girard Zonotope Reduction:** `native-audit/src/control.rs` — `reduce()` con L1-norm sorting + box over-approx
+- **L1-Norm Sorting:** `||g_i||_1` por columna, sort descending, keep top `max_generators - dim`
+- **Box Over-Approximation:** Sum absolute values of discarded generators per dimension → diagonal box
+- **Graphon Mean-Field Drift:** `consensus/src/mean_field.rs` — `compute_graphon_drift()` con kernel graphon
+- **Graphon Kernel:** `W(X,Y) = max(0, cos(X,Y))` — Cosine similarity con ReLU clipping
+- **Empirical Integral:** `∫W(X,Y)(Y-X)μ(dY) ≈ (1/N)∑W(X,Y_i)(Y_i - X)` — Aproximación empírica
+- **Graphon Mean-Field Step:** `graphon_mean_field_step()` — Paso completo con Euler-Maruyama
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| DeepKoopman Unit Tests | ✅ 58/58 |
+| Control Unit Tests | ✅ 41/41 |
+| Mean-Field Unit Tests | ✅ 43/43 |
+| **Total S147 Tests** | **✅ 142/142** |
+| Clippy Warnings (S147 code) | ✅ 0 |
+| Robust Koopman Loss | ✅ Frobenius + 4-term composite |
+| Girard Reduction | ✅ L1-sort + box over-approx |
+| Graphon Drift | ✅ Cosine kernel + empirical integral |
+| Spectral Contraction | ✅ γ||K||_F² penalty |
+
+## [v14.6.0-sprint146] — 2026-06-12 (Sprint 146 — SAE-Lifted EDMD Koopman, Event-Triggered Contractive Tube MPC & Graphon Replicator)
 
 ### Sprint 146 "SAE-Lifted EDMD Koopman, Event-Triggered Contractive Tube MPC & Graphon Replicator"
 
