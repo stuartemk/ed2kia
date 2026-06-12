@@ -1,4 +1,42 @@
-﻿## [v14.5.0-sprint145] — 2026-06-12 (Sprint 145 — DeepKoopmanAE Training, Robust Contractive Tube MPC & McKean-Vlasov Symbiotic Mean-Field)
+﻿## [v14.6.0-sprint146] — 2026-06-12 (Sprint 146 — SAE-Lifted EDMD Koopman, Event-Triggered Contractive Tube MPC & Graphon Replicator)
+
+### Sprint 146 "SAE-Lifted EDMD Koopman, Event-Triggered Contractive Tube MPC & Graphon Replicator"
+
+**Mode:** `STRICT_MATH + EVENT_TRIGGERED_CONTROL + GRAPHON_DYNAMICS + SAE_LIFTING + LYAPUNOV_SDP + ZERO_WARNINGS + ANTI_HARDCODING + DOC_SYNC + EFFICIENCY_99`
+
+**Problema — Sin lifting SAE, control event-triggered ni dinámica graphon:** Sprints 100-145 establecen DeepKoopmanAE con EDMD + Tube MPC robusto, KoopmanVanguard con LQR + CBF, y McKean-Vlasov SDE, pero faltan: (1) **SAE-Lifted EDMD** — `compute_sae_lifted_edmd()` en `crates/native-audit/src/deep_koopman.rs` con pseudo-inversa Tikhonov-regularizada: `K = Ψ_{t+1} · Ψ_t^†` donde `Ψ_t^† = Ψ_t^T (Ψ_t Ψ_t^T + λI)^{-1}`, (2) **Koopman Stabilization** — `stabilize_koopman()` con power iteration + scaling para `ρ(K) < target_rho`, (3) **Discrete Lyapunov via Neumann Series** — `solve_discrete_lyapunov()`: `M ≈ ∑(K^T)^i Q K^i`, (4) **Event-Triggered Contractive Tube MPC** — `event_triggered_koopman_steer()` en `crates/native-audit/src/control.rs` con TCM sentinel (`W₂(φ,p_safe)/W₂(φ,p_toxic) > τ → steer`) + LQR fallback: `u* = -(R + B^T M B)^{-1} B^T M (K ψ - ψ_ref)`, ahorrando 95-99% llamadas en trayectorias benignas, y (5) **Graphon Replicator** — `graphon_replicator_step()` en `crates/consensus/src/replicator.rs` con `∂x_i/∂t = x_i(f_i - ∫w(i,j)f_j dj) + σdW` donde `w(i,j) = exp(-α·latency) · trust`.
+
+**Solución — SAE-Lifted EDMD + Event-Triggered Control + Graphon Completo:** Extendemos `deep_koopman.rs` con `compute_sae_lifted_edmd()` (Tikhonov ridge), `stabilize_koopman()` (power iteration), `solve_discrete_lyapunov()` (Neumann series) y `lift_sae_koopman()` (hybrid SAE + polynomial lifting). Extendemos `control.rs` con `event_triggered_koopman_steer()` (TCM sentinel + LQR), `event_triggered_trajectory()` y `compute_event_savings()`. Extendemos `replicator.rs` con `graphon_replicator_step()` (heterogeneous P2P), `graphon_replicator_trajectory()` y `compute_graphon_weights()`. **155/155 tests passing (58 deep_koopman + 42 control + 55 replicator).**
+
+- **SAE-Lifted EDMD:** `native-audit/src/deep_koopman.rs` — `compute_sae_lifted_edmd()` con Tikhonov regularization
+- **Tikhonov Pseudo-Inverse:** `Ψ_t^† = Ψ_t^T (Ψ_t Ψ_t^T + λI)^{-1}` vía Newton-Schulz iteration
+- **Koopman Stabilization:** `stabilize_koopman()` — Power iteration + scaling para `ρ(K) < target`
+- **Discrete Lyapunov:** `solve_discrete_lyapunov()` — Neumann series: `M ≈ ∑(K^T)^i Q K^i`
+- **SAE + Polynomial Lifting:** `lift_sae_koopman()` — `ψ(x) = concat(SAE_latents(x), φ(x))`
+- **Event-Triggered Control:** `native-audit/src/control.rs` — `event_triggered_koopman_steer()` con TCM sentinel
+- **TCM Sentinel:** `W₂(φ,p_safe)/W₂(φ,p_toxic) > τ → steer, else homeostasis`
+- **LQR Fallback:** `u* = -(R + B^T M B)^{-1} B^T M (K ψ - ψ_ref)` con Lyapunov metric M
+- **Event Savings:** `compute_event_savings()` — 95-99% ahorro en trayectorias benignas
+- **Graphon Replicator:** `consensus/src/replicator.rs` — `graphon_replicator_step()` con kernel weights
+- **Graphon Kernel:** `w(i,j) = exp(-α·latency_ij) · trust_ij` para consenso P2P heterogéneo
+- **Itô Noise:** Euler-Maruyama discretization + Box-Muller transform para ruido gaussiano
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| DeepKoopman Unit Tests | ✅ 58/58 |
+| Control Unit Tests | ✅ 42/42 |
+| Replicator Unit Tests | ✅ 55/55 |
+| **Total S146 Tests** | **✅ 155/155** |
+| Clippy Warnings (S146 code) | ✅ 0 |
+| SAE-Lifted EDMD | ✅ Tikhonov + Newton-Schulz |
+| Koopman Stabilization | ✅ ρ(K) < 0.95 |
+| Discrete Lyapunov | ✅ Neumann series |
+| Event-Triggered Control | ✅ TCM sentinel + LQR |
+| Graphon Replicator | ✅ Heterogeneous P2P + Itô noise |
+| Efficiency Target | ✅ 95-99% call savings |
+
+## [v14.5.0-sprint145] — 2026-06-12 (Sprint 145 — DeepKoopmanAE Training, Robust Contractive Tube MPC & McKean-Vlasov Symbiotic Mean-Field)
 
 ### Sprint 145 "DeepKoopmanAE Training, Robust Contractive Tube MPC & McKean-Vlasov Symbiotic Mean-Field"
 

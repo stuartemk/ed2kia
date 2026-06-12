@@ -189,6 +189,134 @@ pub fn verify_simplex(pop: &[f32]) -> bool {
     (sum - 1.0).abs() < 1e-4 && pop.iter().all(|&x| x >= -1e-6)
 }
 
+// ─── S146 — Graphon Replicator Dynamics (Heterogeneous P2P Consensus) ─────────
+
+/// Graphon Replicator Dynamics for heterogeneous P2P consensus.
+///
+/// Extends standard replicator dynamics with a graphon kernel w(i,j) that
+/// encodes heterogeneous peer weights based on latency, trust, and topology.
+///
+/// **Dynamics:**
+/// ```math
+/// ∂x_i/∂t = x_i · (f_i(x) - ∫ w(i,j) f_j(x) dj) + σ dW_t
+/// ```
+///
+/// Where:
+/// - `w(i,j) = exp(-latency_ij) · trust_ij` — Graphon kernel
+/// - `∫ w(i,j) f_j(x) dj ≈ ∑ w_ij · f_j / ∑ w_ij` — Weighted average fitness
+/// - `σ dW_t` — Itô noise for exploration
+///
+/// **Euler-Maruyama Discretization:**
+/// ```math
+/// x_{t+1} = x_t + x_t · (f_i - f̄_weighted) · Δt + σ · √(Δt) · ξ
+/// ```
+pub fn graphon_replicator_step(
+    local_fitness: f32,
+    peer_fitness: &[f32],
+    peer_weights: &[f32], // w(i,j) = exp(-latency) * trust
+    strategy: f32,
+    dt: f32,
+    noise_scale: f32,
+    seed: u64,
+) -> f32 {
+    // Compute weighted average fitness: ∫ w(i,j) f_j(x) dj ≈ ∑ w_ij · f_j / ∑ w_ij
+    let mut weighted_sum = 0.0f32;
+    let mut weight_total = 0.0f32;
+    for (f, w) in peer_fitness.iter().zip(peer_weights.iter()) {
+        let w_pos = w.max(0.0);
+        weighted_sum += w_pos * f;
+        weight_total += w_pos;
+    }
+
+    let weighted_avg = if weight_total > 1e-10 {
+        weighted_sum / weight_total
+    } else {
+        // Fallback to uniform average
+        if peer_fitness.is_empty() {
+            local_fitness
+        } else {
+            peer_fitness.iter().sum::<f32>() / peer_fitness.len() as f32
+        }
+    };
+
+    // Replicator drift: dx = x · (f_i - f̄_weighted) · dt
+    let drift = strategy * (local_fitness - weighted_avg) * dt;
+
+    // Itô noise: σ · √(Δt) · ξ
+    let noise = if noise_scale > 0.0 && dt > 0.0 {
+        let xi = lcg_gaussian(seed);
+        noise_scale * dt.sqrt() * xi
+    } else {
+        0.0
+    };
+
+    // Euler-Maruyama step with simplex projection
+    (strategy + drift + noise).clamp(0.0, 1.0)
+}
+
+/// Run a trajectory of graphon replicator dynamics.
+pub fn graphon_replicator_trajectory(
+    initial_strategy: f32,
+    local_fitness: f32,
+    peer_fitness: &[f32],
+    peer_weights: &[f32],
+    steps: usize,
+    dt: f32,
+    noise_scale: f32,
+    seed: u64,
+) -> Vec<f32> {
+    let mut trajectory = vec![initial_strategy];
+    let mut current = initial_strategy;
+
+    for i in 0..steps {
+        let step_seed = seed.wrapping_add(i as u64).wrapping_mul(6364136223846793005)
+            .wrapping_add(1442695040888963407);
+        current = graphon_replicator_step(
+            local_fitness,
+            peer_fitness,
+            peer_weights,
+            current,
+            dt,
+            noise_scale,
+            step_seed,
+        );
+        trajectory.push(current);
+    }
+
+    trajectory
+}
+
+/// Compute graphon kernel weights from latency and trust values.
+///
+/// w(i,j) = exp(-α · latency_ij) · trust_ij
+/// where α controls the sensitivity to latency (default: 1.0).
+pub fn compute_graphon_weights(latencies: &[f32], trusts: &[f32], alpha: f32) -> Vec<f32> {
+    latencies
+        .iter()
+        .zip(trusts.iter())
+        .map(|(&lat, &trust)| {
+            let lat_factor = (-alpha * lat).exp();
+            lat_factor * trust.max(0.0).min(1.0)
+        })
+        .collect()
+}
+
+/// LCG-based Gaussian noise generator (Box-Muller transform).
+fn lcg_gaussian(seed: u64) -> f32 {
+    let mut state = seed;
+    let u1 = (lcg_next(&mut state) as f64 / u64::MAX as f64).max(1e-10);
+    let u2 = (lcg_next(&mut state) as f64 / u64::MAX as f64);
+    let radius = (-2.0_f64 * u1.ln()).sqrt();
+    let angle = std::f64::consts::TAU * u2;
+    (radius * angle.cos()) as f32
+}
+
+/// LCG random number generator.
+fn lcg_next(state: &mut u64) -> u64 {
+    *state = state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+    *state
+}
+
 // ─── Unit Tests ───
 
 #[cfg(test)]

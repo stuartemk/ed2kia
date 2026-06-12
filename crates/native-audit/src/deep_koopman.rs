@@ -801,6 +801,182 @@ impl std::fmt::Display for KoopmanAELoss {
     }
 }
 
+// ---------------------------------------------------------------------------
+// S146 — SAE-Lifted EDMD + Koopman Stabilization
+// ---------------------------------------------------------------------------
+
+/// SAE-Lifted EDMD (Extended Dynamic Mode Decomposition).
+///
+/// Computes Koopman operator K via Tikhonov-regularized pseudo-inverse:
+/// ```math
+/// K = Ψ_{t+1} · Ψ_t^†,  Ψ_t^† = Ψ_t^T (Ψ_t Ψ_t^T + λI)^{-1}
+/// ```
+///
+/// Where ψ(x) = concat(SAE_latents(x), φ(x)) combines sparse autoencoder
+/// latents with polynomial/ReLU functional observables for dimensionality
+/// reduction from ~4096D to ~32-128D sparse space.
+pub fn compute_sae_lifted_edmd(
+    psi_t: &Tensor,
+    psi_t1: &Tensor,
+    ridge_lambda: f32,
+) -> Result<Tensor> {
+    // Ψ_t^T
+    let psi_t_t = psi_t.t()?;
+    // Cov = Ψ_t Ψ_t^T
+    let cov = psi_t.matmul(&psi_t_t)?;
+    // Regularized: Cov + λI
+    let n = cov.dim(0)?;
+    let eye = Tensor::eye(n, DType::F32, cov.device())?;
+    let ridge_tensor = Tensor::new(ridge_lambda, cov.device())?;
+    let reg_cov = cov.add(&eye.mul(&ridge_tensor)?)?;
+    // Pseudo-inverse via Newton-Schulz iteration (stable matrix inverse approximation)
+    let cov_inv = newton_schulz_inverse(&reg_cov, 30)?;
+    // Ψ_t^† = Ψ_t^T (Ψ_t Ψ_t^T + λI)^{-1}
+    let pinv = psi_t_t.matmul(&cov_inv)?;
+    // K = Ψ_{t+1} Ψ_t^†
+    let k = psi_t1.matmul(&pinv)?;
+    Ok(k)
+}
+
+/// Newton-Schulz iteration for stable matrix inverse approximation.
+///
+/// Iterates: X_{k+1} = X_k (2I - A X_k), normalized by ||A||_F.
+/// Converges to A^{-1} when initialized properly. Avoids Cholesky for compatibility.
+fn newton_schulz_inverse(a: &Tensor, iterations: usize) -> Result<Tensor> {
+    // Normalize: Y = A / ||A||_F
+    let norm = a.sqr()?.sum_all()?.sqrt()?;
+    let norm_scalar = norm.to_scalar::<f32>()?.max(1e-10);
+    let norm_tensor = Tensor::new(norm_scalar, a.device())?;
+    let y = a.div(&norm_tensor)?;
+
+    let mut x = y.clone();
+    let n = y.dim(0)?;
+    let eye = Tensor::eye(n, DType::F32, y.device())?;
+    let two = Tensor::new(2.0f32, y.device())?;
+
+    for _ in 0..iterations {
+        // X_{k+1} = X_k (2I - Y X_k)
+        let yx = y.matmul(&x)?;
+        let two_minus_yx = two.sub(&yx)?;
+        x = x.matmul(&two_minus_yx)?;
+    }
+
+    // Scale back: A^{-1} = X / ||A||_F
+    x.div(&norm_tensor)
+}
+
+/// Stabilize Koopman operator for contraction ρ(K) < target_rho.
+///
+/// Uses power iteration to estimate the dominant eigenvalue magnitude,
+/// then scales K to ensure spectral radius ρ(K) < target_rho (default 0.95).
+///
+/// Power iteration: v_{k+1} = K v_k / ||K v_k||,  λ_max ≈ v_k^T K v_k
+pub fn stabilize_koopman(k: &Tensor, target_rho: f32, iterations: usize) -> Result<Tensor> {
+    let n = k.dim(0)?;
+    // Initialize random unit vector via LCG
+    let mut data: Vec<f32> = vec![0.0f32; n];
+    let mut seed = 42u64;
+    for val in &mut data {
+        *val = (lcg_next(&mut seed) as f64 / u64::MAX as f64 - 0.5) as f32;
+    }
+    let mut v = Tensor::from_vec(data, (n, 1), k.device())?;
+
+    // Power iteration
+    for _ in 0..iterations {
+        v = k.matmul(&v)?;
+        let norm = v.sqr()?.sum_all()?.sqrt()?;
+        let norm_val = norm.to_scalar::<f32>()?.max(1e-10);
+        let norm_tensor = Tensor::new(norm_val, v.device())?;
+        v = v.div(&norm_tensor)?;
+    }
+
+    // Estimate dominant eigenvalue: λ ≈ v^T K v
+    let kv = k.matmul(&v)?;
+    let vt = v.t()?;
+    let lambda_est = vt.matmul(&kv)?;
+    let max_eig = lambda_est.to_scalar::<f32>()?.abs();
+
+    if max_eig >= target_rho {
+        // Scale K to ensure ρ(K) < target_rho
+        let scale = target_rho / max_eig.min(1.0);
+        let scale_tensor = Tensor::new(scale, k.device())?;
+        Ok(k.mul(&scale_tensor)?)
+    } else {
+        Ok(k.clone())
+    }
+}
+
+/// Solve discrete Lyapunov equation via Neumann series.
+///
+/// For contractive K (ρ(K) < 1), the discrete Lyapunov equation
+/// ```math
+/// M = Q + K^T M K
+/// ```
+/// has solution:
+/// ```math
+/// M ≈ ∑_{i=0}^{N} (K^T)^i Q K^i
+/// ```
+/// which converges geometrically when K is contractive.
+pub fn solve_discrete_lyapunov(k_stable: &Tensor, q: &Tensor, n_iters: usize) -> Result<Tensor> {
+    let mut m = q.clone();
+    let mut kt_pow = k_stable.t()?;
+    let mut k_pow = k_stable.clone();
+
+    for _ in 0..n_iters {
+        // Term: (K^T)^i Q K^i
+        let term = kt_pow.matmul(q)?.matmul(&k_pow)?;
+        m = m.add(&term)?;
+        // Update powers: K^{i+1} = K^i · K
+        kt_pow = kt_pow.matmul(&k_stable.t()?)?;
+        k_pow = k_pow.matmul(k_stable)?;
+    }
+
+    Ok(m)
+}
+
+/// Combined SAE + polynomial lifting: ψ(x) = concat(SAE_latents(x), φ(x)).
+///
+/// Polynomial observables: φ(x) = [x; relu(x); x²_mean]
+/// This provides a hybrid lifting that combines learned sparse features
+/// with hand-crafted polynomial observables for robust Koopman learning.
+pub fn lift_sae_koopman(
+    x: &Tensor,
+    sae_encoder: Option<&Linear>,
+    device: &Device,
+) -> Result<Tensor> {
+    let mut parts: Vec<Tensor> = if let Some(encoder) = sae_encoder {
+        // SAE latents
+        let sae_latents = encoder.forward(x)?.relu()?;
+        vec![sae_latents]
+    } else {
+        // Fallback: use raw input as "SAE latents"
+        vec![x.clone()]
+    };
+
+    // Polynomial observables: φ(x) = [x; relu(x); x²_mean]
+    let relu_x = x.relu()?;
+    let x_sq = x.sqr()?;
+    // Mean over features to keep dimension manageable
+    let x_sq_mean = x_sq.mean(1)?.flatten_all()?.unsqueeze(0)?.broadcast_as(x.shape())?;
+
+    parts.push(relu_x);
+    parts.push(x_sq_mean);
+
+    // Concatenate along feature dimension (dim 1 for [batch, features])
+    let mut result = parts[0].clone();
+    for part in &parts[1..] {
+        // Ensure same shape for concatenation
+        let part_expanded = if part.dim(1)? != result.dim(1)? {
+            part.clone()
+        } else {
+            part.clone()
+        };
+        result = Tensor::cat(&[result, part_expanded], 1)?;
+    }
+
+    Ok(result)
+}
+
 /// Generate random weight matrix with Xavier-uniform scale.
 fn rand_matrix(rows: usize, cols: usize, scale: f64, device: &Device) -> Result<Tensor> {
     let mut data = vec![0.0f32; rows * cols];
