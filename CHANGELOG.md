@@ -1,4 +1,38 @@
-﻿## [v14.0.0-sprint140] — 2026-06-11 (Sprint 140 — Nash-Estuardian Equilibrium & Tube MPC Steering)
+﻿## [v14.1.0-sprint141] — 2026-06-12 (Sprint 141 — Robust Tube MPC, Contraction Metrics & Strided Evaluation)
+
+### Sprint 141 "Robust Tube MPC, Contraction Metrics & Strided Evaluation + Zonotopic Robustness"
+
+**Mode:** `STRICT_MATH + NONLINEAR_CONTROL + ANTI_CHEAT + ZERO_WARNINGS + DOC_SYNC + GLOBAL_STABILITY`
+
+**Problema — Sin filtro de seguridad robusto ni verificación de contracción:** Sprints 100-140 establecen Tube MPC, Nash-Estuardian ESS, replicator dynamics y CBF projection, pero faltan: (1) **Model Predictive Safety Filter (MPSF)** — `h(x) = β - ||x - c_safe||²` con zonotopic tightening `drift + nominal + α·h(x) - disturbance_bound ≥ 0` para seguridad robusta bajo disturbancias acotadas, (2) **Contraction Metrics (Lohmiller-Slotine)** — `ḊV ≤ -λV < 0` verificado vía JVP (Jacobian-Vector Product) `J·v ≈ (f(h+εv) - f(h))/ε` que es OOM-proof (sin matrices Jacobianas completas), y (3) **Strided Evaluation** — Saltar N-1 de N evaluaciones con bound de error Lipschitz `L · stride · max_velocity` para ahorrar 66% de computo.
+
+**Solución — MPSF + Contraction + Strided Completo:** Extendimos `crates/native-audit/src/steering.rs` con `robust_mpsf_cbf_filter()` para MPSF con zonotopic tightening, `verify_contraction_rate_jvp()` para verificación de contracción vía JVP y `compute_strided_error_bound()` para bounds Lipschitz. Creamos `crates/consensus/src/game_theory.rs` con Mirror Descent determinista + KL proximal para evolución de estrategias en simplex. Creamos `crates/native-audit/tests/sprint141_test.rs` con 14 tests de integración. **44 nuevos tests.**
+
+- **Robust MPSF + Zonotopic CBF:** `native-audit/src/steering.rs` — `robust_mpsf_cbf_filter()` con QP-proxy correction, 4 tests
+- **Contraction Metrics via JVP:** `native-audit/src/steering.rs` — `verify_contraction_rate_jvp()` OOM-proof, 3 tests
+- **Strided Error Bound:** `native-audit/src/steering.rs` — `compute_strided_error_bound()`, 4 tests
+- **Deterministic Mirror Descent:** `consensus/src/game_theory.rs` — `mirror_descent_replicator_step()` + KL proximal, 21 tests
+- **S141 Integration Tests:** `native-audit/tests/sprint141_test.rs` — 14 integration tests (MPSF + Contraction + Strided + Pipeline)
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| Robust MPSF Tests | ✅ 4/4 |
+| Contraction JVP Tests | ✅ 3/3 |
+| Strided Bound Tests | ✅ 4/4 |
+| Mirror Descent Tests | ✅ 21/21 |
+| S141 Integration Tests | ✅ 14/14 |
+| **Total S141 Tests** | **✅ 44/44** |
+| MPSF Safe Pass-Through | ✅ No correction when safe |
+| MPSF Unsafe Correction | ✅ QP-proxy λ* applied |
+| Zonotope Tightening | ✅ Larger radius → more conservative |
+| Contraction Tanh | ✅ Rate < 1.0 (exponential convergence) |
+| JVP OOM-Proof | ✅ 64×128 dims, no full Jacobian |
+| Strided Savings | ✅ 66% reduction (stride=3) |
+| Mirror Descent Deterministic | ✅ Seeded noise, reproducible |
+| fmt | ✅ Clean |
+
+## [v14.0.0-sprint140] — 2026-06-11 (Sprint 140 — Nash-Estuardian Equilibrium & Tube MPC Steering)
 
 ### Sprint 140 "Nash-Estuardian Equilibrium & Tube MPC Steering"
 

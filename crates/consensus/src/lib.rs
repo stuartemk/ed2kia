@@ -6,6 +6,7 @@
 
 pub mod emergence;
 pub mod eternal_governance;
+pub mod game_theory;
 pub mod governance;
 pub mod hierarchical_sharding;
 pub mod posym;

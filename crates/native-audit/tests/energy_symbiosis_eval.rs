@@ -79,17 +79,17 @@ fn test_full_energy_symbiosis_pipeline() {
             let u = compute_symbiotic_utility(-2.0, 1.5, 10.0, 0.5, -0.1);
             println!("🔋 Node 0 (high energy): U = {:.2}", u);
             u
-        }
+        },
         {
             let u = compute_symbiotic_utility(-3.0, 2.0, 1.0, 0.3, -0.5);
             println!("🔋 Node 1 (low energy):  U = {:.2}", u);
             u
-        }
+        },
         {
             let u = compute_symbiotic_utility(-1.0, 0.5, 5.0, 1.0, 0.3);
             println!("🔋 Node 2 (med energy):  U = {:.2}", u);
             u
-        }
+        },
     ];
 
     let best = select_best_node(&nodes).unwrap();
