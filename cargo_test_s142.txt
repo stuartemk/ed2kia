@@ -1,0 +1,205 @@
+   Compiling native-audit v0.1.0 (C:\Users\cualo\Desktop\PROYECTOS\ed2kIA\crates\native-audit)
+warning: unused import: `crate::topology::SgwConfig`
+  --> src\category_manifolds.rs:40:5
+   |
+40 | use crate::topology::SgwConfig;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `Device`
+  --> src\replicator.rs:30:19
+   |
+30 | use candle_core::{Device, Result, Tensor};
+   |                   ^^^^^^
+
+warning: unnecessary parentheses around assigned value
+   --> src\verification.rs:855:34
+    |
+855 |                     let lambda = ((state as i32) as f32 / (i32::MAX as f32));
+    |                                  ^                                         ^
+    |
+    = note: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+help: remove these parentheses
+    |
+855 -                     let lambda = ((state as i32) as f32 / (i32::MAX as f32));
+855 +                     let lambda = (state as i32) as f32 / (i32::MAX as f32);
+    |
+
+warning: unused variable: `i`
+   --> src\adversarial.rs:562:13
+    |
+562 |         for i in 0..dim {
+    |             ^ help: if this is intentional, prefix it with an underscore: `_i`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `i`
+   --> src\category_manifolds.rs:458:9
+    |
+458 |     for i in 0..dim {
+    |         ^ help: if this is intentional, prefix it with an underscore: `_i`
+
+warning: value assigned to `momentum` is never read
+   --> src\collective_steering.rs:351:24
+    |
+351 |       let mut momentum = Tensor::from_vec(
+    |  ________________________^
+352 | |         (0..num_elements)
+353 | |             .map(|_| gaussian_noise(&mut state))
+354 | |             .collect(),
+355 | |         shape.clone(),
+356 | |         device,
+357 | |     )?;
+    | |______^
+    |
+    = help: maybe it is overwritten before being read?
+    = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `meta_improvement`
+    --> src\planetary_sim.rs:1185:5
+     |
+1185 |     meta_improvement: f64,
+     |     ^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_meta_improvement`
+
+warning: variable `total_gradient_norm` is assigned to, but never used
+   --> src\thermodynamics.rs:475:13
+    |
+475 |         let mut total_gradient_norm: f64 = 0.0;
+    |             ^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: consider using `_total_gradient_norm` instead
+
+warning: value assigned to `total_gradient_norm` is never read
+   --> src\thermodynamics.rs:538:13
+    |
+538 |             total_gradient_norm += norm;
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+
+warning: unused variable: `g`
+   --> src\verification.rs:789:19
+    |
+789 |             .map(|g| vec![0.0f32; n])
+    |                   ^ help: if this is intentional, prefix it with an underscore: `_g`
+
+warning: unused variable: `epsilon`
+    --> src\verification.rs:1008:5
+     |
+1008 |     epsilon: f32,
+     |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_epsilon`
+
+warning: function `random_gaussian` is never used
+   --> src\provable_safety.rs:282:4
+    |
+282 | fn random_gaussian(state: &mut u64) -> f64 {
+    |    ^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `random_gaussian` is never used
+   --> src\universal_immunity.rs:331:4
+    |
+331 | fn random_gaussian(state: &mut u64) -> f64 {
+    |    ^^^^^^^^^^^^^^^
+
+   Compiling noosfera-kernel v0.1.0 (C:\Users\cualo\Desktop\PROYECTOS\ed2kIA\crates\noosfera-kernel)
+warning: unused imports: `KernelConfig` and `KernelState`
+  --> C:\Users\cualo\Desktop\PROYECTOS\ed2kIA\crates\noosfera-kernel\src\awakening.rs:16:13
+   |
+16 | use crate::{KernelConfig, KernelState, NoosferaKernel};
+   |             ^^^^^^^^^^^^  ^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused imports: `KernelConfig` and `KernelState`
+  --> C:\Users\cualo\Desktop\PROYECTOS\ed2kIA\crates\noosfera-kernel\src\eternal_symbiosis.rs:32:13
+   |
+32 | use crate::{KernelConfig, KernelState, NoosferaKernel};
+   |             ^^^^^^^^^^^^  ^^^^^^^^^^^
+
+warning: unused import: `KernelState`
+  --> C:\Users\cualo\Desktop\PROYECTOS\ed2kIA\crates\noosfera-kernel\src\provable_irreversibility.rs:37:27
+   |
+37 | use crate::{KernelConfig, KernelState, NoosferaKernel};
+   |                           ^^^^^^^^^^^
+
+warning: function `random_gaussian` is never used
+   --> C:\Users\cualo\Desktop\PROYECTOS\ed2kIA\crates\noosfera-kernel\src\provable_irreversibility.rs:438:4
+    |
+438 | fn random_gaussian(state: &mut u64) -> f64 {
+    |    ^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `noosfera-kernel` (lib) generated 4 warnings (run `cargo fix --lib -p noosfera-kernel` to apply 3 suggestions)
+warning: `native-audit` (lib) generated 13 warnings (run `cargo fix --lib -p native-audit` to apply 8 suggestions)
+warning: unused variable: `vuln`
+    --> src\adversarial.rs:1748:23
+     |
+1748 |         let (red, ab, vuln) = full_red_team_pipeline(&clean, &adv_cfg, &counter_cfg);
+     |                       ^^^^ help: if this is intentional, prefix it with an underscore: `_vuln`
+
+warning: unused variable: `vuln`
+    --> src\adversarial.rs:1837:26
+     |
+1837 |             let (red, _, vuln) = full_red_team_pipeline(&clean, &cfg, &counter_cfg);
+     |                          ^^^^ help: if this is intentional, prefix it with an underscore: `_vuln`
+
+warning: unused variable: `stabilized`
+   --> src\phase_transition.rs:573:20
+    |
+573 |         let (c, e, stabilized) = stabilize_irreversible_symbiosis(0.5, 0.5, &cfg);
+    |                    ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_stabilized`
+
+warning: unused variable: `c`
+   --> src\phase_transition.rs:740:14
+    |
+740 |         let (c, _e, stabilized) =
+    |              ^ help: if this is intentional, prefix it with an underscore: `_c`
+
+warning: unused variable: `result`
+    --> src\planetary_sim.rs:2094:14
+     |
+2094 |         let (result, churned, survival) =
+     |              ^^^^^^ help: if this is intentional, prefix it with an underscore: `_result`
+
+warning: field `selection_pressure` is never read
+    --> src\sae_modular.rs:1755:13
+     |
+1741 |     pub struct EvolutionarySAEConfig {
+     |                --------------------- field in this struct
+...
+1755 |         pub selection_pressure: f64,
+     |             ^^^^^^^^^^^^^^^^^^
+     |
+     = note: `EvolutionarySAEConfig` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+     = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `best_vfe_reduction` and `avg_sparsity` are never read
+    --> src\sae_modular.rs:1846:13
+     |
+1838 |     pub struct GenerationResult {
+     |                ---------------- fields in this struct
+...
+1846 |         pub best_vfe_reduction: f64,
+     |             ^^^^^^^^^^^^^^^^^^
+1847 |         /// Average sparsity
+1848 |         pub avg_sparsity: f64,
+     |             ^^^^^^^^^^^^
+     |
+     = note: `GenerationResult` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: comparison is useless due to type limits
+    --> src\provable_safety.rs:1125:17
+     |
+1125 |         assert!(singularity.estimated_steps_remaining >= 0);
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: `#[warn(unused_comparisons)]` on by default
+
+warning: `native-audit` (lib test) generated 18 warnings (10 duplicates) (run `cargo fix --lib -p native-audit --tests` to apply 5 suggestions)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 12.11s
+     Running unittests src\lib.rs (crates\native-audit\target\debug\deps\native_audit-8c43d67c994fb0fe.exe)
+error: test failed, to rerun pass `--lib`

@@ -424,6 +424,42 @@ impl TensorAudit {
         })
     }
 
+    /// Downloads (or uses cache) SmolLM2-360M via hf-hub and loads the model.
+    ///
+    /// **[Sprint 142 — 360M Scale]:** Dynamically detects `hidden_size` from safetensors header.
+    /// Uses memory-mapped loading (mmaped_safetensors) for edge viability without OOM.
+    /// Target layers default to [12, 16, 18] for 360M (deeper semantic layers).
+    pub fn load_smollm2_360m(device: &Device, target_layers: Vec<usize>) -> Result<Self> {
+        const MODEL_REPO_360M: &str = "HuggingFaceTB/SmolLM2-360M";
+        
+        let tokenizer_filename = download_file(MODEL_REPO_360M, "tokenizer.json")?;
+        let config_filename = download_file(MODEL_REPO_360M, "config.json")?;
+        let weights_filename = download_file(MODEL_REPO_360M, "model.safetensors")?;
+
+        let tokenizer = Tokenizer::from_file(tokenizer_filename)
+            .map_err(|e| candle_core::Error::Msg(e.to_string()))?;
+        let llama_config: LlamaConfig = serde_json::from_slice(&std::fs::read(config_filename)?)
+            .map_err(|e| candle_core::Error::Msg(e.to_string()))?;
+        let config = llama_config.into_config(false);
+
+        // [ANTI-HARDCODE]: hidden_size inferred from config, not hardcoded
+        let hidden_size = config.hidden_size;
+        eprintln!("SmolLM2-360M loaded: hidden_size={}", hidden_size);
+
+        let vb = unsafe {
+            VarBuilder::from_mmaped_safetensors(&[weights_filename], DType::F32, device)?
+        };
+        let model = LlamaForAudit::load(vb, &config)?;
+
+        Ok(Self {
+            model,
+            tokenizer,
+            device: device.clone(),
+            target_layers,
+            config,
+        })
+    }
+
     /// Extracts the hidden state tensor from the first target layer (backward compat).
     pub fn forward_extract(&self, prompt: &str) -> Result<Tensor> {
         let map = self.forward_extract_multi(prompt)?;

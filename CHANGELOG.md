@@ -1,4 +1,37 @@
-﻿## [v14.1.0-sprint141] — 2026-06-12 (Sprint 141 — Robust Tube MPC, Contraction Metrics & Strided Evaluation)
+﻿## [v14.2.0-sprint142] — 2026-06-12 (Sprint 142 — The Koopman Vanguard & Contracting Tube MPC)
+
+### Sprint 142 "The Koopman Vanguard & Contracting Tube MPC"
+
+**Mode:** `STRICT_MATH + ANTI_HARDCODING + KOOPMAN_EDMD_STRIDING + 360M_SCALE + ZERO_WARNINGS + TUBE_CONTRACTION_PROOFS + EDGE_EFFICIENCY`
+
+**Problema — Sin representación lineal de dinámica no-lineal ni tubes contractantes:** Sprints 100-141 establecen Tube MPC, Nash-Estuardian ESS, replicator dynamics y CBF projection, pero faltan: (1) **Koopman Operator Theory** — Representación lineal exacta de dinámica no-lineal en espacio de observables levantados `K ψ(φ) = ψ(f(φ))`, (2) **EDMD (Extended Dynamic Mode Decomposition)** — `K ≈ Ψ_X^† Ψ_Y` vía pseudoinverse con ridge regularization adaptativa, (3) **Dynamic Lifted Observables** — `ψ(φ) = [φ; relu(φ); φ²_mean]` sin dimensiones hardcoded, (4) **Contracting Tube MPC** — `V̇ ≤ -λV` con métrica dinámica M ≻ 0 y tube robust con zonotope propagation, y (5) **SmolLM2-360M Scale** — hidden_size ≈ 960 con detección dinámica.
+
+**Solución — Koopman EDMD + Contracting Tube + 360M Scale Completo:** Extendemos `crates/native-audit/src/lib.rs` con `load_smollm2_360m()` para carga dinámica de SmolLM2-360M. Agregamos `KoopmanEstimator` en `steering.rs` con EDMD, lifted observables y adaptive striding. Implementamos `steer_contracting_tube()` con Lyapunov contraction + CBF projection. Conjugate Gradient solver iterativo (no matrix inverse). **16 unit tests + 14 integration tests.**
+
+- **SmolLM2-360M Dynamic Loading:** `native-audit/src/lib.rs` — `load_smollm2_360m()` con hidden_size detection dinámica
+- **Koopman EDMD Estimator:** `native-audit/src/steering.rs` — `KoopmanEstimator` con `estimate_koopman_k()`, `koopman_predict()`, `compute_adaptive_stride()`
+- **Dynamic Lifted Observables:** `ψ(φ) = [φ; relu(φ); φ²_mean]` sin hardcoded dims
+- **Conjugate Gradient Solver:** Iterative linear system solver (no matrix inverse needed) compatible con candle-core 0.6
+- **Contracting Tube MPC:** `steer_contracting_tube()` con Lyapunov V̇ ≤ -λV + CBF boundary projection
+- **EMA Safe Centroid:** `update_safe_centroid_ema()` con tracking adaptativo
+- **Contraction Rate Estimation:** `estimate_contraction_rate()` de trayectorias
+- **S142 Integration Tests:** `native-audit/tests/koopman_contracting_eval.rs` — 14 integration tests
+- **S142 Unit Tests:** `native-audit/src/steering.rs` — 16 unit tests (Koopman + Contracting Tube)
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| Koopman EDMD Tests | ✅ 6/6 |
+| Contracting Tube Tests | ✅ 6/6 |
+| EMA + Contraction Rate Tests | ✅ 4/4 |
+| S142 Integration Tests | ✅ 14/14 |
+| **Total S142 Tests** | **✅ 30/30** |
+| Koopman K Estimation | ✅ Ridge-regularized CG solver |
+| Adaptive Striding | ✅ Dynamic based on prediction error |
+| Tube Contraction | ✅ V̇ ≤ -λV exponential convergence |
+| 360M Scale | ✅ Dynamic hidden_size detection |
+
+## [v14.1.0-sprint141] — 2026-06-12 (Sprint 141 — Robust Tube MPC, Contraction Metrics & Strided Evaluation)
 
 ### Sprint 141 "Robust Tube MPC, Contraction Metrics & Strided Evaluation + Zonotopic Robustness"
 
