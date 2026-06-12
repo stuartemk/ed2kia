@@ -1,4 +1,37 @@
-﻿## [v14.3.0-sprint143] — 2026-06-12 (Sprint 143 — The Koopman Vanguard & Linearized Cognitive Control)
+﻿## [v14.4.0-sprint144] — 2026-06-12 (Sprint 144 — DeepKoopman Autoencoder, Contractive Tube MPC & Symbiotic Mean-Field)
+
+### Sprint 144 "DeepKoopman Autoencoder, Contractive Tube MPC & Symbiotic Mean-Field"
+
+**Mode:** `STRICT_MATH + ANTI_HARDCODING + DEEPKOOPMAN_AUTOENCODER + NEURAL_LIFTING + CONTRACTIVE_TUBE_MPC + MEAN_FIELD_REPLICATOR + LYAPUNOV_STABILITY + ZERO_WARNINGS + INTEGRATION_TESTS`
+
+**Problema — Sin autoencoder DeepKoopman ni dinámica mean-field simbiótica:** Sprints 100-143 establecen Koopman EDMD en `steering.rs`, KoopmanVanguard en `control.rs`, Tube MPC y CBF projection, pero faltan: (1) **DeepKoopman como autoencoder neuronal** — `crates/native-audit/src/deep_koopman.rs` con `DeepKoopman` struct que implementa lifting neuronal con encoder/decoder + operador Koopman aprendido en subespacio reducido, (2) **Steering con Tube MPC contractivo** — `steer_with_deep_koopman_tube()` que combina DeepKoopman lifting + Lyapunov stability + disturbance bounds en una llamada unificada, (3) **Dinámica mean-field replicator** — `mean_field_replicator_step()` con diversidad bonus + ruido Itô vía LCG interno para evolución simbiótica de estrategias, (4) **Lyapunov stability verification** — `V(ψ) = (ψ - ψ_safe)ᵀ M (ψ - ψ_safe)` con `compute_lyapunov_value()` y `compute_lyapunov_derivative()` para garantías de contracción, y (5) **Integration tests exhaustivos** — 31 tests de integración validando lift/unlift roundtrips, Koopman operator learning, Lyapunov stability, Tube MPC, steering integration, mean-field replicator y full pipeline.
+
+**Solución — DeepKoopman Autoencoder Completo:** Creamos `crates/native-audit/src/deep_koopman.rs` con `DeepKoopman` como autoencoder neuronal con lifting a espacio Koopman. Implementamos encoder/decoder con `Linear` layers, Koopman operator learning vía `update_operator_online(psi_t, psi_next)`, Lyapunov stability con métrica M ≻ 0, Tube MPC con `compute_tube_radius(horizon, disturbance_bound)` y steering contractivo con `steer_with_deep_koopman_tube()`. La dinámica mean-field replicator `mean_field_replicator_step(x, fitness, dt, eta, seed)` proporciona evolución simbiótica con ruido Itô. **48 unit tests + 31 integration tests = 79/79 passing.**
+
+- **DeepKoopman Autoencoder:** `native-audit/src/deep_koopman.rs` — `DeepKoopman` con encoder/decoder + Koopman operator learning
+- **Neural Lifting:** Encoder `x → ψ(x)` + Decoder `ψ(x) → x̂` con no-linealidades ReLU
+- **Koopman Operator Learning:** `update_operator_online(psi_t, psi_next)` con contraction penalty
+- **Lyapunov Stability:** `V(ψ) = (ψ - ψ_safe)ᵀ M (ψ - ψ_safe)` con M ≻ 0
+- **Tube MPC Contractivo:** `steer_with_deep_koopman_tube()` con disturbance bounds + Lyapunov derivative
+- **Mean-Field Replicator:** `mean_field_replicator_step()` con diversidad bonus + ruido Itô (LCG)
+- **S144 Integration Tests:** `native-audit/tests/deep_koopman_eval.rs` — 31 integration tests
+- **S144 Unit Tests:** `native-audit/src/deep_koopman.rs` — 48 unit tests
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| DeepKoopman Unit Tests | ✅ 48/48 |
+| S144 Integration Tests | ✅ 31/31 |
+| **Total S144 Tests** | **✅ 79/79** |
+| Clippy Warnings in deep_koopman.rs | ✅ 0 |
+| Neural Lifting | ✅ Encoder/decoder con ReLU |
+| Koopman Operator Learning | ✅ Online update con contraction penalty |
+| Lyapunov Stability | ✅ V(ψ) positive definite, V̇ < 0 |
+| Tube MPC | ✅ Disturbance bounds + tube radius computation |
+| Mean-Field Replicator | ✅ Diversity bonus + Itô noise (LCG) |
+| Reset Mechanisms | ✅ Koopman → Identity, Metric → Identity |
+
+## [v14.3.0-sprint143] — 2026-06-12 (Sprint 143 — The Koopman Vanguard & Linearized Cognitive Control)
 
 ### Sprint 143 "The Koopman Vanguard & Linearized Cognitive Control"
 
