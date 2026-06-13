@@ -27,3 +27,7 @@ ed2k-consensus = { path = "../consensus" }
 [[test]]
 name = "real_toxicity_eval"
 path = "tests/real_toxicity_eval.rs"
+
+[[test]]
+name = "ablation_study"
+path = "tests/ablation_study.rs"

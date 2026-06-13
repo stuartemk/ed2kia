@@ -1711,6 +1711,186 @@ pub fn compute_event_savings(results: &[EventTriggeredResult]) -> (usize, usize,
     (total_triggers, total_steps, savings)
 }
 
+// ─── TV-Hybrid Barrier-Lyapunov (TV-HBL) ────────────────────────────────────
+/// Sprint 152 (v15.2.0) — The Ablation Crucible.
+///
+/// Time-Varying Hybrid Barrier-Lyapunov with adaptive P(t) matrix.
+/// Combines barrier function safety with Lyapunov stability in a single
+/// composite certificate with time-varying parameters.
+///
+/// **Mathematical Foundation:**
+///
+/// - **TV-HBL Value:**
+///   ```math
+///   h(t, ψ) = ½(ψ - c(t))ᵀ P(t) (ψ - c(t)) - α(t)
+///   ```
+///   where P(t) > 0 via Riccati approximation, c(t) is the safe center trajectory,
+///   and α(t) is the time-varying barrier threshold.
+///
+/// - **Gradient:**
+///   ```math
+///   ∇h = P(t)(ψ - c(t))
+///   ```
+///
+/// - **QP Closed-Form Projection:**
+///   ```math
+///   λ = (γ - h(t,ψ)) / (||∇h||² + δ)
+///   u_safe = u_nom + λ · ∇h
+///   ```
+///   where γ is the robust residual bound and δ > 0 is regularization.
+
+/// Result of TV-Hybrid Barrier-Lyapunov evaluation.
+#[derive(Debug)]
+pub struct TVHBLResult {
+    /// Composite barrier-Lyapunov value h(t,ψ).
+    pub h_value: f32,
+    /// Gradient ∇h = P(t)(ψ - c(t)).
+    pub grad_h: Tensor,
+    /// Quadratic term ½(ψ - c)ᵀP(ψ - c).
+    pub quadratic_term: f32,
+    /// Time-varying threshold α(t).
+    pub alpha_t: f32,
+    /// Safety margin: h_value >= 0 means safe.
+    pub safe: bool,
+}
+
+impl std::fmt::Display for TVHBLResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "TVHBL {{ h={:.4}, quad={:.4}, α(t)={:.4}, safe={} }}",
+            self.h_value, self.quadratic_term, self.alpha_t, self.safe
+        )
+    }
+}
+
+/// Compute TV-Hybrid Barrier-Lyapunov value and gradient.
+///
+/// Evaluates the composite barrier-Lyapunov function:
+/// ```math
+/// h(t, ψ) = ½(ψ - c(t))ᵀ P(t) (ψ - c(t)) - α(t)
+/// ```
+///
+/// # Arguments
+/// * `state` — Current state ψ [batch, dim] or [dim,].
+/// * `safe_center` — Time-varying safe center c(t) [batch, dim] or [dim,].
+/// * `p_matrix` — Positive definite matrix P(t) [dim, dim].
+/// * `alpha_t` — Time-varying threshold α(t) > 0.
+///
+/// # Returns
+/// `(h_value, grad_h, quadratic_term, alpha_t, safe)` where safe = (h_value >= 0).
+pub fn compute_tv_hbl(
+    state: &Tensor,
+    safe_center: &Tensor,
+    p_matrix: &Tensor,
+    alpha_t: f32,
+) -> Result<TVHBLResult> {
+    let diff = state.broadcast_sub(safe_center)?;
+    // (ψ - c(t)) @ P(t)  — row-vector convention: [batch, dim] @ [dim, dim]
+    let diff_p = diff.matmul(p_matrix)?;
+    // Quadratic term: ½(ψ - c)ᵀ P (ψ - c) = ½ * sum(diff * diff@P)
+    let quad_raw = diff.broadcast_mul(&diff_p)?;
+    let quadratic_term: f32 = quad_raw.sum_all()?.to_scalar::<f32>()? * 0.5;
+    // h(t,ψ) = quad - α(t)
+    let h_value = quadratic_term - alpha_t;
+    let safe = h_value >= 0.0;
+
+    Ok(TVHBLResult {
+        h_value,
+        grad_h: diff_p,
+        quadratic_term,
+        alpha_t,
+        safe,
+    })
+}
+
+/// Result of QP projection for TV-HBL control.
+#[derive(Debug)]
+pub struct TVHBLProjectResult {
+    /// Steered control input u_safe.
+    pub u_safe: Tensor,
+    /// Lagrange multiplier λ.
+    pub lambda: f32,
+    /// Original safety margin before projection.
+    pub safety_margin_before: f32,
+    /// Safety margin after projection (should be >= 0).
+    pub safety_margin_after: f32,
+    /// Whether correction was applied (lambda > 0).
+    pub corrected: bool,
+}
+
+impl std::fmt::Display for TVHBLProjectResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "TVHBLProj {{ λ={:.4}, margin_before={:.4}, margin_after={:.4}, corrected={} }}",
+            self.lambda, self.safety_margin_before, self.safety_margin_after, self.corrected
+        )
+    }
+}
+
+/// QP closed-form projection for TV-HBL control.
+///
+/// When the nominal control violates the TV-HBL condition, compute the
+/// minimal L2-norm correction:
+/// ```math
+/// λ = max(0, (γ - h(t,ψ)) / (||∇h||² + δ))
+/// u_safe = u_nom + λ · ∇h
+/// ```
+///
+/// # Arguments
+/// * `u_nom` — Nominal control input [batch, u_dim] or [u_dim,].
+/// * `grad_h` — Gradient ∇h from `compute_tv_hbl` [batch, dim] or [dim,].
+/// * `h_value` — TV-HBL value h(t,ψ) from `compute_tv_hbl`.
+/// * `gamma` — Robust residual bound γ > 0 (target safety margin).
+/// * `delta` — Regularization δ > 0 for numerical stability.
+///
+/// # Returns
+/// `TVHBLProjectResult` with steered control and diagnostics.
+pub fn project_control_tv_hbl(
+    u_nom: &Tensor,
+    grad_h: &Tensor,
+    h_value: f32,
+    gamma: f32,
+    delta: f32,
+) -> Result<TVHBLProjectResult> {
+    let safety_margin_before = h_value;
+
+    // Compute ||∇h||²
+    let grad_sq = grad_h.sqr()?;
+    let grad_norm_sq: f32 = grad_sq.sum_all()?.to_scalar::<f32>()?;
+
+    // Lagrange multiplier: λ = max(0, (γ - h) / (||∇h||² + δ))
+    let numerator = gamma - h_value;
+    let lambda = if numerator > 0.0 {
+        numerator / (grad_norm_sq + delta)
+    } else {
+        0.0
+    };
+
+    // u_safe = u_nom + λ · ∇h
+    let u_safe = if lambda > 0.0 {
+        let lambda_tensor = Tensor::new(lambda, grad_h.device())?;
+        let correction = grad_h.broadcast_mul(&lambda_tensor)?;
+        u_nom.broadcast_add(&correction)?
+    } else {
+        u_nom.clone()
+    };
+
+    // Estimate post-projection safety margin
+    // h_new ≈ h + λ * ||∇h||² (first-order Taylor)
+    let safety_margin_after = h_value + lambda * grad_norm_sq;
+    let corrected = lambda > 0.0;
+
+    Ok(TVHBLProjectResult {
+        u_safe,
+        lambda,
+        safety_margin_before,
+        safety_margin_after,
+        corrected,
+    })
+}
+
 // ─── Unit Tests ────────────────────────────────────────────────────────────
 
 #[cfg(test)]

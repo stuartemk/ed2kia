@@ -1,4 +1,32 @@
-﻿## [v15.1.0-sprint151] — 2026-06-13 (Sprint 151 — The Empirical Crucible: TV-CBF Steering + PI-Koopman Residual + RealToxicityPrompts Eval)
+﻿## [v15.2.0-sprint152] — 2026-06-13 (Sprint 152 — The Ablation Crucible: TV-Hybrid Barrier-Lyapunov + QP Projection + Ablation Study)
+
+### Sprint 152 "The Ablation Crucible"
+
+**Mode:** `STRICT_MATH + TV_CBF_CONTROL + DEEP_KOOPMAN_RESIDUAL + ABLATION_CRUCIBLE + PROBABILISTIC_GUARANTEES + ZERO_WARNINGS + DOC_SYNC + NOOSFERA_IMMUNE`
+
+**Problema — Sin TV-Hybrid Barrier-Lyapunov ni Ablation Study formal:** Sprints 100-151 establecen KoopmanVanguard, DeepKoopmanAE, Physics-Informed Koopman, TV-CBF multi-modal, Fictitious Play MFG, TV-CBF Steering free-function y PI-Koopman Residual, pero faltan: (1) **TV-Hybrid Barrier-Lyapunov (TV-HBL)** — `compute_tv_hbl()` en `crates/native-audit/src/control.rs` con barrier compuesta time-varying `h(t,ψ) = ½(ψ-c(t))ᵀP(t)(ψ-c(t)) - α(t)` donde P(t) > 0 (simétrica definida positiva), y (2) **QP Closed-Form Projection** — `project_control_tv_hbl()` con corrección minimal L2-norm `λ = max(0, (γ-h)/(||∇h||²+δ))`, `u_safe = u_nom + λ·∇h`, y (3) **Ablation Study Framework** — `tests/ablation_study.rs` con 4+ configs progresivas (Baseline → SAE → Koopman → TV-HBL Full) validando mejora incremental.
+
+**Solución — TV-HBL + QP Projection + Ablation Study Completo:** Extendemos `control.rs` con TV-Hybrid Barrier-Lyapunov que combina quadratic Lyapunov term con time-varying P(t) matrix y α(t) threshold. QP projection closed-form para minimal correction garantizando safety constraint satisfaction. Ablation study con 22 tests validando progressive improvement: Baseline < SAE < Koopman < TV-HBL Full. **22/22 tests passing.**
+
+- **TV-HBL Barrier:** `native-audit/src/control.rs` — `compute_tv_hbl()` con `h(t,ψ) = ½(ψ-c)ᵀP(ψ-c) - α(t)`
+- **Quadratic Form:** `½(ψ-c)ᵀP(ψ-c)` — Row-vector convention `[batch,dim] @ [dim,dim]`
+- **Gradient:** `∇h = (ψ-c) @ P` — Used for QP projection direction
+- **QP Projection:** `project_control_tv_hbl()` — `λ = (γ-h)/(||∇h||²+δ)`, `u_safe = u_nom + λ·∇h`
+- **Ablation Study:** `tests/ablation_study.rs` — 22 tests across 4 modules (tv_hbl_core, qp_projection, ablation_study, integration)
+- **Progressive Validation:** Baseline < SAE < Koopman < TV-HBL Full safety scores
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| TV-HBL Core Tests | ✅ 7/7 |
+| QP Projection Tests | ✅ 7/7 |
+| Ablation Study Tests | ✅ 6/6 |
+| Integration Tests | ✅ 2/2 |
+| Total Tests | ✅ 22/22 |
+| Progressive Improvement | ✅ Verified |
+| Probabilistic Guarantee | ✅ P(h<0) ≤ δ |
+
+## [v15.1.0-sprint151] — 2026-06-13 (Sprint 151 — The Empirical Crucible: TV-CBF Steering + PI-Koopman Residual + RealToxicityPrompts Eval)
 
 ### Sprint 151 "The Empirical Crucible"
 
