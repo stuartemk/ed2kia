@@ -935,7 +935,7 @@ impl Zonotope {
         let mut box_upper_bound = vec![0.0f32; dim];
         for &idx in discard_indices {
             let col = self.generators.narrow(1, idx, 1)?.abs()?; // Shape: [dim, 1]
-            let col_vec = col.to_vec1::<f32>()?;
+            let col_vec = col.flatten_all()?.to_vec1::<f32>()?;
             for (b, &v) in box_upper_bound.iter_mut().zip(col_vec.iter()) {
                 *b += v;
             }
@@ -1111,6 +1111,171 @@ pub fn koopman_contracting_tube_mpc(
         max_radius,
         contracting,
     })
+}
+
+// ─── S148 — Hybrid Contraction-Graphon Tube MPC ──────────────────────────────
+
+/// Result of hybrid contraction-graphon tube propagation.
+#[derive(Debug)]
+pub struct GraphonTubeResult {
+    /// Propagated center: K · z_k_center
+    pub center: Tensor,
+    /// Propagated + reduced generators: [dim, n_final_gens]
+    pub generators: Tensor,
+    /// Contraction verified (K^T M K - ρ² M ⪯ 0 via trace proxy)
+    pub contraction_verified: bool,
+    /// Contraction rate (trace of certificate / dim)
+    pub contraction_rate: f32,
+    /// Final number of generators after Girard reduction
+    pub num_generators: usize,
+}
+
+impl std::fmt::Display for GraphonTubeResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "GraphonTubeResult {{ contraction_verified={}, contraction_rate={:.4}, num_generators={} }}",
+            self.contraction_verified, self.contraction_rate, self.num_generators)
+    }
+}
+
+/// Hybrid Contraction-Graphon Tube Propagation (S148).
+///
+/// **Mathematical Formula:**
+/// ```math
+/// Z_{k+1} = K Z_k ⊕ ℰ(W_graphon)
+/// ```
+/// Where:
+/// - `K Z_k`: Linear image of current zonotope through Koopman operator
+/// - `ℰ(W_graphon)`: Graphon uncertainty ellipsoid → diagonal generators
+/// - Girard reduction applied to keep generator count bounded
+///
+/// **Contraction Verification:**
+/// After propagation, verify `K^T M K - ρ² M ⪯ 0` via trace proxy.
+///
+/// # Arguments
+/// * `z_k_center` - Current zonotope center, shape `[dim]`.
+/// * `z_k_generators` - Current zonotope generators, shape `[dim, n_gens]`.
+/// * `k_matrix` - Koopman operator K, shape `[dim, dim]`.
+/// * `m_matrix` - Lyapunov metric M ≻ 0, shape `[dim, dim]`.
+/// * `graphon_variance` - Empirical variance from graphon mean-field.
+/// * `rho` - Target contraction rate ρ < 1.
+/// * `max_gens` - Max generators after Girard reduction.
+pub fn propagate_graphon_tube(
+    z_k_center: &Tensor,
+    z_k_generators: &Tensor,
+    k_matrix: &Tensor,
+    m_matrix: &Tensor,
+    graphon_variance: f32,
+    rho: f32,
+    max_gens: usize,
+) -> Result<GraphonTubeResult> {
+    let dim = z_k_center.dim(0)?;
+
+    // 1. Linear image: z_next_center = K · z_k_center
+    // Flatten to 1D first, then reshape to column vector [dim, 1]
+    let z_center_flat = z_k_center.flatten_all()?;
+    let z_center_col = z_center_flat.reshape((dim, 1))?;
+    let z_next_center = k_matrix.matmul(&z_center_col)?;
+
+    // 2. Linear image: z_next_gens = K · z_k_generators
+    let z_next_gens = k_matrix.matmul(z_k_generators)?;
+
+    // 3. Graphon uncertainty: diagonal generators with graphon_variance
+    let mut graphon_data = vec![0.0f32; dim * dim];
+    for i in 0..dim {
+        graphon_data[i * dim + i] = graphon_variance;
+    }
+    let graphon_gens = Tensor::from_vec(graphon_data, (dim, dim), z_k_center.device())?;
+
+    // 4. Concatenate: [K·Z_k_gens | graphon_gens]
+    let combined_gens = Tensor::cat(&[&z_next_gens, &graphon_gens], 1)?;
+
+    // 5. Girard Reduction: L1-norm sort + box over-approx
+    let reduced_gens = girard_reduce(&combined_gens, dim, max_gens)?;
+
+    // 6. Contraction Verification: K^T M K - ρ² M ⪯ 0 (trace proxy)
+    let kt = k_matrix.t()?;
+    let ktmk = kt.matmul(m_matrix)?.matmul(k_matrix)?;
+    let rho2 = rho * rho;
+    let rho2_tensor = Tensor::new(rho2, z_k_center.device())?;
+    let rho2m = m_matrix.broadcast_mul(&rho2_tensor)?;
+    let certificate = ktmk.sub(&rho2m)?;
+
+    // Trace proxy: sum diagonal
+    let cert_data = certificate.flatten_all()?.to_vec1::<f32>()?;
+    let mut trace_val = 0.0f32;
+    let step = dim.min(cert_data.len());
+    for i in 0..dim {
+        if i * step < cert_data.len() {
+            trace_val += cert_data[i * step];
+        }
+    }
+    let contraction_verified = trace_val < 0.0;
+    let contraction_rate = trace_val / (dim as f32);
+
+    let num_generators = reduced_gens.dim(1)?;
+
+    Ok(GraphonTubeResult {
+        center: z_next_center,
+        generators: reduced_gens,
+        contraction_verified,
+        contraction_rate,
+        num_generators,
+    })
+}
+
+/// Girard Zonotope Reduction (standalone function for tube propagation).
+///
+/// Sort generators by L1-norm descending, keep top `max_gens - dim`,
+/// convert rest to diagonal box via sum of absolute values.
+fn girard_reduce(generators: &Tensor, dim: usize, max_gens: usize) -> Result<Tensor> {
+    let num_gens = generators.dim(1)?;
+
+    if num_gens <= max_gens {
+        return Ok(generators.clone());
+    }
+
+    // 1. L1 norm per column
+    let l1_norms = generators.abs()?.sum(0)?;
+    let l1_vec = l1_norms.to_vec1::<f32>()?;
+
+    // 2. Sort indices descending by L1 norm
+    let mut indices: Vec<usize> = (0..num_gens).collect();
+    indices.sort_unstable_by(|a, b| {
+        l1_vec[*b].partial_cmp(&l1_vec[*a]).unwrap_or(std::cmp::Ordering::Equal)
+    });
+
+    // 3. Split: keep top (max_gens - dim), discard rest
+    let keep_count = max_gens.saturating_sub(dim);
+    let keep_indices: Vec<usize> = indices[..keep_count].to_vec();
+    let discard_indices = &indices[keep_count..];
+
+    // 4. Extract kept generators
+    let mut kept_cols = Vec::new();
+    for &idx in &keep_indices {
+        let col = generators.narrow(1, idx, 1)?;
+        kept_cols.push(col);
+    }
+
+    // 5. Box over-approximation for discarded
+    let mut box_upper = vec![0.0f32; dim];
+    for &idx in discard_indices {
+        let col = generators.narrow(1, idx, 1)?.abs()?;
+        let col_vec = col.flatten_all()?.to_vec1::<f32>()?;
+        for (b, &v) in box_upper.iter_mut().zip(col_vec.iter()) {
+            *b += v;
+        }
+    }
+    let box_gens = Tensor::from_vec(box_upper, (dim, 1), generators.device())?;
+
+    // 6. Concatenate
+    let final_gens = if kept_cols.is_empty() {
+        box_gens
+    } else {
+        let kept_cat = Tensor::cat(&kept_cols.as_slice(), 1)?;
+        Tensor::cat(&[&kept_cat, &box_gens], 1)?
+    };
+
+    Ok(final_gens)
 }
 
 // ─── S146 — Event-Triggered Contractive Tube MPC + LQR Fallback ─────────────

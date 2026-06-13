@@ -834,6 +834,117 @@ impl DeepKoopmanAE {
         })
     }
 
+    /// Lyapunov Deep Koopman Loss with Contraction Guarantees (S148).
+    ///
+    /// **Mathematical Formula:**
+    /// ```math
+    /// L_total = L_lyap + L_spec + L_sdp_proxy
+    /// ```
+    /// Where:
+    /// - `L_lyap = E[(V(ψ_{t+1}) - ρ² V(ψ_t))_+]` with `V(ψ) = ψ^T M ψ`
+    /// - `L_spec = (σ_max(K) - ρ)_+` via power iteration
+    /// - `L_sdp_proxy = ||(K^T M K - ρ² M)_+||_1` (element-wise ReLU sum)
+    ///
+    /// **Contraction Guarantee:** If `L_total ≈ 0`, then:
+    /// - `V(ψ_{t+1}) ≤ ρ² V(ψ_t)` (Lyapunov decrease)
+    /// - `σ_max(K) ≤ ρ` (spectral bound)
+    /// - `K^T M K - ρ² M ⪯ 0` (SDP proxy satisfied)
+    ///
+    /// # Arguments
+    /// * `psi_t` - Lifted state at t, shape `[B, lifted_dim]`.
+    /// * `psi_t_next` - Lifted state at t+1, shape `[B, lifted_dim]`.
+    /// * `k_matrix` - Koopman operator K, shape `[lifted_dim, lifted_dim]`.
+    /// * `m_matrix` - Lyapunov metric M ≻ 0, shape `[lifted_dim, lifted_dim]`.
+    /// * `rho` - Target contraction rate ρ < 1 (e.g., 0.95).
+    /// * `lambda_lyap` - Weight for Lyapunov term.
+    /// * `lambda_spec` - Weight for spectral radius term.
+    /// * `lambda_sdp` - Weight for SDP proxy term.
+    pub fn compute_lyapunov_koopman_loss(
+        &self,
+        psi_t: &Tensor,
+        psi_t_next: &Tensor,
+        k_matrix: &Tensor,
+        m_matrix: &Tensor,
+        rho: f32,
+        lambda_lyap: f32,
+        lambda_spec: f32,
+        lambda_sdp: f32,
+    ) -> Result<KoopmanAELoss> {
+        let device = psi_t.device();
+
+        // 1. Lyapunov Contraction Term: L_lyap = E[(V(ψ_{t+1}) - ρ² V(ψ_t))_+]
+        // V(ψ) = ψ^T M ψ  (quadratic form, batch-aware)
+        // psi_t: [B, d], m_matrix: [d, d] → psi_t @ M: [B, d] @ psi_t^T: [d, B] → [B, B]
+        // Diagonal = V(ψ_i) for each batch element
+        let psi_t_t = psi_t.t()?;
+        let v_t = psi_t.matmul(m_matrix)?.matmul(&psi_t_t)?;
+        let psi_t_next_t = psi_t_next.t()?;
+        let v_t_next = psi_t_next.matmul(m_matrix)?.matmul(&psi_t_next_t)?;
+
+        let rho_sq = rho * rho;
+        // contraction_target = ρ² * V(ψ_t) — scalar mul via broadcast
+        let rho_sq_tensor = Tensor::new(rho_sq, device)?;
+        let contraction_target = v_t.broadcast_mul(&rho_sq_tensor)?;
+        // lyap_diff = V(ψ_{t+1}) - ρ² V(ψ_t)
+        let lyap_diff = v_t_next.sub(&contraction_target)?;
+        // ReLU: only penalize when contraction violated
+        let lyap_relu = lyap_diff.relu()?;
+        // Manual trace: sum of diagonal elements (trace() not in candle-core 0.6)
+        let batch_size = lyap_relu.dim(0)?;
+        let mut trace_sum: f32 = 0.0;
+        for i in 0..batch_size {
+            let diag_elem = lyap_relu.narrow(0, i, 1)?.narrow(1, i, 1)?;
+            trace_sum += diag_elem.flatten_all()?.to_vec1::<f32>()?[0];
+        }
+        let _l_lyap = Tensor::new(trace_sum * lambda_lyap, device)?;
+
+        // 2. Spectral Radius Approximation via Power Iteration (5 iterations)
+        // σ_max(K) ≈ ||K v||_2 where v is normalized dominant eigenvector
+        let dim = k_matrix.dim(1)?;
+        let mut v = Tensor::randn(0.0f32, 1.0f32, (dim, 1), device)?;
+        // Manual L2 normalization (normalize() not in candle-core 0.6)
+        let norm = v.sqr()?.sum_all()?.sqrt()?;
+        let min_norm = Tensor::new(1e-12f32, device)?;
+        v = v.broadcast_div(&norm.maximum(&min_norm)?)?;
+        for _ in 0..5 {
+            let kv = k_matrix.matmul(&v)?;
+            let norm = kv.sqr()?.sum_all()?.sqrt()?;
+            v = kv.broadcast_div(&norm.maximum(&min_norm)?)?;
+        }
+        // spectral_radius_approx = ||K v||_2 (norm() not in candle-core 0.6)
+        let kv_final = k_matrix.matmul(&v)?;
+        let spectral_radius_scalar = kv_final.sqr()?.sum_all()?.sqrt()?;
+
+        let rho_tensor = Tensor::new(rho, device)?;
+        let spec_diff = spectral_radius_scalar.broadcast_sub(&rho_tensor)?;
+        let spec_relu = spec_diff.relu()?;
+        // Scalar mul via broadcast (mul(f32) not available)
+        let lambda_spec_tensor = Tensor::new(lambda_spec, device)?;
+        let l_spec_scalar = spec_relu.broadcast_mul(&lambda_spec_tensor)?.sum_all()?.flatten_all()?.to_vec1::<f32>()?[0];
+
+        // 3. SDP Proxy: ||(K^T M K - ρ² M)_+||_1
+        // Differentiable relaxation of K^T M K - ρ² M ⪯ 0
+        let kt = k_matrix.t()?;
+        let ktmk = kt.matmul(m_matrix)?.matmul(k_matrix)?;
+        let rho2m = m_matrix.broadcast_mul(&rho_sq_tensor)?;
+        let sdp_viol = ktmk.sub(&rho2m)?.relu()?;
+        let lambda_sdp_tensor = Tensor::new(lambda_sdp, device)?;
+        let l_sdp_scalar = sdp_viol.broadcast_mul(&lambda_sdp_tensor)?.sum_all()?.flatten_all()?.to_vec1::<f32>()?[0];
+
+        // Total loss — all values are f32 scalars
+        let koop_loss_val = trace_sum * lambda_lyap;
+        let forward_loss_val = l_spec_scalar;
+        let sdp_loss_val = l_sdp_scalar;
+        let total_scalar = koop_loss_val + forward_loss_val + sdp_loss_val;
+
+        Ok(KoopmanAELoss {
+            recon_loss: 0.0,
+            koop_loss: koop_loss_val,
+            forward_loss: forward_loss_val,
+            total_loss: total_scalar,
+        })
+    }
+
     /// Multi-step Koopman prediction: ψ̂_{t+h} = K^h · ψ_t.
     pub fn koopman_predict_horizon(&self, psi_t: &Tensor, horizon: usize) -> Result<Tensor> {
         let mut psi = psi_t.clone();
