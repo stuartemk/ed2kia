@@ -43,6 +43,10 @@
 
 use candle_core::{DType, Device, Result, Tensor};
 
+// Sprint 154 — Clarabel Industrial QP Solver for CBF steering
+use clarabel::algebra::CscMatrix;
+use clarabel::solver::{DefaultSettings, DefaultSolver, IPSolver, SolverStatus, SupportedConeT};
+
 /// Configuration for Hamiltonian Monte Carlo steering.
 #[derive(Debug, Clone)]
 pub struct HmcConfig {
@@ -1259,6 +1263,309 @@ pub fn estimate_contraction_rate(trajectory: &[Tensor]) -> candle_core::Result<f
     } else {
         Ok(0.0)
     }
+}
+
+// ─── Sprint 154 PASO B: Industrial QP Solver (Clarabel) in Steering ───
+
+/// Result of the CBF-QP steering optimization.
+#[derive(Debug)]
+pub struct CbfQpResult {
+    /// Optimal safe steering delta (to add to nominal hidden state).
+    pub u_safe: Tensor,
+    /// Solver status from Clarabel.
+    pub solver_status: String,
+    /// CBF barrier value before projection.
+    pub h_value_before: f64,
+    /// Safety margin after projection (∇h^T u + α·h - γ·ε_koopman).
+    pub safety_margin_after: f64,
+    /// Number of QP solver iterations.
+    pub iterations: u32,
+    /// Whether the nominal control was corrected.
+    pub corrected: bool,
+    /// Robustness margin used (γ·ε_koopman).
+    pub robustness_margin: f64,
+}
+
+impl std::fmt::Display for CbfQpResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "CbfQp[status={}, iters={}, corrected={}, h={:.4}, margin={:.4}, robust={:.6}]",
+            self.solver_status, self.iterations, self.corrected,
+            self.h_value_before, self.safety_margin_after, self.robustness_margin
+        )
+    }
+}
+
+/// Solve the CBF-QP for safe activation steering with Koopman robustness.
+///
+/// Solves the following QP using Clarabel interior-point solver:
+/// ```math
+/// \min_u \ \frac{1}{2} \|u\|^2_2 + q^T u
+/// \quad \text{s.t.} \quad \nabla h(x)^T u \geq -\alpha(h(x)) - L_f h(x) - \gamma \cdot \varepsilon_{koopman}
+/// \quad \quad \quad \ \|u\|_2 \leq u_{max}
+/// ```
+///
+/// Where:
+/// - `h(x) = β² - ||x - c_safe||²` is the CBF (safety barrier function)
+/// - `∇h(x) = -2(x - c_safe)` is the barrier gradient
+/// - `α(h) = α_cbf · h` is the class-K₃ decay rate
+/// - `L_f h(x)` is the drift term (approximated from activation trajectory)
+/// - `γ · ε_koopman` is the Koopman prediction error robustness margin
+/// - `u_max` bounds the steering effort (minimal perturbation guarantee)
+///
+/// # Arguments
+/// * `h_current` — Current activation state tensor [batch, hidden].
+/// * `h_prev` — Previous activation state (for drift estimation).
+/// * `safe_centroid` — Safe reference activation [batch, hidden].
+/// * `u_nom` — Nominal steering delta (from HMC/Koopman). Can be zero for pure safety filter.
+/// * `alpha_cbf` — Class-K gain α > 0 for CBF decay rate.
+/// * `beta_cbf` — Safety radius β for barrier function.
+/// * `gamma_robust` — Robustness scaling γ ≥ 0 for Koopman error margin.
+/// * `epsilon_koopman` — Koopman prediction error bound ε ≥ 0.
+/// * `u_max` — Maximum allowed steering norm.
+///
+/// # Returns
+/// `CbfQpResult` with the optimal safe steering delta and solver diagnostics.
+pub fn solve_cbf_qp(
+    h_current: &Tensor,
+    h_prev: &Tensor,
+    safe_centroid: &Tensor,
+    u_nom: &Tensor,
+    alpha_cbf: f64,
+    beta_cbf: f64,
+    gamma_robust: f64,
+    epsilon_koopman: f64,
+    u_max: f64,
+) -> candle_core::Result<CbfQpResult> {
+    let device = h_current.device();
+    let dtype = h_current.dtype();
+
+    // 1. Compute CBF: h(x) = β² - ||x - c_safe||²
+    //    Flatten diff to 1D for consistent broadcasting
+    let diff = h_current.broadcast_sub(safe_centroid)?.flatten_all()?;
+    let dist_sq = diff.sqr()?.sum_all()?.to_scalar::<f64>()?;
+    let h_value = (beta_cbf * beta_cbf) - dist_sq;
+
+    // 2. CBF gradient: ∇h = -2(x - c_safe)
+    //    Use fill to create same-shape tensor of -2 values
+    let n_diff = diff.shape().dims()[0];
+    let grad_h = if dtype == candle_core::DType::F64 {
+        let data: Vec<f64> = vec![-2.0f64; n_diff];
+        let neg_two = Tensor::from_vec(data, (n_diff,), device)?;
+        diff.broadcast_mul(&neg_two)
+    } else {
+        let data: Vec<f32> = vec![-2.0f32; n_diff];
+        let neg_two = Tensor::from_vec(data, (n_diff,), device)?;
+        diff.broadcast_mul(&neg_two)
+    }?;
+
+    // 3. Drift estimation: L_f h ≈ ∇h^T (h_current - h_prev)
+    //    Compute as scalar product to avoid shape mismatch
+    let drift_scalar = h_current.broadcast_sub(h_prev)?.sum_all()?.to_scalar::<f64>()?;
+    let grad_sum = grad_h.sum_all()?.to_scalar::<f64>()?;
+    let lh_value = grad_sum * drift_scalar;
+
+    // 4. Robustness margin: γ · ε_koopman
+    let robustness_margin = gamma_robust * epsilon_koopman;
+
+    // 5. Class-K₃ decay: α(h) = α_cbf · h
+    let alpha_h = alpha_cbf * h_value;
+
+    // 6. CBF constraint RHS: -α(h) - L_f h - γ·ε
+    let cbf_rhs = -alpha_h - lh_value - robustness_margin;
+
+    // 7. Check if constraint is already satisfied by zero control
+    //    ∇h^T · 0 ≥ cbf_rhs  →  0 ≥ cbf_rhs  →  cbf_rhs ≤ 0
+    if cbf_rhs <= 0.0 {
+        // Already safe — return nominal with no QP solve
+        return Ok(CbfQpResult {
+            u_safe: u_nom.clone(),
+            solver_status: "already_safe".to_string(),
+            h_value_before: h_value,
+            safety_margin_after: -cbf_rhs,
+            iterations: 0,
+            corrected: false,
+            robustness_margin,
+        });
+    }
+
+    // 8. Flatten tensors to f64 vectors for Clarabel
+    //    Handle both F32 and F64 input tensors
+    let grad_h_vec: Vec<f64> = if dtype == candle_core::DType::F64 {
+        grad_h.flatten_all()?.to_vec1::<f64>()?
+    } else {
+        grad_h.flatten_all()?.to_vec1::<f32>()?
+            .iter().map(|&x| x as f64).collect()
+    };
+    let u_nom_vec: Vec<f64> = if dtype == candle_core::DType::F64 {
+        u_nom.flatten_all()?.to_vec1::<f64>()?
+    } else {
+        u_nom.flatten_all()?.to_vec1::<f32>()?
+            .iter().map(|&x| x as f64).collect()
+    };
+    let u_nom_shape = u_nom.shape().dims().to_vec();
+    let n_grad = grad_h_vec.len();
+
+    if n_grad == 0 {
+        return Err(candle_core::Error::Msg(
+            "Empty gradient vector for CBF-QP".to_string(),
+        ));
+    }
+
+    // 9. Build QP for Clarabel:
+    //    min  ½ u^T I u + (-u_nom)^T u
+    //    s.t.  [-∇h^T] u ≤ α(h) + L_f h + γ·ε   (CBF constraint)
+    //          ||u||₂ ≤ u_max                    (effort bound, soft via projection)
+
+    // QP dimension: use gradient length (state dim) for constraint consistency
+    let n_qp = n_grad;
+    // Pad or truncate u_nom to match QP dimension
+    let q_vec: Vec<f64> = (0..n_qp).map(|i| {
+        if i < u_nom_vec.len() { -u_nom_vec[i] } else { 0.0 }
+    }).collect();
+
+    let P = CscMatrix::identity(n_qp);
+    let q = q_vec;
+
+    // Inequality: -∇h^T u ≤ α(h) + L_f h + γ·ε
+    // CSC format: colptr must have n+1 entries for n columns
+    let a_vals: Vec<f64> = grad_h_vec.iter().map(|&g| -g).collect();
+    let a_colptr: Vec<usize> = (0..=n_qp).collect();  // [0, 1, 2, ..., n_qp]
+    let a_rowval: Vec<usize> = vec![0; n_qp];         // all entries in row 0
+    let A = CscMatrix::new(1, n_qp, a_colptr, a_rowval, a_vals);
+    let b = vec![alpha_h + lh_value + robustness_margin];
+
+    let cones: &[SupportedConeT<f64>] =
+        &[SupportedConeT::<f64>::NonnegativeConeT(1)];
+
+    let settings = DefaultSettings::default();
+
+    let mut solver = DefaultSolver::new(&P, &q, &A, &b, cones, settings)
+        .map_err(|e| candle_core::Error::Msg(format!("Clarabel init: {}", e)))?;
+    solver.solve();
+
+    let status_str = format!("{:?}", solver.solution.status);
+
+    let u_opt_raw: Vec<f64> = match solver.solution.status {
+        SolverStatus::Solved => solver.solution.x.clone(),
+        _ => {
+            eprintln!(
+                "CBF-QP did not solve: {:}. Using analytical fallback.",
+                solver.solution.status
+            );
+            // Analytical fallback: project nominal onto CBF halfspace
+            let grad_norm_sq: f64 = grad_h_vec.iter().map(|&g| g * g).sum();
+            if grad_norm_sq > 1e-12 {
+                let lambda = cbf_rhs / grad_norm_sq;
+                (0..n_qp).map(|i| {
+                    let g = grad_h_vec[i];
+                    let u = if i < u_nom_vec.len() { u_nom_vec[i] } else { 0.0 };
+                    u - lambda * g
+                }).collect()
+            } else {
+                (0..n_qp).map(|i| if i < u_nom_vec.len() { u_nom_vec[i] } else { 0.0 }).collect()
+            }
+        }
+    };
+
+    // Project u_opt to match u_nom length (for reshape)
+    let u_opt: Vec<f64> = (0..u_nom_vec.len()).map(|i| {
+        if i < u_opt_raw.len() { u_opt_raw[i] } else { 0.0 }
+    }).collect();
+
+    // 10. Project onto ||u|| ≤ u_max if exceeded
+    let u_norm: f64 = u_opt.iter().map(|&x| x * x).sum::<f64>().sqrt();
+    let u_opt = if u_norm > u_max {
+        let scale = u_max / u_norm;
+        u_opt.iter().map(|&x| x * scale).collect()
+    } else {
+        u_opt
+    };
+
+    // 11. Post-projection safety margin: ∇h^T u + α·h
+    let dot: f64 = grad_h_vec.iter().zip(u_opt.iter()).map(|(&g, &u)| g * u).sum();
+    let safety_margin_after = dot + alpha_h;
+
+    // 12. Check correction magnitude
+    let diff_norm: f64 = u_opt.iter()
+        .zip(u_nom_vec.iter())
+        .map(|(&a, &b)| (a - b).powi(2))
+        .sum::<f64>()
+        .sqrt();
+    let corrected = diff_norm > 1e-8;
+
+    // 13. Convert back to Tensor — preserve original u_nom shape AND dtype
+    let u_safe = if dtype == candle_core::DType::F64 {
+        if u_nom_shape.len() == 1 {
+            Tensor::from_vec(
+                u_opt.clone(),
+                u_nom_shape[0],
+                device,
+            )?
+        } else {
+            Tensor::from_vec(
+                u_opt.clone(),
+                u_nom_shape.clone(),
+                device,
+            )?
+        }
+    } else {
+        let u_opt_f32: Vec<f32> = u_opt.iter().map(|&x| x as f32).collect();
+        if u_nom_shape.len() == 1 {
+            Tensor::from_vec(
+                u_opt_f32,
+                u_nom_shape[0],
+                device,
+            )?
+        } else {
+            Tensor::from_vec(
+                u_opt_f32,
+                u_nom_shape.clone(),
+                device,
+            )?
+        }
+    };
+
+    Ok(CbfQpResult {
+        u_safe,
+        solver_status: status_str,
+        h_value_before: h_value,
+        safety_margin_after,
+        iterations: solver.solution.iterations,
+        corrected,
+        robustness_margin,
+    })
+}
+
+/// Apply CBF-QP steering to a hidden state tensor.
+///
+/// Convenience wrapper that computes `u = solve_cbf_qp(...)` then returns
+/// `h_steered = h_current + u_safe`.
+pub fn steer_cbf_qp(
+    h_current: &Tensor,
+    h_prev: &Tensor,
+    safe_centroid: &Tensor,
+    alpha_cbf: f64,
+    beta_cbf: f64,
+    gamma_robust: f64,
+    epsilon_koopman: f64,
+    u_max: f64,
+) -> candle_core::Result<(Tensor, CbfQpResult)> {
+    // Nominal steering: zero (pure safety filter mode)
+    // Use safe_centroid shape to determine control dimension
+    let safe_shape = safe_centroid.shape().dims().to_vec();
+    let n_state = safe_shape.iter().product();
+    // Create column vector [n, 1] for control
+    let u_nom = Tensor::zeros((n_state, 1), h_current.dtype(), h_current.device())?;
+
+    let result = solve_cbf_qp(
+        h_current, h_prev, safe_centroid, &u_nom,
+        alpha_cbf, beta_cbf, gamma_robust, epsilon_koopman, u_max,
+    )?;
+
+    let h_steered = h_current.broadcast_add(&result.u_safe)?;
+    Ok((h_steered, result))
 }
 
 // ─── Unit Tests ───

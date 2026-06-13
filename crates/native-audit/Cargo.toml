@@ -1,6 +1,6 @@
 [package]
 name = "native-audit"
-version = "15.3.0"
+version = "15.4.0"
 edition = "2021"
 description = "Native tensor audit core for ed2kIA — Candle-based hidden state extraction + TCM Z-axis"
 license = "Apache-2.0"

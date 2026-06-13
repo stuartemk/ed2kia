@@ -1226,23 +1226,24 @@ fn newton_schulz_inverse(a: &Tensor, iterations: usize) -> Result<Tensor> {
     // Normalize: Y = A / ||A||_F
     let norm = a.sqr()?.sum_all()?.sqrt()?;
     let norm_scalar = norm.to_scalar::<f32>()?.max(1e-10);
-    let norm_tensor = Tensor::new(norm_scalar, a.device())?;
-    let y = a.div(&norm_tensor)?;
+    let inv_norm = Tensor::new(1.0f32 / norm_scalar, a.device())?;
+    let y = a.broadcast_mul(&inv_norm)?;
 
     let mut x = y.clone();
     let n = y.dim(0)?;
     let eye = Tensor::eye(n, DType::F32, y.device())?;
     let two = Tensor::new(2.0f32, y.device())?;
+    let two_i = eye.broadcast_mul(&two)?;
 
     for _ in 0..iterations {
         // X_{k+1} = X_k (2I - Y X_k)
         let yx = y.matmul(&x)?;
-        let two_minus_yx = two.sub(&yx)?;
-        x = x.matmul(&two_minus_yx)?;
+        let two_i_minus_yx = two_i.sub(&yx)?;
+        x = x.matmul(&two_i_minus_yx)?;
     }
 
     // Scale back: A^{-1} = X / ||A||_F
-    x.div(&norm_tensor)
+    x.broadcast_mul(&inv_norm)
 }
 
 /// Stabilize Koopman operator for contraction ρ(K) < target_rho.
@@ -1371,6 +1372,184 @@ fn rand_matrix(rows: usize, cols: usize, scale: f64, device: &Device) -> Result<
 fn lcg_next(state: &mut u64) -> u64 {
     *state = state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
     *state
+}
+
+// ---------------------------------------------------------------------------
+// Sprint 154 PASO C: DMDc (Dynamic Mode Decomposition with Control)
+// ---------------------------------------------------------------------------
+
+/// Result of DMDc operator identification.
+#[derive(Debug)]
+pub struct DmdcResult {
+    /// Discrete-time system matrix A [d_state x d_state].
+    pub k_a: Tensor,
+    /// Control influence matrix B [d_state x d_control].
+    pub k_b: Tensor,
+    /// Effective rank (number of significant modes).
+    pub effective_rank: usize,
+    /// Spectral radius of A (stability indicator: <1 = stable).
+    pub spectral_radius: f64,
+    /// Whether stability projection was applied.
+    pub stability_projected: bool,
+}
+
+impl std::fmt::Display for DmdcResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Dmdc[A={:?}, rank={}, ρ(A)={:.4}, projected={}]",
+            self.k_a.shape(),
+            self.effective_rank,
+            self.spectral_radius,
+            self.stability_projected
+        )
+    }
+}
+
+/// Compute DMDc (Dynamic Mode Decomposition with Control) operator from data.
+///
+/// Uses ridge regression (dual normal equations) since candle-core 0.6 lacks SVD:
+/// ```math
+/// \begin{aligned}
+/// &\Omega = [X \ U] \in \mathbb{R}^{N \times (d_x + d_u)} \\
+/// &[A \ B] = Y \Omega^T (\Omega \Omega^T + \lambda I)^{-1}
+/// \end{aligned}
+/// ```
+///
+/// **Stability Projection**: If ρ(A) > target_rho, A is scaled down.
+///
+/// # Arguments
+/// * `x_snapshots` — State snapshots [N x d_state].
+/// * `y_snapshots` — Next-state snapshots [N x d_state].
+/// * `u_snapshots` — Control inputs [N x d_control].
+/// * `target_rho` — Target spectral radius (typically 0.95).
+/// * `ridge` — Tikhonov regularization λ.
+///
+/// # Returns
+/// `DmdcResult` with identified A, B operators.
+pub fn compute_dmdc(
+    x_snapshots: &Tensor,
+    y_snapshots: &Tensor,
+    u_snapshots: &Tensor,
+    target_rho: f64,
+    ridge: f64,
+) -> Result<DmdcResult> {
+    let device = x_snapshots.device();
+    let (n_snapshots, d_state) = x_snapshots.dims2()?;
+    let (n_u, d_control) = u_snapshots.dims2()?;
+
+    if n_snapshots != n_u {
+        return Err(candle_core::Error::Msg(
+            format!(
+                "Snapshot count mismatch: X={}, U={}",
+                n_snapshots, n_u
+            ),
+        ));
+    }
+
+    if n_snapshots < d_state + d_control {
+        return Err(candle_core::Error::Msg(
+            format!(
+                "Insufficient snapshots for DMDc: N={} < d_x+d_u={}",
+                n_snapshots,
+                d_state + d_control
+            ),
+        ));
+    }
+
+    // 1. Build composite Ω = [X | U]  [N x (d_state + d_control)]
+    let omega = Tensor::cat(&[x_snapshots, u_snapshots], 1)?;
+    let d_omega = d_state + d_control;
+
+    // 2. Primal normal equations: [A B] = Y^T Ω (Ω^T Ω + λI)^{-1}
+    //    Data layout: X,Y,U are [N x d]  (rows=samples, cols=features)
+    //    Ω^T Ω  [d_omega x d_omega] — smaller, more stable
+    let omega_t = omega.t()?;
+    let omega_t_omega = omega_t.matmul(&omega)?;
+
+    //    Regularized: Ω^T Ω + λI  [d_omega x d_omega]
+    let eye = Tensor::eye(d_omega, candle_core::DType::F32, device)?;
+    let ridge_tensor = Tensor::new(ridge as f32, device)?;
+    let ridge_i = eye.broadcast_mul(&ridge_tensor)?;
+    let regularized = omega_t_omega.add(&ridge_i)?;
+
+    //    Solve via Newton-Schulz pseudoinverse (stable matrix inverse)
+    let inv = newton_schulz_inverse(&regularized, 20)?;
+
+    //    [A B] = Y^T @ Ω @ inv  [d_state x (d_state + d_control)]
+    let y_t = y_snapshots.t()?;
+    let y_t_omega = y_t.matmul(&omega)?;
+    let ab = y_t_omega.matmul(&inv)?;
+
+    // 3. Split into A and B
+    let k_a = ab.narrow(1, 0, d_state)?;
+    let k_b = ab.narrow(1, d_state, d_control)?;
+
+    // 4. Compute spectral radius via power iteration
+    let spectral_radius = compute_spectral_radius(&k_a, 20)?;
+
+    // 5. Stability projection
+    let (k_a_final, stability_projected) = if spectral_radius > target_rho {
+        let k_a_proj = stabilize_koopman_operator(&k_a, target_rho)?;
+        (k_a_proj, true)
+    } else {
+        (k_a.clone(), false)
+    };
+
+    // Effective rank: min(n_snapshots, d_omega)
+    let effective_rank = n_snapshots.min(d_omega);
+
+    Ok(DmdcResult {
+        k_a: k_a_final,
+        k_b,
+        effective_rank,
+        spectral_radius,
+        stability_projected,
+    })
+}
+
+/// Approximate spectral radius via power iteration.
+fn compute_spectral_radius(k: &Tensor, iterations: usize) -> Result<f64> {
+    let d = k.dim(0)?;
+    let scale = 1.0 / (d as f32).sqrt();
+    let scale_tensor = Tensor::new(scale, k.device())?;
+    // Use 2D column vector [d, 1] for matmul compatibility
+    let mut v = Tensor::ones((d, 1), candle_core::DType::F32, k.device())?
+        .broadcast_mul(&scale_tensor)?;
+
+    let mut rho = 1.0f32;
+    for _ in 0..iterations {
+        let v_new = k.matmul(&v)?;
+        rho = v_new.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
+        if rho < 1e-12 {
+            return Ok(0.0);
+        }
+        let inv_rho = Tensor::new(1.0 / rho, k.device())?;
+        v = v_new.broadcast_mul(&inv_rho)?;
+    }
+    Ok(rho as f64)
+}
+
+/// Stabilize Koopman operator by scaling to target spectral radius.
+fn stabilize_koopman_operator(k: &Tensor, target_rho: f64) -> Result<Tensor> {
+    let current_rho = compute_spectral_radius(k, 15)?;
+    if current_rho < 1e-12 {
+        return Ok(k.clone());
+    }
+    let scale = (target_rho / current_rho) as f32;
+    let scale_tensor = Tensor::new(scale, k.device())?;
+    k.broadcast_mul(&scale_tensor)
+}
+
+/// DMDc-based prediction: ψ(y) = A ψ(x) + B u
+pub fn dmdc_predict(
+    result: &DmdcResult,
+    psi_x: &Tensor,
+    u: &Tensor,
+) -> Result<Tensor> {
+    let psi_y_a = result.k_a.matmul(psi_x)?;
+    let psi_y_b = result.k_b.matmul(u)?;
+    psi_y_a.add(&psi_y_b)
 }
 
 // ---------------------------------------------------------------------------

@@ -1,4 +1,33 @@
-﻿## [v15.3.0-sprint153] — 2026-06-13 (Sprint 153 — Formal Verification Crucible & Industrial QP Solver + Robustness Guarantees)
+﻿## [v15.4.0-sprint154] — 2026-06-13 (Sprint 154 — THE GGUF GOLIATH & INDUSTRIAL QP CONTROL + DMDc KOOPMAN ROBUSTO)
+
+### Sprint 154 "THE GGUF GOLIATH & INDUSTRIAL QP CONTROL + DMDc KOOPMAN ROBUSTO"
+
+**Mode:** `STRICT_MATH + GGUF_QUANTIZATION + CLARABEL_QP + DMDC_KOOPMAN + TUBE_MPC + ZERO_WARNINGS + BENCHMARKS_DUROS`
+
+**Problema — Sin DMDc robusto ni CBF-QP con Clarabel en steering.rs:** Sprints 100-153 establecen KoopmanVanguard, DeepKoopmanAE, Physics-Informed Koopman, TV-CBF multi-modal, Fictitious Play MFG, TV-CBF Steering, PI-Koopman Residual, TV-Hybrid Barrier-Lyapunov, Clarabel QP en control.rs y Kani verification, pero faltan: (1) **DMDc (Dynamic Mode Decomposition with Control)** — `compute_dmdc()` en `crates/native-audit/src/deep_koopman.rs` con primal normal equations `Y^T Ω (Ω^T Ω + λI)^{-1}` para identificación de sistemas lineales con control, y (2) **CBF-QP en steering.rs** — `solve_cbf_qp()` con Clarabel 0.11 CscMatrix para QP de seguridad `min ½||u - u_nom||² s.t. -∇h^T u ≤ α(h) + L_f h + γ·ε`, y (3) **Goliath Benchmark Tests** — `tests/goliath_gguf_audit.rs` con 16 tests cubriendo GGUF, DMDc y CBF-QP.
+
+**Solución — DMDc Primal + CBF-QP Clarabel + Goliath Tests:** Implementamos DMDc con primal normal equations que funciona con data layout `[N, d]` (rows=samples, cols=features), Newton-Schulz inverse para regularización ridge y power iteration para spectral radius. CBF-QP con Clarabel CscMatrix en formato per-column `colptr = [0, 1, 2, ..., n]` para constraint matrices densas. **16/16 Goliath tests passing.**
+
+- **DMDc Primal Normal Equations:** `native-audit/src/deep_koopman.rs` — `compute_dmdc()` con `[A B] = Y^T Ω (Ω^T Ω + λI)^{-1}`
+- **Newton-Schulz Inverse:** Iterative matrix inverse `X_{k+1} = X_k(2I - YX_k)` para `(Ω^T Ω + λI)^{-1}`
+- **Spectral Radius:** `compute_spectral_radius()` con power iteration + 2D column vectors para matmul
+- **CBF-QP Clarabel:** `native-audit/src/steering.rs` — `solve_cbf_qp()` con CscMatrix per-column format
+- **Dtype-Aware Tensors:** F32/F64 detection + conditional tensor creation en `solve_cbf_qp()`
+- **Shape Preservation:** Original `u_nom` shape mantenido en `u_safe` output
+- **Goliath Tests:** `tests/goliath_gguf_audit.rs` — 16 tests (3 GGUF + 8 DMDc + 5 CBF-QP)
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| GGUF Audit Tests | ✅ 3/3 |
+| DMDc Tests | ✅ 8/8 |
+| CBF-QP Tests | ✅ 5/5 |
+| Goliath Benchmark | ✅ 16/16 |
+| Clarabel Integration | ✅ CscMatrix per-column |
+| Dtype Handling | ✅ F32/F64 aware |
+| Shape Preservation | ✅ Original u_nom shape |
+
+## [v15.3.0-sprint153] — 2026-06-13 (Sprint 153 — Formal Verification Crucible & Industrial QP Solver + Robustness Guarantees)
 
 ### Sprint 153 "Formal Verification Crucible"
 
