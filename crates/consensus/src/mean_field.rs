@@ -553,6 +553,160 @@ pub fn graphon_mean_field_step(
     }
 }
 
+// ─── S149 — Sparse Mean Field Games over Graphings ────────────────────────────
+
+/// Sparse neighbor info for graphing-based mean field.
+#[derive(Debug, Clone)]
+pub struct SparseNeighbor {
+    /// Neighbor index.
+    pub idx: usize,
+    /// Neighbor state.
+    pub state: Vec<f64>,
+    /// Edge weight: w_{ij} = exp(-α·latency) · trust.
+    pub weight: f64,
+    /// Empirical measure μ_j.
+    pub measure: f64,
+}
+
+/// Result of sparse mean field update.
+#[derive(Debug)]
+pub struct SparseMeanFieldResult {
+    /// Updated particles.
+    pub particles: Vec<Vec<f64>>,
+    /// Sparse drift magnitudes per particle.
+    pub drift_magnitudes: Vec<f64>,
+    /// Total number of edges processed (sparsity metric).
+    pub num_edges: usize,
+    /// Total number of possible edges (for sparsity ratio).
+    pub num_possible_edges: usize,
+}
+
+impl std::fmt::Display for SparseMeanFieldResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let sparsity = if self.num_possible_edges > 0 {
+            (1.0 - self.num_edges as f64 / self.num_possible_edges as f64) * 100.0
+        } else {
+            100.0
+        };
+        write!(f, "SparseMeanField {{ edges={}/{}, sparsity={:.1}%, avg_drift={:.4} }}",
+            self.num_edges, self.num_possible_edges, sparsity,
+            if self.drift_magnitudes.is_empty() {
+                0.0
+            } else {
+                self.drift_magnitudes.iter().sum::<f64>() / self.drift_magnitudes.len() as f64
+            })
+    }
+}
+
+/// Sparse Mean Field Game Update over Graphings (S149).
+///
+/// **Mathematical Foundation:**
+/// Replaces dense graphon aggregation with sparse neighbor summation over graphings
+/// (local weak limit of sparse graphs, per Fabian et al. 2023-2025).
+/// Suitable for libp2p power-law networks where graphon density assumption fails.
+///
+/// **Sparse Drift:**
+/// ```math
+/// b_i(x, μ) = -∇VFE_i(x) + η ∑_{j∈N(i)} w_{ij}(x_i, x_j)(x_j - x_i) μ_j
+/// ```
+/// where:
+/// - `N(i)` — Sparse neighbor set (graphing adjacency, not dense matrix)
+/// - `w_{ij} = exp(-α·latency_{ij}) · trust_{ij}` — Edge weight
+/// - `μ_j` — Empirical measure at node j
+///
+/// **Discrete Fokker-Planck-Kolmogorov:**
+/// ```math
+/// μ^{t+1} ≈ μ^t - Δt ∇·(b μ) + noise
+/// ```
+///
+/// # Arguments
+/// * `particles` - Current particle states `[num_particles][dim]`.
+/// * `neighbors` - Sparse neighbor list per particle (graphing adjacency).
+/// * `config` - Mean field configuration.
+/// * `alpha` - Latency decay parameter for edge weights.
+pub fn update_sparse_mean_field(
+    particles: &[Vec<f64>],
+    neighbors: &[Vec<SparseNeighbor>],
+    config: &MeanFieldConfig,
+    _alpha: f64,
+) -> SparseMeanFieldResult {
+    let num_particles = particles.len();
+    let dim = if num_particles > 0 { particles[0].len() } else { 0 };
+    let mut new_particles = Vec::with_capacity(num_particles);
+    let mut drift_magnitudes = Vec::with_capacity(num_particles);
+    let mut total_edges: usize = 0;
+
+    for i in 0..num_particles {
+        let x = &particles[i];
+
+        // 1. VFE drift: -∇VFE_i(x) ≈ -x (gradient of quadratic energy)
+        let vfe_drift: Vec<f64> = x.iter().map(|v| -v * config.delta).collect();
+
+        // 2. Sparse mean-field coupling: η ∑_{j∈N(i)} w_{ij}(x_j - x_i) μ_j
+        let mut mf_coupling = vec![0.0f64; dim];
+        for neighbor in &neighbors[i] {
+            total_edges += 1;
+            let w = neighbor.weight * neighbor.measure;
+            for (d, (xj, xi)) in neighbor.state.iter().zip(x.iter()).enumerate().take(dim) {
+                mf_coupling[d] += config.eta * w * (xj - xi);
+            }
+        }
+
+        // 3. Barrier function: -δ ∇B(x) = -δ · x / (R² - ||x||²)
+        let x_sq_norm: f64 = x.iter().map(|v| v * v).sum();
+        let barrier_factor = if x_sq_norm < config.safety_radius * config.safety_radius {
+            config.delta / (config.safety_radius * config.safety_radius - x_sq_norm)
+        } else {
+            config.delta * 10.0 // Strong barrier when outside
+        };
+        let barrier_drift: Vec<f64> = x.iter().map(|v| -barrier_factor * v).collect();
+
+        // 4. Combined drift: b(x, μ) = vfe_drift + mf_coupling + barrier_drift
+        let mut drift = vec![0.0f64; dim];
+        for d in 0..dim {
+            drift[d] = vfe_drift[d] + mf_coupling[d] + barrier_drift[d];
+        }
+
+        // 5. Euler-Maruyama step: x_{t+1} = x_t + b·Δt + σ·√(Δt)·ξ
+        let noise_scale = config.sigma * (config.dt).sqrt();
+        let mut new_x = Vec::with_capacity(dim);
+        let mut drift_sq = 0.0f64;
+        for d in 0..dim {
+            let noise = gaussian_noise(config.seed.wrapping_add(i as u64).wrapping_add(d as u64));
+            let new_val = x[d] + drift[d] * config.dt + noise_scale * noise;
+            new_x.push(new_val);
+            drift_sq += drift[d] * drift[d];
+        }
+
+        new_particles.push(new_x);
+        drift_magnitudes.push(drift_sq.sqrt());
+    }
+
+    let num_possible_edges = num_particles * num_particles;
+
+    SparseMeanFieldResult {
+        particles: new_particles,
+        drift_magnitudes,
+        num_edges: total_edges,
+        num_possible_edges,
+    }
+}
+
+/// Simple LCG-based Gaussian noise for deterministic simulation.
+fn gaussian_noise(seed: u64) -> f64 {
+    let mut state = seed;
+    let lcg_next = |s: &mut u64| {
+        *s = s.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+    };
+    lcg_next(&mut state);
+    let u1 = (state & 0xFFFFFFFF) as f64 / 4294967295.0;
+    lcg_next(&mut state);
+    let u2 = (state & 0xFFFFFFFF) as f64 / 4294967295.0;
+    let r = ((u1.max(1e-10)).ln()).sqrt() * 2.0;
+    let theta = u2 * 2.0 * std::f64::consts::PI;
+    r * theta.cos()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

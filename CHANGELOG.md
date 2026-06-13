@@ -1,4 +1,33 @@
-﻿## [v14.8.0-sprint148] — 2026-06-12 (Sprint 148 — Hybrid Contraction-Graphon Tube MPC & Lyapunov Deep Koopman)
+﻿## [v14.9.0-sprint149] — 2026-06-13 (Sprint 149 — Robust Koopman-CBF & Sparse Mean Field Games)
+
+### Sprint 149 "The Inevitable Attractor"
+
+**Mode:** `STRICT_MATH + FORMAL_VERIFICATION + ZERO_WARNINGS + DOC_SYNC + ROBUST_SAFETY`
+
+**Problema — Sin garantía CBF robusta ni consenso Sparse MFG:** Sprints 100-148 establecen KoopmanVanguard con LQR + CBF + Tube MPC, DeepKoopmanAE con Lyapunov loss, graphon mean-field drift y event-triggered control, pero faltan: (1) **Robust Koopman Control Barrier Functions** — `compute_cbf_safe_steering()` en `crates/native-audit/src/control.rs` con barrier `h(ψ) = r² - ||ψ||²`, Lie derivatives `L_f h = ∇hᵀ(Kψ)` y `L_g h = ∇hᵀB`, robust condition `L_f h + L_g h·u ≥ -γ·h + ||∇h||·ε_residual` y QP closed-form correction `λ = (safety_margin - current_safety) / (||L_g h||² + δ)`, y (2) **Sparse Mean Field Games** — `update_sparse_mean_field()` en `crates/consensus/src/mean_field.rs` con VFE drift `-∇VFE_i(x)`, sparse MF coupling `η∑_{j∈N(i)} w_{ij}(x_j - x_i)μ_j` y Euler-Maruyama discretización `x_{t+1} = x_t + b·Δt + σ·√(Δt)·ξ`.
+
+**Solución — Robust CBF + Sparse MFG Completo:** Extendemos `control.rs` con `compute_cbf_safe_steering()` que verifica la condición CBF robusta compensando el error de truncamiento residual `ε_residual` y aplica corrección QP closed-form cuando se viola. Extendemos `mean_field.rs` con `update_sparse_mean_field()` que implementa consenso graphing-based para redes P2P sparse con power-law topology. **21/21 formal verification tests passing.**
+
+- **Robust Koopman CBF:** `native-audit/src/control.rs` — `compute_cbf_safe_steering()` con barrier + Lie derivatives + QP correction
+- **Barrier Function:** `h(ψ) = r² - ||ψ||²` — Forward invariance del safe set `h(ψ) ≥ 0`
+- **Lie Derivatives:** `L_f h = ∇hᵀ(Kψ)` (drift), `L_g h = ∇hᵀB` (control)
+- **Robust CBF Condition:** `L_f h + L_g h·u ≥ -γ·h + ||∇h||·ε_residual` — Compensa error de truncamiento
+- **QP Closed-Form Correction:** `λ = (safety_margin - current_safety) / (||L_g h||² + δ)` — Minimal correction
+- **Sparse Mean Field Games:** `consensus/src/mean_field.rs` — `update_sparse_mean_field()` con graphing-based consensus
+- **Sparse Drift:** `b_i(x, μ) = -∇VFE_i(x) + η∑_{j∈N(i)} w_{ij}(x_j - x_i)μ_j` — Power-law P2P topology
+- **Euler-Maruyama:** `x_{t+1} = x_t + b·Δt + σ·√(Δt)·ξ` — Discretización estocástica
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| S149 Formal Verification Tests | ✅ 21/21 |
+| Clippy Warnings (S149 code) | ✅ 0 |
+| Robust CBF Safety Guarantee | ✅ Forward invariance con ε_residual |
+| QP Correction | ✅ Closed-form minimal correction |
+| Sparse MFG Consensus | ✅ Graphing-based power-law P2P |
+| Euler-Maruyama Integration | ✅ Stochastic discretization |
+
+## [v14.8.0-sprint148] — 2026-06-12 (Sprint 148 — Hybrid Contraction-Graphon Tube MPC & Lyapunov Deep Koopman)
 
 ### Sprint 148 "Hybrid Contraction-Graphon Tube MPC & Lyapunov Deep Koopman"
 

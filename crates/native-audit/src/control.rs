@@ -1278,6 +1278,153 @@ fn girard_reduce(generators: &Tensor, dim: usize, max_gens: usize) -> Result<Ten
     Ok(final_gens)
 }
 
+// ─── S149 — Robust Koopman Control Barrier Functions (Koopman-CBF) ────────────
+
+/// Result of Robust Koopman-CBF safety filter.
+#[derive(Debug)]
+pub struct KoopmanCBFResult {
+    /// Safe control input (possibly corrected from nominal).
+    pub safe_u: Tensor,
+    /// Was the nominal control already safe?
+    pub was_nominal_safe: bool,
+    /// Barrier function value h(ψ).
+    pub h_value: f32,
+    /// Current safety margin (L_f h + L_g u_nom).
+    pub current_safety: f32,
+    /// Required safety margin (with robustness term).
+    pub safety_margin: f32,
+    /// QP correction magnitude (0 if nominal was safe).
+    pub correction_norm: f32,
+}
+
+impl std::fmt::Display for KoopmanCBFResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "KoopmanCBFResult {{ was_nominal_safe={}, h={:.4}, current_safety={:.4}, safety_margin={:.4}, correction_norm={:.4} }}",
+            self.was_nominal_safe, self.h_value, self.current_safety, self.safety_margin, self.correction_norm)
+    }
+}
+
+/// Robust Koopman-CBF Safety Filter (S149 — 11/10 version).
+///
+/// **Mathematical Foundation:**
+/// Guarantees forward invariance of the safe set `h(ψ) ≥ 0` despite model mismatch
+/// from Koopman truncation error + SAE lifting residual `ε_residual`.
+///
+/// **Barrier Function:**
+/// ```math
+/// h(ψ) = r² - ||ψ - ψ_safe||²
+/// ```
+/// where `ψ_safe = 0` (symbiotic attractor at origin).
+///
+/// **Robust CBF Condition (discrete, relative degree 1):**
+/// ```math
+/// L_f h(ψ) + L_g h(ψ) u ≥ -γ h(ψ) + ||∇h|| ε_residual
+/// ```
+/// where:
+/// - `L_f h = ∇hᵀ (K ψ)` — Lie derivative along drift
+/// - `L_g h = ∇hᵀ B` — Lie derivative along control
+/// - `γ > 0` — Decay rate (class-K function parameter)
+/// - `ε_residual` — Verified bound on model mismatch
+///
+/// **QP Closed-Form Minimal Correction:**
+/// When nominal control violates the CBF condition, compute minimal correction:
+/// ```math
+/// λ = (safety_margin - current_safety) / (||L_g h||² + δ)
+/// u_safe = u_nom + λ · (L_g h)ᵀ
+/// ```
+///
+/// # Arguments
+/// * `psi` - Current lifted state, shape `[dim]` or `[1, dim]`.
+/// * `k_matrix` - Koopman operator K, shape `[dim, dim]`.
+/// * `b_matrix` - Control input matrix B, shape `[dim, u_dim]`.
+/// * `nominal_u` - Nominal control input, shape `[u_dim]` or `[1, u_dim]`.
+/// * `epsilon_residual` - Verified bound on model mismatch `||ε|| ≤ ε_residual`.
+/// * `gamma` - Decay rate `γ > 0`.
+/// * `r_sq` - Safe radius squared `r²` for barrier function.
+pub fn compute_cbf_safe_steering(
+    psi: &Tensor,
+    k_matrix: &Tensor,
+    b_matrix: &Tensor,
+    nominal_u: &Tensor,
+    epsilon_residual: f32,
+    gamma: f32,
+    r_sq: f32,
+) -> Result<KoopmanCBFResult> {
+    let device = psi.device();
+
+    // Flatten psi to 1D [dim] for consistent operations
+    let psi_flat = psi.flatten_all()?;
+    let dim = psi_flat.dim(0)?;
+
+    // 1. Barrier function: h(ψ) = r² - ||ψ||² (ψ_safe = 0)
+    let psi_sq_norm: f32 = psi_flat.sqr()?.sum_all()?.flatten_all()?.to_vec1::<f32>()?[0];
+    let h_val = r_sq - psi_sq_norm;
+
+    // 2. Gradient: ∇h = -2ψ
+    let nabla_h = psi_flat.broadcast_mul(&Tensor::new(-2.0f32, device)?)?;
+
+    // 3. Lie derivative along drift: L_f h = ∇hᵀ (K ψ)
+    let k_psi = k_matrix.matmul(&psi_flat.reshape((dim, 1))?)?;
+    let k_psi_flat = k_psi.flatten_all()?;
+    let l_f_h: f32 = nabla_h.broadcast_mul(&k_psi_flat)?
+        .sum_all()?.flatten_all()?.to_vec1::<f32>()?[0];
+
+    // 4. Lie derivative along control: L_g h = ∇hᵀ B → [u_dim]
+    let u_dim = b_matrix.dim(1)?;
+    let _u_dim = u_dim; // suppress unused warning, used for shape docs
+    let nabla_h_row = nabla_h.reshape((1, dim))?;
+    let l_g_h = nabla_h_row.matmul(b_matrix)?; // [1, u_dim]
+    let l_g_h_flat = l_g_h.flatten_all()?;
+
+    // 5. Safety margin: -γ·h + ||∇h||·ε_residual
+    let nabla_norm: f32 = nabla_h.sqr()?.sum_all()?.sqrt()?.flatten_all()?.to_vec1::<f32>()?[0];
+    let safety_margin = -gamma * h_val + nabla_norm * epsilon_residual;
+
+    // 6. Current safety with nominal control: L_f h + L_g h · u_nom
+    let nominal_u_flat = nominal_u.flatten_all()?;
+    let l_g_u_nom: f32 = l_g_h_flat.broadcast_mul(&nominal_u_flat)?
+        .sum_all()?.flatten_all()?.to_vec1::<f32>()?[0];
+    let current_safety = l_f_h + l_g_u_nom;
+
+    // 7. Check if nominal control satisfies robust CBF condition
+    if current_safety >= safety_margin {
+        // Nominal is already safe
+        return Ok(KoopmanCBFResult {
+            safe_u: nominal_u.clone(),
+            was_nominal_safe: true,
+            h_value: h_val,
+            current_safety,
+            safety_margin,
+            correction_norm: 0.0,
+        });
+    }
+
+    // 8. QP closed-form minimal correction
+    // λ = (safety_margin - current_safety) / (||L_g h||² + δ)
+    let violation = safety_margin - current_safety;
+    let l_g_norm_sq: f32 = l_g_h_flat.sqr()?.sum_all()?.flatten_all()?.to_vec1::<f32>()?[0];
+    let lambda = violation / (l_g_norm_sq + 1e-8);
+
+    // u_safe = u_nom + λ · (L_g h)ᵀ
+    let correction = l_g_h_flat.broadcast_mul(&Tensor::new(lambda, device)?)?;
+    let safe_u_flat = nominal_u_flat.broadcast_add(&correction)?;
+
+    // Reshape to match original nominal_u shape
+    let safe_u = safe_u_flat.reshape(nominal_u.shape())?;
+
+    // Correction norm
+    let corr_norm: f32 = correction.sqr()?.sum_all()?.sqrt()?.flatten_all()?.to_vec1::<f32>()?[0];
+
+    Ok(KoopmanCBFResult {
+        safe_u,
+        was_nominal_safe: false,
+        h_value: h_val,
+        current_safety,
+        safety_margin,
+        correction_norm: corr_norm,
+    })
+}
+
 // ─── S146 — Event-Triggered Contractive Tube MPC + LQR Fallback ─────────────
 
 /// Result of event-triggered Koopman steering.
