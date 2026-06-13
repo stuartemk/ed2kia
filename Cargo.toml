@@ -1,6 +1,6 @@
 [package]
 name = "ed2kia"
-version = "13.2.0-sprint132"
+version = "15.1.0-sprint151"
 edition = "2021"
 description = "Decentralized distributed interpretability network using Sparse Autoencoders (Qwen-Scope)"
 license = "Apache-2.0"
@@ -533,3 +533,8 @@ required-features = ["v3.9-noosphere-engine"]
 name = "alignment_benchmarks"
 path = "benchmarks/alignment_benchmarks.rs"
 harness = false
+
+# Sprint 151: RealToxicityPrompts Streaming Evaluator
+[[test]]
+name = "real_toxicity_eval"
+path = "crates/native-audit/benches/real_toxicity_eval.rs"

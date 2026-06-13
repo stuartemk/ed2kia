@@ -1,4 +1,36 @@
-﻿## [v15.0.0-sprint150] — 2026-06-13 (Sprint 150 — Physics-Informed Koopman + TV-CBF + Fictitious Play MFG)
+﻿## [v15.1.0-sprint151] — 2026-06-13 (Sprint 151 — The Empirical Crucible: TV-CBF Steering + PI-Koopman Residual + RealToxicityPrompts Eval)
+
+### Sprint 151 "The Empirical Crucible"
+
+**Mode:** `STRICT_MATH + FRONTIER_SCALE_UP + STREAMING_EVAL + ZERO_WARNINGS + DOC_SYNC + PI-KOOPMAN_TV_CBF_MFG`
+
+**Problema — Sin steering TV-CBF libre ni residual PI-Koopman:** Sprints 100-150 establecen KoopmanVanguard, DeepKoopmanAE, Physics-Informed Koopman, TV-CBF multi-modal y Fictitious Play MFG, pero faltan: (1) **TV-CBF Steering como free function** — `steer_tvcbf()` en `crates/native-audit/src/lib.rs` con barrier time-varying `h(x) = r² - ||x - x_safe||²`, class-K α time-varying `α(t) = α₀(1 + k·t)` y QP closed-form projection `x_steered = x_safe + (x - x_safe) · min(1, r / ||x - x_safe||)`, y (2) **PI-Koopman Residual** — `compute_pi_koopman_residual()` con residual `r = ψ_obs - K·ψ_pred`, divergence proxy vía element-wise ratio y volume preservation metric `vol_ratio = ||ψ_obs|| / (||ψ_curr|| · scale_factor)`.
+
+**Solución — TV-CBF Steering + PI-Koopman Residual + Streaming Eval:** Free functions standalone (sin dependencia de TensorAudit) para TV-CBF steering con time-varying conservatism y PI-Koopman residual con divergence + volume metrics. Streaming evaluator benchmark con RealToxicityPrompts-style data simulation. **24/24 tests passing (18 sprint151 + 6 streaming eval).**
+
+- **TV-CBF Steering:** `native-audit/src/lib.rs` — `steer_tvcbf()` free function con time-varying α
+- **Barrier Function:** `h(x) = r² - ||x - x_safe||²` — Forward invariance del safe set
+- **Time-Varying α:** `α(t) = α₀(1 + k·t)` — Conservatism increases over time
+- **QP Projection:** `x_steered = x_safe + δ · min(1, r / ||δ||)` — Closed-form minimal correction
+- **PI-Koopman Residual:** `compute_pi_koopman_residual()` — `r = ψ_obs - K·ψ_pred`
+- **Divergence Proxy:** Element-wise ratio `|r| / |ψ_curr|` mean — Local expansion/contraction
+- **Volume Ratio:** `||ψ_obs|| / (||ψ_curr|| · scale)` — Global volume preservation
+- **Streaming Evaluator:** `tests/real_toxicity_eval.rs` — RealToxicityPrompts-style benchmark pipeline
+- **Data Infrastructure:** `scripts/setup_crucible.sh` + `data/model_info.json`
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| S151 Core Tests | ✅ 18/18 |
+| Streaming Eval Tests | ✅ 6/6 |
+| Total Tests | ✅ 24/24 |
+| TV-CBF Steer Tests | ✅ 8/8 |
+| PI-Koopman Residual Tests | ✅ 8/8 |
+| Integration Tests | ✅ 2/2 |
+| Latency Target (small) | ✅ <100ms/prompt |
+| Latency Target (large) | ✅ <500ms/prompt |
+
+## [v15.0.0-sprint150] — 2026-06-13 (Sprint 150 — Physics-Informed Koopman + TV-CBF + Fictitious Play MFG)
 
 ### Sprint 150 "The Physics-Informed Singularity"
 

@@ -3470,3 +3470,210 @@ impl TensorAudit {
         Ok(norm_safe / (norm_toxic + 1e-8))
     }
 }
+
+// ─── S151 — The Empirical Crucible: TV-CBF Steering + PI-Koopman Residual ───
+
+/// Result of TV-CBF steering operation.
+#[derive(Debug)]
+pub struct TVCBFSteerResult {
+    /// Steered activation tensor.
+    pub steered: Tensor,
+    /// Barrier value h(x) = r² - ||x - x_safe||².
+    pub h_value: f32,
+    /// Time-varying α(t) = α₀(1 + k·t).
+    pub alpha_t: f32,
+    /// Correction magnitude applied (0 if already safe).
+    pub correction_magnitude: f32,
+    /// Whether steering was applied.
+    pub intervened: bool,
+}
+
+impl std::fmt::Display for TVCBFSteerResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "TVCBFSteer {{ h={:.4}, α(t)={:.4}, corr={:.4}, intervened={} }}",
+            self.h_value, self.alpha_t, self.correction_magnitude, self.intervened
+        )
+    }
+}
+
+/// Result of Physics-Informed Koopman residual computation.
+#[derive(Debug)]
+pub struct PIKoopmanResidual {
+    /// Residual tensor: ψ_observed - K·ψ_predicted.
+    pub residual: Tensor,
+    /// Residual norm ||r||₂.
+    pub residual_norm: f32,
+    /// Divergence proxy (trace of Jacobian approximation).
+    pub div_proxy: f32,
+    /// Volume preservation metric (1 = perfect, >1 = expansion, <1 = contraction).
+    pub volume_ratio: f32,
+}
+
+impl std::fmt::Display for PIKoopmanResidual {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "PIKoopmanRes {{ ||r||={:.4}, div={:.4}, vol_ratio={:.4} }}",
+            self.residual_norm, self.div_proxy, self.volume_ratio
+        )
+    }
+}
+
+/// TV-CBF (Time-Varying Control Barrier Function) Steering.
+///
+/// Enforces safety barrier h(x) = r² - ||x - x_safe||² ≥ 0 with time-varying
+/// class-K α function: α(t) = α₀(1 + k·t).
+///
+/// When h(x) < 0 (unsafe), applies closed-form QP correction:
+///   λ = (α(t) - ĥ_nom) / (||L_g h||² + δ)
+///   u_safe = u_nom + λ · (L_g h)ᵀ
+///
+/// For activation steering, this simplifies to:
+///   x_steered = x_safe + (x - x_safe) · min(1, r / ||x - x_safe||)
+///
+/// # Arguments
+/// * `x` — Current activation [batch, dim].
+/// * `x_safe` — Safe centroid [batch, dim].
+/// * `r` — Safety radius (barrier threshold).
+/// * `alpha_0` — Base class-K gain α₀ > 0.
+/// * `k` — Time-varying rate k ≥ 0.
+/// * `t` — Current time step.
+pub fn steer_tvcbf(
+    x: &Tensor,
+    x_safe: &Tensor,
+    r: f32,
+    alpha_0: f32,
+    k: f32,
+    t: usize,
+) -> Result<TVCBFSteerResult> {
+    let delta = x.broadcast_sub(x_safe)?;
+    // Use sum(1) not sum_keepdim to get [batch] not [batch, 1]
+    let dist_sq = delta.sqr()?.sum(1)?;
+    let dist: Vec<f32> = dist_sq.flatten_all()?.to_vec1::<f32>()?;
+    let r_sq = r * r;
+
+    // Time-varying α(t) = α₀(1 + k·t)
+    let alpha_t = alpha_0 * (1.0 + k * t as f32);
+
+    // Barrier value h(x) = r² - ||x - x_safe||²
+    let h_values: Vec<f32> = dist.iter().map(|&d| r_sq - d).collect();
+    let h_min = h_values.iter().fold(f32::INFINITY, |a, &b| a.min(b));
+
+    // Check if any sample is unsafe
+    let needs_correction = h_min < 0.0;
+
+    let (steered, correction_mag) = if needs_correction {
+        // Closed-form projection: x_steered = x_safe + (x - x_safe) · min(1, r / ||x - x_safe||)
+        let batch_size = x.dim(0)?;
+        let mut corrections: Vec<f32> = Vec::with_capacity(batch_size);
+
+        let mut steered_list = Vec::new();
+        for i in 0..batch_size {
+            let h_i = h_values[i];
+            if h_i < 0.0 {
+                // Unsafe: project onto safe boundary
+                let d_i = dist[i].sqrt();
+                let scale = if d_i > 1e-8 { r / d_i } else { 1.0 };
+                let effective_scale = scale.min(1.0); // Don't overshoot
+                corrections.push((1.0 - effective_scale) * d_i);
+
+                // Extract slice i of delta and scale
+                let delta_i = delta.narrow(0, i, 1)?;
+                let scale_tensor = Tensor::new(effective_scale, x.device())?;
+                let scaled_delta = delta_i.broadcast_mul(&scale_tensor)?;
+                let x_safe_i = x_safe.narrow(0, i.min(x_safe.dim(0)? - 1), 1)?;
+                let steered_i = x_safe_i.broadcast_add(&scaled_delta)?;
+                steered_list.push(steered_i);
+            } else {
+                // Safe: pass through
+                corrections.push(0.0);
+                let x_i = x.narrow(0, i, 1)?;
+                steered_list.push(x_i);
+            }
+        }
+
+        let steered_stacked = Tensor::stack(&steered_list, 0)?;
+        // Squeeze to remove the extra dimension: [batch, 1, dim] -> [batch, dim]
+        let steered_tensor = steered_stacked.squeeze(1)?;
+        let avg_correction = corrections.iter().sum::<f32>() / (corrections.len() as f32 + 1e-8);
+        (steered_tensor, avg_correction)
+    } else {
+        // All safe: pass through
+        (x.clone(), 0.0f32)
+    };
+
+    Ok(TVCBFSteerResult {
+        steered,
+        h_value: h_min,
+        alpha_t,
+        correction_magnitude: correction_mag,
+        intervened: needs_correction,
+    })
+}
+
+/// Compute Physics-Informed Koopman Residual.
+///
+/// Given observed next state ψ_obs and Koopman prediction ψ_pred = K·ψ_curr,
+/// compute the residual r = ψ_obs - ψ_pred along with divergence proxy
+/// and volume preservation metrics.
+///
+/// The divergence proxy approximates ∇·f(ψ) via the trace of the
+/// finite-difference Jacobian: trace(J) ≈ trace((ψ_obs - ψ_pred) / ψ_curr).
+///
+/// # Arguments
+/// * `psi_curr` — Current Koopman state [batch, dim].
+/// * `psi_observed` — Observed next state [batch, dim].
+/// * `k_operator` — Koopman operator [dim, dim].
+/// * `residual_net` — Residual correction weights [dim, dim] (optional).
+pub fn compute_pi_koopman_residual(
+    psi_curr: &Tensor,
+    psi_observed: &Tensor,
+    k_operator: &Tensor,
+    residual_net: Option<&Tensor>,
+) -> Result<PIKoopmanResidual> {
+    // Koopman prediction: ψ_pred = ψ_curr · K (row-vector convention)
+    let psi_pred = psi_curr.matmul(k_operator)?;
+
+    // Residual: r = ψ_obs - ψ_pred
+    let residual = psi_observed.broadcast_sub(&psi_pred)?;
+
+    // Residual norm ||r||₂
+    let residual_norm: f32 = residual.sqr()?.sum_all()?.to_scalar::<f32>()?.sqrt();
+
+    // Divergence proxy: trace(J) ≈ mean of element-wise ratio (r / ψ_curr)
+    // Use safe division with epsilon to avoid NaN
+    let eps = Tensor::new(1e-8f32, psi_curr.device())?;
+    let abs_curr = psi_curr.abs()?;
+    let safe_curr = abs_curr.broadcast_add(&eps)?;
+    let ratio = residual.abs()?.broadcast_div(&safe_curr)?;
+    let div_proxy: f32 = ratio.mean_all()?.to_scalar::<f32>()?;
+
+    // Volume preservation: ratio of output volume to input volume
+    // Approximate via ratio of mean norms
+    let norm_obs: f32 = psi_observed.sqr()?.sum_all()?.to_scalar::<f32>()?.sqrt();
+    let norm_curr: f32 = psi_curr.sqr()?.sum_all()?.to_scalar::<f32>()?.sqrt();
+    let batch = psi_curr.dim(0)? as f32;
+    let dim = psi_curr.dim(1)? as f32;
+    let scale_factor = (batch * dim).sqrt();
+    let volume_ratio = (norm_obs / (norm_curr + 1e-8)) / scale_factor;
+
+    // If residual net provided, add its contribution to divergence proxy
+    let div_proxy_final = if let Some(rnet) = residual_net {
+        // Trace of residual net as additional divergence signal
+        let n = rnet.dim(0)?.min(rnet.dim(1)?);
+        let eye = Tensor::eye(n, DType::F32, rnet.device())?;
+        let trace_val: f32 = (rnet.broadcast_mul(&eye)?).sum_all()?.to_scalar::<f32>()?;
+        div_proxy + trace_val.abs() * 0.1 // Weighted contribution
+    } else {
+        div_proxy
+    };
+
+    Ok(PIKoopmanResidual {
+        residual,
+        residual_norm,
+        div_proxy: div_proxy_final,
+        volume_ratio,
+    })
+}

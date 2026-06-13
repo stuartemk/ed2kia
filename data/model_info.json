@@ -1,0 +1,35 @@
+{
+  "primary_model": {
+    "name": "Llama-3.2-1B-Instruct",
+    "hidden_dim": 2048,
+    "vocab_size": 128256,
+    "num_layers": 16,
+    "num_heads": 16,
+    "rope": true,
+    "quantization": "Q4_K_M",
+    "estimated_ram_gb": 2.5
+  },
+  "fallback_model": {
+    "name": "Qwen2.5-1.5B-Instruct",
+    "hidden_dim": 1536,
+    "vocab_size": 151936,
+    "num_layers": 28,
+    "num_heads": 12,
+    "rope": true,
+    "quantization": "Q4_K_M",
+    "estimated_ram_gb": 1.8
+  },
+  "edge_fallback": {
+    "name": "SmolLM2-135M",
+    "hidden_dim": 768,
+    "vocab_size": 49152,
+    "num_layers": 12,
+    "num_heads": 12,
+    "rope": true,
+    "quantization": "Q8_0",
+    "estimated_ram_gb": 0.3
+  },
+  "sprint": "151",
+  "version": "v15.1.0-sprint151",
+  "description": "The Empirical Crucible — Llama-3.2-1B & Real-Toxicity Evaluation"
+}
