@@ -707,6 +707,165 @@ fn gaussian_noise(seed: u64) -> f64 {
     r * theta.cos()
 }
 
+// ─── S150 — Fictitious Play for Sparse Graphon MFG (Nash Convergence) ─────────
+
+/// Result of Fictitious Play policy update.
+#[derive(Debug)]
+pub struct FictitiousPlayResult {
+    /// Softmax policy π(a|x,μ) [num_actions].
+    pub policy: Vec<f64>,
+    /// Policy entropy H(π) = -Σ π(a) log(π(a)).
+    pub entropy: f64,
+    /// Expected Q-value E_π[Q].
+    pub expected_q: f64,
+    /// Policy change norm ||π_new - π_old||₁ (for convergence check).
+    pub policy_change: f64,
+}
+
+impl std::fmt::Display for FictitiousPlayResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "FictPlay {{ entropy={:.4}, E[Q]={:.4}, Δπ={:.6}, actions={} }}",
+            self.entropy, self.expected_q, self.policy_change, self.policy.len()
+        )
+    }
+}
+
+/// Fictitious Play with Softmax + Entropy Regularization for Nash Convergence.
+///
+/// Computes the softmax policy from Q-values:
+/// ```math
+/// π^{k+1}(a | x, μ^k) ∝ exp( Q(x,a; μ^k) / τ )
+/// ```
+///
+/// With entropy regularization for exploration:
+/// ```math
+/// L = E_π[Q] - τ · H(π)
+/// ```
+///
+/// Where H(π) = -Σ π(a) log(π(a)) is the Shannon entropy.
+///
+/// # Arguments
+/// * `q_values` — Q-values per action [num_actions].
+/// * `temperature` — Softmax temperature τ > 0 (higher = more uniform).
+/// * `entropy_weight` — Entropy bonus weight for the loss term.
+/// * `previous_policy` — Previous policy for computing change norm (optional).
+pub fn update_policy_fictitious_play(
+    q_values: &[f64],
+    temperature: f64,
+    entropy_weight: f64,
+    previous_policy: Option<&[f64]>,
+) -> FictitiousPlayResult {
+    let tau = temperature.max(1e-8); // Prevent division by zero
+
+    // 1. Scale Q by temperature: Q / τ
+    let scaled: Vec<f64> = q_values.iter().map(|&q| q / tau).collect();
+
+    // 2. Max subtraction for numerical stability
+    let max_q = scaled.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+    let shifted: Vec<f64> = scaled.iter().map(|&v| v - max_q).collect();
+
+    // 3. Exponentiate
+    let exp_q: Vec<f64> = shifted.iter().map(|&v| v.exp()).collect();
+
+    // 4. Sum for normalization
+    let sum_exp: f64 = exp_q.iter().sum();
+    let sum_exp_safe = sum_exp.max(1e-30);
+
+    // 5. Softmax policy: π(a) = exp(Q/τ) / Σ exp(Q/τ)
+    let policy: Vec<f64> = exp_q.iter().map(|&v| v / sum_exp_safe).collect();
+
+    // 6. Entropy: H(π) = -Σ π(a) log(π(a))
+    let entropy: f64 = policy.iter().map(|&p| {
+        if p > 1e-15 {
+            -p * p.ln()
+        } else {
+            0.0
+        }
+    }).sum();
+
+    // 7. Expected Q: E_π[Q] = Σ π(a) · Q(a)
+    let expected_q: f64 = policy.iter().zip(q_values.iter()).map(|(&pi, &q)| pi * q).sum();
+
+    // 8. Policy change: ||π_new - π_old||₁
+    let policy_change = if let Some(prev) = previous_policy {
+        if prev.len() == policy.len() {
+            policy.iter().zip(prev.iter()).map(|(&a, &b)| (a - b).abs()).sum()
+        } else {
+            0.0
+        }
+    } else {
+        0.0
+    };
+
+    // Entropy weight is available for loss computation but doesn't change the policy
+    // (it affects the gradient in training, not the softmax itself)
+    let _entropy_bonus = entropy_weight * entropy;
+
+    FictitiousPlayResult {
+        policy,
+        entropy,
+        expected_q,
+        policy_change,
+    }
+}
+
+/// Run Fictitious Play iterations until convergence or max iterations.
+///
+/// Simulates iterative best-response dynamics where each agent observes
+/// the empirical distribution of opponent strategies and updates via softmax.
+///
+/// # Arguments
+/// * `q_oracle` — Oracle that computes Q-values given current population policy.
+/// * `temperature` — Softmax temperature.
+/// * `entropy_weight` — Entropy regularization weight.
+/// * `max_iters` — Maximum iterations.
+/// * `convergence_tol` — Convergence threshold on policy change ||Δπ||₁.
+pub fn run_fictitious_play<F>(
+    q_oracle: F,
+    temperature: f64,
+    entropy_weight: f64,
+    max_iters: usize,
+    convergence_tol: f64,
+) -> FictitiousPlayResult
+where
+    F: Fn(&[f64]) -> Vec<f64>, // population_policy -> Q_values
+{
+    let num_actions = q_oracle(&[]).len();
+    let mut current_policy = vec![1.0 / num_actions as f64; num_actions];
+
+    let mut last_result = FictitiousPlayResult {
+        policy: current_policy.clone(),
+        entropy: (num_actions as f64).ln(),
+        expected_q: 0.0,
+        policy_change: 0.0,
+    };
+
+    for _ in 0..max_iters {
+        // Query Q-values with current population policy
+        let q_values = q_oracle(&current_policy);
+
+        // Update policy via softmax
+        let result = update_policy_fictitious_play(
+            &q_values,
+            temperature,
+            entropy_weight,
+            Some(&current_policy),
+        );
+
+        // Check convergence
+        if result.policy_change < convergence_tol {
+            return result;
+        }
+
+        current_policy = result.policy.clone();
+        last_result = result;
+    }
+
+    last_result
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

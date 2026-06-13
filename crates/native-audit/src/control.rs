@@ -1425,6 +1425,147 @@ pub fn compute_cbf_safe_steering(
     })
 }
 
+// ─── S150 — Time-Varying Control Barrier Functions (TV-CBF) ────────────────────
+
+/// Result of TV-CBF verification.
+#[derive(Debug)]
+pub struct TVCBFResult {
+    /// Combined barrier value h(x) = min(h_topo, -vfe + γ_vfe, semantic).
+    pub h_value: f32,
+    /// Individual topological barrier.
+    pub h_topo: f32,
+    /// Individual VFE barrier (-VFE + γ_vfe).
+    pub h_vfe: f32,
+    /// Individual semantic safety barrier.
+    pub h_semantic: f32,
+    /// Estimated time derivative ĥ(x,u).
+    pub h_dot: f32,
+    /// Class-K α function value α(h).
+    pub alpha_h: f32,
+    /// CBF condition: ĥ + α(h) ≥ 0.
+    pub cbf_condition: f32,
+    /// Whether the TV-CBF condition is satisfied.
+    pub safe: bool,
+}
+
+impl std::fmt::Display for TVCBFResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "TVCBF {{ h={:.4}, h_topo={:.4}, h_vfe={:.4}, h_sem={:.4}, h_dot={:.4}, α(h)={:.4}, cond={:.4}, safe={} }}",
+            self.h_value, self.h_topo, self.h_vfe, self.h_semantic,
+            self.h_dot, self.alpha_h, self.cbf_condition, self.safe
+        )
+    }
+}
+
+/// Time-Varying Control Barrier Function (TV-CBF) with multi-modal safety.
+///
+/// Combines three safety modalities into a single forward-invariant barrier:
+/// ```math
+/// h(x) = min( h_topo(x),  -VFE(x) + γ_vfe,  semantic_safety(x) )
+/// ```
+///
+/// The CBF condition with class-K α function:
+/// ```math
+/// L_f h(x) + L_g h(x) u + α(h(x)) ≥ 0
+/// ```
+/// where α(h) = k·max(h, 0) (extended class-K for robustness).
+///
+/// # Arguments
+/// * `h_topo` — Topological barrier (e.g., TCM distance or zonotope margin).
+/// * `vfe` — Active Inference Variational Free Energy.
+/// * `gamma_vfe` — VFE threshold γ (safe if VFE ≤ γ).
+/// * `alpha_k` — Class-K gain k > 0.
+/// * `h_dot_estimated` — Estimated time derivative ĥ from Neural ODE or Koopman.
+/// * `semantic_safety` — Semantic safety proxy (e.g., negative toxicity logit).
+pub fn verify_tv_cbf(
+    h_topo: f32,
+    vfe: f32,
+    gamma_vfe: f32,
+    alpha_k: f32,
+    h_dot_estimated: f32,
+    semantic_safety: f32,
+) -> TVCBFResult {
+    // Multi-modal barrier: h(x) = min of all modalities
+    let h_vfe = -vfe + gamma_vfe;
+    let h_value = h_topo.min(h_vfe).min(semantic_safety);
+
+    // Extended class-K α function: α(h) = k · max(h, 0)
+    // Using max(h, 0) ensures α(h) = 0 when h ≤ 0 (boundary),
+    // providing smooth transition at the safe set boundary.
+    let alpha_h = alpha_k * h_value.max(0.0);
+
+    // CBF condition: ĥ + α(h) ≥ 0
+    let cbf_condition = h_dot_estimated + alpha_h;
+    let safe = cbf_condition >= 0.0;
+
+    TVCBFResult {
+        h_value,
+        h_topo,
+        h_vfe,
+        h_semantic: semantic_safety,
+        h_dot: h_dot_estimated,
+        alpha_h,
+        cbf_condition,
+        safe,
+    }
+}
+
+/// QP-based minimal control correction for TV-CBF.
+///
+/// When the nominal control violates the TV-CBF condition, compute the
+/// minimal L2-norm correction:
+/// ```math
+/// λ = (α(h) - ĥ_nom) / (||L_g h||² + δ)
+/// u_safe = u_nom + λ · (L_g h)ᵀ
+/// ```
+///
+/// # Arguments
+/// * `nominal_u` — Nominal control input [u_dim,].
+/// * `l_g_h` — Lie derivative along control ∇hᵀB [u_dim,].
+/// * `h_dot_drift` — Lie derivative along drift L_f h (scalar).
+/// * `alpha_h` — Class-K α function value (scalar).
+/// * `delta` — Regularization δ > 0.
+pub fn tv_cbf_qp_correct(
+    nominal_u: &[f32],
+    l_g_h: &[f32],
+    h_dot_drift: f32,
+    alpha_h: f32,
+    delta: f32,
+) -> Vec<f32> {
+    // Current safety: L_f h + L_g h · u_nom
+    let mut current_safety = h_dot_drift;
+    for i in 0..l_g_h.len().min(nominal_u.len()) {
+        current_safety += l_g_h[i] * nominal_u[i];
+    }
+
+    // Required safety: α(h)
+    let required = alpha_h;
+
+    // If already safe, return nominal
+    if current_safety >= required {
+        return nominal_u.to_vec();
+    }
+
+    // ||L_g h||²
+    let mut lg_norm_sq = delta;
+    for &v in l_g_h {
+        lg_norm_sq += v * v;
+    }
+
+    // λ = (required - current) / ||L_g h||²
+    let lambda = (required - current_safety) / lg_norm_sq;
+
+    // u_safe = u_nom + λ · L_g h
+    let mut safe_u = nominal_u.to_vec();
+    for i in 0..l_g_h.len().min(safe_u.len()) {
+        safe_u[i] += lambda * l_g_h[i];
+    }
+
+    safe_u
+}
+
 // ─── S146 — Event-Triggered Contractive Tube MPC + LQR Fallback ─────────────
 
 /// Result of event-triggered Koopman steering.

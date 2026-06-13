@@ -955,7 +955,210 @@ impl DeepKoopmanAE {
     }
 }
 
-/// Result of Koopman AE loss computation.
+// ---------------------------------------------------------------------------
+// S150 — Physics-Informed Koopman with Residuals + Volume Preservation
+// ---------------------------------------------------------------------------
+
+/// Result of Physics-Informed Koopman loss computation.
+#[derive(Debug)]
+pub struct PhysicsInformedKoopmanLoss {
+    /// MSE reconstruction loss ||ψ_next - ψ_pred||².
+    pub mse_loss: f32,
+    /// Frobenius regularization ||K||_F².
+    pub frob_loss: f32,
+    /// Divergence/volume preservation loss.
+    pub div_loss: f32,
+    /// Lyapunov contraction loss.
+    pub lyap_loss: f32,
+    /// Weighted total loss.
+    pub total_loss: f32,
+}
+
+impl std::fmt::Display for PhysicsInformedKoopmanLoss {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "PIKLoss {{ mse: {:.6}, frob: {:.6}, div: {:.6}, lyap: {:.6}, total: {:.6} }}",
+            self.mse_loss, self.frob_loss, self.div_loss, self.lyap_loss, self.total_loss
+        )
+    }
+}
+
+impl DeepKoopmanAE {
+    /// Physics-Informed Koopman propagation with Residual Neural Correction + Divergence Constraint.
+    ///
+    /// ψ(x_{t+1}) = K ψ(x_t) + ReLU(W_res · ψ(x_t)) + physics_correction
+    ///
+    /// The physics correction approximates a divergence-free constraint for
+    /// near-conservative flows (common in LLM latent dynamics):
+    ///   div_correction ≈ -β · div_approx · ψ(x_t)
+    ///
+    /// Where `div_approx` is a finite-difference proxy of ∇·f(ψ).
+    ///
+    /// # Arguments
+    /// * `psi_x` - Current Koopman state [batch, lifted_dim].
+    /// * `k_operator` - Koopman linear operator [lifted_dim, lifted_dim].
+    /// * `residual_net` - Residual correction weights [lifted_dim, lifted_dim].
+    /// * `div_weight` - Weight β for divergence constraint (0.0 = disabled).
+    pub fn propagate_koopman_physics_informed(
+        &self,
+        psi_x: &Tensor,
+        k_operator: &Tensor,
+        residual_net: &Tensor,
+        div_weight: f32,
+    ) -> Result<Tensor> {
+        // Linear Koopman: ψ · K (row-vector convention)
+        let linear = psi_x.matmul(k_operator)?;
+
+        // Residual neural correction: ReLU(ψ · W_res)
+        let residual_raw = psi_x.matmul(residual_net)?;
+        let residual = residual_raw.relu()?;
+
+        // Physics-informed divergence approximation via finite difference proxy
+        // div(f) ≈ trace(J_f) where J_f is Jacobian of residual
+        // Proxy: sum of diagonal elements of W_res (since ∂ReLU(Wψ)/∂ψ ≈ W · diag(ReLU'>0))
+        // Simplified: use Frobenius norm of residual_net as divergence proxy
+        let div_proxy = if div_weight > 0.0 {
+            // Compute trace as sum of diagonal: trace(W) = sum(W ⊙ I)
+            let n = residual_net.dim(0)?.min(residual_net.dim(1)?);
+            let eye = Tensor::eye(n, DType::F32, residual_net.device())?;
+            let trace_val: f32 = (residual_net.broadcast_mul(&eye)?).sum_all()?.to_scalar()?;
+            // Divergence correction: -β · trace · ψ
+            let corr_scalar = -div_weight * trace_val;
+            let corr_tensor = Tensor::new(corr_scalar, psi_x.device())?;
+            psi_x.broadcast_mul(&corr_tensor)?
+        } else {
+            Tensor::zeros(psi_x.shape(), DType::F32, psi_x.device())?
+        };
+
+        // ψ_next = Kψ + ReLU(W_res·ψ) + div_correction
+        let sum = linear.broadcast_add(&residual)?;
+        sum.broadcast_add(&div_proxy)
+    }
+
+    /// Compute Physics-Informed Koopman Loss.
+    ///
+    /// Total Loss = MSE + γ·Frobenius(K) + β·DivLoss + λ·LyapunovLoss
+    ///
+    /// - MSE: ||ψ_next - ψ_pred||² (data fidelity)
+    /// - Frobenius: γ·||K||_F² (operator regularization)
+    /// - DivLoss: β·(trace(J_res))² (volume preservation)
+    /// - Lyapunov: λ·E[(V(ψ_next) - ρ²·V(ψ))_+] (contraction)
+    ///
+    /// # Arguments
+    /// * `psi_t` - Current Koopman states [batch, lifted_dim].
+    /// * `psi_t_next` - Next Koopman states [batch, lifted_dim].
+    /// * `k_operator` - Koopman operator [lifted_dim, lifted_dim].
+    /// * `residual_weights` - Residual net weights [lifted_dim, lifted_dim].
+    /// * `gamma_frob` - Frobenius regularization weight γ.
+    /// * `beta_div` - Divergence constraint weight β.
+    /// * `lambda_lyap` - Lyapunov contraction weight λ.
+    pub fn compute_koopman_loss_physics_informed(
+        &self,
+        psi_t: &Tensor,
+        psi_t_next: &Tensor,
+        k_operator: &Tensor,
+        residual_weights: &Tensor,
+        gamma_frob: f64,
+        beta_div: f64,
+        lambda_lyap: f64,
+    ) -> Result<PhysicsInformedKoopmanLoss> {
+        // 1. Predicted next state
+        let predicted = self.propagate_koopman_physics_informed(
+            psi_t,
+            k_operator,
+            residual_weights,
+            beta_div as f32,
+        )?;
+
+        // 2. MSE Loss: ||ψ_next - ψ_pred||²
+        let diff = predicted.broadcast_sub(psi_t_next)?;
+        let mse = diff.sqr()?.mean_all()?.to_scalar::<f32>()?;
+
+        // 3. Frobenius Regularization: γ·||K||_F²
+        let frob_raw = k_operator.sqr()?.sum_all()?.to_scalar::<f32>()?;
+        let frob_loss = frob_raw * (gamma_frob as f32);
+
+        // 4. Divergence/Volume Preservation Loss: β·(trace(J_res))²
+        let div_loss = if beta_div > 0.0 {
+            let n = residual_weights.dim(0)?.min(residual_weights.dim(1)?);
+            let eye = Tensor::eye(n, DType::F32, residual_weights.device())?;
+            let trace_val: f32 = (residual_weights.broadcast_mul(&eye)?).sum_all()?.to_scalar()?;
+            (trace_val * trace_val) * (beta_div as f32)
+        } else {
+            0.0f32
+        };
+
+        // 5. Lyapunov Contraction Loss: λ·E[(||ψ_next||² - ρ²·||ψ||²)_+]
+        let lyap_loss = if lambda_lyap > 0.0 {
+            let rho = 0.95f32; // Target contraction rate
+            let rho_sq = rho * rho;
+
+            // ||ψ_next||² per sample
+            let psi_next_sq = psi_t_next.sqr()?.sum_keepdim(1)?;
+            // ρ²·||ψ||² per sample
+            let psi_sq = psi_t.sqr()?.sum_keepdim(1)?;
+            let rho_scalar = Tensor::new(rho_sq, psi_sq.device())?;
+            let rho_psi_sq = psi_sq.broadcast_mul(&rho_scalar)?;
+
+            // (V_next - ρ²·V_curr)_+
+            let delta = psi_next_sq.broadcast_sub(&rho_psi_sq)?;
+            let positive_delta = delta.relu()?;
+            let lyap_raw = positive_delta.mean_all()?.to_scalar::<f32>()?;
+
+            lyap_raw * (lambda_lyap as f32)
+        } else {
+            0.0f32
+        };
+
+        let total = mse + frob_loss + div_loss + lyap_loss;
+
+        Ok(PhysicsInformedKoopmanLoss {
+            mse_loss: mse,
+            frob_loss,
+            div_loss,
+            lyap_loss,
+            total_loss: total,
+        })
+    }
+
+    /// Stiefel projection: Project K onto nearest orthogonal matrix via polar decomposition proxy.
+    ///
+    /// Uses iterative Newton-Schulz normalization: K_{new} = K · (3I - K^T K) / 2
+    /// to push K toward orthogonality (preserving spectral radius).
+    ///
+    /// # Arguments
+    /// * `k` - Input operator [n, n].
+    /// * `iterations` - Number of Newton-Schulz iterations.
+    pub fn stiefel_project(k: &Tensor, iterations: usize) -> Result<Tensor> {
+        let n = k.dim(0)?;
+        let device = k.device().clone();
+        // Normalize K by Frobenius norm so ||K||_F ≈ 1, ensuring convergence of Newton-Schulz
+        let frob_norm = k.sqr()?.sum_all()?.sqrt()?;
+        let min_norm = Tensor::new(1e-6f32, &device)?;
+        let max_norm = Tensor::new(100.0f32, &device)?;
+        let clamped_norm = frob_norm.maximum(&min_norm)?.minimum(&max_norm)?;
+        let one = Tensor::new(1.0f32, &device)?;
+        let scale = one.div(&clamped_norm)?;
+        let mut k_proj = k.broadcast_mul(&scale)?;
+
+        for _ in 0..iterations {
+            let k_clone = k_proj.clone();
+            // K^T K
+            let ktk = k_clone.t()?.matmul(&k_clone)?;
+            // 3I - K^T K
+            let eye = Tensor::eye(n, DType::F32, &device)?;
+            let three = Tensor::new(3.0f32, &device)?;
+            let three_eye = eye.broadcast_mul(&three)?;
+            let update = three_eye.sub(&ktk)?;
+            // K · (3I - K^T K) / 2
+            let half = Tensor::new(0.5f32, &device)?;
+            k_proj = k_clone.matmul(&update)?.broadcast_mul(&half)?;
+        }
+
+        Ok(k_proj)
+    }
+}
 #[derive(Debug)]
 pub struct KoopmanAELoss {
     /// Reconstruction loss ||x - Decoder(ψ)||².
