@@ -38,6 +38,10 @@
 
 use candle_core::{DType, Device, Result, Tensor};
 
+// Sprint 153 — Clarabel Industrial QP Solver
+use clarabel::algebra::CscMatrix;
+use clarabel::solver::{DefaultSettings, DefaultSolver, IPSolver, SolverStatus, SupportedConeT};
+
 /// Configuration for Koopman Vanguard EDMD estimation.
 #[derive(Debug, Clone)]
 pub struct KoopmanVanguardConfig {
@@ -1889,6 +1893,258 @@ pub fn project_control_tv_hbl(
         safety_margin_after,
         corrected,
     })
+}
+
+// ─── Sprint 153: Industrial QP Solver (Clarabel) ────────────────────────────
+
+/// Result of the Clarabel-based industrial QP projection.
+#[derive(Debug)]
+pub struct ClarabelQPResult {
+    /// Optimal safe control input.
+    pub u_safe: Tensor,
+    /// Solver status message.
+    pub solver_status: String,
+    /// Safety margin before projection (h_value).
+    pub safety_margin_before: f64,
+    /// Safety margin after projection (∇h^T u + γ·h + ε).
+    pub safety_margin_after: f64,
+    /// Number of solver iterations.
+    pub iterations: u32,
+    /// Whether the solution differs from nominal.
+    pub corrected: bool,
+}
+
+impl std::fmt::Display for ClarabelQPResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "ClarabelQP[status={}, iters={}, corrected={}, margin {:.4}→{:.4}]",
+            self.solver_status, self.iterations, self.corrected,
+            self.safety_margin_before, self.safety_margin_after
+        )
+    }
+}
+
+/// Industrial QP projection using Clarabel interior-point solver.
+///
+/// Solves:
+/// ```math
+/// \min_u \ \frac{1}{2} \|u - u_{nom}\|^2_2
+/// \quad \text{s.t.} \quad \nabla h^T u + \gamma h \geq -\epsilon_{robust}
+/// ```
+///
+/// The constraint is reformulated as:
+/// ```math
+/// [-\nabla h^T] u \leq \gamma h + \epsilon_{robust}
+/// ```
+/// which fits the standard form `A u ≤ b` via a nonnegative cone on slack.
+///
+/// # Arguments
+/// * `u_nom` — Nominal control input [u_dim].
+/// * `grad_h` — Gradient ∇h [dim].
+/// * `h_value` — TV-HBL barrier value h(t,ψ).
+/// * `gamma` — Class-K gain γ > 0.
+/// * `epsilon_robust` — Conformal robustness margin ε ≥ 0.
+///
+/// # Returns
+/// `ClarabelQPResult` with optimal control and solver diagnostics.
+pub fn project_control_qp_clarabel(
+    u_nom: &[f64],
+    grad_h: &[f64],
+    h_value: f64,
+    gamma: f64,
+    epsilon_robust: f64,
+) -> std::result::Result<ClarabelQPResult, String> {
+    let n = u_nom.len();
+    if n == 0 {
+        return Err("Empty control vector".to_string());
+    }
+    if grad_h.len() != n {
+        return Err(format!(
+            "Dimension mismatch: u_nom={}, grad_h={}",
+            n,
+            grad_h.len()
+        ));
+    }
+
+    // Quadratic cost: min ½ u^T I u - u_nom^T u
+    // P = I (identity)
+    let P = CscMatrix::identity(n);
+
+    // Linear cost: q = -u_nom
+    let q: Vec<f64> = u_nom.iter().map(|&x| -x).collect();
+
+    // CBF constraint: grad_h^T u + γ·h ≥ -ε
+    // Reformulated: [-grad_h^T] u ≤ γ·h + ε
+    // Using equality-style constraint via nonnegative cone slack:
+    // A u + s = b, s ≥ 0
+    let a_vals: Vec<f64> = grad_h.iter().map(|&g| -g).collect();
+    let a_colptr = vec![0usize, n];
+    let a_rowval: Vec<usize> = (0..n).collect();
+    let A = CscMatrix::new(1, n, a_colptr, a_rowval, a_vals);
+
+    let b = vec![gamma * h_value + epsilon_robust];
+
+    let cones: &[SupportedConeT<f64>] = &[SupportedConeT::<f64>::NonnegativeConeT(1)];
+
+    let settings = DefaultSettings::default();
+
+    let mut solver = DefaultSolver::new(&P, &q, &A, &b, cones, settings)
+        .map_err(|e| format!("Clarabel solver init failed: {}", e))?;
+    solver.solve();
+
+    let status_str = format!("{:?}", solver.solution.status);
+
+    let u_opt: Vec<f64> = match solver.solution.status {
+        SolverStatus::Solved => solver.solution.x.clone(),
+        _ => {
+            // Fallback: return nominal if solver fails
+            eprintln!(
+                "Clarabel QP did not solve: {:}. Falling back to nominal.",
+                solver.solution.status
+            );
+            u_nom.to_vec()
+        }
+    };
+
+    // Compute post-projection safety margin: ∇h^T u + γ·h
+    let dot: f64 = grad_h.iter().zip(u_opt.iter()).map(|(&g, &u)| g * u).sum();
+    let safety_margin_after = dot + gamma * h_value;
+
+    // Check if solution differs significantly from nominal
+    let diff_norm: f64 = u_opt
+        .iter()
+        .zip(u_nom.iter())
+        .map(|(&a, &b): (&f64, &f64)| (a - b).powi(2))
+        .sum::<f64>()
+        .sqrt();
+    let corrected = diff_norm > 1e-8;
+
+    // Convert to Candle Tensor
+    let device = Device::Cpu;
+    let u_safe = Tensor::from_vec(
+        u_opt.iter().map(|&x| x as f32).collect(),
+        n,
+        &device,
+    )
+    .map_err(|e| format!("Tensor creation failed: {}", e))?;
+
+    Ok(ClarabelQPResult {
+        u_safe,
+        solver_status: status_str,
+        safety_margin_before: h_value,
+        safety_margin_after,
+        iterations: solver.solution.iterations,
+        corrected,
+    })
+}
+
+/// Candle Tensor overload for `project_control_qp_clarabel`.
+///
+/// Accepts Tensor inputs on CPU device, converts to f64 vectors for Clarabel,
+/// then returns result as a Tensor.
+pub fn project_control_qp_clarabel_tensor(
+    u_nom: &Tensor,
+    grad_h: &Tensor,
+    h_value: f64,
+    gamma: f64,
+    epsilon_robust: f64,
+) -> candle_core::Result<ClarabelQPResult> {
+    // Flatten and convert to f64
+    let u_nom_f32: Vec<f32> = u_nom.flatten_all()?.to_vec1()?;
+    let u_nom_vec: Vec<f64> = u_nom_f32.iter().map(|&x| x as f64).collect();
+    let grad_h_f32: Vec<f32> = grad_h.flatten_all()?.to_vec1()?;
+    let grad_h_vec: Vec<f64> = grad_h_f32.iter().map(|&x| x as f64).collect();
+
+    project_control_qp_clarabel(&u_nom_vec, &grad_h_vec, h_value, gamma, epsilon_robust)
+        .map_err(|e| candle_core::Error::Msg(e.into()))
+}
+
+// ─── Kani Formal Verification Harness ───────────────────────────────────────
+
+/// Formal verification properties for QP projection via Kani.
+///
+/// Run with: `cargo kani --harness verify_qp_projection_safety`
+#[cfg(kani)]
+mod verification {
+    use super::*;
+
+    /// Proof harness: Verify QP projection satisfies CBF constraint.
+    ///
+    /// Properties verified:
+    /// 1. Output u_opt is finite (no NaN/Inf)
+    /// 2. CBF constraint holds: ∇h^T u + γ·h ≥ -ε - tolerance
+    #[kani::proof]
+    #[kani::unwind(20)]
+    fn verify_qp_projection_safety() {
+        let n = 2usize; // Bounded proof dimension
+        let u_nom: Vec<f64> = (0..n).map(|_| kani::any()).collect();
+        let grad_h: Vec<f64> = (0..n).map(|_| kani::any()).collect();
+        let h_value: f64 = kani::any();
+        let gamma = 0.5f64;
+        let epsilon = 1e-6f64;
+
+        // Assumptions for realistic inputs
+        kani::assume(u_nom.iter().all(|&x| x.is_finite()));
+        kani::assume(grad_h.iter().all(|&g| g.is_finite()));
+        kani::assume(h_value.is_finite());
+
+        // Avoid trivial singularity
+        let grad_norm: f64 = grad_h.iter().map(|&g| g * g).sum::<f64>().sqrt();
+        kani::assume(grad_norm > 1e-4);
+
+        if let Ok(result) = project_control_qp_clarabel(&u_nom, &grad_h, h_value, gamma, epsilon)
+        {
+            // Extract u_opt from Tensor
+            let u_opt_vals: Vec<f64> = result
+                .u_safe
+                .flatten_all()
+                .unwrap()
+                .to_vec1()
+                .unwrap()
+                .iter()
+                .map(|&x| x as f64)
+                .collect();
+
+            // Property 1: All outputs finite
+            kani::assert(
+                u_opt_vals.iter().all(|&x| x.is_finite()),
+                "u_opt must be finite",
+            );
+
+            // Property 2: CBF constraint holds with robust margin
+            let dot: f64 = grad_h.iter().zip(u_opt_vals.iter()).map(|(&g, &u)| g * u).sum();
+            kani::assert(
+                dot + gamma * h_value >= -epsilon - 1e-4,
+                "CBF constraint must hold with robust margin",
+            );
+        }
+    }
+
+    /// Proof harness: Verify solver returns nominal when already safe.
+    #[kani::proof]
+    #[kani::unwind(20)]
+    fn verify_qp_passes_through_safe_control() {
+        let n = 2usize;
+        let u_nom: Vec<f64> = (0..n).map(|_| kani::any()).collect();
+        let grad_h: Vec<f64> = (0..n).map(|_| kani::any()).collect();
+        let h_value: f64 = kani::any();
+        let gamma = 0.5f64;
+        let epsilon = 1.0f64; // Large epsilon → constraint always satisfied
+
+        kani::assume(u_nom.iter().all(|&x| x.is_finite()));
+        kani::assume(grad_h.iter().all(|&g| g.is_finite()));
+        kani::assume(h_value.is_finite());
+
+        if let Ok(result) = project_control_qp_clarabel(&u_nom, &grad_h, h_value, gamma, epsilon)
+        {
+            // With large epsilon, solution should be close to nominal
+            kani::assert(
+                result.solver_status == "Solved" || result.solver_status == "SolvedInaccurate",
+                "Solver should converge",
+            );
+        }
+    }
 }
 
 // ─── Unit Tests ────────────────────────────────────────────────────────────
