@@ -393,6 +393,104 @@ impl Zonotope {
     }
 
     // -----------------------------------------------------------------------
+    // Girard-Style Order Reduction (Sprint 159)
+    // -----------------------------------------------------------------------
+
+    /// Girard-style order reduction: collapse minor generators into Interval Hull diagonal.
+    ///
+    /// Algorithm:
+    /// 1. Compute L1 norm of each generator row
+    /// 2. Sort descending by norm
+    /// 3. Keep top-k generators (k = dims * max_order)
+    /// 4. Collapse remaining generators into diagonal bounding box
+    /// 5. Concatenate kept generators + diagonal hull
+    ///
+    /// This limits the zonotope order to `dims * max_order + dims` generators,
+    /// preventing the wrapping effect explosion in high-dimensional spaces.
+    pub fn reduce_order(&self, max_order: usize) -> Result<Self> {
+        let dims = self.hidden_dim()?;
+        let num_gens = self.num_gens()?;
+        let max_gens = dims * max_order;
+
+        if num_gens <= max_gens {
+            return Ok(self.clone());
+        }
+
+        // 1. L1 norms of generator rows (sum of abs per row)
+        let norms = self.generators.abs()?.sum_keepdim(1)?; // [num_gens, 1]
+        let norms_vec: Vec<f32> = norms.flatten_all()?.to_vec1()?;
+
+        // 2. Sort indices descending by norm
+        let mut indices: Vec<usize> = (0..num_gens).collect();
+        indices.sort_by(|&a, &b| {
+            norms_vec[b]
+                .partial_cmp(&norms_vec[a])
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+
+        // 3. Keep top generators (reserve space for diagonal hull)
+        let keep_len = max_gens.saturating_sub(dims);
+        let keep_indices: Vec<usize> = indices[..keep_len].to_vec();
+        let collapse_indices: Vec<usize> = indices[keep_len..].to_vec();
+
+        // 4. Extract kept generators
+        let kept_gens = Self::extract_rows(&self.generators, &keep_indices)?;
+
+        // 5. Collapse remaining → bounding box (sum of abs per dimension)
+        let collapsed = Self::extract_rows(&self.generators, &collapse_indices)?;
+        let hull_diag = collapsed.abs()?.sum(0)?; // [hidden_dim]
+
+        // 6. Create diagonal matrix from hull
+        let diag_matrix = Self::create_diagonal_from_vec(&hull_diag)?;
+
+        // 7. Concatenate kept + diagonal along generator axis (dim 0)
+        let new_gens = Tensor::cat(&[&kept_gens, &diag_matrix], 0)?;
+
+        Ok(Zonotope {
+            center: self.center.clone(),
+            generators: new_gens,
+            config: self.config.clone(),
+        })
+    }
+
+    /// Extract specific rows from a tensor by indices.
+    fn extract_rows(tensor: &Tensor, indices: &[usize]) -> Result<Tensor> {
+        if indices.is_empty() {
+            let dims = tensor.dim(0)?;
+            return Tensor::zeros((dims, 0), tensor.dtype(), tensor.device());
+        }
+        let mut rows = Vec::with_capacity(indices.len());
+        for &i in indices {
+            let row = tensor.narrow(0, i, 1)?;
+            rows.push(row);
+        }
+        Tensor::cat(&rows, 0)
+    }
+
+    /// Create a diagonal matrix from a 1D vector.
+    fn create_diagonal_from_vec(diag: &Tensor) -> Result<Tensor> {
+        let d = diag.dim(0)?;
+        let eye = Tensor::eye(d, diag.dtype(), diag.device())?;
+        eye.broadcast_mul(&diag.unsqueeze(1)?)
+    }
+
+    /// Propagate zonotope through linear map: Z' = A · Z
+    ///
+    /// New center: A · c
+    /// New generators: A · G
+    pub fn propagate_linear(&self, a_matrix: &Tensor) -> Result<Self> {
+        // Row-vector convention: z_new = z @ A^T
+        let a_t = a_matrix.t()?;
+        let new_center = self.center.matmul(&a_t)?;
+        let new_gens = self.generators.matmul(&a_t)?;
+        Ok(Zonotope {
+            center: new_center,
+            generators: new_gens,
+            config: self.config.clone(),
+        })
+    }
+
+    // -----------------------------------------------------------------------
     // Certified Steering Robustness
     // -----------------------------------------------------------------------
 

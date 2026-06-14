@@ -29,6 +29,8 @@ pub mod category_manifolds;
 pub mod cbf_mpc;
 pub mod control;
 pub mod deep_koopman;
+// Sprint 159 — Exact PINN Residual Loss for Koopman Dynamics
+pub mod koopman_pinn;
 // Sprint 154 — GGUF Native Audit Support
 pub mod gguf_audit;
 pub mod cirl_value_learning;

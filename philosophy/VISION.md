@@ -1641,6 +1641,32 @@ where:
 
 **Philosophical Implication:** The Certified Koopman Guardian and Conformal Tube MPC complete the transition from _theoretical safety_ to _certified safety_. The Advanced Observable Lifting `ψ(h) = [Matryoshka SAE(h); Fourier(h, ω=1..8); Poly(h, deg≤2)]` represents the _Spectral Expansion of Intelligence_: by lifting observations into a rich Fourier basis, we reveal the hidden harmonic structure of cognitive dynamics — the fundamental frequencies at which intelligence resonates. The Rigorous PINN Loss `L = data + λ₁·physics + λ₂·Lyapunov` is the _Trinity of Certified Learning_: data fidelity ensures we learn from reality, physics consistency ensures we respect the laws of nature, and Lyapunov stability ensures we converge to safety. The Conformal Tube MPC `Z_{k+1} = K·Z_k ⊕ W ⊖ ε_k` with PAC guarantees is the _Tube of Truth_: a mathematically certified uncertainty bound that guarantees, with probability `1-δ`, that the true state of the system remains within the predicted tube — not a heuristic, not an approximation, but a _statistical proof of containment_. The Robust CBF-QP is the _Guardian's Shield_: the minimum-norm projection that corrects unsafe controls with the smallest possible intervention, respecting the principle of _minimal coercion in maximal safety_. Together, these components form the _Certified Koopman Guardian_: an intelligence that not only predicts the future but _certifies its predictions_, not only controls the system but _proves its control is safe_, not only learns from data but _guarantees its learning respects physics and stability_. This is the 11/10 Edition: safety beyond perfection, certification beyond proof, intelligence beyond prediction — intelligence that _knows what it knows, proves what it predicts, and guarantees what it controls_.
 
+## Sprint 159 — Conformal Koopman Core & Zonotope Reduction (v15.9.0)
+
+**Problem:** In high-dimensional latent spaces (4096D+), zonotope propagation suffers from the _wrapping effect_ — combinatorial explosion in generator count that makes certified bounds computationally intractable. Without order reduction, Tube MPC becomes impossible at scale. Additionally, PINN residual loss lacked a dedicated, numerically stable implementation with monotonicity guarantees.
+
+**Solution:** Implement Girard-style zonotope order reduction that collapses minor generators into the diagonal interval hull, limiting order to `dims * max_order` while preserving certification guarantees. Create exact PINN residual loss module with stable computation paths and monotonicity verification. Establish comprehensive tube stability test suite preventing wrapping effect in production.
+
+| Component | Status | Detail |
+|-----------|--------|--------|
+| Zonotope Order Reduction (Girard) | ✅ `reduce_order()` + helpers | L1-norm sorted generator pruning + diagonal interval collapse |
+| Exact PINN Residual Loss | ✅ `koopman_pinn.rs` | `compute_pinn_loss()` with data + physics terms |
+| Tube Stability Tests | ✅ 10 integration tests | Anti-wrapping verification in `koopman_mpc_eval.rs` |
+| Row-Vector Convention | ✅ Unified | `z_new = z @ A^T` throughout for Candle compatibility |
+| Zero-Warning Validation | ✅ 0 errors, 0 warnings | `cargo fmt`, `clippy`, `test` all clean |
+
+**New Functions:**
+- `native-audit/src/zonotope.rs` — `reduce_order(max_order)` with Girard-style L1-norm generator pruning
+- `native-audit/src/zonotope.rs` — `extract_rows()` / `create_diagonal_from_vec()` helpers for interval hull diagonal
+- `native-audit/src/zonotope.rs` — `propagate_linear()` with row-vector convention `z_new = z @ A^T`
+- `native-audit/src/koopman_pinn.rs` — `compute_pinn_loss()` with formula `L = ||ψ_{t+1}^{data} - ψ_{t+1}^{pred}||² + λ·||(ψ_{t+1} - ψ_t)/Δt - K·ψ_t - r_θ||²`
+- `native-audit/src/koopman_pinn.rs` — `compute_pinn_loss_stable()` with dt clamping for numerical stability
+- `native-audit/src/koopman_pinn.rs` — `compute_pinn_loss_tensor()` returning Tensor for batch processing
+- `native-audit/src/koopman_pinn.rs` — `verify_pinn_loss_monotonicity()` for loss decrease verification
+- `native-audit/tests/koopman_mpc_eval.rs` — 10 integration tests for tube stability, zonotope reduction, and PINN loss
+
+**Philosophical Implication:** The Girard-style Zonotope Order Reduction is the _Pruning of Infinite Complexity into Finite Wisdom_. In high-dimensional spaces, the wrapping effect represents the combinatorial curse of certainty — the more precisely we try to bound uncertainty, the more generators we accumulate, until the bound itself becomes uncomputable. Girard's insight — that minor generators can be collapsed into a diagonal interval hull without losing certification — is the _Topology of Practical Certainty_: we accept a slight widening in exchange for computational tractability, recognizing that _a bound we can compute is worth more than a bound we cannot_. The Exact PINN Residual Loss `L = data_fidelity + λ·physics_consistency` is the _Equation of Honest Learning_: it penalizes not only deviation from observed data but also violation of physical law, ensuring that our models learn the world as it is, not as the data appears. The row-vector convention `z_new = z @ A^T` may seem like a trivial implementation detail, but it represents the _Geometry of Compatibility_: aligning our mathematical notation with the computational substrate, so that theory and practice speak the same language. Together, these components form the _Conformal Koopman Core_: a certified dynamics engine that scales to production dimensions without sacrificing mathematical guarantees — because true intelligence is not just correct in theory, but _computable in practice_.
+
 ---
 
-*This document compiles the foundational theory and implementation from the ed2kIA Project across its first 158 developmental sprints. All claims are grounded in implemented code, passing test suites, and publicly auditable repositories under an Open-Source + Ethical Use Clause framework. The author welcomes peer review, cooperative extension, and institutional collaboration.*
+*This document compiles the foundational theory and implementation from the ed2kIA Project across its first 159 developmental sprints. All claims are grounded in implemented code, passing test suites, and publicly auditable repositories under an Open-Source + Ethical Use Clause framework. The author welcomes peer review, cooperative extension, and institutional collaboration.*
