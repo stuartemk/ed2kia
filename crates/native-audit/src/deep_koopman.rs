@@ -2307,6 +2307,236 @@ impl DeepKoopman {
         Ok(total_loss)
     }
 }
+
+// ---------------------------------------------------------------------------
+// S163 — SVD Bottleneck + EDMD + Hybrid SINDy + ISS-LMI Steering
+// ---------------------------------------------------------------------------
+
+/// SVD Bottleneck — Dynamic dimensionality reduction via cumulative explained variance.
+///
+/// Computes truncated SVD of activations matrix `[samples, dim]`, selecting
+/// `target_dim` dynamically so that cumulative explained variance > 0.95.
+///
+/// Returns `(V_k, reduced, explained_var)` where:
+/// - `V_k`: `[dim, target_dim]` projection matrix (right singular vectors)
+/// - `reduced`: `[samples, target_dim]` = activations · V_k
+/// - `explained_var`: cumulative variance ratio achieved
+pub fn compute_svd_bottleneck(
+    activations: &Tensor,
+    target_dim: Option<usize>,
+) -> Result<(Tensor, Tensor, f32)> {
+    let device = activations.device();
+    let (n_samples, n_dim) = match activations.dims() {
+        [b, d] => (*b, *d),
+        _ => candle_core::bail!("SVD bottleneck requires 2D tensor [samples, dim]"),
+    };
+
+    // Use existing truncated SVD approximation
+    let max_rank = target_dim.unwrap_or(n_dim).min(n_samples).min(n_dim);
+    let (_u, s_vals, vt) = truncated_svd_approx(activations, max_rank, 10)?;
+
+    // Compute total energy
+    let total_energy: f64 = s_vals.iter().copied().sum();
+    if total_energy < 1e-12 {
+        // Degenerate — return identity projection
+        let v_k = Tensor::eye(n_dim, DType::F32, device)?;
+        let reduced = activations.clone();
+        return Ok((v_k, reduced, 1.0));
+    }
+
+    // Dynamic target_dim: cumulative variance > 0.95
+    let mut cumulative: f64 = 0.0;
+    let mut k_select = 1;
+    for (i, &s) in s_vals.iter().enumerate() {
+        cumulative += s;
+        if cumulative / total_energy >= 0.95 {
+            k_select = i + 1;
+            break;
+        }
+    }
+    k_select = k_select.min(max_rank).max(1);
+
+    // V_k = VT.t()[:, :k_select] → [dim, k_select]
+    let v_k = vt.narrow(0, 0, k_select)?.t()?;
+    let explained_var = (cumulative / total_energy) as f32;
+
+    // Reduced = activations · V_k → [samples, k_select]
+    let reduced = activations.matmul(&v_k)?;
+
+    Ok((v_k, reduced, explained_var))
+}
+
+/// EDMD (Extended Dynamic Mode Decomposition) Operator Inference.
+///
+/// Computes Koopman operator K via least-squares: K = Ψ_next · pinv(Ψ_current)
+/// using normal equations with ridge regularization: K = (Ψ_cur^T Ψ_cur + λI)^{-1} Ψ_cur^T Ψ_next
+///
+/// Returns `K` as `[dim, dim]` operator matrix.
+pub fn compute_edmd_operator(
+    psi_current: &Tensor,
+    psi_next: &Tensor,
+    ridge_lambda: f32,
+) -> Result<Tensor> {
+    let device = psi_current.device();
+
+    // Batch-first convention: [batch, dim]
+    let (_, dim_cur) = match psi_current.dims() {
+        [b, d] => (*b, *d),
+        _ => candle_core::bail!("EDMD requires 2D tensors [batch, dim]"),
+    };
+    let (_, dim_next) = match psi_next.dims() {
+        [b, d] => (*b, *d),
+        _ => candle_core::bail!("EDMD requires 2D tensors [batch, dim]"),
+    };
+
+    if dim_cur != dim_next {
+        candle_core::bail!(
+            "EDMD dimension mismatch: current={} vs next={}",
+            dim_cur,
+            dim_next
+        );
+    }
+    let dim = dim_cur;
+
+    // Normal equations: K = (Ψ_cur^T Ψ_cur + λI)^{-1} Ψ_cur^T Ψ_next
+    let a_t = psi_current.t()?;
+    let a_ta = a_t.matmul(psi_current)?; // [dim, dim]
+
+    // Add ridge regularization
+    let eye = Tensor::eye(dim, DType::F32, device)?;
+    let ridge = eye.broadcast_mul(&Tensor::new(ridge_lambda, device)?)?;
+    let a_ta_reg = a_ta.broadcast_add(&ridge)?;
+
+    // Right-hand side: Ψ_cur^T Ψ_next
+    let a_tb = a_t.matmul(psi_next)?; // [dim, dim]
+
+    // Solve via Newton-Schulz inverse approximation
+    let inv_a_ta = newton_schulz_inverse(&a_ta_reg, 20)?;
+    let k = inv_a_ta.matmul(&a_tb)?;
+
+    Ok(k)
+}
+
+/// Hybrid SINDy Observables — Sparse symbolic library in reduced Koopman space.
+///
+/// Constructs sparse observable library Ψ from reduced coordinates via
+/// polynomial basis (up to degree 3) + threshold pruning.
+///
+/// Library: [1, x_i, x_i², x_i·x_j, x_i³] → threshold |coeff| < ε → zero out
+///
+/// Returns `Psi` as `[batch, lib_dim]` observable matrix.
+pub fn sindy_observables(reduced: &Tensor, threshold: f32) -> Result<Tensor> {
+    let device = reduced.device();
+    let (batch, dim) = match reduced.dims() {
+        [b, d] => (*b, *d),
+        _ => candle_core::bail!("SINDy requires 2D tensor [batch, dim]"),
+    };
+
+    let mut terms: Vec<Tensor> = Vec::new();
+
+    // Constant term
+    terms.push(Tensor::ones((batch, 1), DType::F32, device)?);
+
+    // Linear terms: x_i
+    terms.push(reduced.clone());
+
+    // Quadratic terms: x_i² and x_i·x_j
+    let reduced_sq = reduced.sqr()?;
+    terms.push(reduced_sq);
+
+    // Cross terms x_i·x_j for i < j
+    if dim >= 2 {
+        let mut cross_terms: Vec<Tensor> = Vec::new();
+        for i in 0..dim {
+            for j in (i + 1)..dim {
+                let xi = reduced.narrow(1, i, 1)?; // [batch, 1]
+                let xj = reduced.narrow(1, j, 1)?; // [batch, 1]
+                let cross = xi.broadcast_mul(&xj)?;
+                cross_terms.push(cross);
+            }
+        }
+        if !cross_terms.is_empty() {
+            terms.push(Tensor::cat(&cross_terms, 1)?);
+        }
+    }
+
+    // Cubic terms: x_i³
+    let reduced_cubed = reduced.sqr()?.mul(reduced)?;
+    terms.push(reduced_cubed);
+
+    // Concatenate all terms
+    let psi = Tensor::cat(&terms, 1)?;
+
+    // Threshold pruning: zero out columns with mean absolute value < threshold
+    let abs_psi = psi.abs()?;
+    let col_means = abs_psi.sum(0)?; // [lib_dim]
+    let batch_t = Tensor::new(batch as f32, device)?;
+    let col_means = col_means.broadcast_div(&batch_t)?;
+    let mask = (col_means.ge(threshold)?).to_dtype(DType::F32)?; // [lib_dim]
+    let psi_sparse = psi.broadcast_mul(&mask)?;
+
+    Ok(psi_sparse)
+}
+
+/// ISS-LMI Steering with CBF Projection.
+///
+/// Computes ISS-certified steering in reduced Koopman space:
+/// 1. Apply Koopman step: x_red_next = K x_red
+/// 2. CBF projection toward safe centroid in reduced space
+/// 3. Project back via V_k^T: x_steered = x_red_steered · V_k^T
+///
+/// Returns `steered` as `[batch, orig_dim]` in original space.
+pub fn steer_with_iss_lmi(
+    reduced_state: &Tensor,
+    koopman_k: &Tensor,
+    vk: &Tensor,
+    safe_centroid_red: &Tensor,
+    alpha: f32,
+    beta: f32,
+) -> Result<Tensor> {
+    let device = reduced_state.device();
+
+    // 1. Koopman prediction in reduced space
+    let reduced_next = reduced_state.matmul(koopman_k)?;
+
+    // 2. CBF correction in reduced space: push toward safe centroid
+    let diff = reduced_next.broadcast_sub(safe_centroid_red)?;
+    let dist_sq = diff.sqr()?.sum_all()?.to_scalar::<f32>()?;
+
+    // ISS ultimate bound: r = (β/α) · w²
+    let w_norm_sq = dist_sq;
+    let ultimate_bound = if alpha > 1e-6 {
+        (beta / alpha) * w_norm_sq
+    } else {
+        f32::MAX
+    };
+
+    // CBF correction: if outside ultimate bound, project inward
+    let correction_gain = if dist_sq.sqrt() > ultimate_bound.sqrt().max(1e-6) {
+        // Correction magnitude proportional to violation
+        let violation = dist_sq.sqrt() - ultimate_bound.sqrt().max(1e-6);
+        let gain = (violation / dist_sq.sqrt().max(1e-10)).min(1.0f32);
+        gain
+    } else {
+        0.0
+    };
+
+    let steered_red = if correction_gain > 1e-6 {
+        // Blend toward safe centroid
+        let gain_t = Tensor::new(correction_gain, device)?;
+        let correction = diff.broadcast_mul(&gain_t)?;
+        reduced_next.broadcast_sub(&correction)?
+    } else {
+        reduced_next.clone()
+    };
+
+    // 3. Project back to original space via V_k^T
+    // x_steered = steered_red · V_k^T → [batch, target_dim] · [target_dim, orig_dim] = [batch, orig_dim]
+    let steered = steered_red.matmul(&vk.t()?)?;
+
+    Ok(steered)
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------

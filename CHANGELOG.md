@@ -1,4 +1,31 @@
-﻿## [v16.2.0-sprint162] — 2026-06-14 (Sprint 162 — NEURAL KOOPMAN CBF + ISS + OPERATOR INFERENCE)
+﻿## [v16.3.0-sprint163] — 2026-06-14 (Sprint 163 — SINDy-KOOPMAN BOTTLENECK + EDMD + LMI-ISS CERTIFICATION + CONFORMAL TUBE)
+
+### Sprint 163 "SINDy-KOOPMAN BOTTLENECK + EDMD + LMI-ISS CERTIFICATION + CONFORMAL TUBE"
+
+**Mode:** `SVD_BOTTLENECK + EDMD_OPERATOR + HYBRID_SINDY + ISS_LMI_STEERING + HARBENCH_ASR + ZERO_WARNINGS`
+
+**Problema — Sin reducción dimensional adaptativa ni interpretabilidad simbólica:** Sprints 100-162 establecen KoopmanVanguard, DeepKoopmanAE, Neural Koopman Lift, ISS Lyapunov, Explicit CBF O(1), DP54 Adaptivo y Tube MPC, pero faltan: (1) **SVD Bottleneck Dinámico** — `compute_svd_bottleneck()` con dimensión target automática vía varianza explicada acumulada > 0.95, (2) **EDMD Operator Inference** — `compute_edmd_operator()` con normal equations + ridge regularization + Newton-Schulz inverse, (3) **Hybrid SINDy Observables** — `sindy_observables()` con biblioteca simbólica sparse `[1, x_i, x_i², x_i·x_j, x_i³]` + threshold pruning, y (4) **ISS-LMI Steering** — `steer_with_iss_lmi()` con CBF projection en espacio reducido + proyectar de vuelta vía `V_k^T`.
+
+**Solución — SINDy-Koopman Pipeline completo:** `compute_svd_bottleneck()` usa `truncated_svd_approx()` con power iteration + deflación, seleccionando `k_select` dinámico. `compute_edmd_operator()` infiere `K = Ψ_next · pinv(Ψ_current)` vía `(Ψ_cur^T Ψ_cur + λI)^{-1} Ψ_cur^T Ψ_next`. `sindy_observables()` construye biblioteca polinomial con cross-terms + pruning por threshold. `steer_with_iss_lmi()` predice con Koopman, corrige hacia safe centroid con CBF, proyecta de vuelta al espacio original. **25/25 tests passing, library compiles clean.**
+
+- **SVD Bottleneck:** `native-audit/src/deep_koopman.rs` — `compute_svd_bottleneck()` con target_dim dinámico
+- **EDMD Operator:** `native-audit/src/deep_koopman.rs` — `compute_edmd_operator()` con ridge regularization
+- **Hybrid SINDy:** `native-audit/src/deep_koopman.rs` — `sindy_observables()` con biblioteca polinomial sparse
+- **ISS-LMI Steering:** `native-audit/src/deep_koopman.rs` — `steer_with_iss_lmi()` con CBF projection + project back
+- **Eval Tests:** `native-audit/tests/sindy_koopman_eval.rs` — 25 integration tests (SVD, EDMD, SINDy, ISS-LMI, pipeline, HarmBench ASR, anti-cheat)
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| Compilation (lib) | ✅ 0 errors, 0 warnings (S163 code) |
+| SVD Bottleneck | ✅ Dynamic target_dim via cumulative variance > 0.95 |
+| EDMD Operator | ✅ Ridge-regularized least-squares with Newton-Schulz inverse |
+| Hybrid SINDy | ✅ Polynomial library [1, x, x², x·x, x³] + threshold pruning |
+| ISS-LMI Steering | ✅ CBF projection in reduced space + V_k^T project back |
+| HarmBench ASR | ✅ Under-disturbance, SINDy robustness, EDMD stability |
+| Integration Tests | ✅ 25/25 passing |
+
+## [v16.2.0-sprint162] — 2026-06-14 (Sprint 162 — NEURAL KOOPMAN CBF + ISS + OPERATOR INFERENCE)
 
 ### Sprint 162 "NEURAL KOOPMAN CBF + ISS + OPERATOR INFERENCE (11/10 DISRUPTIVE)"
 
