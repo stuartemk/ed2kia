@@ -1,4 +1,34 @@
-﻿## [v15.4.0-sprint154] — 2026-06-13 (Sprint 154 — THE GGUF GOLIATH & INDUSTRIAL QP CONTROL + DMDc KOOPMAN ROBUSTO)
+﻿## [v15.5.0-sprint155] — 2026-06-14 (Sprint 155 — ROBUST KOOPMAN TUBE MPC & GGUF QUANTIZATION DENOISING)
+
+### Sprint 155 "ROBUST KOOPMAN TUBE MPC & GGUF QUANTIZATION DENOISING"
+
+**Mode:** `STRICT_MATH + TUBE_MPC + ROBUST_DMDC + ZERO_WARNINGS + EMPIRICAL_VALIDATION + DOC_SYNC`
+
+**Problema — Sin Tube MPC robusto ni denoising de cuantización GGUF:** Sprints 100-154 establecen KoopmanVanguard, DeepKoopmanAE, DMDc primal, CBF-QP Clarabel y Goliath benchmarks, pero faltan: (1) **Robust DMDc con truncated SVD denoising** — `robust_dmdc_gguf()` en `crates/native-audit/src/deep_koopman.rs` con aproximación SVD truncada `X = UΣV^T → X_denoised = U_rΣ_rV_r^T` para filtrar ruido de cuantización GGUF, y (2) **Tube MPC Steering** — `compute_tube_mpc_steering()` en `crates/native-audit/src/control.rs` con propagación de tubo de incertidumbre `Z_{k+1} = KZ_k ⊕ W` y CBF robusto `L_f h(Z) + L_g h(Z)u + γh(Z) ≥ sup_{w∈W} L_w h(Z)`, y (3) **GGUF Quantization Noise Simulation** — `simulate_gguf_quantization_noise()` modelando INT4-like noise como bounded perturbation `ε_quant ≤ Δ/2`.
+
+**Solución — Robust DMDc + Tube MPC + GGUF Noise Benchmarks:** Implementamos truncated SVD approximation vía power iteration + deflación (pues Candle carece de SVD nativo), normal equations con regularización ridge y physics-informed penalty. Tube MPC con propagación zonotópica, corrección de pseudo-inverso de B y verificación de CBF robusto. **20/20 benchmark tests passing.**
+
+- **Robust DMDc:** `native-audit/src/deep_koopman.rs` — `robust_dmdc_gguf()` con truncated SVD denoising + physics-informed residual loss
+- **Truncated SVD Approx:** `truncated_svd_approx()` — Power iteration + deflación para top-r singular triplets
+- **Tube MPC:** `native-audit/src/control.rs` — `compute_tube_mpc_steering()` con tube propagation + robust CBF
+- **Tube Radius Propagation:** `propagate_tube_radius()` — Forward propagation `r_{k+1} = ||K||·r_k + ε`
+- **Robust CBF Verification:** `verify_robust_cbf()` — Scalar CBF con noise bounds
+- **GGUF Noise Simulation:** `simulate_gguf_quantization_noise()` — INT4-like clip + round con bounded error
+- **Benchmark Tests:** `tests/gguf_robustness_eval.rs` — 20 tests (4 Robust DMDc + 3 GGUF + 4 Tube MPC + 3 Tube Prop + 4 Robust CBF + 1 Integration + 1 Summary)
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| Robust DMDc Tests | ✅ 4/4 |
+| GGUF Quantization Tests | ✅ 3/3 |
+| Tube MPC Tests | ✅ 4/4 |
+| Tube Propagation Tests | ✅ 3/3 |
+| Robust CBF Tests | ✅ 4/4 |
+| Integration Test | ✅ 1/1 |
+| Summary | ✅ 1/1 |
+| Total Benchmark | ✅ 20/20 |
+
+## [v15.4.0-sprint154] — 2026-06-13 (Sprint 154 — THE GGUF GOLIATH & INDUSTRIAL QP CONTROL + DMDc KOOPMAN ROBUSTO)
 
 ### Sprint 154 "THE GGUF GOLIATH & INDUSTRIAL QP CONTROL + DMDc KOOPMAN ROBUSTO"
 

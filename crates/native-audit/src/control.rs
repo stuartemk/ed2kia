@@ -1570,6 +1570,244 @@ pub fn tv_cbf_qp_correct(
     safe_u
 }
 
+// ─── S155 — Robust Koopman Tube MPC + GGUF Quantization Denoising ────────────
+
+/// Result of Robust Tube MPC steering computation.
+#[derive(Debug)]
+pub struct TubeMPCResult {
+    /// Nominal control input u_nom.
+    pub u_nom: Tensor,
+    /// Robust tube correction δu.
+    pub u_tube: Tensor,
+    /// Final robust control: u = u_nom + δu.
+    pub u_robust: Tensor,
+    /// Tube radius at current step.
+    pub tube_radius: f32,
+    /// Nominal state distance to tube center.
+    pub nominal_distance: f32,
+    /// Whether the state was inside the tube.
+    pub inside_tube: bool,
+    /// Robust CBF satisfaction margin.
+    pub cbf_margin: f32,
+}
+
+impl std::fmt::Display for TubeMPCResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "TubeMPC[u={:?}, r_tube={:.4}, dist={:.4}, inside={}, cbf_margin={:.4}]",
+            self.u_robust.shape(),
+            self.tube_radius,
+            self.nominal_distance,
+            self.inside_tube,
+            self.cbf_margin
+        )
+    }
+}
+
+/// Robust Tube MPC steering with uncertainty propagation.
+///
+/// **Mathematical Foundation:**
+///
+/// Tube propagation with zonotope approximation:
+/// ```math
+/// \begin{aligned}
+/// Z_{k+1} &= K Z_k \oplus W \\
+/// r_{k+1} &= \|K\| r_k + \varepsilon_{\text{quant}}
+/// \end{aligned}
+/// ```
+///
+/// where W is the noise set (ball of radius ε_quant from GGUF quantization).
+///
+/// **Robust CBF Condition:**
+/// ```math
+/// L_f h(Z) + L_g h(Z) u + \gamma h(Z) \geq \sup_{w \in W} L_w h(Z)
+/// ```
+///
+/// The sup term is bounded by `||∇h|| · ε_quant`, making the constraint
+/// robust against quantization noise.
+///
+/// # Arguments
+/// * `psi` — Current lifted state `[dim]` or `[1, dim]`.
+/// * `k_matrix` — Koopman operator K `[dim, dim]`.
+/// * `b_matrix` — Control input matrix B `[dim, u_dim]`.
+/// * `nominal_u` — Nominal control input `[u_dim]` or `[1, u_dim]`.
+/// * `tube_radius` — Current tube radius (uncertainty bound).
+/// * `noise_eps` — Per-step quantization noise bound ε.
+/// * `gamma` — CBF decay rate γ > 0.
+/// * `lambda_tube` — Tube correction gain (how aggressively to steer back).
+pub fn compute_tube_mpc_steering(
+    psi: &Tensor,
+    k_matrix: &Tensor,
+    b_matrix: &Tensor,
+    nominal_u: &Tensor,
+    tube_radius: f32,
+    noise_eps: f32,
+    gamma: f32,
+    lambda_tube: f32,
+) -> Result<TubeMPCResult> {
+    let device = psi.device();
+
+    // Flatten psi to 1D [dim]
+    let psi_flat = psi.flatten_all()?;
+    let dim = psi_flat.dim(0)?;
+
+    // 1. Compute nominal next state: ψ_nom = K ψ + B u_nom
+    let psi_nom_next = k_matrix.matmul(&psi_flat.reshape((dim, 1))?)?;
+    let u_nom_flat = nominal_u.flatten_all()?;
+    let b_u = b_matrix.matmul(&u_nom_flat.reshape((u_nom_flat.dim(0)?, 1))?)?;
+    let psi_nom = psi_nom_next.add(&b_u)?.flatten_all()?;
+
+    // 2. Compute tube radius propagation: r_next = ||K|| · r + ε
+    let k_norm = k_matrix.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
+    let next_tube_radius = k_norm * tube_radius + noise_eps;
+
+    // 3. Nominal distance to tube center (origin = safe attractor)
+    let nominal_dist: f32 = psi_nom.sqr()?.sum_all()?.sqrt()?.flatten_all()?.to_vec1::<f32>()?[0];
+
+    // 4. Check if inside tube
+    let inside_tube = nominal_dist <= next_tube_radius;
+
+    // 5. Tube correction: if outside, steer toward tube center
+    let u_tube_flat = if inside_tube {
+        // Inside tube: minimal correction (just robust CBF)
+        Tensor::zeros((u_nom_flat.dim(0)?,), DType::F32, device)?
+    } else {
+        // Outside tube: corrective steering
+        // δu = -λ · (ψ - ψ_center) projected through B^+
+        let error = psi_nom.clone(); // ψ - 0 (center at origin)
+        let error_norm: f32 = error.sqr()?.sum_all()?.sqrt()?.flatten_all()?.to_vec1::<f32>()?[0];
+
+        if error_norm < 1e-10 {
+            Tensor::zeros((u_nom_flat.dim(0)?,), DType::F32, device)?
+        } else {
+            // Project error through pseudo-inverse of B: B^+ ≈ B^T (B B^T)^{-1}
+            let b_bt = b_matrix.matmul(&b_matrix.t()?)?;
+            let b_norm_sq: f32 = b_bt.sqr()?.sum_all()?.sqrt()?.flatten_all()?.to_vec1::<f32>()?[0];
+            let b_pseudo_inv = if b_norm_sq > 1e-10 {
+                // B^+ ≈ B^T / ||B B^T|| (simplified pseudo-inverse)
+                b_matrix.t()?.broadcast_mul(&Tensor::new(1.0f32 / b_norm_sq, device)?)?
+            } else {
+                b_matrix.t()?.clone()
+            };
+
+            // δu = -λ · B^+ · error
+            let correction = b_pseudo_inv.matmul(&error.reshape((dim, 1))?)?.flatten_all()?;
+            let lambda_t = Tensor::new(-lambda_tube, device)?;
+            correction.broadcast_mul(&lambda_t)?
+        }
+    };
+
+    let u_tube = u_tube_flat.reshape(nominal_u.shape())?;
+
+    // 6. Robust control: u_robust = u_nom + δu
+    let u_robust_flat = u_nom_flat.broadcast_add(&u_tube_flat)?;
+    let u_robust = u_robust_flat.reshape(nominal_u.shape())?;
+
+    // 7. Robust CBF margin: L_f h + L_g h · u_robust + γ·h - ||∇h||·ε
+    // h(ψ) = r² - ||ψ||², ∇h = -2ψ
+    let psi_sq_norm: f32 = psi_flat.sqr()?.sum_all()?.flatten_all()?.to_vec1::<f32>()?[0];
+    let safe_r_sq = next_tube_radius * next_tube_radius * 2.0; // Safety margin
+    let h_val = safe_r_sq - psi_sq_norm;
+
+    // ∇h = -2ψ
+    let nabla_h = psi_flat.broadcast_mul(&Tensor::new(-2.0f32, device)?)?;
+
+    // L_f h = ∇h^T · K · ψ
+    let k_psi = k_matrix.matmul(&psi_flat.reshape((dim, 1))?)?.flatten_all()?;
+    let l_f_h: f32 = nabla_h.broadcast_mul(&k_psi)?
+        .sum_all()?.flatten_all()?.to_vec1::<f32>()?[0];
+
+    // L_g h = ∇h^T · B
+    let l_g_h = nabla_h.reshape((1, dim))?.matmul(b_matrix)?.flatten_all()?;
+
+    // L_g h · u_robust
+    let u_robust_f = u_robust_flat.clone();
+    let l_g_u: f32 = l_g_h.broadcast_mul(&u_robust_f)?
+        .sum_all()?.flatten_all()?.to_vec1::<f32>()?[0];
+
+    // ||∇h|| · ε
+    let nabla_norm: f32 = nabla_h.sqr()?.sum_all()?.sqrt()?.flatten_all()?.to_vec1::<f32>()?[0];
+    let noise_term = nabla_norm * noise_eps;
+
+    // CBF margin: L_f h + L_g h · u + γ·h - ||∇h||·ε
+    let cbf_margin = l_f_h + l_g_u + gamma * h_val - noise_term;
+
+    Ok(TubeMPCResult {
+        u_nom: nominal_u.clone(),
+        u_tube,
+        u_robust,
+        tube_radius: next_tube_radius,
+        nominal_distance: nominal_dist,
+        inside_tube,
+        cbf_margin,
+    })
+}
+
+/// Propagate tube radius forward over a prediction horizon.
+///
+/// For a linear system x_{k+1} = K x_k + w_k with ||w_k|| ≤ ε,
+/// compute the tube radius sequence [r_0, r_1, ..., r_H].
+///
+/// **Recursion:**
+/// ```math
+/// r_{k+1} = \|K\| r_k + \varepsilon
+/// ```
+///
+/// # Arguments
+/// * `k_norm` — Induced norm of Koopman operator K.
+/// * `initial_radius` — Initial tube radius r_0.
+/// * `noise_eps` — Per-step noise bound ε.
+/// * `horizon` — Prediction horizon H.
+///
+/// # Returns
+/// Vector of tube radii `[r_0, r_1, ..., r_H]`.
+pub fn propagate_tube_radius(k_norm: f32, initial_radius: f32, noise_eps: f32, horizon: usize) -> Vec<f32> {
+    let mut radii = vec![initial_radius];
+    let mut r = initial_radius;
+
+    for _ in 0..horizon {
+        r = k_norm * r + noise_eps;
+        radii.push(r);
+    }
+
+    radii
+}
+
+/// Robust CBF constraint check with GGUF quantization noise bounds.
+///
+/// Verifies that the control barrier function condition holds
+/// robustly against quantization noise:
+/// ```math
+/// L_f h(x) + L_g h(x) u + \gamma h(x) \geq \|\nabla h\| \cdot \varepsilon_{\text{quant}}
+/// ```
+///
+/// # Arguments
+/// * `l_f_h` — Lie derivative along drift L_f h (scalar).
+/// * `l_g_h_u` — Lie derivative along control L_g h · u (scalar).
+/// * `h_val` — Barrier function value h(x) (scalar).
+/// * `nabla_h_norm` — Gradient norm ||∇h|| (scalar).
+/// * `noise_eps` — Quantization noise bound ε (scalar).
+/// * `gamma` — CBF decay rate γ > 0.
+///
+/// # Returns
+/// `(satisfied, margin)` where margin = LHS - RHS.
+pub fn verify_robust_cbf(
+    l_f_h: f32,
+    l_g_h_u: f32,
+    h_val: f32,
+    nabla_h_norm: f32,
+    noise_eps: f32,
+    gamma: f32,
+) -> (bool, f32) {
+    // LHS: L_f h + L_g h · u + γ·h
+    let lhs = l_f_h + l_g_h_u + gamma * h_val;
+    // RHS: ||∇h|| · ε
+    let rhs = nabla_h_norm * noise_eps;
+    let margin = lhs - rhs;
+    (margin >= 0.0, margin)
+}
+
 // ─── S146 — Event-Triggered Contractive Tube MPC + LQR Fallback ─────────────
 
 /// Result of event-triggered Koopman steering.
