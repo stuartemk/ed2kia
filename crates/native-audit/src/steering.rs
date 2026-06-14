@@ -1327,6 +1327,7 @@ impl std::fmt::Display for CbfQpResult {
 ///
 /// # Returns
 /// `CbfQpResult` with the optimal safe steering delta and solver diagnostics.
+#[allow(non_snake_case)]
 pub fn solve_cbf_qp(
     h_current: &Tensor,
     h_prev: &Tensor,

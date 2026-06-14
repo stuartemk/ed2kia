@@ -37,7 +37,6 @@
 //!   Result preserves categorical structure (composition, identity)
 //! ```
 
-use crate::topology::SgwConfig;
 use candle_core::Result;
 use candle_core::Tensor;
 
@@ -455,7 +454,7 @@ pub fn compute_adjunction(
     // Initialize adjoint mappings
     let mut left_adjoint = Vec::with_capacity(dim);
     let mut right_adjoint = Vec::with_capacity(dim);
-    for i in 0..dim {
+    for _i in 0..dim {
         left_adjoint.push(random_gaussian(&mut state));
         right_adjoint.push(random_gaussian(&mut state));
     }

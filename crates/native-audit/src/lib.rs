@@ -29,6 +29,8 @@ pub mod category_manifolds;
 pub mod cbf_mpc;
 pub mod control;
 pub mod deep_koopman;
+// Sprint 154 — GGUF Native Audit Support
+pub mod gguf_audit;
 pub mod cirl_value_learning;
 pub mod collective_steering;
 pub mod collective_zonotope;
@@ -64,6 +66,7 @@ pub mod topology;
 pub mod universal_immunity;
 pub mod verification;
 pub mod zonotope;
+pub mod tube_mpc;
 
 use candle_core::{DType, Device, Result, Tensor, D};
 use candle_nn::{embedding, Embedding, Module, VarBuilder};

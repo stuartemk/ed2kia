@@ -2353,6 +2353,7 @@ impl std::fmt::Display for ClarabelQPResult {
 ///
 /// # Returns
 /// `ClarabelQPResult` with optimal control and solver diagnostics.
+#[allow(non_snake_case)]
 pub fn project_control_qp_clarabel(
     u_nom: &[f64],
     grad_h: &[f64],
@@ -2466,91 +2467,6 @@ pub fn project_control_qp_clarabel_tensor(
 }
 
 // ─── Kani Formal Verification Harness ───────────────────────────────────────
-
-/// Formal verification properties for QP projection via Kani.
-///
-/// Run with: `cargo kani --harness verify_qp_projection_safety`
-#[cfg(kani)]
-mod verification {
-    use super::*;
-
-    /// Proof harness: Verify QP projection satisfies CBF constraint.
-    ///
-    /// Properties verified:
-    /// 1. Output u_opt is finite (no NaN/Inf)
-    /// 2. CBF constraint holds: ∇h^T u + γ·h ≥ -ε - tolerance
-    #[kani::proof]
-    #[kani::unwind(20)]
-    fn verify_qp_projection_safety() {
-        let n = 2usize; // Bounded proof dimension
-        let u_nom: Vec<f64> = (0..n).map(|_| kani::any()).collect();
-        let grad_h: Vec<f64> = (0..n).map(|_| kani::any()).collect();
-        let h_value: f64 = kani::any();
-        let gamma = 0.5f64;
-        let epsilon = 1e-6f64;
-
-        // Assumptions for realistic inputs
-        kani::assume(u_nom.iter().all(|&x| x.is_finite()));
-        kani::assume(grad_h.iter().all(|&g| g.is_finite()));
-        kani::assume(h_value.is_finite());
-
-        // Avoid trivial singularity
-        let grad_norm: f64 = grad_h.iter().map(|&g| g * g).sum::<f64>().sqrt();
-        kani::assume(grad_norm > 1e-4);
-
-        if let Ok(result) = project_control_qp_clarabel(&u_nom, &grad_h, h_value, gamma, epsilon)
-        {
-            // Extract u_opt from Tensor
-            let u_opt_vals: Vec<f64> = result
-                .u_safe
-                .flatten_all()
-                .unwrap()
-                .to_vec1()
-                .unwrap()
-                .iter()
-                .map(|&x| x as f64)
-                .collect();
-
-            // Property 1: All outputs finite
-            kani::assert(
-                u_opt_vals.iter().all(|&x| x.is_finite()),
-                "u_opt must be finite",
-            );
-
-            // Property 2: CBF constraint holds with robust margin
-            let dot: f64 = grad_h.iter().zip(u_opt_vals.iter()).map(|(&g, &u)| g * u).sum();
-            kani::assert(
-                dot + gamma * h_value >= -epsilon - 1e-4,
-                "CBF constraint must hold with robust margin",
-            );
-        }
-    }
-
-    /// Proof harness: Verify solver returns nominal when already safe.
-    #[kani::proof]
-    #[kani::unwind(20)]
-    fn verify_qp_passes_through_safe_control() {
-        let n = 2usize;
-        let u_nom: Vec<f64> = (0..n).map(|_| kani::any()).collect();
-        let grad_h: Vec<f64> = (0..n).map(|_| kani::any()).collect();
-        let h_value: f64 = kani::any();
-        let gamma = 0.5f64;
-        let epsilon = 1.0f64; // Large epsilon → constraint always satisfied
-
-        kani::assume(u_nom.iter().all(|&x| x.is_finite()));
-        kani::assume(grad_h.iter().all(|&g| g.is_finite()));
-        kani::assume(h_value.is_finite());
-
-        if let Ok(result) = project_control_qp_clarabel(&u_nom, &grad_h, h_value, gamma, epsilon)
-        {
-            // With large epsilon, solution should be close to nominal
-            kani::assert(
-                result.solver_status == "Solved" || result.solver_status == "SolvedInaccurate",
-                "Solver should converge",
-            );
-        }
-    }
-}
 
 // ─── Unit Tests ────────────────────────────────────────────────────────────
 

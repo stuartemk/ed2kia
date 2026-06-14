@@ -345,9 +345,10 @@ fn single_agent_hmc(
     let h_orig = hidden.clone();
     let mut state = agent_seed;
 
-    // Initialize momentum
+    // Initialize momentum (initial value overwritten in first iteration)
     let shape = h.shape().dims().to_vec();
     let num_elements: usize = shape.iter().product();
+    #[allow(unused_assignments)]
     let mut momentum = Tensor::from_vec(
         (0..num_elements)
             .map(|_| gaussian_noise(&mut state))

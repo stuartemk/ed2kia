@@ -466,6 +466,56 @@ impl Zonotope {
         let reduction = 1.0 - (my_width / interval_width);
         Ok(reduction.max(0.0))
     }
+
+    // -----------------------------------------------------------------------
+    // S157 — True Koopman Tube MPC Support
+    // -----------------------------------------------------------------------
+
+    /// Compute the maximum error bound in infinity norm.
+    ///
+    /// **Mathematical Definition:**
+    /// `max_error_bound(Z) = max_i (|c_i| + sum_j |G_ij|)`
+    ///
+    /// This represents the worst-case infinity-norm of any point in the zonotope:
+    /// `||x||_inf <= max_error_bound(Z)` for all `x in Z`.
+    ///
+    /// Used for contractive error verification in Tube MPC:
+    /// `||e_{k+1}||_inf <= rho * ||e_k||_inf + gamma`
+    pub fn max_error_bound(&self) -> Result<f32> {
+        // Compute sum of absolute generators per dimension: sum_j |G_ij|
+        let abs_gens = self.generators.abs()?;
+        let sum_per_dim = abs_gens.sum(0)?; // Shape: [1, hidden_dim]
+
+        // Compute |c_i| + sum_j |G_ij| per dimension
+        let abs_center = self.center.abs()?;
+        let bound_per_dim = abs_center.broadcast_add(&sum_per_dim)?;
+
+        // Take maximum across all dimensions
+        let bound_vec = bound_per_dim.flatten_all()?.to_vec1::<f32>()?;
+        let max_bound = bound_vec.into_iter().fold(f32::NEG_INFINITY, |a, b| a.max(b));
+        Ok(max_bound)
+    }
+
+    /// Linear map: Z' = A · Z = {A·c, A·G}.
+    ///
+    /// Convenience method for tube MPC where no bias is needed.
+    /// Equivalent to `affine_transform(A, None)`.
+    ///
+    /// **Tensor Convention:** Center is `[1, dim]`, generators are `[num_gens, dim]`.
+    /// Weight matrix `A` should be `[dim, dim]` for same-dimension transforms,
+    /// or `[out_dim, dim]` for dimension-changing transforms.
+    ///
+    /// Result: center' = A @ c^T (shape [out_dim, 1]), generators' = A @ G^T (shape [out_dim, num_gens])
+    pub fn linear_map(&self, a: &Tensor) -> Result<Self> {
+        self.affine_transform(a, None)
+    }
+
+    /// Scale the zonotope by a scalar factor (for contractive error bounds).
+    ///
+    /// Z' = alpha * Z = {alpha*c, alpha*G}
+    pub fn scale_factor(&self, alpha: f32) -> Result<Self> {
+        self.scale(alpha)
+    }
 }
 
 /// Result of robustness verification.

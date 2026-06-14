@@ -328,6 +328,7 @@ fn random_uniform(state: &mut u64) -> f64 {
     (val >> 11) as f64 / (1u64 << 53) as f64
 }
 
+#[allow(dead_code)]
 fn random_gaussian(state: &mut u64) -> f64 {
     let u1 = random_uniform(state).max(1e-10);
     let u2 = random_uniform(state);

@@ -1182,7 +1182,7 @@ pub fn compute_planetary_resilience_score(
     sim_result: &PlanetarySimResult,
     fitness_trajectory: &[f64],
     adversarial_threat: f64,
-    meta_improvement: f64,
+    _meta_improvement: f64,
 ) -> f64 {
     // Node survival component
     let node_survival = sim_result.active_nodes as f64 / sim_result.total_nodes.max(1) as f64;

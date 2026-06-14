@@ -786,7 +786,7 @@ impl Zonotope {
         let mut new_generators: Vec<Vec<f32>> = self
             .generators
             .iter()
-            .map(|g| vec![0.0f32; n])
+            .map(|_g| vec![0.0f32; n])
             .collect();
 
         for i in 0..n {
@@ -852,7 +852,7 @@ impl Zonotope {
                     state = state
                         .wrapping_mul(6364136223846793005)
                         .wrapping_add(1442695040888963407);
-                    let lambda = ((state as i32) as f32 / (i32::MAX as f32));
+                    let lambda = (state as i32) as f32 / (i32::MAX as f32);
                     point[i] += lambda * gen[i];
                 }
             }
@@ -1005,7 +1005,7 @@ pub fn simulate_pgd_attack(
     zonotope: &Zonotope,
     safe_lo: &[f32],
     safe_hi: &[f32],
-    epsilon: f32,
+    _epsilon: f32,
     steps: usize,
     step_size: f32,
 ) -> AdversarialCertResult {

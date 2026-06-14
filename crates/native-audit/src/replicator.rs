@@ -27,7 +27,7 @@
 //! ## S137
 //! Added in Sprint 137 (v13.7.0) — Thermodynamic Replicator & Adversarial Certification.
 
-use candle_core::{Device, Result, Tensor};
+use candle_core::{Result, Tensor};
 
 /// Configuration for Replicator Dynamics evolution.
 #[derive(Debug, Clone)]

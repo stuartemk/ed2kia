@@ -49,6 +49,8 @@ The `native-audit` crate (`crates/native-audit`) provides:
 - **verify_steering_robustness_zonotope()** — **Zonotope Robustness Verification** (v11.0.0): Certified bound propagation using zonotope geometry — $Z = \{c + G@\varepsilon \mid \varepsilon \in [-1,1]^k\}$ with exact affine propagation $c'=Wc+b,\ G'=WG$
 - **collective_zonotope_consensus()** — **Collective Zonotope Consensus** (v11.0.0): Distributed zonotope gossip + Weiszfeld geometric median for Byzantine-resilient aggregation
 - **hybrid_zonotope_verify()** — **Hybrid Zonotope-Interval Verification** (v11.0.0): Zonotopes for linear layers, intervals for non-linear, then refine back
+- **True Koopman Tube MPC:** Zonotope propagation for certified robust control.
+- **PINN Residual Denoising:** Physics-informed neural networks for energy conservation.
 
 **Noospheric Self-Organization & Post-Economic Symbiosis (v13.1.0 — Sprint 131):**
 | Feature | Module | Description |

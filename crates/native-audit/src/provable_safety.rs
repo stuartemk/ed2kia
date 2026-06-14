@@ -279,6 +279,7 @@ fn random_uniform(state: &mut u64) -> f64 {
     ((lcg_next(state) >> 11) as f64 / (1u64 << 51) as f64).clamp(0.0, 1.0)
 }
 
+#[allow(dead_code)]
 fn random_gaussian(state: &mut u64) -> f64 {
     let u1 = random_uniform(state).max(1e-10);
     let u2 = random_uniform(state);

@@ -472,7 +472,7 @@ pub fn active_inference_planetary_step(
 
         // Compute numerical gradients for each node
         let eps = 1e-5;
-        let mut total_gradient_norm: f64 = 0.0;
+        let mut _total_gradient_norm: f64 = 0.0;
 
         for node_idx in 0..num_nodes {
             if node_idx >= beliefs.len() {
@@ -535,7 +535,7 @@ pub fn active_inference_planetary_step(
             // Compute gradient norm for this node
             let norm: f64 = node_grad.iter().map(|g| g * g).sum::<f64>().sqrt();
             gradient_norms[node_idx] = norm;
-            total_gradient_norm += norm;
+            _total_gradient_norm += norm;
 
             // Gradient descent update with influence weighting
             let lr = config.lr

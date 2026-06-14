@@ -559,7 +559,7 @@ pub fn generate_distributed_red_team(
     for node_id in 0..config.num_red_nodes {
         // Generate attack vector: SGW-aware perturbation
         let mut attack = Vec::with_capacity(dim);
-        for i in 0..dim {
+        for _i in 0..dim {
             // Perturbation scaled by node-specific strategy
             let base_noise = gaussian_noise(&mut rng_state);
             let node_scale = (node_id as f32 + 1.0) / config.num_red_nodes as f32;
