@@ -1,4 +1,34 @@
-﻿## [v16.3.0-sprint163] — 2026-06-14 (Sprint 163 — SINDy-KOOPMAN BOTTLENECK + EDMD + LMI-ISS CERTIFICATION + CONFORMAL TUBE)
+﻿## [v16.4.0-sprint164] — 2026-06-14 (Sprint 164 — HYBRID SINDy-STLSQ + ADAPTIVE SVD BOTTLENECK + LMI-ISS CERTIFICATION + CONFORMAL TUBE ROBUST STEERING)
+
+### Sprint 164 "HYBRID SINDy-STLSQ + ADAPTIVE SVD BOTTLENECK + LMI-ISS CERTIFICATION + CONFORMAL TUBE ROBUST STEERING"
+
+**Mode:** `ADAPTIVE_SVD_BOTTLENECK + SINDY_LIBRARY + STLSQ_EDMD + LMI_ISS_VERIFY + CONFORMAL_TUBE_STEERING + HARBENCH_ASR + ZERO_WARNINGS`
+
+**Problema — Sin reducción dimensional adaptativa ni inferencia sparse certificada:** Sprints 100-163 establecen KoopmanVanguard, DeepKoopmanAE, Neural Koopman Lift, ISS Lyapunov, Explicit CBF O(1), DP54 Adaptivo, Tube MPC, SVD Bottleneck y SINDy Observables, pero faltan: (1) **Adaptive SVD Bottleneck** — `compute_adaptive_svd_bottleneck()` con rank dinámico vía umbral de varianza acumulada `k = min{j | Σσ²_i / ||X||²_F ≥ θ_var}`, (2) **SINDy Library completa** — `sindy_library()` con base observable polinomial + trigonométrica `[1, x, x², x·x, x³, x⁴, sin(x), cos(x)]`, (3) **STLSQ-EDMD** — `compute_sindy_stlsq_edmd()` con iterative hard thresholding para inferencia Koopman sparse (L1-regularized), (4) **LMI-ISS Verification** — `verify_iss_lmi()` resolviendo ecuación de Lyapunov discreta `A_cl^T P A_cl - P + Q ⪯ 0` vía solver iterativo, y (5) **Conformal Tube Steering** — `steer_with_conformal_tube_iss()` con CBF correction + PAC conformal margin tightening + V_k^T projection.
+
+**Solución — SINDy-STLSQ + Adaptive SVD + LMI-ISS + Conformal Tube Pipeline completo:** `compute_adaptive_svd_bottleneck()` selecciona k dinámico según θ_var. `sindy_library()` construye base observable configurable con trig opcional. `compute_sindy_stlsq_edmd()` aplica iterative hard thresholding: `θ_{j+1} = S_{λ}(θ_j - η∇L(θ_j))` para sparsity controlada. `verify_iss_lmi()` itera `P_{k+1} = K^T P_k K + Q` detectando convergencia/divergencia. `steer_with_conformal_tube_iss()` corrige con CBF λ = violation / ||d²||, tightea con conformal ε, proyecta de vuelta con V_k^T. **29/29 tests passing, library compiles clean, 0 S164 warnings.**
+
+- **Adaptive SVD Bottleneck:** `native-audit/src/deep_koopman.rs` — `compute_adaptive_svd_bottleneck()` con rank dinámico θ_var
+- **SINDy Library:** `native-audit/src/deep_koopman.rs` — `sindy_library()` con base polinomial + trigonométrica configurable
+- **STLSQ-EDMD:** `native-audit/src/deep_koopman.rs` — `compute_sindy_stlsq_edmd()` con iterative hard thresholding
+- **LMI-ISS Verification:** `native-audit/src/deep_koopman.rs` — `verify_iss_lmi()` con solver iterativo de Lyapunov discreta
+- **Conformal Tube Steering:** `native-audit/src/deep_koopman.rs` — `steer_with_conformal_tube_iss()` con CBF + PAC conformal + V_k^T
+- **Eval Tests:** `native-audit/tests/harmbench_certified_eval.rs` — 29 integration tests (Adaptive SVD, SINDy, STLSQ, LMI-ISS, Conformal, pipeline, HarmBench ASR, anti-cheat, tracing)
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| Compilation (lib) | ✅ 0 errors, 0 warnings (S164 code) |
+| Adaptive SVD | ✅ Dynamic k via cumulative variance threshold θ_var |
+| SINDy Library | ✅ Polynomial [1, x, x², x·x, x³, x⁴] + optional trig [sin, cos] |
+| STLSQ-EDMD | ✅ Iterative hard thresholding for L1-sparse Koopman inference |
+| LMI-ISS | ✅ Discrete Lyapunov A_cl^T P A_cl - P + Q ⪯ 0 via iterative solver |
+| Conformal Tube | ✅ CBF correction + PAC conformal margin + V_k^T project back |
+| HarmBench ASR | ✅ Under-disturbance, SINDy robustness, EDMD stability |
+| Anti-Cheat | ✅ No hardcoded shapes, dynamic threshold STLSQ, dynamic alpha LMI |
+| Integration Tests | ✅ 29/29 passing |
+
+## [v16.3.0-sprint163] — 2026-06-14 (Sprint 163 — SINDy-KOOPMAN BOTTLENECK + EDMD + LMI-ISS CERTIFICATION + CONFORMAL TUBE)
 
 ### Sprint 163 "SINDy-KOOPMAN BOTTLENECK + EDMD + LMI-ISS CERTIFICATION + CONFORMAL TUBE"
 

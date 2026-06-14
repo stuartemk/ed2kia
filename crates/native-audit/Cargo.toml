@@ -1,6 +1,6 @@
 [package]
 name = "native-audit"
-version = "16.3.0"
+version = "16.4.0"
 edition = "2021"
 description = "Native tensor audit core for ed2kIA — Candle-based hidden state extraction + TCM Z-axis"
 license = "Apache-2.0"
@@ -40,6 +40,10 @@ path = "tests/tube_mpc_verification.rs"
 [[test]]
 name = "sindy_koopman_eval"
 path = "tests/sindy_koopman_eval.rs"
+
+[[test]]
+name = "harmbench_certified_eval"
+path = "tests/harmbench_certified_eval.rs"
 
 [[bench]]
 name = "koopman_mpc_vs_baseline"

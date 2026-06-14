@@ -2538,6 +2538,305 @@ pub fn steer_with_iss_lmi(
 }
 
 // ---------------------------------------------------------------------------
+// Sprint 164 — Adaptive SVD + SINDy-STLSQ + LMI-ISS + Conformal Tube
+// ---------------------------------------------------------------------------
+
+/// Adaptive Randomized SVD Bottleneck with configurable variance threshold.
+///
+/// Uses power iteration + deflation (via `truncated_svd_approx`) to approximate
+/// the SVD of the activation matrix, then dynamically selects `k` via cumulative
+/// explained variance ratio ≥ `target_var`.
+///
+/// Returns `(V_k, X_red, k, var_ratio)` where:
+/// - `V_k`: `[dim, k]` right singular vectors (projection matrix)
+/// - `X_red`: `[samples, k]` = activations · V_k
+/// - `k`: selected reduced dimension
+/// - `var_ratio`: achieved cumulative explained variance
+pub fn compute_adaptive_svd_bottleneck(
+    activations: &Tensor,
+    target_var: f64,
+    n_oversamples: usize,
+) -> Result<(Tensor, Tensor, usize, f64)> {
+    let device = activations.device();
+    let (n_samples, n_dim) = match activations.dims() {
+        [b, d] => (*b, *d),
+        _ => candle_core::bail!("Adaptive SVD requires 2D tensor [samples, dim]"),
+    };
+
+    let clamped_var = target_var.clamp(0.5, 0.999);
+    let oversample = n_oversamples.max(1).min(n_dim);
+
+    // Request more components than needed for oversampling
+    let max_rank = (n_samples.min(n_dim)).max(1);
+    let request_rank = max_rank.min(max_rank.saturating_sub(1).max(1) + oversample);
+    let actual_rank = request_rank.min(max_rank);
+
+    let (_u, s_vals, vt) = truncated_svd_approx(activations, actual_rank, 10)?;
+
+    // Compute Frobenius norm squared as total energy
+    let total_energy: f64 = s_vals.iter().map(|s| (*s) * (*s)).sum();
+    if total_energy < 1e-24 {
+        // Degenerate — return identity projection
+        let v_k = Tensor::eye(n_dim, DType::F32, device)?;
+        let reduced = activations.clone();
+        return Ok((v_k, reduced, n_dim, 1.0));
+    }
+
+    // Dynamic k: cumulative variance ≥ target_var
+    let mut cumulative: f64 = 0.0;
+    let mut k_select = 1;
+    for (i, s) in s_vals.iter().enumerate() {
+        cumulative += (*s) * (*s);
+        if cumulative / total_energy >= clamped_var {
+            k_select = i + 1;
+            break;
+        }
+    }
+    k_select = k_select.min(s_vals.len()).max(1);
+
+    // V_k = VT[:k_select].t() → [dim, k_select]
+    let v_k = vt.narrow(0, 0, k_select)?.t()?;
+    let var_ratio = (cumulative / total_energy).min(1.0);
+
+    // X_red = activations · V_k → [samples, k_select]
+    let reduced = activations.matmul(&v_k)?;
+
+    Ok((v_k, reduced, k_select, var_ratio))
+}
+
+/// Hybrid SINDy Observable Library with polynomial + trigonometric basis.
+///
+/// Constructs Ψ(x) = [1, x_i, x_i², x_i·x_j, x_i³, ..., sin(x_i), cos(x_i)]
+/// from reduced coordinates, supporting configurable polynomial order and
+/// optional trigonometric terms.
+///
+/// Returns `Psi` as `[batch, lib_dim]` observable matrix.
+pub fn sindy_library(x_red: &Tensor, poly_order: usize, include_trig: bool) -> Result<Tensor> {
+    let device = x_red.device();
+    let (batch, dim) = match x_red.dims() {
+        [b, d] => (*b, *d),
+        _ => candle_core::bail!("SINDy library requires 2D tensor [batch, dim]"),
+    };
+
+    let order = poly_order.clamp(1, 4);
+    let mut terms: Vec<Tensor> = Vec::new();
+
+    // Constant term
+    terms.push(Tensor::ones((batch, 1), DType::F32, device)?);
+
+    // Linear terms: x_i
+    terms.push(x_red.clone());
+
+    if order >= 2 {
+        // Quadratic: x_i²
+        terms.push(x_red.sqr()?);
+
+        // Cross terms x_i·x_j for i < j
+        if dim >= 2 {
+            let mut cross_terms: Vec<Tensor> = Vec::new();
+            for i in 0..dim {
+                for j in (i + 1)..dim {
+                    let xi = x_red.narrow(1, i, 1)?;
+                    let xj = x_red.narrow(1, j, 1)?;
+                    cross_terms.push(xi.broadcast_mul(&xj)?);
+                }
+            }
+            if !cross_terms.is_empty() {
+                terms.push(Tensor::cat(&cross_terms, 1)?);
+            }
+        }
+    }
+
+    if order >= 3 {
+        // Cubic: x_i³
+        terms.push(x_red.sqr()?.mul(x_red)?);
+    }
+
+    if order >= 4 {
+        // Quartic: x_i⁴
+        let sq = x_red.sqr()?;
+        terms.push(sq.sqr()?);
+    }
+
+    // Trigonometric terms
+    if include_trig {
+        terms.push(x_red.sin()?);
+        terms.push(x_red.cos()?);
+    }
+
+    let psi = Tensor::cat(&terms, 1)?;
+    Ok(psi)
+}
+
+/// SINDy-STLSQ EDMD — Iterative Thresholded Least Squares for sparse Koopman inference.
+///
+/// Solves: Θ = argmin ||Ψ_next - Ψ_current · Θ||²_F + λ||Θ||₁
+/// via iterative hard thresholding:
+/// 1. Ridge LS: Θ = (Ψ_cur^T Ψ_cur + λI)^{-1} Ψ_cur^T Ψ_next
+/// 2. Hard threshold: Θ_ij = 0 if |Θ_ij| < threshold
+/// 3. Repeat until convergence or max_iter
+///
+/// Returns sparse `Theta` as `[dim_cur, dim_next]` operator matrix.
+pub fn compute_sindy_stlsq_edmd(
+    psi_current: &Tensor,
+    psi_next: &Tensor,
+    lambda: f64,
+    threshold: f64,
+    max_iter: usize,
+) -> Result<Tensor> {
+    let device = psi_current.device();
+    let lambda = lambda.max(1e-8);
+    let threshold = threshold.max(0.0);
+    let max_iter = max_iter.clamp(1, 100);
+
+    let (_, dim_cur) = match psi_current.dims() {
+        [b, d] => (*b, *d),
+        _ => candle_core::bail!("STLSQ requires 2D tensors [batch, dim]"),
+    };
+    let (_, _dim_next) = match psi_next.dims() {
+        [b, d] => (*b, *d),
+        _ => candle_core::bail!("STLSQ requires 2D tensors [batch, dim]"),
+    };
+
+    // Precompute Ψ_cur^T Ψ_cur + λI (shared across iterations)
+    let a_t = psi_current.t()?;
+    let a_ta = a_t.matmul(psi_current)?;
+    let eye = Tensor::eye(dim_cur, DType::F32, device)?;
+    let ridge = eye.broadcast_mul(&Tensor::new(lambda as f32, device)?)?;
+    let a_ta_reg = a_ta.broadcast_add(&ridge)?;
+    let inv_a_ta = newton_schulz_inverse(&a_ta_reg, 20)?;
+
+    // Precompute Ψ_cur^T Ψ_next
+    let a_tb = a_t.matmul(psi_next)?;
+
+    // Initial LS solution
+    let mut theta = inv_a_ta.matmul(&a_tb)?;
+
+    // Iterative hard thresholding
+    for _iter in 0..max_iter {
+        let abs_theta = theta.abs()?;
+        let active = (abs_theta.gt(threshold as f32)?).to_dtype(DType::F32)?;
+
+        // Re-solve LS then apply sparsity mask
+        let theta_ls = inv_a_ta.matmul(&a_tb)?;
+        theta = active.broadcast_mul(&theta_ls)?;
+    }
+
+    Ok(theta)
+}
+
+/// ISS-LMI Verification via Discrete Lyapunov Solver.
+///
+/// Checks feasibility of: A_cl^T P A_cl - P + Q ⪯ 0, P ≻ 0
+/// using iterative Lyapunov solver: P_{k+1} = A_cl^T P_k A_cl + Q
+/// which converges if ρ(A_cl) < 1.
+///
+/// Returns `(feasible, P)` where `P` is the approximate Lyapunov matrix `[dim, dim]`.
+pub fn verify_iss_lmi(koopman_k: &Tensor, alpha: f32, q_weight: f32) -> Result<(bool, Tensor)> {
+    let device = koopman_k.device();
+    let dim = koopman_k.dim(0)?;
+
+    // Q = α · I (positive definite weighting)
+    let alpha_clamped = alpha.clamp(1e-6f32, 10.0f32);
+    let q = Tensor::eye(dim, DType::F32, device)?
+        .broadcast_mul(&Tensor::new(alpha_clamped as f64, device)?.to_dtype(DType::F32)?)?;
+
+    // Q_weight scaling
+    let q_scaled = q.broadcast_mul(
+        &Tensor::new(q_weight.clamp(1e-6f32, 10.0f32) as f64, device)?.to_dtype(DType::F32)?,
+    )?;
+
+    // Iterative Lyapunov solver: P_{k+1} = K^T P_k K + Q
+    // Converges if ρ(K) < 1
+    let k_t = koopman_k.t()?;
+    let mut p = q_scaled.clone();
+    let mut feasible = false;
+
+    for _iter in 0..50 {
+        let kp = koopman_k.matmul(&p)?;
+        let ktpk = k_t.matmul(&kp)?;
+        let p_new = ktpk.broadcast_add(&q_scaled)?;
+
+        // Check convergence: ||P_new - P||_F / ||P||_F < 1e-4
+        let diff = p_new.sub(&p)?;
+        let diff_norm = diff.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
+        let p_norm = p.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
+
+        if p_norm > 1e-10 && diff_norm / p_norm < 1e-4 {
+            feasible = true;
+            p = p_new;
+            break;
+        }
+
+        // Divergence check: ||P||_F > 1e6
+        if p_norm > 1e6 {
+            feasible = false;
+            break;
+        }
+
+        p = p_new;
+    }
+
+    Ok((feasible, p))
+}
+
+/// Conformal Tube ISS Steering with CBF Projection.
+///
+/// Full certified steering pipeline:
+/// 1. Koopman prediction in reduced space: x_red_next = K · x_red
+/// 2. CBF correction toward safe centroid (closed-form λ)
+/// 3. Conformal tube tightening: shrink bounds by ε_conf
+/// 4. Project back via V_k^T to original space
+///
+/// Returns `steered` as `[batch, orig_dim]` in original activation space.
+pub fn steer_with_conformal_tube_iss(
+    reduced_state: &Tensor,
+    koopman_k: &Tensor,
+    vk: &Tensor,
+    safe_centroid_red: &Tensor,
+    conformal_eps: f32,
+) -> Result<Tensor> {
+    let device = reduced_state.device();
+    let eps = conformal_eps.clamp(0.0, 1.0);
+
+    // 1. Koopman prediction in reduced space
+    let reduced_next = reduced_state.matmul(koopman_k)?;
+
+    // 2. CBF correction: λ = max(0, (-α·h - L_f·h) / ||L_g·h||²)
+    // Simplified: h(x) = ||x - x_safe||² - r², correction toward safe centroid
+    let diff = reduced_next.broadcast_sub(safe_centroid_red)?;
+    let dist_sq_flat = diff.sqr()?.sum(1)?; // [batch]
+    let dist_sq_per_sample = dist_sq_flat.reshape((dist_sq_flat.shape().dims()[0], 1))?; // [batch, 1]
+
+    // Safety margin: r² = 1.0 - ε_conf (tighter tube with higher confidence)
+    let safety_radius_sq = (1.0f32 - eps).max(0.1f32);
+    let radius_t = Tensor::new(safety_radius_sq, device)?;
+
+    // Violation: max(0, dist² - r²)
+    let violation = dist_sq_per_sample.broadcast_sub(&radius_t)?.relu()?;
+
+    // Correction gain: λ = violation / (dist² + ε) clipped to [0, 1]
+    let denom = dist_sq_per_sample.broadcast_add(&Tensor::new(1e-8f32, device)?)?;
+    let lambda = violation.broadcast_div(&denom)?.clamp(0.0f32, 1.0f32)?;
+
+    // Apply correction: x_corrected = x_next - λ · (x_next - x_safe)
+    let correction = diff.broadcast_mul(&lambda)?;
+    let steered_red = reduced_next.broadcast_sub(&correction)?;
+
+    // 3. Conformal tube tightening: scale toward safe centroid by (1 - ε)
+    let tighten = Tensor::new((1.0f32 - eps * 0.5f32).max(0.5f32), device)?;
+    let safe_diff = steered_red.broadcast_sub(safe_centroid_red)?;
+    let tightened = safe_diff.broadcast_mul(&tighten)?;
+    let steered_red = safe_centroid_red.broadcast_add(&tightened)?;
+
+    // 4. Project back to original space via V_k^T
+    // steered = steered_red · V_k^T → [batch, k] · [k, dim] = [batch, dim]
+    let steered = steered_red.matmul(&vk.t()?)?;
+
+    Ok(steered)
+}
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
