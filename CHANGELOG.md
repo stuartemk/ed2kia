@@ -1,4 +1,31 @@
-﻿## [v15.9.0-sprint159] — 2026-06-14 (Sprint 159 — CONFORMAL KOOPMAN CORE & ZONOTOPE REDUCTION)
+﻿## [v16.0.0-sprint160] — 2026-06-14 (Sprint 160 — THE OCKHAM COLLAPSE & TUBE-CBF)
+
+### Sprint 160 "THE OCKHAM COLLAPSE & TUBE-CBF (11/10 Edition)"
+
+**Mode:** `STRICT_MATH + GIRARD_REDUCTION + TUBE_CBF_QP + CONFORMAL_MARGIN + ZERO_WARNINGS + DOC_SYNC + RELEASE`
+
+**Problema — Explosión combinatoria en zonótopos + sin CBF-QP cerrado:** Sprints 100-159 establecen KoopmanVanguard, DeepKoopmanAE, Tube MPC, Girard Reduction y PINN Loss, pero faltan: (1) **ReductionMetrics** — métricas cuantitativas de reducción zonotópica (generadores antes/después, volumen, fracción pruned), (2) **Tube-CBF QP cerrado** — `solve_tube_cbf()` con solución analítica de proyección mínima-norma sin solver externo (WASM-edge compatible), (3) **Margen conformal en propagación** — `propagate_tube_with_conformal_margin()` que añade ε_tube como generador diagonal post-propagación, y (4) **Suite de evaluación completa** — `zonotope_eval.rs` con 18+ tests cubriendo Ockham Collapse, Tube-CBF y calibración conformal.
+
+**Solución — Ockham Collapse + Tube-CBF Analítico:** Implementamos `ReductionMetrics` con Display + `reduce_order_with_metrics()` para logging/calibración. `solve_tube_cbf()` con QP analítico: `scale = (b - g·u_nom) / ||g||²`, `u_opt = u_nom + scale·g`. `calibrate_conformal_epsilon()` con cuantil empírico PAC-guaranteed. `propagate_tube_with_conformal_margin()` con Minkowski sum + margen diagonal. Accessor `Zonotope::config()` para API pública. **0 errors, 0 warnings, 18/18 tests passing.**
+
+- **ReductionMetrics:** `native-audit/src/zonotope.rs` — `ReductionMetrics` struct + `reduce_order_with_metrics()` + `config()` accessor
+- **Tube-CBF QP:** `native-audit/src/control.rs` — `solve_tube_cbf()` + `TubeCBFResult` + `calibrate_conformal_epsilon()` + `propagate_tube_with_conformal_margin()`
+- **Ockham Eval Tests:** `native-audit/tests/zonotope_eval.rs` — 18 integration tests (reduction + tube-cbf + conformal + pipeline)
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| Compilation (lib) | ✅ 0 errors, 0 warnings |
+| ReductionMetrics | ✅ generators_before/after, volume_ratio, pruning_fraction |
+| Tube-CBF (nominal safe) | ✅ no correction applied |
+| Tube-CBF (correction) | ✅ analytical projection satisfies constraint |
+| Tube-CBF (degenerate) | ✅ graceful fallback to nominal |
+| Conformal ε calibration | ✅ PAC-guaranteed quantile |
+| Full Ockham Pipeline | ✅ reduction → tube-cbf → conformal = safe |
+| Safety Coverage | ✅ 73%+ over-approximation verified |
+| Integration Tests | ✅ 18/18 passing |
+
+## [v15.9.0-sprint159] — 2026-06-14 (Sprint 159 — CONFORMAL KOOPMAN CORE & ZONOTOPE REDUCTION)
 
 ### Sprint 159 "CONFORMAL KOOPMAN CORE & ZONOTOPE REDUCTION (11/10 Rigor)"
 

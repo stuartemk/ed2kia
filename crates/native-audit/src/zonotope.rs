@@ -56,7 +56,42 @@ pub struct Zonotope {
     config: ZonotopeConfig,
 }
 
+/// Metrics returned by zonotope order reduction (Sprint 160 — Ockham Collapse).
+#[derive(Debug, Clone)]
+pub struct ReductionMetrics {
+    /// Generators before reduction.
+    pub generators_before: usize,
+    /// Generators after reduction.
+    pub generators_after: usize,
+    /// Volume proxy before reduction.
+    pub volume_before: f32,
+    /// Volume proxy after reduction.
+    pub volume_after: f32,
+    /// Log10 volume ratio (positive = expansion from hull).
+    pub volume_reduction_log10: f32,
+    /// Fraction of generators pruned (0..1].
+    pub pruning_fraction: f32,
+}
+
+impl std::fmt::Display for ReductionMetrics {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ReductionMetrics {{ before={}, after={}, vol_ratio_10={:.3}, pruned={:.1}% }}",
+            self.generators_before, self.generators_after,
+            self.volume_reduction_log10,
+            self.pruning_fraction * 100.0)
+    }
+}
+
 impl Zonotope {
+    // -----------------------------------------------------------------------
+    // Accessors
+    // -----------------------------------------------------------------------
+
+    /// Return a reference to the zonotope configuration.
+    pub fn config(&self) -> &ZonotopeConfig {
+        &self.config
+    }
+
     // -----------------------------------------------------------------------
     // Construction
     // -----------------------------------------------------------------------
@@ -396,24 +431,39 @@ impl Zonotope {
     // Girard-Style Order Reduction (Sprint 159)
     // -----------------------------------------------------------------------
 
-    /// Girard-style order reduction: collapse minor generators into Interval Hull diagonal.
+    /// Reduce the order of this zonotope using Girard-style L1-norm pruning + metrics.
     ///
-    /// Algorithm:
-    /// 1. Compute L1 norm of each generator row
-    /// 2. Sort descending by norm
-    /// 3. Keep top-k generators (k = dims * max_order)
-    /// 4. Collapse remaining generators into diagonal bounding box
-    /// 5. Concatenate kept generators + diagonal hull
+    /// **Sprint 160 — The Ockham Collapse (11/10 Edition):**
+    /// Resolves combinatorial explosion `O(p · d²)` in zonotope propagation by
+    /// pruning generators via L1-norm importance and collapsing pruned generators
+    /// into a certified Interval Hull over-approximation.
     ///
-    /// This limits the zonotope order to `dims * max_order + dims` generators,
-    /// preventing the wrapping effect explosion in high-dimensional spaces.
-    pub fn reduce_order(&self, max_order: usize) -> Result<Self> {
+    /// Formula:
+    /// ```math
+    /// Z = c + Σ_{j=1}^{p} G_{:,j} ε_j  →  Z' = c + Σ_{j=1}^{k} G'_{:,j} ε_j + [-r, r]
+    /// ```
+    /// where `r_i = Σ_{j>k} |G_{i,j}|` and `k = dims * max_order`.
+    ///
+    /// Returns the reduced zonotope + `ReductionMetrics` for logging/calibration.
+    ///
+    /// Complexity: `O(p log p + d·p)` → `O(d·k)` with `k << p`.
+    pub fn reduce_order_with_metrics(&self, max_order: usize) -> Result<(Self, ReductionMetrics)> {
         let dims = self.hidden_dim()?;
         let num_gens = self.num_gens()?;
         let max_gens = dims * max_order;
 
+        let volume_before = self.volume_proxy()?;
+
         if num_gens <= max_gens {
-            return Ok(self.clone());
+            let metrics = ReductionMetrics {
+                generators_before: num_gens,
+                generators_after: num_gens,
+                volume_before,
+                volume_after: volume_before,
+                volume_reduction_log10: 0.0,
+                pruning_fraction: 0.0,
+            };
+            return Ok((self.clone(), metrics));
         }
 
         // 1. L1 norms of generator rows (sum of abs per row)
@@ -446,18 +496,56 @@ impl Zonotope {
         // 7. Concatenate kept + diagonal along generator axis (dim 0)
         let new_gens = Tensor::cat(&[&kept_gens, &diag_matrix], 0)?;
 
-        Ok(Zonotope {
+        let reduced = Zonotope {
             center: self.center.clone(),
             generators: new_gens,
             config: self.config.clone(),
-        })
+        };
+
+        let volume_after = reduced.volume_proxy()?;
+        let generators_after = reduced.num_gens()?;
+        let pruned_count = num_gens - keep_len;
+        let volume_ratio = if volume_before > 1e-12 {
+            volume_after / volume_before
+        } else {
+            1.0
+        };
+
+        let metrics = ReductionMetrics {
+            generators_before: num_gens,
+            generators_after,
+            volume_before,
+            volume_after,
+            volume_reduction_log10: volume_ratio.log10(),
+            pruning_fraction: pruned_count as f32 / num_gens as f32,
+        };
+
+        Ok((reduced, metrics))
+    }
+
+    /// Girard-style order reduction: collapse minor generators into Interval Hull diagonal.
+    ///
+    /// Algorithm:
+    /// 1. Compute L1 norm of each generator row
+    /// 2. Sort descending by norm
+    /// 3. Keep top-k generators (k = dims * max_order)
+    /// 4. Collapse remaining generators into diagonal bounding box
+    /// 5. Concatenate kept generators + diagonal hull
+    ///
+    /// This limits the zonotope order to `dims * max_order + dims` generators,
+    /// preventing the wrapping effect explosion in high-dimensional spaces.
+    ///
+    /// **Note:** Use `reduce_order_with_metrics` for detailed logging/calibration.
+    pub fn reduce_order(&self, max_order: usize) -> Result<Self> {
+        let (reduced, _metrics) = self.reduce_order_with_metrics(max_order)?;
+        Ok(reduced)
     }
 
     /// Extract specific rows from a tensor by indices.
     fn extract_rows(tensor: &Tensor, indices: &[usize]) -> Result<Tensor> {
         if indices.is_empty() {
-            let dims = tensor.dim(0)?;
-            return Tensor::zeros((dims, 0), tensor.dtype(), tensor.device());
+            let cols = tensor.dim(1)?;
+            return Tensor::zeros((0, cols), tensor.dtype(), tensor.device());
         }
         let mut rows = Vec::with_capacity(indices.len());
         for &i in indices {
