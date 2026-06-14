@@ -2211,6 +2211,102 @@ impl DeepKoopman {
     }
 }
 
+impl DeepKoopman {
+    /// Neural Koopman Lifting via Matryoshka SAE Observables.
+    ///
+    /// Replaces the heuristic poly/Fourier lifting O(d²) with learned sparse
+    /// features from the Matryoshka SAE, keeping dimensionality manageable:
+    ///
+    /// **Formula:**
+    /// ```math
+    /// ψ(x) = [x; φ_SAE(x)] ∈ ℝ^{d + k}
+    /// ```
+    ///
+    /// Where `φ_SAE` are the sparse activations from the Matryoshka SAE.
+    /// This avoids the curse of dimensionality while preserving the Koopman
+    /// operator's ability to linearize the dynamics in the lifted space.
+    ///
+    /// **Operator Inference:**
+    /// ```math
+    /// ψ_{t+1} ≈ K ψ_t + B u_t + r_PINN
+    /// ```
+    ///
+    /// # Arguments
+    /// * `hidden_state` - Raw hidden state from LLM [batch, d].
+    /// * `sae_activations` - Sparse SAE features [batch, k].
+    ///
+    /// # Returns
+    /// Lifted Koopman observable [batch, d + k].
+    pub fn neural_koopman_lift(hidden_state: &Tensor, sae_activations: &Tensor) -> Result<Tensor> {
+        // Concatenate raw state with learned SAE features along feature dimension
+        // ψ(x) = [x; φ_SAE(x)]
+        Tensor::cat(&[hidden_state, sae_activations], 1)
+    }
+
+    /// Compute Neural Koopman Operator Inference loss.
+    ///
+    /// **Loss:**
+    /// ```math
+    /// L_K = ||ψ_{t+1} - K ψ_t - B u_t||_F²
+    ///     + λ_PINN · ||∂_t ψ - f_NN(ψ)||²
+    ///     + λ_L · max(0, V̇(ψ))
+    /// ```
+    ///
+    /// # Arguments
+    /// * `psi_t` - Lifted state at time t [batch, lifted_dim].
+    /// * `psi_t_next` - Lifted state at time t+1 [batch, lifted_dim].
+    /// * `k_operator` - Koopman operator [lifted_dim, lifted_dim].
+    /// * `b_matrix` - Control matrix [lifted_dim, u_dim] (optional).
+    /// * `u_t` - Control input [batch, u_dim] (optional).
+    /// * `lambda_pinn` - Weight for PINN residual term.
+    /// * `lambda_lyapunov` - Weight for Lyapunov stability term.
+    /// * `psi_safe` - Safe centroid for Lyapunov function.
+    ///
+    /// # Returns
+    /// Scalar loss value.
+    pub fn neural_koopman_operator_loss(
+        psi_t: &Tensor,
+        psi_t_next: &Tensor,
+        k_operator: &Tensor,
+        b_matrix: Option<&Tensor>,
+        u_t: Option<&Tensor>,
+        lambda_pinn: f32,
+        lambda_lyapunov: f32,
+        psi_safe: &Tensor,
+    ) -> Result<f32> {
+        // 1. Linear prediction: ψ_pred = ψ_t · K^T + u_t · B^T (row-vector / batch-first)
+        // Candle matmul: [batch, dim] x [dim, dim] → [batch, dim]
+        let k_psi = psi_t.matmul(k_operator)?;
+        let k_psi_for_pinn = k_psi.clone();
+        let linear_pred = match (b_matrix, u_t) {
+            (Some(b), Some(u)) => {
+                // [batch, u_dim] x [u_dim, dim] → [batch, dim]
+                let b_u = u.matmul(b)?;
+                k_psi.broadcast_add(&b_u)?
+            }
+            _ => k_psi,
+        };
+
+        // 2. Data loss: ||ψ_{t+1} - Kψ_t - Bu_t||²_F
+        let data_residual = psi_t_next.broadcast_sub(&linear_pred)?;
+        let data_loss = data_residual.sqr()?.sum_all()?.to_scalar::<f32>()?;
+
+        // 3. PINN residual: ||∂_t ψ - f_NN(ψ)||² ≈ ||(ψ_{t+1} - ψ_t) - Kψ_t||²
+        let psi_diff = psi_t_next.broadcast_sub(psi_t)?;
+        let pinn_residual = psi_diff.broadcast_sub(&k_psi_for_pinn)?;
+        let pinn_loss = pinn_residual.sqr()?.sum_all()?.to_scalar::<f32>()?;
+
+        // 4. Lyapunov term: max(0, V̇) where V(ψ) = ||ψ - ψ_safe||²
+        let v_t = compute_lyapunov_value(psi_t, psi_safe)?;
+        let v_t_next = compute_lyapunov_value(psi_t_next, psi_safe)?;
+        let v_dot = v_t_next - v_t;
+        let lyapunov_penalty = v_dot.max(0.0);
+
+        // Composite loss
+        let total_loss = data_loss + lambda_pinn * pinn_loss + lambda_lyapunov * lyapunov_penalty;
+        Ok(total_loss)
+    }
+}
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------

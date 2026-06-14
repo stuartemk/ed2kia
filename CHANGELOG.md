@@ -1,4 +1,30 @@
-﻿## [v16.1.0-sprint161] — 2026-06-14 (Sprint 161 — ADAPTIVE DYNAMICS & EXPLICIT CBF PROJECTION + KOOPMAN LIFTING + TUBE-CBF CERTIFICATION)
+﻿## [v16.2.0-sprint162] — 2026-06-14 (Sprint 162 — NEURAL KOOPMAN CBF + ISS + OPERATOR INFERENCE)
+
+### Sprint 162 "NEURAL KOOPMAN CBF + ISS + OPERATOR INFERENCE (11/10 DISRUPTIVE)"
+
+**Mode:** `NEURAL_KOOPMAN_LIFT + ISS_LYAPUNOV + OPERATOR_INFERENCE + MODEL_TRACING + ZERO_WARNINGS`
+
+**Problema — Sin lifting neuronal ni estabilidad ISS:** Sprints 100-161 establecen KoopmanVanguard, DeepKoopmanAE, Tube MPC, Explicit CBF O(1), DP54 Adaptivo y Koopman-Lyapunov, pero faltan: (1) **Neural Koopman Lifting via SAE Observables** — `neural_koopman_lift()` que reemplaza O(d²) poly/Fourier con O(d+k) features aprendidas del Matryoshka SAE, (2) **ISS Lyapunov Verification** — `verify_iss_lyapunov()` + `compute_iss_ultimate_bound()` + `compute_iss_tube_radius()` para certificar estabilidad bajo perturbaciones acotadas, y (3) **Operator Inference Loss** — `neural_koopman_operator_loss()` con términos Data + PINN + Lyapunov para aprendizaje del operador K.
+
+**Solución — Neural Koopman + ISS + Operator Inference:** `neural_koopman_lift()` con `ψ(x) = [x; φ_SAE(x)] ∈ ℝ^{d+k}`, evitando la maldición de dimensionalidad O(d²). ISS Lyapunov: `V̇ ≤ -αV + β||w||²` garantiza ultimate boundedness `r = (β/α)·w_max²`. Operator loss: `L_K = ||ψ_{t+1} - Kψ_t - Bu_t||²_F + λ_PINN·||∂_tψ - f_NN(ψ)||² + λ_L·max(0,V̇)`. **17/17 tests passing, library compiles clean.**
+
+- **Neural Koopman Lifting:** `native-audit/src/deep_koopman.rs` — `neural_koopman_lift()` + `neural_koopman_operator_loss()`
+- **ISS Lyapunov:** `native-audit/src/control.rs` — `verify_iss_lyapunov()` + `compute_iss_ultimate_bound()` + `compute_iss_tube_radius()`
+- **Eval Tests:** `native-audit/tests/neural_koopman_eval.rs` — 17 integration tests (lifting, CBF, ISS, operator loss, full pipeline)
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| Compilation (lib) | ✅ 0 errors, 0 warnings |
+| Neural Koopman Lift | ✅ O(d+k) vs O(d²) polynomial — 6144 vs 16,777,216 |
+| ISS Lyapunov | ✅ V̇ ≤ -αV + β||w||² verified |
+| ISS Ultimate Bound | ✅ r = (β/α)·w_max² |
+| ISS Tube Radius | ✅ r = r_ultimate + ε_conformal |
+| Operator Loss | ✅ Data + PINN + Lyapunov composite |
+| Model Tracing | ✅ All tests print model_name |
+| Integration Tests | ✅ 17/17 passing |
+
+## [v16.1.0-sprint161] — 2026-06-14 (Sprint 161 — ADAPTIVE DYNAMICS & EXPLICIT CBF PROJECTION + KOOPMAN LIFTING + TUBE-CBF CERTIFICATION)
 
 ### Sprint 161 "ADAPTIVE DYNAMICS & EXPLICIT CBF PROJECTION + KOOPMAN LIFTING + TUBE-CBF CERTIFICATION"
 

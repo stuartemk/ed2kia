@@ -1791,6 +1791,89 @@ pub fn explicit_cbf_projection(
 /// ```
 ///
 /// Guarantees: P(true_state ∈ tube) ≥ 1 - δ (exchangeability assumed).
+/// Verify Input-to-State Stability (ISS) Lyapunov condition.
+///
+/// **ISS Condition:**
+/// ```math
+/// V̇ ≤ -α·V + β·||w||²
+/// ```
+///
+/// Where:
+/// - `V` is the Lyapunov function value
+/// - `V̇` is its time derivative
+/// - `w` is the bounded disturbance (GGUF quantization noise, adversarial perturbation)
+/// - `α > 0` is the decay rate (nominal stability)
+/// - `β > 0` is the gain from disturbance to state
+///
+/// This guarantees that under bounded disturbances `||w|| ≤ w_max`, the state
+/// remains ultimately bounded within a tube of radius `β/α · w_max²`.
+///
+/// # Arguments
+/// * `v_dot` - Time derivative of Lyapunov function V̇.
+/// * `v_val` - Current Lyapunov function value V(ψ).
+/// * `w_norm_sq` - Squared norm of disturbance ||w||².
+/// * `alpha` - Decay rate α > 0.
+/// * `beta` - Disturbance gain β > 0.
+///
+/// # Returns
+/// `true` if the ISS condition is satisfied.
+pub fn verify_iss_lyapunov(v_dot: f32, v_val: f32, w_norm_sq: f32, alpha: f32, beta: f32) -> bool {
+    let iss_bound = -alpha * v_val + beta * w_norm_sq;
+    v_dot <= iss_bound
+}
+
+/// Compute the ultimate bound radius for an ISS system.
+///
+/// **Formula:**
+/// ```math
+/// r_ultimate = (β / α) · w_max²
+/// ```
+///
+/// Under bounded disturbance `||w|| ≤ w_max`, the Lyapunov function
+/// satisfies `V(t) ≤ r_ultimate` as `t → ∞`.
+///
+/// # Arguments
+/// * `alpha` - Decay rate α > 0.
+/// * `beta` - Disturbance gain β > 0.
+/// * `w_max_sq` - Maximum squared disturbance bound ||w||²_max.
+///
+/// # Returns
+/// Ultimate bound radius `r_ultimate`.
+pub fn compute_iss_ultimate_bound(alpha: f32, beta: f32, w_max_sq: f32) -> f32 {
+    if alpha <= 0.0 {
+        return f32::INFINITY;
+    }
+    (beta / alpha) * w_max_sq
+}
+
+/// Compute the ISS tube radius for a given confidence level.
+///
+/// Combines ISS ultimate bound with conformal prediction margin
+/// to form a certified tube around the nominal trajectory.
+///
+/// **Formula:**
+/// ```math
+/// r_tube = r_ultimate + ε_conformal
+/// ```
+///
+/// # Arguments
+/// * `alpha` - ISS decay rate.
+/// * `beta` - ISS disturbance gain.
+/// * `w_max_sq` - Maximum squared disturbance.
+/// * `epsilon_conformal` - Conformal prediction margin.
+///
+/// # Returns
+/// Certified tube radius.
+pub fn compute_iss_tube_radius(
+    alpha: f32,
+    beta: f32,
+    w_max_sq: f32,
+    epsilon_conformal: f32,
+) -> f32 {
+    let r_ultimate = compute_iss_ultimate_bound(alpha, beta, w_max_sq);
+    r_ultimate + epsilon_conformal
+}
+
 pub fn calibrate_conformal_epsilon(calibration_errors: &[f32], delta: f32) -> f32 {
     if calibration_errors.is_empty() {
         return 0.1; // Default conservative margin
