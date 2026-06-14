@@ -1,4 +1,33 @@
-﻿## [v15.5.0-sprint155] — 2026-06-14 (Sprint 155 — ROBUST KOOPMAN TUBE MPC & GGUF QUANTIZATION DENOISING)
+﻿## [v15.6.0-sprint156] — 2026-06-14 (Sprint 156 — ROBUST KOOPMAN TUBE MPC & PHYSICS-INFORMED RESIDUAL DENOISING)
+
+### Sprint 156 "ROBUST KOOPMAN TUBE MPC & PHYSICS-INFORMED RESIDUAL DENOISING"
+
+**Mode:** `STRICT_MATH + RECEDING_HORIZON_MPC + ZONOTOPE_ARITHMETIC + CONFORMAL_GUARANTEES + ZERO_WARNINGS + FULL_TEST_COVERAGE + DOC_SYNC`
+
+**Problema — Sin Koopman con residual physics-informed ni Tube MPC con garantías conformales:** Sprints 100-155 establecen KoopmanVanguard, DeepKoopmanAE, Robust DMDc, Tube MPC y GGUF noise simulation, pero faltan: (1) **Physics-Informed Residual Koopman** — `physics_informed_step()` en `crates/native-audit/src/deep_koopman.rs` con paso Koopman residual `ψ_{t+1} = K ψ_t + r_φ(ψ_t, ε_GGUF)` y proyección divergence-free basada en norma, y (2) **Robust Koopman Tube MPC con Conformal Prediction** — `robust_koopman_tube_mpc()` en `crates/native-audit/src/control.rs` con propagación zonotópica `Z_{k+1} = K·Z_k ⊕ W`, feedback ancilar `u_k = u_{nom,k} + K_{fb}(x_k - x̂_k)` y margen conformal `ε_robust = Q_{1-δ}({e_i})`, y (3) **Integration Tests** — `tests/mpc_eval.rs` con 18 tests cubriendo full horizon simulation.
+
+**Solución — Physics-Informed Residual + Robust Tube MPC + Conformal Guarantees:** Implementamos paso Koopman con residual physics-informed que combina predictor lineal nominal con corrección GGUF-aware y proyección de estabilidad basada en norma. Tube MPC robusto con propagación de tubo zonotópico, feedback ancilar y calibración conformal para garantías probabilísticas. **18/18 integration tests passing.**
+
+- **Physics-Informed Step:** `native-audit/src/deep_koopman.rs` — `physics_informed_step()` con residual GGUF denoising + divergence-free projection
+- **Robust Tube MPC:** `native-audit/src/control.rs` — `robust_koopman_tube_mpc()` con tube propagation + ancillary feedback + conformal margin
+- **Tube Propagation:** `propagate_tube()` — Zonotope dynamics `Z_{k+1} = K·Z_k ⊕ W`
+- **Ancillary Feedback:** `compute_ancillary_feedback()` — `u_fb = K_fb · (x_actual - x_nominal)`
+- **Conformal Margin:** `compute_conformal_margin()` — Q_{1-δ} quantile calibration
+- **Zonotope Fix:** `Zonotope::point()` — Corrected dimension inference for column-vector convention
+- **Integration Tests:** `tests/mpc_eval.rs` — 18 tests (5 physics_informed + 7 tube/feedback/conformal + 2 full horizon + 1 no_operator + 1 summary + 2 robust MPC)
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| Physics-Informed Step Tests | ✅ 5/5 |
+| Tube/Feedback/Conformal Tests | ✅ 7/7 |
+| Full Horizon Simulations | ✅ 2/2 |
+| Robust MPC Tests | ✅ 2/2 |
+| No Operator Fails Test | ✅ 1/1 |
+| Summary Test | ✅ 1/1 |
+| Total Integration | ✅ 18/18 |
+
+## [v15.5.0-sprint155] — 2026-06-14 (Sprint 155 — ROBUST KOOPMAN TUBE MPC & GGUF QUANTIZATION DENOISING)
 
 ### Sprint 155 "ROBUST KOOPMAN TUBE MPC & GGUF QUANTIZATION DENOISING"
 

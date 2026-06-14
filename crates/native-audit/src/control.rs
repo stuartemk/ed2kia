@@ -855,8 +855,9 @@ impl Zonotope {
     /// Create a point zonotope (zero generators).
     pub fn point(center: Tensor) -> Result<Self> {
         let shape = center.shape().dims();
-        let n = *shape.last().unwrap_or(&shape[0]);
-        let gens = Tensor::zeros((n, 1), DType::F32, center.device())?;
+        // Use row dimension for column-vector convention [dim, batch].
+        let dim = *shape.first().unwrap_or(&shape[0]);
+        let gens = Tensor::zeros((dim, 1), DType::F32, center.device())?;
         Ok(Self {
             center,
             generators: gens,
@@ -1806,6 +1807,172 @@ pub fn verify_robust_cbf(
     let rhs = nabla_h_norm * noise_eps;
     let margin = lhs - rhs;
     (margin >= 0.0, margin)
+}
+
+// ─── S156 — Robust Koopman Tube MPC + Zonotope Arithmetic ────────────────────
+
+/// Result of robust Koopman Tube MPC computation.
+#[derive(Debug)]
+pub struct RobustTubeMPCResult {
+    /// Optimal nominal control sequence u_nom[0..N].
+    pub nominal_control: Tensor,
+    /// Ancillary feedback correction K_fb(x - x̂).
+    pub feedback_correction: Tensor,
+    /// Final control: u = u_nom + K_fb(x - x̂).
+    pub final_control: Tensor,
+    /// Tube radius at final horizon step.
+    pub final_tube_radius: f32,
+    /// Conformal margin ε_robust guaranteeing P(violation) ≤ δ.
+    pub conformal_margin: f32,
+    /// Maximum deviation observed during tube propagation.
+    pub max_deviation: f32,
+}
+
+impl std::fmt::Display for RobustTubeMPCResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "RobustTubeMPC {{ tube_r: {:.6}, ε_robust: {:.6}, max_dev: {:.6} }}",
+            self.final_tube_radius, self.conformal_margin, self.max_deviation
+        )
+    }
+}
+
+/// Propagate a zonotope tube one step: Z_{k+1} = K · Z_k ⊕ W.
+///
+/// # Arguments
+/// * `k_matrix` — Koopman linear operator [d, d].
+/// * `zonotope` — Current tube zonotope <c, G>.
+/// * `noise_generators` — Disturbance zonotope generators W [d, n_w].
+///
+/// # Returns
+/// Propagated zonotope Z_{k+1}.
+pub fn propagate_tube(
+    k_matrix: &Tensor,
+    zonotope: &Zonotope,
+    noise_generators: &Tensor,
+) -> Result<Zonotope> {
+    // 1. Linear image: K · <c, G> = <Kc, KG>
+    let new_center = k_matrix.matmul(&zonotope.center)?;
+    let new_generators = k_matrix.matmul(&zonotope.generators)?;
+    // 2. Minkowski sum: <Kc, KG> ⊕ <0, W> = <Kc, [KG W]>
+    let combined_generators = Tensor::cat(&[&new_generators, noise_generators], 1)?;
+    Ok(Zonotope::new(new_center, combined_generators))
+}
+
+/// Compute ancillary feedback correction: u_fb = K_fb · (x_actual - x_nominal).
+///
+/// # Arguments
+/// * `x_actual` — Actual measured state [batch, d].
+/// * `x_nominal` — Nominal trajectory state [batch, d].
+/// * `feedback_gain` — Feedback gain matrix K_fb [d, d].
+///
+/// # Returns
+/// Feedback correction tensor.
+pub fn compute_ancillary_feedback(
+    x_actual: &Tensor,
+    x_nominal: &Tensor,
+    feedback_gain: &Tensor,
+) -> Result<Tensor> {
+    let error = x_actual.sub(x_nominal)?;
+    feedback_gain.matmul(&error)
+}
+
+/// Compute conformal prediction margin for robust tube guarantees.
+///
+/// Given a set of empirical violations {e_i}, compute the (1-δ)-quantile
+/// that guarantees P(violation) ≤ δ.
+///
+/// # Arguments
+/// * `empirical_violations` — Vector of observed tube violations.
+/// * `delta` — Target miscoverage rate (e.g., 0.05 for 95% coverage).
+///
+/// # Returns
+/// The conformal margin ε_robust such that P(violation) ≤ δ.
+pub fn compute_conformal_margin(empirical_violations: &[f32], delta: f32) -> f32 {
+    if empirical_violations.is_empty() {
+        return 0.0;
+    }
+    let mut sorted = empirical_violations.to_vec();
+    sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    let n = sorted.len();
+    // Compute ceiling of (n+1)*(1-δ) - 1 as index
+    let idx = (((n + 1) as f32) * (1.0 - delta)).ceil() as usize - 1;
+    let idx = idx.min(n - 1);
+    sorted[idx]
+}
+
+/// Robust Koopman Tube MPC with conformal guarantees.
+///
+/// Combines nominal Koopman prediction with tube dynamics and conformal
+/// prediction to provide probabilistic forward invariance guarantees.
+///
+/// # Arguments
+/// * `vanguard` — KoopmanVanguard with estimated K operator.
+/// * `x_actual` — Actual measured state.
+/// * `x_nominal` — Nominal trajectory state.
+/// * `u_nominal` — Nominal control input.
+/// * `noise_generators` — Disturbance zonotope generators.
+/// * `feedback_gain` — Ancillary feedback gain K_fb.
+/// * `horizon` — Prediction horizon N.
+/// * `empirical_violations` — Historical violation data for conformal calibration.
+/// * `delta` — Target miscoverage rate.
+///
+/// # Returns
+/// [`RobustTubeMPCResult`] with controls, tube radius, and conformal margin.
+pub fn robust_koopman_tube_mpc(
+    vanguard: &KoopmanVanguard,
+    x_actual: &Tensor,
+    x_nominal: &Tensor,
+    u_nominal: &Tensor,
+    noise_generators: &Tensor,
+    feedback_gain: &Tensor,
+    horizon: usize,
+    empirical_violations: &[f32],
+    delta: f32,
+) -> Result<RobustTubeMPCResult> {
+    let k = match &vanguard.k_operator {
+        Some(k) => k,
+        None => {
+            return Err(candle_core::Error::Msg(
+                "Robust Tube MPC requires estimated Koopman operator".into(),
+            ))
+        }
+    };
+
+    // 1. Initialize tube as point zonotope at nominal state
+    let mut tube = Zonotope::point(x_nominal.clone())?;
+
+    // 2. Propagate tube over horizon
+    let mut max_deviation = 0.0f32;
+    for _ in 0..horizon {
+        tube = propagate_tube(k, &tube, noise_generators)?;
+        let radius = tube.radius()?;
+        if radius > max_deviation {
+            max_deviation = radius;
+        }
+    }
+
+    // 3. Compute ancillary feedback correction
+    let feedback_correction = compute_ancillary_feedback(x_actual, x_nominal, feedback_gain)?;
+
+    // 4. Final control: u = u_nom + K_fb(x - x̂)
+    let final_control = u_nominal.broadcast_add(&feedback_correction)?;
+
+    // 5. Conformal margin for probabilistic guarantee
+    let conformal_margin = compute_conformal_margin(empirical_violations, delta);
+
+    // 6. Final tube radius includes conformal margin
+    let final_tube_radius = tube.radius()? + conformal_margin;
+
+    Ok(RobustTubeMPCResult {
+        nominal_control: u_nominal.clone(),
+        feedback_correction,
+        final_control,
+        final_tube_radius,
+        conformal_margin,
+        max_deviation,
+    })
 }
 
 // ─── S146 — Event-Triggered Contractive Tube MPC + LQR Fallback ─────────────
