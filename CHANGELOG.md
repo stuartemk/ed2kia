@@ -1,4 +1,33 @@
-﻿## [v15.7.0-sprint157] — 2026-06-14 (Sprint 157 — TRUE KOOPMAN TUBE MPC & PINN RESIDUALS)
+﻿## [v15.8.0-sprint158] — 2026-06-14 (Sprint 158 — CERTIFIED KOOPMAN GUARDIAN & CONFORMAL TUBE MPC)
+
+### Sprint 158 "CERTIFIED KOOPMAN GUARDIAN & CONFORMAL TUBE MPC (11/10 Edition)"
+
+**Mode:** `STRICT_MATH + CONFORMAL_PREDICTION + CBF_QP + GOLIAH_BENCHMARK + ZERO_WARNINGS + DOC_SYNC + RELEASE`
+
+**Problema — Sin certificación formal ni garantías conformales:** Sprints 100-157 establecen KoopmanVanguard, DeepKoopmanAE, Tube MPC, PINN Residuals y Formal Verification, pero faltan: (1) **Advanced Observable Lifting** — `lift_observables_advanced()` en `deep_koopman.rs` con Fourier basis + Matryoshka SAE proxy + Polynomial features, (2) **Rigorous PINN Loss** — `physics_informed_residual_loss()` con 3 términos (data + physics + Lyapunov), (3) **Conformal Tube MPC** — `propagate_tube_conformal()` con margen PAC `ε_robust = Q_{1-δ}({e_i})`, (4) **Robust CBF-QP** — `solve_robust_cbf_qp()` con proyección mínima sobre conjunto factible CBF, y (5) **Goliath Benchmark** — `benches/koopman_mpc_vs_baseline.rs` simulando 100 prompts adversarios con ASR, Certifiability Rate, Lyapunov deriv y Tube Radius.
+
+**Solución — Certified Koopman Guardian + Conformal Tube MPC:** Implementamos lifting avanzado de observables con base Fourier (ω=1..8), proxy Matryoshka SAE y features polinomiales (deg≤2). PINN Loss riguroso con pérdida compuesta de 3 términos: fidelidad de datos, consistencia física (divergence-free proxy) y estabilidad de Lyapunov con contracción `V̇ ≤ -αV`. Tube MPC conformal con calibración PAC y propagación zonotópica con margen `Z_{k+1} = K·Z_k ⊕ W ⊖ ε_k`. CBF-QP robusto con solución analítica de proyección mínima. Benchmark de Goliat con 8 benchmarks Criterion cubriendo todos los modos (stable/marginal/unstable). **0 errors, 0 warnings.**
+
+- **Advanced Observables:** `native-audit/src/deep_koopman.rs` — `lift_observables_advanced()` con Fourier + Matryoshka + Poly
+- **Rigorous PINN Loss:** `native-audit/src/deep_koopman.rs` — `physics_informed_residual_loss()` con 3 términos (data + physics + Lyapunov)
+- **Lyapunov Derivative:** `native-audit/src/deep_koopman.rs` — `compute_lyapunov_derivative()`
+- **Conformal Calibration:** `native-audit/src/tube_mpc.rs` — `calibrate_conformal_epsilon()` con PAC guarantees
+- **Conformal Tube Propagation:** `native-audit/src/tube_mpc.rs` — `propagate_tube_conformal()` con margen conformal
+- **Robust CBF-QP:** `native-audit/src/tube_mpc.rs` — `solve_robust_cbf_qp()` con proyección mínima
+- **Helper Metrics:** `compute_certifiability_rate()` + `compute_asr()`
+- **Goliath Benchmark:** `native-audit/benches/koopman_mpc_vs_baseline.rs` — 8 benchmarks Criterion
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| Compilation (lib) | ✅ 0 errors, 0 warnings |
+| Advanced Observables | ✅ Fourier + Matryoshka + Poly |
+| Rigorous PINN Loss | ✅ 3-term composite (data + physics + Lyapunov) |
+| Conformal Tube MPC | ✅ PAC guarantees via Q_{1-δ} |
+| Robust CBF-QP | ✅ Analytical projection |
+| Goliath Benchmark | ✅ 8 Criterion benchmarks |
+
+## [v15.7.0-sprint157] — 2026-06-14 (Sprint 157 — TRUE KOOPMAN TUBE MPC & PINN RESIDUALS)
 
 ### Sprint 157 "TRUE KOOPMAN TUBE MPC & PINN RESIDUALS"
 

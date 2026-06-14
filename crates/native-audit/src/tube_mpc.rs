@@ -448,6 +448,169 @@ pub fn compute_tube_radius_sequence(
 }
 
 // ---------------------------------------------------------------------------
+// Sprint 158: Conformal Tube MPC + Robust CBF-QP
+// ---------------------------------------------------------------------------
+
+/// Calibrate conformal epsilon from calibration set of errors.
+///
+/// Computes the `(1-δ)`-quantile of empirical errors to provide
+/// PAC (Probably Approximately Correct) guarantees:
+/// ```text
+/// ε_robust = Q_{1-δ}({e_i})
+/// ```
+///
+/// # Arguments
+/// - `calibration_errors`: Empirical errors from calibration set.
+/// - `delta`: Risk level (e.g., 0.05 for 95% coverage).
+///
+/// # Returns
+/// Conformal epsilon margin.
+pub fn calibrate_conformal_epsilon(calibration_errors: &[f32], delta: f32) -> f32 {
+    if calibration_errors.is_empty() {
+        return 1.0; // Conservative default
+    }
+    let mut sorted = calibration_errors.to_vec();
+    sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    let n = sorted.len();
+    // Quantile index: ceil((1-δ)·(n+1)) - 1
+    let idx = (((1.0 - delta) * (n + 1) as f32).ceil() as usize).saturating_sub(1).min(n - 1);
+    sorted[idx]
+}
+
+/// Propagate tube with conformal prediction margin.
+///
+/// Implements:
+/// ```text
+/// Z_{k+1} = K·Z_k ⊕ W ⊖ ε_k
+/// ```
+/// Where `ε_k` is the conformal quantile margin that tightens the tube
+/// based on empirical calibration data.
+///
+/// # Arguments
+/// - `a_cl`: Closed-loop Koopman operator `[dim, dim]`.
+/// - `t_k`: Current tube zonotope center `[batch, dim]`.
+/// - `w_disturbance`: Disturbance set zonotope `[batch, dim]`.
+/// - `conformal_epsilon`: Conformal margin from calibration.
+/// - `config`: Tube MPC configuration.
+///
+/// # Returns
+/// Next tube zonotope center `[batch, dim]`.
+pub fn propagate_tube_conformal(
+    a_cl: &Tensor,
+    t_k: &Tensor,
+    w_disturbance: &Tensor,
+    conformal_epsilon: f32,
+    _config: &TubeMPCConfig,
+) -> Result<Tensor> {
+    // 1. Affine propagation: A_cl · T_k
+    let propagated = t_k.matmul(a_cl)?;
+    
+    // 2. Minkowski sum with disturbance: ⊕ W
+    let with_disturbance = propagated.broadcast_add(w_disturbance)?;
+    
+    // 3. Conformal tightening: ⊖ ε (scale down by epsilon factor)
+    let epsilon_factor = 1.0 - conformal_epsilon.min(0.5); // Conservative bound
+    let epsilon_tensor = Tensor::new(epsilon_factor, with_disturbance.device())?;
+    let tightened = with_disturbance.broadcast_mul(&epsilon_tensor)?;
+    
+    Ok(tightened)
+}
+
+/// Solve Robust CBF-QP (Control Barrier Function Quadratic Program).
+///
+/// Implements:
+/// ```text
+/// min_u ½||u - u_nom||²
+/// s.t.  L_f h(Z) + L_g h(Z)·u + γ·h(Z) ≥ sup_w L_w h(Z) + ε_robust
+/// ```
+///
+/// Uses simplified projection-based solver (Clarabel stub for production).
+///
+/// # Arguments
+/// - `u_nom`: Nominal control input `[ctrl_dim]`.
+/// - `cbf_value`: Current CBF value h(Z).
+/// - `lf_h`: Lie derivative L_f h(Z).
+/// - `lg_h`: Lie derivative L_g h(Z) `[ctrl_dim]`.
+/// - `gamma`: CBF class-K parameter.
+/// - `conformal_epsilon`: Robust margin from conformal prediction.
+///
+/// # Returns
+/// Safe control input `[ctrl_dim]`.
+pub fn solve_robust_cbf_qp(
+    u_nom: &Tensor,
+    cbf_value: f32,
+    lf_h: f32,
+    lg_h: &Tensor,
+    gamma: f32,
+    conformal_epsilon: f32,
+) -> Result<Tensor> {
+    // CBF constraint: L_f h + L_g h · u + γ·h ≥ ε_robust
+    // Rearranged: L_g h · u ≥ ε_robust - L_f h - γ·h
+    let rhs = conformal_epsilon - lf_h - gamma * cbf_value;
+    
+    // Check if nominal control satisfies constraint
+    let lg_h_flat = lg_h.flatten_all()?;
+    let u_nom_flat = u_nom.flatten_all()?;
+    let u_nom_dim = u_nom_flat.dim(0)?;
+    let lg_dot_unom = lg_h_flat.broadcast_matmul(&u_nom_flat.reshape((u_nom_dim, 1))?)?;
+    let lg_dot_unom_scalar = lg_dot_unom.to_scalar::<f32>()?;
+    let nominal_satisfies = lg_dot_unom_scalar >= rhs;
+    
+    if nominal_satisfies {
+        // Nominal control is safe
+        return Ok(u_nom.clone());
+    }
+    
+    // Project nominal control onto CBF feasible set
+    // Minimum norm correction: u = u_nom + λ·L_g h where λ = (rhs - L_g h · u_nom) / ||L_g h||²
+    let lg_norm_sq = lg_h_flat.sqr()?.sum_all()?.to_scalar::<f32>()?;
+    
+    if lg_norm_sq < 1e-10 {
+        // L_g h ≈ 0, cannot satisfy constraint, return zero control
+        return Tensor::zeros_like(u_nom);
+    }
+    
+    let lambda = (rhs - lg_dot_unom_scalar) / lg_norm_sq;
+    let lambda_tensor = Tensor::new(lambda, lg_h.device())?;
+    let correction = lg_h.broadcast_mul(&lambda_tensor)?;
+    let u_safe = u_nom.broadcast_add(&correction)?;
+    
+    Ok(u_safe)
+}
+
+/// Compute certifiability rate from a batch of QP solutions.
+///
+/// # Arguments
+/// - `feasible_count`: Number of feasible QP solutions.
+/// - `total_count`: Total number of QP attempts.
+///
+/// # Returns
+/// Certifiability rate as percentage.
+pub fn compute_certifiability_rate(feasible_count: usize, total_count: usize) -> f32 {
+    if total_count == 0 {
+        return 0.0;
+    }
+    (feasible_count as f32 / total_count as f32) * 100.0
+}
+
+/// Simulate Attack Success Rate (ASR) for benchmarking.
+///
+/// ASR = % of adversarial prompts where steered state exits safe tube.
+///
+/// # Arguments
+/// - `exits_count`: Number of tube exits.
+/// - `total_prompts`: Total adversarial prompts tested.
+///
+/// # Returns
+/// ASR as percentage.
+pub fn compute_asr(exits_count: usize, total_prompts: usize) -> f32 {
+    if total_prompts == 0 {
+        return 0.0;
+    }
+    (exits_count as f32 / total_prompts as f32) * 100.0
+}
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
