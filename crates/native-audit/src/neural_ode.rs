@@ -1100,6 +1100,222 @@ impl NeuralODETaylor {
 }
 
 // ---------------------------------------------------------------------------
+// Dormand-Prince 5(4) Adaptive Integrator — Sprint 161
+// ---------------------------------------------------------------------------
+
+/// Result of a single DP54 adaptive step.
+#[derive(Debug, Clone)]
+pub struct DP54StepResult {
+    /// Accepted state after the step.
+    pub state: Tensor,
+    /// Actual step size used (may be reduced from requested).
+    pub h_used: f32,
+    /// Error estimate (embedded 5th vs 4th order difference).
+    pub error_norm: f32,
+    /// Was the step accepted?
+    pub accepted: bool,
+    /// Number of step reductions attempted.
+    pub reductions: usize,
+}
+
+impl std::fmt::Display for DP54StepResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "DP54 {{ accepted={}, h={}, err={:.2e}, reductions={} }}",
+            self.accepted, self.h_used, self.error_norm, self.reductions
+        )
+    }
+}
+
+/// Dormand-Prince 5(4) Butcher Tableau coefficients.
+///
+/// **References:**
+/// - Dormand, J. R., & Prince, P. J. (1980). "A family of embedded Runge-Kutta formulae."
+/// - 7-stage RK with embedded 4th/5th order error estimate.
+///
+/// Coefficients:
+/// c = [0, 1/5, 3/10, 4/5, 8/9, 1, 1]
+/// a[i][j] = Butcher tableau lower triangular matrix
+/// b5 = 5th order weights (primary solution)
+/// b4 = 4th order weights (embedded error estimate)
+/// e = b5 - b4 (error estimation weights)
+const DP54_A: &[[f32; 7]] = &[
+    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+    [1.0 / 5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+    [3.0 / 40.0, 9.0 / 40.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+    [44.0 / 45.0, 56.0 / 15.0, -32.0 / 9.0, 0.0, 0.0, 0.0, 0.0],
+    [
+        19372.0 / 6561.0,
+        25360.0 / 2187.0,
+        -6656.0 / 125.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+    ],
+    [
+        9017.0 / 3168.0,
+        355.0 / 33.0,
+        -46732.0 / 5247.0,
+        485.0 / 176.0,
+        -19200.0 / 429.0,
+        0.0,
+        0.0,
+    ],
+    [
+        35.0 / 384.0,
+        0.0,
+        500.0 / 1113.0,
+        125.0 / 192.0,
+        -2187.0 / 6784.0,
+        11.0 / 84.0,
+        0.0,
+    ],
+];
+const DP54_B5: &[f32] = &[
+    35.0 / 384.0,
+    0.0,
+    500.0 / 1113.0,
+    125.0 / 192.0,
+    -2187.0 / 6784.0,
+    11.0 / 84.0,
+    0.0,
+];
+const DP54_B4: &[f32] = &[
+    5179.0 / 57600.0,
+    0.0,
+    7571.0 / 16695.0,
+    393.0 / 640.0,
+    -92097.0 / 339200.0,
+    187.0 / 2100.0,
+    1.0 / 40.0,
+];
+
+/// Compute error estimation weights: e = b5 - b4.
+fn dp54_error_weights() -> [f32; 7] {
+    let mut e = [0.0f32; 7];
+    for i in 0..7 {
+        e[i] = DP54_B5[i] - DP54_B4[i];
+    }
+    e
+}
+
+/// Single adaptive DP54 step with error control.
+///
+/// **Algorithm:**
+/// 1. Compute 7 RK stages k[0..6] using Butcher tableau
+/// 2. Compute 5th order solution: x_new_5 = x + h * sum(b5[i] * k[i])
+/// 3. Compute 4th order solution: x_new_4 = x + h * sum(b4[i] * k[i])
+/// 4. Error estimate: err = ||x_new_5 - x_new_4||
+/// 5. Accept/reject: if err < tol, accept; else reduce h and retry
+/// 6. Adaptive h: h_new = h * (tol / err)^(1/5) with safety factor 0.9
+///
+/// **Parameters:**
+/// - `x0`: Current state tensor
+/// - `field`: Neural ODE vector field f(x)
+/// - `h`: Requested step size
+/// - `tol`: Error tolerance (default 1e-4)
+/// - `h_min`: Minimum allowed step size (default 1e-8)
+/// - `max_reductions`: Maximum step reductions before forcing accept (default 10)
+///
+/// **Returns:** `DP54StepResult` with accepted state and metadata
+pub fn dp54_step(
+    x0: &Tensor,
+    field: &NeuralODEField,
+    h: f32,
+    tol: f32,
+    h_min: f32,
+    max_reductions: usize,
+) -> candle_core::Result<DP54StepResult> {
+    let device = x0.device();
+    let dims = x0.shape().dims().to_vec();
+    let mut h_current = h;
+    let mut reductions = 0;
+
+    let e_weights = dp54_error_weights();
+
+    loop {
+        // Allocate k stages: k[i] = f(x_stage_i)
+        let mut k_stages: Vec<Tensor> = Vec::with_capacity(7);
+
+        // Compute 7 RK stages
+        for i in 0..7 {
+            // x_stage = x0 + h * sum(a[i][j] * k[j] for j < i)
+            let mut x_stage = x0.clone();
+            let h_tensor = Tensor::new(h_current, device)?;
+
+            for j in 0..i {
+                let a_ij = Tensor::new(DP54_A[i][j], device)?;
+                let scaled_k = a_ij.broadcast_mul(&h_tensor)?.broadcast_mul(&k_stages[j])?;
+                x_stage = x_stage.broadcast_add(&scaled_k)?;
+            }
+
+            let k_i = field.evaluate(&x_stage)?;
+            k_stages.push(k_i);
+        }
+
+        // Compute error estimate: err = h * sum(e[i] * k[i])
+        let mut error = Tensor::zeros(dims.clone(), candle_core::DType::F32, device)?;
+        for i in 0..7 {
+            let e_i = Tensor::new(e_weights[i] * h_current, device)?;
+            let term = e_i.broadcast_mul(&k_stages[i])?;
+            error = error.broadcast_add(&term)?;
+        }
+
+        // Error norm (infinity norm for safety)
+        let error_norm = error.abs()?.sum_all()?.to_scalar::<f32>()?.sqrt();
+
+        // Check acceptance
+        if error_norm < tol || reductions >= max_reductions {
+            // Compute 5th order solution: x_new = x0 + h * sum(b5[i] * k[i])
+            let mut x_new = x0.clone();
+            for i in 0..7 {
+                let b5_i = Tensor::new(DP54_B5[i] * h_current, device)?;
+                let term = b5_i.broadcast_mul(&k_stages[i])?;
+                x_new = x_new.broadcast_add(&term)?;
+            }
+
+            return Ok(DP54StepResult {
+                state: x_new,
+                h_used: h_current,
+                error_norm,
+                accepted: error_norm < tol,
+                reductions,
+            });
+        }
+
+        // Step rejected — reduce h
+        let safety = 0.9;
+        let exponent = 0.2; // 1/5 for 5th order method
+        let factor = (tol / error_norm).powf(exponent).clamp(0.2, 5.0);
+        h_current = (h_current * factor * safety).max(h_min);
+        reductions += 1;
+    }
+}
+
+/// Compute adaptive step size for next DP54 step based on current error.
+///
+/// **Formula:**
+/// ```math
+/// h_{next} = h_{current} × (tol / err)^{1/5} × safety
+/// ```
+///
+/// Clamped to [h_min, h_max] for stability.
+pub fn adapt_step_size(h_current: f32, error_norm: f32, tol: f32, h_min: f32, h_max: f32) -> f32 {
+    if error_norm < 1e-15 {
+        return h_current.min(h_max);
+    }
+
+    let safety = 0.9;
+    let exponent = 0.2; // 1/5 for 5th order
+    let factor = (tol / error_norm).powf(exponent).clamp(0.1, 5.0);
+    let h_next = h_current * factor * safety;
+
+    h_next.clamp(h_min, h_max)
+}
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 

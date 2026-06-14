@@ -11,7 +11,7 @@
 //! - Loss: L = ||ψ(x_{t+1}) - K ψ(x_t)||²_F + ||Decoder(ψ(x)) - x||² + λ||V̇ + αV||²_+
 //! - Lyapunov: V(ψ) = (ψ - ψ_safe)ᵀ M (ψ - ψ_safe), M ≻ 0
 
-use candle_core::{Device, DType, Result, Tensor};
+use candle_core::{DType, Device, Result, Tensor};
 use candle_nn::{Linear, Module};
 
 // ---------------------------------------------------------------------------
@@ -137,7 +137,8 @@ impl std::fmt::Display for DeepKoopmanForward {
         write!(
             f,
             "DeepKoopmanForward {{ lifted: {:?}, recon_loss: {:.6} }}",
-            self.lifted.shape(), self.recon_loss
+            self.lifted.shape(),
+            self.recon_loss
         )
     }
 }
@@ -363,7 +364,8 @@ impl DeepKoopman {
 
         // Contraction penalty
         let contraction_penalty = self.compute_contraction_penalty(psi_t)?;
-        let total_loss = prediction_error + (self.config.lambda_contraction as f32) * contraction_penalty;
+        let total_loss =
+            prediction_error + (self.config.lambda_contraction as f32) * contraction_penalty;
 
         Ok(KoopmanUpdateResult {
             prediction_error,
@@ -383,9 +385,9 @@ impl DeepKoopman {
         //   M @ errorᵀ -> [lifted_dim, batch]
         //   Then element-wise multiply with errorᵀ and sum over lifted_dim
         let error = psi.sub(psi_safe)?;
-        let error_t = error.t()?;  // [lifted_dim, batch]
-        let m_error_t = self.contraction_metric.matmul(&error_t)?;  // [lifted_dim, batch]
-        // Element-wise: (M @ errorᵀ) * errorᵀ -> [lifted_dim, batch]
+        let error_t = error.t()?; // [lifted_dim, batch]
+        let m_error_t = self.contraction_metric.matmul(&error_t)?; // [lifted_dim, batch]
+                                                                   // Element-wise: (M @ errorᵀ) * errorᵀ -> [lifted_dim, batch]
         let weighted = m_error_t.broadcast_mul(&error_t)?;
         // Sum over lifted_dim (dim 0) to get per-sample V -> [batch]
         let v = weighted.sum(0)?;
@@ -395,11 +397,7 @@ impl DeepKoopman {
     /// Compute approximate Lyapunov derivative via finite difference.
     ///
     /// V̇ ≈ (V(ψ_{t+1}) - V(ψ_t)) / Δt
-    pub fn compute_lyapunov_derivative(
-        &self,
-        psi: &Tensor,
-        psi_safe: &Tensor,
-    ) -> Result<f32> {
+    pub fn compute_lyapunov_derivative(&self, psi: &Tensor, psi_safe: &Tensor) -> Result<f32> {
         let psi_next = self.predict_next_state(psi)?;
         let v_t = self.compute_lyapunov_value(psi, psi_safe)?;
         let v_next = self.compute_lyapunov_value(&psi_next, psi_safe)?;
@@ -549,8 +547,8 @@ pub fn mean_field_replicator_step(
     // Mean fitness
     let mean_fitness = fitness.mean_all()?.to_scalar::<f32>()?;
     // Broadcast scalar to match fitness shape for subtraction compatibility
-    let mean_fitness_tensor = Tensor::new(mean_fitness, fitness.device())?
-        .broadcast_as(fitness.shape())?;
+    let mean_fitness_tensor =
+        Tensor::new(mean_fitness, fitness.device())?.broadcast_as(fitness.shape())?;
 
     // Excess fitness: f_i - f̄
     let excess = fitness.sub(&mean_fitness_tensor)?;
@@ -560,7 +558,9 @@ pub fn mean_field_replicator_step(
     let x_clamped = x.maximum(epsilon)?;
     let log_x = x_clamped.log()?;
     let eta_tensor = Tensor::new(eta_diversity, x.device())?;
-    let diversity = x_clamped.broadcast_mul(&log_x)?.broadcast_mul(&eta_tensor)?;
+    let diversity = x_clamped
+        .broadcast_mul(&log_x)?
+        .broadcast_mul(&eta_tensor)?;
 
     // Itô noise (small Gaussian perturbation)
     let shape = x.shape();
@@ -605,18 +605,20 @@ pub fn mean_field_replicator_step(
 pub fn lift_observables_advanced(h: &Tensor) -> Result<Tensor> {
     // 1. Matryoshka SAE proxy: multi-scale linear + ReLU stacks
     let relu_h = h.relu()?;
-    
+
     // 2. Polynomial features (degree ≤ 2)
     let poly2 = h.sqr()?;
-    
+
     // 3. Fourier basis: sin(ω_k · h) for k = 0..7
-    let fourier: Result<Vec<Tensor>> = (0..8).map(|k| {
-        let omega = (k as f64 + 1.0) * 2.0 * std::f64::consts::PI;
-        let omega_tensor = Tensor::new(omega as f32, h.device())?;
-        h.broadcast_mul(&omega_tensor)?.sin()
-    }).collect();
+    let fourier: Result<Vec<Tensor>> = (0..8)
+        .map(|k| {
+            let omega = (k as f64 + 1.0) * 2.0 * std::f64::consts::PI;
+            let omega_tensor = Tensor::new(omega as f32, h.device())?;
+            h.broadcast_mul(&omega_tensor)?.sin()
+        })
+        .collect();
     let fourier = fourier?;
-    
+
     // 4. Concatenate all parts along feature dimension (dim 1)
     let mut parts: Vec<Tensor> = vec![h.clone(), relu_h, poly2];
     parts.extend(fourier);
@@ -675,21 +677,21 @@ pub fn physics_informed_residual_loss(
     // 3. Lyapunov Term: V(ψ) = ||ψ - ψ_safe||², V̇ ≈ V(ψ_{t+1}) - V(ψ_t)
     let diff_t = psi_t.broadcast_sub(safe_centroid)?;
     let v_t = diff_t.sqr()?.mean_all()?;
-    
+
     // Predict ψ_{t+1} for Lyapunov derivative
     let psi_pred = pred.clone();
     let diff_next = psi_pred.broadcast_sub(safe_centroid)?;
     let v_next = diff_next.sqr()?.mean_all()?;
-    
+
     // V̇ ≈ V(ψ_{t+1}) - V(ψ_t) (Δt = 1 discrete)
     let v_dot = v_next.broadcast_sub(&v_t)?;
-    
+
     // Contraction penalty: max(0, V̇ + αV)
     let alpha_tensor = Tensor::new(alpha as f32, v_t.device())?;
     let alpha_v = v_t.broadcast_mul(&alpha_tensor)?;
     let violation = v_dot.broadcast_add(&alpha_v)?;
     let contraction_penalty = violation.maximum(0.0)?;
-    
+
     // Total Lyapunov: V(ψ) + max(0, V̇ + αV)
     let lyapunov_total = v_t.broadcast_add(&contraction_penalty)?;
     let lambda_2_tensor = Tensor::new(lambda_2 as f32, lyapunov_total.device())?;
@@ -714,11 +716,90 @@ pub fn compute_lyapunov_derivative(
 ) -> Result<f32> {
     let diff_t = psi_t.broadcast_sub(safe_centroid)?;
     let v_t = diff_t.sqr()?.mean_all()?.to_scalar::<f32>()?;
-    
+
     let diff_next = psi_t_next.broadcast_sub(safe_centroid)?;
     let v_next = diff_next.sqr()?.mean_all()?.to_scalar::<f32>()?;
-    
+
     Ok(v_next - v_t)
+}
+
+/// Koopman Lifting with Lyapunov Constraint — Sprint 161.
+///
+/// **Mathematical Foundation:**
+/// Extends `lift_observables_advanced` with Lyapunov function embedding for
+/// certified stability in the lifted space.
+///
+/// **Observable Construction:**
+/// ```math
+/// ψ(x) = [x; ReLU(x); x²; sin(ω_k·x)_{k=1..8}; V(x)·x]
+/// ```
+/// where `V(x) = ||x - x_safe||²_Q` is the Lyapunov function.
+///
+/// **Lyapunov Constraint:**
+/// The lifted observables include `V(x)·x` terms that encode the Lyapunov
+/// derivative constraint `V̇ ≤ -αV` directly into the Koopman operator spectrum.
+///
+/// # Arguments
+/// - `h`: Input state tensor `[batch, dim]`
+/// - `safe_centroid`: Safe reference point `[1, dim]` or `[dim]`
+/// - `Q_scale`: Scaling factor for Lyapunov metric (identity if None)
+///
+/// # Returns
+/// Lifted observable tensor `[batch, dim + dim + dim + 8*dim + dim]`
+pub fn lift_observables_with_lyapunov(
+    h: &Tensor,
+    safe_centroid: &Tensor,
+    q_scale: Option<f32>,
+) -> Result<Tensor> {
+    // 1. Base observables (from lift_observables_advanced)
+    let base = lift_observables_advanced(h)?;
+
+    // 2. Lyapunov function: V(x) = ||x - x_safe||²_Q
+    let diff = h.broadcast_sub(safe_centroid)?;
+    let v_raw = diff.sqr()?;
+
+    let v_scaled = match q_scale {
+        Some(scale) => v_raw.broadcast_mul(&Tensor::new(scale, h.device())?)?,
+        None => v_raw,
+    };
+
+    // V(x) as scalar per sample: mean over features
+    let v_scalar = v_scaled.mean(1)?.transpose(0, 1)?;
+
+    // 3. Lyapunov-weighted observables: V(x) · x
+    // This encodes the Lyapunov derivative constraint into the observable space
+    let lyapunov_obs = v_scalar.broadcast_mul(h)?;
+
+    // 4. Concatenate: [base_observables; V(x)·x]
+    Tensor::cat(&[base, lyapunov_obs], 1)
+}
+
+/// Verify Lyapunov contraction in lifted Koopman space.
+///
+/// **Constraint:** `V(ψ_{t+1}) ≤ V(ψ_t) - α·V(ψ_t)`
+///
+/// Returns `true` if the lifted trajectory satisfies the contraction constraint.
+pub fn verify_lyapunov_contraction(
+    psi_t: &Tensor,
+    psi_t_next: &Tensor,
+    safe_centroid: &Tensor,
+    alpha: f32,
+) -> Result<bool> {
+    let v_t = compute_lyapunov_value(psi_t, safe_centroid)?;
+    let v_next = compute_lyapunov_value(psi_t_next, safe_centroid)?;
+
+    // Check: V_next ≤ (1 - α) · V_t
+    let threshold = (1.0 - alpha) * v_t;
+    Ok(v_next <= threshold)
+}
+
+/// Compute Lyapunov function value in lifted space.
+///
+/// `V(ψ) = ||ψ - ψ_safe||²`
+pub fn compute_lyapunov_value(psi: &Tensor, safe_centroid: &Tensor) -> Result<f32> {
+    let diff = psi.broadcast_sub(safe_centroid)?;
+    let v = diff.sqr()?.sum_all()?.to_scalar::<f32>()?;
+    Ok(v)
 }
 
 // ---------------------------------------------------------------------------
@@ -831,7 +912,8 @@ impl DeepKoopmanAE {
         // Gram matrix: G = Ψ_X^T Ψ_X + λI
         let gram = psi_x.t()?.matmul(psi_x)?;
         let identity = Tensor::eye(d, DType::F32, psi_x.device())?;
-        let ridge_broadcast = Tensor::new(self.ridge, psi_x.device())?.broadcast_as(gram.shape())?;
+        let ridge_broadcast =
+            Tensor::new(self.ridge, psi_x.device())?.broadcast_as(gram.shape())?;
         let ridge_term = identity.mul(&ridge_broadcast)?;
         let g_reg = gram.add(&ridge_term)?;
 
@@ -858,7 +940,8 @@ impl DeepKoopmanAE {
             let gr = g_reg.matmul(&residual)?;
             let grgr = gr.sqr()?.sum_all()?.to_scalar::<f32>()?;
             let step_size = rr / (grgr + 1e-12);
-            let step_broadcast = Tensor::new(step_size, psi_x.device())?.broadcast_as(gradient.shape())?;
+            let step_broadcast =
+                Tensor::new(step_size, psi_x.device())?.broadcast_as(gradient.shape())?;
             let update = gradient.mul(&step_broadcast)?;
             k_t = k_t.add(&update)?;
         }
@@ -891,9 +974,8 @@ impl DeepKoopmanAE {
         let forward_recon = x_next.sub(&x_next_hat)?;
         let forward_loss = forward_recon.sqr()?.mean_all()?.to_scalar::<f32>()?;
 
-        let total_loss = self.lambda_recon * recon_loss
-            + self.lambda_koop * koop_loss
-            + forward_loss;
+        let total_loss =
+            self.lambda_recon * recon_loss + self.lambda_koop * koop_loss + forward_loss;
 
         Ok(KoopmanAELoss {
             recon_loss,
@@ -941,7 +1023,11 @@ impl DeepKoopmanAE {
 
         // 2. Koopman Dynamics Loss: ||ψ_next - K·ψ_t||²
         let psi_next_pred = self.koopman_forward(psi_t)?;
-        let koop_loss = psi_next.sub(&psi_next_pred)?.sqr()?.mean_all()?.to_scalar::<f32>()?;
+        let koop_loss = psi_next
+            .sub(&psi_next_pred)?
+            .sqr()?
+            .mean_all()?
+            .to_scalar::<f32>()?;
 
         // 3. Encoder Regularization: ||ψ(x) - Enc(x)||²
         let enc_x = self.lift_koopman_deep(x_t)?;
@@ -949,17 +1035,18 @@ impl DeepKoopmanAE {
 
         // 4. Decoder Regularization: ||Dec(ψ) - x_next||² (forward reconstruction)
         let x_next_hat = self.decode(&psi_next_pred)?;
-        let dec_loss = x_next.sub(&x_next_hat)?.sqr()?.mean_all()?.to_scalar::<f32>()?;
+        let dec_loss = x_next
+            .sub(&x_next_hat)?
+            .sqr()?
+            .mean_all()?
+            .to_scalar::<f32>()?;
 
         // 5. Frobenius Norm Penalty: γ·||K||_F²
         let k_frob_sq = self.k_matrix.sqr()?.sum_all()?.to_scalar::<f32>()?;
 
         // Total Loss
-        let total_loss = recon_loss
-            + koop_loss
-            + lambda_r * enc_loss
-            + lambda_d * dec_loss
-            + gamma * k_frob_sq;
+        let total_loss =
+            recon_loss + koop_loss + lambda_r * enc_loss + lambda_d * dec_loss + gamma * k_frob_sq;
 
         Ok(KoopmanAELoss {
             recon_loss,
@@ -1055,7 +1142,11 @@ impl DeepKoopmanAE {
         let spec_relu = spec_diff.relu()?;
         // Scalar mul via broadcast (mul(f32) not available)
         let lambda_spec_tensor = Tensor::new(lambda_spec, device)?;
-        let l_spec_scalar = spec_relu.broadcast_mul(&lambda_spec_tensor)?.sum_all()?.flatten_all()?.to_vec1::<f32>()?[0];
+        let l_spec_scalar = spec_relu
+            .broadcast_mul(&lambda_spec_tensor)?
+            .sum_all()?
+            .flatten_all()?
+            .to_vec1::<f32>()?[0];
 
         // 3. SDP Proxy: ||(K^T M K - ρ² M)_+||_1
         // Differentiable relaxation of K^T M K - ρ² M ⪯ 0
@@ -1064,7 +1155,11 @@ impl DeepKoopmanAE {
         let rho2m = m_matrix.broadcast_mul(&rho_sq_tensor)?;
         let sdp_viol = ktmk.sub(&rho2m)?.relu()?;
         let lambda_sdp_tensor = Tensor::new(lambda_sdp, device)?;
-        let l_sdp_scalar = sdp_viol.broadcast_mul(&lambda_sdp_tensor)?.sum_all()?.flatten_all()?.to_vec1::<f32>()?[0];
+        let l_sdp_scalar = sdp_viol
+            .broadcast_mul(&lambda_sdp_tensor)?
+            .sum_all()?
+            .flatten_all()?
+            .to_vec1::<f32>()?[0];
 
         // Total loss — all values are f32 scalars
         let koop_loss_val = trace_sum * lambda_lyap;
@@ -1218,7 +1313,9 @@ impl DeepKoopmanAE {
         let div_loss = if beta_div > 0.0 {
             let n = residual_weights.dim(0)?.min(residual_weights.dim(1)?);
             let eye = Tensor::eye(n, DType::F32, residual_weights.device())?;
-            let trace_val: f32 = (residual_weights.broadcast_mul(&eye)?).sum_all()?.to_scalar()?;
+            let trace_val: f32 = (residual_weights.broadcast_mul(&eye)?)
+                .sum_all()?
+                .to_scalar()?;
             (trace_val * trace_val) * (beta_div as f32)
         } else {
             0.0f32
@@ -1473,7 +1570,11 @@ pub fn lift_sae_koopman(
     let relu_x = x.relu()?;
     let x_sq = x.sqr()?;
     // Mean over features to keep dimension manageable
-    let x_sq_mean = x_sq.mean(1)?.flatten_all()?.unsqueeze(0)?.broadcast_as(x.shape())?;
+    let x_sq_mean = x_sq
+        .mean(1)?
+        .flatten_all()?
+        .unsqueeze(0)?
+        .broadcast_as(x.shape())?;
 
     parts.push(relu_x);
     parts.push(x_sq_mean);
@@ -1505,7 +1606,9 @@ fn rand_matrix(rows: usize, cols: usize, scale: f64, device: &Device) -> Result<
 
 /// Simple LCG for deterministic weight initialization.
 fn lcg_next(state: &mut u64) -> u64 {
-    *state = state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+    *state = state
+        .wrapping_mul(6364136223846793005)
+        .wrapping_add(1442695040888963407);
     *state
 }
 
@@ -1593,18 +1696,17 @@ fn truncated_svd_approx(
         let n_cur = x_residual.dim(1)?;
         let scale = 1.0f32 / (n_cur as f32).sqrt();
         let scale_t = Tensor::new(scale, device)?;
-        let mut v = Tensor::ones((n_cur, 1), DType::F32, device)?
-            .broadcast_mul(&scale_t)?;
+        let mut v = Tensor::ones((n_cur, 1), DType::F32, device)?.broadcast_mul(&scale_t)?;
 
         for _ in 0..power_iters {
             // v = X^T X v
             let xv = x_residual.matmul(&v)?;
             let norm = xv.sqr()?.sum_all()?.sqrt()?;
             let norm_val = norm.to_scalar::<f32>()?.max(1e-10);
-            v = x_residual.t()?.matmul(&xv)?.broadcast_mul(&Tensor::new(
-                1.0f32 / norm_val,
-                device,
-            )?)?;
+            v = x_residual
+                .t()?
+                .matmul(&xv)?
+                .broadcast_mul(&Tensor::new(1.0f32 / norm_val, device)?)?;
             let v_norm = v.sqr()?.sum_all()?.sqrt()?;
             let v_norm_val = v_norm.to_scalar::<f32>()?.max(1e-10);
             v = v.broadcast_mul(&Tensor::new(1.0f32 / v_norm_val, device)?)?;
@@ -1715,7 +1817,7 @@ pub fn robust_dmdc_gguf(
     let omega_denoised = if r > 0 {
         let s_diag: Vec<f32> = s_omega.iter().map(|&s| s as f32).collect();
         let s_tensor = Tensor::from_vec(s_diag, (r, 1), device)?; // [r, 1] for broadcasting with [d, r] -> need [d, 1]
-        // U is [d, r], S is [r, 1]: scale each column of U by corresponding singular value
+                                                                  // U is [d, r], S is [r, 1]: scale each column of U by corresponding singular value
         let u_s = u_omega.broadcast_mul(&s_tensor.t()?)?; // [d, r] * [1, r] = [d, r]
         u_s.matmul(&vt_omega)?
     } else {
@@ -1908,22 +2010,18 @@ pub fn compute_dmdc(
     let (n_u, d_control) = u_snapshots.dims2()?;
 
     if n_snapshots != n_u {
-        return Err(candle_core::Error::Msg(
-            format!(
-                "Snapshot count mismatch: X={}, U={}",
-                n_snapshots, n_u
-            ),
-        ));
+        return Err(candle_core::Error::Msg(format!(
+            "Snapshot count mismatch: X={}, U={}",
+            n_snapshots, n_u
+        )));
     }
 
     if n_snapshots < d_state + d_control {
-        return Err(candle_core::Error::Msg(
-            format!(
-                "Insufficient snapshots for DMDc: N={} < d_x+d_u={}",
-                n_snapshots,
-                d_state + d_control
-            ),
-        ));
+        return Err(candle_core::Error::Msg(format!(
+            "Insufficient snapshots for DMDc: N={} < d_x+d_u={}",
+            n_snapshots,
+            d_state + d_control
+        )));
     }
 
     // 1. Build composite Ω = [X | U]  [N x (d_state + d_control)]
@@ -1983,8 +2081,8 @@ fn compute_spectral_radius(k: &Tensor, iterations: usize) -> Result<f64> {
     let scale = 1.0 / (d as f32).sqrt();
     let scale_tensor = Tensor::new(scale, k.device())?;
     // Use 2D column vector [d, 1] for matmul compatibility
-    let mut v = Tensor::ones((d, 1), candle_core::DType::F32, k.device())?
-        .broadcast_mul(&scale_tensor)?;
+    let mut v =
+        Tensor::ones((d, 1), candle_core::DType::F32, k.device())?.broadcast_mul(&scale_tensor)?;
 
     let mut rho = 1.0f32;
     for _ in 0..iterations {
@@ -2011,11 +2109,7 @@ fn stabilize_koopman_operator(k: &Tensor, target_rho: f64) -> Result<Tensor> {
 }
 
 /// DMDc-based prediction: ψ(y) = A ψ(x) + B u
-pub fn dmdc_predict(
-    result: &DmdcResult,
-    psi_x: &Tensor,
-    u: &Tensor,
-) -> Result<Tensor> {
+pub fn dmdc_predict(result: &DmdcResult, psi_x: &Tensor, u: &Tensor) -> Result<Tensor> {
     let psi_y_a = result.k_a.matmul(psi_x)?;
     let psi_y_b = result.k_b.matmul(u)?;
     psi_y_a.add(&psi_y_b)
@@ -2328,7 +2422,11 @@ mod tests {
         let diff_flat = diff_abs.flatten(0, diff_abs.rank() - 1)?;
         let diff_vec: Vec<f32> = diff_flat.to_vec1()?;
         let max_diff = diff_vec.iter().copied().reduce(f32::max).unwrap_or(0.0);
-        assert!(max_diff < 1e-5, "Identity K should preserve ψ: max_diff={}", max_diff);
+        assert!(
+            max_diff < 1e-5,
+            "Identity K should preserve ψ: max_diff={}",
+            max_diff
+        );
         Ok(())
     }
 
@@ -2403,9 +2501,12 @@ mod tests {
         let r_final = dk.update_operator_online(&psi_t, &psi_next)?;
         // After enough iterations, error should be finite and bounded
         assert!(r_final.prediction_error.is_finite());
-        assert!(r_final.prediction_error < r_initial.prediction_error * 10.0,
+        assert!(
+            r_final.prediction_error < r_initial.prediction_error * 10.0,
             "Error should not explode after convergence: {} vs initial {}",
-            r_final.prediction_error, r_initial.prediction_error);
+            r_final.prediction_error,
+            r_initial.prediction_error
+        );
         Ok(())
     }
 
@@ -2495,7 +2596,12 @@ mod tests {
         let dk = DeepKoopman::new(cfg, 32, &device)?;
         let radii = dk.compute_tube_radius(10, 0.1)?;
         // With K = I (norm = 1), radii should grow
-        assert!(radii[9] > radii[0], "Tube radius should grow: {} <= {}", radii[9], radii[0]);
+        assert!(
+            radii[9] > radii[0],
+            "Tube radius should grow: {} <= {}",
+            radii[9],
+            radii[0]
+        );
         Ok(())
     }
 
@@ -2531,7 +2637,11 @@ mod tests {
         let diff_flat = diff_abs.flatten(0, diff_abs.rank() - 1)?;
         let diff_vec: Vec<f32> = diff_flat.to_vec1()?;
         let max_diff = diff_vec.iter().copied().reduce(f32::max).unwrap_or(0.0);
-        assert!(max_diff < 1e-5, "Reset should restore identity: max_diff={}", max_diff);
+        assert!(
+            max_diff < 1e-5,
+            "Reset should restore identity: max_diff={}",
+            max_diff
+        );
         Ok(())
     }
 
@@ -2621,7 +2731,11 @@ mod tests {
         // Distance after (in lifted space)
         let psi_steered = dk.lift(&result.steered)?;
         let psi_safe = dk.lift(&safe)?;
-        let dist_after = psi_steered.sub(&psi_safe)?.sqr()?.mean_all()?.to_scalar::<f32>()?;
+        let dist_after = psi_steered
+            .sub(&psi_safe)?
+            .sqr()?
+            .mean_all()?
+            .to_scalar::<f32>()?;
 
         assert!(
             dist_after < dist_before,
@@ -2653,7 +2767,11 @@ mod tests {
         let mut seed = 42u64;
         let x_new = mean_field_replicator_step(&x, &fitness, 0.01, 0.1, &mut seed)?;
         let sum: f32 = x_new.flatten_all()?.to_vec1()?.iter().sum();
-        assert!((sum - 1.0).abs() < 0.01, "Should remain in simplex: sum={}", sum);
+        assert!(
+            (sum - 1.0).abs() < 0.01,
+            "Should remain in simplex: sum={}",
+            sum
+        );
         Ok(())
     }
 
@@ -2665,7 +2783,10 @@ mod tests {
         let mut seed = 42u64;
         let x_new = mean_field_replicator_step(&x, &fitness, 0.01, 0.1, &mut seed)?;
         let vals: Vec<f32> = x_new.flatten_all()?.to_vec1()?;
-        assert!(vals.iter().all(|&v| v >= 0.0), "All values should be non-negative");
+        assert!(
+            vals.iter().all(|&v| v >= 0.0),
+            "All values should be non-negative"
+        );
         Ok(())
     }
 
@@ -2702,7 +2823,9 @@ mod tests {
 
     #[test]
     fn test_s144_summary() {
-        eprintln!("=== Sprint 144: DeepKoopman Lifting + Contractive Tube MPC + Symbiotic Mean-Field ===");
+        eprintln!(
+            "=== Sprint 144: DeepKoopman Lifting + Contractive Tube MPC + Symbiotic Mean-Field ==="
+        );
         eprintln!("DeepKoopman: ψ(x) = Encoder(x; θ), ψ̂ = K·ψ, x' = Decoder(ψ̂)");
         eprintln!("Loss: L = ||ψ(x') - K·ψ(x)||² + ||Decoder(ψ) - x||² + λ||V̇ + αV||²_+");
         eprintln!("Lyapunov: V(ψ) = (ψ - ψ_safe)ᵀ M (ψ - ψ_safe), M ≻ 0");

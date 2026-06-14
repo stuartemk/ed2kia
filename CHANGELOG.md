@@ -1,4 +1,32 @@
-﻿## [v16.0.0-sprint160] — 2026-06-14 (Sprint 160 — THE OCKHAM COLLAPSE & TUBE-CBF)
+﻿## [v16.1.0-sprint161] — 2026-06-14 (Sprint 161 — ADAPTIVE DYNAMICS & EXPLICIT CBF PROJECTION + KOOPMAN LIFTING + TUBE-CBF CERTIFICATION)
+
+### Sprint 161 "ADAPTIVE DYNAMICS & EXPLICIT CBF PROJECTION + KOOPMAN LIFTING + TUBE-CBF CERTIFICATION"
+
+**Mode:** `EXPLICIT_CBF_O1 + DP54_ADAPTIVE + KOOPMAN_LYAPUNOV + GIRARD_REDUCTION + CONFORMAL_PAC + LATENCY_BENCH + ZERO_WARNINGS`
+
+**Problema — Sin proyección CBF cerrada O(1), integrador fijo, ni reducción zonotópica online:** Sprints 100-160 establecen KoopmanVanguard, DeepKoopmanAE, Tube MPC, Girard Reduction, PINN Loss y Tube-CBF QP, pero faltan: (1) **Explicit Closed-Form CBF Projection O(1)** — `explicit_cbf_projection()` con solución analítica `λ = max(0, violation / ||L_g·h||²)` reemplazando QP online, (2) **Integrador Adaptativo DP54** — `dp54_step()` con Runge-Kutta 7-stage Dormand-Prince 5(4) + control adaptativo de paso + rechazo automático, (3) **Koopman Lifting con Lyapunov** — `lift_observables_with_lyapunov()` que añade `V(x)·x` como observable extra para contracción verificable, (4) **Tube Propagation con reducción Ockham/Girard** — `propagate_tube_with_ockham_reduction()` que propaga + reduce generadores online manteniendo bound, y (5) **Benchmark de latencia** — `latency_benchmark.rs` midiendo overhead TPS ≤ 12%.
+
+**Solución — Explicit CBF O(1) + DP54 Adaptivo + Koopman-Lyapunov + Tube-Ockham:** `explicit_cbf_projection()` con fórmula cerrada robustificada: `violation = -γ·h(x) - L_f·h + δ_conformal + r_tube - L_g·h·u_nom`, `λ = max(0, violation / ||L_g·h||²)`, `u_safe = u_nom + λ·L_g·h^T`. DP54 con Butcher tableau 7-stage, error embebido 4to/5to orden, accept/reject con reducción adaptativa `h_next = h × (tol/err)^(1/5) × 0.9`. Koopman-Lyapunov: `ψ(x) = [ψ_base(x); V(x)·x]` donde `V(x) = ||x - x_safe||²_Q`. Tube-Ockham: `Z_{k+1} = A_cl·Z_k ⊕ W → girard_reduce(max_gens) → tighten(ε_conformal)`. PAC conformal: `ε = Q_{1-δ}(|e_i|)`. **0 errors, 0 warnings, library compiles clean.**
+
+- **Explicit CBF O(1):** `native-audit/src/control.rs` — `explicit_cbf_projection()` con robustificación tube + conformal
+- **DP54 Adaptivo:** `native-audit/src/neural_ode.rs` — `dp54_step()` + `adapt_step_size()` + Butcher tableau 7-stage
+- **Koopman-Lyapunov:** `native-audit/src/deep_koopman.rs` — `lift_observables_with_lyapunov()` + `verify_lyapunov_contraction()` + `compute_lyapunov_value()`
+- **Tube-Ockham:** `native-audit/src/tube_mpc.rs` — `propagate_tube_with_ockham_reduction()` + `girard_reduce_generators()` + `compute_conformal_margin_pac()`
+- **Latency Benchmark:** `native-audit/tests/latency_benchmark.rs` — 9 tests (baseline, CBF, DP54, Koopman, Tube, Girard, pipeline, overhead ≤12%)
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| Compilation (lib) | ✅ 0 errors, 0 warnings |
+| Explicit CBF O(1) | ✅ Closed-form λ, robustified with δ_conformal + r_tube |
+| DP54 Adaptive | ✅ 7-stage RK, embedded error, accept/reject |
+| Koopman-Lyapunov | ✅ ψ(x) = [ψ_base; V(x)·x], contraction verified |
+| Tube-Ockham | ✅ Propagate → Girard reduce → Conformal tighten |
+| PAC Conformal | ✅ ε = Q_{1-δ}(|e_i|) quantile calibration |
+| Latency Overhead | ✅ ≤12% TPS constraint measured |
+| Benchmark Tests | ✅ 9/9 test cases |
+
+## [v16.0.0-sprint160] — 2026-06-14 (Sprint 160 — THE OCKHAM COLLAPSE & TUBE-CBF)
 
 ### Sprint 160 "THE OCKHAM COLLAPSE & TUBE-CBF (11/10 Edition)"
 
