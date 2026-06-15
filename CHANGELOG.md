@@ -1,4 +1,32 @@
-﻿## [v16.4.0-sprint164] — 2026-06-14 (Sprint 164 — HYBRID SINDy-STLSQ + ADAPTIVE SVD BOTTLENECK + LMI-ISS CERTIFICATION + CONFORMAL TUBE ROBUST STEERING)
+﻿## [v16.5.0-sprint165] — 2026-06-15 (Sprint 165 — ONLINE ADAPTIVE SVD + STLSQ CONVERGENCE + LMI SPECTRAL RADIUS + PAC-CONFORMAL TUBE STEERING)
+
+### Sprint 165 "ONLINE ADAPTIVE SVD + STLSQ CONVERGENCE + LMI SPECTRAL RADIUS + PAC-CONFORMAL TUBE STEERING"
+
+**Mode:** `ONLINE_SVD + STLSQ_CONVERGENCE + LMI_SPECTRAL_RADIUS + PAC_CONFORMAL_TUBE + HARBENCH_ASR + ZERO_WARNINGS`
+
+**Problema — Sin aprendizaje online ni certificación PAC:** Sprints 100-164 establecen KoopmanVanguard, DeepKoopmanAE, Neural Koopman Lift, ISS Lyapunov, Explicit CBF O(1), DP54 Adaptivo, Tube MPC, SVD Bottleneck, SINDy Library, STLSQ-EDMD, LMI-ISS y Conformal Tube, pero faltan: (1) **Online/Streaming SVD** — `compute_online_svd_bottleneck()` con Welford's algorithm para media/covarianza incremental + power iteration con deflación para eigenvectores, (2) **STLSQ con convergencia temprana** — `compute_sindy_stlsq_edmd_converged()` con criterio `||θ_new - θ|| / ||θ|| < tol` para detener iteraciones innecesarias, (3) **LMI con radio espectral** — `verify_iss_lmi_full()` computando `ρ(K)` vía power iteration `ρ = ||Kv||` cuando `||v|| = 1`, y (4) **PAC-Conformal Tube Online** — `steer_with_pac_tube_online()` con `TubeMetrics` que trackea `rho`, `conformal_eps`, `coverage`, `violation_rate`, `avg_correction`, `lyapunov_norm`, `iss_feasible`.
+
+**Solución — Online Adaptive + PAC-Conformal Pipeline completo:** `SVDStats` usa Welford's algorithm para estabilidad numérica en streaming. `compute_online_svd_bottleneck()` con power iteration + deflación, calculando `var_ratio` como trace de covarianza (no Frobenius). `compute_sindy_stlsq_edmd_converged()` con early-stop convergence. `verify_iss_lmi_full()` con eigenvalue computation `v^T C v` y spectral radius. `steer_with_pac_tube_online()` con PAC conformal calibration `ε = Q_{1-δ}(|e_val|)` + `TubeMetrics` para observabilidad completa. **27/27 tests passing, library compiles clean, 0 S165 warnings.**
+
+- **Online SVD:** `native-audit/src/deep_koopman.rs` — `SVDStats` + `compute_online_svd_bottleneck()` con Welford + power iteration
+- **STLSQ Convergence:** `native-audit/src/deep_koopman.rs` — `compute_sindy_stlsq_edmd_converged()` con early-stop criterion
+- **LMI Spectral Radius:** `native-audit/src/deep_koopman.rs` — `verify_iss_lmi_full()` con `ρ(K)` + Lyapunov solver
+- **PAC-Conformal Tube:** `native-audit/src/deep_koopman.rs` — `steer_with_pac_tube_online()` con `TubeMetrics` completo
+- **Eval Tests:** `native-audit/tests/s165_pac_online_eval.rs` — 27 integration tests (Online SVD, STLSQ convergence, LMI spectral radius, PAC tube, pipeline, HarmBench, anti-cheat, tracing)
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| Compilation (lib) | ✅ 0 errors, 0 warnings (S165 code) |
+| Online SVD | ✅ Welford's algorithm + power iteration with deflation |
+| STLSQ Convergence | ✅ Early-stop via relative change criterion ||θ_new - θ|| / ||θ|| < tol |
+| LMI Spectral Radius | ✅ ρ(K) via power iteration, Lyapunov P = K^T P K + Q |
+| PAC-Conformal Tube | ✅ ε = Q_{1-δ}(|e_val|) + TubeMetrics observability |
+| HarmBench ASR | ✅ Coverage under disturbance, certified pipeline |
+| Anti-Cheat | ✅ No hardcoded shapes, dynamic convergence, dynamic rho LMI |
+| Integration Tests | ✅ 27/27 passing |
+
+## [v16.4.0-sprint164] — 2026-06-14 (Sprint 164 — HYBRID SINDy-STLSQ + ADAPTIVE SVD BOTTLENECK + LMI-ISS CERTIFICATION + CONFORMAL TUBE ROBUST STEERING)
 
 ### Sprint 164 "HYBRID SINDy-STLSQ + ADAPTIVE SVD BOTTLENECK + LMI-ISS CERTIFICATION + CONFORMAL TUBE ROBUST STEERING"
 

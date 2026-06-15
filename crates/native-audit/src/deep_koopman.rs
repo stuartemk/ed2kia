@@ -2837,6 +2837,447 @@ pub fn steer_with_conformal_tube_iss(
 }
 
 // ---------------------------------------------------------------------------
+// S165 — Online Adaptive + PAC-Conformal + LMI Numerical
+// ---------------------------------------------------------------------------
+
+/// Running statistics for online/incremental SVD bottleneck.
+/// Maintains mean and covariance approximation via Welford's algorithm.
+#[derive(Debug, Clone)]
+pub struct SVDStats {
+    pub mean: Vec<f32>,
+    pub m2: Vec<f32>, // sum of squared differences
+    pub count: usize,
+    pub dim: usize,
+}
+
+impl SVDStats {
+    pub fn new(dim: usize) -> Self {
+        Self {
+            mean: vec![0.0; dim],
+            m2: vec![0.0; dim],
+            count: 0,
+            dim,
+        }
+    }
+
+    /// Update stats with new batch via Welford's online algorithm.
+    pub fn update(&mut self, batch: &Tensor) -> Result<()> {
+        let dims = batch.dims();
+        let (n, d) = match dims {
+            [n, d] => (*n, *d),
+            _ => candle_core::bail!("SVDStats: expected [n, dim]"),
+        };
+        if d != self.dim {
+            candle_core::bail!("SVDStats: dim mismatch {} vs {}", d, self.dim);
+        }
+        let data_vec: Vec<Vec<f32>> = batch.to_vec2::<f32>()?;
+        let data: Vec<f32> = data_vec.into_iter().flatten().collect();
+        for i in 0..n {
+            let offset = i * d;
+            let old_mean = self.mean.clone();
+            self.count += 1;
+            let inv_count = 1.0 / self.count as f32;
+            for j in 0..d {
+                let x = data[offset + j];
+                let diff = x - old_mean[j];
+                self.mean[j] += diff * inv_count;
+                let diff2 = x - self.mean[j];
+                self.m2[j] += diff * diff2;
+            }
+        }
+        Ok(())
+    }
+
+    /// Build covariance-approximation matrix from running stats.
+    pub fn covariance(&self) -> Result<Tensor> {
+        if self.count < 2 {
+            candle_core::bail!("SVDStats: need at least 2 samples");
+        }
+        let inv = 1.0 / (self.count - 1) as f32;
+        let diag: Vec<f32> = self.m2.iter().map(|m| *m * inv).collect();
+        let device = candle_core::Device::Cpu;
+        // Build diagonal matrix manually (no diag_embed/from_vec2 in candle 0.6.0)
+        let size = self.dim * self.dim;
+        let mut flat = vec![0.0f32; size];
+        for i in 0..self.dim {
+            flat[i * self.dim + i] = diag[i];
+        }
+        Tensor::from_vec(flat, (self.dim, self.dim), &device)
+    }
+}
+
+/// Online (streaming) SVD Bottleneck via incremental covariance + power iteration.
+///
+/// Updates running SVDStats with new batch, then computes top-k eigenvectors
+/// of the running covariance via power iteration with deflation.
+///
+/// Returns `(V_k, reduced, var_ratio)` where:
+/// - `V_k`: `[dim, k]` projection matrix
+/// - `reduced`: `[batch, k]` projected activations
+/// - `var_ratio`: cumulative explained variance
+pub fn compute_online_svd_bottleneck(
+    activations: &Tensor,
+    running_stats: &mut SVDStats,
+    target_var: f64,
+    n_oversamples: usize,
+) -> Result<(Tensor, Tensor, f64)> {
+    let device = activations.device();
+    let (n_samples, n_dim) = match activations.dims() {
+        [b, d] => (*b, *d),
+        _ => candle_core::bail!("Online SVD requires 2D tensor [samples, dim]"),
+    };
+
+    // Update running stats
+    running_stats.update(activations)?;
+
+    let clamped_var = target_var.clamp(0.5, 0.999);
+    let oversample = n_oversamples.max(1).min(n_dim);
+
+    // Build covariance from running stats (centered on CPU then move)
+    let cov = running_stats.covariance()?.to_device(device)?;
+    // Total energy = trace of covariance (sum of eigenvalues), not Frobenius norm
+    let cov_flat: Vec<Vec<f32>> = cov.to_vec2::<f32>()?;
+    let total_energy: f64 = (0..n_dim).map(|i| cov_flat[i][i] as f64).sum();
+    if total_energy < 1e-24 {
+        let v_k = Tensor::eye(n_dim, DType::F32, device)?;
+        let reduced = activations.clone();
+        return Ok((v_k, reduced, 1.0));
+    }
+
+    // Power iteration with deflation to get top-k eigenvectors
+    let max_rank = n_samples.min(n_dim).max(1);
+    let request_rank = max_rank.min(max_rank.saturating_sub(1).max(1) + oversample);
+    let actual_rank = request_rank.min(max_rank);
+
+    let mut eig_vals = Vec::new();
+    let mut eig_vecs: Vec<Tensor> = Vec::new();
+    let mut residual = cov.clone();
+
+    for _k in 0..actual_rank {
+        // Random init from diagonal of residual
+        // Extract diagonal manually (no .diag() in candle 0.6.0)
+        let flat_vec: Vec<Vec<f32>> = residual.to_vec2::<f32>()?;
+        let flat: Vec<f32> = flat_vec.into_iter().flatten().collect();
+        let diag: Vec<f32> = (0..n_dim).map(|i| flat[i * n_dim + i]).collect();
+        let mut v = Tensor::from_vec(diag, (n_dim, 1), device)?;
+        let norm = v.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
+        if norm < 1e-12 {
+            break;
+        }
+        v = v.broadcast_div(
+            &Tensor::from_vec(vec![norm as f64], (1, 1), device)?.to_dtype(DType::F32)?,
+        )?;
+
+        // Power iteration
+        for _iter in 0..20 {
+            let av = residual.matmul(&v)?;
+            let norm = av.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
+            if norm < 1e-12 {
+                break;
+            }
+            v = av.broadcast_div(
+                &Tensor::from_vec(vec![norm as f64], (1, 1), device)?.to_dtype(DType::F32)?,
+            )?;
+        }
+
+        // Eigenvalue: v^T C v — v is [dim,1], Cv is [dim,1], result is [1,1] → flatten then extract
+        let cv = cov.matmul(&v)?;
+        let eval_mat = v.t()?.matmul(&cv)?;
+        let eval_flat: Vec<f32> = eval_mat.flatten_all()?.to_vec1()?;
+        let eval = eval_flat[0] as f64;
+        eig_vals.push(eval);
+        eig_vecs.push(v.clone());
+
+        // Deflate: C = C - eval * v * v^T
+        let vv_t = v.matmul(&v.t()?)?;
+        let scale = Tensor::new(eval, device)?.to_dtype(DType::F32)?;
+        let outer = vv_t.broadcast_mul(&scale)?;
+        residual = residual.broadcast_sub(&outer)?;
+    }
+
+    if eig_vecs.is_empty() {
+        let v_k = Tensor::eye(n_dim, DType::F32, device)?;
+        let reduced = activations.clone();
+        return Ok((v_k, reduced, 1.0));
+    }
+
+    // Dynamic k: cumulative variance ≥ target_var
+    let mut cumulative: f64 = 0.0;
+    let mut k_select = 1;
+    for (i, ev) in eig_vals.iter().enumerate() {
+        cumulative += *ev;
+        if cumulative / total_energy >= clamped_var {
+            k_select = i + 1;
+            break;
+        }
+    }
+    k_select = k_select.min(eig_vecs.len()).max(1);
+
+    // V_k = [v_0, v_1, ..., v_{k-1}] → [dim, k]
+    let v_k = Tensor::cat(&eig_vecs[..k_select], 1)?;
+    let var_ratio = (cumulative / total_energy).min(1.0);
+
+    // Center activations on running mean then project
+    let mean_t = Tensor::from_vec(running_stats.mean.clone(), n_dim, device)?;
+    let centered = activations.broadcast_sub(&mean_t)?;
+    let reduced = centered.matmul(&v_k)?;
+
+    Ok((v_k, reduced, var_ratio))
+}
+
+/// Tube metrics for PAC-conformal certified steering.
+#[derive(Debug, Clone)]
+pub struct TubeMetrics {
+    /// Spectral radius of Koopman operator
+    pub rho: f32,
+    /// Conformal epsilon (PAC margin)
+    pub conformal_eps: f32,
+    /// Fraction of samples within tube (empirical coverage)
+    pub coverage: f32,
+    /// Fraction of samples that violated safety before correction
+    pub violation_rate: f32,
+    /// Average correction magnitude ||u_safe - u_nom||
+    pub avg_correction: f32,
+    /// Lyapunov matrix norm ||P||_F
+    pub lyapunov_norm: f32,
+    /// ISS feasible flag
+    pub iss_feasible: bool,
+}
+
+impl std::fmt::Display for TubeMetrics {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "TubeMetrics {{ rho={:.4}, eps={:.4}, coverage={:.3}, violation={:.3}, correction={:.4}, P_norm={:.2}, iss={} }}",
+            self.rho, self.conformal_eps, self.coverage,
+            self.violation_rate, self.avg_correction,
+            self.lyapunov_norm, self.iss_feasible
+        )
+    }
+}
+
+/// STLSQ-EDMD with convergence criterion.
+///
+/// Improved version of `compute_sindy_stlsq_edmd` that breaks early
+/// when relative change in theta falls below tolerance.
+///
+/// Returns `(Theta, iterations_used)`.
+pub fn compute_sindy_stlsq_edmd_converged(
+    psi_current: &Tensor,
+    psi_next: &Tensor,
+    lambda: f64,
+    threshold: f64,
+    max_iter: usize,
+    tol: f64,
+) -> Result<(Tensor, usize)> {
+    let device = psi_current.device();
+    let lambda = lambda.max(1e-8);
+    let threshold = threshold.max(0.0);
+    let max_iter = max_iter.clamp(1, 100);
+    let tol = tol.clamp(0.0, 1.0);
+
+    let (_, dim_cur) = match psi_current.dims() {
+        [b, d] => (*b, *d),
+        _ => candle_core::bail!("STLSQ requires 2D tensors [batch, dim]"),
+    };
+
+    // Precompute normal equations (shared across iterations)
+    let a_t = psi_current.t()?;
+    let a_ta = a_t.matmul(psi_current)?;
+    let eye = Tensor::eye(dim_cur, DType::F32, device)?;
+    let ridge = eye.broadcast_mul(&Tensor::new(lambda as f32, device)?)?;
+    let a_ta_reg = a_ta.broadcast_add(&ridge)?;
+    let inv_a_ta = newton_schulz_inverse(&a_ta_reg, 20)?;
+    let a_tb = a_t.matmul(psi_next)?;
+
+    // Initial LS solution
+    let mut theta = inv_a_ta.matmul(&a_tb)?;
+    let mut iter_used = 0;
+
+    for iter in 0..max_iter {
+        iter_used = iter + 1;
+        let abs_theta = theta.abs()?;
+        let active = (abs_theta.gt(threshold as f32)?).to_dtype(DType::F32)?;
+
+        // Re-solve LS then apply sparsity mask
+        let theta_ls = inv_a_ta.matmul(&a_tb)?;
+        let theta_new = active.broadcast_mul(&theta_ls)?;
+
+        // Convergence: relative change ||θ_new - θ|| / ||θ|| < tol
+        let diff = theta_new.sub(&theta)?;
+        let diff_norm = diff.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
+        let theta_norm = theta.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
+
+        if theta_norm > 1e-12f32 && diff_norm / theta_norm < tol as f32 {
+            theta = theta_new;
+            break;
+        }
+
+        theta = theta_new;
+    }
+
+    Ok((theta, iter_used))
+}
+
+/// Full ISS-LMI Verification with spectral radius + Lyapunov matrix.
+///
+/// Solves discrete Lyapunov: A^T P A - P + Q ⪯ 0
+/// Returns `(feasible, rho, P)` where:
+/// - `feasible`: true if ρ(K) < 1 and Lyapunov converged
+/// - `rho`: spectral radius of K (via power iteration)
+/// - `P`: approximate Lyapunov matrix [dim, dim]
+pub fn verify_iss_lmi_full(koopman_k: &Tensor, alpha: f32) -> Result<(bool, f32, Tensor)> {
+    let device = koopman_k.device();
+    let dim = koopman_k.dim(0)?;
+
+    // Spectral radius via power iteration
+    let mut v = Tensor::ones((dim, 1), DType::F32, device)?;
+    let norm = v.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
+    v = v.broadcast_div(&Tensor::new(norm as f64, device)?.to_dtype(DType::F32)?)?;
+
+    let mut rho: f32 = 0.0;
+    for _ in 0..30 {
+        let kv = koopman_k.matmul(&v)?;
+        let norm = kv.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
+        if norm < 1e-12 {
+            break;
+        }
+        // Eigenvalue ≈ ||Kv|| when v is normalized
+        rho = norm;
+        v = kv.broadcast_div(&Tensor::new(norm as f64, device)?.to_dtype(DType::F32)?)?;
+    }
+
+    // Q = α · I
+    let alpha_clamped = alpha.clamp(1e-6f32, 10.0f32);
+    let q = Tensor::eye(dim, DType::F32, device)?
+        .broadcast_mul(&Tensor::new(alpha_clamped as f64, device)?.to_dtype(DType::F32)?)?;
+
+    // Iterative Lyapunov: P_{k+1} = K^T P_k K + Q
+    let k_t = koopman_k.t()?;
+    let mut p = q.clone();
+    let mut feasible = rho < 1.0f32 - alpha_clamped * 0.1f32;
+
+    for _iter in 0..50 {
+        let kp = koopman_k.matmul(&p)?;
+        let ktpk = k_t.matmul(&kp)?;
+        let p_new = ktpk.broadcast_add(&q)?;
+
+        let diff = p_new.sub(&p)?;
+        let diff_norm = diff.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
+        let p_norm = p.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
+
+        if p_norm > 1e-10 && diff_norm / p_norm < 1e-4 {
+            feasible = true;
+            p = p_new;
+            break;
+        }
+
+        if p_norm > 1e6 {
+            feasible = false;
+            break;
+        }
+
+        p = p_new;
+    }
+
+    let _p_norm = p.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
+    Ok((feasible, rho, p))
+}
+
+/// PAC-Conformal Tube Steering with full metrics.
+///
+/// Full certified pipeline:
+/// 1. Koopman prediction → CBF correction → Conformal tighten → Project back
+/// 2. Compute empirical coverage, violation rate, correction magnitude
+/// 3. ISS-LMI verification with spectral radius
+///
+/// Returns `(steered, TubeMetrics)` where steered is `[batch, orig_dim]`.
+pub fn steer_with_pac_tube_online(
+    reduced_state: &Tensor,
+    koopman_k: &Tensor,
+    vk: &Tensor,
+    safe_centroid_red: &Tensor,
+    conformal_eps: f32,
+    calibration_errors: &[f32],
+) -> Result<(Tensor, TubeMetrics)> {
+    let device = reduced_state.device();
+
+    // PAC conformal calibration: ε = Q_{1-δ}(|e|)
+    let mut sorted_errors = calibration_errors.to_vec();
+    sorted_errors.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    let pac_eps = if sorted_errors.is_empty() {
+        conformal_eps.clamp(0.0, 1.0)
+    } else {
+        let delta = 0.05; // 95% confidence
+        let idx = (((1.0 - delta) * sorted_errors.len() as f32).ceil() as usize)
+            .min(sorted_errors.len().saturating_sub(1));
+        sorted_errors[idx].max(conformal_eps)
+    };
+
+    // Koopman prediction
+    let reduced_next = reduced_state.matmul(koopman_k)?;
+
+    // CBF correction
+    let diff = reduced_next.broadcast_sub(safe_centroid_red)?;
+    let dist_sq_flat = diff.sqr()?.sum(1)?;
+    let dist_sq_per_sample = dist_sq_flat.reshape((dist_sq_flat.shape().dims()[0], 1))?;
+
+    let safety_radius_sq = (1.0f32 - pac_eps).max(0.1f32);
+    let radius_t = Tensor::new(safety_radius_sq, device)?;
+
+    // Pre-correction violation tracking
+    let pre_violation = dist_sq_per_sample
+        .broadcast_sub(&radius_t)?
+        .gt(0.0)?
+        .to_dtype(DType::F32)?;
+    let violation_count = pre_violation.sum_all()?.to_scalar::<f32>()? as usize;
+    let batch_size = reduced_state.dim(0)?;
+    let violation_rate = violation_count as f32 / batch_size as f32;
+
+    let violation = dist_sq_per_sample.broadcast_sub(&radius_t)?.relu()?;
+    let denom = dist_sq_per_sample.broadcast_add(&Tensor::new(1e-8f32, device)?)?;
+    let lambda = violation.broadcast_div(&denom)?.clamp(0.0f32, 1.0f32)?;
+
+    let correction = diff.broadcast_mul(&lambda)?;
+    let steered_red = reduced_next.broadcast_sub(&correction)?;
+
+    // Correction magnitude
+    let avg_correction =
+        correction.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()? / batch_size as f32;
+
+    // Conformal tighten
+    let tighten = Tensor::new((1.0f32 - pac_eps * 0.5f32).max(0.5f32), device)?;
+    let safe_diff = steered_red.broadcast_sub(safe_centroid_red)?;
+    let tightened = safe_diff.broadcast_mul(&tighten)?;
+    let steered_red = safe_centroid_red.broadcast_add(&tightened)?;
+
+    // Post-correction coverage
+    let post_diff = steered_red.broadcast_sub(safe_centroid_red)?;
+    let post_dist_sq = post_diff.sqr()?.sum(1)?;
+    let post_safe = post_dist_sq.broadcast_lt(&radius_t)?.to_dtype(DType::F32)?;
+    let coverage = post_safe.mean_all()?.to_scalar::<f32>()?;
+
+    // ISS-LMI verification
+    let (iss_feasible, rho, p) = verify_iss_lmi_full(koopman_k, 0.1)?;
+    let lyapunov_norm = p.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
+
+    // Project back
+    let steered = steered_red.matmul(&vk.t()?)?;
+
+    let metrics = TubeMetrics {
+        rho,
+        conformal_eps: pac_eps,
+        coverage,
+        violation_rate,
+        avg_correction,
+        lyapunov_norm,
+        iss_feasible,
+    };
+
+    Ok((steered, metrics))
+}
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
