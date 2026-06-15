@@ -1,4 +1,29 @@
-﻿## [v16.5.0-sprint165] — 2026-06-15 (Sprint 165 — ONLINE ADAPTIVE SVD + STLSQ CONVERGENCE + LMI SPECTRAL RADIUS + PAC-CONFORMAL TUBE STEERING)
+﻿## [v16.6.0-sprint166] — 2026-06-15 (Sprint 166 — RLS KOOPMAN + ADMM LMI + HZI TAYLOR)
+
+### Sprint 166 "RLS KOOPMAN + ADMM LMI + HZI TAYLOR"
+
+**Mode:** `RLS_KOOPMAN + ADMM_LMI + HZI_TAYLOR + ZERO_WARNINGS`
+
+**Problema — Sin aprendizaje online certificado ni propagación híbrida:** Sprints 100-165 establecen KoopmanVanguard, DeepKoopmanAE, Neural Koopman Lift, ISS Lyapunov, Explicit CBF O(1), DP54 Adaptivo, Tube MPC, SVD Bottleneck, SINDy Library, STLSQ-EDMD, LMI-ISS, Conformal Tube, Online SVD, PAC-Conformal Tube, pero faltan: (1) **RLS Koopman** — `KoopmanRLS` con Recursive Least Squares para estimación online del operador Koopman con forgetting factor, dead-zone y adaptive SVD truncation, (2) **ADMM LMI** — `certify_stability_admm()` con Fast LMI/ADMM certificates para estabilidad, ISS Lyapunov y contraction metrics, y (3) **HZI Taylor** — `HybridZonotopeTaylor` con integración de modelos Taylor + zonotopos para propagación certificada de incertidumbre.
+
+**Solución — RLS + ADMM + HZI Pipeline completo:** `KoopmanRLS` usa RLS con covariance shared entre output dims, forgetting factor λ para adaptabilidad temporal, dead-zone para robustez y adaptive SVD para rank management. `certify_stability_admm()` resuelve LMI `A^T P A - P + Q ⪯ 0` vía ADMM con projection PSD + iterative Lyapunov. `HybridZonotopeTaylor` combina Taylor models (polinomios + remainder bounds) con zonotopos (center + generators) para propagación affine/ReLU certificada + Girard reduction. **24/24 tests passing (10 control_lmi + 6 koopman_rls + 8 hzi_taylor), library compiles clean.**
+
+- **RLS Koopman:** `native-audit/src/koopman_rls.rs` — `KoopmanRLS` con forgetting factor, dead-zone, adaptive SVD
+- **ADMM LMI:** `native-audit/src/control_lmi.rs` — `certify_stability_admm()` + `neural_lyapunov_fallback()` + `compute_contraction_rate()` + `compute_iss_lyapunov()`
+- **HZI Taylor:** `native-audit/src/hzi_taylor.rs` — `HybridZonotopeTaylor` con affine/ReLU propagation + Girard reduction + CBF lower bound
+- **Tests:** 24 unit tests passing (control_lmi: 10, koopman_rls: 6, hzi_taylor: 8)
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| Compilation (lib) | ✅ 0 errors, 0 warnings (S166 code) |
+| RLS Koopman | ✅ Recursive LS con forgetting factor λ, dead-zone ε, adaptive SVD |
+| ADMM LMI | ✅ Fast certificates: stability, ISS Lyapunov, contraction rate |
+| HZI Taylor | ✅ Hybrid zonotope-interval con Taylor propagation certificada |
+| Neural Lyapunov | ✅ Iterative fallback P_{k+1} = A^T P_k A + Q |
+| Unit Tests | ✅ 24/24 passing |
+
+## [v16.5.0-sprint165] — 2026-06-15 (Sprint 165 — ONLINE ADAPTIVE SVD + STLSQ CONVERGENCE + LMI SPECTRAL RADIUS + PAC-CONFORMAL TUBE STEERING)
 
 ### Sprint 165 "ONLINE ADAPTIVE SVD + STLSQ CONVERGENCE + LMI SPECTRAL RADIUS + PAC-CONFORMAL TUBE STEERING"
 
