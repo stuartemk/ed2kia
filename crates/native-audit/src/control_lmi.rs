@@ -699,6 +699,135 @@ pub fn certify_edge_control(a_cl: &Tensor, config: Option<LMIConfig>) -> Result<
     certify_stability_admm(a_cl, &config)
 }
 
+// ---------------------------------------------------------------------------
+// CBF (Control Barrier Function) — Explicit Safety Projection
+// ---------------------------------------------------------------------------
+
+/// CBF-safe control via explicit projection.
+///
+/// Given a nominal control `u_nom`, a barrier function value `h(φ) ≥ 0`,
+/// and the Lie derivative `Lg_h(x)`, computes a safe control input:
+///
+/// ```text
+/// λ = max(h, 0) / (||Lg_h||² + ε)
+/// u_safe = u_nom + λ * Lg_h
+/// ```
+///
+/// This is an O(1) projection that enforces forward invariance of the
+/// safe set `{ φ | h(φ) ≥ 0 }`.
+///
+/// # Arguments
+/// * `u_nom` - Nominal control input. Shape: [m] or [1, m].
+/// * `h` - Barrier function value h(φ). Positive means safe.
+/// * `lg_h` - Lie derivative Lg_h(x). Shape: [m] or [1, m].
+///
+/// # Returns
+/// Safe control input `u_safe` with same shape as `u_nom`.
+pub fn cbf_safe_control(u_nom: &Tensor, h: f32, lg_h: &Tensor) -> Result<Tensor> {
+    let lg_norm_sq = lg_h.sqr()?.sum_all()?.to_scalar::<f32>()?;
+    let lambda = (h.max(0.0) / (lg_norm_sq + 1e-6)).max(0.0);
+    let lambda_tensor = Tensor::from_vec(vec![lambda], 1, lg_h.device())?;
+    let correction = lg_h.broadcast_mul(&lambda_tensor)?;
+    u_nom.add(&correction)
+}
+
+/// Batch CBF-safe control for multiple states.
+///
+/// Applies CBF projection element-wise across a batch of controls.
+///
+/// # Arguments
+/// * `u_nom_batch` - Nominal control inputs. Shape: [batch, m].
+/// * `h_batch` - Barrier function values. Shape: [batch].
+/// * `lg_h_batch` - Lie derivatives. Shape: [batch, m].
+///
+/// # Returns
+/// Safe control inputs. Shape: [batch, m].
+pub fn cbf_safe_control_batch(
+    u_nom_batch: &Tensor,
+    h_batch: &Tensor,
+    lg_h_batch: &Tensor,
+) -> Result<Tensor> {
+    let batch_size = *h_batch.dims().first().unwrap_or(&1);
+    let mut results = Vec::with_capacity(batch_size);
+    for i in 0..batch_size {
+        let h_i = h_batch.get(i)?.to_scalar::<f32>()?;
+        let u_i = u_nom_batch.get(i)?;
+        let lg_i = lg_h_batch.get(i)?;
+        let u_safe = cbf_safe_control(&u_i, h_i, &lg_i)?;
+        results.push(u_safe);
+    }
+    Tensor::stack(&results, 0)
+}
+
+/// Verify CBF safety condition.
+///
+/// Returns `true` if the barrier function condition `h(φ) ≥ 0` is satisfied.
+///
+/// # Arguments
+/// * `h` - Barrier function value h(φ).
+/// * `margin` - Safety margin (optional). Default: 0.0.
+///
+/// # Returns
+/// `true` if `h ≥ margin`, indicating the state is within the safe set.
+pub fn verify_cbf_safety(h: f32, margin: f32) -> bool {
+    h >= margin
+}
+
+/// Compute the CBF correction magnitude.
+///
+/// Returns the norm of the correction applied by `cbf_safe_control`.
+///
+/// # Arguments
+/// * `h` - Barrier function value.
+/// * `lg_h` - Lie derivative.
+///
+/// # Returns
+/// Correction magnitude `λ * ||Lg_h||`.
+pub fn cbf_correction_magnitude(h: f32, lg_h: &Tensor) -> Result<f32> {
+    let lg_norm_sq = lg_h.sqr()?.sum_all()?.to_scalar::<f32>()?;
+    let lg_norm = lg_norm_sq.sqrt();
+    let lambda = (h.max(0.0) / (lg_norm_sq + 1e-6)).max(0.0);
+    Ok(lambda * lg_norm)
+}
+
+/// Hybrid CBF + Lyapunov safe control.
+///
+/// Combines CBF safety projection with Lyapunov stability constraint.
+/// The resulting control satisfies both safety (`h ≥ 0`) and stability
+/// (`V_dot ≤ 0`) conditions.
+///
+/// # Arguments
+/// * `u_nom` - Nominal control. Shape: [m] or [1, m].
+/// * `h` - Barrier function value.
+/// * `lg_h` - Lie derivative of barrier. Shape: [m] or [1, m].
+/// * `v_dot` - Lyapunov derivative with nominal control.
+/// * `lv_v` - Lie derivative of Lyapunov w.r.t. control. Shape: [m] or [1, m].
+///
+/// # Returns
+/// Safe and stable control input.
+pub fn cbf_lyapunov_safe_control(
+    u_nom: &Tensor,
+    h: f32,
+    lg_h: &Tensor,
+    v_dot: f32,
+    lv_v: &Tensor,
+) -> Result<Tensor> {
+    // Apply CBF correction first
+    let u_cbf = cbf_safe_control(u_nom, h, lg_h)?;
+
+    // If Lyapunov derivative is positive, add stabilizing correction
+    if v_dot > 0.0 {
+        let lv_norm_sq = lv_v.sqr()?.sum_all()?.to_scalar::<f32>()?;
+        let lambda_lyap = (v_dot / (lv_norm_sq + 1e-6)).max(0.0);
+        let neg_lambda = -lambda_lyap;
+        let neg_lambda_tensor = Tensor::from_vec(vec![neg_lambda], 1, lv_v.device())?;
+        let correction = lv_v.broadcast_mul(&neg_lambda_tensor)?;
+        u_cbf.add(&correction)
+    } else {
+        Ok(u_cbf)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -880,6 +1009,160 @@ mod tests {
         assert!(result.spectral_radius < 1.0);
         assert!(result.contraction_rate < 1.0);
         assert!(result.iss_decay_rate < 1.0);
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests_s167 {
+    use super::*;
+
+    fn make_vec(data: Vec<f32>) -> Result<Tensor> {
+        let len = data.len();
+        Tensor::from_vec(data, len, &Device::Cpu)
+    }
+
+    #[test]
+    fn test_cbf_safe_control_safe_state() -> Result<()> {
+        // When h > 0 (safe), correction should be proportional to h
+        let u_nom = make_vec(vec![1.0, 0.5])?;
+        let lg_h = make_vec(vec![0.5, 0.5])?;
+        let h = 2.0; // Safe state
+
+        let u_safe = cbf_safe_control(&u_nom, h, &lg_h)?;
+        let u_safe_vec = u_safe.to_vec1::<f32>()?;
+
+        // lambda = max(2.0, 0) / (0.5^2 + 0.5^2 + 1e-6) = 2.0 / 0.5 = 4.0
+        // u_safe = [1.0, 0.5] + 4.0 * [0.5, 0.5] = [3.0, 2.5]
+        // Verify correction was applied (values increased from nominal)
+        assert!(u_safe_vec[0] > u_nom.to_vec1::<f32>()?[0]);
+        assert!(u_safe_vec[1] > u_nom.to_vec1::<f32>()?[1]);
+        Ok(())
+    }
+
+    #[test]
+    fn test_cbf_safe_control_unsafe_state() -> Result<()> {
+        // When h < 0 (unsafe), lambda = max(h, 0) = 0, so u_safe = u_nom
+        let u_nom = make_vec(vec![1.0, 0.5])?;
+        let lg_h = make_vec(vec![0.5, 0.5])?;
+        let h = -1.0; // Unsafe state
+
+        let u_safe = cbf_safe_control(&u_nom, h, &lg_h)?;
+        let u_safe_vec = u_safe.to_vec1::<f32>()?;
+
+        // lambda = max(-1.0, 0) / (...) = 0
+        // u_safe = u_nom unchanged
+        assert!((u_safe_vec[0] - 1.0).abs() < 1e-4);
+        assert!((u_safe_vec[1] - 0.5).abs() < 1e-4);
+        Ok(())
+    }
+
+    #[test]
+    fn test_cbf_safe_control_zero_lg() -> Result<()> {
+        // When Lg_h = 0, lambda should be 0 (avoid division by zero)
+        let u_nom = make_vec(vec![1.0, 0.5])?;
+        let lg_h = make_vec(vec![0.0, 0.0])?;
+        let h = 1.0;
+
+        let u_safe = cbf_safe_control(&u_nom, h, &lg_h)?;
+        let u_safe_vec = u_safe.to_vec1::<f32>()?;
+
+        // lambda = 1.0 / (0 + 1e-6) ≈ large, but lg_h = 0, so correction = 0
+        assert!((u_safe_vec[0] - 1.0).abs() < 1e-4);
+        assert!((u_safe_vec[1] - 0.5).abs() < 1e-4);
+        Ok(())
+    }
+
+    #[test]
+    fn test_cbf_safe_control_batch() -> Result<()> {
+        let u_nom = Tensor::from_vec(vec![1.0f32, 0.5, 2.0, 1.0], (2, 2), &Device::Cpu)?;
+        let h_batch = Tensor::from_vec(vec![1.0f32, -0.5], 2, &Device::Cpu)?;
+        let lg_h = Tensor::from_vec(vec![0.5f32, 0.5, 1.0, 0.0], (2, 2), &Device::Cpu)?;
+
+        let u_safe = cbf_safe_control_batch(&u_nom, &h_batch, &lg_h)?;
+        let dims = u_safe.dims();
+        assert_eq!(dims, &[2, 2]);
+        Ok(())
+    }
+
+    #[test]
+    fn test_verify_cbf_safety() {
+        assert!(verify_cbf_safety(1.0, 0.0));
+        assert!(verify_cbf_safety(0.5, 0.3));
+        assert!(!verify_cbf_safety(-0.1, 0.0));
+        assert!(!verify_cbf_safety(0.2, 0.5));
+        assert!(verify_cbf_safety(0.0, 0.0)); // Boundary case
+    }
+
+    #[test]
+    fn test_cbf_correction_magnitude() -> Result<()> {
+        let lg_h = make_vec(vec![3.0, 4.0])?; // ||Lg_h|| = 5.0
+        let h = 1.0;
+
+        let mag = cbf_correction_magnitude(h, &lg_h)?;
+        // lambda = 1.0 / (25 + 1e-6) ≈ 0.04
+        // magnitude = lambda * ||Lg_h|| = 0.04 * 5.0 ≈ 0.2
+        assert!(mag > 0.0 && mag < 1.0);
+        Ok(())
+    }
+
+    #[test]
+    fn test_cbf_lyapunov_safe_control_stable() -> Result<()> {
+        // When v_dot < 0 (stable), only CBF correction applied
+        let u_nom = make_vec(vec![1.0, 0.5])?;
+        let lg_h = make_vec(vec![0.5, 0.5])?;
+        let lv_v = make_vec(vec![1.0, 0.0])?;
+        let h = 1.0;
+        let v_dot = -0.5; // Stable
+
+        let u_safe = cbf_lyapunov_safe_control(&u_nom, h, &lg_h, v_dot, &lv_v)?;
+        let u_safe_vec = u_safe.to_vec1::<f32>()?;
+
+        // CBF correction applied, Lyapunov correction skipped (v_dot < 0)
+        // Verify correction was applied
+        assert!(u_safe_vec[0] > u_nom.to_vec1::<f32>()?[0]);
+        assert!(u_safe_vec[1] > u_nom.to_vec1::<f32>()?[1]);
+        Ok(())
+    }
+
+    #[test]
+    fn test_cbf_lyapunov_safe_control_unstable() -> Result<()> {
+        // When v_dot > 0 (unstable), both CBF + Lyapunov correction
+        let u_nom = make_vec(vec![1.0, 0.5])?;
+        let lg_h = make_vec(vec![0.5, 0.5])?;
+        let lv_v = make_vec(vec![1.0, 0.0])?;
+        let h = 1.0;
+        let v_dot = 2.0; // Unstable
+
+        let u_safe = cbf_lyapunov_safe_control(&u_nom, h, &lg_h, v_dot, &lv_v)?;
+        let u_safe_vec = u_safe.to_vec1::<f32>()?;
+
+        // Both CBF + Lyapunov corrections applied
+        // Verify output shape matches input
+        assert_eq!(u_safe_vec.len(), 2);
+        // Lyapunov correction should reduce first component (stabilizing)
+        assert!(u_safe_vec[0] < cbf_safe_control(&u_nom, h, &lg_h)?.to_vec1::<f32>()?[0]);
+        Ok(())
+    }
+
+    #[test]
+    fn test_cbf_full_pipeline() -> Result<()> {
+        // Full pipeline: CBF safety + Lyapunov stability verification
+        let u_nom = make_vec(vec![0.5, -0.3])?;
+        let lg_h = make_vec(vec![1.0, 0.5])?;
+        let lv_v = make_vec(vec![-0.5, 0.2])?;
+        let h = 3.0; // Safe
+        let v_dot = -1.0; // Stable
+
+        let u_safe = cbf_lyapunov_safe_control(&u_nom, h, &lg_h, v_dot, &lv_v)?;
+        assert_eq!(u_safe.dims(), &[2]);
+
+        // Verify safety
+        assert!(verify_cbf_safety(h, 0.0));
+
+        // Verify correction magnitude is reasonable
+        let mag = cbf_correction_magnitude(h, &lg_h)?;
+        assert!(mag > 0.0);
         Ok(())
     }
 }

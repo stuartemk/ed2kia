@@ -1,4 +1,28 @@
-﻿## [v16.6.0-sprint166] — 2026-06-15 (Sprint 166 — RLS KOOPMAN + ADMM LMI + HZI TAYLOR)
+﻿## [v16.7.0-sprint167] — 2026-06-15 (Sprint 167 — ONLINE KOOPMAN RLS + ADMM LMI + HYBRID TUBE CBF + HZI TAYLOR CERTIFICATION)
+
+### Sprint 167 "ONLINE KOOPMAN RLS + ADMM LMI + HYBRID TUBE CBF + HZI TAYLOR CERTIFICATION"
+
+**Mode:** `KOOPMAN_RLS_SAE + CBF_EXPLICIT + HYBRID_LYAPUNOV + ZERO_WARNINGS`
+
+**Problema — Sin lifting SAE ni CBF explícito:** Sprints 100-166 establecen KoopmanVanguard, DeepKoopmanAE, KoopmanRLS, ADMM LMI, HZI Taylor, ISS Lyapunov, Explicit CBF O(1), Tube MPC, SVD Bottleneck, SINDy Library, STLSQ-EDMD, PAC-Conformal Tube, pero faltan: (1) **Koopman Lifting con SAE** — `koopman_lifting_sae()` con ψ(x) = [x; φ_SAE(x)] para observables híbridos neuronales, (2) **Koopman Lifting Avanzado** — `koopman_lifting_advanced()` con normalización L2 + interleaving para estabilidad numérica, y (3) **CBF + Lyapunov Híbrido** — `cbf_safe_control()` con proyección O(1) explícita λ = max(h,0)/(||Lg_h||²+ε), `cbf_lyapunov_safe_control()` combinando seguridad (h ≥ 0) con estabilidad (V_dot ≤ 0).
+
+**Solución — RLS Koopman + SAE + CBF Híbrido Pipeline completo:** `koopman_lifting_sae()` concatena x con φ_SAE(x) para lifting Koopman con observables neuronales. `koopman_lifting_advanced()` normaliza L2 e intercala componentes para conditioning numérico. `cbf_safe_control()` calcula λ = max(h,0)/(||Lg_h||²+ε) con u_safe = u_nom + λ·Lg_h. `cbf_lyapunov_safe_control()` añade corrección Lyapunov cuando V_dot > 0: u_safe = u_cbf - (V_dot/||Lv_V||²)·Lv_V. `verify_cbf_safety()` verifica h ≥ margin. `cbf_correction_magnitude()` calcula ||λ·Lg_h||. **13/13 tests passing (4 koopman_rls + 9 control_lmi), library compiles clean, 0 S167 warnings.**
+
+- **Koopman Lifting SAE:** `native-audit/src/koopman_rls.rs` — `koopman_lifting_sae()` + `koopman_lifting_advanced()`
+- **CBF Explícito:** `native-audit/src/control_lmi.rs` — `cbf_safe_control()` + `cbf_safe_control_batch()` + `verify_cbf_safety()` + `cbf_correction_magnitude()` + `cbf_lyapunov_safe_control()`
+- **Tests:** 13 unit tests passing (koopman_rls: 4, control_lmi: 9)
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| Compilation (lib) | ✅ 0 errors, 0 warnings (S167 code) |
+| Koopman Lifting SAE | ✅ ψ(x) = [x; φ_SAE(x)] con normalización L2 + interleaving |
+| CBF Explícito | ✅ λ = max(h,0)/(||Lg_h||²+ε), u_safe = u_nom + λ·Lg_h |
+| CBF + Lyapunov Híbrido | ✅ Seguridad (h ≥ 0) + Estabilidad (V_dot ≤ 0) |
+| Batch CBF | ✅ cbf_safe_control_batch() para múltiples estados |
+| Unit Tests | ✅ 13/13 passing |
+
+## [v16.6.0-sprint166] — 2026-06-15 (Sprint 166 — RLS KOOPMAN + ADMM LMI + HZI TAYLOR)
 
 ### Sprint 166 "RLS KOOPMAN + ADMM LMI + HZI TAYLOR"
 

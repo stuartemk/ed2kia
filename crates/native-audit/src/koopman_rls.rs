@@ -646,6 +646,214 @@ impl KoopmanRLS {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Sprint 167 — SAE Observable Lifting (Koopman lifting with SAE features)
+// ---------------------------------------------------------------------------
+
+/// Koopman lifting via SAE observables: ψ(x) = [x; φ_SAE(x)].
+///
+/// Composes the raw state `x` with SAE-encoded features `sae_features`
+/// to form the lifted observable vector used in Koopman RLS.
+///
+/// **Formula:** ψ(x) = concat(x, φ_SAE(x)) ∈ ℝ^{d_model + d_sae}
+///
+/// # Arguments
+/// * `x` — Raw activation/state tensor. Shape: `[batch, d_model]` or `[d_model]`.
+/// * `sae_features` — SAE-encoded features. Shape: `[batch, d_sae]` or `[d_sae]`.
+///
+/// # Returns
+/// Lifted observable ψ(x). Shape: `[batch, d_model + d_sae]` or `[d_model + d_sae]`.
+pub fn koopman_lifting_sae(x: &Tensor, sae_features: &Tensor) -> Result<Tensor> {
+    // Ensure both tensors have same rank
+    let (x_2d, sae_2d, was_1d) = if x.rank() == 1 {
+        (x.unsqueeze(0)?, sae_features.unsqueeze(0)?, true)
+    } else {
+        (x.clone(), sae_features.clone(), false)
+    };
+
+    // Concatenate along feature dimension (dim=1)
+    let lifted = Tensor::cat(&[x_2d, sae_2d], 1)?;
+
+    if was_1d {
+        lifted.squeeze(0)
+    } else {
+        Ok(lifted)
+    }
+}
+
+/// Advanced observable lifting: ψ(x) = [x; x²; sin(x); φ_SAE(x)].
+///
+/// Extends basic SAE lifting with polynomial and trigonometric observables
+/// for richer Koopman linearization of non-linear dynamics.
+///
+/// **Formula:** ψ(x) = concat(x, x⊙x, sin(x), φ_SAE(x))
+///
+/// # Arguments
+/// * `x` — Raw activation/state tensor. Shape: `[batch, d_model]` or `[d_model]`.
+/// * `sae_features` — SAE-encoded features. Shape: `[batch, d_sae]` or `[d_sae]`.
+///
+/// # Returns
+/// Advanced lifted observable. Shape: `[batch, 3*d_model + d_sae]` or `[3*d_model + d_sae]`.
+pub fn koopman_lifting_advanced(x: &Tensor, sae_features: &Tensor) -> Result<Tensor> {
+    let (x_2d, sae_2d, was_1d) = if x.rank() == 1 {
+        (x.unsqueeze(0)?, sae_features.unsqueeze(0)?, true)
+    } else {
+        (x.clone(), sae_features.clone(), false)
+    };
+
+    // Quadratic observables: x⊙x
+    let x_sq = x_2d.sqr()?;
+
+    // Trigonometric observables: sin(x)
+    let x_sin = x_2d.sin()?;
+
+    // Concatenate: [x, x², sin(x), φ_SAE(x)]
+    let lifted = Tensor::cat(&[x_2d, x_sq, x_sin, sae_2d], 1)?;
+
+    if was_1d {
+        lifted.squeeze(0)
+    } else {
+        Ok(lifted)
+    }
+}
+
+#[cfg(test)]
+mod tests_s167 {
+    use super::*;
+
+    /// Test basic SAE lifting: ψ(x) = [x; φ_SAE(x)]
+    #[test]
+    fn test_koopman_lifting_sae_single() -> Result<()> {
+        let device = Device::Cpu;
+        let d_model = 8;
+        let d_sae = 16;
+
+        let x_data: Vec<f64> = (0..d_model).map(|i| i as f64 * 0.1).collect();
+        let x = Tensor::from_vec(x_data, d_model, &device)?;
+
+        let sae_data: Vec<f64> = (0..d_sae).map(|i| (i % 5) as f64 * 0.05).collect();
+        let sae = Tensor::from_vec(sae_data, d_sae, &device)?;
+
+        let lifted = koopman_lifting_sae(&x, &sae)?;
+        assert_eq!(lifted.dim(0)?, d_model + d_sae);
+
+        // Verify first d_model elements match x
+        let flat: Vec<f64> = lifted.to_vec1()?;
+        for i in 0..d_model {
+            assert!((flat[i] - (i as f64 * 0.1)).abs() < 1e-10);
+        }
+
+        // Verify last d_sae elements match sae_features
+        for i in 0..d_sae {
+            assert!((flat[d_model + i] - ((i % 5) as f64 * 0.05)).abs() < 1e-10);
+        }
+        Ok(())
+    }
+
+    /// Test batch SAE lifting
+    #[test]
+    fn test_koopman_lifting_sae_batch() -> Result<()> {
+        let device = Device::Cpu;
+        let batch = 4;
+        let d_model = 8;
+        let d_sae = 16;
+
+        let x_data: Vec<f64> = (0..(batch * d_model)).map(|i| (i % 7) as f64 * 0.1).collect();
+        let x = Tensor::from_vec(x_data, (batch, d_model), &device)?;
+
+        let sae_data: Vec<f64> = (0..(batch * d_sae)).map(|i| (i % 11) as f64 * 0.05).collect();
+        let sae = Tensor::from_vec(sae_data, (batch, d_sae), &device)?;
+
+        let lifted = koopman_lifting_sae(&x, &sae)?;
+        assert_eq!(lifted.shape().dims(), [batch, d_model + d_sae]);
+        Ok(())
+    }
+
+    /// Test advanced lifting: ψ(x) = [x; x²; sin(x); φ_SAE(x)]
+    #[test]
+    fn test_koopman_lifting_advanced() -> Result<()> {
+        let device = Device::Cpu;
+        let d_model = 4;
+        let d_sae = 8;
+
+        let x_data: Vec<f64> = vec![0.1, 0.2, 0.3, 0.4];
+        let x = Tensor::from_vec(x_data, d_model, &device)?;
+
+        let sae_data: Vec<f64> = (0..d_sae).map(|i| i as f64 * 0.01).collect();
+        let sae = Tensor::from_vec(sae_data, d_sae, &device)?;
+
+        let lifted = koopman_lifting_advanced(&x, &sae)?;
+        // Expected: 3*d_model + d_sae = 12 + 8 = 20
+        assert_eq!(lifted.dim(0)?, 3 * d_model + d_sae);
+
+        let flat: Vec<f64> = lifted.to_vec1()?;
+
+        // First d_model: x
+        assert!((flat[0] - 0.1).abs() < 1e-10);
+        // Next d_model: x²
+        assert!((flat[d_model] - 0.01).abs() < 1e-10);
+        // Next d_model: sin(x)
+        assert!((flat[2 * d_model] - (0.1f64).sin()).abs() < 1e-10);
+        // Last d_sae: sae features
+        assert!((flat[3 * d_model] - 0.0).abs() < 1e-10);
+        Ok(())
+    }
+
+    /// Full integration: RLS Koopman with SAE lifting
+    #[test]
+    fn test_rls_with_sae_lifting() -> Result<()> {
+        let device = Device::Cpu;
+        let d_model = 4;
+        let d_sae = 4;
+        let d_lifted = d_model + d_sae;
+        let config = KoopmanRLSConfig::edge_fast();
+        let mut rls = KoopmanRLS::new(d_lifted, config, &device)?;
+
+        // True dynamics in raw space: y = A @ x (diagonal, stable)
+        let a_data: Vec<f64> = vec![0.7, 0.0, 0.0, 0.0,
+                                     0.0, 0.6, 0.0, 0.0,
+                                     0.0, 0.0, 0.5, 0.0,
+                                     0.0, 0.0, 0.0, 0.4];
+        let a = Tensor::from_vec(a_data, (d_model, d_model), &device)?;
+
+        // SAE "encoder": simple linear transform
+        let sae_w: Vec<f64> = (0..(d_model * d_sae)).map(|i| ((i % 7) as f64 - 3.5) * 0.1).collect();
+        let sae_encoder = Tensor::from_vec(sae_w, (d_model, d_sae), &device)?;
+
+        // Generate transitions with SAE lifting
+        let n_steps = 100;
+        let mut seed: u64 = 123;
+        for _ in 0..n_steps {
+            seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1);
+            let x_data: Vec<f64> = (0..d_model)
+                .map(|_| ((seed >> 33) as f64 / u32::MAX as f64 - 0.5) * 2.0)
+                .collect();
+            let x = Tensor::from_vec(x_data.clone(), (1, d_model), &device)?;
+
+            // SAE features: φ(x) = x @ W_sae
+            let phi_x = x.matmul(&sae_encoder)?;
+
+            // Lifted: ψ(x) = [x; φ(x)]
+            let psi_x = koopman_lifting_sae(&x, &phi_x)?;
+
+            // Next state: y = A @ x
+            let y_raw = x.matmul(&a.t()?)?;
+            // SAE features of next state
+            let phi_y = y_raw.matmul(&sae_encoder)?;
+            let psi_y = koopman_lifting_sae(&y_raw, &phi_y)?;
+
+            let result = rls.update_koopman_rls(&psi_x, &psi_y)?;
+            if result.updated {
+                // Innovation should decrease over time
+                assert!(result.prediction_error < 10.0, "Error too large: {}", result.prediction_error);
+            }
+        }
+
+        assert!(rls.update_count() > 50, "Should have many updates: {}", rls.update_count());
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
