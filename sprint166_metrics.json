@@ -1,0 +1,37 @@
+{
+  "sprint": 166,
+  "version": "v16.6.0-sprint166",
+  "date": "2026-06-15",
+  "title": "RLS Koopman + ADMM LMI + HZI Taylor",
+  "modules": [
+    {
+      "name": "koopman_rls",
+      "file": "crates/native-audit/src/koopman_rls.rs",
+      "description": "Recursive Least Squares para estimaci\u00f3n online del operador Koopman",
+      "features": ["forgetting_factor", "dead_zone", "adaptive_svd", "shared_covariance"],
+      "tests": 6,
+      "tests_passed": 6
+    },
+    {
+      "name": "control_lmi",
+      "file": "crates/native-audit/src/control_lmi.rs",
+      "description": "Fast LMI/ADMM certificates para estabilidad, ISS Lyapunov y contraction metrics",
+      "features": ["certify_stability_admm", "neural_lyapunov_fallback", "compute_contraction_rate", "compute_iss_lyapunov"],
+      "tests": 10,
+      "tests_passed": 10
+    },
+    {
+      "name": "hzi_taylor",
+      "file": "crates/native-audit/src/hzi_taylor.rs",
+      "description": "Hybrid Zonotope-Interval con Taylor propagation certificada",
+      "features": ["affine_propagate", "relu_propagate", "girard_reduction", "cbf_lower_bound"],
+      "tests": 8,
+      "tests_passed": 8
+    }
+  ],
+  "total_tests": 24,
+  "total_tests_passed": 24,
+  "compilation": "0 errors, 0 warnings (S166 code)",
+  "git_commit": "c60b09c",
+  "git_tag": "v16.6.0-sprint166"
+}

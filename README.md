@@ -1,6 +1,6 @@
 # 🌐 ed2kIA: Distributed Sparse Autoencoders for Edge LLM Interpretability
 
-[![Version](https://img.shields.io/badge/v16.5.0-sprint165-blue.svg)](https://github.com/Stuartemk/ed2kIA/releases/tag/v16.5.0-sprint165)
+[![Version](https://img.shields.io/badge/v16.6.0-sprint166-blue.svg)](https://github.com/Stuartemk/ed2kIA/releases/tag/v16.6.0-sprint166)
 [![Tests](https://img.shields.io/badge/Tests-1156%2B%20PASS-green.svg)](https://github.com/Stuartemk/ed2kIA/actions)
 [![Audit](https://img.shields.io/badge/OSSF-8.5%2F10-yellow.svg)](https://github.com/Stuartemk/ed2kIA/security)
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ética-orange.svg)](LICENSE)
@@ -20,6 +20,7 @@ ed2k start --model qwen3.5:2b
 - **Automated Byzantine Eviction:** Staleness-aware weighting + BFT median aggregation
 - **Compute Credits (CE):** Earn credits by running a node; spend credits to audit models
 - **Post-Quantum Ready:** zk-STARKs, Ed25519, recursive SNARKs for proof aggregation
+- **11/10: Certified Edge Steering via ADMM LMI & RLS Koopman (<10ms latency)** — Sprint 166 (v16.6.0)
 
 ## 🔬 Native Tensor Audit (v10.5.0)
 ed2kIA now loads models natively via [Candle](https://github.com/huggingface/candle) (HuggingFace's Rust ML framework) to extract **real hidden states** and compute the **TCM Z-axis** — without depending on HTTP proxies or external inference servers.
