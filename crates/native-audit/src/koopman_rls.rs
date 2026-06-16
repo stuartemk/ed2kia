@@ -78,6 +78,12 @@ pub struct KoopmanRLSConfig {
     /// SVD convergence tolerance.
     /// Default: 1e-8.
     pub svd_tolerance: f64,
+    /// Wasserstein ambiguity radius ε_W for robust RLS updates.
+    /// When innovation ||e|| > ε_W, the update is attenuated by
+    /// weight w = min(1, ε_W / ||e||) to reject adversarial distribution shifts.
+    /// Set to f64::MAX to disable Wasserstein robustness (standard RLS).
+    /// Default: 0.1 (moderate robustness against outliers).
+    pub wasserstein_radius: f64,
 }
 
 impl Default for KoopmanRLSConfig {
@@ -93,6 +99,7 @@ impl Default for KoopmanRLSConfig {
             svd_energy_threshold: 0.99,
             svd_max_iter: 20,
             svd_tolerance: 1e-8,
+            wasserstein_radius: 0.1,
         }
     }
 }
@@ -111,6 +118,7 @@ impl KoopmanRLSConfig {
             svd_energy_threshold: 0.95,
             svd_max_iter: 10,
             svd_tolerance: 1e-6,
+            wasserstein_radius: 0.2,
         }
     }
 
@@ -127,6 +135,7 @@ impl KoopmanRLSConfig {
             svd_energy_threshold: 0.999,
             svd_max_iter: 50,
             svd_tolerance: 1e-12,
+            wasserstein_radius: 0.05,
         }
     }
 
@@ -146,6 +155,12 @@ impl KoopmanRLSConfig {
     pub fn with_svd_rank(mut self, rank: usize) -> Self {
         self.use_adaptive_svd = true;
         self.svd_target_rank = rank;
+        self
+    }
+
+    /// Set custom Wasserstein ambiguity radius.
+    pub fn with_wasserstein_radius(mut self, radius: f64) -> Self {
+        self.wasserstein_radius = radius.max(0.0);
         self
     }
 }
@@ -479,13 +494,17 @@ pub struct RLSUpdateResult {
     pub svd_rank_after: Option<usize>,
     /// Prediction error (MSE).
     pub prediction_error: f64,
+    /// Wasserstein robust weight w = min(1, ε_W / ||e||).
+    /// w=1.0 means full update (innovation within ambiguity set).
+    /// w<1.0 means attenuated update (innovation exceeds Wasserstein radius).
+    pub wasserstein_weight: f64,
 }
 
 impl std::fmt::Display for RLSUpdateResult {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "RLS{{ innov={:.6e}, updated={}, cond={:.2e}, infl={}, svd={:?}->{:?}, mse={:.6e} }}",
+            "RLS{{ innov={:.6e}, updated={}, cond={:.2e}, infl={}, svd={:?}->{:?}, mse={:.6e}, w_W={:.3} }}",
             self.innovation_norm,
             self.updated,
             self.condition_number,
@@ -493,6 +512,7 @@ impl std::fmt::Display for RLSUpdateResult {
             self.svd_rank_before,
             self.svd_rank_after,
             self.prediction_error,
+            self.wasserstein_weight
         )
     }
 }
@@ -620,6 +640,14 @@ impl KoopmanRLS {
         // Prediction error (MSE)
         let prediction_error: f64 = innovation.sqr()?.mean_all()?.to_scalar::<f64>()?;
 
+        // --- Wasserstein Robust Weight ---
+        // w = min(1, ε_W / ||e||) — attenuate update if innovation exceeds ambiguity radius
+        let wasserstein_weight = if self.config.wasserstein_radius.is_infinite() {
+            1.0 // Disabled
+        } else {
+            (1.0_f64).min(self.config.wasserstein_radius / innovation_norm.max(1e-15))
+        };
+
         // Dead-zone check: skip update if innovation is too small
         if innovation_norm < epsilon {
             return Ok(RLSUpdateResult {
@@ -630,6 +658,7 @@ impl KoopmanRLS {
                 svd_rank_before: None,
                 svd_rank_after: None,
                 prediction_error,
+                wasserstein_weight,
             });
         }
 
@@ -658,9 +687,13 @@ impl KoopmanRLS {
         // Gain: K_gain = (P @ phi^T) / denom  → [d, 1]
         let gain = p_phi_t.broadcast_mul(&Tensor::new(denom_inv, &self.device)?)?;
 
-        // Update theta: theta += gain @ innovation  → [d,1] @ [1,d] = [d,d]
+        // Update theta: theta += w_W · (gain @ innovation)  → [d,1] @ [1,d] = [d,d]
+        // Wasserstein weight attenuates the update for adversarial innovations
         let theta_update = gain.matmul(&innovation)?;
-        self.theta = self.theta.broadcast_add(&theta_update)?;
+        let theta_update_weighted = theta_update.broadcast_mul(
+            &Tensor::new(wasserstein_weight, &self.device)?,
+        )?;
+        self.theta = self.theta.broadcast_add(&theta_update_weighted)?;
 
         // Update covariance: P = (1/lambda) * (P - gain @ phi @ P)
         // gain @ phi: [d,1] @ [1,d] = [d,d]
@@ -694,6 +727,7 @@ impl KoopmanRLS {
             svd_rank_before: svd_before,
             svd_rank_after: svd_after,
             prediction_error,
+            wasserstein_weight,
         })
     }
 
@@ -1891,6 +1925,218 @@ mod tests {
         let result = rls.update_koopman_rls_core(&phi_full, &y_full, &collapse_cfg, None)?;
         assert_eq!(result.effective_core_dim, core_dim);
         assert_eq!(result.importance_scores.len(), core_dim);
+        Ok(())
+    }
+
+    // -----------------------------------------------------------------------
+    // Wasserstein Robust Koopman — PASO B (Sprint 169)
+    // -----------------------------------------------------------------------
+
+    /// Test: Normal innovation (||e|| < ε_W) → wasserstein_weight ≈ 1.0
+    #[test]
+    fn test_wasserstein_normal_innovation() -> Result<()> {
+        let device = Device::Cpu;
+        let dim = 8;
+        let config = KoopmanRLSConfig::default()
+            .with_wasserstein_radius(0.1)
+            .with_dead_zone(0.0);
+        let mut rls = KoopmanRLS::new(dim, config, &device)?;
+
+        // Small perturbation → small innovation
+        let phi_data: Vec<f64> = (0..dim).map(|i| i as f64 * 0.01).collect();
+        let y_data: Vec<f64> = (0..dim).map(|i| i as f64 * 0.01 + 0.001).collect();
+        let phi = Tensor::from_vec(phi_data, (1, dim), &device)?;
+        let y = Tensor::from_vec(y_data, (1, dim), &device)?;
+
+        let result = rls.update_koopman_rls(&phi, &y)?;
+        // Innovation is small (< ε_W=0.1), so weight should be 1.0
+        assert!((result.wasserstein_weight - 1.0).abs() < 1e-6);
+        Ok(())
+    }
+
+    /// Test: Large innovation (||e|| > ε_W) → wasserstein_weight < 1.0
+    #[test]
+    fn test_wasserstein_large_innovation() -> Result<()> {
+        let device = Device::Cpu;
+        let dim = 8;
+        let config = KoopmanRLSConfig::default()
+            .with_wasserstein_radius(0.05)
+            .with_dead_zone(0.0);
+        let mut rls = KoopmanRLS::new(dim, config, &device)?;
+
+        // Large perturbation → large innovation
+        let phi_data: Vec<f64> = (0..dim).map(|_| 0.0).collect();
+        let y_data: Vec<f64> = (0..dim).map(|_| 1.0).collect();
+        let phi = Tensor::from_vec(phi_data, (1, dim), &device)?;
+        let y = Tensor::from_vec(y_data, (1, dim), &device)?;
+
+        let result = rls.update_koopman_rls(&phi, &y)?;
+        // Innovation norm ≈ sqrt(8) ≈ 2.83 >> ε_W=0.05
+        // w = min(1, 0.05 / 2.83) ≈ 0.0177
+        assert!(result.wasserstein_weight < 1.0);
+        assert!(result.wasserstein_weight > 0.0);
+        assert!((result.wasserstein_weight - 0.0177).abs() < 0.005);
+        Ok(())
+    }
+
+    /// Test: Disabled Wasserstein (ε_W = ∞) → wasserstein_weight always 1.0
+    #[test]
+    fn test_wasserstein_disabled() -> Result<()> {
+        let device = Device::Cpu;
+        let dim = 8;
+        let config = KoopmanRLSConfig::default()
+            .with_wasserstein_radius(f64::MAX)
+            .with_dead_zone(0.0);
+        let mut rls = KoopmanRLS::new(dim, config, &device)?;
+
+        // Large innovation
+        let phi_data: Vec<f64> = (0..dim).map(|_| 0.0).collect();
+        let y_data: Vec<f64> = (0..dim).map(|_| 10.0).collect();
+        let phi = Tensor::from_vec(phi_data, (1, dim), &device)?;
+        let y = Tensor::from_vec(y_data, (1, dim), &device)?;
+
+        let result = rls.update_koopman_rls(&phi, &y)?;
+        // Disabled → always full weight
+        assert!((result.wasserstein_weight - 1.0).abs() < 1e-6);
+        Ok(())
+    }
+
+    /// Test: Wasserstein weight decreases monotonically with innovation norm
+    #[test]
+    fn test_wasserstein_weight_monotonicity() -> Result<()> {
+        let device = Device::Cpu;
+        let dim = 4;
+        let epsilon_w = 0.1;
+        let config = KoopmanRLSConfig::default()
+            .with_wasserstein_radius(epsilon_w)
+            .with_dead_zone(0.0);
+
+        let innovations = vec![0.01, 0.05, 0.1, 0.2, 0.5, 1.0];
+        let mut weights = Vec::new();
+
+        for &innov_scale in &innovations {
+            let mut rls = KoopmanRLS::new(dim, config.clone(), &device)?;
+            let phi_data: Vec<f64> = (0..dim).map(|_| 0.0).collect();
+            let y_data: Vec<f64> = (0..dim).map(|_| innov_scale).collect();
+            let phi = Tensor::from_vec(phi_data, (1, dim), &device)?;
+            let y = Tensor::from_vec(y_data, (1, dim), &device)?;
+
+            let result = rls.update_koopman_rls(&phi, &y)?;
+            weights.push(result.wasserstein_weight);
+        }
+
+        // Verify monotonic decrease
+        for i in 1..weights.len() {
+            assert!(weights[i] <= weights[i - 1] + 1e-6,
+                "Weight should decrease with innovation: w[{}] = {:.6} > w[{}] = {:.6}",
+                i, weights[i], i - 1, weights[i - 1]);
+        }
+        // First weight should be 1.0 (smallest innovation)
+        assert!((weights[0] - 1.0).abs() < 1e-6);
+        Ok(())
+    }
+
+    /// Test: Wasserstein weight in dead-zone path
+    #[test]
+    fn test_wasserstein_dead_zone() -> Result<()> {
+        let device = Device::Cpu;
+        let dim = 4;
+        let config = KoopmanRLSConfig::default()
+            .with_wasserstein_radius(0.1)
+            .with_dead_zone(1.0); // Large dead zone
+        let mut rls = KoopmanRLS::new(dim, config, &device)?;
+
+        // Small innovation → falls into dead zone
+        let phi_data: Vec<f64> = (0..dim).map(|i| i as f64 * 0.001).collect();
+        let y_data: Vec<f64> = (0..dim).map(|i| i as f64 * 0.001 + 0.0001).collect();
+        let phi = Tensor::from_vec(phi_data, (1, dim), &device)?;
+        let y = Tensor::from_vec(y_data, (1, dim), &device)?;
+
+        let result = rls.update_koopman_rls(&phi, &y)?;
+        assert!(!result.updated);
+        // Wasserstein weight should still be computed even in dead zone
+        assert!(result.wasserstein_weight > 0.0);
+        assert!(result.wasserstein_weight <= 1.0);
+        Ok(())
+    }
+
+    /// Test: with_wasserstein_radius clamps negative values to 0
+    #[test]
+    fn test_wasserstein_radius_negative_clamp() {
+        let config = KoopmanRLSConfig::default().with_wasserstein_radius(-0.5);
+        assert_eq!(config.wasserstein_radius, 0.0);
+    }
+
+    /// Test: Display includes wasserstein_weight
+    #[test]
+    fn test_rls_update_result_display_wasserstein() -> Result<()> {
+        let device = Device::Cpu;
+        let dim = 4;
+        let config = KoopmanRLSConfig::default()
+            .with_wasserstein_radius(0.05)
+            .with_dead_zone(0.0);
+        let mut rls = KoopmanRLS::new(dim, config, &device)?;
+
+        let phi_data: Vec<f64> = (0..dim).map(|_| 0.0).collect();
+        let y_data: Vec<f64> = (0..dim).map(|_| 1.0).collect();
+        let phi = Tensor::from_vec(phi_data, (1, dim), &device)?;
+        let y = Tensor::from_vec(y_data, (1, dim), &device)?;
+
+        let result = rls.update_koopman_rls(&phi, &y)?;
+        let display = format!("{}", result);
+        assert!(display.contains("w_W="));
+        Ok(())
+    }
+
+    /// Integration: Wasserstein robustness attenuates adversarial updates
+    #[test]
+    fn test_wasserstein_robustness_integration() -> Result<()> {
+        let device = Device::Cpu;
+        let dim = 8;
+        // Use large epsilon_W so first update (cold start) is not attenuated
+        let epsilon_w = 5.0;
+
+        // Standard RLS (no Wasserstein)
+        let config_std = KoopmanRLSConfig::default()
+            .with_wasserstein_radius(f64::MAX)
+            .with_dead_zone(0.0);
+        let mut rls_std = KoopmanRLS::new(dim, config_std, &device)?;
+
+        // Wasserstein robust RLS
+        let config_robust = KoopmanRLSConfig::default()
+            .with_wasserstein_radius(epsilon_w)
+            .with_dead_zone(0.0);
+        let mut rls_robust = KoopmanRLS::new(dim, config_robust, &device)?;
+
+        // Normal data first — both should learn similarly (innovation < ε_W)
+        let phi_normal: Vec<f64> = (0..dim).map(|i| i as f64 * 0.1).collect();
+        let y_normal: Vec<f64> = (0..dim).map(|i| (i + 1) as f64 * 0.1).collect();
+        let phi_t = Tensor::from_vec(phi_normal.clone(), (1, dim), &device)?;
+        let y_t = Tensor::from_vec(y_normal.clone(), (1, dim), &device)?;
+
+        let r_std_normal = rls_std.update_koopman_rls(&phi_t, &y_t)?;
+        let r_robust_normal = rls_robust.update_koopman_rls(&phi_t, &y_t)?;
+
+        // Standard always w=1.0
+        assert!((r_std_normal.wasserstein_weight - 1.0).abs() < 1e-6);
+        // Robust: innovation norm ≈ 1.43 < ε_W=5.0 → w=1.0
+        assert!((r_robust_normal.wasserstein_weight - 1.0).abs() < 1e-6);
+
+        // Adversarial injection — very large innovation
+        let phi_adv: Vec<f64> = (0..dim).map(|i| i as f64 * 0.1).collect();
+        let y_adv: Vec<f64> = (0..dim).map(|_| 100.0).collect();
+        let phi_adv_t = Tensor::from_vec(phi_adv, (1, dim), &device)?;
+        let y_adv_t = Tensor::from_vec(y_adv, (1, dim), &device)?;
+
+        let r_std_adv = rls_std.update_koopman_rls(&phi_adv_t, &y_adv_t)?;
+        let r_robust_adv = rls_robust.update_koopman_rls(&phi_adv_t, &y_adv_t)?;
+
+        // Standard: full weight (no protection)
+        assert!((r_std_adv.wasserstein_weight - 1.0).abs() < 1e-6);
+        // Robust: innovation ≈ sqrt(8)*100 >> ε_W=5.0 → heavily attenuated
+        assert!(r_robust_adv.wasserstein_weight < 0.1);
+        // Robust result should show much smaller effective update
+        assert!(r_robust_adv.wasserstein_weight < r_std_adv.wasserstein_weight);
         Ok(())
     }
 }

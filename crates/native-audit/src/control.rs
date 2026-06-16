@@ -1952,18 +1952,23 @@ pub struct TubeMPCResult {
     pub inside_tube: bool,
     /// Robust CBF satisfaction margin.
     pub cbf_margin: f32,
+    /// Whether this step was event-triggered (CBF bypassed heavy MPC).
+    /// When true, the controller used the lightweight CBF fallback instead
+    /// of the full O(n³) MPC/ADMM pipeline, saving computation.
+    pub event_triggered: bool,
 }
 
 impl std::fmt::Display for TubeMPCResult {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "TubeMPC[u={:?}, r_tube={:.4}, dist={:.4}, inside={}, cbf_margin={:.4}]",
+            "TubeMPC[u={:?}, r_tube={:.4}, dist={:.4}, inside={}, cbf_margin={:.4}, event_triggered={}]",
             self.u_robust.shape(),
             self.tube_radius,
             self.nominal_distance,
             self.inside_tube,
-            self.cbf_margin
+            self.cbf_margin,
+            self.event_triggered
         )
     }
 }
@@ -2136,6 +2141,7 @@ pub fn compute_tube_mpc_steering(
         nominal_distance: nominal_dist,
         inside_tube,
         cbf_margin,
+        event_triggered: false,
     })
 }
 

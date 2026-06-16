@@ -731,6 +731,37 @@ pub fn cbf_safe_control(u_nom: &Tensor, h: f32, lg_h: &Tensor) -> Result<Tensor>
     u_nom.add(&correction)
 }
 
+/// Event-Triggered CBF — Only execute heavy MPC/ADMM when CBF condition degrades.
+///
+/// Returns `true` when `ḣ + γ·h < safety_margin`, indicating that the nominal
+/// dynamics alone cannot maintain safety and Tube MPC intervention is required.
+///
+/// When `false`, the system is on a safe trajectory and control can bypass
+/// the heavy O(n³) MPC solver, falling back to O(1) ancillary feedback.
+///
+/// # Arguments
+/// * `h_val` — Current barrier function value (distance to unsafe set). `h > 0` means safe.
+/// * `h_dot` — Lie derivative of `h` along nominal dynamics.
+/// * `gamma` — Class-K decay rate (γ > 0). Enforces `ḣ ≥ -γ·h`.
+/// * `safety_margin` — Early-triggering margin ε > 0. Triggers before violation for robustness.
+///
+/// # Returns
+/// `true` if MPC intervention is required, `false` if safe to bypass (O(1)).
+///
+/// # Mathematical Basis
+/// The CBF condition requires `ḣ + γ·h ≥ 0` for forward invariance.
+/// Event triggering checks `ḣ + γ·h < ε` where ε is the safety margin.
+/// When satisfied, the heavy MPC solver is bypassed.
+pub fn requires_mpc_intervention(
+    h_val: f32,
+    h_dot: f32,
+    gamma: f32,
+    safety_margin: f32,
+) -> bool {
+    let cbf_condition = h_dot + gamma * h_val;
+    cbf_condition < safety_margin
+}
+
 /// Batch CBF-safe control for multiple states.
 ///
 /// Applies CBF projection element-wise across a batch of controls.
@@ -1164,5 +1195,76 @@ mod tests_s167 {
         let mag = cbf_correction_magnitude(h, &lg_h)?;
         assert!(mag > 0.0);
         Ok(())
+    }
+
+    #[test]
+    fn test_requires_mpc_intervention_safe_trajectory() {
+        // Safe: h=5.0 (far from boundary), h_dot=0.0 (not moving toward unsafe)
+        // gamma=0.5, safety_margin=0.1
+        // cbf_condition = 0.0 + 0.5*5.0 = 2.5 >= 0.1 → no intervention
+        assert!(!requires_mpc_intervention(5.0, 0.0, 0.5, 0.1));
+    }
+
+    #[test]
+    fn test_requires_mpc_intervention_approaching_boundary() {
+        // Unsafe: h=0.1 (close to boundary), h_dot=-0.5 (moving toward unsafe)
+        // gamma=0.5, safety_margin=0.1
+        // cbf_condition = -0.5 + 0.5*0.1 = -0.45 < 0.1 → intervention required
+        assert!(requires_mpc_intervention(0.1, -0.5, 0.5, 0.1));
+    }
+
+    #[test]
+    fn test_requires_mpc_intervention_exact_boundary() {
+        // Edge: h=0.2, h_dot=0.0, gamma=0.5, safety_margin=0.1
+        // cbf_condition = 0.0 + 0.5*0.2 = 0.1 >= 0.1 → no intervention (equal)
+        assert!(!requires_mpc_intervention(0.2, 0.0, 0.5, 0.1));
+    }
+
+    #[test]
+    fn test_requires_mpc_intervention_zero_h_positive_hdot() {
+        // h=0.0 (at boundary), h_dot=0.2 (moving away), gamma=0.5, margin=0.1
+        // cbf_condition = 0.2 + 0.0 = 0.2 >= 0.1 → no intervention
+        assert!(!requires_mpc_intervention(0.0, 0.2, 0.5, 0.1));
+    }
+
+    #[test]
+    fn test_requires_mpc_intervention_zero_h_negative_hdot() {
+        // h=0.0 (at boundary), h_dot=-0.1 (moving toward unsafe), gamma=0.5, margin=0.1
+        // cbf_condition = -0.1 + 0.0 = -0.1 < 0.1 → intervention required
+        assert!(requires_mpc_intervention(0.0, -0.1, 0.5, 0.1));
+    }
+
+    #[test]
+    fn test_requires_mpc_intervention_high_gamma() {
+        // High gamma can compensate for negative h_dot
+        // h=2.0, h_dot=-0.5, gamma=2.0, margin=0.1
+        // cbf_condition = -0.5 + 2.0*2.0 = 3.5 >= 0.1 → no intervention
+        assert!(!requires_mpc_intervention(2.0, -0.5, 2.0, 0.1));
+    }
+
+    #[test]
+    fn test_requires_mpc_intervention_strict_margin() {
+        // Large safety_margin triggers early
+        // h=1.0, h_dot=0.0, gamma=0.5, margin=1.0
+        // cbf_condition = 0.0 + 0.5*1.0 = 0.5 < 1.0 → intervention
+        assert!(requires_mpc_intervention(1.0, 0.0, 0.5, 1.0));
+    }
+
+    #[test]
+    fn test_event_trigger_bypass_rate() {
+        // Simulate a trajectory to verify that event triggering achieves >70% bypass
+        let mut trigger_count = 0;
+        let total_steps = 100;
+        for i in 0..total_steps {
+            // Simulate oscillating safety margin — most steps safe
+            let h_val = 3.0 + (i as f32).sin() * 0.5;
+            let h_dot = (i as f32).cos() * 0.1;
+            if requires_mpc_intervention(h_val, h_dot, 0.5, 0.1) {
+                trigger_count += 1;
+            }
+        }
+        let bypass_rate = (total_steps - trigger_count) as f32 / total_steps as f32;
+        // With h centered at 3.0 and gamma=0.5, cbf_condition ≈ 1.5 → mostly bypassed
+        assert!(bypass_rate > 0.7, "Bypass rate {:.1}% should exceed 70%", bypass_rate * 100.0);
     }
 }

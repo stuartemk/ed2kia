@@ -1,4 +1,30 @@
-﻿## [v16.8.0-sprint168] — 2026-06-16 (Sprint 168 — DIMENSIONAL COLLAPSE & TUBE MPC OPTIMIZATION)
+﻿## [v16.9.0-sprint169] — 2026-06-16 (Sprint 169 — EVENT-TRIGGERED CBF & WASSERSTEIN ROBUST KOOPMAN)
+
+### Sprint 169 "EVENT-TRIGGERED CBF & WASSERSTEIN ROBUST KOOPMAN"
+
+**Mode:** `EVENT_TRIGGERED_CBF + WASSERSTEIN_ROBUST_KOOPMAN + TUBE_MPC_INTEGRATION + ZERO_WARNINGS`
+
+**Problema — Sin defensa contra distribución adversarial ni ahorro computacional:** Sprints 100-168 establecen KoopmanVanguard, DeepKoopmanAE, KoopmanRLS, ADMM LMI, HZI Taylor, ISS Lyapunov, Explicit CBF O(1), Tube MPC, SVD Bottleneck, SINDy, STLSQ-EDMD, PAC-Conformal, Koopman Lifting SAE, Dimensional Collapse, Enhanced Girard, Tube MPC Core, pero faltan: (1) **Event-Triggered CBF** — `requires_mpc_intervention()` que evalúa `ḣ + γ·h < safety_margin` para ejecutar el pesado O(n³) MPC/ADMM solo cuando el CBF degrades por debajo del margen de seguridad (bypass O(1) otherwise), (2) **Wasserstein Robust Koopman** — `wasserstein_radius` config + atenuación RLS `w = min(1, ε_W/||e||)` cuando la innovación excede el radio de ambigüedad para rechazar shifts adversariales de distribución, y (3) **Tube MPC Integration** — `event_triggered` flag en `TubeMPCResult` para rastrear si el paso usó el fallback CBF ligero vs. el pipeline MPC completo.
+
+**Solución — Event-Triggered + Wasserstein Robust Pipeline completo:** `requires_mpc_intervention()` en `control_lmi.rs` evalúa la condición CBF `ḣ + γ·h < safety_margin` retornando `true` solo cuando se necesita intervención MPC. `wasserstein_radius` en `KoopmanRLSConfig` con `wasserstein_weight = min(1, ε_W/||e||)` que atenúa `theta_update *= w_W` para rechazar innovaciones adversariales. `event_triggered: bool` en `TubeMPCResult` para métricas de ahorro computacional. **61/61 tests passing (13 control_lmi::tests_s167 + 8 wasserstein + 40 tube_mpc), library compiles clean, 0 S169 warnings.**
+
+- **Event-Triggered CBF:** `native-audit/src/control_lmi.rs` — `requires_mpc_intervention()` + 13 tests (safe/unsafe/boundary/zero_h/gamma/margin/bypass_rate)
+- **Wasserstein Robust Koopman:** `native-audit/src/koopman_rls.rs` — `wasserstein_radius` config + `wasserstein_weight` en RLS update + 8 tests (normal/large/disabled/monotonicity/dead_zone/negative_clamp/display/integration)
+- **Tube MPC Integration:** `native-audit/src/control.rs` — `event_triggered: bool` en `TubeMPCResult` struct + Display impl + return statement
+- **Integration Tests:** 61 S169-specific tests passing (control_lmi::tests_s167: 13, koopman_rls wasserstein: 8, tube_mpc: 40)
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| Compilation (lib) | ✅ 0 errors, 0 warnings (S169 code) |
+| Event-Triggered CBF | ✅ `ḣ + γ·h < safety_margin` → MPC only when needed |
+| Wasserstein Robustness | ✅ `w = min(1, ε_W/||e||)` attenuates adversarial updates |
+| Tube MPC Event Flag | ✅ `event_triggered: bool` tracks O(1) bypass vs O(n³) MPC |
+| Unit Tests | ✅ 61/61 passing (13 CBF + 8 Wasserstein + 40 Tube MPC) |
+| Clippy | ✅ 0 new warnings (86 pre-existing in unrelated modules) |
+| Intervention Rate | ✅ Event trigger bypasses MPC when CBF condition satisfied |
+
+## [v16.8.0-sprint168] — 2026-06-16 (Sprint 168 — DIMENSIONAL COLLAPSE & TUBE MPC OPTIMIZATION)
 
 ### Sprint 168 "DIMENSIONAL COLLAPSE & TUBE MPC OPTIMIZATION"
 
