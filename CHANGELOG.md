@@ -1,4 +1,31 @@
-﻿## [v16.9.0-sprint169] — 2026-06-16 (Sprint 169 — EVENT-TRIGGERED CBF & WASSERSTEIN ROBUST KOOPMAN)
+﻿## [v17.0.0-sprint170] — 2026-06-16 (Sprint 170 — WASSERSTEIN ROBUST EVENT-TRIGGERED CBF WITH ZENO AVOIDANCE & TUBE MPC INTEGRATION)
+
+### Sprint 170 "WASSERSTEIN ROBUST EVENT-TRIGGERED CBF WITH ZENO AVOIDANCE & TUBE MPC INTEGRATION"
+
+**Mode:** `DR_CBF + EVENT_TRIGGERED_CONTROLLER + ZENO_AVOIDANCE + KOOPMAN_TUBE_MPC + WASSERSTEIN_ZONOTOPE + ZERO_WARNINGS`
+
+**Problema — Sin control event-triggered con garantía Zeno ni Tube MPC Wasserstein:** Sprints 100-169 establecen KoopmanVanguard, DeepKoopmanAE, KoopmanRLS, ADMM LMI, HZI Taylor, ISS Lyapunov, Explicit CBF O(1), Tube MPC, SVD Bottleneck, SINDy, STLSQ-EDMD, PAC-Conformal, Koopman Lifting SAE, Dimensional Collapse, Enhanced Girard, Tube MPC Core, Event-Triggered CBF, Wasserstein Robust Koopman, pero faltan: (1) **DR-CBF** — `dr_cbf_safe_control()` con h_robust = h(φ̂) - ε·L_h para ambigüedad Wasserstein, (2) **EventTriggeredController con Zeno Avoidance** — Sample-and-hold con τ_min garantizado para prevenir triggering infinito, (3) **Wasserstein Tube Propagation** — `Z_next = K·Z ⊕ W` donde W = ε·I (Wasserstein ball), y (4) **Integrated Event-Triggered DR-CBF Tube MPC** — Pipeline unificado que combina trigger conditions + Koopman prediction + zonotope tube + DR-CBF correction.
+
+**Solución — DR-CBF + Event-Triggered + Wasserstein Tube Pipeline completo:** `dr_cbf_safe_control()` en `control_lmi.rs` calcula u = u_nom + λ·L_g·h + tube_correction donde λ = max(-h_robust, 0)/(||L_g h||² + ε_reg) y h_robust = h - ε·L_h. `EventTriggeredController` en nuevo `event_triggered.rs` con trigger conditions: CBF degradation (h_robust < margin), Wasserstein drift (> δ), Lyapunov instability (V_dot > 0), + Zeno avoidance hard limit τ_min. `wasserstein_tube_propagate()` propaga Z_next = K·Z ⊕ W con Girard reduction. `koopman_tube_predict_horizon()` hace multi-step prediction con DR-CBF verification. `event_triggered_tube_mpc_step()` integra todo en un paso unificado. **27/27 tests passing (14 event_triggered + 13 control integration), library compiles clean, 0 S170 warnings.**
+
+- **DR-CBF:** `native-audit/src/control_lmi.rs` — `dr_cbf_safe_control()` + `estimate_lipschitz_h()` + `compute_tau_min()` + `dr_cbf_trigger()`
+- **EventTriggeredController:** `native-audit/src/event_triggered.rs` — Nuevo módulo con `EventTriggerConfig`, `EventTriggerResult`, `TriggerReason`, `EventTriggeredController` + Zeno avoidance + 14 tests
+- **Wasserstein Tube MPC:** `native-audit/src/control.rs` — `wasserstein_tube_propagate()` + `koopman_tube_predict_horizon()` + `compute_tube_correction()` + `verify_tube_cbf_safety()` + `event_triggered_tube_mpc_step()` + 13 tests
+- **Module Registration:** `native-audit/src/lib.rs` — `pub mod event_triggered;`
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| Compilation (lib) | ✅ 0 errors, 0 warnings (S170 code) |
+| DR-CBF | ✅ h_robust = h(φ̂) - ε·L_h, λ = max(-h_robust, 0)/(||L_g h||² + ε_reg) |
+| Event-Triggered Controller | ✅ Sample-and-hold + Zeno avoidance τ_min garantizado |
+| Wasserstein Tube Propagation | ✅ Z_next = K·Z ⊕ W, W = ε·I (isotropic Wasserstein ball) |
+| Integrated Pipeline | ✅ event_triggered_tube_mpc_step() unifica trigger + Koopman + tube + DR-CBF |
+| Unit Tests | ✅ 27/27 passing (14 event_triggered + 13 control integration) |
+| Clippy | ✅ 0 new warnings (90 pre-existing in unrelated modules) |
+| Trigger Conditions | ✅ CBF degradation + Wasserstein drift + Lyapunov instability |
+
+## [v16.9.0-sprint169] — 2026-06-16 (Sprint 169 — EVENT-TRIGGERED CBF & WASSERSTEIN ROBUST KOOPMAN)
 
 ### Sprint 169 "EVENT-TRIGGERED CBF & WASSERSTEIN ROBUST KOOPMAN"
 

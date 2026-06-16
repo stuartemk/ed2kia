@@ -3011,6 +3011,388 @@ pub fn tube_mpc_core(
 
 // ─── Unit Tests ────────────────────────────────────────────────────────────
 
+// ---------------------------------------------------------------------------
+// Sprint 170 — Koopman + Tube MPC + Zonotope Integration (PASO C)
+// ---------------------------------------------------------------------------
+
+/// Result of Wasserstein-robust zonotope tube propagation.
+#[derive(Debug, Clone)]
+pub struct WassersteinTubeResult {
+    /// Propagated zonotope after one Koopman step + Wasserstein disturbance.
+    pub zonotope_next: Zonotope,
+    /// Nominal predicted state: φ_nom = K · φ_core.
+    pub phi_nom: Tensor,
+    /// Tube radius (max width of zonotope).
+    pub tube_radius: f32,
+    /// Number of generators after Girard reduction.
+    pub num_gens: usize,
+    /// Wasserstein drift bound: ε · L_h (conservative safety margin).
+    pub wasserstein_margin: f32,
+    /// DR-CBF safety margin: h_robust = h_nom - wasserstein_margin.
+    pub dr_cbf_margin: f32,
+    /// True if the entire zonotope tube satisfies DR-CBF.
+    pub tube_safe: bool,
+}
+
+impl std::fmt::Display for WassersteinTubeResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "WassersteinTube[r={:.4}, gens={}, w_margin={:.4}, dr_cbf={:.4}, safe={}]",
+            self.tube_radius, self.num_gens, self.wasserstein_margin, self.dr_cbf_margin, self.tube_safe,
+        )
+    }
+}
+
+/// Propagate a zonotope tube through one Koopman step with Wasserstein-bounded
+/// disturbance, then apply Girard reduction for tight over-approximation.
+///
+/// **Algorithm:**
+/// 1. Nominal prediction: `φ_nom = K · φ_core`
+/// 2. Linear propagation: `Z' = K · Z`
+/// 3. Wasserstein disturbance: `W = {0} ⊕ ε·B` (Wasserstein ball)
+/// 4. Minkowski sum: `Z'' = Z' ⊕ W`
+/// 5. Girard reduction: `Z_reduced = girard_reduce(Z'', max_gens)`
+/// 6. DR-CBF verification: `h_robust = h_nom - ε·L_h - r_tube·||∇h||`
+///
+/// # Arguments
+/// * `phi_core` — Current core state `[core_dim]` or `[core_dim, 1]`.
+/// * `k_operator` — Koopman operator K `[core_dim, core_dim]`.
+/// * `zonotope` — Current uncertainty zonotope in core space.
+/// * `wasserstein_epsilon` — Wasserstein ambiguity radius ε ≥ 0.
+/// * `h_nom` — Nominal barrier function value h(φ̂).
+/// * `lip_h` — Lipschitz constant of h (gradient norm bound).
+/// * `max_gens` — Maximum generators after Girard reduction.
+///
+/// # Returns
+/// `WassersteinTubeResult` with propagated tube and DR-CBF safety certificate.
+pub fn wasserstein_tube_propagate(
+    phi_core: &Tensor,
+    k_operator: &Tensor,
+    zonotope: &Zonotope,
+    wasserstein_epsilon: f32,
+    h_nom: f32,
+    lip_h: f32,
+    max_gens: usize,
+) -> Result<WassersteinTubeResult> {
+    let device = phi_core.device();
+    let core_dim = k_operator.dim(0)?;
+
+    // 1. Nominal prediction: φ_nom = K · φ_core
+    let phi_flat = phi_core.flatten_all()?;
+    let phi_nom = k_operator.matmul(&phi_flat.reshape((core_dim, 1))?)?;
+
+    // 2. Linear propagation: Z' = K · Z
+    let z_propagated = zonotope.linear_image(k_operator)?;
+
+    // 3. Wasserstein disturbance: W = {0} ⊕ ε·I (isotropic Wasserstein ball)
+    let w_center = Tensor::zeros((core_dim, 1), DType::F32, device)?;
+    let w_scale = Tensor::new(wasserstein_epsilon, device)?;
+    let w_gens = Tensor::eye(core_dim, DType::F32, device)?
+        .broadcast_mul(&w_scale)?;
+    let w_zono = Zonotope::new(w_center, w_gens);
+
+    // 4. Minkowski sum: Z'' = Z' ⊕ W
+    let z_with_disturbance = z_propagated.minkowski_sum(&w_zono)?;
+
+    // 5. Girard reduction: Z_reduced = girard_reduce(Z'', max_gens)
+    let z_reduced = z_with_disturbance.reduce(max_gens)?;
+
+    // 6. Compute tube radius and DR-CBF margin
+    let tube_radius = z_reduced.radius()?;
+    let num_gens = z_reduced.generators.dim(1).unwrap_or(0);
+
+    // Wasserstein margin: ε · L_h
+    let wasserstein_margin = wasserstein_epsilon * lip_h;
+
+    // DR-CBF margin: h_robust = h_nom - ε·L_h - r_tube·L_h
+    // The tube radius adds worst-case deviation within the zonotope.
+    let dr_cbf_margin = h_nom - wasserstein_margin - tube_radius * lip_h;
+    let tube_safe = dr_cbf_margin >= 0.0;
+
+    Ok(WassersteinTubeResult {
+        zonotope_next: z_reduced,
+        phi_nom,
+        tube_radius,
+        num_gens,
+        wasserstein_margin,
+        dr_cbf_margin,
+        tube_safe,
+    })
+}
+
+/// Result of multi-step Koopman tube prediction with DR-CBF verification.
+#[derive(Debug, Clone)]
+pub struct KoopmanTubePrediction {
+    /// Sequence of nominal predictions: [φ_1, φ_2, ..., φ_H].
+    pub phi_trajectory: Vec<Tensor>,
+    /// Sequence of zonotope tubes: [Z_1, Z_2, ..., Z_H].
+    pub zonotope_trajectory: Vec<Zonotope>,
+    /// Sequence of tube radii: [r_1, r_2, ..., r_H].
+    pub tube_radii: Vec<f32>,
+    /// Minimum DR-CBF margin across all steps.
+    pub min_dr_cbf_margin: f32,
+    /// True if all steps satisfy DR-CBF.
+    pub all_safe: bool,
+    /// Step index where safety first violated (None if all safe).
+    pub first_violation_step: Option<usize>,
+}
+
+impl std::fmt::Display for KoopmanTubePrediction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "KoopmanTubePred[H={}, min_margin={:.4}, all_safe={}, first_viol={:?}]",
+            self.phi_trajectory.len(),
+            self.min_dr_cbf_margin,
+            self.all_safe,
+            self.first_violation_step,
+        )
+    }
+}
+
+/// Multi-step Koopman tube prediction with DR-CBF verification at each step.
+///
+/// Propagates the zonotope tube through `horizon` Koopman steps, applying
+/// Wasserstein-bounded disturbance and Girard reduction at each step.
+/// Verifies DR-CBF safety at each step using the accumulated tube radius.
+///
+/// **Algorithm:**
+/// For k = 1 to H:
+///   1. φ_k = K · φ_{k-1}
+///   2. Z_k = K · Z_{k-1} ⊕ W
+///   3. Z_k = girard_reduce(Z_k, max_gens)
+///   4. h_robust_k = h_nom - ε·L_h - r_k·L_h
+///   5. If h_robust_k < 0: record violation
+///
+/// # Arguments
+/// * `phi_core` — Initial core state.
+/// * `k_operator` — Koopman operator K.
+/// * `zonotope` — Initial uncertainty zonotope.
+/// * `horizon` — Prediction horizon H.
+/// * `wasserstein_epsilon` — Wasserstein ambiguity radius.
+/// * `h_nom` — Nominal barrier function value.
+/// * `lip_h` — Lipschitz constant of h.
+/// * `max_gens` — Maximum generators after Girard reduction.
+///
+/// # Returns
+/// `KoopmanTubePrediction` with full trajectory and safety certificate.
+pub fn koopman_tube_predict_horizon(
+    phi_core: &Tensor,
+    k_operator: &Tensor,
+    zonotope: &Zonotope,
+    horizon: usize,
+    wasserstein_epsilon: f32,
+    h_nom: f32,
+    lip_h: f32,
+    max_gens: usize,
+) -> Result<KoopmanTubePrediction> {
+    let mut phi_trajectory = Vec::with_capacity(horizon);
+    let mut zonotope_trajectory = Vec::with_capacity(horizon);
+    let mut tube_radii = Vec::with_capacity(horizon);
+    let mut min_dr_cbf_margin = f32::MAX;
+    let mut all_safe = true;
+    let mut first_violation_step: Option<usize> = None;
+
+    let mut current_phi = phi_core.clone();
+    let mut current_zono = zonotope.clone();
+
+    for step in 0..horizon {
+        // Propagate one step
+        let result = wasserstein_tube_propagate(
+            &current_phi,
+            k_operator,
+            &current_zono,
+            wasserstein_epsilon,
+            h_nom,
+            lip_h,
+            max_gens,
+        )?;
+
+        phi_trajectory.push(result.phi_nom.clone());
+        zonotope_trajectory.push(result.zonotope_next.clone());
+        tube_radii.push(result.tube_radius);
+
+        if result.dr_cbf_margin < min_dr_cbf_margin {
+            min_dr_cbf_margin = result.dr_cbf_margin;
+        }
+
+        if !result.tube_safe && first_violation_step.is_none() {
+            all_safe = false;
+            first_violation_step = Some(step);
+        }
+
+        // Update state for next step
+        current_phi = result.phi_nom;
+        current_zono = result.zonotope_next;
+    }
+
+    Ok(KoopmanTubePrediction {
+        phi_trajectory,
+        zonotope_trajectory,
+        tube_radii,
+        min_dr_cbf_margin,
+        all_safe,
+        first_violation_step,
+    })
+}
+
+/// Compute conservative tube correction for DR-CBF control law.
+///
+/// Given a zonotope tube, compute the worst-case correction vector
+/// that ensures DR-CBF safety for all states within the tube.
+///
+/// **Formula:**
+/// ```math
+/// u_tube = -r_tube · (L_g h) / (||L_g h||² + ε_reg)
+/// ```
+/// where `r_tube` is the zonotope radius (conservative bound).
+///
+/// This correction is added to the DR-CBF control input to guarantee
+/// robustness against all perturbations within the zonotope tube.
+///
+/// # Arguments
+/// * `zonotope` — Current uncertainty zonotope.
+/// * `lg_h` — Lie derivative L_g h. Shape: [m] or [1, m].
+///
+/// # Returns
+/// Conservative tube correction vector `u_tube`.
+pub fn compute_tube_correction(zonotope: &Zonotope, lg_h: &Tensor) -> Result<Tensor> {
+    let tube_radius = zonotope.radius()?;
+    let eps_reg = 1e-6_f32;
+
+    // Compute correction magnitude
+    let lg_norm_sq = lg_h.sqr()?.sum_all()?.to_scalar::<f32>()?;
+    let lambda = -tube_radius / (lg_norm_sq + eps_reg);
+
+    let lambda_tensor = Tensor::from_vec(vec![lambda], 1, lg_h.device())?;
+    let correction = lg_h.broadcast_mul(&lambda_tensor)?;
+
+    Ok(correction)
+}
+
+/// Verify that an entire zonotope tube satisfies DR-CBF robustly.
+///
+/// **Certificate:** For all φ in Z:
+/// ```math
+/// h_robust(φ) = h(φ̂) - ε·L_h - r·L_h ≥ 0
+/// ```
+/// where φ̂ = zonotope center, r = zonotope radius.
+///
+/// This is a rigorous worst-case guarantee: if the certificate holds,
+/// then every point in the zonotope satisfies the robust barrier condition.
+///
+/// # Arguments
+/// * `zonotope` — Uncertainty zonotope in state space.
+/// * `h_center` — Barrier function value at zonotope center.
+/// * `wasserstein_epsilon` — Wasserstein ambiguity radius.
+/// * `lip_h` — Lipschitz constant of h.
+///
+/// # Returns
+/// `true` if the entire tube is certified safe under DR-CBF.
+pub fn verify_tube_cbf_safety(
+    zonotope: &Zonotope,
+    h_center: f32,
+    wasserstein_epsilon: f32,
+    lip_h: f32,
+) -> bool {
+    let tube_radius = zonotope.radius().unwrap_or(f32::MAX);
+    let h_robust = h_center - wasserstein_epsilon * lip_h - tube_radius * lip_h;
+    h_robust >= 0.0
+}
+
+/// Integrated Event-Triggered DR-CBF Tube MPC step.
+///
+/// Combines EventTriggeredController + Wasserstein tube propagation +
+/// DR-CBF control into a single unified step for edge deployment.
+///
+/// **Algorithm:**
+/// 1. Check event trigger (CBF degradation, Wasserstein drift, Lyapunov).
+/// 2. If triggered:
+///    a. Propagate Wasserstein tube one step.
+///    b. Compute tube correction.
+///    c. Compute DR-CBF safe control with tube correction.
+///    d. Update sample-and-hold.
+/// 3. If not triggered: hold last control input.
+/// 4. Enforce Zeno avoidance (τ_min).
+///
+/// # Arguments
+/// * `controller` — EventTriggeredController (mutable).
+/// * `current_step` — Current time step index.
+/// * `phi_core` — Current core state.
+/// * `k_operator` — Koopman operator K.
+/// * `zonotope` — Current uncertainty zonotope.
+/// * `u_nom_fn` — Closure computing nominal control.
+/// * `h_val` — Current barrier function value.
+/// * `v_dot` — Current Lyapunov derivative.
+/// * `v_val` — Current Lyapunov value.
+/// * `wasserstein_epsilon` — Wasserstein ambiguity radius.
+/// * `lip_h` — Lipschitz constant of h.
+/// * `max_gens` — Maximum generators after Girard reduction.
+///
+/// # Returns
+/// Tuple of `(EventTriggerResult, WassersteinTubeResult)`.
+pub fn event_triggered_tube_mpc_step<F>(
+    controller: &mut crate::event_triggered::EventTriggeredController,
+    current_step: usize,
+    phi_core: &Tensor,
+    k_operator: &Tensor,
+    zonotope: &Zonotope,
+    u_nom_fn: F,
+    h_val: f32,
+    v_dot: f32,
+    v_val: f32,
+    wasserstein_epsilon: f32,
+    lip_h: f32,
+    max_gens: usize,
+) -> Result<(crate::event_triggered::EventTriggerResult, WassersteinTubeResult)>
+where
+    F: FnOnce() -> Result<Tensor>,
+{
+    // Define control computation that includes tube correction + DR-CBF
+    let k_op = k_operator.clone();
+    let zono = zonotope.clone();
+    let w_eps = wasserstein_epsilon;
+    let l_h = lip_h;
+    let m_gens = max_gens;
+
+    let compute_control = move || -> Result<Tensor> {
+        // Propagate tube one step
+        let phi = phi_core.clone();
+        let result = wasserstein_tube_propagate(
+            &phi, &k_op, &zono, w_eps, h_val, l_h, m_gens,
+        )?;
+
+        // Compute tube correction
+        let u_nom_inner = u_nom_fn()?;
+        let lg_h = phi_core.flatten_all()?;
+        let tube_corr = compute_tube_correction(&result.zonotope_next, &lg_h)?;
+
+        // DR-CBF safe control with tube correction
+        crate::control_lmi::dr_cbf_safe_control(
+            &u_nom_inner, h_val, &lg_h, w_eps, l_h, Some(&tube_corr),
+        )
+    };
+
+    // Event-triggered step
+    let trigger_result = controller.step(
+        current_step,
+        h_val,
+        v_dot,
+        v_val,
+        phi_core,
+        compute_control,
+    )?;
+
+    // Compute tube result for current state
+    let tube_result = wasserstein_tube_propagate(
+        phi_core, k_operator, zonotope,
+        wasserstein_epsilon, h_val, lip_h, max_gens,
+    )?;
+
+    Ok((trigger_result, tube_result))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -3889,6 +4271,355 @@ mod tests {
         }
 
         assert!(max_radius > 0.0);
+
+        Ok(())
+    }
+
+    // ── Sprint 170 (v17.0.0) — Koopman + Tube MPC + Zonotope Integration Tests ──
+
+    #[test]
+    fn test_wasserstein_tube_propagate_safe() -> Result<()> {
+        let device = Device::Cpu;
+        let core_dim = 16;
+
+        // Identity Koopman operator (stable system)
+        let k = Tensor::eye(core_dim, DType::F32, &device)?;
+
+        // Small zonotope around zero
+        let center = Tensor::zeros((core_dim, 1), DType::F32, &device)?;
+        let gens = Tensor::eye(core_dim, DType::F32, &device)?
+            .broadcast_mul(&Tensor::new(0.01f32, &device)?)?;
+        let zono = Zonotope::new(center, gens);
+
+        // State near center
+        let phi = Tensor::zeros((core_dim, 1), DType::F32, &device)?;
+
+        let result = wasserstein_tube_propagate(
+            &phi, &k, &zono,
+            0.05,  // wasserstein_epsilon
+            1.0,   // h_nom (safe)
+            0.5,   // lip_h
+            32,    // max_gens
+        )?;
+
+        assert!(result.tube_safe, "Tube should be safe with h_nom=1.0");
+        assert!(result.dr_cbf_margin > 0.0);
+        assert!(result.tube_radius > 0.0);
+        assert!(result.num_gens <= 32);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_wasserstein_tube_propagate_unsafe() -> Result<()> {
+        let device = Device::Cpu;
+        let core_dim = 16;
+
+        let k = Tensor::eye(core_dim, DType::F32, &device)?;
+        let center = Tensor::zeros((core_dim, 1), DType::F32, &device)?;
+        let gens = Tensor::eye(core_dim, DType::F32, &device)?
+            .broadcast_mul(&Tensor::new(0.1f32, &device)?)?;
+        let zono = Zonotope::new(center, gens);
+        let phi = Tensor::zeros((core_dim, 1), DType::F32, &device)?;
+
+        let result = wasserstein_tube_propagate(
+            &phi, &k, &zono,
+            0.5,   // large wasserstein_epsilon
+            0.01,  // h_nom near boundary
+            1.0,   // lip_h
+            32,    // max_gens
+        )?;
+
+        assert!(!result.tube_safe, "Tube should be unsafe with large epsilon");
+        assert!(result.dr_cbf_margin < 0.0);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_wasserstein_tube_display() -> Result<()> {
+        let device = Device::Cpu;
+        let core_dim = 8;
+        let k = Tensor::eye(core_dim, DType::F32, &device)?;
+        let center = Tensor::zeros((core_dim, 1), DType::F32, &device)?;
+        let gens = Tensor::eye(core_dim, DType::F32, &device)?
+            .broadcast_mul(&Tensor::new(0.01f32, &device)?)?;
+        let zono = Zonotope::new(center, gens);
+        let phi = Tensor::zeros((core_dim, 1), DType::F32, &device)?;
+
+        let result = wasserstein_tube_propagate(
+            &phi, &k, &zono, 0.05, 1.0, 0.5, 16,
+        )?;
+
+        let display = format!("{}", result);
+        assert!(display.contains("WassersteinTube"));
+        assert!(display.contains("safe="));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_koopman_tube_predict_horizon_safe() -> Result<()> {
+        let device = Device::Cpu;
+        let core_dim = 16;
+        let horizon = 5;
+
+        // Stable Koopman: 0.9 * I (contracting)
+        let k = Tensor::eye(core_dim, DType::F32, &device)?
+            .broadcast_mul(&Tensor::new(0.9f32, &device)?)?;
+
+        let center = Tensor::zeros((core_dim, 1), DType::F32, &device)?;
+        let gens = Tensor::eye(core_dim, DType::F32, &device)?
+            .broadcast_mul(&Tensor::new(0.01f32, &device)?)?;
+        let zono = Zonotope::new(center, gens);
+        let phi = Tensor::zeros((core_dim, 1), DType::F32, &device)?;
+
+        let result = koopman_tube_predict_horizon(
+            &phi, &k, &zono,
+            horizon,
+            0.05,  // wasserstein_epsilon
+            2.0,   // h_nom
+            0.5,   // lip_h
+            32,    // max_gens
+        )?;
+
+        assert_eq!(result.phi_trajectory.len(), horizon);
+        assert_eq!(result.zonotope_trajectory.len(), horizon);
+        assert_eq!(result.tube_radii.len(), horizon);
+        assert!(result.all_safe, "All steps should be safe");
+        assert!(result.first_violation_step.is_none());
+        assert!(result.min_dr_cbf_margin > 0.0);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_koopman_tube_predict_horizon_violation() -> Result<()> {
+        let device = Device::Cpu;
+        let core_dim = 16;
+        let horizon = 10;
+
+        // Expanding Koopman: 1.1 * I (unstable)
+        let k = Tensor::eye(core_dim, DType::F32, &device)?
+            .broadcast_mul(&Tensor::new(1.1f32, &device)?)?;
+
+        let center = Tensor::zeros((core_dim, 1), DType::F32, &device)?;
+        let gens = Tensor::eye(core_dim, DType::F32, &device)?
+            .broadcast_mul(&Tensor::new(0.01f32, &device)?)?;
+        let zono = Zonotope::new(center, gens);
+        let phi = Tensor::zeros((core_dim, 1), DType::F32, &device)?;
+
+        let result = koopman_tube_predict_horizon(
+            &phi, &k, &zono,
+            horizon,
+            0.1,   // wasserstein_epsilon
+            0.1,   // small h_nom
+            1.0,   // lip_h
+            32,    // max_gens
+        )?;
+
+        assert_eq!(result.phi_trajectory.len(), horizon);
+        // With expanding dynamics + small h_nom, safety should eventually be violated
+        assert!(result.first_violation_step.is_some() || result.min_dr_cbf_margin < 0.0);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_koopman_tube_predict_display() -> Result<()> {
+        let device = Device::Cpu;
+        let core_dim = 8;
+        let k = Tensor::eye(core_dim, DType::F32, &device)?;
+        let center = Tensor::zeros((core_dim, 1), DType::F32, &device)?;
+        let gens = Tensor::eye(core_dim, DType::F32, &device)?
+            .broadcast_mul(&Tensor::new(0.01f32, &device)?)?;
+        let zono = Zonotope::new(center, gens);
+        let phi = Tensor::zeros((core_dim, 1), DType::F32, &device)?;
+
+        let result = koopman_tube_predict_horizon(
+            &phi, &k, &zono, 3, 0.05, 1.0, 0.5, 16,
+        )?;
+
+        let display = format!("{}", result);
+        assert!(display.contains("KoopmanTubePred"));
+        assert!(display.contains("all_safe="));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_compute_tube_correction() -> Result<()> {
+        let device = Device::Cpu;
+        let core_dim = 16;
+
+        let center = Tensor::zeros((core_dim, 1), DType::F32, &device)?;
+        let gens = Tensor::eye(core_dim, DType::F32, &device)?
+            .broadcast_mul(&Tensor::new(0.1f32, &device)?)?;
+        let zono = Zonotope::new(center, gens);
+
+        let lg_h = Tensor::ones((core_dim,), DType::F32, &device)?;
+
+        let correction = compute_tube_correction(&zono, &lg_h)?;
+        assert_eq!(correction.shape().dims(), &[core_dim]);
+
+        // Correction should be non-zero when tube has radius
+        let norm = correction.sqr()?.sum_all()?.to_scalar::<f32>()?;
+        assert!(norm > 0.0, "Correction should be non-zero");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_compute_tube_correction_zero_radius() -> Result<()> {
+        let device = Device::Cpu;
+        let core_dim = 8;
+
+        // Point zonotope (zero radius)
+        let center = Tensor::zeros((core_dim, 1), DType::F32, &device)?;
+        let gens = Tensor::zeros((0, core_dim), DType::F32, &device)?;
+        let zono = Zonotope::new(center, gens);
+
+        let lg_h = Tensor::ones((core_dim,), DType::F32, &device)?;
+
+        let correction = compute_tube_correction(&zono, &lg_h)?;
+        // With zero radius, correction should be zero
+        let norm = correction.sqr()?.sum_all()?.to_scalar::<f32>()?;
+        assert!(norm < 1e-10, "Correction should be ~zero for point zonotope");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_verify_tube_cbf_safety_safe() -> Result<()> {
+        let device = Device::Cpu;
+        let core_dim = 16;
+
+        let center = Tensor::zeros((core_dim, 1), DType::F32, &device)?;
+        let gens = Tensor::eye(core_dim, DType::F32, &device)?
+            .broadcast_mul(&Tensor::new(0.01f32, &device)?)?;
+        let zono = Zonotope::new(center, gens);
+
+        let safe = verify_tube_cbf_safety(&zono, 1.0, 0.05, 0.5);
+        assert!(safe, "Should be safe with large h_center");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_verify_tube_cbf_safety_unsafe() -> Result<()> {
+        let device = Device::Cpu;
+        let core_dim = 16;
+
+        let center = Tensor::zeros((core_dim, 1), DType::F32, &device)?;
+        let gens = Tensor::eye(core_dim, DType::F32, &device)?
+            .broadcast_mul(&Tensor::new(0.5f32, &device)?)?;
+        let zono = Zonotope::new(center, gens);
+
+        let safe = verify_tube_cbf_safety(&zono, 0.01, 0.5, 1.0);
+        assert!(!safe, "Should be unsafe with large tube + small h_center");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_event_triggered_tube_mpc_step() -> Result<()> {
+        let device = Device::Cpu;
+        let core_dim = 16;
+
+        let k = Tensor::eye(core_dim, DType::F32, &device)?;
+        let center = Tensor::zeros((core_dim, 1), DType::F32, &device)?;
+        let gens = Tensor::eye(core_dim, DType::F32, &device)?
+            .broadcast_mul(&Tensor::new(0.01f32, &device)?)?;
+        let zono = Zonotope::new(center, gens);
+        let phi = Tensor::zeros((core_dim, 1), DType::F32, &device)?;
+
+        let config = crate::event_triggered::EventTriggerConfig::default();
+        let mut controller = crate::event_triggered::EventTriggeredController::new(config, &device);
+
+        let u_nom_fn = || -> Result<Tensor> {
+            Ok(Tensor::zeros((core_dim,), DType::F32, &device)?)
+        };
+
+        let (trigger_result, tube_result) = event_triggered_tube_mpc_step(
+            &mut controller,
+            0,  // current_step
+            &phi, &k, &zono,
+            u_nom_fn,
+            1.0,   // h_val
+            -0.1,  // v_dot (stable)
+            0.5,   // v_val
+            0.05,  // wasserstein_epsilon
+            0.5,   // lip_h
+            32,    // max_gens
+        )?;
+
+        assert!(trigger_result.triggered, "Initial step should trigger");
+        assert!(tube_result.tube_safe);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_wasserstein_margin_scales_with_epsilon() -> Result<()> {
+        let device = Device::Cpu;
+        let core_dim = 16;
+
+        let k = Tensor::eye(core_dim, DType::F32, &device)?;
+        let center = Tensor::zeros((core_dim, 1), DType::F32, &device)?;
+        let gens = Tensor::eye(core_dim, DType::F32, &device)?
+            .broadcast_mul(&Tensor::new(0.01f32, &device)?)?;
+        let zono = Zonotope::new(center, gens);
+        let phi = Tensor::zeros((core_dim, 1), DType::F32, &device)?;
+
+        let result_small = wasserstein_tube_propagate(
+            &phi, &k, &zono, 0.01, 1.0, 0.5, 32,
+        )?;
+        let result_large = wasserstein_tube_propagate(
+            &phi, &k, &zono, 0.5, 1.0, 0.5, 32,
+        )?;
+
+        // Larger epsilon -> larger margin -> smaller dr_cbf_margin
+        assert!(
+            result_large.wasserstein_margin > result_small.wasserstein_margin,
+            "Wasserstein margin should scale with epsilon"
+        );
+        assert!(
+            result_large.dr_cbf_margin < result_small.dr_cbf_margin,
+            "DR-CBF margin should decrease with larger epsilon"
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_tube_radius_grows_with_horizon() -> Result<()> {
+        let device = Device::Cpu;
+        let core_dim = 16;
+        let horizon = 10;
+
+        let k = Tensor::eye(core_dim, DType::F32, &device)?;
+        // Start with tiny point zonotope (single small generator per dimension)
+        let center = Tensor::zeros((core_dim, 1), DType::F32, &device)?;
+        let gens = Tensor::eye(core_dim, DType::F32, &device)?
+            .broadcast_mul(&Tensor::new(0.001f32, &device)?)?;
+        let zono = Zonotope::new(center, gens);
+        let phi = Tensor::zeros((core_dim, 1), DType::F32, &device)?;
+
+        let result = koopman_tube_predict_horizon(
+            &phi, &k, &zono,
+            horizon,
+            0.1,   // wasserstein_epsilon (adds disturbance each step)
+            2.0,   // h_nom
+            0.5,   // lip_h
+            32,    // max_gens
+        )?;
+
+        // Tube radius should grow over time due to accumulated disturbance
+        assert!(result.tube_radii.len() == horizon);
+        assert!(
+            result.tube_radii[horizon - 1] > result.tube_radii[0],
+            "Tube radius should grow over horizon"
+        );
 
         Ok(())
     }

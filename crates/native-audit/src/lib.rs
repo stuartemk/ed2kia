@@ -30,6 +30,8 @@ pub mod cbf_mpc;
 pub mod control;
 // Sprint 166 — Fast LMI/ADMM Certificates + ISS Lyapunov + Contraction Metrics
 pub mod control_lmi;
+// Sprint 170 — Event-Triggered Controller with Zeno Avoidance
+pub mod event_triggered;
 pub mod deep_koopman;
 // Sprint 166 — Adaptive RLS Koopman with Forgetting Factor + Adaptive SVD
 pub mod koopman_rls;

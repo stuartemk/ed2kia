@@ -859,6 +859,117 @@ pub fn cbf_lyapunov_safe_control(
     }
 }
 
+/// Distributionally Robust CBF (DR-CBF) with Wasserstein ambiguity set.
+///
+/// Given approximate Koopman system: φ_{t+1} ≈ K φ_t + B u + w, where w ~ Wasserstein ball.
+///
+/// **Robust barrier condition:**
+/// ```math
+/// h_{robust}(φ̂) = h(φ̂) - ε · L_h ≥ 0
+/// ```
+/// where `L_h = Lip(h)` (Lipschitz constant of h, estimated via gradient norm bound).
+///
+/// **Explicit O(1) control law:**
+/// ```math
+/// λ = max(-h_robust, 0) / (||L_g h||² + ε_reg)
+/// u = u_nom + λ · L_g h(φ̂) + tube_correction
+/// ```
+///
+/// # Arguments
+/// * `u_nom` - Nominal control input. Shape: [m] or [1, m].
+/// * `h_nom` - Nominal barrier function value h(φ̂). Positive = safe.
+/// * `lg_h` - Lie derivative L_g h(φ̂). Shape: [m] or [1, m].
+/// * `wasserstein_epsilon` - Wasserstein ambiguity radius ε ≥ 0.
+/// * `lip_h` - Lipschitz constant of h (gradient norm bound).
+/// * `tube_correction` - Optional conservative tube shift from zonotope propagation.
+///
+/// # Returns
+/// Robustly safe control input `u_robust`.
+pub fn dr_cbf_safe_control(
+    u_nom: &Tensor,
+    h_nom: f32,
+    lg_h: &Tensor,
+    wasserstein_epsilon: f32,
+    lip_h: f32,
+    tube_correction: Option<&Tensor>,
+) -> Result<Tensor> {
+    let eps_reg = 1e-6_f32;
+    // Robust barrier: h_robust = h_nom - ε · L_h
+    let h_robust = h_nom - wasserstein_epsilon * lip_h;
+    // Correction magnitude: λ = max(-h_robust, 0) / (||Lg_h||² + ε_reg)
+    let lg_norm_sq = lg_h.sqr()?.sum_all()?.to_scalar::<f32>()?;
+    let lambda = (-h_robust).max(0.0) / (lg_norm_sq + eps_reg);
+
+    let lambda_tensor = Tensor::from_vec(vec![lambda], 1, lg_h.device())?;
+    let correction = lg_h.broadcast_mul(&lambda_tensor)?;
+    let mut u = u_nom.add(&correction)?;
+
+    // Add conservative tube shift if provided
+    if let Some(tube) = tube_correction {
+        u = u.add(tube)?;
+    }
+    Ok(u)
+}
+
+/// Estimate Lipschitz constant of barrier function h via gradient norm bound.
+///
+/// For h(φ) = φᵀ Q φ - 1 (quadratic barrier), Lip(h) = 2||Q||·||φ||.
+/// This function computes the gradient norm ||∇h(φ)|| as a Lipschitz proxy.
+///
+/// # Arguments
+/// * `grad_h` - Gradient of h at current state. Shape: [d] or [1, d].
+///
+/// # Returns
+/// Estimated Lipschitz constant L_h = ||∇h||₂.
+pub fn estimate_lipschitz_h(grad_h: &Tensor) -> Result<f32> {
+    let norm = grad_h.sqr()?.sum_all()?.to_scalar::<f32>()?;
+    Ok(norm.sqrt())
+}
+
+/// Compute minimum inter-event time bound (Zeno avoidance).
+///
+/// **Zeno-free guarantee:**
+/// ```math
+/// τ_min ≈ α · h_min / (L_f + L_g · ||u||_max + β)
+/// ```
+/// where α, β are class-K decrease conditions, L_f = Lip(f), L_g = Lip(g).
+///
+/// # Arguments
+/// * `alpha` - Class-K coefficient α > 0.
+/// * `h_min` - Minimum safe barrier value h_min > 0.
+/// * `l_f` - Lipschitz constant of nominal dynamics f.
+/// * `l_g` - Lipschitz constant of control matrix g.
+/// * `u_max` - Maximum control norm ||u||_max.
+/// * `beta` - Class-K coefficient β ≥ 0.
+///
+/// # Returns
+/// Minimum inter-event time τ_min > 0 (in discrete steps).
+pub fn compute_tau_min(alpha: f32, h_min: f32, l_f: f32, l_g: f32, u_max: f32, beta: f32) -> f32 {
+    let denom = l_f + l_g * u_max + beta;
+    if denom < 1e-10 {
+        return f32::MAX; // No Zeno risk if dynamics are bounded
+    }
+    alpha * h_min / denom
+}
+
+/// DR-CBF trigger condition with Wasserstein robustness.
+///
+/// Returns `true` when the robust barrier condition is violated:
+/// `h(φ̂) - ε · L_h < h_margin`
+///
+/// # Arguments
+/// * `h_val` - Current barrier function value.
+/// * `wasserstein_epsilon` - Wasserstein ambiguity radius.
+/// * `lip_h` - Lipschitz constant of h.
+/// * `h_margin` - Safety margin for early triggering.
+///
+/// # Returns
+/// `true` if DR-CBF trigger condition is met (needs control update).
+pub fn dr_cbf_trigger(h_val: f32, wasserstein_epsilon: f32, lip_h: f32, h_margin: f32) -> bool {
+    let h_robust = h_val - wasserstein_epsilon * lip_h;
+    h_robust < h_margin
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
