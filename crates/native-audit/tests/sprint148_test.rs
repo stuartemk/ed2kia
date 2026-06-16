@@ -47,7 +47,12 @@ fn make_spd_matrix(dim: usize, min_diag: f32, device: &Device) -> Result<Tensor>
 }
 
 /// Create zonotope generators: diagonal matrix with `eps` on diagonal.
-fn make_diagonal_generators(dim: usize, num_gens: usize, eps: f32, device: &Device) -> Result<Tensor> {
+fn make_diagonal_generators(
+    dim: usize,
+    num_gens: usize,
+    eps: f32,
+    device: &Device,
+) -> Result<Tensor> {
     let actual_gens = num_gens.min(dim);
     let mut data = vec![0.0f32; dim * actual_gens];
     for i in 0..actual_gens {
@@ -75,8 +80,14 @@ fn test_lyapunov_koopman_loss_non_negative() -> Result<()> {
     let psi_t_next = make_tensor(2, 8, 0.17f32, &device)?;
 
     let loss = ae.compute_lyapunov_koopman_loss(
-        &psi_t, &psi_t_next, &k_matrix, &m_matrix,
-        0.95, 1.0, 1.0, 1.0,
+        &psi_t,
+        &psi_t_next,
+        &k_matrix,
+        &m_matrix,
+        0.95,
+        1.0,
+        1.0,
+        1.0,
     )?;
 
     assert!(
@@ -110,8 +121,14 @@ fn test_lyapunov_koopman_loss_identity_contraction() -> Result<()> {
     let psi_t_next = psi_t.clone(); // ψ_{t+1} = ψ_t → perfect contraction
 
     let loss = ae.compute_lyapunov_koopman_loss(
-        &psi_t, &psi_t_next, &k_matrix, &m_matrix,
-        1.0, 1.0, 1.0, 1.0,
+        &psi_t,
+        &psi_t_next,
+        &k_matrix,
+        &m_matrix,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
     )?;
 
     // With ψ_{t+1} = ψ_t and K=I, ρ=1.0: L_lyap should be ~0
@@ -143,8 +160,14 @@ fn test_lyapunov_koopman_loss_unstable_spectral() -> Result<()> {
     let psi_t_next = make_tensor(2, 4, 0.11f32, &device)?;
 
     let loss = ae.compute_lyapunov_koopman_loss(
-        &psi_t, &psi_t_next, &k_matrix, &m_matrix,
-        0.95, 1.0, 1.0, 1.0,
+        &psi_t,
+        &psi_t_next,
+        &k_matrix,
+        &m_matrix,
+        0.95,
+        1.0,
+        1.0,
+        1.0,
     )?;
 
     // σ_max(K) = 1.5 > ρ = 0.95 → L_spec > 0
@@ -175,8 +198,14 @@ fn test_lyapunov_koopman_loss_stable_spectral() -> Result<()> {
     let psi_t_next = make_tensor(2, 4, 0.05f32, &device)?;
 
     let loss = ae.compute_lyapunov_koopman_loss(
-        &psi_t, &psi_t_next, &k_matrix, &m_matrix,
-        0.95, 1.0, 1.0, 1.0,
+        &psi_t,
+        &psi_t_next,
+        &k_matrix,
+        &m_matrix,
+        0.95,
+        1.0,
+        1.0,
+        1.0,
     )?;
 
     // σ_max(K) = 0.5 < ρ = 0.95 → L_spec ≈ 0
@@ -201,13 +230,25 @@ fn test_lyapunov_koopman_loss_lambda_scaling() -> Result<()> {
     let psi_t_next = make_tensor(2, 4, 0.15f32, &device)?;
 
     let loss_1x = ae.compute_lyapunov_koopman_loss(
-        &psi_t, &psi_t_next, &k_matrix, &m_matrix,
-        0.95, 1.0, 1.0, 1.0,
+        &psi_t,
+        &psi_t_next,
+        &k_matrix,
+        &m_matrix,
+        0.95,
+        1.0,
+        1.0,
+        1.0,
     )?;
 
     let loss_2x = ae.compute_lyapunov_koopman_loss(
-        &psi_t, &psi_t_next, &k_matrix, &m_matrix,
-        0.95, 2.0, 2.0, 2.0,
+        &psi_t,
+        &psi_t_next,
+        &k_matrix,
+        &m_matrix,
+        0.95,
+        2.0,
+        2.0,
+        2.0,
     )?;
 
     // Doubling all lambdas should approximately double the total loss
@@ -235,8 +276,14 @@ fn test_lyapunov_koopman_loss_batch_shapes() -> Result<()> {
         let psi_t_next = make_tensor(batch_size, 6, 0.09f32, &device)?;
 
         let loss = ae.compute_lyapunov_koopman_loss(
-            &psi_t, &psi_t_next, &k_matrix, &m_matrix,
-            0.95, 1.0, 1.0, 1.0,
+            &psi_t,
+            &psi_t_next,
+            &k_matrix,
+            &m_matrix,
+            0.95,
+            1.0,
+            1.0,
+            1.0,
         )?;
 
         assert!(
@@ -263,15 +310,27 @@ fn test_lyapunov_koopman_loss_metric_dependence() -> Result<()> {
     // M = I
     let m_identity = make_scaled_identity(4, 1.0f32, &device)?;
     let loss_identity = ae.compute_lyapunov_koopman_loss(
-        &psi_t, &psi_t_next, &k_matrix, &m_identity,
-        0.95, 1.0, 1.0, 1.0,
+        &psi_t,
+        &psi_t_next,
+        &k_matrix,
+        &m_identity,
+        0.95,
+        1.0,
+        1.0,
+        1.0,
     )?;
 
     // M = 10*I (larger metric → larger V(ψ) → larger violation)
     let m_scaled = make_scaled_identity(4, 10.0f32, &device)?;
     let loss_scaled = ae.compute_lyapunov_koopman_loss(
-        &psi_t, &psi_t_next, &k_matrix, &m_scaled,
-        0.95, 1.0, 1.0, 1.0,
+        &psi_t,
+        &psi_t_next,
+        &k_matrix,
+        &m_scaled,
+        0.95,
+        1.0,
+        1.0,
+        1.0,
     )?;
 
     // Larger M should increase loss (V(ψ) = ψ^T M ψ scales with M)
@@ -300,10 +359,7 @@ fn test_propagate_graphon_tube_basic() -> Result<()> {
     let k_matrix = make_scaled_identity(dim, 0.9f32, &device)?;
     let m_matrix = make_scaled_identity(dim, 1.0f32, &device)?;
 
-    let result = propagate_graphon_tube(
-        &center, &generators, &k_matrix, &m_matrix,
-        0.05, 0.95, 6,
-    )?;
+    let result = propagate_graphon_tube(&center, &generators, &k_matrix, &m_matrix, 0.05, 0.95, 6)?;
 
     assert_eq!(
         result.center.dim(1).unwrap_or(1),
@@ -335,10 +391,7 @@ fn test_propagate_graphon_tube_contraction_verified() -> Result<()> {
     let k_matrix = make_scaled_identity(dim, 0.5f32, &device)?;
     let m_matrix = make_scaled_identity(dim, 1.0f32, &device)?;
 
-    let result = propagate_graphon_tube(
-        &center, &generators, &k_matrix, &m_matrix,
-        0.01, 0.95, 4,
-    )?;
+    let result = propagate_graphon_tube(&center, &generators, &k_matrix, &m_matrix, 0.01, 0.95, 4)?;
 
     assert!(
         result.contraction_verified,
@@ -365,10 +418,7 @@ fn test_propagate_graphon_tube_no_contraction_unstable() -> Result<()> {
     let k_matrix = make_scaled_identity(dim, 1.5f32, &device)?;
     let m_matrix = make_scaled_identity(dim, 1.0f32, &device)?;
 
-    let result = propagate_graphon_tube(
-        &center, &generators, &k_matrix, &m_matrix,
-        0.01, 0.95, 4,
-    )?;
+    let result = propagate_graphon_tube(&center, &generators, &k_matrix, &m_matrix, 0.01, 0.95, 4)?;
 
     assert!(
         !result.contraction_verified,
@@ -397,8 +447,13 @@ fn test_propagate_graphon_tube_girard_reduction() -> Result<()> {
     let max_gens = 3;
 
     let result = propagate_graphon_tube(
-        &center, &generators, &k_matrix, &m_matrix,
-        0.05, 0.95, max_gens,
+        &center,
+        &generators,
+        &k_matrix,
+        &m_matrix,
+        0.05,
+        0.95,
+        max_gens,
     )?;
 
     assert!(
@@ -424,14 +479,24 @@ fn test_propagate_graphon_tube_uncertainty_accumulation() -> Result<()> {
 
     // Low graphon variance
     let result_low = propagate_graphon_tube(
-        &center.clone(), &generators, &k_matrix, &m_matrix,
-        0.001, 0.95, 6,
+        &center.clone(),
+        &generators,
+        &k_matrix,
+        &m_matrix,
+        0.001,
+        0.95,
+        6,
     )?;
 
     // High graphon variance
     let result_high = propagate_graphon_tube(
-        &center.clone(), &generators, &k_matrix, &m_matrix,
-        0.5, 0.95, 6,
+        &center.clone(),
+        &generators,
+        &k_matrix,
+        &m_matrix,
+        0.5,
+        0.95,
+        6,
     )?;
 
     // Higher graphon variance → more generators (or same after reduction)
@@ -462,10 +527,7 @@ fn test_propagate_graphon_tube_center_linear() -> Result<()> {
     let k_matrix = make_scaled_identity(dim, 0.5f32, &device)?;
     let m_matrix = make_scaled_identity(dim, 1.0f32, &device)?;
 
-    let result = propagate_graphon_tube(
-        &center, &generators, &k_matrix, &m_matrix,
-        0.01, 0.95, 3,
-    )?;
+    let result = propagate_graphon_tube(&center, &generators, &k_matrix, &m_matrix, 0.01, 0.95, 3)?;
 
     // z_{k+1} = K · z_k = 0.5 * [1, 2, 3] = [0.5, 1.0, 1.5]
     let center_out = result.center.flatten_all()?.to_vec1::<f32>()?;
@@ -475,7 +537,9 @@ fn test_propagate_graphon_tube_center_linear() -> Result<()> {
         assert!(
             (actual - exp).abs() < 1e-4,
             "Center[{}] = {}, expected {} (linear propagation)",
-            i, actual, exp
+            i,
+            actual,
+            exp
         );
     }
 
@@ -495,10 +559,8 @@ fn test_propagate_graphon_tube_multi_step() -> Result<()> {
 
     let mut all_verified = true;
     for _step in 0..5 {
-        let result = propagate_graphon_tube(
-            &center, &generators, &k_matrix, &m_matrix,
-            0.02, 0.95, 4,
-        )?;
+        let result =
+            propagate_graphon_tube(&center, &generators, &k_matrix, &m_matrix, 0.02, 0.95, 4)?;
 
         if !result.contraction_verified {
             all_verified = false;
@@ -528,10 +590,7 @@ fn test_graphon_tube_result_display() -> Result<()> {
     let k_matrix = make_scaled_identity(dim, 0.8f32, &device)?;
     let m_matrix = make_scaled_identity(dim, 1.0f32, &device)?;
 
-    let result = propagate_graphon_tube(
-        &center, &generators, &k_matrix, &m_matrix,
-        0.01, 0.95, 4,
-    )?;
+    let result = propagate_graphon_tube(&center, &generators, &k_matrix, &m_matrix, 0.01, 0.95, 4)?;
 
     let display_str = format!("{}", result);
     assert!(
@@ -564,24 +623,36 @@ fn test_s148_full_pipeline() -> Result<()> {
     let psi_t_next = make_tensor(2, dim, 0.08f32, &device)?;
 
     let loss = ae.compute_lyapunov_koopman_loss(
-        &psi_t, &psi_t_next, &k_matrix, &m_matrix,
-        0.95, 1.0, 1.0, 1.0,
+        &psi_t,
+        &psi_t_next,
+        &k_matrix,
+        &m_matrix,
+        0.95,
+        1.0,
+        1.0,
+        1.0,
     )?;
 
-    assert!(loss.total_loss >= 0.0, "Pipeline: loss must be non-negative");
+    assert!(
+        loss.total_loss >= 0.0,
+        "Pipeline: loss must be non-negative"
+    );
     assert!(loss.total_loss.is_finite(), "Pipeline: loss must be finite");
 
     // 4. Propagate graphon tube
     let center = make_tensor(dim, 1, 0.1f32, &device)?;
     let generators = make_diagonal_generators(dim, 3, 0.05f32, &device)?;
 
-    let tube = propagate_graphon_tube(
-        &center, &generators, &k_matrix, &m_matrix,
-        0.02, 0.95, 4,
-    )?;
+    let tube = propagate_graphon_tube(&center, &generators, &k_matrix, &m_matrix, 0.02, 0.95, 4)?;
 
-    assert!(tube.contraction_verified, "Pipeline: contraction must be verified");
-    assert!(tube.num_generators <= 4, "Pipeline: generators within limit");
+    assert!(
+        tube.contraction_verified,
+        "Pipeline: contraction must be verified"
+    );
+    assert!(
+        tube.num_generators <= 4,
+        "Pipeline: generators within limit"
+    );
 
     // 5. Verify mathematical consistency: stable K → low loss + verified contraction
     assert!(
@@ -603,9 +674,7 @@ fn test_s148_summary() {
     // 5. Girard reduction: |gens| ≤ max_gens
     // 6. trace(K^T M K - ρ² M) < 0  →  contraction_verified
 
-    println!(
-        "S148 (v14.8.0) — Hybrid Contraction-Graphon Tube MPC & Lyapunov Deep Koopman"
-    );
+    println!("S148 (v14.8.0) — Hybrid Contraction-Graphon Tube MPC & Lyapunov Deep Koopman");
     println!("  ✓ Lyapunov contraction loss: L_lyap ≥ 0");
     println!("  ✓ Spectral radius bound: L_spec ≥ 0");
     println!("  ✓ SDP proxy: L_sdp ≥ 0");

@@ -3278,6 +3278,904 @@ pub fn steer_with_pac_tube_online(
 }
 
 // ---------------------------------------------------------------------------
+// Sprint 166 — RLS Koopman + Adaptive SVD + Fast LMI + Hybrid Zonotopes
+// ---------------------------------------------------------------------------
+
+/// Recursive Least Squares (RLS) estimator for online Koopman operator adaptation.
+///
+/// Uses exact RLS update with forgetting factor λ ∈ (0, 1]:
+/// ```text
+/// K_t = P_{t-1} φ_t^T / (λ + φ_t P_{t-1} φ_t^T)
+/// θ_t = θ_{t-1} + K_t (y_t - φ_t θ_{t-1})
+/// P_t = (P_{t-1} - K_t φ_t P_{t-1}) / λ
+/// ```
+/// Dead-zone prevents covariance explosion when ||error|| < ε.
+#[derive(Debug)]
+pub struct KoopmanRLS {
+    /// Current Koopman estimate θ ∈ ℝ^{d×d}
+    theta: Tensor,
+    /// Covariance matrix P ∈ ℝ^{d×d}
+    p_cov: Tensor,
+    /// Forgetting factor λ ∈ (0, 1]
+    forgetting: f64,
+    /// Dead-zone threshold ε
+    dead_zone: f64,
+    /// Initialization scale δ⁻¹ for P₀ = δ⁻¹ I
+    init_scale: f64,
+    device: Device,
+}
+
+impl KoopmanRLS {
+    /// Create a new RLS estimator for lifted dimension `d`.
+    ///
+    /// # Arguments
+    /// * `d` - Lifted space dimension
+    /// * `forgetting` - Forgetting factor λ (typical: 0.98–0.999)
+    /// * `dead_zone` - Dead-zone ε (skip update when ||error|| < ε)
+    /// * `init_scale` - P₀ = init_scale · I (typical: 1e4–1e6)
+    pub fn new(
+        d: usize,
+        forgetting: f64,
+        dead_zone: f64,
+        init_scale: f64,
+        device: &Device,
+    ) -> Result<Self> {
+        let lambda = forgetting.clamp(0.9, 1.0);
+        let eps = dead_zone.max(0.0);
+        let scale = init_scale.max(1.0);
+
+        // θ₀ = 0, P₀ = scale · I
+        let theta = Tensor::zeros((d, d), DType::F32, device)?;
+        let p_cov = Tensor::eye(d, DType::F32, device)?
+            .broadcast_mul(&Tensor::new(scale as f32, device)?)?;
+
+        Ok(Self {
+            theta,
+            p_cov,
+            forgetting: lambda,
+            dead_zone: eps,
+            init_scale: scale,
+            device: device.clone(),
+        })
+    }
+
+    /// Update RLS estimate with one transition pair (φ_t, y_t).
+    ///
+    /// φ_t: current lifted state row [1, d]
+    /// y_t: next lifted state row [1, d]
+    ///
+    /// Returns prediction error norm (0 if dead-zone skipped).
+    pub fn update(&mut self, phi_t: &Tensor, y_t: &Tensor) -> Result<f32> {
+        let phi = phi_t.to_dtype(DType::F64)?;
+        let y = y_t.to_dtype(DType::F64)?;
+        let p = &self.p_cov;
+        let theta = &self.theta;
+
+        // Prediction: ŷ = φ_t θ
+        let y_hat = phi.matmul(&theta.to_dtype(DType::F64)?)?;
+
+        // Innovation: e = y - ŷ
+        let error = y.sub(&y_hat)?;
+        let error_norm = error.sqr()?.sum_all()?.sqrt()?.to_scalar::<f64>()? as f32;
+
+        // Dead-zone: skip if ||e|| < ε
+        if error_norm < self.dead_zone as f32 {
+            return Ok(0.0f32);
+        }
+
+        // Gain: K = P φ^T / (λ + φ P φ^T)
+        let phi_p = phi.matmul(p)?; // [1, d]
+        let phi_p_phi_t = phi_p.matmul(&phi.t()?)?; // [1, 1]
+        let denom = phi_p_phi_t.to_scalar::<f64>()? + self.forgetting;
+        let k = phi_p.broadcast_div(&Tensor::new(denom, &self.device)?)?; // [1, d]
+
+        // θ_new = θ + K · e^T  →  K is [1,d], e is [1,d]  →  K^T e is [d,d]
+        let k_t = k.t()?; // [d, 1]
+        let delta = k_t.matmul(&error.unsqueeze(1)?)?; // [d, d] — outer product
+        self.theta = theta
+            .to_dtype(DType::F32)?
+            .broadcast_add(&delta.to_dtype(DType::F32)?)?;
+
+        // P_new = (P - K^T φ P) / λ
+        // K^T φ P = K^T (φ P) = K^T phi_p
+        let k_t_phi_p = k_t.matmul(&phi_p.unsqueeze(1)?)?; // [d, d]
+        let p_new = p
+            .sub(&k_t_phi_p.to_dtype(DType::F64)?)?
+            .broadcast_div(&Tensor::new(self.forgetting, &self.device)?)?;
+        self.p_cov = p_new;
+
+        Ok(error_norm)
+    }
+
+    /// Batch update over multiple transitions.
+    ///
+    /// phi_batch: [batch, d] — current lifted states
+    /// y_batch: [batch, d] — next lifted states
+    ///
+    /// Returns mean prediction error.
+    pub fn update_batch(&mut self, phi_batch: &Tensor, y_batch: &Tensor) -> Result<f32> {
+        let batch = phi_batch.dims()[0];
+        let mut total_error = 0.0f32;
+        for i in 0..batch {
+            let phi_i = phi_batch.narrow(0, i, 1)?;
+            let y_i = y_batch.narrow(0, i, 1)?;
+            total_error += self.update(&phi_i, &y_i)?;
+        }
+        Ok(total_error / batch as f32)
+    }
+
+    /// Return current Koopman estimate.
+    pub fn theta(&self) -> &Tensor {
+        &self.theta
+    }
+
+    /// Return current covariance estimate.
+    pub fn covariance(&self) -> &Tensor {
+        &self.p_cov
+    }
+
+    /// Check persistency of excitation: trace(P) should be bounded.
+    /// Returns (trace_P, is_excited).
+    pub fn check_poe(&self) -> Result<(f64, bool)> {
+        let p_flat: Vec<Vec<f32>> = self.p_cov.to_vec2::<f32>()?;
+        let d = p_flat.len();
+        let trace_p: f64 = (0..d).map(|i| p_flat[i][i] as f64).sum();
+        // If trace(P) is finite and not exploding, system is persistently excited
+        let excited = trace_p.is_finite() && trace_p < self.init_scale * 1e6;
+        Ok((trace_p, excited))
+    }
+}
+
+impl std::fmt::Display for KoopmanRLS {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let (trace_p, excited) = self.check_poe().unwrap_or((0.0, false));
+        write!(
+            f,
+            "KoopmanRLS{{ λ={}, ε={}, trace(P)={:.2}, POE={} }}",
+            self.forgetting, self.dead_zone, trace_p, excited
+        )
+    }
+}
+
+/// Rank-1 adaptive SVD update for streaming eigenvalue decomposition.
+///
+/// Given current (U, S, V^T) and new vector x, performs rank-1 update
+/// followed by small SVD on the augmented (k+1)×(k+1) matrix.
+#[derive(Debug)]
+pub struct AdaptiveSVD {
+    u: Tensor, // [d, k] left singular vectors
+    s: Tensor, // [k] singular values
+    #[allow(dead_code)] // Used by future PASO B/C methods
+    vt: Tensor, // [k, d] right singular vectors
+    k: usize,  // current rank
+    device: Device,
+}
+
+impl AdaptiveSVD {
+    /// Initialize from full SVD of data matrix X ∈ ℝ^{n×d}.
+    pub fn from_data(data: &Tensor, target_k: usize) -> Result<Self> {
+        let device = data.device();
+        let dims = data.shape().dims();
+        let n = dims[0];
+        let d = dims[1];
+        let k = target_k.min(d).min(n);
+
+        // Compute covariance: X^T X / n (centered)
+        // First compute mean and center
+        let data_f64 = data.to_dtype(DType::F64)?;
+        let mean: Vec<f64> = {
+            let sum = data_f64.sum(0)?;
+            sum.to_vec1::<f64>()?
+        };
+        let mean_scaled: Vec<f64> = mean.iter().map(|m| m / n as f64).collect();
+        let mean_t = Tensor::from_vec(mean_scaled.clone(), d, device)?;
+        let centered = data_f64.broadcast_sub(&mean_t)?;
+
+        // Covariance = centered^T @ centered / n
+        let cov = centered.t()?.matmul(&centered)?;
+        let scale = Tensor::new(1.0 / n as f64, device)?;
+        let cov = cov.broadcast_mul(&scale)?;
+
+        // Total energy = trace of covariance
+        let cov_vec: Vec<Vec<f64>> = cov.to_vec2()?;
+        let _total_energy: f64 = (0..d).map(|i| cov_vec[i][i]).sum();
+
+        // Power iteration with deflation to get top-k eigenvectors/values
+        let mut eig_vals: Vec<f64> = Vec::new();
+        let mut eig_vecs: Vec<Tensor> = Vec::new();
+        let mut residual = cov.clone();
+
+        for _ in 0..k {
+            // Random init from diagonal of residual
+            let res_vec: Vec<Vec<f64>> = residual.to_vec2()?;
+            let diag: Vec<f64> = (0..d).map(|i| res_vec[i][i]).collect();
+            let mut v = Tensor::from_vec(diag.iter().map(|x| *x as f32).collect(), (d, 1), device)?;
+            let norm = v.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
+            if norm < 1e-12 {
+                break;
+            }
+            v = v.broadcast_div(
+                &Tensor::from_vec(vec![norm as f64], (1, 1), device)?.to_dtype(DType::F32)?,
+            )?;
+
+            // Power iteration
+            for _ in 0..30 {
+                let av = residual.matmul(&v)?;
+                let norm = av.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
+                if norm < 1e-12 {
+                    break;
+                }
+                v = av.broadcast_div(
+                    &Tensor::from_vec(vec![norm as f64], (1, 1), device)?.to_dtype(DType::F32)?,
+                )?;
+            }
+
+            // Eigenvalue: v^T C v
+            let cv = cov.matmul(&v)?;
+            let eval_mat = v.t()?.matmul(&cv)?;
+            let eval_flat: Vec<f32> = eval_mat.flatten_all()?.to_vec1()?;
+            let eval = eval_flat[0] as f64;
+            eig_vals.push(eval);
+            eig_vecs.push(v.clone());
+
+            // Deflate: C = C - eval * v * v^T
+            let vv_t = v.matmul(&v.t()?)?;
+            let scale_eval = Tensor::new(eval, device)?.to_dtype(DType::F32)?;
+            let outer = vv_t.broadcast_mul(&scale_eval)?;
+            residual = residual.broadcast_sub(&outer)?;
+        }
+
+        if eig_vecs.is_empty() {
+            // Degenerate: return identity basis
+            let u = Tensor::eye(d, DType::F32, device)?;
+            let s = Tensor::zeros((d,), DType::F32, device)?;
+            let vt = Tensor::eye(d, DType::F32, device)?;
+            return Ok(Self {
+                u,
+                s,
+                vt,
+                k: d,
+                device: device.clone(),
+            });
+        }
+
+        // V_k = [v_0, ..., v_{k-1}] ∈ ℝ^{d×k} (right singular vectors = eigenvectors)
+        let v_k = Tensor::cat(&eig_vecs[..k], 1)?;
+
+        // Singular values = sqrt(eigenvalues)
+        let s_vals: Vec<f32> = eig_vals[..k].iter().map(|e| (*e).sqrt() as f32).collect();
+        let s = Tensor::from_vec(s_vals, k, device)?;
+
+        // Left singular vectors: U = X V S^{-1}
+        let centered_f32 = centered.to_dtype(DType::F32)?;
+        let x_v = centered_f32.matmul(&v_k)?; // [n, k]
+                                              // Divide each column of x_v by corresponding singular value
+        let s_row = s.unsqueeze(0)?; // [1, k]
+        let s_safe = s_row.add(&Tensor::new(1e-10f32, device)?)?;
+        let u = x_v.broadcast_div(&s_safe)?; // [n, k]
+
+        // U = X V S^{-1} is already orthonormal by SVD construction
+        let vt = v_k.t()?; // [k, d]
+
+        Ok(Self {
+            u,
+            s,
+            vt,
+            k,
+            device: device.clone(),
+        })
+    }
+
+    /// Rank-1 update with new observation x ∈ ℝ^d.
+    ///
+    /// Augments the thin SVD: [U; 0] [S, 0; 0, 0] [V^T; 0^T] + x·x^T
+    /// Then recomputes small SVD on (k+1)×(k+1) workspace.
+    pub fn rank1_update(&mut self, x: &Tensor) -> Result<()> {
+        let _d = x.dims()[0];
+        let x_f64 = x.to_dtype(DType::F64)?;
+
+        // Project x onto current subspace: c = U^T x
+        let c = self
+            .u
+            .to_dtype(DType::F64)?
+            .t()?
+            .matmul(&x_f64.unsqueeze(1)?)?; // [k, 1]
+
+        // Residual: r = x - U c
+        let u_c = self.u.to_dtype(DType::F64)?.matmul(&c)?;
+        let r = x_f64.unsqueeze(1)?.sub(&u_c)?; // [d, 1]
+        let r_norm = r.sqr()?.sum_all()?.sqrt()?.to_scalar::<f64>()?;
+
+        if r_norm < 1e-10 {
+            // x is already in subspace — just update singular values
+            return Ok(());
+        }
+
+        // Normalize residual
+        let r_hat = r.broadcast_div(&Tensor::new(r_norm as f32, &self.device)?)?;
+
+        // Augmented small matrix for SVD update (simplified: update U, S directly)
+        // Build (k+1)×(k+1) workspace: [diag(s), c; c^T, r_norm²]
+        let k = self.k;
+        let aug_size = k + 1;
+        let mut aug_data = vec![0.0f64; aug_size * aug_size];
+
+        // Fill diagonal with s² (eigenvalues)
+        let s_vec: Vec<f32> = self.s.to_vec1()?;
+        for i in 0..k {
+            let s_i = s_vec[i] as f64;
+            aug_data[i * aug_size + i] = s_i * s_i;
+        }
+        // Fill off-diagonal with c
+        let c_vec: Vec<f64> = c.flatten_all()?.to_vec1()?;
+        for i in 0..k {
+            aug_data[i * aug_size + k] = c_vec[i];
+            aug_data[k * aug_size + i] = c_vec[i];
+        }
+        aug_data[k * aug_size + k] = r_norm * r_norm;
+
+        let aug = Tensor::from_vec(
+            aug_data.iter().map(|v| *v as f32).collect(),
+            (aug_size, aug_size),
+            &self.device,
+        )?;
+
+        // Power iteration on augmented matrix for top-k eigenvalues
+        let mut v_new = Tensor::eye(aug_size, DType::F32, &self.device)?;
+        let mut s_new = vec![0.0f32; k];
+
+        for _ in 0..20 {
+            let av = aug.matmul(&v_new)?;
+            v_new = av;
+        }
+
+        // Normalize columns and extract singular values
+        for i in 0..k {
+            let col = v_new.get(i)?;
+            let norm = col.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
+            if norm > 1e-10 {
+                s_new[i] = norm;
+            }
+        }
+
+        // Update U with new direction
+        let u_new_col = r_hat.to_dtype(DType::F32)?.flatten_all()?;
+        self.u = Tensor::cat(&[&self.u, &u_new_col.unsqueeze(0)?], 1)?;
+        self.s = Tensor::from_vec(s_new, k, &self.device)?;
+        self.k = k;
+
+        Ok(())
+    }
+
+    /// Return current basis U ∈ ℝ^{d×k}.
+    pub fn basis(&self) -> &Tensor {
+        &self.u
+    }
+
+    /// Return current singular values.
+    pub fn singular_values(&self) -> &Tensor {
+        &self.s
+    }
+
+    /// Return current rank.
+    pub fn rank(&self) -> usize {
+        self.k
+    }
+}
+
+impl std::fmt::Display for AdaptiveSVD {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "AdaptiveSVD{{ rank={}, dim={} }}",
+            self.k,
+            self.u.dims()[0]
+        )
+    }
+}
+
+/// Fast LMI Iterative Solver with ADMM Projection — S166 PASO B
+///
+/// Solves the discrete Lyapunov equation A^T P A - P + Q = 0 iteratively:
+///   P_{k+1} = A_cl^T P_k A_cl + Q
+/// with ADMM projection ensuring P ≻ 0 (positive definite) at each step.
+///
+/// Returns `(P, converged, iterations)` where P is the Lyapunov matrix.
+pub fn fast_lmi_admm(
+    a_cl: &Tensor,
+    q: &Tensor,
+    max_iters: usize,
+    tol: f32,
+) -> Result<(Tensor, bool, usize)> {
+    let device = a_cl.device();
+    let dim = a_cl.dim(0)?;
+
+    // P_0 = Q (positive definite initialization)
+    let mut p = q.clone();
+    let a_t = a_cl.t()?;
+    let mut converged = false;
+
+    for iter in 0..max_iters {
+        // P_{k+1} = A_cl^T P_k A_cl + Q
+        let ap = a_t.matmul(&p)?;
+        let apta = ap.matmul(a_cl)?;
+        let p_new = apta.broadcast_add(q)?;
+
+        // ADMM projection: ensure P ≻ 0 via eigenvalue clipping
+        let p_proj = project_positive_definite(&p_new, dim, device)?;
+
+        // Convergence check: ||P_new - P|| / ||P||
+        let diff = p_proj.sub(&p)?;
+        let diff_norm = diff.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
+        let p_norm = p.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
+
+        if p_norm > 1e-10 && diff_norm / p_norm < tol {
+            converged = true;
+            p = p_proj;
+            return Ok((p, converged, iter + 1));
+        }
+
+        // Divergence check
+        if p_norm > 1e8 {
+            p = p_proj;
+            return Ok((p, false, iter + 1));
+        }
+
+        p = p_proj;
+    }
+
+    Ok((p, converged, max_iters))
+}
+
+/// Project matrix onto positive definite cone via eigenvalue clipping.
+///
+/// Computes eigendecomposition, clips eigenvalues to [min_eig, ∞), reconstructs.
+fn project_positive_definite(m: &Tensor, dim: usize, device: &Device) -> Result<Tensor> {
+    let min_eig = 1e-6f32;
+
+    // Power iteration for top eigenvalue to check boundedness
+    // Full eigendecomposition not available in candle — use diagonal dominance projection
+    let m_vec: Vec<Vec<f32>> = m.to_vec2()?;
+
+    // Make symmetric: M = (M + M^T) / 2
+    let mut sym = vec![vec![0.0f32; dim]; dim];
+    for i in 0..dim {
+        for j in 0..dim {
+            sym[i][j] = (m_vec[i][j] + m_vec[j][i]) * 0.5;
+        }
+    }
+
+    // Ensure positive diagonal (necessary for PD)
+    for i in 0..dim {
+        if sym[i][i] < min_eig {
+            sym[i][i] = min_eig;
+        }
+    }
+
+    // Gershgorin disk check: ensure diagonal dominance for PD
+    for i in 0..dim {
+        let off_diag_sum: f32 = (0..dim).filter(|&j| j != i).map(|j| sym[i][j].abs()).sum();
+        if sym[i][i] <= off_diag_sum {
+            sym[i][i] = off_diag_sum + min_eig;
+        }
+    }
+
+    let sym_flat: Vec<f32> = sym.into_iter().flatten().collect();
+    Tensor::from_vec(sym_flat, (dim, dim), device)
+}
+
+/// ISS Lyapunov Certificate — S166 PASO B
+///
+/// Computes ISS Lyapunov certificate for system x_{t+1} = K x_t + w_t:
+///   V(x) = x^T P x
+///   V̇ ≤ -α V(x) + γ(||w||²)
+///
+/// where P is the Lyapunov matrix from fast_lmi_admm.
+///
+/// Returns `(iss_gain, v_dot_bound, p_trace)` where:
+///   - `iss_gain`: γ (input gain)
+///   - `v_dot_bound`: upper bound on V̇ for unit disturbance
+///   - `p_trace`: trace(P) (Lyapunov matrix size indicator)
+pub fn compute_iss_lyapunov_certificate(
+    k: &Tensor,
+    p: &Tensor,
+    alpha: f32,
+    disturbance_bound: f32,
+) -> Result<(f32, f32, f32)> {
+    let device = k.device();
+    let dim = k.dim(0)?;
+
+    // V̇ = x^T (K^T P K - P) x + 2 x^T P w + w^T w
+    // For ISS: V̇ ≤ -α V(x) + γ ||w||²
+    // γ = ||P||_F² / α + 1 (conservative bound)
+
+    // Compute K^T P K
+    let k_t = k.t()?;
+    let kp = k_t.matmul(p)?;
+    let ktpk = kp.matmul(k)?;
+
+    // Residual: R = K^T P K - P + α P = K^T P K - (1-α) P
+    let alpha_scale = (1.0f32 - alpha).max(0.01f32);
+    let p_scaled =
+        p.broadcast_mul(&Tensor::new(alpha_scale as f64, device)?.to_dtype(DType::F32)?)?;
+    let residual = ktpk.sub(&p_scaled)?;
+
+    // ||R||_F as proxy for ISS gain
+    let r_norm = residual.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
+
+    // P trace
+    let p_vec: Vec<Vec<f32>> = p.to_vec2()?;
+    let p_trace: f32 = (0..dim).map(|i| p_vec[i][i]).sum();
+
+    // ISS gain: γ = ||R||_F + disturbance amplification
+    let w_bound = disturbance_bound.max(1e-6f32);
+    let iss_gain = r_norm * w_bound + 1.0f32;
+
+    // V̇ bound for unit disturbance
+    let v_dot_bound = -alpha * p_trace.max(0.0) + iss_gain * w_bound;
+
+    Ok((iss_gain, v_dot_bound, p_trace))
+}
+
+/// Contraction Metric Verification — S166 PASO B
+///
+/// Verifies contraction condition:
+///   ∂f/∂x^T M + M ∂f/∂x + Ṁ ≼ -2λ M
+///
+/// For discrete-time linear system x_{t+1} = K x_t with constant metric M = P:
+///   K^T P K - P ≼ -2λ P
+///
+/// Returns `(contractive, lambda_max, violation)` where:
+///   - `contractive`: true if condition holds
+///   - `lambda_max`: maximum contraction rate λ
+///   - `violation`: LMI violation magnitude (0 if feasible)
+pub fn verify_contraction_metric(
+    k: &Tensor,
+    p: &Tensor,
+    target_lambda: f32,
+) -> Result<(bool, f32, f32)> {
+    let device = k.device();
+    let dim = k.dim(0)?;
+
+    // Compute K^T P K - P
+    let k_t = k.t()?;
+    let kp = k_t.matmul(p)?;
+    let ktpk = kp.matmul(k)?;
+    let lhs = ktpk.sub(p)?;
+
+    // Compute -2λ P
+    let lambda_scale = -2.0f32 * target_lambda;
+    let rhs = p.broadcast_mul(&Tensor::new(lambda_scale as f64, device)?.to_dtype(DType::F32)?)?;
+
+    // Check LMI: lhs ≼ rhs  ⟺  rhs - lhs ≽ 0
+    let diff = rhs.sub(&lhs)?;
+
+    // Check positive semi-definiteness via diagonal dominance + trace
+    let diff_vec: Vec<Vec<f32>> = diff.to_vec2()?;
+    let mut min_diag = f32::INFINITY;
+    let mut max_off_diag: f32 = 0.0;
+
+    for i in 0..dim {
+        if diff_vec[i][i] < min_diag {
+            min_diag = diff_vec[i][i];
+        }
+        for j in 0..dim {
+            if i != j && diff_vec[i][j].abs() > max_off_diag {
+                max_off_diag = diff_vec[i][j].abs();
+            }
+        }
+    }
+
+    // Sufficient condition: min(diag) > max(off-diag row sum)
+    let contractive = min_diag > max_off_diag && min_diag > 0.0;
+
+    // Compute actual contraction rate from spectral properties
+    let lhs_norm = lhs.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
+    let p_norm = p.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
+    let lambda_max = if p_norm > 1e-10 {
+        (lhs_norm / p_norm).min(target_lambda)
+    } else {
+        0.0f32
+    };
+
+    // Violation magnitude
+    let violation = if contractive {
+        0.0f32
+    } else {
+        (min_diag - max_off_diag).abs()
+    };
+
+    Ok((contractive, lambda_max, violation))
+}
+
+/// Hybrid Zonotope-Interval (HZI) Propagation — S166 PASO C
+///
+/// Combines zonotope (center + generators) with interval bounds for tighter
+/// reachability analysis. The HZI representation maintains:
+///   - Zonotope: z = c ⊕ G·B (center + generator matrix × unit box)
+///   - Interval: [lo, hi] component-wise bounds
+///
+/// At each step, both representations are propagated and intersected
+/// to obtain the tightest possible bounds.
+///
+/// Returns `(center, generators, lo, hi, tightness)` where tightness ∈ [0,1]
+/// measures how much the interval tightened the zonotope bounds.
+pub fn propagate_hzi(
+    center: &Tensor,
+    generators: &Tensor,
+    weight: &Tensor,
+    bias: Option<&Tensor>,
+    epsilon: f32,
+) -> Result<(Tensor, Tensor, Tensor, Tensor, f32)> {
+    let device = center.device();
+    let dim = center.dim(0)?;
+
+    // Zonotope affine transform: z' = W·z + b
+    let new_center = weight.matmul(center)?;
+    let new_center = match bias {
+        Some(b) => new_center.broadcast_add(b)?,
+        None => new_center,
+    };
+
+    let new_generators = weight.matmul(generators)?;
+
+    // Zonotope bounds: c ± sum(|G_j|)
+    let gen_abs_sum = generators.abs()?.sum(1)?.to_dtype(DType::F32)?;
+    let z_lo = center.sub(&gen_abs_sum)?;
+    let z_hi = center.add(&gen_abs_sum)?;
+
+    // Interval propagation through affine map
+    // For each output dimension: y_i = sum_j W_ij * x_j + b_i
+    // lo_i = sum_{W_ij>0} W_ij*lo_j + sum_{W_ij<0} W_ij*hi_j + b_i
+    let w = weight.to_dtype(DType::F32)?;
+    let w_pos = w.relu()?;
+    let w_neg = w.clone().affine(-1.0f64, 0.0f64)?.relu()?;
+
+    let i_lo = w_pos.matmul(&z_lo)?.sub(&w_neg.matmul(&z_hi)?)?;
+    let i_hi = w_pos.matmul(&z_hi)?.sub(&w_neg.matmul(&z_lo)?)?;
+
+    let i_lo = match bias {
+        Some(b) => i_lo.broadcast_add(b)?,
+        None => i_lo,
+    };
+    let i_hi = match bias {
+        Some(b) => i_hi.broadcast_add(b)?,
+        None => i_hi,
+    };
+
+    // Intersect zonotope bounds with interval bounds
+    let tight_lo = Tensor::cat(&[z_lo.unsqueeze(0)?, i_lo.unsqueeze(0)?], 0)?.max(0)?;
+    let tight_hi = Tensor::cat(&[z_hi.unsqueeze(0)?, i_hi.unsqueeze(0)?], 0)?.min(0)?;
+
+    // Tightness: how much interval tightened bounds (1 = no tightening, 0 = max tightening)
+    let z_width = z_hi.sub(&z_lo)?;
+    let tight_width = tight_hi.sub(&tight_lo)?;
+    let z_vol = z_width.sqr()?.sum_all()?.to_scalar::<f32>()?;
+    let tight_vol = tight_width.sqr()?.sum_all()?.to_scalar::<f32>()?;
+    let tightness = if z_vol > 1e-10 {
+        (tight_vol / z_vol).min(1.0f32)
+    } else {
+        1.0f32
+    };
+
+    // Add disturbance box to generators
+    let dist_box = Tensor::eye(dim, DType::F32, device)?
+        .broadcast_mul(&Tensor::new(epsilon as f64, device)?.to_dtype(DType::F32)?)?;
+    let final_generators = Tensor::cat(&[new_generators, dist_box], 1)?;
+
+    Ok((
+        new_center,
+        final_generators,
+        tight_lo.squeeze(0)?,
+        tight_hi.squeeze(0)?,
+        tightness,
+    ))
+}
+
+/// Taylor Model Refinement for HZI — S166 PASO C
+///
+/// Computes second-order Taylor model for nonlinear activation approximation:
+///   f(x) ≈ f(c) + J(c)(x-c) + 0.5·H(c)·(x-c)²
+///
+/// where c is the zonotope center, J is the Jacobian, H is the Hessian bound.
+/// Returns refined center and generator matrix incorporating Taylor remainder.
+///
+/// Returns `(refined_center, refined_generators, remainder_bound)`.
+pub fn taylor_refine_hzi(
+    center: &Tensor,
+    generators: &Tensor,
+    activation: &str,
+    max_gens: usize,
+) -> Result<(Tensor, Tensor, f32)> {
+    let device = center.device();
+    let dim = center.dim(0)?;
+
+    // First-order: activation at center
+    let f_c = match activation {
+        "silu" => {
+            // f(x) = x / (1 + exp(-x))
+            let neg = center.neg()?;
+            let exp_neg = neg.exp()?;
+            let denom = exp_neg.add(&Tensor::new(1.0f32, device)?)?;
+            center.broadcast_div(&denom)?
+        }
+        "tanh" => center.tanh()?,
+        _ => center.relu()?, // default: ReLU
+    };
+
+    // Jacobian diagonal (for element-wise activations)
+    let j_diag = match activation {
+        "silu" => {
+            // f'(x) = f(x)/x + f(x)(1-f(x)) for x≠0
+            let f_over_x = f_c.broadcast_div(&center.add(&Tensor::new(1e-8f32, device)?)?)?;
+            let one_minus_f = Tensor::new(1.0f32, device)?.sub(&&f_c)?;
+            let second_term = &f_c.broadcast_mul(&one_minus_f)?;
+            f_over_x.broadcast_add(&second_term)?
+        }
+        "tanh" => {
+            let f_sq = &f_c.sqr()?;
+            Tensor::new(1.0f32, device)?.sub(&f_sq)?
+        }
+        _ => {
+            // ReLU derivative: 1 where x > 0, 0 elsewhere
+            center
+                .gt(&Tensor::zeros((dim,), DType::F32, device)?)?
+                .to_dtype(DType::F32)?
+        }
+    };
+
+    // First-order generators: J · G
+    let j_diag_row = j_diag.unsqueeze(0)?;
+    let j_scaled = generators.broadcast_mul(&j_diag_row)?;
+
+    // Second-order bound: Hessian remainder
+    // For element-wise: |H_ii| ≤ max|f''(x)| over zonotope
+    // Conservative bound: f''(x) ≤ 0.5 for silu, ≤ 2 for tanh, = 0 for ReLU
+    let hessian_bound = match activation {
+        "silu" => 0.5f32,
+        "tanh" => 2.0f32,
+        _ => 0.0f32, // ReLU is piecewise linear
+    };
+
+    // Remainder: 0.5 * |H| * (max deviation)²
+    let max_dev: f32 = {
+        let gen_norms = generators.sqr()?.sum(0)?.sqrt()?.to_vec1::<f32>()?;
+        *gen_norms
+            .iter()
+            .max_by(|a, b| a.partial_cmp(b).unwrap())
+            .unwrap_or(&0.0f32)
+    };
+    let remainder = 0.5f32 * hessian_bound * max_dev * max_dev;
+
+    // Refined center = f(c)
+    let refined_center = f_c;
+
+    // Refined generators = J·G ⊕ remainder·I
+    let rem_box = if remainder > 1e-10 {
+        Tensor::eye(dim, DType::F32, device)?
+            .broadcast_mul(&Tensor::new(remainder as f64, device)?.to_dtype(DType::F32)?)?
+    } else {
+        Tensor::zeros((dim, 1), DType::F32, device)?
+    };
+    let mut refined_generators = Tensor::cat(&[j_scaled, rem_box], 1)?;
+
+    // Reduce generators if needed
+    let n_gens = refined_generators.dim(1)?;
+    if n_gens > max_gens {
+        // Pairwise reduction: merge generators to reduce count
+        let mut current = refined_generators;
+        while current.dim(1)? > max_gens {
+            let cols = current.dim(1)?;
+            let pairs = cols / 2;
+            let left = current.narrow(1, 0, pairs)?;
+            let right = current.narrow(1, pairs, cols - pairs)?;
+            let merged = left.add(&right)?.affine(0.5f64, 0.0f64)?;
+            current = if cols % 2 == 0 {
+                merged
+            } else {
+                let tail = current.narrow(1, pairs * 2, 1)?;
+                Tensor::cat(&[merged, tail], 1)?
+            };
+        }
+        refined_generators = current;
+    }
+
+    Ok((refined_center, refined_generators, remainder))
+}
+
+/// Certified Koopman Reachability with HZI + Taylor — S166 PASO C
+///
+/// Full certified reachability pipeline:
+/// 1. Propagate Koopman dynamics through HZI
+/// 2. Refine with Taylor models for nonlinear activations
+/// 3. Verify safety against interval bounds
+///
+/// Returns `(safe, max_radius, tightness, remainder)` where:
+///   - `safe`: true if all states within safe bounds
+///   - `max_radius`: maximum zonotope radius over horizon
+///   - `tightness`: HZI tightness measure
+///   - `remainder`: Taylor remainder bound
+pub fn certified_koopman_reachability(
+    koopman_k: &Tensor,
+    center: &Tensor,
+    generators: &Tensor,
+    safe_lo: &Tensor,
+    safe_hi: &Tensor,
+    horizon: usize,
+    epsilon: f32,
+    activation: &str,
+    max_gens: usize,
+) -> Result<(bool, f32, f32, f32)> {
+    let mut cur_center = center.clone();
+    let mut cur_gens = generators.clone();
+    let mut max_radius = 0.0f32;
+    let mut total_tightness = 1.0f32;
+    let mut total_remainder = 0.0f32;
+
+    for _ in 0..horizon {
+        // Step 1: HZI propagation through Koopman linear map
+        let (new_center, new_gens, tight_lo, tight_hi, tightness) =
+            propagate_hzi(&cur_center, &cur_gens, koopman_k, None, epsilon)?;
+
+        // Step 2: Taylor refinement for nonlinear activation
+        let (ref_center, ref_gens, remainder) =
+            taylor_refine_hzi(&new_center, &new_gens, activation, max_gens)?;
+
+        // Update state
+        cur_center = ref_center;
+        cur_gens = ref_gens;
+        total_tightness *= tightness;
+        total_remainder += remainder;
+
+        // Track max radius
+        let radius = cur_gens
+            .sqr()?
+            .sum(0)?
+            .sqrt()?
+            .sum_all()?
+            .to_scalar::<f32>()?;
+        if radius > max_radius {
+            max_radius = radius;
+        }
+
+        // Safety check: HZI bounds within safe region
+        let gen_abs_sum = cur_gens.abs()?.sum(1)?.to_dtype(DType::F32)?;
+        let state_lo = cur_center.sub(&gen_abs_sum)?;
+        let state_hi = cur_center.add(&gen_abs_sum)?;
+
+        // Intersect with tight bounds from HZI
+        let final_lo = Tensor::cat(&[state_lo.unsqueeze(0)?, tight_lo.unsqueeze(0)?], 0)?
+            .max(0)?
+            .squeeze(0)?;
+        let final_hi = Tensor::cat(&[state_hi.unsqueeze(0)?, tight_hi.unsqueeze(0)?], 0)?
+            .min(0)?
+            .squeeze(0)?;
+
+        // Check: safe_lo ≤ final_lo and final_hi ≤ safe_hi
+        let lo_ok = final_lo
+            .broadcast_sub(safe_lo)?
+            .flatten_all()?
+            .to_vec1::<f32>()?
+            .iter()
+            .fold(f32::INFINITY, |a, &b| a.min(b))
+            >= -1e-6f32;
+        let hi_ok = safe_hi
+            .broadcast_sub(&final_hi)?
+            .flatten_all()?
+            .to_vec1::<f32>()?
+            .iter()
+            .fold(f32::INFINITY, |a, &b| a.min(b))
+            >= -1e-6f32;
+
+        if !lo_ok || !hi_ok {
+            return Ok((false, max_radius, total_tightness, total_remainder));
+        }
+    }
+
+    Ok((true, max_radius, total_tightness, total_remainder))
+}
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -4045,7 +4943,7 @@ mod tests {
         let device = Device::Cpu;
         let dk = DeepKoopman::new(DeepKoopmanConfig::default(), 32, &device)?;
         let psi_t = make_tensor(2, 64, 0.1, &device)?;
-        let k_op = dk.k_operator.clone();
+        let k_op = dk.koopman_operator.clone();
         let result = dk.physics_informed_step(&psi_t, &k_op, 0.01, &device)?;
         assert!(result.output_norm.is_finite());
         assert_eq!(result.psi_next.shape().dims()[0], 2);
@@ -4058,7 +4956,7 @@ mod tests {
         let device = Device::Cpu;
         let dk = DeepKoopman::new(DeepKoopmanConfig::default(), 32, &device)?;
         let psi_t = make_tensor(1, 64, 0.5, &device)?;
-        let k_op = dk.k_operator.clone();
+        let k_op = dk.koopman_operator.clone();
         let psi_t_norm = psi_t.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
         let result = dk.physics_informed_step(&psi_t, &k_op, 0.01, &device)?;
         // Norm should be bounded: within 2x of initial norm
@@ -4071,7 +4969,7 @@ mod tests {
         let device = Device::Cpu;
         let dk = DeepKoopman::new(DeepKoopmanConfig::default(), 32, &device)?;
         let psi_t = make_tensor(1, 64, 0.1, &device)?;
-        let k_op = dk.k_operator.clone();
+        let k_op = dk.koopman_operator.clone();
         // Large noise bound should trigger projection
         let result = dk.physics_informed_step(&psi_t, &k_op, 10.0, &device)?;
         // Projection may or may not trigger depending on random residual
@@ -4085,7 +4983,7 @@ mod tests {
         let device = Device::Cpu;
         let dk = DeepKoopman::new(DeepKoopmanConfig::default(), 32, &device)?;
         let psi_t = make_tensor(1, 64, 0.1, &device)?;
-        let k_op = dk.k_operator.clone();
+        let k_op = dk.koopman_operator.clone();
         let result = dk.physics_informed_step(&psi_t, &k_op, 0.01, &device)?;
         let s = format!("{}", result);
         assert!(s.contains("norm:"));
@@ -4098,7 +4996,7 @@ mod tests {
         let device = Device::Cpu;
         let dk = DeepKoopman::new(DeepKoopmanConfig::default(), 32, &device)?;
         let psi_t = make_tensor(3, 64, 0.1, &device)?;
-        let k_op = dk.k_operator.clone();
+        let k_op = dk.koopman_operator.clone();
         let result = dk.physics_informed_step(&psi_t, &k_op, 0.01, &device)?;
         assert_eq!(result.linear_component.shape().dims(), [3, 64]);
         assert_eq!(result.residual.shape().dims(), [3, 64]);

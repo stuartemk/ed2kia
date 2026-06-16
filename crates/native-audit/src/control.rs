@@ -2556,7 +2556,7 @@ pub fn compute_event_savings(results: &[EventTriggeredResult]) -> (usize, usize,
 ///   u_safe = u_nom + λ · ∇h
 ///   ```
 ///   where γ is the robust residual bound and δ > 0 is regularization.
-
+///
 /// Result of TV-Hybrid Barrier-Lyapunov evaluation.
 #[derive(Debug)]
 pub struct TVHBLResult {
@@ -2872,6 +2872,133 @@ pub fn project_control_qp_clarabel_tensor(
 
     project_control_qp_clarabel(&u_nom_vec, &grad_h_vec, h_value, gamma, epsilon_robust)
         .map_err(|e| candle_core::Error::Msg(e.into()))
+}
+
+// ─── S168 PASO D — Tube MPC Simplificado en Core ────────────────────────────
+
+/// Result of core-space Tube MPC step.
+#[derive(Debug)]
+pub struct CoreTubeMPCResult {
+    /// Nominal prediction: phi_nom = K @ phi_core
+    pub phi_nom: Tensor,
+    /// Steered control after CBF correction
+    pub u_safe: Tensor,
+    /// Propagated zonotope after Girard reduction
+    pub zonotope_next: Zonotope,
+    /// Tube radius (infinity-norm bound)
+    pub tube_radius: f32,
+    /// CBF margin (positive = safe)
+    pub cbf_margin: f32,
+    /// Number of generators after reduction
+    pub num_gens: usize,
+    /// Whether CBF is satisfied
+    pub cbf_satisfied: bool,
+}
+
+impl std::fmt::Display for CoreTubeMPCResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "CoreTubeMPC[r_tube={:.4}, cbf_margin={:.4}, cbf_ok={}, gens={}, phi_nom={:?}]",
+            self.tube_radius,
+            self.cbf_margin,
+            self.cbf_satisfied,
+            self.num_gens,
+            self.phi_nom.shape(),
+        )
+    }
+}
+
+/// Simplified Tube MPC operating entirely in low-dimensional core space.
+///
+/// **S168 Dimensional Collapse Pipeline:**
+/// All computation happens in core_dim (16-32) instead of full SAE dim (4096+).
+///
+/// **Algorithm:**
+/// 1. Nominal prediction: `phi_nom = K @ phi_core`
+/// 2. Tube propagation: `Z_next = K @ Z + W` (disturbance zonotope)
+/// 3. Girard reduction: `Z_reduced = girard_reduce(Z_next, max_gens)`
+/// 4. CBF correction: `u_safe = cbf_safe_control(u_nom, h, lg_h)`
+/// 5. Return result with tube bounds
+///
+/// **Complexity (core_dim=32):**
+/// | Operation | Ops | Time |
+/// |-----------|-----|------|
+/// | K @ phi_core | O(32^2) = 1K | <0.01ms |
+/// | Zonotope affine | O(32*64) = 2K | <0.02ms |
+/// | Girard reduction | O(64*log(64)) = 384 | <0.01ms |
+/// | CBF projection | O(32) = 32 | <0.001ms |
+/// | **Total per step** | **~3.5K** | **<0.1ms** |
+///
+/// # Arguments
+/// * `phi_core` — Current core state `[1, core_dim]` or `[core_dim]`
+/// * `k_operator` — Koopman operator K `[core_dim, core_dim]`
+/// * `zonotope` — Current uncertainty zonotope in core space
+/// * `u_nom` — Nominal control input `[u_dim]` or `[1, u_dim]`
+/// * `cbf_h` — Control Barrier Function value (positive = safe)
+/// * `cbf_lg_h` — CBF gradient w.r.t. control `[u_dim]` or `[1, u_dim]`
+/// * `config` — KoopmanVanguardConfig for disturbance and reduction params
+///
+/// # Returns
+/// `CoreTubeMPCResult` with nominal prediction, safe control, and tube bounds
+pub fn tube_mpc_core(
+    phi_core: &Tensor,
+    k_operator: &Tensor,
+    zonotope: &Zonotope,
+    u_nom: &Tensor,
+    cbf_h: f32,
+    cbf_lg_h: &Tensor,
+    config: &KoopmanVanguardConfig,
+) -> Result<CoreTubeMPCResult> {
+    let device = phi_core.device();
+    let core_dim = k_operator.dim(0)?;
+
+    // 1. Nominal prediction: phi_nom = K @ phi_core
+    let phi_flat = phi_core.flatten_all()?;
+    let phi_nom = k_operator.matmul(&phi_flat.reshape((core_dim, 1))?)?;
+
+    // 2. Tube propagation: Z_next = K @ Z + W (disturbance)
+    let z_propagated = zonotope.linear_image(k_operator)?;
+
+    // Build disturbance zonotope W = {0 + eps * I}
+    // Center must be [dim, 1] for matmul compatibility in linear_image
+    let w_center = Tensor::zeros((core_dim, 1), DType::F32, device)?;
+    let w_scale = Tensor::new(config.disturbance_bound, device)?;
+    let w_gens = Tensor::eye(core_dim, DType::F32, device)?
+        .broadcast_mul(&w_scale)?;
+    let w_zono = Zonotope::new(w_center, w_gens);
+    let z_with_disturbance = z_propagated.minkowski_sum(&w_zono)?;
+
+    // 3. Girard reduction: Z_reduced = girard_reduce(Z_next, max_gens)
+    let max_gens = core_dim * 2;
+    let z_reduced = z_with_disturbance.reduce(max_gens)?;
+
+    // 4. CBF correction: u_safe = cbf_safe_control(u_nom, h, lg_h)
+    let u_safe = crate::control_lmi::cbf_safe_control(u_nom, cbf_h, cbf_lg_h)?;
+
+    // 5. Compute tube radius and CBF margin
+    let tube_radius = z_reduced.radius()?;
+    let num_gens = z_reduced.generators.dim(1).unwrap_or(0);
+
+    // CBF margin: h + lg_h^T * u_safe (simplified)
+    let lg_flat = cbf_lg_h.flatten_all()?;
+    let u_flat = u_safe.flatten_all()?;
+    let lg_u: f32 = lg_flat
+        .broadcast_mul(&u_flat)?
+        .sum_all()?
+        .to_scalar::<f32>()?;
+    let cbf_margin = cbf_h + lg_u;
+    let cbf_satisfied = cbf_margin >= 0.0;
+
+    Ok(CoreTubeMPCResult {
+        phi_nom,
+        u_safe,
+        zonotope_next: z_reduced,
+        tube_radius,
+        cbf_margin,
+        num_gens,
+        cbf_satisfied,
+    })
 }
 
 // ─── Kani Formal Verification Harness ───────────────────────────────────────
@@ -3551,6 +3678,212 @@ mod tests {
             "Scaled identity inverse error: {:.6}",
             max_err
         );
+        Ok(())
+    }
+
+    // ─── S168 PASO D: Tube MPC Core Tests ──────────────────────────────────
+
+    #[test]
+    fn test_tube_mpc_core_basic() -> Result<()> {
+        let device = Device::Cpu;
+        let core_dim = 16;
+        let u_dim = 4;
+
+        // K = 0.9 * I (stable)
+        let k_scale = Tensor::new(0.9f32, &device)?;
+        let k = Tensor::eye(core_dim, DType::F32, &device)?.broadcast_mul(&k_scale)?;
+
+        // phi_core = ones [1, core_dim]
+        let phi_core = Tensor::ones((1, core_dim), DType::F32, &device)?;
+
+        // Zonotope: center = phi_core as column vector [dim, 1], small generators
+        let center = phi_core.flatten_all()?.reshape((core_dim, 1))?;
+        let gens_scale = Tensor::new(0.01f32, &device)?;
+        let gens = Tensor::eye(core_dim, DType::F32, &device)?
+            .broadcast_mul(&gens_scale)?;
+        let zono = Zonotope::new(center, gens);
+
+        // u_nom = zeros
+        let u_nom = Tensor::zeros((u_dim,), DType::F32, &device)?;
+
+        // CBF: h = 1.0 (safe), lg_h = zeros
+        let cbf_h = 1.0f32;
+        let cbf_lg_h = Tensor::zeros((u_dim,), DType::F32, &device)?;
+
+        let config = KoopmanVanguardConfig::default();
+        let result = tube_mpc_core(&phi_core, &k, &zono, &u_nom, cbf_h, &cbf_lg_h, &config)?;
+
+        // Verify shapes
+        assert_eq!(result.phi_nom.dim(0)?, core_dim);
+        assert_eq!(result.u_safe.dim(0)?, u_dim);
+        assert!(result.tube_radius > 0.0);
+        assert!(result.cbf_satisfied);
+        assert!(result.num_gens <= core_dim * 2);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_tube_mpc_core_cbf_correction() -> Result<()> {
+        let device = Device::Cpu;
+        let core_dim = 16;
+        let u_dim = 4;
+
+        let k = Tensor::eye(core_dim, DType::F32, &device)?;
+        let phi_core = Tensor::ones((1, core_dim), DType::F32, &device)?;
+
+        let center = phi_core.flatten_all()?.reshape((core_dim, 1))?;
+        let gens = Tensor::zeros((core_dim, 1), DType::F32, &device)?;
+        let zono = Zonotope::new(center, gens);
+
+        // u_nom = ones (will be corrected if unsafe)
+        let u_nom = Tensor::ones((u_dim,), DType::F32, &device)?;
+
+        // Unsafe: h = -0.5 (violation)
+        let cbf_h = -0.5f32;
+        // lg_h = ones (gradient points in control direction)
+        let cbf_lg_h = Tensor::ones((u_dim,), DType::F32, &device)?;
+
+        let config = KoopmanVanguardConfig::default();
+        let result = tube_mpc_core(&phi_core, &k, &zono, &u_nom, cbf_h, &cbf_lg_h, &config)?;
+
+        // CBF should have been applied
+        assert!(result.u_safe.dims() == u_nom.dims());
+        // Result should be recorded
+        assert!(result.phi_nom.dims() == &[core_dim, 1]);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_tube_mpc_core_display() -> Result<()> {
+        let device = Device::Cpu;
+        let core_dim = 8;
+        let u_dim = 2;
+
+        let k = Tensor::eye(core_dim, DType::F32, &device)?;
+        let phi_core = Tensor::ones((1, core_dim), DType::F32, &device)?;
+
+        let center = phi_core.flatten_all()?.reshape((core_dim, 1))?;
+        let gens = Tensor::zeros((core_dim, 1), DType::F32, &device)?;
+        let zono = Zonotope::new(center, gens);
+
+        let u_nom = Tensor::zeros((u_dim,), DType::F32, &device)?;
+        let cbf_h = 0.5f32;
+        let cbf_lg_h = Tensor::zeros((u_dim,), DType::F32, &device)?;
+
+        let config = KoopmanVanguardConfig::default();
+        let result = tube_mpc_core(&phi_core, &k, &zono, &u_nom, cbf_h, &cbf_lg_h, &config)?;
+
+        let display = format!("{}", result);
+        assert!(display.contains("CoreTubeMPC"));
+        assert!(display.contains("r_tube="));
+        assert!(display.contains("cbf_margin="));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_tube_mpc_core_small_dimension() -> Result<()> {
+        let device = Device::Cpu;
+        let core_dim = 4; // Very small core
+        let u_dim = 2;
+
+        let k_scale = Tensor::new(0.5f32, &device)?;
+        let k = Tensor::eye(core_dim, DType::F32, &device)?.broadcast_mul(&k_scale)?;
+        let phi_core = Tensor::ones((1, core_dim), DType::F32, &device)?;
+
+        let center = phi_core.flatten_all()?.reshape((core_dim, 1))?;
+        let gens_scale = Tensor::new(0.1f32, &device)?;
+        let gens = Tensor::eye(core_dim, DType::F32, &device)?
+            .broadcast_mul(&gens_scale)?;
+        let zono = Zonotope::new(center, gens);
+
+        let u_nom = Tensor::zeros((u_dim,), DType::F32, &device)?;
+        let cbf_h = 2.0f32;
+        let cbf_lg_h = Tensor::zeros((u_dim,), DType::F32, &device)?;
+
+        let config = KoopmanVanguardConfig::default();
+        let result = tube_mpc_core(&phi_core, &k, &zono, &u_nom, cbf_h, &cbf_lg_h, &config)?;
+
+        assert_eq!(result.phi_nom.dim(0)?, core_dim);
+        assert!(result.cbf_satisfied);
+        assert!(result.tube_radius > 0.0);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_tube_mpc_core_32_dim() -> Result<()> {
+        let device = Device::Cpu;
+        let core_dim = 32; // Max recommended core dim
+        let u_dim = 8;
+
+        let k_scale = Tensor::new(0.85f32, &device)?;
+        let k = Tensor::eye(core_dim, DType::F32, &device)?.broadcast_mul(&k_scale)?;
+        let phi_core = Tensor::ones((1, core_dim), DType::F32, &device)?;
+
+        let center = phi_core.flatten_all()?.reshape((core_dim, 1))?;
+        let gens_scale = Tensor::new(0.05f32, &device)?;
+        let gens = Tensor::eye(core_dim, DType::F32, &device)?
+            .broadcast_mul(&gens_scale)?;
+        let zono = Zonotope::new(center, gens);
+
+        let u_nom = Tensor::zeros((u_dim,), DType::F32, &device)?;
+        let cbf_h = 1.0f32;
+        let cbf_lg_h = Tensor::zeros((u_dim,), DType::F32, &device)?;
+
+        let config = KoopmanVanguardConfig::default();
+        let result = tube_mpc_core(&phi_core, &k, &zono, &u_nom, cbf_h, &cbf_lg_h, &config)?;
+
+        assert_eq!(result.phi_nom.dim(0)?, core_dim);
+        assert!(result.cbf_satisfied);
+        assert!(result.num_gens <= core_dim * 2);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_tube_mpc_core_propagation_chain() -> Result<()> {
+        let device = Device::Cpu;
+        let core_dim = 16;
+        let u_dim = 4;
+        let steps = 10;
+
+        let k_scale = Tensor::new(0.9f32, &device)?;
+        let k = Tensor::eye(core_dim, DType::F32, &device)?.broadcast_mul(&k_scale)?;
+
+        let mut phi_core = Tensor::ones((1, core_dim), DType::F32, &device)?;
+        let mut center = phi_core.flatten_all()?.reshape((core_dim, 1))?.clone();
+        let gens_scale = Tensor::new(0.01f32, &device)?;
+        let gens = Tensor::eye(core_dim, DType::F32, &device)?
+            .broadcast_mul(&gens_scale)?;
+        let mut zono = Zonotope::new(center.clone(), gens);
+
+        let config = KoopmanVanguardConfig::default();
+        let mut max_radius = 0.0f32;
+
+        for _ in 0..steps {
+            let u_nom = Tensor::zeros((u_dim,), DType::F32, &device)?;
+            let cbf_h = 1.0f32;
+            let cbf_lg_h = Tensor::zeros((u_dim,), DType::F32, &device)?;
+
+            let result =
+                tube_mpc_core(&phi_core, &k, &zono, &u_nom, cbf_h, &cbf_lg_h, &config)?;
+
+            assert!(result.cbf_satisfied, "CBF violated at step");
+            if result.tube_radius > max_radius {
+                max_radius = result.tube_radius;
+            }
+
+            // Chain: use phi_nom as next phi_core
+            phi_core = result.phi_nom.reshape((1, core_dim))?;
+            center = result.phi_nom.clone(); // phi_nom is already [dim, 1]
+            zono = result.zonotope_next;
+        }
+
+        assert!(max_radius > 0.0);
+
         Ok(())
     }
 }

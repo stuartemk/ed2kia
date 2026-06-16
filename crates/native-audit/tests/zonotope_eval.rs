@@ -11,7 +11,12 @@ use native_audit::zonotope::{ReductionMetrics, Zonotope, ZonotopeConfig};
 
 // ─── Helper: deterministic tensor creation ────────────────────────────────────
 
-fn make_tensor(rows: usize, cols: usize, seed: f32, device: &candle_core::Device) -> Result<Tensor> {
+fn make_tensor(
+    rows: usize,
+    cols: usize,
+    seed: f32,
+    device: &candle_core::Device,
+) -> Result<Tensor> {
     let mut data = Vec::with_capacity(rows * cols);
     let mut s = (seed * 1e6) as u64;
     for _ in 0..(rows * cols) {
@@ -78,7 +83,11 @@ fn test_reduction_generators_decrease() -> Result<()> {
 
     // Verify reduction > 80% when num_gens >> max_gens
     let reduction_ratio = 1.0 - metrics.generators_after as f32 / metrics.generators_before as f32;
-    assert!(reduction_ratio > 0.3, "Reduction ratio {:.2} should be > 0.3", reduction_ratio);
+    assert!(
+        reduction_ratio > 0.3,
+        "Reduction ratio {:.2} should be > 0.3",
+        reduction_ratio
+    );
 
     println!(
         "Reduction: {} → {} ({:.1}% decrease)",
@@ -128,8 +137,16 @@ fn test_reduction_preserves_bounds() -> Result<()> {
 
     // Reduced bounds should over-approximate original bounds
     // (interval hull guarantees containment)
-    let lo_diff = lo_orig.broadcast_sub(&lo_red)?.abs()?.sum_all()?.to_scalar::<f32>()?;
-    let hi_diff = hi_red.broadcast_sub(&hi_orig)?.abs()?.sum_all()?.to_scalar::<f32>()?;
+    let lo_diff = lo_orig
+        .broadcast_sub(&lo_red)?
+        .abs()?
+        .sum_all()?
+        .to_scalar::<f32>()?;
+    let hi_diff = hi_red
+        .broadcast_sub(&hi_orig)?
+        .abs()?
+        .sum_all()?
+        .to_scalar::<f32>()?;
 
     // Allow small numerical tolerance
     assert!(lo_diff >= -1e-5, "Lower bound violation: {:.6}", lo_diff);
@@ -239,7 +256,10 @@ fn test_tube_cbf_nominal_safe() -> Result<()> {
     assert!(result.correction_norm == 0.0);
     assert!(result.safety_margin > 0.0);
 
-    println!("Tube-CBF nominal safe: margin = {:.4}", result.safety_margin);
+    println!(
+        "Tube-CBF nominal safe: margin = {:.4}",
+        result.safety_margin
+    );
 
     Ok(())
 }
@@ -339,7 +359,11 @@ fn test_conformal_epsilon_basic() {
     let errors = vec![0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
     let epsilon = calibrate_conformal_epsilon(&errors, 0.1); // 90th percentile
 
-    assert!(epsilon >= 0.8, "90th percentile should be >= 0.8, got {}", epsilon);
+    assert!(
+        epsilon >= 0.8,
+        "90th percentile should be >= 0.8, got {}",
+        epsilon
+    );
     assert!(epsilon <= 1.0);
 
     println!("Conformal epsilon (90%%): {:.4}", epsilon);
@@ -357,12 +381,12 @@ fn test_conformal_epsilon_high_confidence() {
     let epsilon_95 = calibrate_conformal_epsilon(&errors, 0.05); // 95th percentile
     let epsilon_99 = calibrate_conformal_epsilon(&errors, 0.01); // 99th percentile
 
-    assert!(epsilon_99 >= epsilon_95, "99th percentile should be >= 95th");
-
-    println!(
-        "Conformal: 95%%={:.4}, 99%%={:.4}",
-        epsilon_95, epsilon_99
+    assert!(
+        epsilon_99 >= epsilon_95,
+        "99th percentile should be >= 95th"
     );
+
+    println!("Conformal: 95%%={:.4}, 99%%={:.4}", epsilon_95, epsilon_99);
 }
 
 #[test]
@@ -394,7 +418,9 @@ fn test_full_ockham_pipeline() -> Result<()> {
     let reduce_ms = start.elapsed().as_secs_f64() * 1000.0;
 
     // Step 3: Calibrate conformal margin from simulated errors
-    let calibration_errors: Vec<f32> = (0..50).map(|_| 0.01 + (metrics.volume_reduction_log10).abs() * 0.1).collect();
+    let calibration_errors: Vec<f32> = (0..50)
+        .map(|_| 0.01 + (metrics.volume_reduction_log10).abs() * 0.1)
+        .collect();
     let epsilon_tube = calibrate_conformal_epsilon(&calibration_errors, 0.1);
 
     // Step 4: Apply Tube-CBF
@@ -407,10 +433,16 @@ fn test_full_ockham_pipeline() -> Result<()> {
 
     // Print summary
     println!("=== Ockham Collapse Pipeline ===");
-    println!("Antes: {} generadores | Despues: {} generadores", metrics.generators_before, metrics.generators_after);
+    println!(
+        "Antes: {} generadores | Despues: {} generadores",
+        metrics.generators_before, metrics.generators_after
+    );
     println!("Tiempo reduce: {:.2}ms", reduce_ms);
     println!("Conformal epsilon: {:.4}", epsilon_tube);
-    println!("Tube-CBF: nominal_safe={}, margin={:.4}", cbf_result.was_nominal_safe, cbf_result.safety_margin);
+    println!(
+        "Tube-CBF: nominal_safe={}, margin={:.4}",
+        cbf_result.was_nominal_safe, cbf_result.safety_margin
+    );
     println!("================================");
 
     assert!(metrics.generators_after < metrics.generators_before);
@@ -443,8 +475,16 @@ fn test_safety_coverage_under_drift() -> Result<()> {
         let (lo_red, hi_red) = reduced.compute_bounds()?;
 
         // Over-approximation: reduced bounds should contain original
-        let lo_safe = lo_orig.broadcast_sub(&lo_red)?.sum_all()?.to_scalar::<f32>()? >= -1e-4;
-        let hi_safe = hi_red.broadcast_sub(&hi_orig)?.sum_all()?.to_scalar::<f32>()? >= -1e-4;
+        let lo_safe = lo_orig
+            .broadcast_sub(&lo_red)?
+            .sum_all()?
+            .to_scalar::<f32>()?
+            >= -1e-4;
+        let hi_safe = hi_red
+            .broadcast_sub(&hi_orig)?
+            .sum_all()?
+            .to_scalar::<f32>()?
+            >= -1e-4;
 
         if lo_safe && hi_safe {
             safe_count += 1;
@@ -458,7 +498,12 @@ fn test_safety_coverage_under_drift() -> Result<()> {
         coverage * 100.0
     );
 
-    println!("Coverage Tube-CBF: {:.1}% ({}/{})", coverage * 100.0, safe_count, num_trials);
+    println!(
+        "Coverage Tube-CBF: {:.1}% ({}/{})",
+        coverage * 100.0,
+        safe_count,
+        num_trials
+    );
 
     Ok(())
 }

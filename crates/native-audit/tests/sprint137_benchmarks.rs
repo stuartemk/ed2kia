@@ -11,8 +11,8 @@ use native_audit::replicator::{
 };
 use native_audit::steering::SymplecticGDConfig;
 use native_audit::verification::{
-    AdversarialCertConfig, HybridConfig, Zonotope, compute_hybrid_bounds,
-    interval_bound_propagation, IbPConfig,
+    compute_hybrid_bounds, interval_bound_propagation, AdversarialCertConfig, HybridConfig,
+    IbPConfig, Zonotope,
 };
 
 // ──────────────────────────────────────────────
@@ -144,7 +144,11 @@ fn test_symplectic_energy_conservation_long() -> Result<()> {
 
     // Pure symplectic should have bounded deviation
     assert!(max_deviation.is_finite(), "Energy deviation not finite");
-    assert!(max_deviation < 100.0, "Energy deviation {:.4} too large", max_deviation);
+    assert!(
+        max_deviation < 100.0,
+        "Energy deviation {:.4} too large",
+        max_deviation
+    );
     Ok(())
 }
 
@@ -165,9 +169,8 @@ fn test_hybrid_tightness_improvement() -> Result<()> {
     // IBP-only (flat weights, row-major)
     let weights_flat: Vec<f32> = weight.iter().flat_map(|row| row.clone()).collect();
     let ibp_config = IbPConfig::default();
-    let ibp_result = interval_bound_propagation(
-        &lower, &upper, &weights_flat, &bias, "relu", &ibp_config,
-    );
+    let ibp_result =
+        interval_bound_propagation(&lower, &upper, &weights_flat, &bias, "relu", &ibp_config);
 
     // Hybrid
     let hybrid_config = HybridConfig::default();
@@ -221,9 +224,8 @@ fn test_hybrid_tightness_relu_layer() -> Result<()> {
 
     let weights_flat: Vec<f32> = weight.iter().flat_map(|row| row.clone()).collect();
     let ibp_config = IbPConfig::default();
-    let ibp_result = interval_bound_propagation(
-        &lower, &upper, &weights_flat, &bias, "relu", &ibp_config,
-    );
+    let ibp_result =
+        interval_bound_propagation(&lower, &upper, &weights_flat, &bias, "relu", &ibp_config);
 
     let hybrid_config = HybridConfig::default();
     let hybrid_result = compute_hybrid_bounds(&lower, &upper, &weight, &bias, &hybrid_config);
@@ -275,9 +277,8 @@ fn test_hybrid_tightness_large_network() -> Result<()> {
     // Flat weights for IBP
     let weights_flat: Vec<f32> = weight.iter().flat_map(|row| row.clone()).collect();
     let ibp_config = IbPConfig::default();
-    let ibp_result = interval_bound_propagation(
-        &lower, &upper, &weights_flat, &bias, "relu", &ibp_config,
-    );
+    let ibp_result =
+        interval_bound_propagation(&lower, &upper, &weights_flat, &bias, "relu", &ibp_config);
 
     let hybrid_config = HybridConfig::default();
     let hybrid_result = compute_hybrid_bounds(&lower, &upper, &weight, &bias, &hybrid_config);
@@ -396,7 +397,10 @@ fn test_replicator_convergence_heun() -> Result<()> {
     let config = ReplicatorConfig::high_precision(); // Uses Heun
     let result = run_replicator(&x0, &fitness, &config)?;
 
-    assert!(verify_simplex(&result.x_next)?, "Simplex not preserved (Heun)");
+    assert!(
+        verify_simplex(&result.x_next)?,
+        "Simplex not preserved (Heun)"
+    );
 
     let pop = result.x_next.to_vec1::<f32>()?;
     let max_idx = (0..pop.len())
@@ -549,9 +553,8 @@ fn test_s137_full_pipeline() -> Result<()> {
 
     let weights_flat: Vec<f32> = weight.iter().flat_map(|row| row.clone()).collect();
     let ibp_config = IbPConfig::default();
-    let ibp_result = interval_bound_propagation(
-        &lower, &upper, &weights_flat, &bias, "relu", &ibp_config,
-    );
+    let ibp_result =
+        interval_bound_propagation(&lower, &upper, &weights_flat, &bias, "relu", &ibp_config);
     let ibp_width: f32 = ibp_result
         .upper
         .iter()

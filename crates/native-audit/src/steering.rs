@@ -805,8 +805,7 @@ pub fn steer_tube_mpc(
     //    Solución analítica (LQR simplificado para 1 paso):
     //    u = - (1 / (1 + lambda)) * error_vector
     let control_gain = 1.0 / (1.0 + lambda_energy);
-    let gain_tensor =
-        candle_core::Tensor::new(control_gain, hidden_state.device())?;
+    let gain_tensor = candle_core::Tensor::new(control_gain, hidden_state.device())?;
 
     let control_effort = error_vector.broadcast_mul(&gain_tensor)?;
 
@@ -913,9 +912,7 @@ pub fn verify_contraction_rate_jvp(
         let f_h_plus = h_plus.tanh()?;
 
         // JVP: J·v ≈ (f(h+εv) - f(h)) / ε
-        let jv = f_h_plus
-            .broadcast_sub(&f_h)?
-            .broadcast_div(&eps_tensor)?;
+        let jv = f_h_plus.broadcast_sub(&f_h)?.broadcast_div(&eps_tensor)?;
 
         // Track contraction rate: ||J·v|| / ||v|| (v is normalized, so just ||J·v||)
         let jv_norm = jv.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
@@ -937,7 +934,11 @@ pub fn verify_contraction_rate_jvp(
 ///
 /// Assumes L-smooth dynamics: `||f(x_t) - f(x_{t-stride})|| ≤ L · stride · ||dx/dt||`
 /// Returns the maximum error bound for skipping `stride-1` evaluations.
-pub fn compute_strided_error_bound(lipschitz_constant: f32, stride: usize, max_velocity: f32) -> f32 {
+pub fn compute_strided_error_bound(
+    lipschitz_constant: f32,
+    stride: usize,
+    max_velocity: f32,
+) -> f32 {
     let error_bound = lipschitz_constant * (stride as f32) * max_velocity;
     error_bound
 }
@@ -993,9 +994,7 @@ impl KoopmanEstimator {
     }
 
     /// Lift a sequence of snapshots into data matrices Ψ_X and Ψ_Y.
-    fn lift_observables_sequence(
-        snapshots: &[Tensor],
-    ) -> candle_core::Result<(Tensor, Tensor)> {
+    fn lift_observables_sequence(snapshots: &[Tensor]) -> candle_core::Result<(Tensor, Tensor)> {
         if snapshots.len() < 2 {
             return Err(candle_core::Error::Msg(
                 "Need at least 2 snapshots for EDMD".to_string(),
@@ -1064,7 +1063,11 @@ impl KoopmanEstimator {
         let r = b.clone();
         let p = r.clone();
 
-        let r_dot_r_init: f64 = r.sqr()?.sum_all()?.to_dtype(DType::F64)?.to_scalar::<f64>()?;
+        let r_dot_r_init: f64 = r
+            .sqr()?
+            .sum_all()?
+            .to_dtype(DType::F64)?
+            .to_scalar::<f64>()?;
 
         let mut x_curr = x;
         let mut r_curr = r;
@@ -1077,7 +1080,11 @@ impl KoopmanEstimator {
             }
 
             let ap = a.matmul(&p_curr)?;
-            let p_ap: f64 = p_curr.broadcast_mul(&ap)?.sum_all()?.to_dtype(DType::F64)?.to_scalar::<f64>()?;
+            let p_ap: f64 = p_curr
+                .broadcast_mul(&ap)?
+                .sum_all()?
+                .to_dtype(DType::F64)?
+                .to_scalar::<f64>()?;
             if p_ap.abs() < small_tol {
                 break;
             }
@@ -1086,7 +1093,11 @@ impl KoopmanEstimator {
 
             let x_new: Tensor = x_curr.broadcast_add(&p_curr.broadcast_mul(&alpha_tensor)?)?;
             let r_new: Tensor = r_curr.broadcast_sub(&ap.broadcast_mul(&alpha_tensor)?)?;
-            let r_dot_r_new: f64 = r_new.sqr()?.sum_all()?.to_dtype(DType::F64)?.to_scalar::<f64>()?;
+            let r_dot_r_new: f64 = r_new
+                .sqr()?
+                .sum_all()?
+                .to_dtype(DType::F64)?
+                .to_scalar::<f64>()?;
 
             x_curr = x_new;
             r_curr = r_new;
@@ -1182,7 +1193,7 @@ impl KoopmanEstimator {
 pub fn steer_contracting_tube(
     phi_t: &Tensor,
     safe_centroid: &Tensor,
-    lambda: f32, // Adaptive contraction rate (derived from recent contraction rate)
+    lambda: f32,   // Adaptive contraction rate (derived from recent contraction rate)
     rho_tube: f32, // Tube radius (shrinking)
 ) -> candle_core::Result<Tensor> {
     let delta = phi_t.broadcast_sub(safe_centroid)?;
@@ -1215,14 +1226,18 @@ pub fn steer_contracting_tube(
 
     // Verify tube membership: ||φ_corrected - c||_M ≤ ρ
     let delta_corrected = phi_corrected.broadcast_sub(safe_centroid)?;
-    let tube_dist = delta_corrected.sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
+    let tube_dist = delta_corrected
+        .sqr()?
+        .sum_all()?
+        .sqrt()?
+        .to_scalar::<f32>()?;
 
     if tube_dist > rho_tube {
         // Project onto tube boundary
         let proj_scale = rho_tube / (tube_dist + 1e-8);
         let proj_tensor = Tensor::new(proj_scale, phi_t.device())?;
-        let phi_projected = safe_centroid
-            .broadcast_add(&delta_corrected.broadcast_mul(&proj_tensor)?)?;
+        let phi_projected =
+            safe_centroid.broadcast_add(&delta_corrected.broadcast_mul(&proj_tensor)?)?;
         Ok(phi_projected)
     } else {
         Ok(phi_corrected)
@@ -1291,8 +1306,12 @@ impl std::fmt::Display for CbfQpResult {
         write!(
             f,
             "CbfQp[status={}, iters={}, corrected={}, h={:.4}, margin={:.4}, robust={:.6}]",
-            self.solver_status, self.iterations, self.corrected,
-            self.h_value_before, self.safety_margin_after, self.robustness_margin
+            self.solver_status,
+            self.iterations,
+            self.corrected,
+            self.h_value_before,
+            self.safety_margin_after,
+            self.robustness_margin
         )
     }
 }
@@ -1363,7 +1382,10 @@ pub fn solve_cbf_qp(
 
     // 3. Drift estimation: L_f h ≈ ∇h^T (h_current - h_prev)
     //    Compute as scalar product to avoid shape mismatch
-    let drift_scalar = h_current.broadcast_sub(h_prev)?.sum_all()?.to_scalar::<f64>()?;
+    let drift_scalar = h_current
+        .broadcast_sub(h_prev)?
+        .sum_all()?
+        .to_scalar::<f64>()?;
     let grad_sum = grad_h.sum_all()?.to_scalar::<f64>()?;
     let lh_value = grad_sum * drift_scalar;
 
@@ -1396,14 +1418,22 @@ pub fn solve_cbf_qp(
     let grad_h_vec: Vec<f64> = if dtype == candle_core::DType::F64 {
         grad_h.flatten_all()?.to_vec1::<f64>()?
     } else {
-        grad_h.flatten_all()?.to_vec1::<f32>()?
-            .iter().map(|&x| x as f64).collect()
+        grad_h
+            .flatten_all()?
+            .to_vec1::<f32>()?
+            .iter()
+            .map(|&x| x as f64)
+            .collect()
     };
     let u_nom_vec: Vec<f64> = if dtype == candle_core::DType::F64 {
         u_nom.flatten_all()?.to_vec1::<f64>()?
     } else {
-        u_nom.flatten_all()?.to_vec1::<f32>()?
-            .iter().map(|&x| x as f64).collect()
+        u_nom
+            .flatten_all()?
+            .to_vec1::<f32>()?
+            .iter()
+            .map(|&x| x as f64)
+            .collect()
     };
     let u_nom_shape = u_nom.shape().dims().to_vec();
     let n_grad = grad_h_vec.len();
@@ -1422,9 +1452,15 @@ pub fn solve_cbf_qp(
     // QP dimension: use gradient length (state dim) for constraint consistency
     let n_qp = n_grad;
     // Pad or truncate u_nom to match QP dimension
-    let q_vec: Vec<f64> = (0..n_qp).map(|i| {
-        if i < u_nom_vec.len() { -u_nom_vec[i] } else { 0.0 }
-    }).collect();
+    let q_vec: Vec<f64> = (0..n_qp)
+        .map(|i| {
+            if i < u_nom_vec.len() {
+                -u_nom_vec[i]
+            } else {
+                0.0
+            }
+        })
+        .collect();
 
     let P = CscMatrix::identity(n_qp);
     let q = q_vec;
@@ -1432,13 +1468,12 @@ pub fn solve_cbf_qp(
     // Inequality: -∇h^T u ≤ α(h) + L_f h + γ·ε
     // CSC format: colptr must have n+1 entries for n columns
     let a_vals: Vec<f64> = grad_h_vec.iter().map(|&g| -g).collect();
-    let a_colptr: Vec<usize> = (0..=n_qp).collect();  // [0, 1, 2, ..., n_qp]
-    let a_rowval: Vec<usize> = vec![0; n_qp];         // all entries in row 0
+    let a_colptr: Vec<usize> = (0..=n_qp).collect(); // [0, 1, 2, ..., n_qp]
+    let a_rowval: Vec<usize> = vec![0; n_qp]; // all entries in row 0
     let A = CscMatrix::new(1, n_qp, a_colptr, a_rowval, a_vals);
     let b = vec![alpha_h + lh_value + robustness_margin];
 
-    let cones: &[SupportedConeT<f64>] =
-        &[SupportedConeT::<f64>::NonnegativeConeT(1)];
+    let cones: &[SupportedConeT<f64>] = &[SupportedConeT::<f64>::NonnegativeConeT(1)];
 
     let settings = DefaultSettings::default();
 
@@ -1459,21 +1494,41 @@ pub fn solve_cbf_qp(
             let grad_norm_sq: f64 = grad_h_vec.iter().map(|&g| g * g).sum();
             if grad_norm_sq > 1e-12 {
                 let lambda = cbf_rhs / grad_norm_sq;
-                (0..n_qp).map(|i| {
-                    let g = grad_h_vec[i];
-                    let u = if i < u_nom_vec.len() { u_nom_vec[i] } else { 0.0 };
-                    u - lambda * g
-                }).collect()
+                (0..n_qp)
+                    .map(|i| {
+                        let g = grad_h_vec[i];
+                        let u = if i < u_nom_vec.len() {
+                            u_nom_vec[i]
+                        } else {
+                            0.0
+                        };
+                        u - lambda * g
+                    })
+                    .collect()
             } else {
-                (0..n_qp).map(|i| if i < u_nom_vec.len() { u_nom_vec[i] } else { 0.0 }).collect()
+                (0..n_qp)
+                    .map(|i| {
+                        if i < u_nom_vec.len() {
+                            u_nom_vec[i]
+                        } else {
+                            0.0
+                        }
+                    })
+                    .collect()
             }
         }
     };
 
     // Project u_opt to match u_nom length (for reshape)
-    let u_opt: Vec<f64> = (0..u_nom_vec.len()).map(|i| {
-        if i < u_opt_raw.len() { u_opt_raw[i] } else { 0.0 }
-    }).collect();
+    let u_opt: Vec<f64> = (0..u_nom_vec.len())
+        .map(|i| {
+            if i < u_opt_raw.len() {
+                u_opt_raw[i]
+            } else {
+                0.0
+            }
+        })
+        .collect();
 
     // 10. Project onto ||u|| ≤ u_max if exceeded
     let u_norm: f64 = u_opt.iter().map(|&x| x * x).sum::<f64>().sqrt();
@@ -1485,11 +1540,16 @@ pub fn solve_cbf_qp(
     };
 
     // 11. Post-projection safety margin: ∇h^T u + α·h
-    let dot: f64 = grad_h_vec.iter().zip(u_opt.iter()).map(|(&g, &u)| g * u).sum();
+    let dot: f64 = grad_h_vec
+        .iter()
+        .zip(u_opt.iter())
+        .map(|(&g, &u)| g * u)
+        .sum();
     let safety_margin_after = dot + alpha_h;
 
     // 12. Check correction magnitude
-    let diff_norm: f64 = u_opt.iter()
+    let diff_norm: f64 = u_opt
+        .iter()
         .zip(u_nom_vec.iter())
         .map(|(&a, &b)| (a - b).powi(2))
         .sum::<f64>()
@@ -1499,32 +1559,16 @@ pub fn solve_cbf_qp(
     // 13. Convert back to Tensor — preserve original u_nom shape AND dtype
     let u_safe = if dtype == candle_core::DType::F64 {
         if u_nom_shape.len() == 1 {
-            Tensor::from_vec(
-                u_opt.clone(),
-                u_nom_shape[0],
-                device,
-            )?
+            Tensor::from_vec(u_opt.clone(), u_nom_shape[0], device)?
         } else {
-            Tensor::from_vec(
-                u_opt.clone(),
-                u_nom_shape.clone(),
-                device,
-            )?
+            Tensor::from_vec(u_opt.clone(), u_nom_shape.clone(), device)?
         }
     } else {
         let u_opt_f32: Vec<f32> = u_opt.iter().map(|&x| x as f32).collect();
         if u_nom_shape.len() == 1 {
-            Tensor::from_vec(
-                u_opt_f32,
-                u_nom_shape[0],
-                device,
-            )?
+            Tensor::from_vec(u_opt_f32, u_nom_shape[0], device)?
         } else {
-            Tensor::from_vec(
-                u_opt_f32,
-                u_nom_shape.clone(),
-                device,
-            )?
+            Tensor::from_vec(u_opt_f32, u_nom_shape.clone(), device)?
         }
     };
 
@@ -1561,8 +1605,15 @@ pub fn steer_cbf_qp(
     let u_nom = Tensor::zeros((n_state, 1), h_current.dtype(), h_current.device())?;
 
     let result = solve_cbf_qp(
-        h_current, h_prev, safe_centroid, &u_nom,
-        alpha_cbf, beta_cbf, gamma_robust, epsilon_koopman, u_max,
+        h_current,
+        h_prev,
+        safe_centroid,
+        &u_nom,
+        alpha_cbf,
+        beta_cbf,
+        gamma_robust,
+        epsilon_koopman,
+        u_max,
     )?;
 
     let h_steered = h_current.broadcast_add(&result.u_safe)?;
@@ -2313,7 +2364,10 @@ mod tests {
         let g1 = compute_adaptive_gain(1.0, -2.0);
         let g2 = compute_adaptive_gain(1.0, 0.0);
         let g3 = compute_adaptive_gain(1.0, 2.0);
-        assert!(g1 > g2 && g2 > g3, "Gain must decrease with higher Lyapunov");
+        assert!(
+            g1 > g2 && g2 > g3,
+            "Gain must decrease with higher Lyapunov"
+        );
     }
 
     #[test]
@@ -2373,7 +2427,10 @@ mod tests {
         let safe = Tensor::zeros(&[2, 2], DType::F32, &Device::Cpu)?;
         let result = steer_cbf_projection(&h, &safe, 1.0)?;
         let val = result.mean_all()?.to_scalar::<f32>()?;
-        assert!((val - 0.5).abs() < 1e-5, "State well inside safe set should not change");
+        assert!(
+            (val - 0.5).abs() < 1e-5,
+            "State well inside safe set should not change"
+        );
         Ok(())
     }
 
@@ -2382,8 +2439,7 @@ mod tests {
         let beta_cbf = 100.0f32;
         let dist_needed = (beta_cbf + 5.0f32).sqrt();
         let val_per_elem = dist_needed / 2.0f32.sqrt();
-        let h =
-            Tensor::new(val_per_elem, &Device::Cpu)?.broadcast_as(&[2, 2])?;
+        let h = Tensor::new(val_per_elem, &Device::Cpu)?.broadcast_as(&[2, 2])?;
         let safe = Tensor::zeros(&[2, 2], DType::F32, &Device::Cpu)?;
         let result = steer_cbf_projection(&h, &safe, 1.0)?;
         let result_val = result.mean_all()?.to_scalar::<f32>()?;
@@ -2472,8 +2528,16 @@ mod tests {
         let hidden = Tensor::new(10.0f32, &Device::Cpu)?.broadcast_as(&[2, 2])?;
         let result_low_lambda = steer_tube_mpc(&hidden, &safe, 1.0, 0.1)?;
         let result_high_lambda = steer_tube_mpc(&hidden, &safe, 1.0, 10.0)?;
-        let corr_low = hidden.sub(&result_low_lambda)?.abs()?.sum_all()?.to_scalar::<f32>()?;
-        let corr_high = hidden.sub(&result_high_lambda)?.abs()?.sum_all()?.to_scalar::<f32>()?;
+        let corr_low = hidden
+            .sub(&result_low_lambda)?
+            .abs()?
+            .sum_all()?
+            .to_scalar::<f32>()?;
+        let corr_high = hidden
+            .sub(&result_high_lambda)?
+            .abs()?
+            .sum_all()?
+            .to_scalar::<f32>()?;
         assert!(
             corr_low > corr_high,
             "Menor lambda → mayor corrección: low_lambda={:.2}, high_lambda={:.2}",
@@ -2528,7 +2592,10 @@ mod tests {
         let u_nom = Tensor::zeros(&[2, 2], DType::F32, &Device::Cpu)?;
         let result = robust_mpsf_cbf_filter(&h_current, &h_prev, &u_nom, &safe, 1.0, 10.0, 0.01)?;
         let diff = u_nom.sub(&result)?.abs()?.sum_all()?.to_scalar::<f32>()?;
-        assert!(diff < 1e-6, "Safe state should pass nominal control unchanged");
+        assert!(
+            diff < 1e-6,
+            "Safe state should pass nominal control unchanged"
+        );
         Ok(())
     }
 
@@ -2552,10 +2619,20 @@ mod tests {
         let h_current = Tensor::new(5.0f32, &Device::Cpu)?.broadcast_as(&[2, 2])?;
         let h_prev = h_current.clone();
         let u_nom = Tensor::zeros(&[2, 2], DType::F32, &Device::Cpu)?;
-        let result_small = robust_mpsf_cbf_filter(&h_current, &h_prev, &u_nom, &safe, 1.0, 1.0, 0.01)?;
-        let result_large = robust_mpsf_cbf_filter(&h_current, &h_prev, &u_nom, &safe, 1.0, 1.0, 1.0)?;
-        let corr_small = u_nom.sub(&result_small)?.abs()?.sum_all()?.to_scalar::<f32>()?;
-        let corr_large = u_nom.sub(&result_large)?.abs()?.sum_all()?.to_scalar::<f32>()?;
+        let result_small =
+            robust_mpsf_cbf_filter(&h_current, &h_prev, &u_nom, &safe, 1.0, 1.0, 0.01)?;
+        let result_large =
+            robust_mpsf_cbf_filter(&h_current, &h_prev, &u_nom, &safe, 1.0, 1.0, 1.0)?;
+        let corr_small = u_nom
+            .sub(&result_small)?
+            .abs()?
+            .sum_all()?
+            .to_scalar::<f32>()?;
+        let corr_large = u_nom
+            .sub(&result_large)?
+            .abs()?
+            .sum_all()?
+            .to_scalar::<f32>()?;
         assert!(
             corr_large >= corr_small,
             "Larger zonotope → more conservative correction: small={:.4}, large={:.4}",
@@ -2580,7 +2657,11 @@ mod tests {
     fn test_verify_contraction_rate_jvp_basic() -> Result<()> {
         let h = Tensor::new(0.5f32, &Device::Cpu)?.broadcast_as(&[2, 3])?;
         let rate = verify_contraction_rate_jvp(&h, 1e-4, 10, 0.5)?;
-        assert!(rate > 0.0 && rate.is_finite(), "Contraction rate must be positive and finite: {:.6}", rate);
+        assert!(
+            rate > 0.0 && rate.is_finite(),
+            "Contraction rate must be positive and finite: {:.6}",
+            rate
+        );
         Ok(())
     }
 
@@ -2608,7 +2689,10 @@ mod tests {
     #[test]
     fn test_compute_strided_error_bound_basic() {
         let bound = compute_strided_error_bound(2.0, 3, 0.5);
-        assert!((bound - 3.0).abs() < 1e-6, "L=2, stride=3, v=0.5 → bound=3.0");
+        assert!(
+            (bound - 3.0).abs() < 1e-6,
+            "L=2, stride=3, v=0.5 → bound=3.0"
+        );
     }
 
     #[test]
@@ -2620,7 +2704,10 @@ mod tests {
     #[test]
     fn test_compute_strided_error_bound_large_stride() {
         let bound = compute_strided_error_bound(1.0, 10, 0.1);
-        assert!((bound - 1.0).abs() < 1e-6, "L=1, stride=10, v=0.1 → bound=1.0");
+        assert!(
+            (bound - 1.0).abs() < 1e-6,
+            "L=1, stride=10, v=0.1 → bound=1.0"
+        );
     }
 
     #[test]
@@ -2745,9 +2832,18 @@ mod tests {
         let result = steer_contracting_tube(&phi, &centroid, 1.0, 10.0)?;
 
         // Verify contraction: distance to centroid decreased
-        let orig_dist = (&phi.broadcast_sub(&centroid)?).sqr()?.sum_all()?.to_scalar::<f32>()?;
-        let new_dist = (&result.broadcast_sub(&centroid)?).sqr()?.sum_all()?.to_scalar::<f32>()?;
-        assert!(new_dist < orig_dist, "Tube MPC should contract toward centroid");
+        let orig_dist = (&phi.broadcast_sub(&centroid)?)
+            .sqr()?
+            .sum_all()?
+            .to_scalar::<f32>()?;
+        let new_dist = (&result.broadcast_sub(&centroid)?)
+            .sqr()?
+            .sum_all()?
+            .to_scalar::<f32>()?;
+        assert!(
+            new_dist < orig_dist,
+            "Tube MPC should contract toward centroid"
+        );
         Ok(())
     }
 
@@ -2770,8 +2866,15 @@ mod tests {
         let result = steer_contracting_tube(&phi, &centroid, 2.0, rho_tube)?;
 
         // Verify tube membership: ||result - centroid|| ≤ ρ
-        let tube_dist = (&result.broadcast_sub(&centroid)?).sqr()?.sum_all()?.sqrt()?.to_scalar::<f32>()?;
-        assert!(tube_dist <= rho_tube + 1e-4, "Result must be within tube boundary");
+        let tube_dist = (&result.broadcast_sub(&centroid)?)
+            .sqr()?
+            .sum_all()?
+            .sqrt()?
+            .to_scalar::<f32>()?;
+        assert!(
+            tube_dist <= rho_tube + 1e-4,
+            "Result must be within tube boundary"
+        );
         Ok(())
     }
 
@@ -2790,9 +2893,12 @@ mod tests {
     fn test_estimate_contraction_rate_converging() -> Result<()> {
         // Simulate converging trajectory: norms decrease
         let dev = &Device::Cpu;
-        let t0 = Tensor::ones((1, 4), DType::F32, dev)?.broadcast_mul(&Tensor::new(4.0f32, dev)?)?;
-        let t1 = Tensor::ones((1, 4), DType::F32, dev)?.broadcast_mul(&Tensor::new(2.0f32, dev)?)?;
-        let t2 = Tensor::ones((1, 4), DType::F32, dev)?.broadcast_mul(&Tensor::new(1.0f32, dev)?)?;
+        let t0 =
+            Tensor::ones((1, 4), DType::F32, dev)?.broadcast_mul(&Tensor::new(4.0f32, dev)?)?;
+        let t1 =
+            Tensor::ones((1, 4), DType::F32, dev)?.broadcast_mul(&Tensor::new(2.0f32, dev)?)?;
+        let t2 =
+            Tensor::ones((1, 4), DType::F32, dev)?.broadcast_mul(&Tensor::new(1.0f32, dev)?)?;
         let trajectory = vec![t0, t1, t2];
         let lambda = estimate_contraction_rate(&trajectory)?;
         assert!(lambda < 0.0, "Converging trajectory → negative λ");
@@ -2802,9 +2908,12 @@ mod tests {
     #[test]
     fn test_estimate_contraction_rate_diverging() -> Result<()> {
         let dev = &Device::Cpu;
-        let t0 = Tensor::ones((1, 4), DType::F32, dev)?.broadcast_mul(&Tensor::new(1.0f32, dev)?)?;
-        let t1 = Tensor::ones((1, 4), DType::F32, dev)?.broadcast_mul(&Tensor::new(2.0f32, dev)?)?;
-        let t2 = Tensor::ones((1, 4), DType::F32, dev)?.broadcast_mul(&Tensor::new(4.0f32, dev)?)?;
+        let t0 =
+            Tensor::ones((1, 4), DType::F32, dev)?.broadcast_mul(&Tensor::new(1.0f32, dev)?)?;
+        let t1 =
+            Tensor::ones((1, 4), DType::F32, dev)?.broadcast_mul(&Tensor::new(2.0f32, dev)?)?;
+        let t2 =
+            Tensor::ones((1, 4), DType::F32, dev)?.broadcast_mul(&Tensor::new(4.0f32, dev)?)?;
         let trajectory = vec![t0, t1, t2];
         let lambda = estimate_contraction_rate(&trajectory)?;
         assert!(lambda > 0.0, "Diverging trajectory → positive λ");

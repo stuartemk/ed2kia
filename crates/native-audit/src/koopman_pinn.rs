@@ -114,7 +114,14 @@ pub fn compute_pinn_loss_stable(
 ) -> Result<PinnLossResult> {
     // Clamp dt to prevent division by zero
     let dt_clamped = dt.max(1e-6).min(1.0);
-    compute_pinn_loss(psi_t, psi_t_next_data, k_matrix, r_theta, dt_clamped, lambda_physics)
+    compute_pinn_loss(
+        psi_t,
+        psi_t_next_data,
+        k_matrix,
+        r_theta,
+        dt_clamped,
+        lambda_physics,
+    )
 }
 
 /// Compute PINN loss tensor (returns Tensor for gradient computation).
@@ -182,7 +189,9 @@ mod tests {
     use candle_core::Device;
 
     fn make_tensor(rows: usize, cols: usize, seed: f32) -> Result<Tensor> {
-        let data: Vec<f32> = (0..rows * cols).map(|i| seed + (i % 10) as f32 * 0.1).collect();
+        let data: Vec<f32> = (0..rows * cols)
+            .map(|i| seed + (i % 10) as f32 * 0.1)
+            .collect();
         Tensor::from_vec(data, (rows, cols), &Device::Cpu)
     }
 
@@ -196,7 +205,10 @@ mod tests {
         let result = compute_pinn_loss(&psi_t, &psi_next, &k, &r, 0.01, 1.0)?;
         assert!(result.total_loss >= 0.0, "Loss should be non-negative");
         assert!(result.data_loss >= 0.0, "Data loss should be non-negative");
-        assert!(result.physics_loss >= 0.0, "Physics loss should be non-negative");
+        assert!(
+            result.physics_loss >= 0.0,
+            "Physics loss should be non-negative"
+        );
         Ok(())
     }
 
@@ -209,7 +221,10 @@ mod tests {
         let r = Tensor::zeros((2, 4), DType::F32, &Device::Cpu)?;
 
         let result = compute_pinn_loss(&psi_t, &psi_next, &k, &r, 0.01, 1.0)?;
-        assert!(result.data_loss < 1e-5, "Data loss should be ~0 for exact evolution");
+        assert!(
+            result.data_loss < 1e-5,
+            "Data loss should be ~0 for exact evolution"
+        );
         Ok(())
     }
 
@@ -238,7 +253,10 @@ mod tests {
 
         // dt = 0 should be clamped to 1e-6
         let result = compute_pinn_loss_stable(&psi_t, &psi_next, &k, &r, 0.0, 1.0)?;
-        assert!(result.total_loss.is_finite(), "Stable loss should be finite with dt=0");
+        assert!(
+            result.total_loss.is_finite(),
+            "Stable loss should be finite with dt=0"
+        );
         Ok(())
     }
 
@@ -250,7 +268,7 @@ mod tests {
         let r = Tensor::zeros((2, 4), DType::F32, &Device::Cpu)?;
 
         let loss = compute_pinn_loss_tensor(&psi_t, &psi_next, &k, &r, 0.01, 1.0)?;
-        assert!(loss.dim_all()?.is_empty(), "Loss should be scalar");
+        assert!(loss.dims().is_empty(), "Loss should be scalar");
         Ok(())
     }
 
@@ -261,7 +279,10 @@ mod tests {
         let k = Tensor::eye(8, DType::F32, &Device::Cpu)?;
 
         let monotonic = verify_pinn_loss_monotonicity(&psi_t, &psi_next, &k, 0.01, 1.0)?;
-        assert!(monotonic, "Zero residual should give lower loss than random");
+        assert!(
+            monotonic,
+            "Zero residual should give lower loss than random"
+        );
         Ok(())
     }
 

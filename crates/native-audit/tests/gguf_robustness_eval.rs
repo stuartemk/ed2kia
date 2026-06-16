@@ -4,11 +4,9 @@
 //! Validates forward invariance under real GGUF noise on edge devices.
 
 use candle_core::{Device, Tensor};
+use native_audit::control::{compute_tube_mpc_steering, propagate_tube_radius, verify_robust_cbf};
 use native_audit::deep_koopman::{
     compute_robust_tube_radius, robust_dmdc_gguf, simulate_gguf_quantization_noise,
-};
-use native_audit::control::{
-    compute_tube_mpc_steering, propagate_tube_radius, verify_robust_cbf,
 };
 
 // ---------------------------------------------------------------------------
@@ -113,7 +111,15 @@ fn test_robust_dmdc_basic_identification() {
         .collect();
     let b_vals: Vec<f32> = (0..d_state * d_control).map(|_| 0.1).collect();
 
-    let (x, y, u) = generate_linear_trajectories(&k_vals, &b_vals, d_state, d_control, n_snapshots, 0.01, &device);
+    let (x, y, u) = generate_linear_trajectories(
+        &k_vals,
+        &b_vals,
+        d_state,
+        d_control,
+        n_snapshots,
+        0.01,
+        &device,
+    );
 
     let result = robust_dmdc_gguf(&x, &y, &u, 8, 0.5, 0.95, 1e-4).expect("robust_dmdc_gguf");
 
@@ -127,14 +133,22 @@ fn test_robust_dmdc_basic_identification() {
     assert_eq!(b_shape[1], d_control);
 
     // Verify spectral radius is stable
-    assert!(result.spectral_radius <= 0.95, "rho={:.4}", result.spectral_radius);
+    assert!(
+        result.spectral_radius <= 0.95,
+        "rho={:.4}",
+        result.spectral_radius
+    );
 
     // Verify rank truncation
     assert!(result.truncated_rank <= 8);
     assert!(result.truncated_rank > 0);
 
     // Reconstruction error should be reasonable
-    assert!(result.reconstruction_error < 1.0, "recon_err={:.6}", result.reconstruction_error);
+    assert!(
+        result.reconstruction_error < 1.0,
+        "recon_err={:.6}",
+        result.reconstruction_error
+    );
 }
 
 #[test]
@@ -150,12 +164,24 @@ fn test_robust_dmdc_stability_projection() {
         .collect();
     let b_vals: Vec<f32> = vec![0.2; d_state * d_control];
 
-    let (x, y, u) = generate_linear_trajectories(&k_vals, &b_vals, d_state, d_control, n_snapshots, 0.0, &device);
+    let (x, y, u) = generate_linear_trajectories(
+        &k_vals,
+        &b_vals,
+        d_state,
+        d_control,
+        n_snapshots,
+        0.0,
+        &device,
+    );
 
     let result = robust_dmdc_gguf(&x, &y, &u, 4, 0.5, 0.9, 1e-4).expect("robust_dmdc_gguf");
 
     // Must be stabilized
-    assert!(result.spectral_radius <= 0.9, "rho={:.4}", result.spectral_radius);
+    assert!(
+        result.spectral_radius <= 0.9,
+        "rho={:.4}",
+        result.spectral_radius
+    );
 }
 
 #[test]
@@ -171,11 +197,27 @@ fn test_robust_dmdc_noise_sensitivity() {
     let b_vals: Vec<f32> = vec![0.1; d_state * d_control];
 
     // Low noise
-    let (x1, y1, u1) = generate_linear_trajectories(&k_vals, &b_vals, d_state, d_control, n_snapshots, 0.001, &device);
+    let (x1, y1, u1) = generate_linear_trajectories(
+        &k_vals,
+        &b_vals,
+        d_state,
+        d_control,
+        n_snapshots,
+        0.001,
+        &device,
+    );
     let result_clean = robust_dmdc_gguf(&x1, &y1, &u1, 4, 0.1, 0.95, 1e-4).expect("clean");
 
     // High noise
-    let (x2, y2, u2) = generate_linear_trajectories(&k_vals, &b_vals, d_state, d_control, n_snapshots, 0.1, &device);
+    let (x2, y2, u2) = generate_linear_trajectories(
+        &k_vals,
+        &b_vals,
+        d_state,
+        d_control,
+        n_snapshots,
+        0.1,
+        &device,
+    );
     let result_noisy = robust_dmdc_gguf(&x2, &y2, &u2, 4, 0.5, 0.95, 1e-4).expect("noisy");
 
     // Noisy result should have higher reconstruction error
@@ -199,7 +241,15 @@ fn test_robust_dmdc_result_display() {
         .collect();
     let b_vals: Vec<f32> = vec![0.1; d_state * d_control];
 
-    let (x, y, u) = generate_linear_trajectories(&k_vals, &b_vals, d_state, d_control, n_snapshots, 0.0, &device);
+    let (x, y, u) = generate_linear_trajectories(
+        &k_vals,
+        &b_vals,
+        d_state,
+        d_control,
+        n_snapshots,
+        0.0,
+        &device,
+    );
 
     let result = robust_dmdc_gguf(&x, &y, &u, 3, 0.5, 0.95, 1e-4).expect("robust_dmdc_gguf");
 
@@ -222,7 +272,15 @@ fn test_gguf_quantization_noise_basic() {
 
     // Noise should change values
     let diff = x.sub(&noisy).expect("diff");
-    let diff_norm = diff.sqr().expect("sqr").sum_all().expect("sum").sqrt().expect("sqrt").to_scalar::<f32>().expect("scalar");
+    let diff_norm = diff
+        .sqr()
+        .expect("sqr")
+        .sum_all()
+        .expect("sum")
+        .sqrt()
+        .expect("sqrt")
+        .to_scalar::<f32>()
+        .expect("scalar");
 
     // Quantization noise should be non-zero for non-quantized values
     assert!(diff_norm > 0.0, "Quantization should introduce noise");
@@ -241,8 +299,28 @@ fn test_gguf_quantization_noise_int4_vs_int8() {
     // INT8-like (smaller quantization step)
     let noisy_int8 = simulate_gguf_quantization_noise(&x, 0.25).expect("int8");
 
-    let diff_int4 = x.sub(&noisy_int4).expect("d4").sqr().expect("s4").sum_all().expect("s4").sqrt().expect("s4").to_scalar::<f32>().expect("s4");
-    let diff_int8 = x.sub(&noisy_int8).expect("d8").sqr().expect("s8").sum_all().expect("s8").sqrt().expect("s8").to_scalar::<f32>().expect("s8");
+    let diff_int4 = x
+        .sub(&noisy_int4)
+        .expect("d4")
+        .sqr()
+        .expect("s4")
+        .sum_all()
+        .expect("s4")
+        .sqrt()
+        .expect("s4")
+        .to_scalar::<f32>()
+        .expect("s4");
+    let diff_int8 = x
+        .sub(&noisy_int8)
+        .expect("d8")
+        .sqr()
+        .expect("s8")
+        .sum_all()
+        .expect("s8")
+        .sqrt()
+        .expect("s8")
+        .to_scalar::<f32>()
+        .expect("s8");
 
     // INT4 should have more noise than INT8
     assert!(
@@ -263,7 +341,11 @@ fn test_gguf_quantization_noise_clamping() {
     let noisy = simulate_gguf_quantization_noise(&x, 0.5).expect("quantize");
 
     // Result should be clipped to [-8, 7] range
-    let out: Vec<f32> = noisy.flatten_all().expect("flat").to_vec1::<f32>().expect("vec");
+    let out: Vec<f32> = noisy
+        .flatten_all()
+        .expect("flat")
+        .to_vec1::<f32>()
+        .expect("vec");
     for &v in &out {
         assert!(v >= -8.0 && v <= 7.0, "Value {:.2} outside [-8, 7]", v);
     }
@@ -293,7 +375,8 @@ fn test_tube_mpc_inside_tube_no_change() {
     let psi = make_tensor(1, dim, 0.01, &device);
     let u_nom = make_tensor(1, u_dim, 0.1, &device);
 
-    let result = compute_tube_mpc_steering(&psi, &k, &b, &u_nom, 1.0, 0.05, 0.1, 0.5).expect("tube_mpc");
+    let result =
+        compute_tube_mpc_steering(&psi, &k, &b, &u_nom, 1.0, 0.05, 0.1, 0.5).expect("tube_mpc");
 
     // Should be inside tube
     assert!(result.inside_tube, "Small state should be inside tube");
@@ -330,7 +413,8 @@ fn test_tube_mpc_outside_tube_corrects() {
     let psi = make_tensor(1, dim, 5.0, &device);
     let u_nom = make_tensor(1, u_dim, 0.1, &device);
 
-    let result = compute_tube_mpc_steering(&psi, &k, &b, &u_nom, 0.5, 0.1, 0.1, 1.0).expect("tube_mpc");
+    let result =
+        compute_tube_mpc_steering(&psi, &k, &b, &u_nom, 0.5, 0.1, 0.1, 1.0).expect("tube_mpc");
 
     // Should be outside tube
     assert!(!result.inside_tube, "Large state should be outside tube");
@@ -346,7 +430,10 @@ fn test_tube_mpc_outside_tube_corrects() {
         .expect("sqrt")
         .to_scalar::<f32>()
         .expect("norm");
-    assert!(corr_norm > 0.0, "Correction should be non-zero outside tube");
+    assert!(
+        corr_norm > 0.0,
+        "Correction should be non-zero outside tube"
+    );
 }
 
 #[test]
@@ -363,7 +450,8 @@ fn test_tube_mpc_result_display() {
     let psi = make_tensor(1, dim, 0.1, &device);
     let u_nom = make_tensor(1, u_dim, 0.1, &device);
 
-    let result = compute_tube_mpc_steering(&psi, &k, &b, &u_nom, 1.0, 0.05, 0.1, 0.5).expect("tube_mpc");
+    let result =
+        compute_tube_mpc_steering(&psi, &k, &b, &u_nom, 1.0, 0.05, 0.1, 0.5).expect("tube_mpc");
 
     let display = format!("{}", result);
     assert!(display.contains("TubeMPC"));
@@ -387,12 +475,32 @@ fn test_tube_mpc_lambda_effect() {
     let u_nom = make_tensor(1, u_dim, 0.1, &device);
 
     // Low lambda
-    let result_low = compute_tube_mpc_steering(&psi, &k, &b, &u_nom, 0.5, 0.1, 0.1, 0.1).expect("low");
+    let result_low =
+        compute_tube_mpc_steering(&psi, &k, &b, &u_nom, 0.5, 0.1, 0.1, 0.1).expect("low");
     // High lambda
-    let result_high = compute_tube_mpc_steering(&psi, &k, &b, &u_nom, 0.5, 0.1, 0.1, 2.0).expect("high");
+    let result_high =
+        compute_tube_mpc_steering(&psi, &k, &b, &u_nom, 0.5, 0.1, 0.1, 2.0).expect("high");
 
-    let corr_low = result_low.u_tube.sqr().expect("s").sum_all().expect("s").sqrt().expect("s").to_scalar::<f32>().expect("s");
-    let corr_high = result_high.u_tube.sqr().expect("s").sum_all().expect("s").sqrt().expect("s").to_scalar::<f32>().expect("s");
+    let corr_low = result_low
+        .u_tube
+        .sqr()
+        .expect("s")
+        .sum_all()
+        .expect("s")
+        .sqrt()
+        .expect("s")
+        .to_scalar::<f32>()
+        .expect("s");
+    let corr_high = result_high
+        .u_tube
+        .sqr()
+        .expect("s")
+        .sum_all()
+        .expect("s")
+        .sqrt()
+        .expect("s")
+        .to_scalar::<f32>()
+        .expect("s");
 
     // Higher lambda should produce larger correction
     assert!(
@@ -488,7 +596,12 @@ fn test_verify_robust_cbf_noise_effect() {
     let (_sat_high, margin_high) = verify_robust_cbf(0.1, 0.0, 0.5, 1.0, 0.5, 0.1);
 
     // Low noise should have larger margin
-    assert!(margin_low > margin_high, "Low noise margin ({:.4}) > high noise ({:.4})", margin_low, margin_high);
+    assert!(
+        margin_low > margin_high,
+        "Low noise margin ({:.4}) > high noise ({:.4})",
+        margin_low,
+        margin_high
+    );
 
     // Low noise should be more likely satisfied
     assert!(sat_low, "Low noise should satisfy CBF");
@@ -511,7 +624,15 @@ fn test_robust_pipeline_dmdc_tube_mpc() {
         .collect();
     let b_vals: Vec<f32> = vec![0.1; d_state * d_control];
 
-    let (x, y, u) = generate_linear_trajectories(&k_vals, &b_vals, d_state, d_control, n_snapshots, 0.02, &device);
+    let (x, y, u) = generate_linear_trajectories(
+        &k_vals,
+        &b_vals,
+        d_state,
+        d_control,
+        n_snapshots,
+        0.02,
+        &device,
+    );
 
     // 2. Robust DMDc identification
     let dmdc = robust_dmdc_gguf(&x, &y, &u, 4, 0.5, 0.95, 1e-4).expect("robust_dmdc");
@@ -523,26 +644,39 @@ fn test_robust_pipeline_dmdc_tube_mpc() {
     // 4. Tube MPC steering with noisy state
     let u_nom = make_tensor(1, d_control, 0.1, &device);
     let result = compute_tube_mpc_steering(
-        &psi_noisy,
-        &dmdc.k_a,
-        &dmdc.k_b,
-        &u_nom,
-        0.5,
-        0.5, // noise_eps
-        0.1,
-        0.5,
+        &psi_noisy, &dmdc.k_a, &dmdc.k_b, &u_nom, 0.5, 0.5, // noise_eps
+        0.1, 0.5,
     )
     .expect("tube_mpc");
 
     // 5. Verify robust CBF
     let psi_flat = psi_noisy.flatten_all().expect("flat");
-    let psi_sq: f32 = psi_flat.sqr().expect("s").sum_all().expect("s").to_scalar::<f32>().expect("s");
+    let psi_sq: f32 = psi_flat
+        .sqr()
+        .expect("s")
+        .sum_all()
+        .expect("s")
+        .to_scalar::<f32>()
+        .expect("s");
     let h_val = 1.0 - psi_sq;
     let nabla_norm = 2.0 * psi_sq.sqrt();
 
-    let k_psi = dmdc.k_a.matmul(&psi_noisy).expect("kp").flatten_all().expect("f");
-    let nabla_h = psi_flat.broadcast_mul(&Tensor::new(-2.0f32, &device).expect("neg2")).expect("nh");
-    let l_f_h: f32 = nabla_h.broadcast_mul(&k_psi).expect("bf").sum_all().expect("s").to_scalar::<f32>().expect("s");
+    let k_psi = dmdc
+        .k_a
+        .matmul(&psi_noisy)
+        .expect("kp")
+        .flatten_all()
+        .expect("f");
+    let nabla_h = psi_flat
+        .broadcast_mul(&Tensor::new(-2.0f32, &device).expect("neg2"))
+        .expect("nh");
+    let l_f_h: f32 = nabla_h
+        .broadcast_mul(&k_psi)
+        .expect("bf")
+        .sum_all()
+        .expect("s")
+        .to_scalar::<f32>()
+        .expect("s");
 
     let l_g_h = nabla_h
         .reshape((1, d_state))
@@ -552,12 +686,22 @@ fn test_robust_pipeline_dmdc_tube_mpc() {
         .flatten_all()
         .expect("f");
     let u_robust_f = result.u_robust.flatten_all().expect("f");
-    let l_g_u: f32 = l_g_h.broadcast_mul(&u_robust_f).expect("bu").sum_all().expect("s").to_scalar::<f32>().expect("s");
+    let l_g_u: f32 = l_g_h
+        .broadcast_mul(&u_robust_f)
+        .expect("bu")
+        .sum_all()
+        .expect("s")
+        .to_scalar::<f32>()
+        .expect("s");
 
     let (cbf_sat, cbf_margin) = verify_robust_cbf(l_f_h, l_g_u, h_val, nabla_norm, 0.5, 0.1);
 
     // Pipeline should complete without panic
-    assert!(dmdc.spectral_radius <= 1.1, "spectral_radius {:.4} > 1.1", dmdc.spectral_radius);
+    assert!(
+        dmdc.spectral_radius <= 1.1,
+        "spectral_radius {:.4} > 1.1",
+        dmdc.spectral_radius
+    );
     assert!(result.tube_radius > 0.0);
 
     // Log results

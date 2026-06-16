@@ -71,14 +71,22 @@ pub struct ReductionMetrics {
     pub volume_reduction_log10: f32,
     /// Fraction of generators pruned (0..1].
     pub pruning_fraction: f32,
+    /// Tightness score: 1.0 = perfect fit, lower = more over-approximation (Sprint 168).
+    pub tightness_score: f32,
+    /// Wrapping overhead: ratio of volume_after / volume_before (Sprint 168).
+    pub wrapping_overhead: f32,
 }
 
 impl std::fmt::Display for ReductionMetrics {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "ReductionMetrics {{ before={}, after={}, vol_ratio_10={:.3}, pruned={:.1}% }}",
-            self.generators_before, self.generators_after,
+        write!(
+            f,
+            "ReductionMetrics {{ before={}, after={}, vol_ratio_10={:.3}, pruned={:.1}% }}",
+            self.generators_before,
+            self.generators_after,
             self.volume_reduction_log10,
-            self.pruning_fraction * 100.0)
+            self.pruning_fraction * 100.0
+        )
     }
 }
 
@@ -462,6 +470,8 @@ impl Zonotope {
                 volume_after: volume_before,
                 volume_reduction_log10: 0.0,
                 pruning_fraction: 0.0,
+                tightness_score: 1.0,
+                wrapping_overhead: 1.0,
             };
             return Ok((self.clone(), metrics));
         }
@@ -511,6 +521,17 @@ impl Zonotope {
             1.0
         };
 
+        let wrapping_overhead = if volume_before > 1e-12 {
+            volume_after / volume_before
+        } else {
+            1.0
+        };
+        // Tightness: how much of the original volume is preserved (1.0 = perfect)
+        let tightness_score = if volume_after > 1e-12 {
+            (volume_before / volume_after).min(1.0)
+        } else {
+            1.0
+        };
         let metrics = ReductionMetrics {
             generators_before: num_gens,
             generators_after,
@@ -518,6 +539,8 @@ impl Zonotope {
             volume_after,
             volume_reduction_log10: volume_ratio.log10(),
             pruning_fraction: pruned_count as f32 / num_gens as f32,
+            tightness_score,
+            wrapping_overhead,
         };
 
         Ok((reduced, metrics))
@@ -539,6 +562,114 @@ impl Zonotope {
     pub fn reduce_order(&self, max_order: usize) -> Result<Self> {
         let (reduced, _metrics) = self.reduce_order_with_metrics(max_order)?;
         Ok(reduced)
+    }
+
+    /// Enhanced Girard Reduction (Sprint 168).
+    ///
+    /// Uses hybrid importance scoring: `importance[i] = L2_norm(G[i]) + alpha * L1_norm(G[i])`.
+    /// This combines directional magnitude (L2) with volume contribution (L1) for
+    /// tighter over-approximation in high-dimensional core spaces.
+    ///
+    /// # Arguments
+    /// * `max_gens` - Maximum number of generators to keep (before adding diagonal hull).
+    /// * `alpha_volume` - Weight for L1 volume contribution (default 0.1). Higher values
+    ///   prioritize volume-preserving generators.
+    ///
+    /// # Returns
+    /// Reduced zonotope + enhanced `ReductionMetrics` with tightness/wrapping scores.
+    pub fn reduce_order_girard_enhanced(
+        &self,
+        max_gens: usize,
+        alpha_volume: f32,
+    ) -> Result<(Self, ReductionMetrics)> {
+        let dims = self.hidden_dim()?;
+        let num_gens = self.num_gens()?;
+        let volume_before = self.volume_proxy()?;
+
+        if num_gens <= max_gens {
+            let metrics = ReductionMetrics {
+                generators_before: num_gens,
+                generators_after: num_gens,
+                volume_before,
+                volume_after: volume_before,
+                volume_reduction_log10: 0.0,
+                pruning_fraction: 0.0,
+                tightness_score: 1.0,
+                wrapping_overhead: 1.0,
+            };
+            return Ok((self.clone(), metrics));
+        }
+
+        // 1. Compute hybrid importance: L2 norm + alpha * L1 norm
+        let gen_abs = self.generators.abs()?;
+        let l1_norms = gen_abs.sum_keepdim(1)?; // [num_gens, 1]
+        let l2_norms = self.generators.sqr()?.sum_keepdim(1)?.sqrt()?; // [num_gens, 1]
+
+        // importance = L2 + alpha * L1
+        let alpha_tensor = Tensor::new(alpha_volume, self.generators.device())?;
+        let l1_weighted = l1_norms.broadcast_mul(&alpha_tensor)?;
+        let importance = l2_norms.broadcast_add(&l1_weighted)?;
+        let importance_vec: Vec<f32> = importance.flatten_all()?.to_vec1()?;
+
+        // 2. Sort indices descending by hybrid importance
+        let mut indices: Vec<usize> = (0..num_gens).collect();
+        indices.sort_by(|&a, &b| {
+            importance_vec[b]
+                .partial_cmp(&importance_vec[a])
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+
+        // 3. Keep top generators (reserve space for diagonal hull)
+        let keep_len = max_gens.saturating_sub(dims).min(num_gens);
+        let keep_indices: Vec<usize> = indices[..keep_len].to_vec();
+        let collapse_indices: Vec<usize> = indices[keep_len..].to_vec();
+
+        // 4. Extract kept generators
+        let kept_gens = Self::extract_rows(&self.generators, &keep_indices)?;
+
+        // 5. Collapse remaining → bounding box (sum of abs per dimension)
+        let collapsed = Self::extract_rows(&self.generators, &collapse_indices)?;
+        let hull_diag = collapsed.abs()?.sum(0)?; // [hidden_dim]
+
+        // 6. Create diagonal matrix from hull
+        let diag_matrix = Self::create_diagonal_from_vec(&hull_diag)?;
+
+        // 7. Concatenate kept + diagonal along generator axis (dim 0)
+        let new_gens = Tensor::cat(&[&kept_gens, &diag_matrix], 0)?;
+
+        let reduced = Zonotope {
+            center: self.center.clone(),
+            generators: new_gens,
+            config: self.config.clone(),
+        };
+
+        let volume_after = reduced.volume_proxy()?;
+        let generators_after = reduced.num_gens()?;
+        let pruned_count = num_gens - keep_len;
+        let volume_ratio = if volume_before > 1e-12 {
+            volume_after / volume_before
+        } else {
+            1.0
+        };
+        let wrapping_overhead = volume_ratio;
+        let tightness_score = if volume_after > 1e-12 {
+            (volume_before / volume_after).min(1.0)
+        } else {
+            1.0
+        };
+
+        let metrics = ReductionMetrics {
+            generators_before: num_gens,
+            generators_after,
+            volume_before,
+            volume_after,
+            volume_reduction_log10: volume_ratio.log10(),
+            pruning_fraction: pruned_count as f32 / num_gens as f32,
+            tightness_score,
+            wrapping_overhead,
+        };
+
+        Ok((reduced, metrics))
     }
 
     /// Extract specific rows from a tensor by indices.
@@ -678,7 +809,9 @@ impl Zonotope {
 
         // Take maximum across all dimensions
         let bound_vec = bound_per_dim.flatten_all()?.to_vec1::<f32>()?;
-        let max_bound = bound_vec.into_iter().fold(f32::NEG_INFINITY, |a, b| a.max(b));
+        let max_bound = bound_vec
+            .into_iter()
+            .fold(f32::NEG_INFINITY, |a, b| a.max(b));
         Ok(max_bound)
     }
 
@@ -1322,6 +1455,111 @@ mod tests {
         assert!(result.remainder_bound >= 0.0);
         // With small dt and close safe_center, should be safe
         assert!(is_safe || result.remainder_bound < 1.0);
+        Ok(())
+    }
+
+    // =====================================================================
+    // Sprint 168 — Enhanced Girard Reduction Tests
+    // =====================================================================
+
+    #[test]
+    fn test_girard_enhanced_basic() -> Result<()> {
+        let device = Device::Cpu;
+        let center = Tensor::zeros((1, 4), DType::F32, &device)?;
+        // Create 20 generators in 4D
+        let gens = Tensor::randn(0.0f32, 1.0f32, (20, 4), &device)?;
+        let z = Zonotope::new(center, gens, ZonotopeConfig::default())?;
+
+        let (reduced, metrics) = z.reduce_order_girard_enhanced(8, 0.1)?;
+
+        assert!(reduced.num_gens()? <= 8 + 4); // max_gens + dim (diagonal hull)
+        assert!(metrics.generators_before == 20);
+        assert!(metrics.generators_after <= 12);
+        assert!(metrics.tightness_score > 0.0 && metrics.tightness_score <= 1.0);
+        assert!(metrics.wrapping_overhead > 0.0);
+        assert!(metrics.pruning_fraction > 0.0);
+        Ok(())
+    }
+
+    #[test]
+    fn test_girard_enhanced_no_reduction_needed() -> Result<()> {
+        let device = Device::Cpu;
+        let center = Tensor::zeros((1, 3), DType::F32, &device)?;
+        let gens = Tensor::randn(0.0f32, 1.0f32, (4, 3), &device)?;
+        let z = Zonotope::new(center, gens, ZonotopeConfig::default())?;
+
+        let (reduced, metrics) = z.reduce_order_girard_enhanced(10, 0.1)?;
+
+        assert!(reduced.num_gens()? == 4);
+        assert!(metrics.pruning_fraction == 0.0);
+        assert!(metrics.tightness_score == 1.0);
+        assert!(metrics.wrapping_overhead == 1.0);
+        Ok(())
+    }
+
+    #[test]
+    fn test_girard_enhanced_volume_reduction() -> Result<()> {
+        let device = Device::Cpu;
+        let center = Tensor::zeros((1, 8), DType::F32, &device)?;
+        // Many generators → significant wrapping effect
+        let gens = Tensor::randn(0.0f32, 0.5f32, (50, 8), &device)?;
+        let z = Zonotope::new(center, gens, ZonotopeConfig::default())?;
+
+        let (reduced, metrics) = z.reduce_order_girard_enhanced(16, 0.1)?;
+
+        assert!(reduced.num_gens()? <= 16 + 8);
+        // Volume should not explode significantly
+        assert!(metrics.wrapping_overhead < 10.0);
+        assert!(metrics.pruning_fraction > 0.5); // Most gens pruned
+        Ok(())
+    }
+
+    #[test]
+    fn test_girard_enhanced_vs_standard() -> Result<()> {
+        let device = Device::Cpu;
+        let center = Tensor::zeros((1, 4), DType::F32, &device)?;
+        let gens = Tensor::randn(0.0f32, 1.0f32, (30, 4), &device)?;
+        let z = Zonotope::new(center, gens, ZonotopeConfig::default())?;
+
+        let (_std_reduced, std_metrics) = z.reduce_order_with_metrics(2)?; // max_order=2 → max_gens=8
+        let (_enh_reduced, enh_metrics) = z.reduce_order_girard_enhanced(8, 0.1)?;
+
+        // Both should reduce to similar generator counts
+        assert!(std_metrics.generators_after <= 12);
+        assert!(enh_metrics.generators_after <= 12);
+        // Enhanced should have tightness score
+        assert!(enh_metrics.tightness_score > 0.0);
+        Ok(())
+    }
+
+    #[test]
+    fn test_girard_enhanced_alpha_zero() -> Result<()> {
+        // alpha=0 means pure L2 norm (no volume contribution)
+        let device = Device::Cpu;
+        let center = Tensor::zeros((1, 4), DType::F32, &device)?;
+        let gens = Tensor::randn(0.0f32, 1.0f32, (20, 4), &device)?;
+        let z = Zonotope::new(center, gens, ZonotopeConfig::default())?;
+
+        let (reduced, metrics) = z.reduce_order_girard_enhanced(8, 0.0)?;
+
+        assert!(reduced.num_gens()? <= 12);
+        assert!(metrics.pruning_fraction > 0.0);
+        Ok(())
+    }
+
+    #[test]
+    fn test_girard_enhanced_high_alpha() -> Result<()> {
+        // High alpha prioritizes volume contribution (L1 norm)
+        let device = Device::Cpu;
+        let center = Tensor::zeros((1, 4), DType::F32, &device)?;
+        let gens = Tensor::randn(0.0f32, 1.0f32, (20, 4), &device)?;
+        let z = Zonotope::new(center, gens, ZonotopeConfig::default())?;
+
+        let (reduced, metrics) = z.reduce_order_girard_enhanced(8, 1.0)?;
+
+        assert!(reduced.num_gens()? <= 12);
+        assert!(metrics.pruning_fraction > 0.0);
+        assert!(metrics.tightness_score > 0.0);
         Ok(())
     }
 }

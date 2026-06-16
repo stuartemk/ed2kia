@@ -151,8 +151,317 @@ impl KoopmanRLSConfig {
 }
 
 // ---------------------------------------------------------------------------
-// Result types
+// Sprint 168 (v16.8.0) — Dimensional Collapse Config
 // ---------------------------------------------------------------------------
+
+/// Core selection method for dimensional collapse.
+///
+/// Determines how to rank SAE features when extracting the top-k
+/// topological core for Koopman control in reduced dimension.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CoreSelectionMethod {
+    /// Select by L2 norm of SAE activations (energy-based).
+    Norm,
+    /// Select by SAE sparsity weights (importance-based).
+    Sparsity,
+    /// Weighted combination of norm + sparsity (default: 0.7 norm + 0.3 sparsity).
+    Mixed,
+}
+
+impl Default for CoreSelectionMethod {
+    fn default() -> Self {
+        Self::Mixed
+    }
+}
+
+/// Configuration for dimensional collapse to Matryoshka SAE Core.
+///
+/// Sprint 168 pivot: Run Koopman control, Tube MPC, and certification
+/// **only in low-dim core** (top 16-32 dims by topological/moral importance).
+///
+/// This makes edge propagation viable by collapsing from 4096D+ → core_dim=32,
+/// reducing complexity from O(4096^3) to O(32^3) — a 512Kx speedup.
+#[derive(Debug, Clone)]
+pub struct DimensionalCollapseConfig {
+    /// Core dimensions for control (16-32 recommended for edge).
+    /// Default: 32.
+    pub core_dim: usize,
+    /// Method for core selection.
+    /// Default: Mixed (weighted norm + sparsity).
+    pub selection_method: CoreSelectionMethod,
+    /// Enable adaptive core_dim based on activation energy.
+    /// When true, core_dim varies between min_core_dim and max_core_dim.
+    /// Default: false (fixed core_dim).
+    pub adaptive_core: bool,
+    /// Minimum core_dim when adaptive is enabled.
+    /// Default: 16.
+    pub min_core_dim: usize,
+    /// Maximum core_dim when adaptive is enabled.
+    /// Default: 64.
+    pub max_core_dim: usize,
+    /// Weight for norm component in Mixed selection (sparsity weight = 1 - alpha).
+    /// Default: 0.7 (70% norm + 30% sparsity).
+    pub mixed_norm_weight: f32,
+}
+
+impl Default for DimensionalCollapseConfig {
+    fn default() -> Self {
+        Self {
+            core_dim: 32,
+            selection_method: CoreSelectionMethod::Mixed,
+            adaptive_core: false,
+            min_core_dim: 16,
+            max_core_dim: 64,
+            mixed_norm_weight: 0.7,
+        }
+    }
+}
+
+impl DimensionalCollapseConfig {
+    /// Preset for edge deployment (minimal core, aggressive collapse).
+    pub fn edge_fast() -> Self {
+        Self {
+            core_dim: 16,
+            selection_method: CoreSelectionMethod::Norm,
+            adaptive_core: true,
+            min_core_dim: 8,
+            max_core_dim: 32,
+            mixed_norm_weight: 0.8,
+        }
+    }
+
+    /// Preset for server-class nodes (larger core, higher precision).
+    pub fn high_precision() -> Self {
+        Self {
+            core_dim: 64,
+            selection_method: CoreSelectionMethod::Mixed,
+            adaptive_core: false,
+            min_core_dim: 32,
+            max_core_dim: 128,
+            mixed_norm_weight: 0.6,
+        }
+    }
+
+    /// Set fixed core dimension.
+    pub fn with_core_dim(mut self, dim: usize) -> Self {
+        self.core_dim = dim.max(1).min(256);
+        self.adaptive_core = false;
+        self
+    }
+
+    /// Enable adaptive core with bounds.
+    pub fn with_adaptive_core(mut self, min_dim: usize, max_dim: usize) -> Self {
+        self.adaptive_core = true;
+        self.min_core_dim = min_dim.max(1);
+        self.max_core_dim = max_dim.min(256).max(self.min_core_dim);
+        self
+    }
+
+    /// Validate configuration constraints.
+    pub fn validate(&self) -> std::result::Result<(), String> {
+        if self.core_dim < 1 || self.core_dim > 256 {
+            return Err(format!(
+                "core_dim must be in [1, 256], got {}",
+                self.core_dim
+            ));
+        }
+        if self.min_core_dim < 1 {
+            return Err("min_core_dim must be >= 1".to_string());
+        }
+        if self.max_core_dim < self.min_core_dim {
+            return Err(format!(
+                "max_core_dim ({}) must be >= min_core_dim ({})",
+                self.max_core_dim, self.min_core_dim
+            ));
+        }
+        if self.mixed_norm_weight < 0.0 || self.mixed_norm_weight > 1.0 {
+            return Err(format!(
+                "mixed_norm_weight must be in [0, 1], got {}",
+                self.mixed_norm_weight
+            ));
+        }
+        Ok(())
+    }
+}
+
+/// Result of extracting topological core from high-dimensional SAE features.
+#[derive(Debug, Clone)]
+pub struct CoreExtractionResult {
+    /// Core features [batch, core_dim].
+    pub core_features: Tensor,
+    /// Indices of selected core dimensions (in original SAE space).
+    pub core_indices: Vec<usize>,
+    /// Importance scores for selected dimensions.
+    pub importance_scores: Vec<f32>,
+    /// Total dimensions in original SAE features.
+    pub original_dim: usize,
+    /// Effective core dimension used.
+    pub effective_core_dim: usize,
+}
+
+impl std::fmt::Display for CoreExtractionResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "CoreExtraction[{}→{} dims | top importance: {:.4}]",
+            self.original_dim,
+            self.effective_core_dim,
+            self.importance_scores.first().copied().unwrap_or(0.0)
+        )
+    }
+}
+
+/// Extract topological core from SAE features using configured selection method.
+///
+/// This is the key function for dimensional collapse: it reduces high-dimensional
+/// SAE features (e.g., 2048D) to a compact core (e.g., 32D) that captures the
+/// most dynamically relevant dimensions for Koopman control.
+///
+/// # Arguments
+/// * `sae_features` - SAE activations [batch, d_sae] or [1, d_sae].
+/// * `config` - Dimensional collapse configuration.
+/// * `sae_sparsity_weights` - Optional sparsity weights from SAE [d_sae]. None uses norm-only.
+///
+/// # Returns
+/// `CoreExtractionResult` with core features, indices, and importance scores.
+pub fn extract_topological_core(
+    sae_features: &Tensor,
+    config: &DimensionalCollapseConfig,
+    sae_sparsity_weights: Option<&Tensor>,
+) -> Result<CoreExtractionResult> {
+    let dims = sae_features.dims();
+    let (batch, d_sae) = match dims.len() {
+        2 => (dims[0], dims[1]),
+        1 => (1, dims[0]),
+        _ => candle_core::bail!("sae_features must be 1D or 2D, got {}D", dims.len()),
+    };
+
+    let effective_core_dim = if config.adaptive_core {
+        // Adaptive: estimate core_dim from activation energy
+        let energy = sae_features.sqr()?.to_dtype(DType::F32)?.sum_all()?;
+        let energy_val: f32 = energy.to_scalar()?;
+        // Log-scale mapping: higher energy → larger core
+        let log_energy = (energy_val.max(1e-8) as f64).log2().clamp(0.0, 16.0);
+        let scale = log_energy / 16.0;
+        config.min_core_dim
+            + ((scale * (config.max_core_dim as f64 - config.min_core_dim as f64)) as usize)
+    } else {
+        config.core_dim
+    };
+
+    let core_dim = effective_core_dim.min(d_sae);
+
+    // Compute importance scores per dimension
+    let importance: Tensor = match config.selection_method {
+        CoreSelectionMethod::Norm => {
+            // L2 norm per dimension across batch
+            let sq = sae_features.sqr()?;
+            if batch > 1 {
+                sq.mean(0)?
+            } else {
+                sq.squeeze(0)?
+            }
+        }
+        CoreSelectionMethod::Sparsity => {
+            // Use SAE sparsity weights directly
+            match sae_sparsity_weights {
+                Some(w) => w.to_dtype(DType::F32)?,
+                None => {
+                    // Fallback to norm if no sparsity weights
+                    let sq = sae_features.sqr()?;
+                    if batch > 1 {
+                        sq.mean(0)?
+                    } else {
+                        sq.squeeze(0)?
+                    }
+                }
+            }
+        }
+        CoreSelectionMethod::Mixed => {
+            // Weighted combination: alpha * norm + (1-alpha) * sparsity
+            let norm_score = {
+                let sq = sae_features.sqr()?;
+                if batch > 1 {
+                    sq.mean(0)?
+                } else {
+                    sq.squeeze(0)?
+                }
+            };
+            match sae_sparsity_weights {
+                Some(w) => {
+                    let sparsity_score = w.to_dtype(DType::F32)?;
+                    // Normalize both to [0,1] range using Vec max (Candle lacks max_all)
+                    let norm_vec: Vec<f32> = if norm_score.dims().len() == 1 {
+                        norm_score.to_vec1()?
+                    } else {
+                        norm_score.flatten_all()?.to_vec1()?
+                    };
+                    let sparsity_vec: Vec<f32> = if sparsity_score.dims().len() == 1 {
+                        sparsity_score.to_vec1()?
+                    } else {
+                        sparsity_score.flatten_all()?.to_vec1()?
+                    };
+                    let norm_max = norm_vec.iter().copied().fold(0.0f32, f32::max).max(1e-12);
+                    let sparsity_max = sparsity_vec.iter().copied().fold(0.0f32, f32::max).max(1e-12);
+                    let norm_max_tensor = Tensor::new(norm_max, sae_features.device())?;
+                    let sparsity_max_tensor = Tensor::new(sparsity_max, sae_features.device())?;
+                    let norm_normed = norm_score.broadcast_div(&norm_max_tensor)?;
+                    let sparsity_normed = sparsity_score.broadcast_div(&sparsity_max_tensor)?;
+                    let alpha = config.mixed_norm_weight;
+                    let one_minus_alpha = 1.0 - alpha;
+                    let alpha_tensor = Tensor::new(alpha, sae_features.device())?;
+                    let beta_tensor = Tensor::new(one_minus_alpha, sae_features.device())?;
+                    let norm_weighted = norm_normed.broadcast_mul(&alpha_tensor)?;
+                    let sparsity_weighted = sparsity_normed.broadcast_mul(&beta_tensor)?;
+                    norm_weighted.broadcast_add(&sparsity_weighted)?
+                }
+                None => {
+                    // No sparsity weights, use norm only
+                    norm_score
+                }
+            }
+        }
+    };
+
+    // Extract importance vector and rank dimensions
+    let importance_vec: Vec<f32> = if importance.dims().len() == 1 {
+        importance.to_vec1()?
+    } else {
+        importance.flatten_all()?.to_vec1()?
+    };
+
+    // Create indexed scores and sort descending
+    let mut indexed: Vec<(usize, f32)> = importance_vec
+        .into_iter()
+        .enumerate()
+        .collect();
+    indexed.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+
+    // Select top-k
+    let core_indices: Vec<usize> = indexed[..core_dim].iter().map(|(i, _)| *i).collect();
+    let importance_scores: Vec<f32> = indexed[..core_dim].iter().map(|(_, s)| *s).collect();
+
+    // Extract core features by gathering selected columns
+    let core_features = if core_indices.is_empty() {
+        Tensor::zeros((batch, 1), sae_features.dtype(), sae_features.device())?
+    } else {
+        // Gather columns by indices using narrow slices
+        let mut parts: Vec<Tensor> = Vec::with_capacity(core_dim);
+        for &idx in &core_indices {
+            let col = sae_features.narrow(1, idx, 1)?;
+            parts.push(col);
+        }
+        Tensor::cat(&parts, 1)?
+    };
+
+    Ok(CoreExtractionResult {
+        core_features,
+        core_indices,
+        importance_scores,
+        original_dim: d_sae,
+        effective_core_dim: core_dim,
+    })
+}
 
 /// Result of a single RLS update step.
 #[derive(Debug, Clone)]
@@ -644,7 +953,164 @@ impl KoopmanRLS {
 
         Ok(results)
     }
+
+    // -----------------------------------------------------------------------
+    // Dimensional Collapse RLS — Update in core space (Sprint 168)
+    // -----------------------------------------------------------------------
+
+    /// Perform RLS update using dimensional collapse.
+    ///
+    /// This method accepts full-dimensional SAE features, extracts the
+    /// topological core (top-k dimensions by importance), and performs
+    /// the RLS update entirely in the reduced core space.
+    ///
+    /// **Pipeline:**
+    /// 1. Extract core from `phi_t_full` → `phi_core` [1, core_dim]
+    /// 2. Extract core from `y_t_full` → `y_core` [1, core_dim]
+    /// 3. Run standard RLS update on core features
+    /// 4. Return `CoreRLSResult` with core indices and metrics
+    ///
+    /// # Arguments
+    /// * `phi_t_full` - Current full-dim SAE features. Shape: [1, d_sae] or [d_sae].
+    /// * `y_t_full` - Next full-dim SAE features. Shape: [1, d_sae] or [d_sae].
+    /// * `collapse_config` - Configuration for dimensional collapse.
+    /// * `sae_sparsity_weights` - Optional SAE sparsity weights for Mixed selection.
+    ///
+    /// # Returns
+    /// `CoreRLSResult` containing the RLS result, core indices, and extraction metrics.
+    pub fn update_koopman_rls_core(
+        &mut self,
+        phi_t_full: &Tensor,
+        y_t_full: &Tensor,
+        collapse_config: &DimensionalCollapseConfig,
+        sae_sparsity_weights: Option<&Tensor>,
+    ) -> Result<CoreRLSResult> {
+        // Extract core from phi_t
+        let phi_result = extract_topological_core(
+            phi_t_full,
+            collapse_config,
+            sae_sparsity_weights,
+        )?;
+        let phi_core = &phi_result.core_features;
+        let core_indices = phi_result.core_indices.clone();
+        let original_dim = phi_result.original_dim;
+        let effective_core_dim = phi_result.effective_core_dim;
+
+        // Extract core from y_t using the same indices
+        // (ensure consistent dimensionality between phi and y)
+        let y_core = extract_core_by_indices(y_t_full, &core_indices)?;
+
+        // Perform standard RLS update in core space
+        let rls_result = self.update_koopman_rls(phi_core, &y_core)?;
+
+        Ok(CoreRLSResult {
+            rls_result,
+            core_indices,
+            original_dim,
+            effective_core_dim,
+            importance_scores: phi_result.importance_scores,
+        })
+    }
 }
+
+/// Result of a dimensional collapse RLS update.
+#[derive(Debug, Clone)]
+pub struct CoreRLSResult {
+    /// Underlying RLS update result.
+    pub rls_result: RLSUpdateResult,
+    /// Indices of selected core dimensions.
+    pub core_indices: Vec<usize>,
+    /// Original SAE dimension before collapse.
+    pub original_dim: usize,
+    /// Effective core dimension used.
+    pub effective_core_dim: usize,
+    /// Importance scores for all dimensions.
+    pub importance_scores: Vec<f32>,
+}
+
+impl std::fmt::Display for CoreRLSResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "CoreRLS[orig={} → core={} | updated={} | err={:.6}]",
+            self.original_dim,
+            self.effective_core_dim,
+            self.rls_result.updated,
+            self.rls_result.prediction_error
+        )
+    }
+}
+
+/// Extract core features from a tensor using pre-computed indices.
+///
+/// This helper ensures that both `phi_t` and `y_t` use the exact same
+/// core indices, maintaining dimensional consistency.
+///
+/// # Arguments
+/// * `features` - Full-dim features. Shape: [1, d_sae] or [d_sae].
+/// * `core_indices` - Indices of selected core dimensions.
+///
+/// # Returns
+/// Core features tensor. Shape: [1, core_dim].
+fn extract_core_by_indices(features: &Tensor, core_indices: &[usize]) -> Result<Tensor> {
+    let dims = features.dims();
+    let is_1d = dims.len() == 1;
+    let (_batch, d_full) = if is_1d {
+        (1, dims[0])
+    } else {
+        (dims[0], dims[1])
+    };
+
+    if core_indices.is_empty() {
+        return Err(candle_core::Error::Msg(
+            "extract_core_by_indices: core_indices is empty".to_string()
+        ));
+    }
+
+    if core_indices.len() >= d_full {
+        // No reduction needed — return as 2D [1, d_full]
+        if is_1d {
+            return features.unsqueeze(0);
+        }
+        return Ok(features.clone());
+    }
+
+    // For 1D input, extract scalars and stack into [core_dim], then unsqueeze to [1, core_dim]
+    if is_1d {
+        let mut scalars: Vec<Tensor> = Vec::with_capacity(core_indices.len());
+        for &idx in core_indices {
+            if idx >= d_full {
+                return Err(candle_core::Error::Msg(format!(
+                    "extract_core_by_indices: index {} out of bounds (dim={})",
+                    idx,
+                    d_full
+                )));
+            }
+            let scalar = features.narrow(0, idx, 1)?; // [1]
+            scalars.push(scalar);
+        }
+        let result = Tensor::cat(&scalars, 0)?; // [core_dim]
+        return result.unsqueeze(0); // [1, core_dim]
+    }
+
+    // 2D input: extract columns
+    let mut core_parts: Vec<Tensor> = Vec::with_capacity(core_indices.len());
+    for &idx in core_indices {
+        if idx >= d_full {
+            return Err(candle_core::Error::Msg(format!(
+                "extract_core_by_indices: index {} out of bounds (dim={})",
+                idx,
+                d_full
+            )));
+        }
+        let col = features.narrow(1, idx, 1)?;
+        core_parts.push(col);
+    }
+
+    // Concatenate along dimension 1
+    Tensor::cat(&core_parts, 1)
+}
+
 
 // ---------------------------------------------------------------------------
 // Sprint 167 — SAE Observable Lifting (Koopman lifting with SAE features)
@@ -1023,6 +1489,408 @@ mod tests {
             mean_diag1,
             mean_diag2
         );
+        Ok(())
+    }
+
+    // -----------------------------------------------------------------------
+    // Sprint 168 — Dimensional Collapse tests
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_dimensional_collapse_config_default() {
+        let cfg = DimensionalCollapseConfig::default();
+        assert_eq!(cfg.core_dim, 32);
+        assert_eq!(cfg.selection_method, CoreSelectionMethod::Mixed);
+        assert!(!cfg.adaptive_core);
+        assert_eq!(cfg.min_core_dim, 16);
+        assert_eq!(cfg.max_core_dim, 64);
+        assert!((cfg.mixed_norm_weight - 0.7).abs() < 1e-6);
+        assert!(cfg.validate().is_ok());
+    }
+
+    #[test]
+    fn test_dimensional_collapse_config_edge_fast() {
+        let cfg = DimensionalCollapseConfig::edge_fast();
+        assert_eq!(cfg.core_dim, 16);
+        assert_eq!(cfg.selection_method, CoreSelectionMethod::Norm);
+        assert!(cfg.adaptive_core);
+        assert_eq!(cfg.min_core_dim, 8);
+        assert_eq!(cfg.max_core_dim, 32);
+        assert!(cfg.validate().is_ok());
+    }
+
+    #[test]
+    fn test_dimensional_collapse_config_high_precision() {
+        let cfg = DimensionalCollapseConfig::high_precision();
+        assert_eq!(cfg.core_dim, 64);
+        assert_eq!(cfg.selection_method, CoreSelectionMethod::Mixed);
+        assert!(!cfg.adaptive_core);
+        assert_eq!(cfg.min_core_dim, 32);
+        assert_eq!(cfg.max_core_dim, 128);
+        assert!(cfg.validate().is_ok());
+    }
+
+    #[test]
+    fn test_dimensional_collapse_config_with_core_dim() {
+        let cfg = DimensionalCollapseConfig::default().with_core_dim(48);
+        assert_eq!(cfg.core_dim, 48);
+        assert!(!cfg.adaptive_core);
+    }
+
+    #[test]
+    fn test_dimensional_collapse_config_with_adaptive_core() {
+        let cfg = DimensionalCollapseConfig::default().with_adaptive_core(16, 48);
+        assert!(cfg.adaptive_core);
+        assert_eq!(cfg.min_core_dim, 16);
+        assert_eq!(cfg.max_core_dim, 48);
+    }
+
+    #[test]
+    fn test_dimensional_collapse_validate_invalid_core_dim() {
+        let mut cfg = DimensionalCollapseConfig::default();
+        cfg.core_dim = 0;
+        assert!(cfg.validate().is_err());
+
+        cfg.core_dim = 300;
+        assert!(cfg.validate().is_err());
+    }
+
+    #[test]
+    fn test_dimensional_collapse_validate_invalid_bounds() {
+        let mut cfg = DimensionalCollapseConfig::default();
+        cfg.min_core_dim = 0;
+        assert!(cfg.validate().is_err());
+
+        cfg.min_core_dim = 1;
+        cfg.max_core_dim = 0;
+        assert!(cfg.validate().is_err());
+    }
+
+    #[test]
+    fn test_extract_topological_core_norm() -> Result<()> {
+        let device = Device::Cpu;
+        let d_sae = 64;
+        let core_dim = 16;
+
+        // Create features where first 10 dims have high energy
+        let data: Vec<f32> = (0..d_sae)
+            .map(|i| if i < 10 { 1.0f32 } else { 0.01f32 })
+            .collect();
+        let sae_features = Tensor::from_vec(data, (1, d_sae), &device)?;
+
+        let cfg = DimensionalCollapseConfig {
+            core_dim,
+            selection_method: CoreSelectionMethod::Norm,
+            ..Default::default()
+        };
+
+        let result = extract_topological_core(&sae_features, &cfg, None)?;
+        assert_eq!(result.effective_core_dim, core_dim);
+        assert_eq!(result.original_dim, d_sae);
+        assert_eq!(result.core_indices.len(), core_dim);
+
+        // Top indices should be the high-energy ones (0-9)
+        assert!(result.core_indices.contains(&0));
+        assert!(result.core_indices.contains(&9));
+
+        // Core features shape
+        let core_dims = result.core_features.dims();
+        assert_eq!(core_dims[0], 1);
+        assert_eq!(core_dims[1], core_dim);
+        Ok(())
+    }
+
+    #[test]
+    fn test_extract_topological_core_mixed_no_sparsity() -> Result<()> {
+        let device = Device::Cpu;
+        let d_sae = 32;
+        let core_dim = 8;
+
+        let data: Vec<f32> = (0..d_sae)
+            .map(|i| (d_sae - i) as f32 * 0.1)
+            .collect();
+        let sae_features = Tensor::from_vec(data, (1, d_sae), &device)?;
+
+        let cfg = DimensionalCollapseConfig {
+            core_dim,
+            selection_method: CoreSelectionMethod::Mixed,
+            ..Default::default()
+        };
+
+        let result = extract_topological_core(&sae_features, &cfg, None)?;
+        assert_eq!(result.effective_core_dim, core_dim);
+        // Should select dims with highest norm (first dims have highest values)
+        assert!(result.core_indices.contains(&0));
+        Ok(())
+    }
+
+    #[test]
+    fn test_extract_topological_core_adaptive() -> Result<()> {
+        let device = Device::Cpu;
+        let d_sae = 128;
+
+        // High energy signal
+        let data: Vec<f32> = (0..d_sae).map(|_| 1.0f32).collect();
+        let sae_features = Tensor::from_vec(data, (1, d_sae), &device)?;
+
+        let cfg = DimensionalCollapseConfig {
+            adaptive_core: true,
+            min_core_dim: 16,
+            max_core_dim: 48,
+            ..Default::default()
+        };
+
+        let result = extract_topological_core(&sae_features, &cfg, None)?;
+        assert!(result.effective_core_dim >= 16);
+        assert!(result.effective_core_dim <= 48);
+        assert!(result.effective_core_dim <= d_sae);
+        Ok(())
+    }
+
+    #[test]
+    fn test_extract_topological_core_clamps_to_d_sae() -> Result<()> {
+        let device = Device::Cpu;
+        let d_sae = 8;
+
+        let data: Vec<f32> = (0..d_sae).map(|i| i as f32).collect();
+        let sae_features = Tensor::from_vec(data, (1, d_sae), &device)?;
+
+        // Request more core dims than available
+        let cfg = DimensionalCollapseConfig {
+            core_dim: 32,
+            ..Default::default()
+        };
+
+        let result = extract_topological_core(&sae_features, &cfg, None)?;
+        assert_eq!(result.effective_core_dim, d_sae);
+        Ok(())
+    }
+
+    #[test]
+    fn test_core_extraction_result_display() -> Result<()> {
+        let device = Device::Cpu;
+        let d_sae = 16;
+        let data: Vec<f32> = (0..d_sae).map(|i| i as f32 * 0.1).collect();
+        let sae_features = Tensor::from_vec(data, (1, d_sae), &device)?;
+
+        let cfg = DimensionalCollapseConfig {
+            core_dim: 4,
+            ..Default::default()
+        };
+
+        let result = extract_topological_core(&sae_features, &cfg, None)?;
+        let display = format!("{}", result);
+        assert!(display.contains("CoreExtraction"));
+        assert!(display.contains("dims"));
+        Ok(())
+    }
+
+    #[test]
+    fn test_core_selection_method_default() {
+        let method = CoreSelectionMethod::default();
+        assert_eq!(method, CoreSelectionMethod::Mixed);
+    }
+
+    // -----------------------------------------------------------------------
+    // Sprint 168 — PASO C: Dimensional Collapse in Koopman RLS
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_core_rls_update_basic() -> Result<()> {
+        let device = Device::Cpu;
+        let d_sae = 64;
+        let core_dim = 16;
+
+        // Create KoopmanRLS in core space
+        let mut rls = KoopmanRLS::new(core_dim, KoopmanRLSConfig::default(), &device)?;
+
+        // Create full-dim features
+        let phi_data: Vec<f32> = (0..d_sae).map(|i| i as f32 * 0.1).collect();
+        let y_data: Vec<f32> = (0..d_sae).map(|i| (i + 1) as f32 * 0.1).collect();
+        let phi_full = Tensor::from_vec(phi_data, (1, d_sae), &device)?;
+        let y_full = Tensor::from_vec(y_data, (1, d_sae), &device)?;
+
+        let collapse_cfg = DimensionalCollapseConfig {
+            core_dim,
+            ..Default::default()
+        };
+
+        let result = rls.update_koopman_rls_core(&phi_full, &y_full, &collapse_cfg, None)?;
+        assert_eq!(result.effective_core_dim, core_dim);
+        assert_eq!(result.original_dim, d_sae);
+        assert_eq!(result.core_indices.len(), core_dim);
+        Ok(())
+    }
+
+    #[test]
+    fn test_core_rls_update_reduces_dimension() -> Result<()> {
+        let device = Device::Cpu;
+        let d_sae = 128;
+        let core_dim = 32;
+
+        let mut rls = KoopmanRLS::new(core_dim, KoopmanRLSConfig::default(), &device)?;
+
+        let phi_data: Vec<f32> = (0..d_sae).map(|_| 1.0f32).collect();
+        let y_data: Vec<f32> = (0..d_sae).map(|_| 2.0f32).collect();
+        let phi_full = Tensor::from_vec(phi_data, (1, d_sae), &device)?;
+        let y_full = Tensor::from_vec(y_data, (1, d_sae), &device)?;
+
+        let collapse_cfg = DimensionalCollapseConfig {
+            core_dim,
+            ..Default::default()
+        };
+
+        let result = rls.update_koopman_rls_core(&phi_full, &y_full, &collapse_cfg, None)?;
+        // K operator should be [core_dim, core_dim]
+        assert_eq!(rls.k_operator().shape().dims(), [core_dim, core_dim]);
+        assert!(result.rls_result.updated);
+        Ok(())
+    }
+
+    #[test]
+    fn test_core_rls_result_display() -> Result<()> {
+        let device = Device::Cpu;
+        let d_sae = 32;
+        let core_dim = 8;
+
+        let mut rls = KoopmanRLS::new(core_dim, KoopmanRLSConfig::default(), &device)?;
+
+        let phi_data: Vec<f32> = (0..d_sae).map(|i| i as f32 * 0.5).collect();
+        let y_data: Vec<f32> = (0..d_sae).map(|i| (i + 1) as f32 * 0.5).collect();
+        let phi_full = Tensor::from_vec(phi_data, (1, d_sae), &device)?;
+        let y_full = Tensor::from_vec(y_data, (1, d_sae), &device)?;
+
+        let collapse_cfg = DimensionalCollapseConfig {
+            core_dim,
+            ..Default::default()
+        };
+
+        let result = rls.update_koopman_rls_core(&phi_full, &y_full, &collapse_cfg, None)?;
+        let display = format!("{}", result);
+        assert!(display.contains("CoreRLS"));
+        assert!(display.contains("orig=32"));
+        assert!(display.contains("core=8"));
+        Ok(())
+    }
+
+    #[test]
+    fn test_extract_core_by_indices() -> Result<()> {
+        let device = Device::Cpu;
+        let d_full = 64;
+        let core_indices = vec![0, 10, 20, 30, 40, 50];
+
+        let data: Vec<f32> = (0..d_full).map(|i| i as f32).collect();
+        let features = Tensor::from_vec(data, (1, d_full), &device)?;
+
+        let core = extract_core_by_indices(&features, &core_indices)?;
+        let dims = core.dims();
+        assert_eq!(dims, [1, 6]);
+
+        // Verify extracted values match indices
+        let vec = core.flatten_all()?.to_vec1::<f32>()?;
+        assert!((vec[0] - 0.0).abs() < 1e-5);
+        assert!((vec[1] - 10.0).abs() < 1e-5);
+        assert!((vec[2] - 20.0).abs() < 1e-5);
+        assert!((vec[3] - 30.0).abs() < 1e-5);
+        assert!((vec[4] - 40.0).abs() < 1e-5);
+        assert!((vec[5] - 50.0).abs() < 1e-5);
+        Ok(())
+    }
+
+    #[test]
+    fn test_extract_core_by_indices_1d() -> Result<()> {
+        let device = Device::Cpu;
+        let d_full = 32;
+        let core_indices = vec![5, 15, 25];
+
+        let data: Vec<f32> = (0..d_full).map(|i| i as f32 * 2.0).collect();
+        let features = Tensor::from_vec(data, d_full, &device)?;
+
+        let core = extract_core_by_indices(&features, &core_indices)?;
+        let dims = core.dims();
+        assert_eq!(dims, [1, 3]);
+
+        let vec = core.flatten_all()?.to_vec1::<f32>()?;
+        assert!((vec[0] - 10.0).abs() < 1e-5); // index 5 * 2
+        assert!((vec[1] - 30.0).abs() < 1e-5); // index 15 * 2
+        assert!((vec[2] - 50.0).abs() < 1e-5); // index 25 * 2
+        Ok(())
+    }
+
+    #[test]
+    fn test_extract_core_by_indices_no_reduction() -> Result<()> {
+        let device = Device::Cpu;
+        let d_full = 8;
+        // Indices cover all dimensions
+        let core_indices: Vec<usize> = (0..d_full).collect();
+
+        let data: Vec<f32> = (0..d_full).map(|i| i as f32).collect();
+        let features = Tensor::from_vec(data, (1, d_full), &device)?;
+
+        let core = extract_core_by_indices(&features, &core_indices)?;
+        let dims = core.dims();
+        assert_eq!(dims, [1, d_full]);
+        Ok(())
+    }
+
+    #[test]
+    fn test_core_rls_multiple_updates() -> Result<()> {
+        let device = Device::Cpu;
+        let d_sae = 64;
+        let core_dim = 16;
+
+        let mut rls = KoopmanRLS::new(core_dim, KoopmanRLSConfig::default(), &device)?;
+
+        for step in 0..5u32 {
+            let phi_data: Vec<f32> = (0..d_sae)
+                .map(|i| (i as f32 + step as f32) * 0.1)
+                .collect();
+            let y_data: Vec<f32> = (0..d_sae)
+                .map(|i| (i as f32 + (step + 1) as f32) * 0.1)
+                .collect();
+            let phi_full = Tensor::from_vec(phi_data, (1, d_sae), &device)?;
+            let y_full = Tensor::from_vec(y_data, (1, d_sae), &device)?;
+
+            let collapse_cfg = DimensionalCollapseConfig {
+                core_dim,
+                ..Default::default()
+            };
+
+            let result =
+                rls.update_koopman_rls_core(&phi_full, &y_full, &collapse_cfg, None)?;
+            assert_eq!(result.effective_core_dim, core_dim);
+        }
+
+        assert_eq!(rls.update_count(), 5);
+        Ok(())
+    }
+
+    #[test]
+    fn test_core_rls_with_edge_fast_config() -> Result<()> {
+        let device = Device::Cpu;
+        let d_sae = 128;
+        let core_dim = 16;
+
+        // Use fixed core_dim (no adaptive) to ensure RLS dim matches
+        let collapse_cfg = DimensionalCollapseConfig {
+            core_dim,
+            selection_method: CoreSelectionMethod::Norm,
+            adaptive_core: false,
+            min_core_dim: 16,
+            max_core_dim: 32,
+            mixed_norm_weight: 0.5,
+        };
+
+        let mut rls = KoopmanRLS::new(core_dim, KoopmanRLSConfig::default(), &device)?;
+
+        let phi_data: Vec<f32> = (0..d_sae).map(|i| i as f32 * 0.05).collect();
+        let y_data: Vec<f32> = (0..d_sae).map(|i| (i + 2) as f32 * 0.05).collect();
+        let phi_full = Tensor::from_vec(phi_data, (1, d_sae), &device)?;
+        let y_full = Tensor::from_vec(y_data, (1, d_sae), &device)?;
+
+        let result = rls.update_koopman_rls_core(&phi_full, &y_full, &collapse_cfg, None)?;
+        assert_eq!(result.effective_core_dim, core_dim);
+        assert_eq!(result.importance_scores.len(), core_dim);
         Ok(())
     }
 }

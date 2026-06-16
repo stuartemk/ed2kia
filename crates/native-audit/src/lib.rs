@@ -28,11 +28,16 @@ pub mod adversarial;
 pub mod category_manifolds;
 pub mod cbf_mpc;
 pub mod control;
+// Sprint 166 — Fast LMI/ADMM Certificates + ISS Lyapunov + Contraction Metrics
+pub mod control_lmi;
 pub mod deep_koopman;
+// Sprint 166 — Adaptive RLS Koopman with Forgetting Factor + Adaptive SVD
+pub mod koopman_rls;
 // Sprint 159 — Exact PINN Residual Loss for Koopman Dynamics
 pub mod koopman_pinn;
+// Sprint 166 — Hybrid Zonotope-Interval (HZI) + Taylor Model Integration
+pub mod hzi_taylor;
 // Sprint 154 — GGUF Native Audit Support
-pub mod gguf_audit;
 pub mod cirl_value_learning;
 pub mod collective_steering;
 pub mod collective_zonotope;
@@ -42,6 +47,7 @@ pub mod distributed_sae;
 pub mod edge_runtime;
 pub mod formal_barrier;
 pub mod formal_verification;
+pub mod gguf_audit;
 pub mod global_bootstrap;
 pub mod hybrid_zonotope;
 pub mod live_testnet;
@@ -53,8 +59,8 @@ pub mod neural_ode;
 pub mod p2p_mechanism;
 pub mod phase_transition;
 pub mod planetary_sim;
-pub mod replicator;
 pub mod provable_safety;
+pub mod replicator;
 pub mod sae_integration;
 pub mod sae_modular;
 pub mod singularity_stabilization;
@@ -65,10 +71,10 @@ pub mod taylor_model;
 pub mod testnet_sim;
 pub mod thermodynamics;
 pub mod topology;
+pub mod tube_mpc;
 pub mod universal_immunity;
 pub mod verification;
 pub mod zonotope;
-pub mod tube_mpc;
 
 use candle_core::{DType, Device, Result, Tensor, D};
 use candle_nn::{embedding, Embedding, Module, VarBuilder};
@@ -438,7 +444,7 @@ impl TensorAudit {
     /// Target layers default to [12, 16, 18] for 360M (deeper semantic layers).
     pub fn load_smollm2_360m(device: &Device, target_layers: Vec<usize>) -> Result<Self> {
         const MODEL_REPO_360M: &str = "HuggingFaceTB/SmolLM2-360M";
-        
+
         let tokenizer_filename = download_file(MODEL_REPO_360M, "tokenizer.json")?;
         let config_filename = download_file(MODEL_REPO_360M, "config.json")?;
         let weights_filename = download_file(MODEL_REPO_360M, "model.safetensors")?;

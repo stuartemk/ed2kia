@@ -2,8 +2,8 @@
 //!
 //! Mode: `STRICT_MATH + PHYSICS_INFORMED_CONTROL + ZERO_WARNINGS + FORMAL_VERIFICATION`
 
-use candle_core::{Device, DType, Tensor};
 use candle_core::Result;
+use candle_core::{DType, Device, Tensor};
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -80,17 +80,40 @@ mod physics_informed_koopman_tests {
         let w_res = make_tensor(32, 32, 0.01, &device)?;
 
         let loss = ae.compute_koopman_loss_physics_informed(
-            &psi_t, &psi_t_next, &k, &w_res,
-            0.01,  // gamma_frob
-            0.01,  // beta_div
-            0.1,   // lambda_lyap
+            &psi_t,
+            &psi_t_next,
+            &k,
+            &w_res,
+            0.01, // gamma_frob
+            0.01, // beta_div
+            0.1,  // lambda_lyap
         )?;
 
-        assert!(loss.mse_loss >= 0.0, "MSE must be non-negative, got {}", loss.mse_loss);
-        assert!(loss.frob_loss >= 0.0, "Frobenius must be non-negative, got {}", loss.frob_loss);
-        assert!(loss.div_loss >= 0.0, "Div loss must be non-negative, got {}", loss.div_loss);
-        assert!(loss.lyap_loss >= 0.0, "Lyapunov must be non-negative, got {}", loss.lyap_loss);
-        assert!(loss.total_loss >= 0.0, "Total must be non-negative, got {}", loss.total_loss);
+        assert!(
+            loss.mse_loss >= 0.0,
+            "MSE must be non-negative, got {}",
+            loss.mse_loss
+        );
+        assert!(
+            loss.frob_loss >= 0.0,
+            "Frobenius must be non-negative, got {}",
+            loss.frob_loss
+        );
+        assert!(
+            loss.div_loss >= 0.0,
+            "Div loss must be non-negative, got {}",
+            loss.div_loss
+        );
+        assert!(
+            loss.lyap_loss >= 0.0,
+            "Lyapunov must be non-negative, got {}",
+            loss.lyap_loss
+        );
+        assert!(
+            loss.total_loss >= 0.0,
+            "Total must be non-negative, got {}",
+            loss.total_loss
+        );
         Ok(())
     }
 
@@ -104,11 +127,20 @@ mod physics_informed_koopman_tests {
         let w_res = make_tensor(32, 32, 0.001, &device)?;
 
         let loss = ae.compute_koopman_loss_physics_informed(
-            &psi_t, &psi_t_next, &k, &w_res,
-            0.001, 0.001, 0.01,
+            &psi_t,
+            &psi_t_next,
+            &k,
+            &w_res,
+            0.001,
+            0.001,
+            0.01,
         )?;
 
-        assert!(loss.total_loss.is_finite(), "Total loss must be finite, got {}", loss.total_loss);
+        assert!(
+            loss.total_loss.is_finite(),
+            "Total loss must be finite, got {}",
+            loss.total_loss
+        );
         Ok(())
     }
 
@@ -122,17 +154,30 @@ mod physics_informed_koopman_tests {
         let w_res = make_tensor(32, 32, 0.01, &device)?;
 
         let loss_low = ae.compute_koopman_loss_physics_informed(
-            &psi_t, &psi_t_next, &k, &w_res,
-            0.001, 0.0, 0.0,
+            &psi_t,
+            &psi_t_next,
+            &k,
+            &w_res,
+            0.001,
+            0.0,
+            0.0,
         )?;
         let loss_high = ae.compute_koopman_loss_physics_informed(
-            &psi_t, &psi_t_next, &k, &w_res,
-            0.1, 0.0, 0.0,
+            &psi_t,
+            &psi_t_next,
+            &k,
+            &w_res,
+            0.1,
+            0.0,
+            0.0,
         )?;
 
-        assert!(loss_high.frob_loss > loss_low.frob_loss,
+        assert!(
+            loss_high.frob_loss > loss_low.frob_loss,
             "Higher gamma_frob should increase Frobenius loss: low={} high={}",
-            loss_low.frob_loss, loss_high.frob_loss);
+            loss_low.frob_loss,
+            loss_high.frob_loss
+        );
         Ok(())
     }
 
@@ -146,13 +191,26 @@ mod physics_informed_koopman_tests {
         let w_res = make_tensor(32, 32, 0.01, &device)?;
 
         let loss = ae.compute_koopman_loss_physics_informed(
-            &psi_t, &psi_t_next, &k, &w_res,
-            0.01, 0.01, 0.1,
+            &psi_t,
+            &psi_t_next,
+            &k,
+            &w_res,
+            0.01,
+            0.01,
+            0.1,
         )?;
 
         let display = format!("{}", loss);
-        assert!(display.contains("PIKLoss"), "Display should contain PIKLoss: {}", display);
-        assert!(display.contains("mse:"), "Display should contain mse: {}", display);
+        assert!(
+            display.contains("PIKLoss"),
+            "Display should contain PIKLoss: {}",
+            display
+        );
+        assert!(
+            display.contains("mse:"),
+            "Display should contain mse: {}",
+            display
+        );
         Ok(())
     }
 
@@ -174,7 +232,11 @@ mod physics_informed_koopman_tests {
 
         // Difference between 5 and 10 iterations should be small
         let diff = proj_5.sub(&proj_10)?.sqr()?.sum_all()?.to_scalar::<f32>()?;
-        assert!(diff < 1.0, "Stiefel projection should converge, diff={}", diff);
+        assert!(
+            diff < 1.0,
+            "Stiefel projection should converge, diff={}",
+            diff
+        );
         Ok(())
     }
 
@@ -194,12 +256,25 @@ mod physics_informed_koopman_tests {
         // Compute loss
         let psi_t_next = make_tensor(8, 64, 0.06, &device)?;
         let loss = ae.compute_koopman_loss_physics_informed(
-            &psi_t, &psi_t_next, &k, &w_res,
-            0.001, 0.001, 0.01,
+            &psi_t,
+            &psi_t_next,
+            &k,
+            &w_res,
+            0.001,
+            0.001,
+            0.01,
         )?;
 
-        assert!(loss.total_loss.is_finite(), "Pipeline loss must be finite: {}", loss.total_loss);
-        assert!(loss.total_loss >= 0.0, "Pipeline loss must be non-negative: {}", loss.total_loss);
+        assert!(
+            loss.total_loss.is_finite(),
+            "Pipeline loss must be finite: {}",
+            loss.total_loss
+        );
+        assert!(
+            loss.total_loss >= 0.0,
+            "Pipeline loss must be non-negative: {}",
+            loss.total_loss
+        );
         Ok(())
     }
 }
@@ -207,97 +282,126 @@ mod physics_informed_koopman_tests {
 // ─── PASO B: TV-CBF Tests ────────────────────────────────────────────────────
 
 mod tv_cbf_tests {
-    use native_audit::control::{verify_tv_cbf, tv_cbf_qp_correct, TVCBFResult};
+    use native_audit::control::{tv_cbf_qp_correct, verify_tv_cbf, TVCBFResult};
 
     #[test]
     fn test_tv_cbf_safe_state() {
         // All modalities safe, positive h_dot
         let result = verify_tv_cbf(
-            1.0,   // h_topo
-            -0.5,  // vfe (safe: -vfe + gamma = 0.5 + 1.0 = 1.5)
-            1.0,   // gamma_vfe
-            1.0,   // alpha_k
-            0.5,   // h_dot
-            2.0,   // semantic_safety
+            1.0,  // h_topo
+            -0.5, // vfe (safe: -vfe + gamma = 0.5 + 1.0 = 1.5)
+            1.0,  // gamma_vfe
+            1.0,  // alpha_k
+            0.5,  // h_dot
+            2.0,  // semantic_safety
         );
 
         assert!(result.safe, "Should be safe: {}", result);
-        assert!(result.h_value > 0.0, "h should be positive: {}", result.h_value);
-        assert!(result.cbf_condition >= 0.0, "CBF condition should be >= 0: {}", result.cbf_condition);
+        assert!(
+            result.h_value > 0.0,
+            "h should be positive: {}",
+            result.h_value
+        );
+        assert!(
+            result.cbf_condition >= 0.0,
+            "CBF condition should be >= 0: {}",
+            result.cbf_condition
+        );
     }
 
     #[test]
     fn test_tv_cbf_unsafe_state() {
         // Negative h_dot, boundary h
         let result = verify_tv_cbf(
-            -0.5,  // h_topo (unsafe)
-            2.0,   // vfe (unsafe: -2.0 + 1.0 = -1.0)
-            1.0,   // gamma_vfe
-            1.0,   // alpha_k
-            -1.0,  // h_dot (driving away)
-            0.5,   // semantic_safety
+            -0.5, // h_topo (unsafe)
+            2.0,  // vfe (unsafe: -2.0 + 1.0 = -1.0)
+            1.0,  // gamma_vfe
+            1.0,  // alpha_k
+            -1.0, // h_dot (driving away)
+            0.5,  // semantic_safety
         );
 
         assert!(!result.safe, "Should be unsafe: {}", result);
-        assert!(result.h_value < 0.0, "h should be negative: {}", result.h_value);
+        assert!(
+            result.h_value < 0.0,
+            "h should be negative: {}",
+            result.h_value
+        );
     }
 
     #[test]
     fn test_tv_cbf_min_modality() {
         // h = min(h_topo, h_vfe, h_semantic)
         let result = verify_tv_cbf(
-            0.3,   // h_topo
-            0.5,   // vfe → h_vfe = -0.5 + 2.0 = 1.5
-            2.0,   // gamma_vfe
-            1.0,   // alpha_k
-            0.0,   // h_dot
-            0.1,   // semantic_safety (minimum)
+            0.3, // h_topo
+            0.5, // vfe → h_vfe = -0.5 + 2.0 = 1.5
+            2.0, // gamma_vfe
+            1.0, // alpha_k
+            0.0, // h_dot
+            0.1, // semantic_safety (minimum)
         );
 
-        assert!((result.h_value - 0.1).abs() < 1e-6,
-            "h should be min modality (semantic=0.1), got {}", result.h_value);
+        assert!(
+            (result.h_value - 0.1).abs() < 1e-6,
+            "h should be min modality (semantic=0.1), got {}",
+            result.h_value
+        );
     }
 
     #[test]
     fn test_tv_cbf_alpha_function() {
         // α(h) = k · max(h, 0)
         let result = verify_tv_cbf(
-            2.0,   // h_topo
-            0.0,   // vfe → h_vfe = 0 + 1.0 = 1.0
-            1.0,   // gamma_vfe
-            0.5,   // alpha_k
-            0.0,   // h_dot
-            3.0,   // semantic
+            2.0, // h_topo
+            0.0, // vfe → h_vfe = 0 + 1.0 = 1.0
+            1.0, // gamma_vfe
+            0.5, // alpha_k
+            0.0, // h_dot
+            3.0, // semantic
         );
 
         // h = min(2.0, 1.0, 3.0) = 1.0
         // α(h) = 0.5 * 1.0 = 0.5
-        assert!((result.alpha_h - 0.5).abs() < 1e-6,
-            "α(h) should be 0.5, got {}", result.alpha_h);
+        assert!(
+            (result.alpha_h - 0.5).abs() < 1e-6,
+            "α(h) should be 0.5, got {}",
+            result.alpha_h
+        );
     }
 
     #[test]
     fn test_tv_cbf_alpha_zero_at_boundary() {
         // When h ≤ 0, α(h) = 0
         let result = verify_tv_cbf(
-            -1.0,  // h_topo (negative)
-            0.0,   // vfe
-            1.0,   // gamma_vfe
-            1.0,   // alpha_k
-            0.5,   // h_dot
-            2.0,   // semantic
+            -1.0, // h_topo (negative)
+            0.0,  // vfe
+            1.0,  // gamma_vfe
+            1.0,  // alpha_k
+            0.5,  // h_dot
+            2.0,  // semantic
         );
 
-        assert!((result.alpha_h - 0.0).abs() < 1e-6,
-            "α(h) should be 0 when h < 0, got {}", result.alpha_h);
+        assert!(
+            (result.alpha_h - 0.0).abs() < 1e-6,
+            "α(h) should be 0 when h < 0, got {}",
+            result.alpha_h
+        );
     }
 
     #[test]
     fn test_tv_cbf_result_display() {
         let result = verify_tv_cbf(1.0, 0.0, 1.0, 1.0, 0.5, 2.0);
         let display = format!("{}", result);
-        assert!(display.contains("TVCBF"), "Display should contain TVCBF: {}", display);
-        assert!(display.contains("safe="), "Display should contain safe=: {}", display);
+        assert!(
+            display.contains("TVCBF"),
+            "Display should contain TVCBF: {}",
+            display
+        );
+        assert!(
+            display.contains("safe="),
+            "Display should contain safe=: {}",
+            display
+        );
     }
 
     #[test]
@@ -312,7 +416,13 @@ mod tv_cbf_tests {
 
         assert_eq!(safe_u.len(), 3);
         for (i, (a, b)) in safe_u.iter().zip(nominal_u.iter()).enumerate() {
-            assert!((a - b).abs() < 1e-6, "u[{}] should be unchanged: {} vs {}", i, a, b);
+            assert!(
+                (a - b).abs() < 1e-6,
+                "u[{}] should be unchanged: {} vs {}",
+                i,
+                a,
+                b
+            );
         }
     }
 
@@ -327,7 +437,11 @@ mod tv_cbf_tests {
         let safe_u = tv_cbf_qp_correct(&nominal_u, &l_g_h, h_dot_drift, alpha_h, 1e-8);
 
         assert_eq!(safe_u.len(), 3);
-        assert!(safe_u[0] > 0.0, "First component should be corrected positive: {}", safe_u[0]);
+        assert!(
+            safe_u[0] > 0.0,
+            "First component should be corrected positive: {}",
+            safe_u[0]
+        );
     }
 
     #[test]
@@ -341,8 +455,16 @@ mod tv_cbf_tests {
 
         // λ = (1.0 - 0.0) / (1+1+1e-8) ≈ 0.5
         // u_safe = [0.5, 0.5, 0, 0]
-        assert!((safe_u[0] - 0.5).abs() < 0.01, "u[0] ≈ 0.5, got {}", safe_u[0]);
-        assert!((safe_u[1] - 0.5).abs() < 0.01, "u[1] ≈ 0.5, got {}", safe_u[1]);
+        assert!(
+            (safe_u[0] - 0.5).abs() < 0.01,
+            "u[0] ≈ 0.5, got {}",
+            safe_u[0]
+        );
+        assert!(
+            (safe_u[1] - 0.5).abs() < 0.01,
+            "u[1] ≈ 0.5, got {}",
+            safe_u[1]
+        );
     }
 
     #[test]
@@ -350,14 +472,15 @@ mod tv_cbf_tests {
         // Simulate a trajectory where safety degrades then recovers
         let scenarios = [
             (2.0, 0.0, 1.0, 1.0, 0.5, 3.0),  // Safe
-            (1.0, 0.5, 1.0, 1.0, 0.0, 2.0),   // Borderline
-            (0.5, 1.0, 1.0, 1.0, -0.3, 1.0),  // Unsafe
-            (1.5, 0.0, 1.0, 1.0, 0.3, 2.5),   // Safe again
+            (1.0, 0.5, 1.0, 1.0, 0.0, 2.0),  // Borderline
+            (0.5, 1.0, 1.0, 1.0, -0.3, 1.0), // Unsafe
+            (1.5, 0.0, 1.0, 1.0, 0.3, 2.5),  // Safe again
         ];
 
-        let results: Vec<TVCBFResult> = scenarios.iter().map(|&(a, b, c, d, e, f)| {
-            verify_tv_cbf(a, b, c, d, e, f)
-        }).collect();
+        let results: Vec<TVCBFResult> = scenarios
+            .iter()
+            .map(|&(a, b, c, d, e, f)| verify_tv_cbf(a, b, c, d, e, f))
+            .collect();
 
         assert!(results[0].safe, "Step 0 should be safe");
         assert!(!results[2].safe, "Step 2 should be unsafe");
@@ -368,7 +491,7 @@ mod tv_cbf_tests {
 // ─── PASO C: Fictitious Play MFG Tests ───────────────────────────────────────
 
 mod fictitious_play_tests {
-    use ed2k_consensus::mean_field::{update_policy_fictitious_play, run_fictitious_play};
+    use ed2k_consensus::mean_field::{run_fictitious_play, update_policy_fictitious_play};
 
     #[test]
     fn test_fictitious_play_policy_sums_to_one() {
@@ -376,7 +499,11 @@ mod fictitious_play_tests {
         let result = update_policy_fictitious_play(&q_values, 1.0, 0.1, None);
 
         let sum: f64 = result.policy.iter().sum();
-        assert!((sum - 1.0).abs() < 1e-6, "Policy must sum to 1, got {}", sum);
+        assert!(
+            (sum - 1.0).abs() < 1e-6,
+            "Policy must sum to 1, got {}",
+            sum
+        );
     }
 
     #[test]
@@ -395,10 +522,16 @@ mod fictitious_play_tests {
         let result = update_policy_fictitious_play(&q_values, 1.0, 0.0, None);
 
         for i in 0..result.policy.len() - 1 {
-            assert!(result.policy[i + 1] > result.policy[i],
+            assert!(
+                result.policy[i + 1] > result.policy[i],
                 "Higher Q should have higher prob: Q[{}]={} prob={} vs Q[{}]={} prob={}",
-                i, q_values[i], result.policy[i],
-                i + 1, q_values[i + 1], result.policy[i + 1]);
+                i,
+                q_values[i],
+                result.policy[i],
+                i + 1,
+                q_values[i + 1],
+                result.policy[i + 1]
+            );
         }
     }
 
@@ -411,9 +544,12 @@ mod fictitious_play_tests {
         // High temperature → more uniform
         let result_hot = update_policy_fictitious_play(&q_values, 10.0, 0.0, None);
 
-        assert!(result_cold.entropy < result_hot.entropy,
+        assert!(
+            result_cold.entropy < result_hot.entropy,
             "Cold policy should have lower entropy: cold={} hot={}",
-            result_cold.entropy, result_hot.entropy);
+            result_cold.entropy,
+            result_hot.entropy
+        );
     }
 
     #[test]
@@ -421,9 +557,17 @@ mod fictitious_play_tests {
         let q_values = vec![1.0, 2.0, 3.0];
         let result = update_policy_fictitious_play(&q_values, 1.0, 0.1, None);
 
-        assert!(result.entropy >= 0.0, "Entropy must be non-negative, got {}", result.entropy);
+        assert!(
+            result.entropy >= 0.0,
+            "Entropy must be non-negative, got {}",
+            result.entropy
+        );
         // Max entropy for 3 actions = ln(3) ≈ 1.099
-        assert!(result.entropy <= 1.1, "Entropy must be bounded, got {}", result.entropy);
+        assert!(
+            result.entropy <= 1.1,
+            "Entropy must be bounded, got {}",
+            result.entropy
+        );
     }
 
     #[test]
@@ -434,9 +578,13 @@ mod fictitious_play_tests {
         let min_q = *q_values.iter().min_by_key(|v| v.to_bits()).unwrap();
         let max_q = *q_values.iter().max_by_key(|v| v.to_bits()).unwrap();
 
-        assert!(result.expected_q >= min_q && result.expected_q <= max_q,
+        assert!(
+            result.expected_q >= min_q && result.expected_q <= max_q,
             "Expected Q must be in [min, max]: E[Q]={} range=[{}, {}]",
-            result.expected_q, min_q, max_q);
+            result.expected_q,
+            min_q,
+            max_q
+        );
     }
 
     #[test]
@@ -446,8 +594,16 @@ mod fictitious_play_tests {
 
         let result = update_policy_fictitious_play(&q_values, 1.0, 0.0, Some(&prev_policy));
 
-        assert!(result.policy_change > 0.0, "Policy change should be positive: {}", result.policy_change);
-        assert!(result.policy_change <= 2.0, "Policy change should be ≤ 2: {}", result.policy_change);
+        assert!(
+            result.policy_change > 0.0,
+            "Policy change should be positive: {}",
+            result.policy_change
+        );
+        assert!(
+            result.policy_change <= 2.0,
+            "Policy change should be ≤ 2: {}",
+            result.policy_change
+        );
     }
 
     #[test]
@@ -456,8 +612,16 @@ mod fictitious_play_tests {
         let result = update_policy_fictitious_play(&q_values, 1.0, 0.1, None);
 
         let display = format!("{}", result);
-        assert!(display.contains("FictPlay"), "Display should contain FictPlay: {}", display);
-        assert!(display.contains("entropy="), "Display should contain entropy: {}", display);
+        assert!(
+            display.contains("FictPlay"),
+            "Display should contain FictPlay: {}",
+            display
+        );
+        assert!(
+            display.contains("entropy="),
+            "Display should contain entropy: {}",
+            display
+        );
     }
 
     #[test]
@@ -467,9 +631,16 @@ mod fictitious_play_tests {
 
         let result = run_fictitious_play(oracle, 1.0, 0.1, 50, 1e-6);
 
-        assert!(result.policy_change < 0.1, "Should converge: Δπ={}", result.policy_change);
-        assert!(result.policy[2] > result.policy[0],
-            "Action 2 should have highest prob: {:?}", result.policy);
+        assert!(
+            result.policy_change < 0.1,
+            "Should converge: Δπ={}",
+            result.policy_change
+        );
+        assert!(
+            result.policy[2] > result.policy[0],
+            "Action 2 should have highest prob: {:?}",
+            result.policy
+        );
     }
 
     #[test]
@@ -508,10 +679,12 @@ mod fictitious_play_tests {
 
         for _round in 0..20 {
             // Compute Q based on population
-            let q_values: Vec<f64> = (0..3).map(|i| {
-                // Reward diversity: Q[i] = 1 - population[i]
-                1.0 - population[i] + (i as f64) * 0.1
-            }).collect();
+            let q_values: Vec<f64> = (0..3)
+                .map(|i| {
+                    // Reward diversity: Q[i] = 1 - population[i]
+                    1.0 - population[i] + (i as f64) * 0.1
+                })
+                .collect();
 
             let result = update_policy_fictitious_play(&q_values, 1.0, 0.05, Some(&population));
             population = result.policy;
@@ -519,7 +692,11 @@ mod fictitious_play_tests {
 
         // Verify final policy
         let sum: f64 = population.iter().sum();
-        assert!((sum - 1.0).abs() < 1e-6, "Final policy must sum to 1: {}", sum);
+        assert!(
+            (sum - 1.0).abs() < 1e-6,
+            "Final policy must sum to 1: {}",
+            sum
+        );
         for (i, &p) in population.iter().enumerate() {
             assert!(p >= 0.0 && p <= 1.0, "Policy[{}] in [0,1]: {}", i, p);
         }

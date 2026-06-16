@@ -56,7 +56,10 @@ mod tvcbf_steer_tests {
 
         assert!(result.h_value < 0.0, "Unsafe state should have h < 0");
         assert!(result.intervened, "Should intervene on unsafe state");
-        assert!(result.correction_magnitude > 0.0, "Correction should be non-zero");
+        assert!(
+            result.correction_magnitude > 0.0,
+            "Correction should be non-zero"
+        );
         Ok(())
     }
 
@@ -115,7 +118,10 @@ mod tvcbf_steer_tests {
         let delta = result.steered.broadcast_sub(&safe_centroid)?;
         let dist_sq: f32 = delta.sqr()?.sum_all()?.to_scalar()?;
         let r_sq = r * r;
-        assert!(dist_sq <= r_sq + 1e-4, "Steered state should be within safe radius");
+        assert!(
+            dist_sq <= r_sq + 1e-4,
+            "Steered state should be within safe radius"
+        );
         Ok(())
     }
 
@@ -165,8 +171,10 @@ mod tvcbf_steer_tests {
         let x_far = Tensor::full(2.0f32, (1, 4), &device)?;
         let result_far = steer_tvcbf(&x_far, &safe, r, 0.5, 0.0, 0)?;
 
-        assert!(result_far.correction_magnitude > result_close.correction_magnitude,
-            "Farther states should need larger correction");
+        assert!(
+            result_far.correction_magnitude > result_close.correction_magnitude,
+            "Farther states should need larger correction"
+        );
         Ok(())
     }
 }
@@ -182,12 +190,15 @@ mod pi_koopman_residual_tests {
         let device = Device::Cpu;
         let psi_curr = make_tensor(4, 8, 1.0, &device)?;
         let k_op = make_scaled_identity(8, 1.0, &device)?; // Identity
-        // ψ_obs = K · ψ_curr = ψ_curr (since K = I)
+                                                           // ψ_obs = K · ψ_curr = ψ_curr (since K = I)
         let psi_obs = psi_curr.matmul(&k_op)?;
 
         let result = compute_pi_koopman_residual(&psi_curr, &psi_obs, &k_op, None)?;
 
-        assert!(result.residual_norm < 1e-4, "Residual should be near zero for identity K");
+        assert!(
+            result.residual_norm < 1e-4,
+            "Residual should be near zero for identity K"
+        );
         assert!(result.residual.dim(0)? == 4);
         assert!(result.residual.dim(1)? == 8);
         Ok(())
@@ -204,7 +215,10 @@ mod pi_koopman_residual_tests {
         let result = compute_pi_koopman_residual(&psi_curr, &psi_obs, &k_op, None)?;
 
         assert!(result.residual_norm > 0.0, "Residual should be non-zero");
-        assert!(result.div_proxy >= 0.0, "Divergence proxy should be non-negative");
+        assert!(
+            result.div_proxy >= 0.0,
+            "Divergence proxy should be non-negative"
+        );
         assert!(result.volume_ratio > 0.0, "Volume ratio should be positive");
         Ok(())
     }
@@ -219,15 +233,16 @@ mod pi_koopman_residual_tests {
         let residual_net = make_tensor(8, 8, 0.5, &device)?;
 
         let result_no_net = compute_pi_koopman_residual(&psi_curr, &psi_obs, &k_op, None)?;
-        let result_with_net = compute_pi_koopman_residual(
-            &psi_curr, &psi_obs, &k_op, Some(&residual_net)
-        )?;
+        let result_with_net =
+            compute_pi_koopman_residual(&psi_curr, &psi_obs, &k_op, Some(&residual_net))?;
 
         // Residual norm should be the same (residual net only affects div_proxy)
         assert!((result_no_net.residual_norm - result_with_net.residual_norm).abs() < 1e-6);
         // Div proxy should differ due to residual net trace
-        assert!((result_no_net.div_proxy - result_with_net.div_proxy).abs() > 1e-6,
-            "Residual net should affect divergence proxy");
+        assert!(
+            (result_no_net.div_proxy - result_with_net.div_proxy).abs() > 1e-6,
+            "Residual net should affect divergence proxy"
+        );
         Ok(())
     }
 
@@ -242,7 +257,10 @@ mod pi_koopman_residual_tests {
         let result = compute_pi_koopman_residual(&psi_curr, &psi_obs, &k_op, None)?;
 
         assert!(result.volume_ratio > 0.0, "Volume ratio should be positive");
-        assert!(result.volume_ratio.is_finite(), "Volume ratio should be finite");
+        assert!(
+            result.volume_ratio.is_finite(),
+            "Volume ratio should be finite"
+        );
         Ok(())
     }
 
@@ -256,8 +274,14 @@ mod pi_koopman_residual_tests {
 
         let result = compute_pi_koopman_residual(&psi_curr, &psi_obs, &k_op, None)?;
 
-        assert!(result.div_proxy.is_finite(), "Divergence proxy should be finite");
-        assert!(result.div_proxy >= 0.0, "Divergence proxy should be non-negative");
+        assert!(
+            result.div_proxy.is_finite(),
+            "Divergence proxy should be finite"
+        );
+        assert!(
+            result.div_proxy >= 0.0,
+            "Divergence proxy should be non-negative"
+        );
         Ok(())
     }
 
@@ -293,8 +317,10 @@ mod pi_koopman_residual_tests {
         let psi_obs_noisy = psi_obs_perfect.broadcast_add(&noise)?;
         let result_noisy = compute_pi_koopman_residual(&psi_curr, &psi_obs_noisy, &k_op, None)?;
 
-        assert!(result_perfect.residual_norm < result_noisy.residual_norm,
-            "Perfect prediction should have lower residual");
+        assert!(
+            result_perfect.residual_norm < result_noisy.residual_norm,
+            "Perfect prediction should have lower residual"
+        );
         Ok(())
     }
 
@@ -341,9 +367,8 @@ mod integration_tests {
 
         // Step 3: Compute residual against observed next state
         let psi_observed = make_tensor(batch, dim, 1.5, &device)?;
-        let residual = compute_pi_koopman_residual(
-            &steer_result.steered, &psi_observed, &k_op, None
-        )?;
+        let residual =
+            compute_pi_koopman_residual(&steer_result.steered, &psi_observed, &k_op, None)?;
 
         // Verify pipeline consistency
         assert!(residual.residual_norm.is_finite());
@@ -353,7 +378,10 @@ mod integration_tests {
         // TV-CBF should have been evaluated
         assert!(steer_result.alpha_t > 0.0);
 
-        println!("S151 Integration: steer={}, residual={}", steer_result, residual);
+        println!(
+            "S151 Integration: steer={}, residual={}",
+            steer_result, residual
+        );
         Ok(())
     }
 

@@ -8,8 +8,8 @@
 
 use candle_core::{Device, Tensor};
 use native_audit::steering::{
-    compute_strided_error_bound, robust_mpsf_cbf_filter, verify_contraction_rate_jvp,
-    steer_tube_mpc,
+    compute_strided_error_bound, robust_mpsf_cbf_filter, steer_tube_mpc,
+    verify_contraction_rate_jvp,
 };
 
 // ─── MPSF + Zonotopic Safety Tests ───
@@ -26,7 +26,15 @@ fn test_mpsf_safe_state_passes_through() {
 
     let result =
         robust_mpsf_cbf_filter(&h_current, &h_prev, &u_nom, &safe, 1.0, 10.0, 0.01).unwrap();
-    let diff = u_nom.sub(&result).unwrap().abs().unwrap().sum_all().unwrap().to_scalar::<f32>().unwrap();
+    let diff = u_nom
+        .sub(&result)
+        .unwrap()
+        .abs()
+        .unwrap()
+        .sum_all()
+        .unwrap()
+        .to_scalar::<f32>()
+        .unwrap();
     assert!(
         diff < 1e-6,
         "Safe state must pass nominal control unchanged: diff={:.8}",
@@ -44,9 +52,16 @@ fn test_mpsf_unsafe_state_applies_correction() {
     let h_prev = h_current.clone();
     let u_nom = Tensor::zeros(&[4, 4], candle_core::DType::F32, &Device::Cpu).unwrap();
 
-    let result =
-        robust_mpsf_cbf_filter(&h_current, &h_prev, &u_nom, &safe, 1.0, 1.0, 0.1).unwrap();
-    let diff = u_nom.sub(&result).unwrap().abs().unwrap().sum_all().unwrap().to_scalar::<f32>().unwrap();
+    let result = robust_mpsf_cbf_filter(&h_current, &h_prev, &u_nom, &safe, 1.0, 1.0, 0.1).unwrap();
+    let diff = u_nom
+        .sub(&result)
+        .unwrap()
+        .abs()
+        .unwrap()
+        .sum_all()
+        .unwrap()
+        .to_scalar::<f32>()
+        .unwrap();
     assert!(
         diff > 1.0,
         "Unsafe state must apply significant CBF correction: diff={:.4}",
@@ -99,18 +114,13 @@ fn test_mpsf_zonotope_tightening_is_conservative() {
 #[test]
 fn test_mpsf_shape_preservation() {
     let safe = Tensor::zeros(&[5, 8], candle_core::DType::F32, &Device::Cpu).unwrap();
-    let h_current =
-        Tensor::randn(0.0f32, 1.0f32, &[5, 8], &Device::Cpu).unwrap();
+    let h_current = Tensor::randn(0.0f32, 1.0f32, &[5, 8], &Device::Cpu).unwrap();
     let h_prev = h_current.clone();
     let u_nom = Tensor::zeros(&[5, 8], candle_core::DType::F32, &Device::Cpu).unwrap();
 
     let result =
         robust_mpsf_cbf_filter(&h_current, &h_prev, &u_nom, &safe, 1.0, 10.0, 0.1).unwrap();
-    assert_eq!(
-        result.dims(),
-        &[5, 8],
-        "MPSF must preserve tensor shape"
-    );
+    assert_eq!(result.dims(), &[5, 8], "MPSF must preserve tensor shape");
 }
 
 // ─── Contraction Metrics Tests ───
@@ -207,9 +217,7 @@ fn test_strided_evaluation_savings_demo() {
     let savings_pct = (1.0 - evals as f32 / total_tokens as f32) * 100.0;
     println!(
         "⚡ Tokens: {} | Evals: {} | Ahorro: {:.0}%",
-        total_tokens,
-        evals,
-        savings_pct
+        total_tokens, evals, savings_pct
     );
 
     assert!(
@@ -217,11 +225,7 @@ fn test_strided_evaluation_savings_demo() {
         "Strided evaluation must save ≥65%: got={:.1}%",
         savings_pct
     );
-    assert_eq!(
-        evals,
-        100,
-        "Stride=3, 300 tokens → 100 evals (every 3rd)"
-    );
+    assert_eq!(evals, 100, "Stride=3, 300 tokens → 100 evals (every 3rd)");
 }
 
 /// Integration test: Full S141 pipeline (MPSF + Contraction + Strided).
@@ -279,16 +283,8 @@ fn test_strided_mpsf_safety_within_bound() {
             // Evaluate MPSF at stride points
             let h_prev = h_current.clone();
             let u_nom = Tensor::zeros(&[4, 4], candle_core::DType::F32, &device).unwrap();
-            h_current = robust_mpsf_cbf_filter(
-                &h_current,
-                &h_prev,
-                &u_nom,
-                &safe,
-                1.0,
-                5.0,
-                0.05,
-            )
-            .unwrap();
+            h_current =
+                robust_mpsf_cbf_filter(&h_current, &h_prev, &u_nom, &safe, 1.0, 5.0, 0.05).unwrap();
         }
         // Between stride points: error bounded by Lipschitz continuity
         let _bound = compute_strided_error_bound(lipschitz_l, stride, max_velocity);
@@ -302,7 +298,10 @@ fn test_strided_mpsf_safety_within_bound() {
         .unwrap()
         .to_scalar::<f32>()
         .unwrap();
-    assert!(norm.is_finite(), "Strided MPSF must maintain numerical stability");
+    assert!(
+        norm.is_finite(),
+        "Strided MPSF must maintain numerical stability"
+    );
 }
 
 /// Demonstrate that strided evaluation achieves ~66% savings with stride=3.
@@ -322,10 +321,7 @@ fn test_strided_savings_percentage() {
         );
         println!(
             "⚡ Stride={}: {:.0}% savings ({} evals of {})",
-            stride,
-            savings,
-            evals,
-            total
+            stride, savings, evals, total
         );
     }
 }

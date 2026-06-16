@@ -117,11 +117,14 @@ fn stream_eval(
 fn compute_stats(results: &[EvalResult]) -> (f64, f64, f64, f32, f32, f32, usize) {
     let total_latency: f64 = results.iter().map(|r| r.latency_ms).sum();
     let avg_latency = total_latency / (results.len() as f64 + 1e-8);
-    let min_latency = results.iter().map(|r| r.latency_ms).fold(f64::INFINITY, f64::min);
+    let min_latency = results
+        .iter()
+        .map(|r| r.latency_ms)
+        .fold(f64::INFINITY, f64::min);
     let max_latency = results.iter().map(|r| r.latency_ms).fold(0.0f64, f64::max);
 
-    let avg_residual: f32 =
-        results.iter().map(|r| r.koopman_residual_norm).sum::<f32>() / (results.len() as f32 + 1e-8);
+    let avg_residual: f32 = results.iter().map(|r| r.koopman_residual_norm).sum::<f32>()
+        / (results.len() as f32 + 1e-8);
     let avg_div: f32 =
         results.iter().map(|r| r.koopman_div_proxy).sum::<f32>() / (results.len() as f32 + 1e-8);
     let interventions = results.iter().filter(|r| r.tvcbf_intervened).count();
@@ -168,7 +171,11 @@ fn bench_stream_eval_small() -> candle_core::Result<()> {
         _intervention_rate * 100.0
     );
 
-    assert!(avg_ms < 100.0, "Average latency {:.2}ms exceeds 100ms target", avg_ms);
+    assert!(
+        avg_ms < 100.0,
+        "Average latency {:.2}ms exceeds 100ms target",
+        avg_ms
+    );
     assert!(avg_res.is_finite(), "Residual must be finite");
     assert!(avg_div.is_finite(), "Divergence proxy must be finite");
 
@@ -189,9 +196,7 @@ fn bench_stream_eval_large() -> candle_core::Result<()> {
     let (avg_ms, min_ms, max_ms, avg_res, avg_div, intervention_rate, n_interventions) =
         compute_stats(&results);
 
-    println!(
-        "\n=== RealToxicityPrompts Streaming Eval (Large - Llama-3.2-1B scale) ==="
-    );
+    println!("\n=== RealToxicityPrompts Streaming Eval (Large - Llama-3.2-1B scale) ===");
     println!("Prompts: {} | Hidden dim: {}", num_prompts, hidden_dim);
     println!(
         "Avg latency: {:.2}ms | Min: {:.2}ms | Max: {:.2}ms",

@@ -24,11 +24,7 @@ fn make_state(rows: usize, cols: usize, seed: f32, device: &Device) -> Tensor {
 }
 
 /// Generate linear dynamics pairs: h_{t+1} = A @ h_t + b (approximately linear for Koopman).
-fn generate_linear_pairs(
-    n: usize,
-    dim: usize,
-    device: &Device,
-) -> Vec<(Tensor, Tensor)> {
+fn generate_linear_pairs(n: usize, dim: usize, device: &Device) -> Vec<(Tensor, Tensor)> {
     let mut pairs = Vec::new();
     for i in 0..n {
         let h_t = make_state(1, dim, 0.1 * (i as f32 + 1.0), device);
@@ -280,7 +276,10 @@ fn test_koopman_online_steer_adaptive() {
 
     // After 12 steps with threshold 8, operator should have been re-estimated
     let (_, has_operator, _) = vanguard.status();
-    assert!(has_operator, "Operator should be estimated after online learning");
+    assert!(
+        has_operator,
+        "Operator should be estimated after online learning"
+    );
 
     println!(
         "[KoopmanEval] Online steer complete: pairs={}, has_operator={}",
@@ -300,22 +299,19 @@ fn test_koopman_online_steer_reestimation_trigger() {
     let mut h_prev: Option<&Tensor> = None;
 
     for (h_t, _h_next) in &trajectory {
-        let _steered = koopman_online_steer(
-            &mut vanguard,
-            h_t,
-            &h_target,
-            h_prev,
-            None,
-            Some(6),
-        )
-        .unwrap();
+        let _steered =
+            koopman_online_steer(&mut vanguard, h_t, &h_target, h_prev, None, Some(6)).unwrap();
         h_prev = Some(h_t);
     }
 
     // Verify operator exists and has processed data
     let (n_pairs, has_operator, _) = vanguard.status();
     assert!(has_operator, "Operator must exist after online learning");
-    assert!(n_pairs >= 6, "At least 6 pairs should be stored, got {}", n_pairs);
+    assert!(
+        n_pairs >= 6,
+        "At least 6 pairs should be stored, got {}",
+        n_pairs
+    );
 
     println!(
         "[KoopmanEval] Re-estimation triggered: pairs={}, has_operator={}",
@@ -415,7 +411,11 @@ fn test_full_koopman_certified_pipeline() {
         .approximate_koopman_operator()
         .unwrap()
         .expect("Koopman operator");
-    assert!(estimate.mse.is_finite(), "EDMD MSE must be finite, got {:.6}", estimate.mse);
+    assert!(
+        estimate.mse.is_finite(),
+        "EDMD MSE must be finite, got {:.6}",
+        estimate.mse
+    );
 
     // Phase 3: Koopman-guided steering with Tube MPC
     eprintln!("[Pipeline] Phase 3: Koopman-guided steering...");
@@ -460,7 +460,10 @@ fn test_edge_fast_pipeline_performance() {
         vanguard.add_snapshot_pair(h_t, h_next).unwrap();
     }
 
-    let estimate = vanguard.approximate_koopman_operator().unwrap().expect("estimate");
+    let estimate = vanguard
+        .approximate_koopman_operator()
+        .unwrap()
+        .expect("estimate");
     println!(
         "[EdgeFast] MSE={:.6}, d_lifted={}, pairs={}",
         estimate.mse, estimate.lifted_dim, estimate.num_pairs
@@ -486,14 +489,21 @@ fn test_high_precision_pipeline() {
         vanguard.add_snapshot_pair(h_t, h_next).unwrap();
     }
 
-    let estimate = vanguard.approximate_koopman_operator().unwrap().expect("estimate");
+    let estimate = vanguard
+        .approximate_koopman_operator()
+        .unwrap()
+        .expect("estimate");
     println!(
         "[HighPrec] MSE={:.6}, d_lifted={}, pairs={}",
         estimate.mse, estimate.lifted_dim, estimate.num_pairs
     );
 
     // High precision should produce finite MSE
-    assert!(estimate.mse.is_finite(), "High precision MSE must be finite, got {:.6}", estimate.mse);
+    assert!(
+        estimate.mse.is_finite(),
+        "High precision MSE must be finite, got {:.6}",
+        estimate.mse
+    );
 }
 
 // ─── Observable Lifting Validation ───
@@ -508,7 +518,9 @@ fn test_observable_lifting_dimension_expansion() {
 
     // Add a pair to trigger observable lifting internally
     let h_next = make_state(1, 16, 0.6, &device);
-    vanguard.add_snapshot_pair(&h.squeeze(0).unwrap(), &h_next.squeeze(0).unwrap()).unwrap();
+    vanguard
+        .add_snapshot_pair(&h.squeeze(0).unwrap(), &h_next.squeeze(0).unwrap())
+        .unwrap();
 
     // Verify that the lifted dimension is 3x the original (Ψ(h) = [h; relu(h); h²])
     let (n_pairs, _, _) = vanguard.status();
@@ -519,7 +531,10 @@ fn test_observable_lifting_dimension_expansion() {
     for (h_t, h_next) in &pairs {
         vanguard.add_snapshot_pair(h_t, h_next).unwrap();
     }
-    let estimate = vanguard.approximate_koopman_operator().unwrap().expect("estimate");
+    let estimate = vanguard
+        .approximate_koopman_operator()
+        .unwrap()
+        .expect("estimate");
     assert_eq!(
         estimate.lifted_dim,
         16 * 3,
@@ -547,13 +562,13 @@ fn test_s143_summary() {
         vanguard.add_snapshot_pair(h_t, h_next).unwrap();
     }
 
-    let estimate = vanguard.approximate_koopman_operator().unwrap().expect("estimate");
+    let estimate = vanguard
+        .approximate_koopman_operator()
+        .unwrap()
+        .expect("estimate");
     eprintln!(
         "✅ EDMD: K ∈ ℝ{}×{}, MSE={:.6}, pairs={}",
-        estimate.lifted_dim,
-        estimate.lifted_dim,
-        estimate.mse,
-        estimate.num_pairs
+        estimate.lifted_dim, estimate.lifted_dim, estimate.mse, estimate.num_pairs
     );
 
     let h_current = make_state(1, 20, 0.5, &device);

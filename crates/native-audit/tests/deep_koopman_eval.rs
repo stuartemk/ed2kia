@@ -25,11 +25,7 @@ fn make_state(rows: usize, cols: usize, seed: f32, device: &Device) -> Tensor {
 }
 
 /// Generate near-linear dynamics pairs for Koopman operator learning.
-fn generate_linear_pairs(
-    n: usize,
-    dim: usize,
-    device: &Device,
-) -> Vec<(Tensor, Tensor)> {
+fn generate_linear_pairs(n: usize, dim: usize, device: &Device) -> Vec<(Tensor, Tensor)> {
     let mut pairs = Vec::new();
     for i in 0..n {
         let x_t = make_state(1, dim, 0.1 * (i as f32 + 1.0), device);
@@ -306,11 +302,7 @@ fn test_lyapunov_value_positive_definite() {
         "Lyapunov value must be non-negative, got {:.6}",
         v
     );
-    assert!(
-        v.is_finite(),
-        "Lyapunov value must be finite, got {:.6}",
-        v
-    );
+    assert!(v.is_finite(), "Lyapunov value must be finite, got {:.6}", v);
 
     println!("[DeepKoopmanEval] Lyapunov V(ψ): {:.6}", v);
 }
@@ -365,10 +357,7 @@ fn test_verify_contraction_with_identity_k() {
     let contracted = dk.verify_contraction(&psi, &psi_safe).unwrap();
 
     // Result should be a valid boolean
-    println!(
-        "[DeepKoopmanEval] Contraction verified: {}",
-        contracted
-    );
+    println!("[DeepKoopmanEval] Contraction verified: {}", contracted);
 }
 
 // ─── Tube MPC Tests ───
@@ -436,10 +425,7 @@ fn test_steer_with_deep_koopman_tube_basic() {
     let x_safe = make_state(1, 32, 0.1, &device);
 
     let result = steer_with_deep_koopman_tube(
-        &dk,
-        &x_current,
-        &x_safe,
-        0.1, // alpha: f64
+        &dk, &x_current, &x_safe, 0.1, // alpha: f64
         0.1, // disturbance_bound: f32
     )
     .unwrap();
@@ -456,9 +442,7 @@ fn test_steer_with_deep_koopman_tube_basic() {
 
     println!(
         "[DeepKoopmanEval] Steer: V̇={:.4}, r_tube={:.4}, contract={}",
-        result.lyapunov_derivative,
-        result.tube_radius,
-        result.contraction_satisfied
+        result.lyapunov_derivative, result.tube_radius, result.contraction_satisfied
     );
 }
 
@@ -472,13 +456,25 @@ fn test_steer_with_deep_koopman_tube_reduces_distance() {
 
     // Compute initial distance
     let diff_before = x_current.sub(&x_safe).unwrap();
-    let dist_before: f32 = diff_before.sqr().unwrap().sum_all().unwrap().to_scalar().unwrap();
+    let dist_before: f32 = diff_before
+        .sqr()
+        .unwrap()
+        .sum_all()
+        .unwrap()
+        .to_scalar()
+        .unwrap();
 
     let result = steer_with_deep_koopman_tube(&dk, &x_current, &x_safe, 0.1, 0.05).unwrap();
 
     // Compute distance after steering
     let diff_after = result.steered.sub(&x_safe).unwrap();
-    let dist_after: f32 = diff_after.sqr().unwrap().sum_all().unwrap().to_scalar().unwrap();
+    let dist_after: f32 = diff_after
+        .sqr()
+        .unwrap()
+        .sum_all()
+        .unwrap()
+        .to_scalar()
+        .unwrap();
 
     println!(
         "[DeepKoopmanEval] Distance: before={:.6}, after={:.6}",
@@ -501,7 +497,10 @@ fn test_steer_result_display() {
 
     // Verify Display trait works
     let display_str = format!("{}", result);
-    assert!(!display_str.is_empty(), "Display output should not be empty");
+    assert!(
+        !display_str.is_empty(),
+        "Display output should not be empty"
+    );
 
     println!("[DeepKoopmanEval] Display: {}", display_str);
 }
@@ -560,10 +559,7 @@ fn test_mean_field_replicator_simplex_preservation() {
         );
     }
 
-    println!(
-        "[DeepKoopmanEval] Simplex sums: {:?}",
-        sums_vec
-    );
+    println!("[DeepKoopmanEval] Simplex sums: {:?}", sums_vec);
 }
 
 #[test]
@@ -577,12 +573,7 @@ fn test_mean_field_replicator_non_negative() {
 
     let vals: Vec<f32> = x_new.flatten_all().unwrap().to_vec1().unwrap();
     for (i, v) in vals.iter().enumerate() {
-        assert!(
-            *v >= 0.0,
-            "Value[{}] must be non-negative, got {:.6}",
-            i,
-            v
-        );
+        assert!(*v >= 0.0, "Value[{}] must be non-negative, got {:.6}", i, v);
     }
 
     println!("[DeepKoopmanEval] All values non-negative: ✓");
@@ -602,7 +593,11 @@ fn test_mean_field_replicator_with_noise() {
     // Values should still be non-negative after noise
     let vals: Vec<f32> = x_new.flatten_all().unwrap().to_vec1().unwrap();
     for v in &vals {
-        assert!(v.is_finite(), "Value must be finite after noise, got {:.6}", v);
+        assert!(
+            v.is_finite(),
+            "Value must be finite after noise, got {:.6}",
+            v
+        );
     }
 
     println!("[DeepKoopmanEval] Replicator with noise: ✓");
@@ -709,9 +704,7 @@ fn test_full_deep_koopman_pipeline() {
     assert!(result.tube_radius >= 0.0);
     eprintln!(
         "[Pipeline] Steer: V̇={:.4}, r_tube={:.4}, contract={}",
-        result.lyapunov_derivative,
-        result.tube_radius,
-        result.contraction_satisfied
+        result.lyapunov_derivative, result.tube_radius, result.contraction_satisfied
     );
 
     // Phase 6: Unlift reconstruction
@@ -731,7 +724,11 @@ fn test_full_deep_koopman_pipeline() {
     let mut seed = 42u64;
     let pop_new = mean_field_replicator_step(&pop, &fitness, 0.01, 0.1, &mut seed).unwrap();
     assert_eq!(pop_new.shape(), pop.shape());
-    eprintln!("[Pipeline] Replicator: {:?} -> {:?}", pop.shape(), pop_new.shape());
+    eprintln!(
+        "[Pipeline] Replicator: {:?} -> {:?}",
+        pop.shape(),
+        pop_new.shape()
+    );
 
     eprintln!("[Pipeline] ✅ Full DeepKoopman certified pipeline complete!");
 }
@@ -759,8 +756,7 @@ fn test_edge_fast_pipeline_performance() {
 
     println!(
         "[EdgeFast] V̇={:.4}, r_tube={:.4}",
-        result.lyapunov_derivative,
-        result.tube_radius
+        result.lyapunov_derivative, result.tube_radius
     );
 }
 
@@ -782,14 +778,14 @@ fn test_high_precision_pipeline() {
     let psi_safe = make_state(1, dk.lifted_dim(), 0.0, &device);
     let v = dk.compute_lyapunov_value(&psi, &psi_safe).unwrap();
 
-    assert!(v.is_finite(), "High precision Lyapunov must be finite, got {:.6}", v);
+    assert!(
+        v.is_finite(),
+        "High precision Lyapunov must be finite, got {:.6}",
+        v
+    );
     assert!(v >= 0.0);
 
-    println!(
-        "[HighPrec] V(ψ)={:.9}, lifted={}",
-        v,
-        dk.lifted_dim()
-    );
+    println!("[HighPrec] V(ψ)={:.9}, lifted={}", v, dk.lifted_dim());
 }
 
 // ─── Config Builder Tests ───
@@ -822,7 +818,10 @@ fn test_config_clamping() {
 
     // Hidden dim clamping
     let config = DeepKoopmanConfig::default().with_hidden_dim(10);
-    assert!(config.hidden_dim >= 16, "Hidden dim should be clamped to min 16");
+    assert!(
+        config.hidden_dim >= 16,
+        "Hidden dim should be clamped to min 16"
+    );
 
     println!("[DeepKoopmanEval] Config clamping: ✓");
 }
@@ -834,7 +833,9 @@ fn test_s144_summary() {
     let device = Device::Cpu;
     let input_dim = 32;
 
-    eprintln!("=== Sprint 144: DeepKoopman Lifting + Contractive Tube MPC + Symbiotic Mean-Field ===");
+    eprintln!(
+        "=== Sprint 144: DeepKoopman Lifting + Contractive Tube MPC + Symbiotic Mean-Field ==="
+    );
     eprintln!("DeepKoopman: Encoder → ψ ∈ ℝ^{{lifted_dim}}, K ∈ ℝ^{{lifted_dim × lifted_dim}}");
     eprintln!("Decoder: ψ → x̂ ∈ ℝ^{{input_dim}} (reconstruction)");
     eprintln!("Lyapunov: V(ψ) = (ψ - ψ_safe)ᵀ M (ψ - ψ_safe), M ≻ 0");
@@ -866,9 +867,7 @@ fn test_s144_summary() {
 
     eprintln!(
         "✅ Steer: V̇={:.4}, r_tube={:.4}, contract={}",
-        result.lyapunov_derivative,
-        result.tube_radius,
-        result.contraction_satisfied
+        result.lyapunov_derivative, result.tube_radius, result.contraction_satisfied
     );
 
     // Lyapunov

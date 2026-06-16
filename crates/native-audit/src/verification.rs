@@ -783,11 +783,8 @@ impl Zonotope {
         let n = self.center.len();
 
         let mut new_center = vec![0.0f32; n];
-        let mut new_generators: Vec<Vec<f32>> = self
-            .generators
-            .iter()
-            .map(|_g| vec![0.0f32; n])
-            .collect();
+        let mut new_generators: Vec<Vec<f32>> =
+            self.generators.iter().map(|_g| vec![0.0f32; n]).collect();
 
         for i in 0..n {
             if lower[i] >= 0.0 {
@@ -842,7 +839,9 @@ impl Zonotope {
 
         for _ in 0..num_samples {
             // LCG random number generator
-            state = state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+            state = state
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407);
             // Sample a random point from the zonotope
             let mut point = vec![0.0f32; n];
             for i in 0..n {
@@ -985,8 +984,7 @@ pub fn certify_adversarial_robustness(
     let certified_radius = zonotope.linf_radius();
     let bound_tightness = zonotope.avg_width();
 
-    let is_certified = bounds_safe
-        || safety_prob >= config.safety_threshold;
+    let is_certified = bounds_safe || safety_prob >= config.safety_threshold;
 
     AdversarialCertResult {
         safety_probability: safety_prob,
@@ -1021,11 +1019,7 @@ pub fn simulate_pgd_attack(
             let mid = (safe_lo.get(i).copied().unwrap_or(0.0)
                 + safe_hi.get(i).copied().unwrap_or(0.0))
                 / 2.0;
-            let direction = if current.center[i] > mid {
-                -1.0
-            } else {
-                1.0
-            };
+            let direction = if current.center[i] > mid { -1.0 } else { 1.0 };
             attack_gen[i] = direction * step_size;
         }
         current.generators.push(attack_gen);
@@ -2224,7 +2218,11 @@ mod tests {
         let safe_lo = vec![0.0, 0.0];
         let safe_hi = vec![1.0, 1.0];
         let (prob, _samples) = z.certified_safety_prob(&safe_lo, &safe_hi, 500, 42);
-        assert!(prob > 0.1 && prob < 0.5, "Partial safety should be ~0.25, got {}", prob);
+        assert!(
+            prob > 0.1 && prob < 0.5,
+            "Partial safety should be ~0.25, got {}",
+            prob
+        );
     }
 
     #[test]

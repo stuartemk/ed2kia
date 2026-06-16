@@ -1582,7 +1582,7 @@ dependencies = [
 
 [[package]]
 name = "native-audit"
-version = "15.8.0"
+version = "16.8.0"
 dependencies = [
  "candle-core",
  "candle-nn",

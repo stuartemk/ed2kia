@@ -10,9 +10,7 @@
 //! 4. **TV-HBL Full**: Time-Varying Hybrid Barrier-Lyapunov + QP projection
 
 use candle_core::{Device, Result, Tensor};
-use native_audit::control::{
-    compute_tv_hbl, project_control_tv_hbl,
-};
+use native_audit::control::{compute_tv_hbl, project_control_tv_hbl};
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -74,8 +72,17 @@ mod tv_hbl_core_tests {
 
         let result = compute_tv_hbl(&state, &safe_center, &p_matrix, alpha_t)?;
         assert!(result.safe, "State should be safe: h={:.4}", result.h_value);
-        assert!(result.h_value > 0.0, "h_value should be positive: {:.4}", result.h_value);
-        assert!(result.quadratic_term > alpha_t, "quad > alpha: {:.4} > {:.4}", result.quadratic_term, alpha_t);
+        assert!(
+            result.h_value > 0.0,
+            "h_value should be positive: {:.4}",
+            result.h_value
+        );
+        assert!(
+            result.quadratic_term > alpha_t,
+            "quad > alpha: {:.4} > {:.4}",
+            result.quadratic_term,
+            alpha_t
+        );
         Ok(())
     }
 
@@ -89,8 +96,16 @@ mod tv_hbl_core_tests {
         let alpha_t = 5.0;
 
         let result = compute_tv_hbl(&state, &safe_center, &p_matrix, alpha_t)?;
-        assert!(!result.safe, "State should be unsafe: h={:.4}", result.h_value);
-        assert!(result.h_value < 0.0, "h_value should be negative: {:.4}", result.h_value);
+        assert!(
+            !result.safe,
+            "State should be unsafe: h={:.4}",
+            result.h_value
+        );
+        assert!(
+            result.h_value < 0.0,
+            "h_value should be negative: {:.4}",
+            result.h_value
+        );
         Ok(())
     }
 
@@ -127,7 +142,9 @@ mod tv_hbl_core_tests {
             assert!(
                 result.h_value < prev_h,
                 "h should decrease as alpha grows: t={}, h={:.4}, prev={:.4}",
-                t, result.h_value, prev_h
+                t,
+                result.h_value,
+                prev_h
             );
             prev_h = result.h_value;
         }
@@ -144,9 +161,21 @@ mod tv_hbl_core_tests {
 
         let result = compute_tv_hbl(&state, &safe_center, &p_matrix, 0.5)?;
         let display = format!("{}", result);
-        assert!(display.contains("TVHBL"), "Display should contain 'TVHBL': {}", display);
-        assert!(display.contains("h="), "Display should contain 'h=': {}", display);
-        assert!(display.contains("safe="), "Display should contain 'safe=': {}", display);
+        assert!(
+            display.contains("TVHBL"),
+            "Display should contain 'TVHBL': {}",
+            display
+        );
+        assert!(
+            display.contains("h="),
+            "Display should contain 'h=': {}",
+            display
+        );
+        assert!(
+            display.contains("safe="),
+            "Display should contain 'safe=': {}",
+            display
+        );
         Ok(())
     }
 
@@ -159,7 +188,11 @@ mod tv_hbl_core_tests {
         let p_matrix = make_symmetric_posdef(dim, 1.0, &device)?;
 
         let result = compute_tv_hbl(&state, &safe_center, &p_matrix, 0.0)?;
-        assert!(result.quadratic_term >= 0.0, "Quadratic term should be non-negative: {:.4}", result.quadratic_term);
+        assert!(
+            result.quadratic_term >= 0.0,
+            "Quadratic term should be non-negative: {:.4}",
+            result.quadratic_term
+        );
         Ok(())
     }
 
@@ -172,8 +205,16 @@ mod tv_hbl_core_tests {
         let alpha_t = 1.0;
 
         let result = compute_tv_hbl(&state, &state, &p_matrix, alpha_t)?;
-        assert!((result.quadratic_term - 0.0).abs() < 1e-6, "Quadratic should be ~0: {:.6}", result.quadratic_term);
-        assert!((result.h_value + alpha_t).abs() < 1e-6, "h should be -alpha: {:.6}", result.h_value);
+        assert!(
+            (result.quadratic_term - 0.0).abs() < 1e-6,
+            "Quadratic should be ~0: {:.6}",
+            result.quadratic_term
+        );
+        assert!(
+            (result.h_value + alpha_t).abs() < 1e-6,
+            "h should be -alpha: {:.6}",
+            result.h_value
+        );
         assert!(!result.safe, "Should be unsafe when state == center");
         Ok(())
     }
@@ -196,7 +237,11 @@ mod qp_projection_tests {
 
         let result = project_control_tv_hbl(&u_nom, &grad_h, h_value, gamma, delta)?;
         assert!(!result.corrected, "Safe state should not be corrected");
-        assert!(result.lambda == 0.0, "Lambda should be 0 for safe state: {:.6}", result.lambda);
+        assert!(
+            result.lambda == 0.0,
+            "Lambda should be 0 for safe state: {:.6}",
+            result.lambda
+        );
         Ok(())
     }
 
@@ -212,10 +257,17 @@ mod qp_projection_tests {
 
         let result = project_control_tv_hbl(&u_nom, &grad_h, h_value, gamma, delta)?;
         assert!(result.corrected, "Unsafe state should be corrected");
-        assert!(result.lambda > 0.0, "Lambda should be positive: {:.6}", result.lambda);
-        assert!(result.safety_margin_after > result.safety_margin_before,
+        assert!(
+            result.lambda > 0.0,
+            "Lambda should be positive: {:.6}",
+            result.lambda
+        );
+        assert!(
+            result.safety_margin_after > result.safety_margin_before,
             "Safety margin should improve: after={:.4}, before={:.4}",
-            result.safety_margin_after, result.safety_margin_before);
+            result.safety_margin_after,
+            result.safety_margin_before
+        );
         Ok(())
     }
 
@@ -235,7 +287,8 @@ mod qp_projection_tests {
         assert!(
             (result.lambda - expected_lambda).abs() < 1e-4,
             "Lambda formula: got {:.6}, expected {:.6}",
-            result.lambda, expected_lambda
+            result.lambda,
+            expected_lambda
         );
         Ok(())
     }
@@ -249,7 +302,11 @@ mod qp_projection_tests {
         let grad_h = make_tensor(batch, dim, 0.5, &device)?;
 
         let result = project_control_tv_hbl(&u_nom, &grad_h, -1.0, 1.0, 1e-6)?;
-        assert_eq!(result.u_safe.shape(), u_nom.shape(), "Shape should be preserved");
+        assert_eq!(
+            result.u_safe.shape(),
+            u_nom.shape(),
+            "Shape should be preserved"
+        );
         Ok(())
     }
 
@@ -262,9 +319,21 @@ mod qp_projection_tests {
 
         let result = project_control_tv_hbl(&u_nom, &grad_h, -1.0, 1.0, 1e-6)?;
         let display = format!("{}", result);
-        assert!(display.contains("TVHBLProj"), "Display should contain 'TVHBLProj': {}", display);
-        assert!(display.contains("λ="), "Display should contain lambda: {}", display);
-        assert!(display.contains("corrected="), "Display should contain corrected: {}", display);
+        assert!(
+            display.contains("TVHBLProj"),
+            "Display should contain 'TVHBLProj': {}",
+            display
+        );
+        assert!(
+            display.contains("λ="),
+            "Display should contain lambda: {}",
+            display
+        );
+        assert!(
+            display.contains("corrected="),
+            "Display should contain corrected: {}",
+            display
+        );
         Ok(())
     }
 
@@ -280,7 +349,8 @@ mod qp_projection_tests {
         assert!(
             r2.lambda > r1.lambda,
             "More unsafe → larger lambda: r1={:.4}, r2={:.4}",
-            r1.lambda, r2.lambda
+            r1.lambda,
+            r2.lambda
         );
         Ok(())
     }
@@ -297,7 +367,8 @@ mod qp_projection_tests {
         assert!(
             result.safety_margin_after > result.safety_margin_before,
             "Margin should improve: after={:.4}, before={:.4}",
-            result.safety_margin_after, result.safety_margin_before
+            result.safety_margin_after,
+            result.safety_margin_before
         );
         Ok(())
     }
@@ -320,22 +391,23 @@ mod ablation_study {
             "baseline" => {
                 let result = compute_tv_hbl(state, safe_center, p_matrix, alpha_t)?;
                 Ok(("baseline", result.h_value, 0.0))
-            },
+            }
             "sae" => {
                 let alpha_sae = alpha_t * 0.8;
                 let result = compute_tv_hbl(state, safe_center, p_matrix, alpha_sae)?;
                 Ok(("sae", result.h_value, 0.0))
-            },
+            }
             "koopman" => {
                 let alpha_koop = alpha_t * 0.6;
                 let result = compute_tv_hbl(state, safe_center, p_matrix, alpha_koop)?;
                 Ok(("koopman", result.h_value, 0.0))
-            },
+            }
             "tv_hbl_full" => {
                 let result = compute_tv_hbl(state, safe_center, p_matrix, alpha_t)?;
-                let proj = project_control_tv_hbl(u_nom, &result.grad_h, result.h_value, 1.0, 1e-6)?;
+                let proj =
+                    project_control_tv_hbl(u_nom, &result.grad_h, result.h_value, 1.0, 1e-6)?;
                 Ok(("tv_hbl_full", proj.safety_margin_after, proj.lambda))
-            },
+            }
             _ => panic!("Unknown ablation stage: {}", stage),
         }
     }
@@ -356,9 +428,8 @@ mod ablation_study {
         let mut summary = String::new();
 
         for stage in stages {
-            let (name, score, correction) = run_ablation_stage(
-                stage, &state, &safe_center, &p_matrix, alpha_t, &u_nom,
-            )?;
+            let (name, score, correction) =
+                run_ablation_stage(stage, &state, &safe_center, &p_matrix, alpha_t, &u_nom)?;
             scores.push((name, score));
 
             summary.push_str(&format!(
@@ -368,13 +439,25 @@ mod ablation_study {
         }
 
         // Baseline < SAE < Koopman (alpha reduction → higher h)
-        assert!(scores[1].1 > scores[0].1,
-            "SAE ({:.4}) > Baseline ({:.4})", scores[1].1, scores[0].1);
-        assert!(scores[2].1 > scores[1].1,
-            "Koopman ({:.4}) > SAE ({:.4})", scores[2].1, scores[1].1);
+        assert!(
+            scores[1].1 > scores[0].1,
+            "SAE ({:.4}) > Baseline ({:.4})",
+            scores[1].1,
+            scores[0].1
+        );
+        assert!(
+            scores[2].1 > scores[1].1,
+            "Koopman ({:.4}) > SAE ({:.4})",
+            scores[2].1,
+            scores[1].1
+        );
         // TV-HBL full: safety_margin_after >= baseline (QP correction helps)
-        assert!(scores[3].1 >= scores[0].1,
-            "TV-HBL ({:.4}) >= Baseline ({:.4})", scores[3].1, scores[0].1);
+        assert!(
+            scores[3].1 >= scores[0].1,
+            "TV-HBL ({:.4}) >= Baseline ({:.4})",
+            scores[3].1,
+            scores[0].1
+        );
 
         println!("\n{}", summary);
         Ok(())
@@ -401,12 +484,18 @@ mod ablation_study {
 
         for config in ABLATION_CONFIGS {
             let (name, score, _) = run_ablation_stage(
-                config.name, &state, &safe_center, &p_matrix, alpha_t, &u_nom,
+                config.name,
+                &state,
+                &safe_center,
+                &p_matrix,
+                alpha_t,
+                &u_nom,
             )?;
             assert!(
                 score > 0.0,
                 "Safe state should pass all configs: {} score={:.4}",
-                name, score
+                name,
+                score
             );
         }
         Ok(())
@@ -423,11 +512,15 @@ mod ablation_study {
         let alpha_t = 10.0;
         let u_nom = make_tensor(1, dim, 0.5, &device)?;
 
-        let (_, baseline_score, _) = run_ablation_stage(
-            "baseline", &state, &safe_center, &p_matrix, alpha_t, &u_nom,
-        )?;
+        let (_, baseline_score, _) =
+            run_ablation_stage("baseline", &state, &safe_center, &p_matrix, alpha_t, &u_nom)?;
         let (_, tv_hbl_score, _) = run_ablation_stage(
-            "tv_hbl_full", &state, &safe_center, &p_matrix, alpha_t, &u_nom,
+            "tv_hbl_full",
+            &state,
+            &safe_center,
+            &p_matrix,
+            alpha_t,
+            &u_nom,
         )?;
 
         assert!(
@@ -439,7 +532,8 @@ mod ablation_study {
         assert!(
             tv_hbl_score > baseline_score,
             "TV-HBL should improve over baseline: tv_hbl={:.4}, baseline={:.4}",
-            tv_hbl_score, baseline_score
+            tv_hbl_score,
+            baseline_score
         );
         Ok(())
     }
@@ -501,7 +595,10 @@ mod integration_tests {
             assert!(
                 trajectory[i].1 < trajectory[i - 1].1,
                 "h should decrease over time: t={} h={:.4}, t={} h={:.4}",
-                i, trajectory[i].1, i - 1, trajectory[i - 1].1
+                i,
+                trajectory[i].1,
+                i - 1,
+                trajectory[i - 1].1
             );
         }
 

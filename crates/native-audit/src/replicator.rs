@@ -191,7 +191,9 @@ pub fn replicator_heun_step(x: &Tensor, fitness: &Tensor, dt: f32) -> Result<Ten
     let half_tensor = Tensor::new(0.5f32, x.device())?;
     let avg_slope = k1.broadcast_add(&k2)?.broadcast_mul(&half_tensor)?;
     let dt_tensor = Tensor::new(dt, x.device())?;
-    let x_next = x.broadcast_add(&avg_slope.broadcast_mul(&dt_tensor)?)?.clamp(0.0, 1.0)?;
+    let x_next = x
+        .broadcast_add(&avg_slope.broadcast_mul(&dt_tensor)?)?
+        .clamp(0.0, 1.0)?;
     Ok(x_next)
 }
 
@@ -262,6 +264,7 @@ pub fn verify_simplex(x: &Tensor) -> Result<bool> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use candle_core::Device;
 
     fn make_uniform_pop(n: usize) -> Result<Tensor> {
         let val = 1.0 / n as f32;
@@ -415,7 +418,10 @@ mod tests {
         assert_eq!(x_next.dims(), &[4]);
 
         let x_vec = x_next.to_vec1::<f32>()?;
-        assert!(x_vec[3] > x_vec[0], "Heun: highest fitness should grow most");
+        assert!(
+            x_vec[3] > x_vec[0],
+            "Heun: highest fitness should grow most"
+        );
         Ok(())
     }
 
@@ -459,9 +465,7 @@ mod tests {
         let x0 = make_uniform_pop(3)?;
         // Large fitness difference
         let fitness = Tensor::from_vec(vec![1.0f32, 5.0, 10.0], &[3], &Device::Cpu)?;
-        let cfg = ReplicatorConfig::default()
-            .with_dt(0.1)
-            .with_steps(100);
+        let cfg = ReplicatorConfig::default().with_dt(0.1).with_steps(100);
 
         let result = run_replicator(&x0, &fitness, &cfg)?;
         let x_vec = result.x_next.to_vec1::<f32>()?;
@@ -477,15 +481,17 @@ mod tests {
         let x0 = make_uniform_pop(3)?;
         // Byzantine node has very negative fitness
         let fitness = Tensor::from_vec(vec![2.0f32, 3.0, -5.0], &[3], &Device::Cpu)?;
-        let cfg = ReplicatorConfig::default()
-            .with_dt(0.05)
-            .with_steps(50);
+        let cfg = ReplicatorConfig::default().with_dt(0.05).with_steps(50);
 
         let result = run_replicator(&x0, &fitness, &cfg)?;
         let x_vec = result.x_next.to_vec1::<f32>()?;
 
         // Byzantine node (index 2) should be nearly eliminated
-        assert!(x_vec[2] < 0.1, "Byzantine node should be eliminated, got {}", x_vec[2]);
+        assert!(
+            x_vec[2] < 0.1,
+            "Byzantine node should be eliminated, got {}",
+            x_vec[2]
+        );
         Ok(())
     }
 
@@ -493,9 +499,7 @@ mod tests {
     fn test_run_replicator_entropy_decreases() -> Result<()> {
         let x0 = make_uniform_pop(4)?;
         let fitness = make_fitness(4, 1.0)?;
-        let cfg = ReplicatorConfig::default()
-            .with_dt(0.1)
-            .with_steps(50);
+        let cfg = ReplicatorConfig::default().with_dt(0.1).with_steps(50);
 
         let initial_entropy = population_entropy(&x0)?;
         let result = run_replicator(&x0, &fitness, &cfg)?;
@@ -591,9 +595,7 @@ mod tests {
         // Byzantine: node 5 is adversarial
         let byz = Tensor::from_vec(vec![0.0f32, 0.0, 0.0, 0.0, 0.0, 1.0], &[n], &Device::Cpu)?;
 
-        let cfg = ReplicatorConfig::default()
-            .with_dt(0.05)
-            .with_steps(50);
+        let cfg = ReplicatorConfig::default().with_dt(0.05).with_steps(50);
 
         let fitness = compute_fitness(&vfe, &eff, &div, &byz, &cfg)?;
         let result = run_replicator(&x0, &fitness, &cfg)?;

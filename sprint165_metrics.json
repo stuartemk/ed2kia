@@ -1,0 +1,124 @@
+{
+  "sprint": 165,
+  "version": "v16.5.0-sprint165",
+  "date": "2026-06-15",
+  "title": "Online Adaptive SVD + STLSQ Convergence + LMI Spectral Radius + PAC-Conformal Tube Steering",
+  "mode": "ONLINE_SVD + STLSQ_CONVERGENCE + LMI_SPECTRAL_RADIUS + PAC_CONFORMAL_TUBE + HARBENCH_ASR + ZERO_WARNINGS",
+  "functions_added": [
+    {
+      "name": "SVDStats",
+      "file": "crates/native-audit/src/deep_koopman.rs",
+      "line": 2846,
+      "description": "Welford's online algorithm for streaming mean/covariance tracking"
+    },
+    {
+      "name": "compute_online_svd_bottleneck",
+      "file": "crates/native-audit/src/deep_koopman.rs",
+      "line": 2918,
+      "description": "Streaming SVD via power iteration with deflation for eigenvectors"
+    },
+    {
+      "name": "compute_sindy_stlsq_edmd_converged",
+      "file": "crates/native-audit/src/deep_koopman.rs",
+      "line": 3065,
+      "description": "STLSQ with early-stop convergence criterion ||theta_new - theta|| / ||theta|| < tol"
+    },
+    {
+      "name": "verify_iss_lmi_full",
+      "file": "crates/native-audit/src/deep_koopman.rs",
+      "line": 3129,
+      "description": "LMI verification with spectral radius rho(K) via power iteration"
+    },
+    {
+      "name": "steer_with_pac_tube_online",
+      "file": "crates/native-audit/src/deep_koopman.rs",
+      "line": 3195,
+      "description": "PAC-conformal tube steering with TubeMetrics observability"
+    }
+  ],
+  "structs_added": [
+    {
+      "name": "SVDStats",
+      "file": "crates/native-audit/src/deep_koopman.rs",
+      "line": 2846,
+      "fields": ["count", "mean", "m2"]
+    },
+    {
+      "name": "TubeMetrics",
+      "file": "crates/native-audit/src/deep_koopman.rs",
+      "line": 3030,
+      "fields": ["rho", "conformal_eps", "coverage", "violation_rate", "avg_correction", "lyapunov_norm", "iss_feasible"]
+    }
+  ],
+  "test_file": "crates/native-audit/tests/s165_pac_online_eval.rs",
+  "tests": {
+    "total": 27,
+    "passed": 27,
+    "failed": 0,
+    "list": [
+      "test_svd_stats_new",
+      "test_svd_stats_update",
+      "test_svd_stats_incremental",
+      "test_online_svd_shape",
+      "test_online_svd_var_ratio_increases",
+      "test_online_svd_streaming_consistency",
+      "test_online_svd_no_hardcoded_shapes",
+      "test_stlsq_converged_shape",
+      "test_stlsq_converged_early_stop",
+      "test_stlsq_converged_sparsity",
+      "test_iss_lmi_full_stable",
+      "test_iss_lmi_full_unstable",
+      "test_iss_lmi_full_rho_effect",
+      "test_iss_lmi_full_alpha_stricter",
+      "test_iss_lmi_full_p_norm_finite",
+      "test_pac_tube_shape",
+      "test_pac_tube_metrics_display",
+      "test_pac_tube_safe_no_correction",
+      "test_pac_tube_conformal_calibration",
+      "test_pac_tube_coverage_high",
+      "test_harmbench_proxy_asr_reduction",
+      "test_harmbench_proxy_pac_coverage",
+      "test_online_certified_pipeline",
+      "test_dynamic_convergence_stlsq",
+      "test_dynamic_rho_lmi",
+      "test_model_tracing_s165",
+      "test_s165_summary"
+    ]
+  },
+  "metrics": {
+    "compilation": "0 errors, 0 warnings (S165 code)",
+    "cargo_fmt": "passed",
+    "cargo_clippy_s165": "0 warnings",
+    "test_result": "27/27 passed",
+    "test_duration_seconds": 0.03,
+    "lines_of_code_added": 432,
+    "functions_added": 5,
+    "structs_added": 2,
+    "anti_cheat": {
+      "no_hardcoded_shapes": true,
+      "dynamic_convergence_stlsq": true,
+      "dynamic_rho_lmi": true,
+      "model_tracing": true
+    }
+  },
+  "paper_metrics": {
+    "online_svd_welford": "Numerically stable streaming covariance via Welford's algorithm",
+    "power_iteration_deflation": "Eigenvector approximation with residual deflation",
+    "stlsq_early_stop": "Relative change criterion ||theta_new - theta|| / ||theta|| < tol",
+    "spectral_radius_power": "rho(K) = ||Kv|| when ||v|| = 1 via power iteration",
+    "pac_conformal_epsilon": "epsilon = Q_{1-delta}(|e_val|) quantile-based margin",
+    "tube_metrics_observability": "Full pipeline telemetry: rho, eps, coverage, violation_rate, avg_correction, lyapunov_norm, iss_feasible"
+  },
+  "git": {
+    "commit": "942d9f0",
+    "tag": "v16.5.0-sprint165",
+    "files_changed": 5,
+    "insertions": 1105,
+    "deletions": 4
+  },
+  "repro": {
+    "cmd_test": "cargo test --manifest-path crates/native-audit/Cargo.toml --test s165_pac_online_eval",
+    "cmd_fmt": "cargo fmt --manifest-path crates/native-audit/Cargo.toml",
+    "cmd_clippy": "cargo clippy --manifest-path crates/native-audit/Cargo.toml --lib -- -D warnings"
+  }
+}

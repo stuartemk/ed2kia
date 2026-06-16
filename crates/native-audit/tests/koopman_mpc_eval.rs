@@ -82,7 +82,10 @@ fn test_zonotope_reduction_preserves_center() -> Result<()> {
     // Center should be preserved exactly
     let center_after = z_reduced.center.to_vec2::<f32>()?;
     for (before, after) in center_data.iter().zip(center_after[0].iter()) {
-        assert!((before - after).abs() < 1e-6, "Center modified by reduction");
+        assert!(
+            (before - after).abs() < 1e-6,
+            "Center modified by reduction"
+        );
     }
 
     println!("✅ Zonotope center preserved through reduction");
@@ -107,7 +110,11 @@ fn test_zonotope_reduction_no_op_when_small() -> Result<()> {
     let z_reduced = z.reduce_order(2)?;
 
     // Should return unchanged since init_gens < dims * max_order
-    assert_eq!(z_reduced.num_gens()?, init_gens, "Should not reduce when already small");
+    assert_eq!(
+        z_reduced.num_gens()?,
+        init_gens,
+        "Should not reduce when already small"
+    );
 
     println!("✅ No-op reduction when generators < threshold");
     Ok(())
@@ -186,9 +193,15 @@ fn test_pinn_loss_integration() -> Result<()> {
     let result = koopman_pinn::compute_pinn_loss(&psi_t, &psi_next, &k, &r, 0.01, 1.0)?;
 
     println!("PINN Loss: {}", result);
-    assert!(result.total_loss >= 0.0, "Total loss should be non-negative");
+    assert!(
+        result.total_loss >= 0.0,
+        "Total loss should be non-negative"
+    );
     assert!(result.data_loss >= 0.0, "Data loss should be non-negative");
-    assert!(result.physics_loss >= 0.0, "Physics loss should be non-negative");
+    assert!(
+        result.physics_loss >= 0.0,
+        "Physics loss should be non-negative"
+    );
 
     println!("✅ PINN loss integration test passed");
     Ok(())
@@ -234,8 +247,7 @@ fn test_pinn_loss_monotonicity_verification() -> Result<()> {
     let k_t = k.t()?;
     let psi_next = psi_t.matmul(&k_t)?;
 
-    let monotonic =
-        koopman_pinn::verify_pinn_loss_monotonicity(&psi_t, &psi_next, &k, 0.01, 1.0)?;
+    let monotonic = koopman_pinn::verify_pinn_loss_monotonicity(&psi_t, &psi_next, &k, 0.01, 1.0)?;
 
     assert!(
         monotonic,
@@ -257,12 +269,9 @@ fn test_pinn_loss_lambda_ablation() -> Result<()> {
     let k = Tensor::eye(lifted_dim, DType::F32, &device)?;
     let r = Tensor::zeros((batch, lifted_dim), DType::F32, &device)?;
 
-    let loss_lambda_0 =
-        koopman_pinn::compute_pinn_loss(&psi_t, &psi_next, &k, &r, 0.01, 0.0)?;
-    let loss_lambda_1 =
-        koopman_pinn::compute_pinn_loss(&psi_t, &psi_next, &k, &r, 0.01, 1.0)?;
-    let loss_lambda_10 =
-        koopman_pinn::compute_pinn_loss(&psi_t, &psi_next, &k, &r, 0.01, 10.0)?;
+    let loss_lambda_0 = koopman_pinn::compute_pinn_loss(&psi_t, &psi_next, &k, &r, 0.01, 0.0)?;
+    let loss_lambda_1 = koopman_pinn::compute_pinn_loss(&psi_t, &psi_next, &k, &r, 0.01, 1.0)?;
+    let loss_lambda_10 = koopman_pinn::compute_pinn_loss(&psi_t, &psi_next, &k, &r, 0.01, 10.0)?;
 
     println!(
         "λ=0.0: total={:.6e}, λ=1.0: total={:.6e}, λ=10.0: total={:.6e}",

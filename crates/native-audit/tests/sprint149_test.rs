@@ -81,10 +81,8 @@ mod koopman_cbf_tests {
         let b_matrix = make_control_matrix(dim, u_dim, &device)?;
         let nominal_u = make_safe_control(u_dim, &device)?;
 
-        let result = compute_cbf_safe_steering(
-            &psi, &k_matrix, &b_matrix, &nominal_u,
-            0.01, 0.5, 1.0,
-        )?;
+        let result =
+            compute_cbf_safe_steering(&psi, &k_matrix, &b_matrix, &nominal_u, 0.01, 0.5, 1.0)?;
 
         assert_eq!(
             result.safe_u.shape().dims().len(),
@@ -107,10 +105,8 @@ mod koopman_cbf_tests {
         let b_matrix = make_control_matrix(dim, u_dim, &device)?;
         let nominal_u = make_safe_control(u_dim, &device)?;
 
-        let result = compute_cbf_safe_steering(
-            &psi, &k_matrix, &b_matrix, &nominal_u,
-            0.01, 0.5, 1.0,
-        )?;
+        let result =
+            compute_cbf_safe_steering(&psi, &k_matrix, &b_matrix, &nominal_u, 0.01, 0.5, 1.0)?;
 
         assert!(
             result.was_nominal_safe,
@@ -136,10 +132,8 @@ mod koopman_cbf_tests {
         let b_matrix = make_control_matrix(dim, u_dim, &device)?;
         let nominal_u = make_unsafe_control(u_dim, &device)?;
 
-        let result = compute_cbf_safe_steering(
-            &psi, &k_matrix, &b_matrix, &nominal_u,
-            0.1, 0.5, 1.0,
-        )?;
+        let result =
+            compute_cbf_safe_steering(&psi, &k_matrix, &b_matrix, &nominal_u, 0.1, 0.5, 1.0)?;
 
         assert!(
             !result.was_nominal_safe,
@@ -166,10 +160,8 @@ mod koopman_cbf_tests {
         let b_matrix = make_control_matrix(dim, u_dim, &device)?;
         let nominal_u = make_safe_control(u_dim, &device)?;
 
-        let result = compute_cbf_safe_steering(
-            &psi, &k_matrix, &b_matrix, &nominal_u,
-            0.01, 0.5, r_sq,
-        )?;
+        let result =
+            compute_cbf_safe_steering(&psi, &k_matrix, &b_matrix, &nominal_u, 0.01, 0.5, r_sq)?;
 
         assert!(
             (result.h_value - 0.0).abs() < 1e-5,
@@ -192,20 +184,17 @@ mod koopman_cbf_tests {
         let b_matrix = make_control_matrix(dim, u_dim, &device)?;
         let nominal_u = make_safe_control(u_dim, &device)?;
 
-        let result_low_eps = compute_cbf_safe_steering(
-            &psi, &k_matrix, &b_matrix, &nominal_u,
-            0.001, 0.5, 1.0,
-        )?;
+        let result_low_eps =
+            compute_cbf_safe_steering(&psi, &k_matrix, &b_matrix, &nominal_u, 0.001, 0.5, 1.0)?;
 
-        let result_high_eps = compute_cbf_safe_steering(
-            &psi, &k_matrix, &b_matrix, &nominal_u,
-            0.5, 0.5, 1.0,
-        )?;
+        let result_high_eps =
+            compute_cbf_safe_steering(&psi, &k_matrix, &b_matrix, &nominal_u, 0.5, 0.5, 1.0)?;
 
         assert!(
             result_high_eps.safety_margin > result_low_eps.safety_margin,
             "Safety margin should increase with epsilon_residual. low_eps={:.4}, high_eps={:.4}",
-            result_low_eps.safety_margin, result_high_eps.safety_margin
+            result_low_eps.safety_margin,
+            result_high_eps.safety_margin
         );
 
         Ok(())
@@ -223,10 +212,8 @@ mod koopman_cbf_tests {
         let b_matrix = make_control_matrix(dim, u_dim, &device)?;
         let nominal_u = make_unsafe_control(u_dim, &device)?;
 
-        let result = compute_cbf_safe_steering(
-            &psi, &k_matrix, &b_matrix, &nominal_u,
-            0.1, 0.5, 1.0,
-        )?;
+        let result =
+            compute_cbf_safe_steering(&psi, &k_matrix, &b_matrix, &nominal_u, 0.1, 0.5, 1.0)?;
 
         if !result.was_nominal_safe {
             assert!(
@@ -255,8 +242,13 @@ mod koopman_cbf_tests {
         let nominal_u = make_unsafe_control(u_dim, &device)?;
 
         let result = compute_cbf_safe_steering(
-            &psi_initial, &k_matrix, &b_matrix, &nominal_u,
-            0.05, 0.5, 1.0,
+            &psi_initial,
+            &k_matrix,
+            &b_matrix,
+            &nominal_u,
+            0.05,
+            0.5,
+            1.0,
         )?;
 
         let psi_flat = psi_initial.flatten_all()?;
@@ -299,10 +291,8 @@ mod koopman_cbf_tests {
         let b_matrix = make_control_matrix(dim, u_dim, &device)?;
         let nominal_u = make_safe_control(u_dim, &device)?;
 
-        let result = compute_cbf_safe_steering(
-            &psi, &k_matrix, &b_matrix, &nominal_u,
-            0.01, 0.5, 1.0,
-        )?;
+        let result =
+            compute_cbf_safe_steering(&psi, &k_matrix, &b_matrix, &nominal_u, 0.01, 0.5, 1.0)?;
 
         let display = format!("{}", result);
         assert!(
@@ -332,21 +322,18 @@ mod koopman_cbf_tests {
         let b_matrix = make_control_matrix(dim, u_dim, &device)?;
         let nominal_u = make_safe_control(u_dim, &device)?;
 
-        let result_low_gamma = compute_cbf_safe_steering(
-            &psi, &k_matrix, &b_matrix, &nominal_u,
-            0.01, 0.1, 1.0,
-        )?;
+        let result_low_gamma =
+            compute_cbf_safe_steering(&psi, &k_matrix, &b_matrix, &nominal_u, 0.01, 0.1, 1.0)?;
 
-        let result_high_gamma = compute_cbf_safe_steering(
-            &psi, &k_matrix, &b_matrix, &nominal_u,
-            0.01, 2.0, 1.0,
-        )?;
+        let result_high_gamma =
+            compute_cbf_safe_steering(&psi, &k_matrix, &b_matrix, &nominal_u, 0.01, 2.0, 1.0)?;
 
         // Verify gamma actually changes the margin (not equal)
         assert!(
             (result_high_gamma.safety_margin - result_low_gamma.safety_margin).abs() > 1e-6,
             "Gamma should affect safety margin. low_gamma={:.4}, high_gamma={:.4}",
-            result_low_gamma.safety_margin, result_high_gamma.safety_margin
+            result_low_gamma.safety_margin,
+            result_high_gamma.safety_margin
         );
 
         // Direction depends on sign of h:
@@ -381,20 +368,17 @@ mod koopman_cbf_tests {
         let b_matrix = make_control_matrix(dim, u_dim, &device)?;
         let nominal_u = make_safe_control(u_dim, &device)?;
 
-        let result_small_r = compute_cbf_safe_steering(
-            &psi, &k_matrix, &b_matrix, &nominal_u,
-            0.01, 0.5, 0.1,
-        )?;
+        let result_small_r =
+            compute_cbf_safe_steering(&psi, &k_matrix, &b_matrix, &nominal_u, 0.01, 0.5, 0.1)?;
 
-        let result_large_r = compute_cbf_safe_steering(
-            &psi, &k_matrix, &b_matrix, &nominal_u,
-            0.01, 0.5, 10.0,
-        )?;
+        let result_large_r =
+            compute_cbf_safe_steering(&psi, &k_matrix, &b_matrix, &nominal_u, 0.01, 0.5, 10.0)?;
 
         assert!(
             result_large_r.h_value > result_small_r.h_value,
             "Larger r² should produce larger barrier value. small_r={:.4}, large_r={:.4}",
-            result_small_r.h_value, result_large_r.h_value
+            result_small_r.h_value,
+            result_large_r.h_value
         );
 
         Ok(())
@@ -412,19 +396,14 @@ mod koopman_cbf_tests {
         let b_matrix = make_control_matrix(dim, u_dim, &device)?;
         let nominal_u = make_unsafe_control(u_dim, &device)?;
 
-        let result = compute_cbf_safe_steering(
-            &psi, &k_matrix, &b_matrix, &nominal_u,
-            0.15, 0.5, 1.0,
-        )?;
+        let result =
+            compute_cbf_safe_steering(&psi, &k_matrix, &b_matrix, &nominal_u, 0.15, 0.5, 1.0)?;
 
         assert!(
             !result.was_nominal_safe,
             "Unstable system near boundary should trigger CBF"
         );
-        assert!(
-            result.correction_norm > 0.0,
-            "Correction must be applied"
-        );
+        assert!(result.correction_norm > 0.0, "Correction must be applied");
         assert!(result.h_value.is_finite());
         assert!(result.safety_margin.is_finite());
         assert!(result.current_safety.is_finite());
@@ -445,9 +424,7 @@ mod koopman_cbf_tests {
 #[cfg(test)]
 mod sparse_mean_field_tests {
     use super::*;
-    use ed2k_consensus::mean_field::{
-        update_sparse_mean_field, MeanFieldConfig, SparseNeighbor,
-    };
+    use ed2k_consensus::mean_field::{update_sparse_mean_field, MeanFieldConfig, SparseNeighbor};
 
     fn create_sparse_neighbors(
         num_particles: usize,
@@ -461,7 +438,11 @@ mod sparse_mean_field_tests {
                 .take(num_neighbors_per_particle)
                 .collect::<Vec<_>>();
             neighbor_indices.sort_by_key(|&j| (j * 7 + i * 3) % num_particles);
-            for (k, &j) in neighbor_indices.iter().enumerate().take(num_neighbors_per_particle) {
+            for (k, &j) in neighbor_indices
+                .iter()
+                .enumerate()
+                .take(num_neighbors_per_particle)
+            {
                 neighbors[i].push(SparseNeighbor {
                     idx: j,
                     state: (0..dim).map(|d| ((j + d) as f64 * 0.1).fract()).collect(),
@@ -523,7 +504,8 @@ mod sparse_mean_field_tests {
         assert!(
             result.num_edges < num_possible,
             "Sparse MFG must have fewer edges than dense graph. edges={}, possible={}",
-            result.num_edges, num_possible
+            result.num_edges,
+            num_possible
         );
 
         let sparsity = 1.0 - result.num_edges as f64 / result.num_possible_edges as f64;
@@ -590,17 +572,25 @@ mod sparse_mean_field_tests {
 
         let mut particles: Vec<Vec<f64>> = (0..num_particles)
             .map(|i| {
-                (0..dim).map(|d| {
-                    if d == 0 { i as f64 * 0.5 } else { 0.1 }
-                }).collect()
+                (0..dim)
+                    .map(|d| if d == 0 { i as f64 * 0.5 } else { 0.1 })
+                    .collect()
             })
             .collect();
 
         let compute_spread = |parts: &[Vec<f64>]| -> Option<f64> {
-            if parts.is_empty() { return None; }
+            if parts.is_empty() {
+                return None;
+            }
             let vals: Vec<f64> = parts.iter().map(|p| p[0]).collect();
-            let max_v = *vals.iter().filter(|v| v.is_finite()).max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))?;
-            let min_v = *vals.iter().filter(|v| v.is_finite()).min_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))?;
+            let max_v = *vals
+                .iter()
+                .filter(|v| v.is_finite())
+                .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))?;
+            let min_v = *vals
+                .iter()
+                .filter(|v| v.is_finite())
+                .min_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))?;
             Some(max_v - min_v)
         };
 
@@ -619,7 +609,8 @@ mod sparse_mean_field_tests {
         assert!(
             final_spread < initial_spread * 2.0 || final_spread < 5.0,
             "Mean-field coupling should reduce spread. initial={:.4}, final={:.4}",
-            initial_spread, final_spread
+            initial_spread,
+            final_spread
         );
     }
 
@@ -632,7 +623,11 @@ mod sparse_mean_field_tests {
         let config = MeanFieldConfig::conservative();
 
         let mut particles: Vec<Vec<f64>> = (0..num_particles)
-            .map(|i| (0..dim).map(|d| ((i * 3 + d * 7) as f64 * 0.005).fract() * 0.5).collect())
+            .map(|i| {
+                (0..dim)
+                    .map(|d| ((i * 3 + d * 7) as f64 * 0.005).fract() * 0.5)
+                    .collect()
+            })
             .collect();
 
         let mut total_edges_all_steps = 0;
@@ -659,11 +654,21 @@ mod sparse_mean_field_tests {
             }
 
             assert_eq!(particle_count, num_particles);
-            assert!(num_edges < num_possible, "step {}: edges {} >= possible {}", step, num_edges, num_possible);
+            assert!(
+                num_edges < num_possible,
+                "step {}: edges {} >= possible {}",
+                step,
+                num_edges,
+                num_possible
+            );
             // Only check finite drift magnitudes (skip NaN from numerical edge cases)
             for &mag in &drifts {
                 if mag.is_finite() {
-                    assert!(mag >= 0.0, "drift magnitude must be non-negative, got {}", mag);
+                    assert!(
+                        mag >= 0.0,
+                        "drift magnitude must be non-negative, got {}",
+                        mag
+                    );
                 }
             }
         }
@@ -685,9 +690,7 @@ mod sparse_mean_field_tests {
 #[cfg(test)]
 mod integration_tests {
     use super::*;
-    use ed2k_consensus::mean_field::{
-        update_sparse_mean_field, MeanFieldConfig, SparseNeighbor,
-    };
+    use ed2k_consensus::mean_field::{update_sparse_mean_field, MeanFieldConfig, SparseNeighbor};
 
     /// Test: CBF + Sparse MFG integrated pipeline.
     #[test]
@@ -702,15 +705,17 @@ mod integration_tests {
             .collect();
         let neighbors: Vec<Vec<SparseNeighbor>> = (0..num_particles)
             .map(|i| {
-                (0..3).map(|k| {
-                    let j = (i + k + 1) % num_particles;
-                    SparseNeighbor {
-                        idx: j,
-                        state: mfg_particles[j].clone(),
-                        weight: 0.9,
-                        measure: 1.0 / num_particles as f64,
-                    }
-                }).collect()
+                (0..3)
+                    .map(|k| {
+                        let j = (i + k + 1) % num_particles;
+                        SparseNeighbor {
+                            idx: j,
+                            state: mfg_particles[j].clone(),
+                            weight: 0.9,
+                            measure: 1.0 / num_particles as f64,
+                        }
+                    })
+                    .collect()
             })
             .collect();
         let mfg_config = MeanFieldConfig::default();
@@ -722,13 +727,13 @@ mod integration_tests {
         let b_matrix = make_control_matrix(dim, u_dim, &device)?;
 
         let nominal_data: Vec<f32> = mfg_result.drift_magnitudes[..u_dim]
-            .iter().map(|&v| v as f32 * 0.1).collect();
+            .iter()
+            .map(|&v| v as f32 * 0.1)
+            .collect();
         let nominal_u = Tensor::from_vec(nominal_data, (u_dim,), &device)?;
 
-        let cbf_result = compute_cbf_safe_steering(
-            &psi, &k_matrix, &b_matrix, &nominal_u,
-            0.05, 0.5, 1.0,
-        )?;
+        let cbf_result =
+            compute_cbf_safe_steering(&psi, &k_matrix, &b_matrix, &nominal_u, 0.05, 0.5, 1.0)?;
 
         assert!(cbf_result.h_value.is_finite());
         assert!(cbf_result.correction_norm >= 0.0);
@@ -749,10 +754,9 @@ mod integration_tests {
         let b_matrix = make_control_matrix(dim, u_dim, &device).unwrap();
         let nominal_u = make_safe_control(u_dim, &device).unwrap();
 
-        let cbf_result = compute_cbf_safe_steering(
-            &psi, &k_matrix, &b_matrix, &nominal_u,
-            0.01, 0.5, 1.0,
-        ).unwrap();
+        let cbf_result =
+            compute_cbf_safe_steering(&psi, &k_matrix, &b_matrix, &nominal_u, 0.01, 0.5, 1.0)
+                .unwrap();
 
         assert!(cbf_result.h_value.is_finite());
 
@@ -771,7 +775,10 @@ mod integration_tests {
             .collect();
 
         let mfg_result = update_sparse_mean_field(
-            &mfg_particles, &mfg_neighbors, &MeanFieldConfig::default(), 0.5,
+            &mfg_particles,
+            &mfg_neighbors,
+            &MeanFieldConfig::default(),
+            0.5,
         );
 
         assert_eq!(mfg_result.particles.len(), 5);

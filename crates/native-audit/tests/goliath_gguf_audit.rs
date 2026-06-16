@@ -263,8 +263,8 @@ fn test_cbf_qp_safe_control() {
 
     // Safe state: h(x) = β² - ||x - c_safe||² > 0
     // Use matching shapes: h_current ≈ safe_centroid (small distance → positive h)
-    let h_current = make_tensor_f64(1, 8, 0.5, &device);  // Same seed as centroid → small diff
-    let h_prev = make_tensor_f64(1, 8, 0.5, &device);     // Same as current → no drift
+    let h_current = make_tensor_f64(1, 8, 0.5, &device); // Same seed as centroid → small diff
+    let h_prev = make_tensor_f64(1, 8, 0.5, &device); // Same as current → no drift
     let safe_centroid = make_tensor_f64(1, 8, 0.5, &device);
     let u_nom = make_tensor_f64(8, 1, 0.1, &device);
 
@@ -287,10 +287,7 @@ fn test_cbf_qp_safe_control() {
 
     println!(
         "[Goliath] CBF-QP safe: status={}, corrected={}, iterations={}, margin={:.4}",
-        result.solver_status,
-        result.corrected,
-        result.iterations,
-        result.safety_margin_after
+        result.solver_status, result.corrected, result.iterations, result.safety_margin_after
     );
 }
 
@@ -309,11 +306,11 @@ fn test_cbf_qp_unsafe_correction() {
         &h_prev,
         &safe_centroid,
         &u_nom,
-        2.0,  // α (aggressive)
-        1.0,  // β
-        0.2,  // γ
-        0.1,  // ε_koopman
-        5.0,  // u_max
+        2.0, // α (aggressive)
+        1.0, // β
+        0.2, // γ
+        0.1, // ε_koopman
+        5.0, // u_max
     )
     .unwrap();
 
@@ -368,7 +365,15 @@ fn test_cbf_qp_result_display() {
     let u_nom = make_tensor_f64(4, 1, 0.1, &device);
 
     let result = solve_cbf_qp(
-        &h_current, &h_prev, &safe_centroid, &u_nom, 1.0, 0.5, 0.1, 0.05, 10.0,
+        &h_current,
+        &h_prev,
+        &safe_centroid,
+        &u_nom,
+        1.0,
+        0.5,
+        0.1,
+        0.05,
+        10.0,
     )
     .unwrap();
 

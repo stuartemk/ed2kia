@@ -26,7 +26,8 @@ fn test_symbiotic_utility_energy_penalty() {
     assert!(
         util_low_bat > util_high_bat,
         "Low energy cost must yield higher utility (actual: {:.2} > {:.2})",
-        util_low_bat, util_high_bat
+        util_low_bat,
+        util_high_bat
     );
 }
 
@@ -63,7 +64,10 @@ fn test_energy_aware_node_selection() {
         compute_symbiotic_utility(-3.0, 2.0, 1.0, 0.3, -0.5),
         compute_symbiotic_utility(-1.0, 0.5, 5.0, 1.0, 0.3),
     ];
-    println!("Utilities: [{:.2}, {:.2}, {:.2}]", utilities[0], utilities[1], utilities[2]);
+    println!(
+        "Utilities: [{:.2}, {:.2}, {:.2}]",
+        utilities[0], utilities[1], utilities[2]
+    );
     let best = select_best_node(&utilities).unwrap();
     assert_eq!(
         best, 1,
@@ -101,7 +105,10 @@ fn test_full_energy_symbiosis_pipeline() {
             replicator_step_multiplicative(strategies[i], *node_util, f_bar, 0.0, 0.0, 0.01, 0.05);
     }
 
-    assert!(verify_simplex(&strategies), "Strategies must form valid simplex");
+    assert!(
+        verify_simplex(&strategies),
+        "Strategies must form valid simplex"
+    );
     assert!(
         strategies[best] > 0.33,
         "Best node strategy should increase"
@@ -110,10 +117,7 @@ fn test_full_energy_symbiosis_pipeline() {
     let entropy = population_entropy(&strategies);
     println!(
         "🧬 Strategies: [{:.4}, {:.4}, {:.4}], H = {:.4}",
-        strategies[0],
-        strategies[1],
-        strategies[2],
-        entropy
+        strategies[0], strategies[1], strategies[2], entropy
     );
     assert!(entropy > 0.0, "Entropy must be positive");
 }
@@ -198,7 +202,11 @@ fn test_replicator_convergence_to_best() {
     for _ in 0..200 {
         x = replicator_step_multiplicative(x, best_util, avg_util, 0.0, 0.0, 0.01, 0.0);
     }
-    assert!(x > 0.1, "Best strategy should grow over time (final: {:.4})", x);
+    assert!(
+        x > 0.1,
+        "Best strategy should grow over time (final: {:.4})",
+        x
+    );
     println!("✅ Replicator convergence: x0=0.1 → x_final={:.4}", x);
 }
 
@@ -210,7 +218,11 @@ fn test_replicator_elimination_of_worst() {
     for _ in 0..200 {
         x = replicator_step_multiplicative(x, worst_util, avg_util, 0.0, 0.0, 0.01, 0.0);
     }
-    assert!(x < 0.9, "Worst strategy should shrink over time (final: {:.4})", x);
+    assert!(
+        x < 0.9,
+        "Worst strategy should shrink over time (final: {:.4})",
+        x
+    );
     println!("✅ Replicator elimination: x0=0.9 → x_final={:.4}", x);
 }
 
@@ -232,7 +244,10 @@ fn test_entropy_decreases_under_selection() {
         "✅ Entropy: H_initial={:.4} → H_final={:.4}",
         h_initial, h_final
     );
-    assert!(h_final < h_initial, "Entropy should decrease under selection pressure");
+    assert!(
+        h_final < h_initial,
+        "Entropy should decrease under selection pressure"
+    );
 }
 
 #[test]
@@ -249,13 +264,16 @@ fn test_energy_dominates_utility() {
         diff,
         2.0 * 19.0
     );
-    assert!((diff - 38.0).abs() < 0.01, "Energy penalty must match w3 × ΔE");
+    assert!(
+        (diff - 38.0).abs() < 0.01,
+        "Energy penalty must match w3 × ΔE"
+    );
 }
 
 #[test]
 fn test_cbf_projection_safe_state() {
+    use candle_core::{DType, Device, Tensor};
     use native_audit::steering::steer_cbf_projection;
-    use candle_core::{Device, DType, Tensor};
 
     let h = Tensor::zeros(&[2, 2], DType::F32, &Device::Cpu).unwrap();
     let safe = Tensor::zeros(&[2, 2], DType::F32, &Device::Cpu).unwrap();
@@ -270,10 +288,13 @@ fn test_cbf_projection_safe_state() {
 
 #[test]
 fn test_cbf_projection_corrects_unsafe() {
+    use candle_core::{DType, Device, Tensor};
     use native_audit::steering::steer_cbf_projection;
-    use candle_core::{Device, DType, Tensor};
 
-    let h = Tensor::new(50.0f32, &Device::Cpu).unwrap().broadcast_as(&[2, 2]).unwrap();
+    let h = Tensor::new(50.0f32, &Device::Cpu)
+        .unwrap()
+        .broadcast_as(&[2, 2])
+        .unwrap();
     let safe = Tensor::zeros(&[2, 2], DType::F32, &Device::Cpu).unwrap();
     let result = steer_cbf_projection(&h, &safe, 2.0).unwrap();
     let result_val = result.mean_all().unwrap().to_scalar::<f32>().unwrap();

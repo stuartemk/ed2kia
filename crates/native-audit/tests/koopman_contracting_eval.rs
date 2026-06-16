@@ -47,7 +47,10 @@ fn test_koopman_edmd_pipeline() -> candle_core::Result<()> {
 
     // Adaptive stride
     let stride = est.compute_adaptive_stride(last, 8)?;
-    assert!(stride >= 1 && stride <= 8, "Stride must be bounded [1, max_stride]");
+    assert!(
+        stride >= 1 && stride <= 8,
+        "Stride must be bounded [1, max_stride]"
+    );
 
     Ok(())
 }
@@ -129,7 +132,10 @@ fn test_contracting_tube_mpc_stability() -> candle_core::Result<()> {
 
     let final_dist = *distances.last().unwrap();
     println!("Contracting Tube: final distance = {:.4}", final_dist);
-    assert!(final_dist < distances[0], "Final distance < initial distance");
+    assert!(
+        final_dist < distances[0],
+        "Final distance < initial distance"
+    );
     Ok(())
 }
 
@@ -157,7 +163,10 @@ fn test_contracting_tube_zero_violations() -> candle_core::Result<()> {
     }
 
     println!("Tube violations: {}/20", violations);
-    assert_eq!(violations, 0, "All states must be within tube after steering");
+    assert_eq!(
+        violations, 0,
+        "All states must be within tube after steering"
+    );
     Ok(())
 }
 
@@ -174,7 +183,10 @@ fn test_ema_centroid_tracking() -> candle_core::Result<()> {
 
     let centroid_val = centroid.to_scalar::<f32>()?;
     println!("EMA centroid after 10 steps: {:.4}", centroid_val);
-    assert!(centroid_val > 0.0 && centroid_val < 1.0, "EMA should track target");
+    assert!(
+        centroid_val > 0.0 && centroid_val < 1.0,
+        "EMA should track target"
+    );
     Ok(())
 }
 
@@ -204,7 +216,9 @@ fn test_full_s142_pipeline() -> candle_core::Result<()> {
     // 2. Build trajectory + estimate K
     for i in 0..10 {
         let t = i as f32 * 0.1;
-        let data: Vec<f32> = (0..dim).map(|j| (t + j as f32 * 0.01).sin() * 0.5).collect();
+        let data: Vec<f32> = (0..dim)
+            .map(|j| (t + j as f32 * 0.01).sin() * 0.5)
+            .collect();
         let tensor = Tensor::from_vec(data, (1, dim), &device)?;
         est.add_snapshot(tensor);
     }
@@ -220,7 +234,9 @@ fn test_full_s142_pipeline() -> candle_core::Result<()> {
 
     for i in 0..15 {
         let t = (10 + i) as f32 * 0.1;
-        let data: Vec<f32> = (0..dim).map(|j| (t + j as f32 * 0.01).sin() * 0.5).collect();
+        let data: Vec<f32> = (0..dim)
+            .map(|j| (t + j as f32 * 0.01).sin() * 0.5)
+            .collect();
         let phi = Tensor::from_vec(data, (1, dim), &device)?;
 
         // Update centroid
@@ -270,7 +286,9 @@ fn test_s142_metrics_report() -> candle_core::Result<()> {
     let mut est = KoopmanEstimator::new(16, &device);
     for i in 0..10 {
         let t = i as f32 * 0.05;
-        let data: Vec<f32> = (0..dim).map(|j| (t + j as f32 * 0.005).cos() * 0.3).collect();
+        let data: Vec<f32> = (0..dim)
+            .map(|j| (t + j as f32 * 0.005).cos() * 0.3)
+            .collect();
         let tensor = Tensor::from_vec(data, (1, dim), &device)?;
         est.add_snapshot(tensor);
     }
@@ -283,7 +301,9 @@ fn test_s142_metrics_report() -> candle_core::Result<()> {
 
     for i in 0..20 {
         let t = (10 + i) as f32 * 0.05;
-        let data: Vec<f32> = (0..dim).map(|j| (t + j as f32 * 0.005).cos() * 0.3).collect();
+        let data: Vec<f32> = (0..dim)
+            .map(|j| (t + j as f32 * 0.005).cos() * 0.3)
+            .collect();
         let phi = Tensor::from_vec(data, (1, dim), &device)?;
 
         let stride = est.compute_adaptive_stride(&phi, 8)?;
@@ -362,7 +382,9 @@ fn test_strided_mpsf_360m_scale() -> candle_core::Result<()> {
     let mut est = KoopmanEstimator::new(8, &Device::Cpu);
     for i in 0..6 {
         let t = i as f32 * 0.1;
-        let data: Vec<f32> = (0..hidden).map(|j| (t + j as f32 * 0.001).sin() * 0.1).collect();
+        let data: Vec<f32> = (0..hidden)
+            .map(|j| (t + j as f32 * 0.001).sin() * 0.1)
+            .collect();
         let tensor = Tensor::from_vec(data, (1, hidden), &Device::Cpu)?;
         est.add_snapshot(tensor);
     }

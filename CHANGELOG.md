@@ -1,4 +1,30 @@
-﻿## [v16.7.0-sprint167] — 2026-06-15 (Sprint 167 — ONLINE KOOPMAN RLS + ADMM LMI + HYBRID TUBE CBF + HZI TAYLOR CERTIFICATION)
+﻿## [v16.8.0-sprint168] — 2026-06-16 (Sprint 168 — DIMENSIONAL COLLAPSE & TUBE MPC OPTIMIZATION)
+
+### Sprint 168 "DIMENSIONAL COLLAPSE & TUBE MPC OPTIMIZATION"
+
+**Mode:** `DIMENSIONAL_COLLAPSE + GIRARD_ENHANCED + TUBE_MPC_CORE + ZERO_WARNINGS`
+
+**Problema — Sin colapso dimensional ni Tube MPC en core:** Sprints 100-167 establecen KoopmanVanguard, DeepKoopmanAE, KoopmanRLS, ADMM LMI, HZI Taylor, ISS Lyapunov, Explicit CBF O(1), Tube MPC, SVD Bottleneck, SINDy Library, STLSQ-EDMD, PAC-Conformal Tube, Koopman Lifting SAE + CBF Híbrido, pero faltan: (1) **Dimensional Collapse** — `extract_topological_core()` con Matryoshka SAE para reducir de 4096D+ a core_dim=16-32 usando norm/mixed-norm selection, (2) **Enhanced Girard Reduction** — `reduce_order_girard_enhanced()` con importancia híbrida = L2_norm + alpha * L1_norm para over-approximation más ajustada, y (3) **Tube MPC en Core** — `tube_mpc_core()` ejecutando pipeline completo (nominal prediction → tube propagation → Girard reduction → CBF correction) en espacio de baja dimensión.
+
+**Solución — Dimensional Collapse + Tube MPC Core Pipeline completo:** `DimensionalCollapseConfig` con `core_dim`, `selection_method` (Norm/Mixed), `adaptive_core` bounds y `mixed_norm_weight`. `extract_topological_core()` selecciona top-k dimensiones por importancia (L2 o L2+alpha*L1), retornando `CoreExtractionResult` con indices + features reducidas. `reduce_order_girard_enhanced()` ordena generadores por importancia híbrida, mantiene top-k y colapsa resto a diagonal box. `tube_mpc_core()` ejecuta K @ phi_core → K @ Z + W → Girard reduction → CBF correction en core space. `update_koopman_rls_core()` entrena RLS directamente en core space. **44/44 tests passing (31 koopman_rls + 6 control + 7 integration), library compiles clean.**
+
+- **Dimensional Collapse:** `native-audit/src/koopman_rls.rs` — `DimensionalCollapseConfig` + `extract_topological_core()` + `update_koopman_rls_core()`
+- **Enhanced Girard:** `native-audit/src/zonotope.rs` — `reduce_order_girard_enhanced()` con importancia híbrida L2 + alpha*L1
+- **Tube MPC Core:** `native-audit/src/control.rs` — `tube_mpc_core()` + `CoreTubeMPCResult`
+- **Integration Tests:** `native-audit/tests/s168_dimensional_collapse_eval.rs` — 7 tests (performance <50ms, CBF safety, Girard tightness, full pipeline)
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| Compilation (lib) | ✅ 0 errors, 0 warnings (S168 code) |
+| Dimensional Collapse | ✅ 4096D → 16-32D core con norm/mixed-norm selection |
+| Enhanced Girard | ✅ Importancia híbrida L2 + alpha*L1, pruning >50% |
+| Tube MPC Core | ✅ Pipeline completo en core space con CBF safety |
+| Performance | ✅ 50 steps < 50ms con core_dim=32 |
+| Unit Tests | ✅ 37/37 passing (koopman_rls: 31, control: 6) |
+| Integration Tests | ✅ 7/7 passing |
+
+## [v16.7.0-sprint167] — 2026-06-15 (Sprint 167 — ONLINE KOOPMAN RLS + ADMM LMI + HYBRID TUBE CBF + HZI TAYLOR CERTIFICATION)
 
 ### Sprint 167 "ONLINE KOOPMAN RLS + ADMM LMI + HYBRID TUBE CBF + HZI TAYLOR CERTIFICATION"
 

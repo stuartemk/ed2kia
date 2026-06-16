@@ -19,14 +19,14 @@
 //! - Llama-3.1-8B-IQ2_XS: ~2.3GB RAM (ultra-edge)
 //! - No GPU required, runs on Raspberry Pi 5 / Jetson Nano
 
-use candle_core::{Device, Result, Tensor, DType, D};
-use candle_transformers::models::quantized_llama::ModelWeights as QLlama;
 use candle_core::quantized::gguf_file;
-use tokenizers::Tokenizer;
+use candle_core::{DType, Device, Result, Tensor, D};
+use candle_transformers::models::quantized_llama::ModelWeights as QLlama;
 use std::collections::HashMap;
 use std::fs;
 use std::io::Cursor;
 use std::path::Path;
+use tokenizers::Tokenizer;
 
 // ---------------------------------------------------------------------------
 // Model Type + Info
@@ -85,11 +85,7 @@ impl std::fmt::Display for GGUFModelInfo {
 fn extract_metadata_from_gguf(content: &gguf_file::Content) -> GGUFModelInfo {
     let md = &content.metadata;
 
-    let get_u32 = |key: &str| -> u32 {
-        md.get(key)
-            .and_then(|v| v.to_u32().ok())
-            .unwrap_or(0)
-    };
+    let get_u32 = |key: &str| -> u32 { md.get(key).and_then(|v| v.to_u32().ok()).unwrap_or(0) };
 
     let embedding_length = get_u32("llama.embedding_length") as usize;
     let block_count = get_u32("llama.block_count") as usize;
@@ -105,7 +101,8 @@ fn extract_metadata_from_gguf(content: &gguf_file::Content) -> GGUFModelInfo {
     };
 
     // Detect architecture from metadata
-    let architecture = md.get("general.architecture")
+    let architecture = md
+        .get("general.architecture")
         .and_then(|v| v.to_string().ok())
         .map(|s| s.to_string())
         .unwrap_or_else(|| "llama".to_string());
@@ -153,8 +150,9 @@ impl TensorAuditGGUF {
     /// * `device` - Target device (CPU for edge)
     /// * `target_layers` - Layer indices for hidden state simulation
     pub fn load(gguf_path: &str, device: &Device, target_layers: Vec<usize>) -> Result<Self> {
-        let mut file = fs::File::open(gguf_path)
-            .map_err(|e| candle_core::Error::Msg(format!("Failed to open GGUF file '{}': {}", gguf_path, e)))?;
+        let mut file = fs::File::open(gguf_path).map_err(|e| {
+            candle_core::Error::Msg(format!("Failed to open GGUF file '{}': {}", gguf_path, e))
+        })?;
 
         let content = gguf_file::Content::read(&mut file)
             .map_err(|e| candle_core::Error::Msg(format!("GGUF parse error: {}", e)))?;
@@ -165,11 +163,13 @@ impl TensorAuditGGUF {
         let model = QLlama::from_gguf(content, &mut file, device)?;
 
         // Load tokenizer
-        let tokenizer = find_and_load_tokenizer(gguf_path)
-            .unwrap_or_else(|| {
-                eprintln!("WARNING: No tokenizer found near '{}', using fallback", gguf_path);
-                create_fallback_tokenizer()
-            });
+        let tokenizer = find_and_load_tokenizer(gguf_path).unwrap_or_else(|| {
+            eprintln!(
+                "WARNING: No tokenizer found near '{}', using fallback",
+                gguf_path
+            );
+            create_fallback_tokenizer()
+        });
 
         eprintln!(
             "GGUF model loaded: {} hidden={} layers={} heads={} kv={} head_dim={} vocab={} target_layers={:?}",
@@ -217,7 +217,8 @@ impl TensorAuditGGUF {
 
     /// Forward pass — generate logits for the given prompt.
     pub fn forward_logits(&mut self, prompt: &str) -> Result<Tensor> {
-        let tokens = self.tokenizer
+        let tokens = self
+            .tokenizer
             .encode(prompt, true)
             .map_err(|e| candle_core::Error::Msg(format!("Tokenization error: {}", e)))?;
 
@@ -273,7 +274,8 @@ impl TensorAuditGGUF {
 
     /// Encode prompt to token IDs.
     pub fn encode(&self, prompt: &str) -> Result<Vec<u32>> {
-        let tokens = self.tokenizer
+        let tokens = self
+            .tokenizer
             .encode(prompt, true)
             .map_err(|e| candle_core::Error::Msg(format!("Tokenization error: {}", e)))?;
         Ok(tokens.get_ids().to_vec())
@@ -281,7 +283,8 @@ impl TensorAuditGGUF {
 
     /// Decode token IDs to text.
     pub fn decode(&self, token_ids: &[u32]) -> Result<String> {
-        let text = self.tokenizer
+        let text = self
+            .tokenizer
             .decode(token_ids, true)
             .map_err(|e| candle_core::Error::Msg(format!("Decode error: {}", e)))?;
         Ok(text)
@@ -320,7 +323,8 @@ impl TensorAuditGGUF {
                 }
                 selected
             } else {
-                logits.argmax(D::Minus1)?
+                logits
+                    .argmax(D::Minus1)?
                     .to_dtype(DType::U32)?
                     .to_scalar::<u32>()?
             };
@@ -357,7 +361,8 @@ impl TensorAuditGGUF {
 
     /// Memory usage estimate in MB.
     pub fn estimate_memory_mb(&self) -> f64 {
-        let base_mb = (self.info.hidden_size as f64 * self.info.hidden_size as f64 * 4.0) / 1_048_576.0;
+        let base_mb =
+            (self.info.hidden_size as f64 * self.info.hidden_size as f64 * 4.0) / 1_048_576.0;
         let layer_count = self.info.n_layers as f64;
         let per_layer = base_mb * 4.0;
         let quant_factor = match self.info.quant_type.as_str() {
@@ -441,16 +446,14 @@ fn create_fallback_tokenizer() -> Tokenizer {
         },
         "add_special_tokens": []
     }"#;
-    Tokenizer::from_bytes(json.as_bytes())
-        .unwrap_or_else(|_| {
-            // Ultra-minimal fallback if even ByteLevel fails
-            let minimal = r#"{
+    Tokenizer::from_bytes(json.as_bytes()).unwrap_or_else(|_| {
+        // Ultra-minimal fallback if even ByteLevel fails
+        let minimal = r#"{
                 "model": {"type":"BPE","vocab":{},"merges":[]},
                 "add_special_tokens": []
             }"#;
-            Tokenizer::from_bytes(minimal.as_bytes())
-                .expect("Fallback tokenizer creation failed")
-        })
+        Tokenizer::from_bytes(minimal.as_bytes()).expect("Fallback tokenizer creation failed")
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -534,7 +537,7 @@ mod tests {
         });
 
         match f32_type {
-            ModelType::F32 => {},
+            ModelType::F32 => {}
             ModelType::GGUF(_) => panic!("Should be F32"),
         }
 
@@ -543,7 +546,7 @@ mod tests {
                 assert_eq!(info.hidden_size, 4096);
                 assert_eq!(info.n_layers, 32);
                 assert_eq!(info.vocab_size, 128256);
-            },
+            }
             ModelType::F32 => panic!("Should be GGUF"),
         }
     }
@@ -633,6 +636,7 @@ mod tests {
         use std::collections::HashMap;
 
         let content = gguf_file::Content {
+            magic: candle_core::quantized::gguf_file::VersionedMagic::GgufV3,
             metadata: HashMap::new(),
             tensor_infos: HashMap::new(),
             tensor_data_offset: 0,
@@ -661,7 +665,11 @@ mod tests {
         let per_layer = base_mb * 4.0;
         let expected = (base_mb + per_layer * 32.0) * 0.15625;
 
-        assert!(expected > 500.0 && expected < 5000.0, "Expected ~1290MB, got {}", expected);
+        assert!(
+            expected > 500.0 && expected < 5000.0,
+            "Expected ~1290MB, got {}",
+            expected
+        );
     }
 
     #[test]
@@ -693,13 +701,16 @@ mod tests {
         let mem_q4 = total_base * 0.15625;
         let mem_iq2 = total_base * 0.07813;
 
-        assert!(mem_iq2 < mem_q4 / 2.0, "IQ2_XS should use <50% of Q4_K_M memory");
+        assert!(
+            mem_iq2 < mem_q4 / 2.0,
+            "IQ2_XS should use <50% of Q4_K_M memory"
+        );
     }
 
     #[test]
     fn test_fallback_tokenizer_creation() {
         let tokenizer = create_fallback_tokenizer();
         // Should not panic — tokenizer is created
-        assert!(!tokenizer.to_string().is_empty() || true); // Just verify no panic
+        let _ = tokenizer.to_string(false).ok(); // Just verify no panic
     }
 }

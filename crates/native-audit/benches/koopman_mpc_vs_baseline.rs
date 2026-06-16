@@ -84,7 +84,9 @@ fn calibrate_conformal_epsilon(calibration_errors: &[f32], delta: f32) -> f32 {
     let mut sorted = calibration_errors.to_vec();
     sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
     let n = sorted.len();
-    let idx = (((1.0 - delta) * (n + 1) as f32).ceil() as usize).saturating_sub(1).min(n - 1);
+    let idx = (((1.0 - delta) * (n + 1) as f32).ceil() as usize)
+        .saturating_sub(1)
+        .min(n - 1);
     sorted[idx]
 }
 
@@ -222,10 +224,17 @@ fn simulate_single_prompt(
         .collect();
 
     // 4. Solve robust CBF-QP
-    let (_u_safe, feasible) = solve_robust_cbf_qp(&u_nom, cbf_value, lf_h, &lg_h, CBF_GAMMA, conformal_epsilon);
+    let (_u_safe, feasible) =
+        solve_robust_cbf_qp(&u_nom, cbf_value, lf_h, &lg_h, CBF_GAMMA, conformal_epsilon);
 
     // 5. Propagate tube for this prompt
-    let tube_radii = propagate_tube_conformal(k_norm, dist_sq.sqrt(), disturbance_bound, conformal_epsilon, HORIZON);
+    let tube_radii = propagate_tube_conformal(
+        k_norm,
+        dist_sq.sqrt(),
+        disturbance_bound,
+        conformal_epsilon,
+        HORIZON,
+    );
     let final_radius = *tube_radii.last().unwrap_or(&1.0);
 
     // 6. Check if state exits tube (attack success)
@@ -299,9 +308,7 @@ fn bench_conformal_calibration(c: &mut Criterion) {
         group.throughput(Throughput::Elements(size as u64));
         group.bench_with_input(BenchmarkId::from_parameter(size), &size, |b, sz| {
             let errors = generate_calibration_errors(*sz, 0.01);
-            b.iter(|| {
-                calibrate_conformal_epsilon(black_box(&errors), black_box(CONFORMAL_DELTA))
-            })
+            b.iter(|| calibrate_conformal_epsilon(black_box(&errors), black_box(CONFORMAL_DELTA)))
         });
     }
 }
@@ -364,27 +371,21 @@ fn bench_cbf_qp_solver(c: &mut Criterion) {
 /// Benchmark: Full Goliath Simulation — Stable Regime
 fn bench_goliath_stable(c: &mut Criterion) {
     c.bench_function("sprint158/goliath_stable_100prompts", |b| {
-        b.iter(|| {
-            goliath_benchmark_simulation(black_box(0.5), black_box("stable"))
-        })
+        b.iter(|| goliath_benchmark_simulation(black_box(0.5), black_box("stable")))
     });
 }
 
 /// Benchmark: Full Goliath Simulation — Marginal Regime
 fn bench_goliath_marginal(c: &mut Criterion) {
     c.bench_function("sprint158/goliath_marginal_100prompts", |b| {
-        b.iter(|| {
-            goliath_benchmark_simulation(black_box(1.0), black_box("marginal"))
-        })
+        b.iter(|| goliath_benchmark_simulation(black_box(1.0), black_box("marginal")))
     });
 }
 
 /// Benchmark: Full Goliath Simulation — Unstable Regime
 fn bench_goliath_unstable(c: &mut Criterion) {
     c.bench_function("sprint158/goliath_unstable_100prompts", |b| {
-        b.iter(|| {
-            goliath_benchmark_simulation(black_box(2.0), black_box("unstable"))
-        })
+        b.iter(|| goliath_benchmark_simulation(black_box(2.0), black_box("unstable")))
     });
 }
 
@@ -400,7 +401,11 @@ fn bench_lyapunov_derivative(c: &mut Criterion) {
             let next_state = vec![0.09f32; *d];
             let safe = vec![0.0f32; *d];
             b.iter(|| {
-                compute_lyapunov_derivative(black_box(&state), black_box(&next_state), black_box(&safe))
+                compute_lyapunov_derivative(
+                    black_box(&state),
+                    black_box(&next_state),
+                    black_box(&safe),
+                )
             })
         });
     }
@@ -414,7 +419,8 @@ fn bench_asr_comparison(c: &mut Criterion) {
     for scale in scales {
         group.bench_with_input(BenchmarkId::from_parameter(scale), &scale, |b, s| {
             b.iter(|| {
-                let (asr, _, _, _) = goliath_benchmark_simulation(black_box(*s), black_box("stable"));
+                let (asr, _, _, _) =
+                    goliath_benchmark_simulation(black_box(*s), black_box("stable"));
                 asr
             })
         });
