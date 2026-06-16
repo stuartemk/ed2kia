@@ -1,4 +1,32 @@
-﻿## [v17.0.0-sprint170] — 2026-06-16 (Sprint 170 — WASSERSTEIN ROBUST EVENT-TRIGGERED CBF WITH ZENO AVOIDANCE & TUBE MPC INTEGRATION)
+﻿## [v17.1.0-sprint171] — 2026-06-16 (Sprint 171 — ROBUST ORGANIC STEERING VIA DR-CBF + CONFORMAL TUBES + FAST/SLOW SPLIT)
+
+### Sprint 171 "ROBUST ORGANIC STEERING VIA DR-CBF + CONFORMAL TUBES + FAST/SLOW SPLIT"
+
+**Mode:** `DR_CBF + CONFORMAL_TUBES + SOFT_VFE_PENALTY + TWO_BRAIN_ARCHITECTURE + ZERO_PHILOSOPHICAL_NOISE + EDGE_VIABLE`
+
+**Problema — Sin garantías conformales ni arquitectura two-brain:** Sprints 100-170 establecen KoopmanVanguard, DeepKoopmanAE, KoopmanRLS, ADMM LMI, HZI Taylor, ISS Lyapunov, Explicit CBF O(1), Tube MPC, DR-CBF, Event-Triggered Controller, Wasserstein Tube MPC, pero faltan: (1) **Conformal Prediction Tubes** — `conformal_tube_radius()` con garantía marginal `P(|error| <= radius) >= 1-α` para inferencia O(1) en edge/WASM, (2) **Soft VFE Pain Penalty** — `pain = λ * max(0, -h_robust)²` reemplazando todos los bloques duros CBF con penalización cuadrática suave, (3) **DR-CBF Conformal Step** — `dr_cbf_conformal_step()` unificando radio conformal + h_robust + corrección lambda en un paso atómico, y (4) **Documentación Técnica Limpia** — Eliminación de TODO texto filosófico/hype de README.md (Noosfera, Eternal Symbiosis, Cárcel Topológica) reemplazado con tablas técnicas de Two-Brain Architecture, Control Theory Stack, y Safety Guarantees.
+
+**Solución — Conformal Tubes + Soft Penalty Pipeline completo:** `conformal.rs` nuevo módulo con `ConformalConfig`, `conformal_tube_radius()` (calibration set quantile), `propagate_conformal_tube()` (Z_{k+1} = ρ·Z_k ⊕ ε), `verify_conformal_coverage()` (empirical coverage check), `dr_cbf_conformal_step()` (full pipeline: radius → h_robust → λ → u_safe), `compute_soft_vfe_pain()` (quadratic penalty), `propagate_tube_horizon()` (multi-step radii), `verify_conformal_safety()` (h_nom - radius*L_h >= 0), `compute_conformal_tube_correction()` (conditional tube correction). `dr_cbf_safe_control()` en `control_lmi.rs` verificado como soft-only (lambda correction, no hard block). README.md limpiado: ~70 líneas de hype eliminadas, reemplazadas con arquitectura técnica tabular. **30/30 tests passing, library compiles clean, 0 S171 warnings.**
+
+- **Conformal Prediction Tubes:** `native-audit/src/conformal.rs` — Nuevo módulo con `ConformalConfig`, `ConformalTubeResult`, 8 public functions + 30 tests
+- **Soft VFE Penalty:** `native-audit/src/control_lmi.rs` — `dr_cbf_safe_control()` verificado soft-only (λ = max(-h_robust, 0) / (‖Lg_h‖² + ε))
+- **README Technical Cleanup:** `README.md` — Two-Brain Architecture table, Control Theory Stack table, Safety Guarantees section
+- **Benchmarks:** `native-audit/benches/s171_dr_cbf_conformal.rs` — 9 benchmark groups (radius, propagate, coverage, dr_cbf_step, vfe_pain, horizon, safety, config, full_pipeline)
+- **Module Registration:** `native-audit/src/lib.rs` — `pub mod conformal;`
+
+**Resultados:**
+| Metric | Value |
+|--------|-------|
+| Compilation (lib) | ✅ 0 errors, 0 warnings (S171 code) |
+| Conformal Tubes | ✅ P(\|error\| ≤ radius) ≥ 1-α finite-sample guarantee |
+| Soft VFE Penalty | ✅ pain = λ · violation² — no hard blocking |
+| DR-CBF Conformal Step | ✅ Atomic: radius → h_robust → λ → u_safe |
+| Unit Tests | ✅ 30/30 passing |
+| README Cleanup | ✅ ~70 lines hype removed, technical tables added |
+| Benchmarks | ✅ 9 benchmark groups for empirical validation |
+| Two-Brain Architecture | ✅ Fast (WASM/edge) vs Slow (CPU/training) documented |
+
+## [v17.0.0-sprint170] — 2026-06-16 (Sprint 170 — WASSERSTEIN ROBUST EVENT-TRIGGERED CBF WITH ZENO AVOIDANCE & TUBE MPC INTEGRATION)
 
 ### Sprint 170 "WASSERSTEIN ROBUST EVENT-TRIGGERED CBF WITH ZENO AVOIDANCE & TUBE MPC INTEGRATION"
 

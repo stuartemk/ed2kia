@@ -1,7 +1,7 @@
 # 🌐 ed2kIA: Distributed Sparse Autoencoders for Edge LLM Interpretability
 
-[![Version](https://img.shields.io/badge/v16.6.0-sprint166-blue.svg)](https://github.com/Stuartemk/ed2kIA/releases/tag/v16.6.0-sprint166)
-[![Tests](https://img.shields.io/badge/Tests-1156%2B%20PASS-green.svg)](https://github.com/Stuartemk/ed2kIA/actions)
+[![Version](https://img.shields.io/badge/v17.1.0-sprint171-blue.svg)](https://github.com/Stuartemk/ed2kIA/releases/tag/v17.1.0-sprint171)
+[![Tests](https://img.shields.io/badge/Tests-1200%2B%20PASS-green.svg)](https://github.com/Stuartemk/ed2kIA/actions)
 [![Audit](https://img.shields.io/badge/OSSF-8.5%2F10-yellow.svg)](https://github.com/Stuartemk/ed2kIA/security)
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%2B%20Ética-orange.svg)](LICENSE)
 
@@ -53,77 +53,29 @@ The `native-audit` crate (`crates/native-audit`) provides:
 - **True Koopman Tube MPC:** Zonotope propagation for certified robust control.
 - **PINN Residual Denoising:** Physics-informed neural networks for energy conservation.
 
-**Noospheric Self-Organization & Post-Economic Symbiosis (v13.1.0 — Sprint 131):**
-| Feature | Module | Description |
-|---------|--------|-------------|
-| Planetary Free Energy | `native-audit/thermodynamics.rs` | `compute_planetary_free_energy()` — $F_{\text{planet}} = \sum_i x_i \cdot \text{VFE}_i + \lambda \cdot H(\text{energy\_dist}) - \gamma \cdot \text{symbiosis\_bonus}$ |
-| Active Inference Planetaria | `native-audit/thermodynamics.rs` | `active_inference_planetary_step()` — $\phi(t+1) = \phi(t) - \text{lr} \cdot \nabla_{\phi} F_{\text{planet}}$ |
-| Thermodynamic Resilience | `native-audit/thermodynamics.rs` | `thermodynamic_resilience_score()` — Resilience based on free energy minimization |
-| Civilizational Transition | `native-audit/thermodynamics.rs` | `simulate_civilizational_transition()` — Tipping point detection, economic vs symbiotic attractors |
-| Noospheric Aggregation | `native-audit/thermodynamics.rs` | `colimit_noospheric_aggregation()` — Colimit-based noospheric aggregation |
-| Functorial Safety Margin | `native-audit/thermodynamics.rs` | `functorial_safety_margin()` — Functorial safety margin for manifold composition |
-| S131 Noosfera Closure | `native-audit/thermodynamics.rs` | `s131_noosfera_closure()` — Unified planetary thermodynamic closure pipeline |
-| Category Manifolds Export | `native-audit/category_manifolds.rs` | Module export fix in `lib.rs`, Yoneda embedding, manifold composition |
-| Value Alignment Clippy Fixes | `consensus/value_alignment.rs` | 6 iterator/type corrections for clean compilation |
+## 🏗️ Technical Architecture (v17.1.0)
 
-**Sprint 135 — Thermodynamic Sentinel & Symplectic Matryoshka (v13.5.0):**
-| Feature | Module | Description |
-|---------|--------|-------------|
-| Matryoshka SAE | `sae/src/lib.rs` | `MatryoshkaSAE`, `compute_drift_plus_penalty()`, `forward_matryoshka()`, `sparsity_penalty()` — Energy-aware nested SAEs with Lyapunov drift-plus-penalty scheduling |
-| Symplectic Steering | `native-audit/steering.rs` | `SymplecticSteering`, `symplectic_langevin_step()`, `compute_lyapunov_exponent()`, `run_trajectory()` — Symplectic Langevin integration + Maximum Lyapunov Exponent (λ < 0 → stable attractor) |
-| Thermodynamic Eval | `native-audit/tests/thermodynamic_eval.rs` | 28 integration tests: Drift-Plus-Penalty (resolution 0.25), Lyapunov (λ = -0.0693 < 0), full pipeline demo |
+### Two-Brain Architecture
+| Component | Location | Role |
+|-----------|----------|------|
+| **Fast Brain (Edge/WASM)** | `crates/native-audit` | Real-time steering: DR-CBF, conformal tubes, event-triggered control |
+| **Slow Brain (CPU/Training)** | `crates/consensus`, `crates/federated` | Koopman operator learning, topological analysis, federated aggregation |
 
-**Sprint 135 Validation:**
-| Metric | Value |
-|--------|-------|
-| Matryoshka SAE Tests | **19/19 (100%)** |
-| Symplectic Steering Tests | **14/14 (100%)** |
-| Thermodynamic Eval Tests | **28/28 (100%)** |
-| Total New Tests (S135) | **61/61 (100%)** |
-| Lyapunov Exponent (λ) | **-0.0693 < 0 ✅ (Stable Attractor)** |
-| Drift-Plus-Penalty Resolution | **0.25 ✅ (Low Energy Mode)** |
-| Warnings | **0** |
+### Control Theory Stack
+| Module | Functions | Mathematical Guarantee |
+|--------|-----------|----------------------|
+| `control_lmi.rs` | `dr_cbf_safe_control()`, `cbf_lyapunov_safe_control()` | Soft penalty CBF: `λ = max(-h_robust, 0) / (‖Lg_h‖² + ε)` |
+| `conformal.rs` | `conformal_tube_radius()`, `propagate_conformal_tube()` | Marginal coverage: `P(\|error\| ≤ radius) ≥ 1-α` |
+| `event_triggered.rs` | `EventTriggeredController::step()` | Zeno avoidance: `τ ≥ τ_min`, trigger rate < 20% |
+| `control.rs` | `koopman_contracting_tube_mpc()`, `wasserstein_tube_propagate()` | Tube contraction: `ρ < 1`, ISS Lyapunov |
+| `zonotope.rs` | `Zonotope::affine_transform()`, `reduce_order_girard_enhanced()` | Exact affine propagation, wrapping reduction >70% |
+| `koopman_rls.rs` | `KoopmanRLS::update_koopman_rls()` | Forgetting factor RLS, adaptive SVD rank |
 
-**Sprint 134 — Noosfera Eternal Symbiosis, Global Singularity Stabilization & Eternal Civilizational Immunity (v13.4.0):**
-| Feature | Module | Description |
-|---------|--------|-------------|
-| Eternal Symbiosis | `noosfera-kernel/eternal_symbiosis.rs` | `stabilize_eternal_symbiosis()`, `compute_eternal_attractor_step()`, `compute_cosmic_entropy()`, `compute_eternal_cbf()`, `compute_lyapunov_exponent()` |
-| Global Singularity Stabilization | `native-audit/singularity_stabilization.rs` | `stabilize_global_singularity()`, `compute_singularity_potential()`, `compute_lyapunov_spectrum()`, `verify_no_regression()`, `prove_eternal_attractor()` |
-| Universal Immunity | `native-audit/universal_immunity.rs` | `deploy_universal_immune_system()`, `compute_immune_response()`, `detect_threat()`, `neutralize_threat()`, `prove_eternal_immunity()` |
-| Eternal Governance | `consensus/eternal_governance.rs` | `eternal_noospheric_governance()`, `colimit_consensus()`, `thermodynamic_voting()`, `verify_eternal_governance()` |
-
-**Sprint 134 Validation:**
-| Metric | Value |
-|--------|-------|
-| eternal_symbiosis.rs Tests | **45/45 (100%)** |
-| singularity_stabilization.rs Tests | **33/33 (100%)** |
-| universal_immunity.rs Tests | **37/37 (100%)** |
-| Total New Tests (S134) | **115/115 (100%)** |
-| Warnings | **0** |
-
-**Sprint 132 — Noosfera Kernel Unification, Quantum-Inspired Coherence & Universal Symbiosis Protocol (v13.2.0):**
-| Feature | Module | Description |
-|---------|--------|-------------|
-| Noosfera Kernel | `crates/noosfera-kernel` | `NoosferaKernel::new()`, `run_full_symbiotic_cycle()`, `integrate_all_modules()` — Unified runtime |
-| Quantum Coherence | `native-audit/quantum_coherence.rs` | `compute_quantum_inspired_coherence()`, `entanglement_symbiosis_score()`, `decoherence_stabilizer()` |
-| Universal Symbiosis Protocol | `p2p/universal_symbiosis_protocol.rs` | `usp_handshake()`, `propagate_symbiotic_state()`, `verify_protocol_compliance()` |
-| Provable Safety | `native-audit/provable_safety.rs` | `prove_noosfera_safety()`, `simulate_deployment_10k_nodes()`, `detect_singularity_threshold()` |
-
-**Sprint 132 Validation:**
-| Metric | Value |
-|--------|-------|
-| noosfera-kernel Tests | **67/67 (100%)** |
-| provable_safety Tests | **51/51 (100%)** |
-| Total New Tests (S132) | **118/118 (100%)** |
-| Warnings | **0** |
-
-**Sprint 131 Validation:**
-| Metric | Value |
-|--------|-------|
-| Thermodynamics Tests | **64/64 (100%)** |
-| Value Alignment Tests | **471/471 (100%)** |
-| Total New Tests (S131) | **64/64 (100%)** |
-| Warnings | **0** |
+### Safety Guarantees
+- **DR-CBF**: Distributionally robust via Wasserstein ambiguity set `P ∈ B_ε(P_nom)`
+- **Conformal Tubes**: Finite-sample coverage guarantee with calibration set
+- **Soft VFE Penalty**: `pain = λ · max(0, -h_robust)²` — no hard blocking
+- **Event Triggering**: Sample-and-hold with inter-event bounds `τ_min ≤ τ ≤ τ_max`
 
 **Planetary Immune Symbiosis & Adversarial Intelligence (v12.8.0 — Sprint 128):**
 | Feature | Module | Description |

@@ -32,6 +32,8 @@ pub mod control;
 pub mod control_lmi;
 // Sprint 170 — Event-Triggered Controller with Zeno Avoidance
 pub mod event_triggered;
+// Sprint 171 — Conformal Prediction Tubes for O(1) Inference
+pub mod conformal;
 pub mod deep_koopman;
 // Sprint 166 — Adaptive RLS Koopman with Forgetting Factor + Adaptive SVD
 pub mod koopman_rls;
